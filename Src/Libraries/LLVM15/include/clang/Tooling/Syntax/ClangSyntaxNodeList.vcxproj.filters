@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\Git\llvm-project\build\CMakeFiles\4757fc4b19d173ad9129ec7716d33518\Nodes.inc.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\Git\llvm-project\build\CMakeFiles\c9ef8d3ae7aae8e96a912ba216db6e38\ClangSyntaxNodeList.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\Git\llvm-project\clang\include\clang\Tooling\Syntax\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="D:\Git\llvm-project\build\tools\clang\include\clang\Tooling\Syntax\CMakeFiles\ClangSyntaxNodeList" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{BA22F3A4-135D-33EB-8941-D386C130D83E}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

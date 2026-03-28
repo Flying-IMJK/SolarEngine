@@ -1,0 +1,465 @@
+
+#include "RenderTask.h"
+
+#include "Renderer.h"
+#include "RenderList.h"
+#include "SceneRendering.h"
+#include "2D/Render2D.h"
+#include "Core/Types/Collections/Sorting.h"
+#include "Core/Thread/Threading.h"
+#include "Core/Platform/Window.h"
+#include "Core/Profiler/Profiler.h"
+
+#include "Runtime/Engine.h"
+#include "Runtime/Graphics/GPUDevice.h"
+#include "Runtime/Graphics/GPUSwapChain.h"
+#include "Runtime/Level/Level.h"
+#include "Runtime/Render/RenderBuffers.h"
+
+
+namespace SE
+{
+	List<RenderTask*> RenderTask::Tasks;
+	CriticalSection RenderTask::TasksLocker;
+	int32 RenderTask::TasksDoneLastFrame;
+	MainRenderTask* MainRenderTask::Instance;
+	//	CriticalSection RenderContext::GPULocker;
+	RenderTask* RenderTask::CurrentTask;
+
+	void RenderTask::RenderAll()
+	{
+		Threading::ScopeLock lock(TasksLocker);
+
+		// Sort tasks (by Order property)
+		Sorting::QuickSortObj(Tasks.Get(), Tasks.Count());
+
+		// Render all tasks
+		for (auto task : Tasks)
+		{
+			if (task->CanDraw())
+			{
+				task->OnRender();
+			}
+		}
+	}
+
+	RenderTask::RenderTask()
+	{
+		// Register
+		TasksLocker.Lock();
+		Tasks.Add(this);
+		TasksLocker.Unlock();
+	}
+
+	RenderTask::~RenderTask()
+	{
+		// Unregister
+		TasksLocker.Lock();
+		Tasks.Remove(this);
+		TasksLocker.Unlock();
+	}
+
+	bool RenderTask::CanDraw() const
+	{
+		if (SwapChain)
+		{
+			Window* window = SwapChain->GetWindow();
+			if (window != nullptr && !window->IsVisible() && !window->GetSettings().ShowAfterFirstPaint)
+			{
+				return false;
+			}
+		}
+
+		return Enabled;
+	}
+
+	void RenderTask::OnRender()
+	{
+		const auto context = GPUDevice::instance->GetMainContext();
+		OnBegin(context);
+		OnRender(context);
+		OnEnd(context);
+	}
+
+	void RenderTask::OnBegin(GPUContext* context)
+	{
+		Begin(this, context);
+		if (SwapChain)
+			SwapChain->Begin();
+
+		_prevTask = CurrentTask;
+		CurrentTask = this;
+		LastUsedFrame = Engine::FrameCount;
+		FrameCount++;
+	}
+
+	void RenderTask::OnRender(GPUContext* context)
+	{
+		Render(this, context);
+
+		if (SwapChain)
+		{
+			PROFILE_GPU_CPU_NAMED("GUI");
+			const Viewport viewport(0, 0, static_cast<float>(SwapChain->GetWidth()), static_cast<float>(SwapChain->GetHeight()));
+			Render2D::Begin(context, SwapChain->GetBackBufferView(), nullptr, viewport);
+			SwapChain->GetWindow()->OnDraw();
+			Render2D::End();
+		}
+	}
+
+	void RenderTask::OnEnd(GPUContext* context)
+	{
+		CurrentTask = _prevTask;
+
+		_prevTask = nullptr;
+		if (SwapChain)
+			SwapChain->End();
+		End(this, context);
+	}
+
+	void RenderTask::OnPresent(bool vsync)
+	{
+		if (SwapChain)
+			SwapChain->Present(vsync);
+		Present(this);
+	}
+
+	bool RenderTask::Resize(int32 width, int32 height)
+	{
+		return false;
+	}
+
+	String RenderTask::ToString() const
+	{
+		return SE_TEXT("RenderTask");
+	}
+
+	//---------------------------------------------------------
+
+	SceneRenderTask::SceneRenderTask()
+	{
+		Buffers = New<RenderBuffers>();
+
+		// Initialize view
+		View.Position = Float3::Zero;
+		View.Direction = Float3::Forward;
+		Matrix::PerspectiveFov(Math::PiDivTwo, 1.0f, View.Near, View.Far, View.Projection);
+		View.NonJitteredProjection = View.Projection;
+		Matrix::Invert(View.Projection, View.IP);
+		View.SetFace(4);
+	}
+
+	SceneRenderTask::~SceneRenderTask()
+	{
+		if (Buffers)
+			Buffers->DeleteObjectNow();
+		/*if (_customActorsScene)
+			Delete(_customActorsScene);*/
+	}
+
+	void SceneRenderTask::CameraCut()
+	{
+		IsCameraCut = true;
+	}
+
+	/*
+	void SceneRenderTask::AddCustomActor(Actor* actor)
+	{
+		CustomActors.AddUnique(actor);
+	}
+
+	void SceneRenderTask::RemoveCustomActor(Actor* actor)
+	{
+		CustomActors.Remove(actor);
+	}
+
+	void SceneRenderTask::ClearCustomActors()
+	{
+		CustomActors.Clear();
+	}
+
+	void SceneRenderTask::AddCustomPostFx(PostProcessEffect* fx)
+	{
+		CustomPostFx.AddUnique(fx);
+	}
+
+	void SceneRenderTask::RemoveCustomPostFx(PostProcessEffect* fx)
+	{
+		CustomPostFx.Remove(fx);
+	}
+
+	void SceneRenderTask::AddGlobalCustomPostFx(PostProcessEffect* fx)
+	{
+		GlobalCustomPostFx.AddUnique(fx);
+	}
+
+	void SceneRenderTask::RemoveGlobalCustomPostFx(PostProcessEffect* fx)
+	{
+		GlobalCustomPostFx.Remove(fx);
+	}
+	*/
+
+	void SceneRenderTask::CollectPostFxVolumes(RenderContext& renderContext)
+	{
+		// Cache WorldPosition used for PostFx volumes blending (RenderView caches it later on)
+		/*renderContext.View.WorldPosition = renderContext.View.Origin + renderContext.View.Position;
+
+		if (EnumHasAllFlags(ActorsSource, ActorsSources::Scenes))
+		{
+			Level::CollectPostFxVolumes(renderContext);
+		}
+		if (EnumHasAllFlags(ActorsSource, ActorsSources::CustomActors))
+		{
+			for (Actor* a : CustomActors)
+			{
+				auto* postFxVolume = dynamic_cast<PostFxVolume*>(a);
+				if (postFxVolume && a->GetIsActive())
+					postFxVolume->Collect(renderContext);
+			}
+		}
+		if (EnumHasAllFlags(ActorsSource, ActorsSources::CustomScenes))
+		{
+			for (Scene* scene : CustomScenes)
+			{
+				if (scene && scene->IsActiveInHierarchy())
+					scene->Rendering.CollectPostFxVolumes(renderContext);
+			}
+		}*/
+	}
+
+	/*void AddActorToSceneRendering(SceneRendering* s, Actor* a)
+	{
+		if (a && a->IsActiveInHierarchy())
+		{
+			int32 key = -1;
+			s->AddActor(a, key);
+			for (Actor* child : a->Children)
+				AddActorToSceneRendering(s, child);
+		}
+	}
+
+	bool SortPostFx(PostProcessEffect* const& a, PostProcessEffect* const& b)
+	{
+		return a->Order < b->Order;
+	}*/
+
+	void SceneRenderTask::OnCollectDrawCalls(RenderContextBatch& renderContextBatch, SceneRendering::DrawCategory category)
+	{
+		// Setup PostFx in the render list
+		if (category == SceneRendering::DrawCategory::PreRender)
+		{
+			const RenderContext& renderContext = renderContextBatch.GetMainContext();
+			/*auto& postFx = renderContext.list->PostFx;
+
+			// Collect all post effects
+			if (AllowGlobalCustomPostFx)
+			{
+				for (PostProcessEffect* fx : GlobalCustomPostFx)
+				{
+					if (fx && fx->CanRender(renderContext))
+						postFx.Add(fx);
+				}
+			}
+			for (PostProcessEffect* fx : CustomPostFx)
+			{
+				if (fx && fx->CanRender(renderContext))
+					postFx.Add(fx);
+			}
+			if (const auto* camera = Camera.Get())
+			{
+				for (Script* script : camera->Scripts)
+				{
+					auto* fx = Cast<PostProcessEffect>(script);
+					if (fx && fx->CanRender(renderContext))
+						postFx.Add(fx);
+				}
+			}
+
+			// Sort by order
+			Sorting::QuickSort(postFx.Get(), postFx.Count(), &SortPostFx);*/
+		}
+
+		// Draw actors (collect draw calls)
+		if (ActorsSource.IsFlag(ActorsSources::CustomActors))
+		{
+			/*if (category == SceneRendering::DrawCategory::PreRender)
+			{
+				if (_customActorsScene == nullptr)
+					_customActorsScene = New<SceneRendering>();
+				else
+					_customActorsScene->Clear();
+				for (Actor* a : CustomActors)
+					AddActorToSceneRendering(_customActorsScene, a);
+			}
+			ASSERT_LOW_LAYER(_customActorsScene);
+			_customActorsScene->Draw(renderContextBatch, category);*/
+		}
+
+		if (ActorsSource.IsFlag(ActorsSources::CustomScenes))
+		{
+			/*for (Scene* scene : CustomScenes)
+			{
+				if (scene && scene->IsActiveInHierarchy())
+					scene->Rendering.Draw(renderContextBatch, category);
+			}*/
+		}
+
+		if (ActorsSource.IsFlag(ActorsSources::Scenes))
+		{
+			Level::DrawActors(renderContextBatch, category);
+		}
+
+		// External drawing event
+		for (RenderContext& renderContext : renderContextBatch.Contexts)
+		{
+			CollectDrawCalls(renderContext);
+		}
+	}
+
+
+	void SceneRenderTask::OnPreRender(RenderContext& renderContext)
+	{
+		PreRender(renderContext);
+
+		// Collect initial draw calls
+		renderContext.view.Pass = DrawPass::GBuffer;
+		RenderContextBatch renderContextBatch(renderContext);
+		OnCollectDrawCalls(renderContextBatch, SceneRendering::PreRender);
+	}
+
+	void SceneRenderTask::OnPostRender(RenderContext& renderContext)
+	{
+		// Collect final draw calls
+		renderContext.view.Pass = DrawPass::GBuffer;
+		RenderContextBatch renderContextBatch(renderContext);
+		OnCollectDrawCalls(renderContextBatch, SceneRendering::PostRender);
+
+		PostRender(renderContext);
+	}
+
+	Viewport SceneRenderTask::GetViewport() const
+	{
+		Viewport viewport;
+		if (Output)
+			viewport = Viewport(0, 0, static_cast<float>(Output->Width()), static_cast<float>(Output->Height()));
+		else if (SwapChain)
+			viewport = Viewport(0, 0, static_cast<float>(SwapChain->GetWidth()), static_cast<float>(SwapChain->GetHeight()));
+		else if (Buffers != nullptr)
+			viewport = Buffers->GetViewport();
+		else
+			viewport = Viewport(0, 0, 1280, 720);
+		viewport.width *= RenderingPercentage;
+		viewport.height *= RenderingPercentage;
+		return viewport;
+	}
+
+	Viewport SceneRenderTask::GetOutputViewport() const
+	{
+		if (Output && Output->IsAllocated())
+			return Viewport(0, 0, static_cast<float>(Output->Width()), static_cast<float>(Output->Height()));
+		if (SwapChain)
+			return Viewport(0, 0, static_cast<float>(SwapChain->GetWidth()), static_cast<float>(SwapChain->GetHeight()));
+		return GetViewport();
+	}
+
+	GPUTextureView* SceneRenderTask::GetOutputView() const
+	{
+		if (Output && Output->IsAllocated())
+			return Output->View();
+		if (SwapChain)
+			return SwapChain->GetBackBufferView();
+		return nullptr;
+	}
+
+	void SceneRenderTask::OnBegin(GPUContext* context)
+	{
+		RenderTask::OnBegin(context);
+
+		// Copy view info if camera is specified
+		/*if (Camera)
+		{
+			auto viewport = GetViewport();
+			View.CopyFrom(Camera, &viewport);
+		}*/
+
+		// Setup render buffers for the output rendering resolution
+		if (Output)
+		{
+			Buffers->Init((int32)((float)Output->Width() * RenderingPercentage), (int32)((float)Output->Height() * RenderingPercentage));
+		}
+		else if (SwapChain)
+		{
+			Buffers->Init((int32)((float)SwapChain->GetWidth() * RenderingPercentage), (int32)((float)SwapChain->GetHeight() * RenderingPercentage));
+		}
+	}
+
+	void SceneRenderTask::OnRender(GPUContext* context)
+	{
+		if (!IsCustomRendering && Buffers && Buffers->GetWidth() > 0)
+			Renderer::Render(this);
+
+		RenderTask::OnRender(context);
+	}
+
+	void SceneRenderTask::OnEnd(GPUContext* context)
+	{
+		TasksDoneLastFrame++;
+		IsCameraCut = false;
+
+		RenderTask::OnEnd(context);
+
+		// Swap data
+		View.PrevOrigin = View.Origin;
+		View.PrevView = View.View;
+		View.PrevProjection = View.Projection;
+		View.PrevViewProjection = View.ViewProjection();
+
+		// Remove jitter from the projection (in case it's unmodified by gameplay eg. due to missing camera)
+		View.Projection = View.NonJitteredProjection;
+	}
+
+
+	bool SceneRenderTask::Resize(int32 width, int32 height)
+	{
+		if (Output && Output->Resize(width, height))
+		{
+			return true;
+		}
+
+		if (Buffers && Buffers->Init((int32)(width * RenderingPercentage), (int32)(height * RenderingPercentage)))
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+	bool SceneRenderTask::CanDraw() const
+	{
+		if (Output && !Output->IsAllocated())
+			return false;
+		return RenderTask::CanDraw();
+	}
+
+	MainRenderTask::MainRenderTask()
+	{
+		if (Instance == nullptr)
+		{
+			Instance = this;
+			LOG_INFO("Render", "Main render task created");
+		}
+	}
+
+	MainRenderTask::~MainRenderTask()
+	{
+		if (Instance == this)
+		{
+			Instance = nullptr;
+		}
+	}
+	
+	void MainRenderTask::OnBegin(GPUContext* context)
+	{
+		SceneRenderTask::OnBegin(context);
+	}
+} // SE

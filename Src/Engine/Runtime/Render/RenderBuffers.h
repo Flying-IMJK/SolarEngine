@@ -1,0 +1,234 @@
+#pragma once
+
+#include "Runtime/Api.h"
+#include "Runtime/Graphics/Textures/GPUTexture.h"
+#include "Runtime/Graphics/Viewport.h"
+
+namespace SE
+{
+    class GPUContext;
+    
+    // GBuffer render targets formats
+#define GBUFFER0_FORMAT PixelFormat::R8G8B8A8_UNorm
+#define GBUFFER1_FORMAT PixelFormat::R10G10B10A2_UNorm
+#define GBUFFER2_FORMAT PixelFormat::R8G8B8A8_UNorm
+#define GBUFFER3_FORMAT PixelFormat::R8G8B8A8_UNorm
+
+    /// <summary>
+    /// The scene rendering buffers container.
+    /// </summary>
+    class SE_API_RUNTIME RenderBuffers : public Object
+    {
+    private:
+        /// <summary
+        /// The custom rendering state.
+        /// </summary>
+        class SE_API_RUNTIME CustomBuffer : public Object
+        {
+        public:
+            String Name;
+            uint64 LastFrameUsed = 0;
+
+            String ToString() const override;
+        };
+
+    protected:
+        int32 _width = 0;
+        int32 _height = 0;
+        float _aspectRatio = 0.0f;
+        bool _useAlpha = false;
+        Viewport _viewport;
+        List<GPUTexture*, FixedAllocation<32>> _resources;
+
+    public:
+        union
+        {
+            struct
+            {
+                /// <summary>Gets the GBuffer texture 0. RGB: Color, A: AO</summary>
+                GPUTexture* GBuffer0;
+                /// <summary>Gets the GBuffer texture 1. RGB: Normal, A: ShadingModel</summary>
+                GPUTexture* GBuffer1;
+                /// <summary>Gets the GBuffer texture 2. R: Roughness, G: Metalness, B:Specular</summary>
+                GPUTexture* GBuffer2;
+                /// <summary>Gets the GBuffer texture 3. RGBA: Custom Data</summary>
+                GPUTexture* GBuffer3;
+            };
+
+            GPUTexture* GBuffer[4];
+        };
+
+        // Helper target for the eye adaptation
+        float LastEyeAdaptationTime = 0.0f;
+        GPUTexture* LuminanceMap = nullptr;
+        uint64 LastFrameLuminanceMap = 0;
+
+        // Helper target for volumetric fog rendering (used for the temporal filter and apply via fog shader)
+        GPUTexture* VolumetricFogHistory = nullptr;
+        GPUTexture* VolumetricFog = nullptr;
+        GPUTexture* LocalShadowedLightScattering = nullptr;
+        uint64 LastFrameVolumetricFog = 0;
+
+        struct
+        {
+            float MaxDistance;
+        } VolumetricFogData;
+
+        // Helper buffer with half-resolution depth buffer shared by effects (eg. SSR, Motion Blur). Valid only during frame rendering and on request (see RequestHalfResDepth).
+        // Should be released if not used for a few frames.
+        GPUTexture* HalfResDepth = nullptr;
+        uint64 LastFrameHalfResDepth = 0;
+
+        // Helper target for the temporal SSR.
+        // Should be released if not used for a few frames.
+        GPUTexture* TemporalSSR = nullptr;
+        uint64 LastFrameTemporalSSR = 0;
+
+        // Helper target for the temporal AA.
+        // Should be released if not used for a few frames.
+        GPUTexture* TemporalAA = nullptr;
+        uint64 LastFrameTemporalAA = 0;
+
+        // Maps the custom buffer type into the object that holds the state.
+        List<CustomBuffer*, HeapAllocation> CustomBuffers;
+
+    public:
+        RenderBuffers();
+
+        /// <summary>
+        /// Finalizes an instance of the <see cref="RenderBuffers"/> class.
+        /// </summary>
+        ~RenderBuffers();
+
+        String ToString() const override;
+
+    public:
+        /// <summary>
+        /// Prepares buffers for rendering a scene. Called before rendering so other parts can reuse calculated value.
+        /// </summary>
+        void Prepare();
+
+        /// <summary>
+        /// Requests the half-resolution depth to be prepared for the current frame.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <returns>The half-res depth buffer.</returns>
+        GPUTexture* RequestHalfResDepth(GPUContext* context);
+
+    public:
+        /// <summary>
+        /// Gets the buffers width (in pixels).
+        /// </summary>
+        FORCE_INLINE int32 GetWidth() const
+        {
+            return _width;
+        }
+
+        /// <summary>
+        /// Gets the buffers height (in pixels).
+        /// </summary>
+        FORCE_INLINE int32 GetHeight() const
+        {
+            return _height;
+        }
+
+        /// <summary>
+        /// Gets the buffers width and height (in pixels).
+        /// </summary>
+        FORCE_INLINE Float2 GetSize() const
+        {
+            return Float2((float)_width, (float)_height);
+        }
+
+        /// <summary>
+        /// Gets the buffers aspect ratio.
+        /// </summary>
+        FORCE_INLINE float GetAspectRatio() const
+        {
+            return _aspectRatio;
+        }
+
+        /// <summary>
+        /// Gets the buffers rendering viewport.
+        /// </summary>
+        FORCE_INLINE Viewport GetViewport() const
+        {
+            return _viewport;
+        }
+
+        /// <summary>
+        /// Gets the output buffers format (R11G11B10 or R16G16B16A16 depending on UseAlpha property).
+        /// </summary>
+        PixelFormat GetOutputFormat() const;
+
+        /// <summary>
+        /// True if support alpha output in the rendering buffers and pass-though alpha mask of the scene during rendering (at cost of reduced performance).
+        /// </summary>
+        bool GetUseAlpha() const;
+
+        /// <summary>
+        /// True if support alpha output in the rendering buffers and pass-though alpha mask of the scene during rendering (at cost of reduced performance).
+        /// </summary>
+        void SetUseAlpha(bool value);
+
+        const CustomBuffer* FindCustomBuffer(const StringView& name) const;
+
+        template<class T>
+        const T* FindCustomBuffer(const StringView& name) const
+        {
+            return (const T*)FindCustomBuffer(name);
+        }
+
+        template<class T>
+        T* GetCustomBuffer(const StringView& name)
+        {
+            if (LinkedCustomBuffers)
+                return LinkedCustomBuffers->GetCustomBuffer<T>(name);
+            CustomBuffer* result = (CustomBuffer*)FindCustomBuffer(name);
+            if (!result)
+            {
+                result = New<T>();
+                result->Name = name;
+                CustomBuffers.Add(result);
+            }
+            return (T*)result;
+        }
+
+        /// <summary>
+        /// Gets the current GPU memory usage by all the buffers (in bytes).
+        /// </summary>
+        uint64 GetMemoryUsage() const;
+
+        /// <summary>
+        /// Gets the depth buffer render target allocated within this render buffers collection (read only).
+        /// </summary>
+        GPUTexture* DepthBuffer;
+
+        /// <summary>
+        /// Gets the motion vectors render target allocated within this render buffers collection (read only).
+        /// </summary>
+        /// <remarks>
+        /// Texture ca be null or not initialized if motion blur is disabled or not yet rendered.
+        /// </remarks>
+        GPUTexture* MotionVectors;
+
+        /// <summary>
+        /// External Render Buffers used to redirect FindCustomBuffer/GetCustomBuffer calls. Can be linked to other rendering task (eg. main game viewport) to reuse graphics effect state from it (eg. use GI from main game view in in-game camera renderer).
+        /// </summary>
+        RenderBuffers* LinkedCustomBuffers = nullptr;
+
+    public:
+        /// <summary>
+        /// Allocates the buffers.
+        /// </summary>
+        /// <param name="width">The surface width (in pixels).</param>
+        /// <param name="height">The surface height (in pixels).</param>
+        /// <returns>True if cannot allocate buffers, otherwise false.</returns>
+        bool Init(int32 width, int32 height);
+
+        /// <summary>
+        /// Release the buffers data.
+        /// </summary>
+        void Release();
+    };
+} // SE

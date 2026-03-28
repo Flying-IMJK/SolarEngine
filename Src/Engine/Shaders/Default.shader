@@ -1,0 +1,342 @@
+
+#define MATERIAL 1
+#define USE_PER_VIEW_CONSTANTS 1
+
+#include "./Shaders/Common.hlsl"
+#include "./Shaders/MaterialCommon.hlsl"
+#include "./Shaders/GBufferCommon.hlsl"
+
+// Primary constant buffer (with additional material parameters)
+META_CB_BEGIN(0, Data)
+float4x4 WorldMatrix;
+float4x4 PrevWorldMatrix;
+float2 Dummy0;
+float LODDitherFactor;
+float PerInstanceRandom;
+float3 GeometrySize;
+float WorldDeterminantSign;
+META_CB_END
+
+// Shader resources
+// Geometry data passed though the graphics rendering stages up to the pixel shader
+struct GeometryData
+{
+	float3 WorldPosition : TEXCOORD0;
+	float2 TexCoord : TEXCOORD1;
+	float2 LightmapUV : TEXCOORD2;
+#if USE_VERTEX_COLOR
+	half4 VertexColor : COLOR;
+#endif
+	float3 WorldNormal : TEXCOORD3;
+	float4 WorldTangent : TEXCOORD4;
+	nointerpolation float3 InstanceOrigin : TEXCOORD5;
+	nointerpolation float2 InstanceParams : TEXCOORD6; // x-PerInstanceRandom, y-LODDitherFactor
+	float3 PrevWorldPosition : TEXCOORD7;
+	nointerpolation float3 InstanceTransform1 : TEXCOORD8;
+	nointerpolation float3 InstanceTransform2 : TEXCOORD9;
+	nointerpolation float3 InstanceTransform3 : TEXCOORD10;
+};
+
+// Interpolants passed from the vertex shader
+struct VertexOutput
+{
+	float4 Position : SV_Position;
+	GeometryData Geometry;
+};
+
+// Interpolants passed to the pixel shader
+struct PixelInput
+{
+	float4 Position : SV_Position;
+	GeometryData Geometry;
+	bool IsFrontFace : SV_IsFrontFace;
+};
+
+// Material properties generation input
+struct MaterialInput
+{
+	float3 WorldPosition;
+	float TwoSidedSign;
+	float2 TexCoord;
+#if USE_LIGHTMAP
+	float2 LightmapUV;
+#endif
+#if USE_VERTEX_COLOR
+	half4 VertexColor;
+#endif
+	float3x3 TBN;
+	float4 SvPosition;
+	float3 PreSkinnedPosition;
+	float3 PreSkinnedNormal;
+	float3 InstanceOrigin;
+	float2 InstanceParams;
+	float3 InstanceTransform1;
+	float3 InstanceTransform2;
+	float3 InstanceTransform3;
+};
+
+// Extracts geometry data to the material input
+MaterialInput GetGeometryMaterialInput(GeometryData geometry)
+{
+	MaterialInput output = (MaterialInput)0;
+	output.WorldPosition = geometry.WorldPosition;
+	output.TexCoord = geometry.TexCoord;
+#if USE_LIGHTMAP
+	output.LightmapUV = geometry.LightmapUV;
+#endif
+#if USE_VERTEX_COLOR
+	output.VertexColor = geometry.VertexColor;
+#endif
+	output.TBN = CalcTangentBasis(geometry.WorldNormal, geometry.WorldTangent);
+	output.InstanceOrigin = geometry.InstanceOrigin;
+	output.InstanceParams = geometry.InstanceParams;
+	output.InstanceTransform1 = geometry.InstanceTransform1;
+	output.InstanceTransform2 = geometry.InstanceTransform2;
+	output.InstanceTransform3 = geometry.InstanceTransform3;
+	return output;
+}
+
+MaterialInput GetMaterialInput(PixelInput input)
+{
+	MaterialInput output = GetGeometryMaterialInput(input.Geometry);
+	output.TwoSidedSign = WorldDeterminantSign * (input.IsFrontFace ? 1.0 : -1.0);
+	output.SvPosition = input.Position;
+	return output;
+}
+
+// Gets the local to world transform matrix
+#define GetInstanceTransform(input) float4x4(float4(input.InstanceTransform1.xyz, 0.0f), float4(input.InstanceTransform2.xyz, 0.0f), float4(input.InstanceTransform3.xyz, 0.0f), float4(input.InstanceOrigin.xyz, 1.0f))
+
+// Extarcts the world matrix and instancce transform vector
+#if USE_INSTANCING
+#define CalculateInstanceTransform(input) float4x4 world = GetInstanceTransform(input); output.Geometry.InstanceTransform1 = input.InstanceTransform1.xyz; output.Geometry.InstanceTransform2 = input.InstanceTransform2.xyz; output.Geometry.InstanceTransform3 = input.InstanceTransform3.xyz;
+#else
+#define CalculateInstanceTransform(input) float4x4 world = WorldMatrix; output.Geometry.InstanceTransform1 = world[0].xyz; output.Geometry.InstanceTransform2 = world[1].xyz; output.Geometry.InstanceTransform3 = world[2].xyz;
+#endif
+
+// Removes the scale vector from the local to world transformation matrix (supports instancing)
+float3x3 RemoveScaleFromLocalToWorld(float3x3 localToWorld)
+{
+	// Extract per axis scales from localToWorld transform
+	float scaleX = length(localToWorld[0]);
+	float scaleY = length(localToWorld[1]);
+	float scaleZ = length(localToWorld[2]);
+	float3 invScale = float3(
+		scaleX > 0.00001f ? 1.0f / scaleX : 0.0f,
+		scaleY > 0.00001f ? 1.0f / scaleY : 0.0f,
+		scaleZ > 0.00001f ? 1.0f / scaleZ : 0.0f);
+	localToWorld[0] *= invScale.x;
+	localToWorld[1] *= invScale.y;
+	localToWorld[2] *= invScale.z;
+	return localToWorld;
+}
+
+// Transforms a vector from tangent space to world space
+float3 TransformTangentVectorToWorld(MaterialInput input, float3 tangentVector)
+{
+	return mul(tangentVector, input.TBN);
+}
+
+// Transforms a vector from world space to tangent space
+float3 TransformWorldVectorToTangent(MaterialInput input, float3 worldVector)
+{
+	return mul(input.TBN, worldVector);
+}
+
+// Transforms a vector from world space to view space
+float3 TransformWorldVectorToView(MaterialInput input, float3 worldVector)
+{
+	return mul(worldVector, (float3x3)ViewMatrix);
+}
+
+// Transforms a vector from view space to world space
+float3 TransformViewVectorToWorld(MaterialInput input, float3 viewVector)
+{
+	return mul((float3x3)ViewMatrix, viewVector);
+}
+
+// Transforms a vector from local space to world space
+float3 TransformLocalVectorToWorld(MaterialInput input, float3 localVector)
+{
+	float3x3 localToWorld = (float3x3)GetInstanceTransform(input);
+	//localToWorld = RemoveScaleFromLocalToWorld(localToWorld);
+	return mul(localVector, localToWorld);
+}
+
+// Transforms a vector from local space to world space
+float3 TransformWorldVectorToLocal(MaterialInput input, float3 worldVector)
+{
+	float3x3 localToWorld = (float3x3)GetInstanceTransform(input);
+	//localToWorld = RemoveScaleFromLocalToWorld(localToWorld);
+	return mul(localToWorld, worldVector);
+}
+
+// Gets the current object position (supports instancing)
+float3 GetObjectPosition(MaterialInput input)
+{
+	return input.InstanceOrigin.xyz;
+}
+
+// Gets the current object size (supports instancing)
+float3 GetObjectSize(MaterialInput input)
+{
+	float4x4 world = GetInstanceTransform(input);
+	return GeometrySize * float3(world._m00, world._m11, world._m22);
+}
+
+// Get the current object random value (supports instancing)
+float GetPerInstanceRandom(MaterialInput input)
+{
+	return input.InstanceParams.x;
+}
+
+// Gets the interpolated vertex color (in linear space)
+float4 GetVertexColor(MaterialInput input)
+{
+#if USE_VERTEX_COLOR
+	return input.VertexColor;
+#else
+	return 1;
+#endif
+}
+
+
+// Get material properties function (for vertex shader)
+Material GetMaterialVS(MaterialInput input)
+{
+    Material material = (Material)0;
+    return material;
+}
+
+// Get material properties function (for pixel shader)
+Material GetMaterialPS(MaterialInput input)
+{
+    Material material = (Material)0;
+
+    material.TangentNormal *= input.TwoSidedSign;
+
+    // Normalize and transform to world space if need to
+    material.WorldNormal = material.TangentNormal;
+    material.TangentNormal = normalize(TransformWorldVectorToTangent(input, material.WorldNormal));
+
+    // Clamp values
+    material.Metalness = 0.1;
+    material.Roughness = 0.1;
+    material.AO = 0;
+    material.Opacity = 0;
+
+    return material;
+}
+
+// Calculates the transform matrix from mesh tangent space to local space
+float3x3 CalcTangentToLocal(ModelInput input)
+{
+	float bitangentSign = input.Tangent.w ? -1.0f : +1.0f;
+	float3 normal = input.Normal.xyz * 2.0 - 1.0;
+	float3 tangent = input.Tangent.xyz * 2.0 - 1.0;
+	float3 bitangent = cross(normal, tangent) * bitangentSign;
+	return float3x3(tangent, bitangent, normal);
+}
+
+float3x3 CalcTangentToWorld(float4x4 world, float3x3 tangentToLocal)
+{
+	float3x3 localToWorld = RemoveScaleFromLocalToWorld((float3x3)world);
+	return mul(tangentToLocal, localToWorld);
+}
+
+// Vertex Shader function for GBuffer Pass and Depth Pass (with full vertex data)
+META_VS(true, FEATURE_LEVEL_ES2)
+META_PERMUTATION_1(USE_INSTANCING=0)
+META_PERMUTATION_1(USE_INSTANCING=1)
+META_VS_IN_ELEMENT(POSITION, 0, R32G32B32_FLOAT,   0, 0,     PER_VERTEX, 0, true)
+META_VS_IN_ELEMENT(TEXCOORD, 0, R16G16_FLOAT,      1, 0,     PER_VERTEX, 0, true)
+META_VS_IN_ELEMENT(NORMAL,   0, R10G10B10A2_UNORM, 1, ALIGN, PER_VERTEX, 0, true)
+META_VS_IN_ELEMENT(TANGENT,  0, R10G10B10A2_UNORM, 1, ALIGN, PER_VERTEX, 0, true)
+META_VS_IN_ELEMENT(TEXCOORD, 1, R16G16_FLOAT,      1, ALIGN, PER_VERTEX, 0, true)
+META_VS_IN_ELEMENT(COLOR,    0, R8G8B8A8_UNORM,    2, 0,     PER_VERTEX, 0, USE_VERTEX_COLOR)
+VertexOutput VS(ModelInput input)
+{
+	VertexOutput output;
+
+	// Compute world space vertex position
+	CalculateInstanceTransform(input);
+	output.Geometry.WorldPosition = mul(float4(input.Position.xyz, 1), world).xyz;
+	output.Geometry.PrevWorldPosition = mul(float4(input.Position.xyz, 1), PrevWorldMatrix).xyz;
+
+	// Compute clip space position
+	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
+
+	// Pass vertex attributes
+	output.Geometry.TexCoord = input.TexCoord;
+#if USE_VERTEX_COLOR
+	output.Geometry.VertexColor = input.Color;
+#endif
+	output.Geometry.InstanceOrigin = world[3].xyz;
+#if USE_INSTANCING
+	output.Geometry.LightmapUV = input.LightmapUV * input.InstanceLightmapArea.zw + input.InstanceLightmapArea.xy;
+	output.Geometry.InstanceParams = float2(input.InstanceOrigin.w, input.InstanceTransform1.w);
+#else
+#if CAN_USE_LIGHTMAP
+	output.Geometry.LightmapUV = input.LightmapUV * LightmapArea.zw + LightmapArea.xy;
+#else
+	output.Geometry.LightmapUV = input.LightmapUV;
+#endif
+	output.Geometry.InstanceParams = float2(PerInstanceRandom, LODDitherFactor);
+#endif
+
+	// Calculate tanget space to world space transformation matrix for unit vectors
+	float3x3 tangentToLocal = CalcTangentToLocal(input);
+	float3x3 tangentToWorld = CalcTangentToWorld(world, tangentToLocal);
+	output.Geometry.WorldNormal = tangentToWorld[2];
+	output.Geometry.WorldTangent.xyz = tangentToWorld[0];
+	output.Geometry.WorldTangent.w = input.Tangent.w ? -1.0f : +1.0f;
+
+	// Apply world position offset per-vertex
+#if USE_POSITION_OFFSET
+	output.Geometry.WorldPosition += material.PositionOffset;
+	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
+#endif
+
+	return output;
+}
+
+// Vertex Shader function for Depth Pass
+META_VS(true, FEATURE_LEVEL_ES2)
+META_PERMUTATION_1(USE_INSTANCING=0)
+META_PERMUTATION_1(USE_INSTANCING=1)
+META_VS_IN_ELEMENT(POSITION, 0, R32G32B32_FLOAT,   0, 0,     PER_VERTEX, 0, true)
+META_VS_IN_ELEMENT(ATTRIBUTE,0, R32G32B32A32_FLOAT,3, 0,     PER_INSTANCE, 1, USE_INSTANCING)
+META_VS_IN_ELEMENT(ATTRIBUTE,1, R32G32B32A32_FLOAT,3, ALIGN, PER_INSTANCE, 1, USE_INSTANCING)
+META_VS_IN_ELEMENT(ATTRIBUTE,2, R32G32B32_FLOAT,   3, ALIGN, PER_INSTANCE, 1, USE_INSTANCING)
+META_VS_IN_ELEMENT(ATTRIBUTE,3, R32G32B32_FLOAT,   3, ALIGN, PER_INSTANCE, 1, USE_INSTANCING)
+META_VS_IN_ELEMENT(ATTRIBUTE,4, R16G16B16A16_FLOAT,3, ALIGN, PER_INSTANCE, 1, USE_INSTANCING)
+float4 VS_Depth(ModelInput_PosOnly input) : SV_Position
+{
+#if USE_INSTANCING
+	float4x4 world = GetInstanceTransform(input);
+#else
+	float4x4 world = WorldMatrix;
+#endif
+	float3 worldPosition = mul(float4(input.Position.xyz, 1), world).xyz;
+	float4 position = mul(float4(worldPosition, 1), ViewProjectionMatrix);
+	return position;
+}
+
+// Pixel Shader function for Depth Pass
+META_PS(true, FEATURE_LEVEL_ES2)
+void PS_Depth(PixelInput input)
+{
+#if MATERIAL_MASKED || MATERIAL_BLEND != MATERIAL_BLEND_OPAQUE
+	// Get material parameters
+	MaterialInput materialInput = GetMaterialInput(input);
+	Material material = GetMaterialPS(materialInput);
+
+	// Perform per pixel clipping
+#if MATERIAL_MASKED
+	clip(material.Mask - MATERIAL_MASK_THRESHOLD);
+#endif
+#if MATERIAL_BLEND != MATERIAL_BLEND_OPAQUE
+	clip(material.Opacity - MATERIAL_OPACITY_THRESHOLD);
+#endif
+#endif
+}

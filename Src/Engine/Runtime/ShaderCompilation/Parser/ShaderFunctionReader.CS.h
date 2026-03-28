@@ -1,0 +1,24 @@
+#pragma once
+
+#include "ShaderFunctionReader.h"
+
+namespace SE::ShaderParser
+{
+    /// <summary>
+    /// Compute Shaders reader
+    /// </summary>
+    class ComputeShaderFunctionReader : public ShaderFunctionReader<ComputeShaderMeta>
+    {
+    	DECLARE_SHADER_META_READER_HEADER("META_CS", CS);
+
+        ComputeShaderFunctionReader()
+        {
+            _childReaders.Add(New<StripLineReader>("numthreads"));
+        }
+
+        ~ComputeShaderFunctionReader()
+        {
+        }
+    };
+}
+

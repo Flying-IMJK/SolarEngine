@@ -1,0 +1,29 @@
+
+add_subdirectory(ContextMenu)
+add_subdirectory(Docking)
+add_subdirectory(Tree)
+add_subdirectory(Drag)
+add_subdirectory(Viewport)
+add_subdirectory(Input)
+add_subdirectory(Popups)
+
+EDITOR_ADD(
+    MainMenu.h
+    MainMenu.cpp
+    MainMenuButton.h
+    MainMenuButton.cpp
+    ToolStripButton.h
+    ToolStripButton.cpp
+    ToolStrip.h
+    ToolStrip.cpp
+    ToolStripSeparator.h
+    ToolStripSeparator.cpp
+    StatusBar.h
+    StatusBar.cpp
+    ComboBox.h
+    ComboBox.cpp
+    NavigationBar.h
+    NavigationBar.cpp
+    NavigationButton.h
+    NavigationButton.cpp
+)

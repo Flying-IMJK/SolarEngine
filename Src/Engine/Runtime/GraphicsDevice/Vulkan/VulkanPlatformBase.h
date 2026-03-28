@@ -1,0 +1,52 @@
+#pragma once
+
+#include "Core/Types/Collections/List.h"
+#include "VulkanInclude.h"
+
+namespace SE
+{
+
+	enum class VulkanValidationLevel
+	{
+		Disabled = 0,
+		ErrorsOnly = 1,
+		ErrorsAndWarnings = 2,
+		ErrorsAndWarningsPerf = 3,
+		ErrorsAndWarningsPerfInfo = 4,
+		All = 5,
+	};
+
+	/// <summary>
+	/// The base implementation for the Vulkan API platform support.
+	/// </summary>
+	class VulkanPlatformBase
+	{
+	public:
+		static void GetInstanceExtensions(List<const char*>& extensions, List<const char*>& layers)
+		{
+		}
+
+		static void GetDeviceExtensions(List<const char*>& extensions, List<const char*>& layers)
+		{
+		}
+
+		static void CreateSurface(VkSurfaceKHR* outSurface)
+		{
+		}
+
+		static void RestrictEnabledPhysicalDeviceFeatures(const VkPhysicalDeviceFeatures& deviceFeatures, VkPhysicalDeviceFeatures& featuresToEnable)
+		{
+			featuresToEnable = deviceFeatures;
+			featuresToEnable.shaderResourceResidency = VK_FALSE;
+			featuresToEnable.shaderResourceMinLod = VK_FALSE;
+			featuresToEnable.sparseBinding = VK_FALSE;
+			featuresToEnable.sparseResidencyBuffer = VK_FALSE;
+			featuresToEnable.sparseResidencyImage2D = VK_FALSE;
+			featuresToEnable.sparseResidencyImage3D = VK_FALSE;
+			featuresToEnable.sparseResidency2Samples = VK_FALSE;
+			featuresToEnable.sparseResidency4Samples = VK_FALSE;
+			featuresToEnable.sparseResidency8Samples = VK_FALSE;
+			featuresToEnable.sparseResidencyAliased = VK_FALSE;
+		}
+	};
+}

@@ -1,0 +1,69 @@
+//-------------------------------------------------------------------------
+// This is an auto-generated file - DO NOT edit";
+//-------------------------------------------------------------------------
+#include "{{moduleHeaderFile}}"
+
+#include "Core/TypeSystem/Types.h"
+#include "Core/TypeSystem/Info/TypeEnumInfo.h"
+//-------------------------------------------------------------------------
+
+//-------------------------------------------------------------------------
+// Includes
+
+{{#includeFileList}}
+#include "{{includeFile}}"
+{{/includeFileList}}
+
+//-------------------------------------------------------------------------
+// Registration functions
+
+namespace SE
+{
+    class {{moduleClassName}}Typer final : public ITyper
+    {
+    protected:
+        void RegisterTypes() override
+        {
+            // Meta
+        {{#metaTypeList}}{{isDevOnlyBegin}}
+            Types::RegisterTypeID(StableID::Generate<::{{registerNamespace}}{{registerName}}>(), TypeID(SE_TEXT("{{registerNamespace}}{{registerName}}")));
+            TTypeMetaInfo<::{{registerNamespace}}{{registerName}}>::RegisterType();
+        {{isDevOnlyEnd}}{{/metaTypeList}}
+
+            // Type
+        {{#compositeTypeList}}{{isDevOnlyBegin}}
+            Types::RegisterTypeID(StableID::Generate<::{{registerNamespace}}{{registerName}}>(), TypeID(SE_TEXT("{{registerNamespace}}{{registerName}}")));
+            TTypeCompositeInfo<::{{registerNamespace}}{{registerName}}>::RegisterType();
+        {{isDevOnlyEnd}}{{/compositeTypeList}}
+
+            // Enum
+        {{#enumTypeList}}{{isDevOnlyBegin}}
+            Types::RegisterTypeID(StableID::Generate<::{{registerNamespace}}{{registerName}}>(), TypeID(SE_TEXT("{{registerNamespace}}{{registerName}}")));
+            TTypeEnumInfo<::{{registerNamespace}}{{registerName}}>::RegisterType();
+        {{isDevOnlyEnd}}{{/enumTypeList}}
+        }
+
+        void UnregisterTypes() override
+        {
+            // Meta
+        {{#metaTypeList}}{{isDevOnlyBegin}}
+            TTypeMetaInfo<::{{registerNamespace}}{{registerName}}>::UnregisterType();
+            Types::RegisterTypeID(StableID::Generate<::{{registerNamespace}}{{registerName}}>(), TypeID(SE_TEXT("{{registerNamespace}}{{registerName}}")));
+        {{isDevOnlyEnd}}{{/metaTypeList}}
+
+            // Type
+        {{#compositeTypeList}}{{isDevOnlyBegin}}
+            TTypeCompositeInfo<::{{registerNamespace}}{{registerName}}>::UnregisterType();
+            Types::UnRegisterTypeID(StableID::Generate<::{{registerNamespace}}{{registerName}}>(), TypeID(SE_TEXT("{{registerNamespace}}{{registerName}}")));
+        {{isDevOnlyEnd}}{{/compositeTypeList}}
+
+            // Enum
+        {{#enumTypeList}}{{isDevOnlyBegin}}
+            TTypeEnumInfo<::{{registerNamespace}}{{registerName}}>::UnregisterType();
+            Types::UnRegisterTypeID(StableID::Generate<::{{registerNamespace}}{{registerName}}>(), TypeID(SE_TEXT("{{registerNamespace}}{{registerName}}")));
+        {{isDevOnlyEnd}}{{/enumTypeList}}
+        }
+    };
+
+    SE_TYPER_REGISTER({{moduleClassName}}Typer);
+}

@@ -1,0 +1,43 @@
+{
+    "version": 2,
+    "configurePresets": [
+        {
+            "name": "x64-Debug",
+            "description": "将编译器用于 Visual Studio 17 2022 (x64 体系结构)",
+            "generator": "Visual Studio 17 2022",
+            "toolset": "host=x64",
+            "architecture": "x64",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "cl.exe",
+                "CMAKE_CXX_COMPILER": "cl.exe",
+                "CMAKE_BUILD_TYPE":"Debug"
+            }
+        },
+        {
+            "name": "x64-Release",
+            "description": "将编译器用于 Visual Studio 17 2022 (x64 体系结构)",
+            "generator": "Visual Studio 17 2022",
+            "toolset": "host=x64",
+            "architecture": "x64",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "cl.exe",
+                "CMAKE_CXX_COMPILER": "cl.exe",
+                "CMAKE_BUILD_TYPE":"Release"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "Debug",
+            "displayName": "x64-Debug",
+            "configurePreset": "x64-Debug"
+        },
+        {
+            "name": "Release",
+            "displayName": "x64-Release",
+            "configurePreset": "x64-Release"
+        }
+    ]
+}

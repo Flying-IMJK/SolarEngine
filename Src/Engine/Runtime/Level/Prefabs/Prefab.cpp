@@ -1,0 +1,209 @@
+
+#include "Prefab.h"
+
+#include "PrefabManager.h"
+#include "Core/Logging/Exception.h"
+#include "Core/Logging/Exceptions/ArgumentNullException.h"
+#include "Core/Profiler/ProfilerCPU.h"
+#include "Core/Serialization/JsonTools.h"
+#include "Core/Thread/Threading.h"
+#include "Core/Types/DateTime.h"
+#include "Core/Types/Collections/CollectionPoolCache.h"
+#include "Runtime/Level/Actor.h"
+#include "Runtime/Level/ActorsCache.h"
+#include "Runtime/Level/SceneObjectsFactory.h"
+#include "Runtime/Level/SceneQuery.h"
+#include "Runtime/Resource/AssetsCache.h"
+#include "Runtime/Resource/Storage/StorageReference.h"
+
+namespace SE
+{
+    Prefab::Prefab() :_isCreatingDefaultInstance(false)
+       , _defaultInstance(nullptr)
+       , ObjectsCount(0)
+    {
+    }
+
+    Prefab::Prefab(const AssetInfo* info)
+       : JsonAssetBase(info)
+       , _isCreatingDefaultInstance(false)
+       , _defaultInstance(nullptr)
+       , ObjectsCount(0)
+    {
+    }
+
+    UID Prefab::GetRootObjectId() const
+    {
+        ENGINE_ASSERT(IsLoaded());
+        Threading::ScopeLock lock(Locker);
+
+        // Root is always the first but handle case when prefab root was reordered in the base prefab while the nested prefab has still the old state
+        // TODO: resave and force sync prefabs during game cooking so this step could be skipped in game
+        int32 objectIndex = 0;
+        if (NestedPrefabs.HasItems())
+        {
+            const auto& data = *Data;
+            const UID basePrefabId = JsonTools::GetGuid(data[objectIndex], "PrefabID");
+            if (const auto basePrefab = AssetContent::Load<Prefab>(basePrefabId))
+            {
+                const UID basePrefabRootId = basePrefab->GetRootObjectId();
+                for (int32 i = 0; i < ObjectsCount; i++)
+                {
+                    const UID prefabObjectId = JsonTools::GetGuid(data[i], "PrefabObjectID");
+                    if (prefabObjectId == basePrefabRootId)
+                    {
+                        objectIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return ObjectsIds[objectIndex];
+    }
+
+    Actor* Prefab::GetDefaultInstance()
+    {
+        Threading::ScopeLock lock(Locker);
+
+        // Skip if already created (reuse cached result)
+        if (_defaultInstance)
+            return _defaultInstance;
+
+        // Skip if not loaded
+        if (!IsLoaded())
+        {
+            LOG_WARNING("Level", "Cannot instantiate object from not loaded prefab asset.");
+            return nullptr;
+        }
+
+        // Prevent recursive calls
+        if (_isCreatingDefaultInstance)
+        {
+            LOG_WARNING("Level", "Loop call to Prefab::GetDefaultInstance.");
+            return nullptr;
+        }
+        _isCreatingDefaultInstance = true;
+
+        // Instantiate objects from prefab (default spawning logic)
+        _defaultInstance = PrefabManager::SpawnPrefab(this, nullptr, &ObjectsCache);
+
+        _isCreatingDefaultInstance = false;
+        return _defaultInstance;
+    }
+
+    SceneObject* Prefab::GetDefaultInstance(const UID& objectId)
+    {
+        const auto result = GetDefaultInstance();
+        if (!result)
+            return nullptr;
+        if (objectId.IsValid())
+        {
+            SceneObject* object;
+            if (ObjectsCache.TryGet(objectId, object))
+                return object;
+        }
+        return result;
+    }
+
+    void Prefab::DeleteDefaultInstance()
+    {
+        Threading::ScopeLock lock(Locker);
+        ObjectsCache.Clear();
+        if (_defaultInstance)
+        {
+            _defaultInstance->DeleteObject();
+            _defaultInstance = nullptr;
+        }
+    }
+
+    Asset::LoadResult Prefab::ProcessLoadAsset()
+    {
+        // Base
+        const auto result = JsonAssetBase::ProcessLoadAsset();
+        if (result != LoadResult::Ok)
+            return result;
+
+        // Validate data schema
+        if (!Data->IsArray())
+        {
+            LOG_WARNING("Level", "Invalid prefab data.");
+            return LoadResult::InvalidData;
+        }
+
+        // Get objects amount
+        const int32 objectsCount = Data->GetArray().Size();
+        if (objectsCount <= 0)
+        {
+            LOG_WARNING("Level", "Prefab is empty or has invalid amount of objects.");
+            return LoadResult::InvalidData;
+        }
+
+        // Allocate memory for objects
+        ObjectsIds.EnsureCapacity(objectsCount * 2);
+        ObjectsDataCache.EnsureCapacity(objectsCount * 3);
+
+        // Find serialized object ids (actors and scripts), they are used later for IDs mapping on prefab spawning via PrefabManager
+        const auto& data = *Data;
+        for (int32 objectIndex = 0; objectIndex < objectsCount; objectIndex++)
+        {
+            auto& objData = data[objectIndex];
+
+            UID objectId = JsonTools::GetGuid(objData, "ID");
+            if (!objectId.IsValid())
+            {
+                LOG_WARNING("Level", "The object inside prefab has invalid ID.");
+                return LoadResult::InvalidData;
+            }
+
+            ObjectsIds.Add(objectId);
+            ObjectsDataCache.Add(objectId, &objData);
+            ObjectsCount++;
+
+            UID prefabId = JsonTools::GetGuid(objData, "PrefabID");
+            if (prefabId.IsValid() && !NestedPrefabs.Contains(prefabId))
+            {
+                if (prefabId == GetID())
+                {
+                    LOG_ERROR("Level", "Circural reference in prefab.");
+                    return LoadResult::InvalidData;
+                }
+
+                NestedPrefabs.Add(prefabId);
+            }
+        }
+
+        // Register for scripts reload and unload (need to cleanup all user objects including scripts that may be attached to the default instance - it can be always restored)
+        /*Scripting::ScriptsUnload.Bind<Prefab, &Prefab::DeleteDefaultInstance>(this);
+#if SE_EDITOR
+        Scripting::ScriptsReloading.Bind<Prefab, &Prefab::DeleteDefaultInstance>(this);
+#endif*/
+
+        return LoadResult::Ok;
+    }
+
+    void Prefab::Unload(bool isReloading)
+    {
+        // Unlink
+        /*Scripting::ScriptsUnload.Unbind<Prefab, &Prefab::DeleteDefaultInstance>(this);
+#if SE_EDITOR
+        Scripting::ScriptsReloading.Unbind<Prefab, &Prefab::DeleteDefaultInstance>(this);
+#endif*/
+
+        // Base
+        JsonAssetBase::Unload(isReloading);
+
+        ObjectsCount = 0;
+        ObjectsIds.Resize(0);
+        NestedPrefabs.Resize(0);
+        ObjectsDataCache.Clear();
+        ObjectsDataCache.SetCapacity(0);
+        ObjectsCache.Clear();
+        ObjectsCache.SetCapacity(0);
+        if (_defaultInstance)
+        {
+            _defaultInstance->DeleteObject();
+            _defaultInstance = nullptr;
+        }
+    }
+} // SE

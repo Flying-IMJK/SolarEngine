@@ -1,0 +1,114 @@
+#pragma once
+
+#include "Core/Math/Rectangle.h"
+
+namespace SE
+{
+    /// <summary>
+    /// Represents a rectangle that has been transformed by an arbitrary render transform.
+    /// </summary>
+    struct RotatedRectangle
+    {
+    public:
+
+        /// <summary>
+        /// The transformed top left corner.
+        /// </summary>
+        Float2 TopLeft;
+
+        /// <summary>
+        /// The transformed X extent (right-left).
+        /// </summary>
+        Float2 ExtentX;
+
+        /// <summary>
+        /// The transformed Y extent (bottom-top).
+        /// </summary>
+        Float2 ExtentY;
+
+    public:
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RotatedRectangle"/> struct.
+        /// </summary>
+        RotatedRectangle()
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RotatedRectangle"/> struct.
+        /// </summary>
+        /// <param name="rect">The aligned rectangle.</param>
+        explicit RotatedRectangle(const Rectangle& rect)
+            : TopLeft(rect.GetUpperLeft())
+            , ExtentX(rect.GetWidth(), 0.0f)
+            , ExtentY(0.0f, rect.GetHeight())
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RotatedRectangle"/> struct.
+        /// </summary>
+        /// <param name="topLeft">The top left corner.</param>
+        /// <param name="extentX">The extent on X axis.</param>
+        /// <param name="extentY">The extent on Y axis.</param>
+        RotatedRectangle(const Float2& topLeft, const Float2& extentX, const Float2& extentY)
+            : TopLeft(topLeft)
+            , ExtentX(extentX)
+            , ExtentY(extentY)
+        {
+        }
+
+    public:
+
+        /// <summary>
+        /// Convert rotated rectangle to the axis-aligned rectangle that builds rotated rectangle bounding box.
+        /// </summary>
+        /// <returns>The bounds rectangle.</returns>
+        Rectangle ToBoundingRect() const
+        {
+            Float2 points[4] =
+            {
+                TopLeft,
+                TopLeft + ExtentX,
+                TopLeft + ExtentY,
+                TopLeft + ExtentX + ExtentY
+            };
+            return Rectangle::FromPoints(points, 4);
+        }
+
+        /// <summary>
+        /// Determines whether the specified location is contained within this rotated rectangle.
+        /// </summary>
+        /// <param name="location">The location to test.</param>
+        /// <returns><c>true</c> if the specified location is contained by this rotated rectangle; otherwise, <c>false</c>.</returns>
+        bool ContainsPoint(const Float2& location) const
+        {
+            const Float2 offset = location - TopLeft;
+            const float det = Float2::Cross(ExtentX, ExtentY);
+            const float s = Float2::Cross(offset, ExtentX) / -det;
+            if (Math::RangeInclusive(s, 0.0f, 1.0f))
+            {
+                const float t = Float2::Cross(offset, ExtentY) / det;
+                return Math::RangeInclusive(t, 0.0f, 1.0f);
+            }
+            return false;
+        }
+
+    public:
+
+        bool operator ==(const RotatedRectangle& other) const
+        {
+            return
+                    TopLeft == other.TopLeft &&
+                    ExtentX == other.ExtentX &&
+                    ExtentY == other.ExtentY;
+        }
+    };
+}
+
+template<>
+struct TIsPODType<SE::RotatedRectangle>
+{
+    enum { Value = true };
+};

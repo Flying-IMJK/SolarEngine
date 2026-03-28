@@ -1,0 +1,17 @@
+Package: gamenetworkingsockets
+Version: 2020-10-06
+Depends: protobuf
+Architecture: x64-windows
+Multi-Arch: same
+Abi: ea1e358f545a5f6f06a41ee92744bb86a34162ae00eb8d0452b27188e3d58dd7
+Description: GameNetworkingSockets is a basic transport layer for games.
+Type: Port
+Default-Features: openssl
+
+Package: gamenetworkingsockets
+Feature: openssl
+Depends: openssl
+Architecture: x64-windows
+Multi-Arch: same
+Description: Use OpenSSL as the crypto backend
+Type: Port

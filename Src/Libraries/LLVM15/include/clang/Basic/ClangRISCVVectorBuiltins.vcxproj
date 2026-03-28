@@ -1,0 +1,293 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{BB4EE493-1D69-3247-9F03-17153B863E5E}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+    <Platform>x64</Platform>
+    <ProjectName>ClangRISCVVectorBuiltins</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\Git\llvm-project\build\tools\clang\include\clang\Basic;D:\Git\llvm-project\clang\include\clang\Basic;D:\Git\llvm-project\clang\include;D:\Git\llvm-project\build\tools\clang\include;D:\Git\llvm-project\build\include;D:\Git\llvm-project\llvm\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\Git\llvm-project\build\tools\clang\include\clang\Basic;D:\Git\llvm-project\clang\include\clang\Basic;D:\Git\llvm-project\clang\include;D:\Git\llvm-project\build\tools\clang\include;D:\Git\llvm-project\build\include;D:\Git\llvm-project\llvm\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\Git\llvm-project\build\tools\clang\include\clang\Basic;D:\Git\llvm-project\clang\include\clang\Basic;D:\Git\llvm-project\clang\include;D:\Git\llvm-project\build\tools\clang\include;D:\Git\llvm-project\build\include;D:\Git\llvm-project\llvm\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\Git\llvm-project\build\tools\clang\include\clang\Basic;D:\Git\llvm-project\clang\include\clang\Basic;D:\Git\llvm-project\clang\include;D:\Git\llvm-project\build\tools\clang\include;D:\Git\llvm-project\build\include;D:\Git\llvm-project\llvm\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Git\llvm-project\build\CMakeFiles\1621c461e5261bd334262dddf4d14c83\riscv_vector_builtins.inc.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building riscv_vector_builtins.inc...</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+..\..\..\..\..\Debug\bin\clang-tblgen.exe -gen-riscv-vector-builtins -I D:/Git/llvm-project/clang/include/clang/Basic -ID:/Git/llvm-project/clang/include -ID:/Git/llvm-project/build/tools/clang/include -ID:/Git/llvm-project/build/include -ID:/Git/llvm-project/llvm/include D:/Git/llvm-project/clang/include/clang/Basic/riscv_vector.td -o D:/Git/llvm-project/build/tools/clang/include/clang/Basic/riscv_vector_builtins.inc
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Git\llvm-project\build\Debug\bin\clang-tblgen.exe;D:\Git\llvm-project\clang\include\clang\Basic\ASTNode.td;D:\Git\llvm-project\clang\include\clang\Basic\Attr.td;D:\Git\llvm-project\clang\include\clang\Basic\AttrDocs.td;D:\Git\llvm-project\clang\include\clang\Basic\CommentNodes.td;D:\Git\llvm-project\clang\include\clang\Basic\DeclNodes.td;D:\Git\llvm-project\clang\include\clang\Basic\Diagnostic.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticASTKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticAnalysisKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticCategories.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticCommentKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticCommonKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticCrossTUKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticDocs.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticDriverKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticFrontendKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticGroups.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticLexKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticParseKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticRefactoringKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticSemaKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticSerializationKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\StmtNodes.td;D:\Git\llvm-project\clang\include\clang\Basic\TypeNodes.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_bf16.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_cde.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_fp16.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_mve.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_mve_defs.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_neon.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_neon_incl.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_sve.td;D:\Git\llvm-project\clang\include\clang\Basic\riscv_vector.td;D:\Git\llvm-project\llvm\include\llvm\CodeGen\SDNodeProperties.td;D:\Git\llvm-project\llvm\include\llvm\CodeGen\ValueTypes.td;D:\Git\llvm-project\llvm\include\llvm\Frontend\Directive\DirectiveBase.td;D:\Git\llvm-project\llvm\include\llvm\Frontend\OpenACC\ACC.td;D:\Git\llvm-project\llvm\include\llvm\Frontend\OpenMP\OMP.td;D:\Git\llvm-project\llvm\include\llvm\IR\Attributes.td;D:\Git\llvm-project\llvm\include\llvm\IR\Intrinsics.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsAArch64.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsAMDGPU.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsARM.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsBPF.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsDirectX.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsHexagon.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsHexagonDep.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsLoongArch.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsMips.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsNVVM.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsPowerPC.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsRISCV.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsSPIRV.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsSystemZ.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsVE.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsVEVL.gen.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsWebAssembly.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsX86.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsXCore.td;D:\Git\llvm-project\llvm\include\llvm\Option\OptParser.td;D:\Git\llvm-project\llvm\include\llvm\TableGen\Automaton.td;D:\Git\llvm-project\llvm\include\llvm\TableGen\SearchableTable.td;D:\Git\llvm-project\llvm\include\llvm\Target\GenericOpcodes.td;D:\Git\llvm-project\llvm\include\llvm\Target\GlobalISel\Combine.td;D:\Git\llvm-project\llvm\include\llvm\Target\GlobalISel\RegisterBank.td;D:\Git\llvm-project\llvm\include\llvm\Target\GlobalISel\SelectionDAGCompat.td;D:\Git\llvm-project\llvm\include\llvm\Target\GlobalISel\Target.td;D:\Git\llvm-project\llvm\include\llvm\Target\Target.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetCallingConv.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetInstrPredicate.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetItinerary.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetPfmCounters.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetSchedule.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetSelectionDAG.td;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Git\llvm-project\build\tools\clang\include\clang\Basic\riscv_vector_builtins.inc</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building riscv_vector_builtins.inc...</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+..\..\..\..\..\Release\bin\clang-tblgen.exe -gen-riscv-vector-builtins -I D:/Git/llvm-project/clang/include/clang/Basic -ID:/Git/llvm-project/clang/include -ID:/Git/llvm-project/build/tools/clang/include -ID:/Git/llvm-project/build/include -ID:/Git/llvm-project/llvm/include D:/Git/llvm-project/clang/include/clang/Basic/riscv_vector.td -o D:/Git/llvm-project/build/tools/clang/include/clang/Basic/riscv_vector_builtins.inc
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Git\llvm-project\build\Release\bin\clang-tblgen.exe;D:\Git\llvm-project\clang\include\clang\Basic\ASTNode.td;D:\Git\llvm-project\clang\include\clang\Basic\Attr.td;D:\Git\llvm-project\clang\include\clang\Basic\AttrDocs.td;D:\Git\llvm-project\clang\include\clang\Basic\CommentNodes.td;D:\Git\llvm-project\clang\include\clang\Basic\DeclNodes.td;D:\Git\llvm-project\clang\include\clang\Basic\Diagnostic.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticASTKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticAnalysisKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticCategories.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticCommentKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticCommonKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticCrossTUKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticDocs.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticDriverKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticFrontendKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticGroups.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticLexKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticParseKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticRefactoringKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticSemaKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticSerializationKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\StmtNodes.td;D:\Git\llvm-project\clang\include\clang\Basic\TypeNodes.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_bf16.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_cde.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_fp16.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_mve.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_mve_defs.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_neon.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_neon_incl.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_sve.td;D:\Git\llvm-project\clang\include\clang\Basic\riscv_vector.td;D:\Git\llvm-project\llvm\include\llvm\CodeGen\SDNodeProperties.td;D:\Git\llvm-project\llvm\include\llvm\CodeGen\ValueTypes.td;D:\Git\llvm-project\llvm\include\llvm\Frontend\Directive\DirectiveBase.td;D:\Git\llvm-project\llvm\include\llvm\Frontend\OpenACC\ACC.td;D:\Git\llvm-project\llvm\include\llvm\Frontend\OpenMP\OMP.td;D:\Git\llvm-project\llvm\include\llvm\IR\Attributes.td;D:\Git\llvm-project\llvm\include\llvm\IR\Intrinsics.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsAArch64.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsAMDGPU.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsARM.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsBPF.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsDirectX.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsHexagon.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsHexagonDep.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsLoongArch.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsMips.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsNVVM.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsPowerPC.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsRISCV.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsSPIRV.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsSystemZ.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsVE.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsVEVL.gen.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsWebAssembly.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsX86.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsXCore.td;D:\Git\llvm-project\llvm\include\llvm\Option\OptParser.td;D:\Git\llvm-project\llvm\include\llvm\TableGen\Automaton.td;D:\Git\llvm-project\llvm\include\llvm\TableGen\SearchableTable.td;D:\Git\llvm-project\llvm\include\llvm\Target\GenericOpcodes.td;D:\Git\llvm-project\llvm\include\llvm\Target\GlobalISel\Combine.td;D:\Git\llvm-project\llvm\include\llvm\Target\GlobalISel\RegisterBank.td;D:\Git\llvm-project\llvm\include\llvm\Target\GlobalISel\SelectionDAGCompat.td;D:\Git\llvm-project\llvm\include\llvm\Target\GlobalISel\Target.td;D:\Git\llvm-project\llvm\include\llvm\Target\Target.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetCallingConv.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetInstrPredicate.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetItinerary.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetPfmCounters.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetSchedule.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetSelectionDAG.td;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Git\llvm-project\build\tools\clang\include\clang\Basic\riscv_vector_builtins.inc</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building riscv_vector_builtins.inc...</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+..\..\..\..\..\MinSizeRel\bin\clang-tblgen.exe -gen-riscv-vector-builtins -I D:/Git/llvm-project/clang/include/clang/Basic -ID:/Git/llvm-project/clang/include -ID:/Git/llvm-project/build/tools/clang/include -ID:/Git/llvm-project/build/include -ID:/Git/llvm-project/llvm/include D:/Git/llvm-project/clang/include/clang/Basic/riscv_vector.td -o D:/Git/llvm-project/build/tools/clang/include/clang/Basic/riscv_vector_builtins.inc
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Git\llvm-project\build\MinSizeRel\bin\clang-tblgen.exe;D:\Git\llvm-project\clang\include\clang\Basic\ASTNode.td;D:\Git\llvm-project\clang\include\clang\Basic\Attr.td;D:\Git\llvm-project\clang\include\clang\Basic\AttrDocs.td;D:\Git\llvm-project\clang\include\clang\Basic\CommentNodes.td;D:\Git\llvm-project\clang\include\clang\Basic\DeclNodes.td;D:\Git\llvm-project\clang\include\clang\Basic\Diagnostic.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticASTKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticAnalysisKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticCategories.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticCommentKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticCommonKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticCrossTUKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticDocs.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticDriverKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticFrontendKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticGroups.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticLexKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticParseKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticRefactoringKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticSemaKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticSerializationKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\StmtNodes.td;D:\Git\llvm-project\clang\include\clang\Basic\TypeNodes.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_bf16.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_cde.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_fp16.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_mve.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_mve_defs.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_neon.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_neon_incl.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_sve.td;D:\Git\llvm-project\clang\include\clang\Basic\riscv_vector.td;D:\Git\llvm-project\llvm\include\llvm\CodeGen\SDNodeProperties.td;D:\Git\llvm-project\llvm\include\llvm\CodeGen\ValueTypes.td;D:\Git\llvm-project\llvm\include\llvm\Frontend\Directive\DirectiveBase.td;D:\Git\llvm-project\llvm\include\llvm\Frontend\OpenACC\ACC.td;D:\Git\llvm-project\llvm\include\llvm\Frontend\OpenMP\OMP.td;D:\Git\llvm-project\llvm\include\llvm\IR\Attributes.td;D:\Git\llvm-project\llvm\include\llvm\IR\Intrinsics.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsAArch64.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsAMDGPU.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsARM.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsBPF.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsDirectX.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsHexagon.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsHexagonDep.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsLoongArch.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsMips.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsNVVM.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsPowerPC.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsRISCV.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsSPIRV.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsSystemZ.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsVE.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsVEVL.gen.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsWebAssembly.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsX86.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsXCore.td;D:\Git\llvm-project\llvm\include\llvm\Option\OptParser.td;D:\Git\llvm-project\llvm\include\llvm\TableGen\Automaton.td;D:\Git\llvm-project\llvm\include\llvm\TableGen\SearchableTable.td;D:\Git\llvm-project\llvm\include\llvm\Target\GenericOpcodes.td;D:\Git\llvm-project\llvm\include\llvm\Target\GlobalISel\Combine.td;D:\Git\llvm-project\llvm\include\llvm\Target\GlobalISel\RegisterBank.td;D:\Git\llvm-project\llvm\include\llvm\Target\GlobalISel\SelectionDAGCompat.td;D:\Git\llvm-project\llvm\include\llvm\Target\GlobalISel\Target.td;D:\Git\llvm-project\llvm\include\llvm\Target\Target.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetCallingConv.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetInstrPredicate.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetItinerary.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetPfmCounters.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetSchedule.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetSelectionDAG.td;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Git\llvm-project\build\tools\clang\include\clang\Basic\riscv_vector_builtins.inc</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building riscv_vector_builtins.inc...</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+..\..\..\..\..\RelWithDebInfo\bin\clang-tblgen.exe -gen-riscv-vector-builtins -I D:/Git/llvm-project/clang/include/clang/Basic -ID:/Git/llvm-project/clang/include -ID:/Git/llvm-project/build/tools/clang/include -ID:/Git/llvm-project/build/include -ID:/Git/llvm-project/llvm/include D:/Git/llvm-project/clang/include/clang/Basic/riscv_vector.td -o D:/Git/llvm-project/build/tools/clang/include/clang/Basic/riscv_vector_builtins.inc
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Git\llvm-project\build\RelWithDebInfo\bin\clang-tblgen.exe;D:\Git\llvm-project\clang\include\clang\Basic\ASTNode.td;D:\Git\llvm-project\clang\include\clang\Basic\Attr.td;D:\Git\llvm-project\clang\include\clang\Basic\AttrDocs.td;D:\Git\llvm-project\clang\include\clang\Basic\CommentNodes.td;D:\Git\llvm-project\clang\include\clang\Basic\DeclNodes.td;D:\Git\llvm-project\clang\include\clang\Basic\Diagnostic.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticASTKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticAnalysisKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticCategories.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticCommentKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticCommonKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticCrossTUKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticDocs.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticDriverKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticFrontendKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticGroups.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticLexKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticParseKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticRefactoringKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticSemaKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\DiagnosticSerializationKinds.td;D:\Git\llvm-project\clang\include\clang\Basic\StmtNodes.td;D:\Git\llvm-project\clang\include\clang\Basic\TypeNodes.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_bf16.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_cde.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_fp16.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_mve.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_mve_defs.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_neon.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_neon_incl.td;D:\Git\llvm-project\clang\include\clang\Basic\arm_sve.td;D:\Git\llvm-project\clang\include\clang\Basic\riscv_vector.td;D:\Git\llvm-project\llvm\include\llvm\CodeGen\SDNodeProperties.td;D:\Git\llvm-project\llvm\include\llvm\CodeGen\ValueTypes.td;D:\Git\llvm-project\llvm\include\llvm\Frontend\Directive\DirectiveBase.td;D:\Git\llvm-project\llvm\include\llvm\Frontend\OpenACC\ACC.td;D:\Git\llvm-project\llvm\include\llvm\Frontend\OpenMP\OMP.td;D:\Git\llvm-project\llvm\include\llvm\IR\Attributes.td;D:\Git\llvm-project\llvm\include\llvm\IR\Intrinsics.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsAArch64.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsAMDGPU.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsARM.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsBPF.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsDirectX.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsHexagon.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsHexagonDep.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsLoongArch.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsMips.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsNVVM.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsPowerPC.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsRISCV.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsSPIRV.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsSystemZ.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsVE.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsVEVL.gen.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsWebAssembly.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsX86.td;D:\Git\llvm-project\llvm\include\llvm\IR\IntrinsicsXCore.td;D:\Git\llvm-project\llvm\include\llvm\Option\OptParser.td;D:\Git\llvm-project\llvm\include\llvm\TableGen\Automaton.td;D:\Git\llvm-project\llvm\include\llvm\TableGen\SearchableTable.td;D:\Git\llvm-project\llvm\include\llvm\Target\GenericOpcodes.td;D:\Git\llvm-project\llvm\include\llvm\Target\GlobalISel\Combine.td;D:\Git\llvm-project\llvm\include\llvm\Target\GlobalISel\RegisterBank.td;D:\Git\llvm-project\llvm\include\llvm\Target\GlobalISel\SelectionDAGCompat.td;D:\Git\llvm-project\llvm\include\llvm\Target\GlobalISel\Target.td;D:\Git\llvm-project\llvm\include\llvm\Target\Target.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetCallingConv.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetInstrPredicate.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetItinerary.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetPfmCounters.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetSchedule.td;D:\Git\llvm-project\llvm\include\llvm\Target\TargetSelectionDAG.td;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Git\llvm-project\build\tools\clang\include\clang\Basic\riscv_vector_builtins.inc</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Git\llvm-project\build\CMakeFiles\4cea8109d910690befb10e3e9ab65c3b\ClangRISCVVectorBuiltins.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'"></Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Git\llvm-project\build\tools\clang\include\clang\Basic\riscv_vector_builtins.inc;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Git\llvm-project\build\tools\clang\include\clang\Basic\CMakeFiles\ClangRISCVVectorBuiltins</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <VerifyInputsAndOutputsExist Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</VerifyInputsAndOutputsExist>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'"></Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Git\llvm-project\build\tools\clang\include\clang\Basic\riscv_vector_builtins.inc;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Git\llvm-project\build\tools\clang\include\clang\Basic\CMakeFiles\ClangRISCVVectorBuiltins</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <VerifyInputsAndOutputsExist Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</VerifyInputsAndOutputsExist>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'"></Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Git\llvm-project\build\tools\clang\include\clang\Basic\riscv_vector_builtins.inc;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Git\llvm-project\build\tools\clang\include\clang\Basic\CMakeFiles\ClangRISCVVectorBuiltins</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <VerifyInputsAndOutputsExist Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</VerifyInputsAndOutputsExist>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'"></Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Git\llvm-project\build\tools\clang\include\clang\Basic\riscv_vector_builtins.inc;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Git\llvm-project\build\tools\clang\include\clang\Basic\CMakeFiles\ClangRISCVVectorBuiltins</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+      <VerifyInputsAndOutputsExist Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</VerifyInputsAndOutputsExist>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Git\llvm-project\clang\include\clang\Basic\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule D:/Git/llvm-project/clang/include/clang/Basic/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Git/llvm-project/llvm -BD:/Git/llvm-project/build --check-stamp-file D:/Git/llvm-project/build/tools/clang/include/clang/Basic/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Git\llvm-project\build\tools\clang\include\clang\Basic\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule D:/Git/llvm-project/clang/include/clang/Basic/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Git/llvm-project/llvm -BD:/Git/llvm-project/build --check-stamp-file D:/Git/llvm-project/build/tools/clang/include/clang/Basic/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Git\llvm-project\build\tools\clang\include\clang\Basic\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule D:/Git/llvm-project/clang/include/clang/Basic/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Git/llvm-project/llvm -BD:/Git/llvm-project/build --check-stamp-file D:/Git/llvm-project/build/tools/clang/include/clang/Basic/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Git\llvm-project\build\tools\clang\include\clang\Basic\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule D:/Git/llvm-project/clang/include/clang/Basic/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Git/llvm-project/llvm -BD:/Git/llvm-project/build --check-stamp-file D:/Git/llvm-project/build/tools/clang/include/clang/Basic/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Git\llvm-project\build\tools\clang\include\clang\Basic\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="D:\Git\llvm-project\build\tools\clang\include\clang\Basic\CMakeFiles\ClangRISCVVectorBuiltins">
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="D:\Git\llvm-project\build\ZERO_CHECK.vcxproj">
+      <Project>{07C8AD27-F606-302B-B8F2-20B422B5A6DA}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\Git\llvm-project\build\tools\clang\utils\TableGen\clang-tblgen.vcxproj">
+      <Project>{19F2BA7A-7432-3143-AE56-01F854152E7D}</Project>
+      <Name>clang-tblgen</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
+  </ImportGroup>
+</Project>

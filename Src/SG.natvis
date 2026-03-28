@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+    <!-- Array<T, FixedAllocation<Capacity>> -->
+    <Type Name="SE::List&lt;*,FixedAllocation&lt;*&gt;&gt;">
+        <DisplayString>{{ Size={m_count} Capacity={m_capacity} }}</DisplayString>
+        <Expand>
+            <Item Name="[Size]" ExcludeView="simple">m_count</Item>
+            <Item Name="[Capacity]" ExcludeView="simple">m_capacity</Item>
+            <ArrayItems Condition="m_count &lt;= m_capacity">
+                <Size>m_count</Size>
+                <ValuePointer>(SE::List&lt;$T1,FixedAllocation&lt;$T2&gt; &gt;::ItemType*)m_allocation.m_data</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+
+    <!-- Array<T, InlinedAllocation<Capacity>> -->
+    <Type Name="SE::List&lt;*,InlinedAllocation&lt;*&gt;&gt;">
+        <DisplayString>{{ Size={m_count} Capacity={m_capacity} }}</DisplayString>
+        <Expand>
+            <Item Name="[Size]" ExcludeView="simple">m_count</Item>
+            <Item Name="[Capacity]" ExcludeView="simple">m_capacity</Item>
+            <ArrayItems Condition="m_count &lt;= m_capacity">
+                <Size>m_count</Size>
+                <ValuePointer Condition="!m_allocation.m_useOther">(SE::List&lt;$T1,InlinedAllocation&lt;$T2,$T3&gt; &gt;::ItemType*)m_allocation.m_data</ValuePointer>
+                <ValuePointer Condition=" m_allocation.m_useOther">(SE::List&lt;$T1,InlinedAllocation&lt;$T2,$T3&gt; &gt;::ItemType*)m_allocation.m_other.m_Data</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+
+    <!-- Array<T, HeapAllocation> -->
+    <Type Name="SE::List&lt;*,*&gt;">
+        <DisplayString>{{ Size={m_count} Capacity={m_capacity} }}</DisplayString>
+        <Expand>
+            <Item Name="[Size]" ExcludeView="simple">m_count</Item>
+            <Item Name="[Capacity]" ExcludeView="simple">m_capacity</Item>
+            <ArrayItems Condition="m_count &lt;= m_capacity">
+                <Size>m_count</Size>
+                <ValuePointer>m_allocation.m_Data</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+
+    <!-- Dictionary<Key, Value, HeapAllocation> -->
+    <Type Name="SE::Dictionary&lt;*,*,*&gt;">
+        <DisplayString>{{ Size={m_elementsCount} Capacity={m_size} }}</DisplayString>
+        <Expand>
+            <Item Name="[Size]" ExcludeView="simple">m_elementsCount</Item>
+            <Item Name="[Capacity]" ExcludeView="simple">m_size</Item>
+            <CustomListItems MaxItemsPerView="500" ExcludeView="Test">
+                <Variable Name="i" InitialValue="0" />
+                <Size>m_elementsCount</Size>
+                <Loop>
+                    <Break Condition="i == m_size" />
+                    <If Condition="m_allocation.m_Data[i].m_State != 0">
+                        <Item>m_allocation.m_Data[i]</Item>
+                    </If>
+                    <Exec>i++</Exec>
+                </Loop>
+            </CustomListItems>
+        </Expand>
+    </Type>
+
+    <!-- HashSet<T, HeapAllocation> -->
+    <Type Name="SE::HashSet&lt;*&gt;">
+        <DisplayString>{{ Size={m_elementsCount} Capacity={m_size} }}</DisplayString>
+        <Expand>
+            <Item Name="[Size]" ExcludeView="simple">m_elementsCount</Item>
+            <Item Name="[Capacity]" ExcludeView="simple">m_size</Item>
+            <CustomListItems MaxItemsPerView="500" ExcludeView="Test">
+                <Variable Name="i" InitialValue="0" />
+                <Size>m_elementsCount</Size>
+                <Loop>
+                    <Break Condition="i == m_size" />
+                    <If Condition="m_allocation.m_Data[i].m_State != 0">
+                        <Item>m_allocation.m_Data[i].Item</Item>
+                    </If>
+                    <Exec>i++</Exec>
+                </Loop>
+            </CustomListItems>
+        </Expand>
+    </Type>
+
+    <!-- String -->
+    <Type Name="SE::String">
+        <DisplayString Condition="m_length == 0">Empty</DisplayString>
+        <DisplayString Condition="m_length &lt; 0">Invalid</DisplayString>
+        <DisplayString>{m_data,su}</DisplayString>
+        <StringView>m_data</StringView>
+        <Expand>
+            <Item Name="[Length]" ExcludeView="simple">m_length</Item>
+            <ArrayItems>
+                <Size>m_length</Size>
+                <ValuePointer>m_data</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+
+    <!-- StringView -->
+    <Type Name="SE::StringView">
+        <DisplayString Condition="m_length == 0">Empty</DisplayString>
+        <DisplayString Condition="m_length &lt; 0">Invalid</DisplayString>
+        <DisplayString>{m_data,[m_length]su}</DisplayString>
+        <StringView>m_data</StringView>
+        <Expand>
+            <Item Name="[Length]" ExcludeView="simple">m_length</Item>
+            <ArrayItems>
+                <Size>m_length</Size>
+                <ValuePointer>m_data</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+
+    <!-- StringAnsi -->
+    <Type Name="SE::StringAnsi">
+        <DisplayString Condition="m_length == 0">Empty</DisplayString>
+        <DisplayString Condition="m_length &lt; 0">Invalid</DisplayString>
+        <DisplayString>{m_data}</DisplayString>
+        <StringView>m_data</StringView>
+        <Expand>
+            <Item Name="[Length]" ExcludeView="simple">m_length</Item>
+            <ArrayItems>
+                <Size>m_length</Size>
+                <ValuePointer>m_data</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+
+    <!-- StringAnsiView -->
+    <Type Name="SE::StringAnsiView">
+        <DisplayString Condition="m_length == 0">Empty</DisplayString>
+        <DisplayString Condition="m_length &lt; 0">Invalid</DisplayString>
+        <DisplayString>{m_data,[m_length]}</DisplayString>
+        <StringView>m_data</StringView>
+        <Expand>
+            <Item Name="[Length]" ExcludeView="simple">m_length</Item>
+            <ArrayItems>
+                <Size>m_length</Size>
+                <ValuePointer>m_data</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+
+    <!-- StringBuilder -->
+    <Type Name="SE::StringBuilder">
+        <DisplayString Condition="m_data.m_count == 0">Empty</DisplayString>
+        <DisplayString>{m_data.m_allocation.Get(),[m_data.m_count]su}</DisplayString>
+        <Expand>
+            <Item Name="[Size]" ExcludeView="simple">m_data.m_count</Item>
+            <Item Name="[Capacity]" ExcludeView="simple">m_data.m_capacity</Item>
+            <ArrayItems>
+                <Size>m_data.m_count</Size>
+                <ValuePointer>m_data.m_allocation.m_data</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+
+    <!-- Vector2/Float2/Double2/Int2 -->
+    <Type Name="SE::Vector2Base&lt;*&gt;">
+        <DisplayString>{{ X={x}, Y={y} }}</DisplayString>
+    </Type>
+
+    <!-- Vector3/Float3/Double3/Int3 -->
+    <Type Name="SE::Vector3Base&lt;*&gt;">
+        <DisplayString>{{ X={x}, Y={y}, Z={z} }}</DisplayString>
+    </Type>
+
+    <!-- Vector4/Float4/Double4/Int4 -->
+    <Type Name="SE::Vector4Base&lt;*&gt;">
+        <DisplayString>{{ X={x}, Y={y}, Z={z}, W={w} }}</DisplayString>
+    </Type>
+
+    <Type Name="SE::TypeID">
+        <DisplayString Condition="m_ID == 0">Invalid</DisplayString>
+        <DisplayString>{m_ID}</DisplayString>
+        <Expand>
+            <Item Name="[ID]">m_ID</Item>
+            <Item Name="[Valid]" ExcludeView="simple">m_ID != 0</Item>
+        </Expand>
+    </Type>
+
+    <!-- UID - Globally Unique Identifier -->
+    <Type Name="SE::UID">
+        <DisplayString>{{ A={A}, B={B}, C={C}, D={D} }}</DisplayString>
+        <Expand>
+            <Item Name="[A]">A</Item>
+            <Item Name="[B]">B</Item>
+            <Item Name="[C]">C</Item>
+            <Item Name="[D]">D</Item>
+            <Item Name="[Raw]">Raw</Item>
+            <Item Name="[Values]">Values</Item>
+        </Expand>
+    </Type>
+
+    <!-- TimeSpan -->
+    <Type Name="SE::TimeSpan">
+        <DisplayString>{{ Ticks={Ticks} }}</DisplayString>
+        <Expand>
+            <Item Name="[Days]">((int64)Ticks / 864000000000)</Item>
+            <Item Name="[Hours]">((int64)Ticks / 36000000000 % 24)</Item>
+            <Item Name="[Minutes]">((int64)Ticks / 600000000 % 60)</Item>
+            <Item Name="[Seconds]">((int64)Ticks / 10000000 % 60)</Item>
+            <Item Name="[Milliseconds]">((int64)Ticks / 10000 % 1000)</Item>
+            <Item Name="[TotalSeconds]">(double)Ticks / 10000000</Item>
+            <Item Name="[TotalMilliseconds]">(double)Ticks / 10000</Item>
+            <Item Name="[TotalMinutes]">(double)Ticks / 600000000</Item>
+            <Item Name="[TotalHours]">(double)Ticks / 36000000000</Item>
+            <Item Name="[TotalDays]">(double)Ticks / 864000000000</Item>
+        </Expand>
+    </Type>
+
+    <!-- DateTime -->
+    <Type Name="SE::DateTime">
+        <DisplayString>{{ Ticks={Ticks} }}</DisplayString>
+        <Expand>
+            <Item Name="[Ticks]">Ticks</Item>
+            <Item Name="[Year]">((int64)Ticks / 864000000000 / 365) + 1</Item>
+            <Item Name="[Month]">((((int64)Ticks / 864000000000) % 365) / 30) + 1</Item>
+            <Item Name="[Day]">((((int64)Ticks / 864000000000) % 365) % 30) + 1</Item>
+        </Expand>
+    </Type>
+
+    <!-- Stopwatch -->
+    <Type Name="SE::Stopwatch">
+        <DisplayString>{{ Elapsed={m_End - m_Start}s }}</DisplayString>
+        <Expand>
+            <Item Name="[Start]">m_Start</Item>
+            <Item Name="[End]">m_End</Item>
+            <Item Name="[ElapsedSeconds]">m_End - m_Start</Item>
+            <Item Name="[ElapsedMilliseconds]">(m_End - m_Start) * 1000.0</Item>
+        </Expand>
+    </Type>
+
+    <!-- LoadingStatus (enum) -->
+    <Type Name="SE::LoadingStatus">
+        <DisplayString Condition="value == 0">Unloaded</DisplayString>
+        <DisplayString Condition="value == 1">Loading</DisplayString>
+        <DisplayString Condition="value == 2">Loaded</DisplayString>
+        <DisplayString Condition="value == 3">Unloading</DisplayString>
+        <DisplayString Condition="value == 4">Failed</DisplayString>
+        <DisplayString>Unknown({value})</DisplayString>
+    </Type>
+
+    <!-- EventBindingID -->
+    <Type Name="SE::EventBindingID">
+        <DisplayString Condition="(m_ID.A | m_ID.B | m_ID.C | m_ID.D) == 0">Invalid</DisplayString>
+        <DisplayString>{{ A={m_ID.A}, B={m_ID.B}, C={m_ID.C}, D={m_ID.D} }}</DisplayString>
+        <Expand>
+            <Item Name="[Valid]">(m_ID.A | m_ID.B | m_ID.C | m_ID.D) != 0</Item>
+            <Item Name="[UID]">m_ID</Item>
+        </Expand>
+    </Type>
+
+    <!-- Pair<T, U> -->
+    <Type Name="SE::Pair&lt;*,*&gt;">
+        <DisplayString>{{ First={{First}}, Second={{Second}} }}</DisplayString>
+        <Expand>
+            <Item Name="[First]">First</Item>
+            <Item Name="[Second]">Second</Item>
+        </Expand>
+    </Type>
+
+    <!-- EnumFlags<T> -->
+    <Type Name="SE::EnumFlags&lt;*&gt;">
+        <DisplayString>{{ Flags={m_flags} }}</DisplayString>
+        <Expand>
+            <Item Name="[Value]">m_flags</Item>
+        </Expand>
+    </Type>
+
+    <!-- Span<T> -->
+    <Type Name="SE::Span&lt;*&gt;">
+        <DisplayString Condition="m_length == 0">Empty</DisplayString>
+        <DisplayString Condition="m_length &lt; 0">Invalid</DisplayString>
+        <DisplayString>{{ Length={m_length} }}</DisplayString>
+        <Expand>
+            <Item Name="[Length]">m_length</Item>
+            <Item Name="[Data]">m_data</Item>
+            <ArrayItems>
+                <Size>m_length</Size>
+                <ValuePointer>m_data</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+
+    <!-- RingBuffer<T> -->
+    <Type Name="SE::RingBuffer&lt;*,*&gt;">
+        <DisplayString>{{ Count={m_count} Capacity={m_capacity} }}</DisplayString>
+        <Expand>
+            <Item Name="[Count]">m_count</Item>
+            <Item Name="[Capacity]">m_capacity</Item>
+            <Item Name="[Front]">m_allocation.Get()[m_front]</Item>
+            <ArrayItems>
+                <Size>m_count</Size>
+                <ValuePointer>m_allocation.Get()</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+
+    <!-- BitArray -->
+    <Type Name="SE::BitArray&lt;*&gt;">
+        <DisplayString>{{ Count={m_count} Capacity={m_capacity} }}</DisplayString>
+        <Expand>
+            <Item Name="[Count]">m_count</Item>
+            <Item Name="[Capacity]">m_capacity</Item>
+            <CustomListItems MaxItemsPerView="1000">
+                <Variable Name="i" InitialValue="0" />
+                <Size>m_count</Size>
+                <Loop>
+                    <Break Condition="i &gt;= m_count" />
+                    <Item Name="[{i}]">(m_allocation.m_Data[i/64] &gt;&gt; (i % 64)) &amp; 1</Item>
+                    <Exec>i++</Exec>
+                </Loop>
+            </CustomListItems>
+        </Expand>
+    </Type>
+
+    <!-- ChunkedArray<T, ChunkSize> -->
+    <Type Name="SE::ChunkedArray&lt;*,*&gt;">
+        <DisplayString>{{ Count={m_count} Chunks={m_chunks.m_count} }}</DisplayString>
+        <Expand>
+            <Item Name="[Count]">m_count</Item>
+            <Item Name="[Chunks]">m_chunks.m_count</Item>
+            <Item Name="[Capacity]">m_chunks.m_count * ChunkSize</Item>
+        </Expand>
+    </Type>
+
+    <!-- Function<ReturnType(Params...)> -->
+    <Type Name="SE::Function&lt;*&gt;">
+        <DisplayString Condition="_function == nullptr">Empty</DisplayString>
+        <DisplayString Condition="_lambda == nullptr">Static Function</DisplayString>
+        <DisplayString>Lambda</DisplayString>
+        <Expand>
+            <Item Name="[Binded]">_function != nullptr</Item>
+            <Item Name="[Callee]">_callee</Item>
+            <Item Name="[Function]">_function</Item>
+            <Item Name="[Lambda]">_lambda</Item>
+        </Expand>
+    </Type>
+
+    <!-- Delegate<Params...> -->
+    <Type Name="SE::Delegate&lt;*&gt;">
+        <DisplayString>Delegate</DisplayString>
+        <Expand>
+            <Item Name="[DataPtr]">_data</Item>
+        </Expand>
+    </Type>
+
+    <!-- TEvent<Args...> -->
+    <Type Name="SE::TEvent&lt;*&gt;">
+        <DisplayString>{{ BoundUsers={m_boundUsers.m_count} }}</DisplayString>
+        <Expand>
+            <Item Name="[HasBoundUsers]">m_boundUsers.m_count != 0</Item>
+            <Item Name="[BoundUsersCount]">m_boundUsers.m_count</Item>
+        </Expand>
+    </Type>
+
+    <!-- TEventHandle<Args...> -->
+    <Type Name="SE::TEventHandle&lt;*&gt;">
+        <DisplayString>{m_pEvent}</DisplayString>
+        <Expand>
+            <Item Name="[Pointer]">m_pEvent</Item>
+        </Expand>
+    </Type>
+
+</AutoVisualizer>
