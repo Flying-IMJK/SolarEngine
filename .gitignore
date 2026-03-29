@@ -14,7 +14,6 @@
 # Compiled Dynamic libraries
 *.so
 *.dylib
-*.dll
 
 # Fortran module files
 *.mod
@@ -34,5 +33,4 @@
 Debug/
 Release/
 FlaxEngine/
-Reflector/Precompile
-
+Reflector/Precompile/*

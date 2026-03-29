@@ -1,2 +1,8 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+/Src/Libraries/LLVM15/bin/DebugDLL/libclang.dll filter=lfs diff=lfs merge=lfs -text
+/Src/Libraries/LLVM15/bin/DebugDLL/libclang.pdb filter=lfs diff=lfs merge=lfs -text
+/Src/Libraries/LLVM15/bin/ReleaseDLL/libclang.dll filter=lfs diff=lfs merge=lfs -text
+/Src/Libraries/slang/bin/slang-llvm.dll filter=lfs diff=lfs merge=lfs -text
+*.dll filter=lfs diff=lfs merge=lfs -text
+*.pdb filter=lfs diff=lfs merge=lfs -text
