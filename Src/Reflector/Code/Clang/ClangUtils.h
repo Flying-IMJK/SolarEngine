@@ -7,7 +7,7 @@
 #include <clang-c/Index.h>
 
 #include "Core/Types/Strings/StringID.h"
-#include "Core/TypeSystem/TypeID.h"
+#include "Core/Types/Strings/String.h"
 
 //-------------------------------------------------------------------------
 
@@ -43,6 +43,28 @@ namespace SE
             CXSourceLocation start = clang_getRangeStart(range);
             clang_getExpansionLocation(start, nullptr, &line, &column, &offset);
             return line;
+        }
+
+        inline uint32_t GetStartPositionForCursor(CXCursor const &cr)
+        {
+            CXSourceRange range = clang_getCursorExtent(cr);
+            return range.begin_int_data;
+        }
+
+        inline StringAnsi GetTypeSpellingAnsi(CXType type)
+        {
+            CXString spelling = clang_getTypeSpelling(type);
+            StringAnsi result(clang_getCString(spelling));
+            clang_disposeString(spelling);
+            return result;
+        }
+
+        inline StringAnsi GetCursorSpellingAnsi(CXCursor cr)
+        {
+            CXString spelling = clang_getCursorSpelling(cr);
+            StringAnsi result(clang_getCString(spelling));
+            clang_disposeString(spelling);
+            return result;
         }
 
         void GetDiagnostics(CXTranslationUnit &TU, List<StringView> &diagnostics);

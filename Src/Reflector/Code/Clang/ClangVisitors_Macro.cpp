@@ -1,7 +1,6 @@
-#include "ClangVisitors_Macro.h"
+#include "ClangVisitors.h"
 #include "../ReflectorSettingsAndUtils.h"
 #include "clang-c/Documentation.h"
-#include <iostream>
 
 //-------------------------------------------------------------------------
 
@@ -12,22 +11,55 @@ namespace SE::ReflectTool
         CXSourceRange range = clang_getCursorExtent(cr);
 
         //-------------------------------------------------------------------------
+        // Code-injecting macros (always recorded)
 
-        if (cursorName.StartsWith(GetReflectionMacroText(ReflectionMacroType::ReflectProperty)))
+        /*if (cursorName == GetReflectionMacroText(ReflectionMacroType::DefineClass))
         {
-            pContext->AddFoundReflectionMacro(ReflectionMacro(pHeaderInfo, cr, range, ReflectionMacroType::ReflectProperty));
+            pContext->AddFoundReflectionMacro(ReflectionMacro(pHeaderInfo, cr, range, ReflectionMacroType::DefineClass));
         }
-        else if (cursorName.StartsWith(GetReflectionMacroText(ReflectionMacroType::ReflectEnum)))
+        else if (cursorName == GetReflectionMacroText(ReflectionMacroType::DefineClassDefault))
         {
-            pContext->AddFoundReflectionMacro(ReflectionMacro(pHeaderInfo, cr, range, ReflectionMacroType::ReflectEnum));
+            pContext->AddFoundReflectionMacro(ReflectionMacro(pHeaderInfo, cr, range, ReflectionMacroType::DefineClassDefault));
         }
-        else if (cursorName.StartsWith(GetReflectionMacroText(ReflectionMacroType::ReflectType)))
+        else if (cursorName == GetReflectionMacroText(ReflectionMacroType::ReflectModule))
         {
-            pContext->AddFoundReflectionMacro(ReflectionMacro(pHeaderInfo, cr, range, ReflectionMacroType::ReflectType));
+            pContext->AddFoundReflectionMacro(ReflectionMacro(pHeaderInfo, cr, range, ReflectionMacroType::ReflectModule));
         }
-        else if (cursorName.StartsWith(GetReflectionMacroText(ReflectionMacroType::ReflectMeta)))
+        else */if (cursorName == GetReflectionMacroText(ReflectionMacroType::ReflectMeta))
         {
             pContext->AddFoundReflectionMacro(ReflectionMacro(pHeaderInfo, cr, range, ReflectionMacroType::ReflectMeta));
+        }
+
+        //-------------------------------------------------------------------------
+        // Unified annotation macros (parsed for Reflect/API parameters)
+
+        else if (cursorName == GetReflectionMacroText(ReflectionMacroType::SEClass))
+        {
+            pContext->AddFoundReflectionMacro(ReflectionMacro(pHeaderInfo, cr, range, ReflectionMacroType::SEClass));
+        }
+        else if (cursorName == GetReflectionMacroText(ReflectionMacroType::SEStruct))
+        {
+            pContext->AddFoundReflectionMacro(ReflectionMacro(pHeaderInfo, cr, range, ReflectionMacroType::SEStruct));
+        }
+        else if (cursorName == GetReflectionMacroText(ReflectionMacroType::SEInterface))
+        {
+            pContext->AddFoundReflectionMacro(ReflectionMacro(pHeaderInfo, cr, range, ReflectionMacroType::SEInterface));
+        }
+        else if (cursorName == GetReflectionMacroText(ReflectionMacroType::SEEnum))
+        {
+            pContext->AddFoundReflectionMacro(ReflectionMacro(pHeaderInfo, cr, range, ReflectionMacroType::SEEnum));
+        }
+        else if (cursorName == GetReflectionMacroText(ReflectionMacroType::SEProperty))
+        {
+            pContext->AddFoundReflectionMacro(ReflectionMacro(pHeaderInfo, cr, range, ReflectionMacroType::SEProperty));
+        }
+        else if (cursorName == GetReflectionMacroText(ReflectionMacroType::SEFunction))
+        {
+            pContext->AddFoundReflectionMacro(ReflectionMacro(pHeaderInfo, cr, range, ReflectionMacroType::SEFunction));
+        }
+        else if (cursorName == GetReflectionMacroText(ReflectionMacroType::SEEvent))
+        {
+            pContext->AddFoundReflectionMacro(ReflectionMacro(pHeaderInfo, cr, range, ReflectionMacroType::SEEvent));
         }
 
         //-------------------------------------------------------------------------

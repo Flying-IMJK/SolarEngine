@@ -5,7 +5,7 @@
 
 namespace SE::ReflectTool
 {
-    static mustache::data GenerateFile(String const &exportMacro, ReflectedType const &type)
+    static mustache::data GenerateFile(String const &exportMacro, DataType const &type)
     {
         mustache::data generatorData;
 
@@ -33,7 +33,7 @@ namespace SE::ReflectTool
             sortedOrder[sortingConstantIndices[i]] = i;
         }
 
-        if (type.m_isDevOnly)
+        if (type.isDevOnly)
         {
             generatorData.set("isDevOnlyBegin", "#ifdef SGE_DEVELOPMENT");
             generatorData.set("isDevOnlyEnd", "#endif");
@@ -97,7 +97,7 @@ namespace SE::ReflectTool
 
     //-------------------------------------------------------------------------
 
-    void CppGenerateEnum(Generator* generator, std::stringstream &codeFile, String const &exportMacro, ReflectedType const &type, std::string templateStr)
+    void CppGenerateEnum(Generator* generator, std::stringstream &codeFile, String const &exportMacro, DataType const &type, std::string templateStr)
     {
         ENGINE_ASSERT(type.IsEnum());
         // GenerateFile(codeFile, exportMacro, type);

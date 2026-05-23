@@ -1,10 +1,11 @@
 #include "ClangParser.h"
-#include "ClangVisitors_TranslationUnit.h"
+#include "ClangVisitors.h"
 #include "../ReflectorSettingsAndUtils.h"
 #include "../Database/ReflectionDatabase.h"
 #include "Core/Utilities/Timers.h"
-#include "Core/Platform/Win32/Platform_Win32.h"
 #include <fstream>
+
+#include "Core/Types/DateTime.h"
 
 //-------------------------------------------------------------------------
 
@@ -17,10 +18,8 @@ namespace SE::ReflectTool
         , m_reflectionDataPath( reflectionDataPath )
     {}
 
-    bool ClangParser::Parse(List<HeaderInfo*> const& headers, Pass pass )
+    bool ClangParser::Parse(List<HeaderInfo*> const& headers)
     {
-        m_context.m_detectDevOnlyTypesAndProperties = ( pass == NoDevToolsPass );
-
         // Create single amalgamated header file for all headers to parse
         //-------------------------------------------------------------------------
 
@@ -30,16 +29,10 @@ namespace SE::ReflectTool
         ENGINE_ASSERT( !reflectorFileStream.fail() );
 
 		StringAnsi includeStr;
-        m_context.m_headersToVisit.Clear();
+        m_context.headersToVisit.Clear();
         for ( HeaderInfo const* pHeader : headers )
         {
-            // Exclude dev tools
-            if ( pass == NoDevToolsPass && pHeader->IsInToolsLayer() )
-            {
-                continue;
-            }
-
-            m_context.m_headersToVisit.Add( ClangParserContext::HeaderToVisit(pHeader->headerId, pHeader) );
+            m_context.headersToVisit.Add( ClangParserContext::HeaderToVisit(pHeader->headerId, pHeader) );
             includeStr += "#include \"" + pHeader->filePath + "\"\n";
         }
 
@@ -52,7 +45,7 @@ namespace SE::ReflectTool
         int32_t const numIncludePaths = sizeof( Settings::g_includePaths ) / sizeof( Settings::g_includePaths[0] );
         for ( auto i = 0; i < numIncludePaths; i++ )
         {
-			String const fullPath = m_context.m_pSolution->path + SE_TEXT("/") + Settings::g_includePaths[i];
+			String const fullPath = m_context.pSolution->path + SE_TEXT("/") + Settings::g_includePaths[i];
 //			StringAnsi const shortPath = Platform::GetShortPath( fullPath );
             fullIncludePaths.Add( "-I" + fullPath.ToStringAnsi() );
             clangArgs.Add( fullIncludePaths.Last().Get() );
@@ -81,13 +74,6 @@ namespace SE::ReflectTool
         clangArgs.Add( "-Wno-gnu-folding-constant" );
         clangArgs.Add( "-Wno-nonportable-include-path" );
 
-
-        // Exclude dev tools
-        if ( pass == NoDevToolsPass )
-        {
-            clangArgs.Add( Settings::g_devToolsExclusionDefine );
-        }
-
         //-------------------------------------------------------------------------
 
         // Set up clang
@@ -105,9 +91,9 @@ namespace SE::ReflectTool
         // Handle result of parse
         if (result == CXError_Success)
         {
-            ScopedTimer<PlatformClock> timer( m_totalVisitingTime );
+            ScopedTimer<PlatformClock> timer(m_totalVisitingTime);
             m_context.Reset( &tu );
-            auto cursor = clang_getTranslationUnitCursor( tu );
+            const auto cursor = clang_getTranslationUnitCursor(tu);
             clang_visitChildren( cursor, VisitTranslationUnit, &m_context );
         }
         else

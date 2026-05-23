@@ -1,16 +1,12 @@
-#include "ClangVisitors_TranslationUnit.h"
-#include "ClangVisitors_Macro.h"
-#include "ClangVisitors_Enum.h"
-#include "Clangvisitors_Structure.h"
-#include "../ReflectorSettingsAndUtils.h"
+#include "Clangvisitors.h"
 
 //-------------------------------------------------------------------------
 
 namespace SE::ReflectTool
 {
-    CXChildVisitResult VisitTranslationUnit( CXCursor cr, CXCursor parent, CXClientData pClientData )
+    CXChildVisitResult VisitTranslationUnit(CXCursor cr, CXCursor parent, CXClientData pClientData)
     {
-        auto pContext = reinterpret_cast<ClangParserContext*>( pClientData );
+        ClangParserContext* pContext = static_cast<ClangParserContext*>( pClientData );
         if ( pContext->HasErrorOccured() )
         {
             return CXChildVisit_Break;
@@ -23,7 +19,7 @@ namespace SE::ReflectTool
         }
 
         // Dont parse non-solution files
-        if (!FileSystem::IsUnderDirectory(headerFilePath, pContext->m_pSolution->path))
+        if (!FileSystem::IsUnderDirectory(headerFilePath, pContext->pSolution->path))
         {
             return CXChildVisit_Continue;
         }
@@ -55,10 +51,23 @@ namespace SE::ReflectTool
 
                 return CXChildVisit_Continue;
             }
-            break;
 
             // Classes / Structs
             case CXCursor_ClassDecl:
+            {
+                // Process children before the parent so that we can correctly handle the mapping between macro and types
+                // We dont want an nested registration macro to cause an unwanted type to be registered
+                pContext->PushNamespace( cursorName);
+                clang_visitChildren( cr, VisitTranslationUnit, pClientData );
+                pContext->PopNamespace();
+
+                if ( pContext->HasErrorOccured() )
+                {
+                    return CXChildVisit_Break;
+                }
+                return VisitStructure( pContext, cr, headerFilePath, headerID, false);
+            }
+
             case CXCursor_StructDecl:
             {
                 // Process children before the parent so that we can correctly handle the mapping between macro and types
@@ -72,16 +81,14 @@ namespace SE::ReflectTool
                     return CXChildVisit_Break;
                 }
 
-                return VisitStructure( pContext, cr, headerFilePath, headerID);
+                return VisitStructure( pContext, cr, headerFilePath, headerID, true);
             }
-            break;
 
             // Enums
             case CXCursor_EnumDecl:
             {
                 return VisitEnum( pContext, cr, headerID );
             }
-            break;
 
             // Non-Type Cursors
             case CXCursor_Namespace:
@@ -95,14 +102,12 @@ namespace SE::ReflectTool
 
                 return CXChildVisit_Continue;
             }
-            break;
 
             // Macros
             case CXCursor_MacroExpansion:
             {
                 return VisitMacro( pContext, pHeaderInfo, cr, cursorName );
             }
-            break;
 
             // Irrelevant Cursors
             default:

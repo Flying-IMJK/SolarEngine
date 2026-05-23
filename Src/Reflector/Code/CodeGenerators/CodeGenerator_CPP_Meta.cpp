@@ -6,11 +6,11 @@
 
 namespace SE::ReflectTool
 {
-	static mustache::data GenerateFile(ReflectedType const &type)
+	static mustache::data GenerateFile(DataType const &type)
 	{
 		mustache::data generatorData;
 
-		if (type.m_isDevOnly)
+		if (type.isDevOnly)
 		{
 			generatorData.set("isDevOnlyBegin", "#ifdef SGE_DEVELOPMENT");
 			generatorData.set("isDevOnlyEnd", "#endif");
@@ -23,7 +23,7 @@ namespace SE::ReflectTool
 		return generatorData;
 	}
 
-	void CppGenerateMeta(Generator* generator, ReflectionDatabase const& database, std::stringstream& codeFile, ReflectedType const& type, std::string templateStr)
+	void CppGenerateMeta(Generator* generator, ReflectionDatabase const& database, std::stringstream& codeFile, DataType const& type, std::string templateStr)
 	{
 		ENGINE_ASSERT(type.IsMeta());
 

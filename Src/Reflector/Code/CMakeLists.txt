@@ -5,7 +5,6 @@ set(REFLECTOR_TARGET SE.Reflector)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-include(../../Libraries/GameNetworkingSockets/link.cmake)
 set(LLVM "LLVM15")
 
 set("SOURCES"
@@ -16,8 +15,8 @@ set("SOURCES"
 
     Database/ReflectionDatabase.h
     Database/ReflectionDatabase.cpp
-    Database/ReflectionDataTypes.h
-    Database/ReflectionDataTypes.cpp
+        Database/DataTypes.h
+        Database/DataTypes.cpp
     Database/ReflectionProjectTypes.h
 
     CodeGenerators/CodeGenerator_CPP_Enum.h
@@ -29,19 +28,26 @@ set("SOURCES"
     CodeGenerators/CodeGenerator_CPP.h
     CodeGenerators/CodeGenerator_CPP.cpp
 
+    CodeGenerators/CodeGenerator_BindingsDataTypes.h
+    CodeGenerators/CodeGenerator_BindingsTypeMap.h
+    CodeGenerators/CodeGenerator_BindingsTypeMap.cpp
+    CodeGenerators/CodeGenerator_BindingsCpp.h
+    CodeGenerators/CodeGenerator_BindingsCpp.cpp
+    CodeGenerators/CodeGenerator_BindingsCSharp.h
+    CodeGenerators/CodeGenerator_BindingsCSharp.cpp
+    CodeGenerators/CodeGenerator_Bindings.h
+    CodeGenerators/CodeGenerator_Bindings.cpp
+
     Clang/ClangParser.h
     Clang/ClangParser.cpp
     Clang/ClangParserContext.h
     Clang/ClangParserContext.cpp
     Clang/ClangUtils.h
     Clang/ClangUtils.cpp
-    Clang/ClangVisitors_Enum.h
+    Clang/ClangVisitors.h
     Clang/ClangVisitors_Enum.cpp
-    Clang/ClangVisitors_Macro.h
     Clang/ClangVisitors_Macro.cpp
-    Clang/ClangVisitors_Structure.h
     Clang/ClangVisitors_Structure.cpp
-    Clang/ClangVisitors_TranslationUnit.h
     Clang/ClangVisitors_TranslationUnit.cpp
 
     TopologicalSort.h
@@ -121,8 +127,6 @@ endif()
 
 target_link_directories(${REFLECTOR_TARGET} PUBLIC ${LLVM_LIBRARY_DIR})
 
-GameNetworkingSocketsLinkReflector(${REFLECTOR_TARGET})
-
 # copy resources on post build
 add_custom_command(TARGET ${REFLECTOR_TARGET} POST_BUILD
 	# mustache templates directory
@@ -132,4 +136,7 @@ add_custom_command(TARGET ${REFLECTOR_TARGET} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
 		"${ProjectBuildDir}/SE.Core.dll" "${ProjectBuildDir}/SE.Core.pdb"
 		$<TARGET_FILE_DIR:${REFLECTOR_TARGET}>
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/Template"
+        "$<TARGET_FILE_DIR:${REFLECTOR_TARGET}>/Template"
 )

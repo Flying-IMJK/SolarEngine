@@ -1,14 +1,19 @@
 #include "CodeGenerator_CPP.h"
 #include "CodeGenerator_CPP_Type.h"
 #include "CodeGenerator_CPP_Enum.h"
+#include "CodeGenerator_BindingsCpp.h"
+#include "CodeGenerator_BindingsCSharp.h"
+#include "CodeGenerator_BindingsTypeMap.h"
 #include "../ReflectorSettingsAndUtils.h"
 #include "Core/TypeSystem/TypeID.h"
 #include "Core/Types/Collections/Sorting.h"
 #include "Core/Platform/File.h"
+#include "Core/Utilities/Timers.h"
 
 #include "../TopologicalSort.h"
 #include <fstream>
 #include <string>
+#include <iostream>
 
 #include "CodeGenerator_CPP_Meta.h"
 
@@ -51,7 +56,7 @@ namespace SE::ReflectTool
         return true;
     }
 
-    static bool SortTypesByDependencies( List<ReflectedType>& structureTypes )
+    static bool SortTypesByDependencies( List<DataType>& structureTypes )
     {
         int32 const numTypes = (int32_t) structureTypes.Count();
         if ( numTypes <= 1 )
@@ -84,7 +89,7 @@ namespace SE::ReflectTool
         }
 
         // Update type list
-        List<ReflectedType> sortedTypes;
+        List<DataType> sortedTypes;
         sortedTypes.SetCapacity( numTypes );
 
         for ( auto& node : list )
@@ -96,7 +101,7 @@ namespace SE::ReflectTool
         return true;
     }
 
-    static bool GenerateTypeRegistrationHeaderFiles( ReflectionDatabase const& database, SolutionInfo const& solution, 
+    /*static bool GenerateTypeRegistrationHeaderFiles( ReflectionDatabase const& database, SolutionInfo const& solution,
                     std::stringstream& typeRegistrationStr, TypeRegistrationHeaderType headerType, StringAnsi templateStr)
     {
         mustache::data generateData;
@@ -183,7 +188,7 @@ namespace SE::ReflectTool
 
             ENGINE_UNREACHABLE_CODE();
             return ResTypeID();
-        };*/
+        };#1#
 
         mustache::data registeredResourceTypeListData(mustache::data::type::list);
 
@@ -207,7 +212,7 @@ namespace SE::ReflectTool
             registeredResourceTypeData.set("friendlyName", registeredResourceType.m_friendlyName.Get());
 
             registeredResourceTypeListData.push_back(registeredResourceTypeData);
-        }*/
+        }#1#
 
         generateData.set("registeredResourceTypes", registeredResourceTypeListData);
 
@@ -217,7 +222,7 @@ namespace SE::ReflectTool
         typeRegistrationStr << tmpl.render(generateData);
 
         return true;
-    }
+    }*/
 
     //-------------------------------------------------------------------------
 
@@ -259,7 +264,7 @@ namespace SE::ReflectTool
         if (!fileContentsEqual)
         {
 			stream.seekg(std::ios::beg);
-			File ::WriteAllText(filePath, String(stream.str().c_str()), Encoding::EncodingType::UTF8);
+			File::WriteAllText(filePath, String(stream.str().c_str()), Encoding::EncodingType::UTF8);
         }
 
         return true;
@@ -274,7 +279,6 @@ namespace SE::ReflectTool
         StringAnsi codeCppMetaTemplateFilePath(StringAnsi::Format("{0}/Reflector/Code/Template/CodeCppMetaTemplate.mustache", rootPath));
 		StringAnsi codeCppEnumTemplateFilePath(StringAnsi::Format("{0}/Reflector/Code/Template/CodeCppEnumTemplate.mustache", rootPath));
 		StringAnsi codeCppClassTemplateFilePath(StringAnsi::Format("{0}/Reflector/Code/Template/CodeCppClassTemplate.mustache", rootPath));
-		StringAnsi codeTypeRegistrationFilePath(StringAnsi::Format("{0}/Reflector/Code/Template/CodeTypeRegistrationTemplate.mustache", rootPath));
             
 
         if (m_CodeModuleTemplate.IsEmpty())
@@ -293,11 +297,6 @@ namespace SE::ReflectTool
         {
             LoadTemplateFileString(*this, codeCppClassTemplateFilePath, m_CodeCppClassTemplate);
         }
-
-        if (m_CodeTypeRegistrationTemplate.IsEmpty())
-        {
-            LoadTemplateFileString(*this, codeTypeRegistrationFilePath, m_CodeTypeRegistrationTemplate);
-        }
     }
 
     void Generator::GenerateTypeInfoFileHeader(HeaderInfo const &hdr, StringView solutionPath)
@@ -306,85 +305,98 @@ namespace SE::ReflectTool
         m_typeInfoFile.clear();
         m_typeInfoFile << "#pragma once" << std::endl;
         m_typeInfoFile << "//*************************************************************************\n";
-        m_typeInfoFile << "// This is an auto-generated file - DO NOT edit"  << std::endl;
+        m_typeInfoFile << "// This is an auto-generated file - DO NOT edit\n";
         m_typeInfoFile << "//*************************************************************************\n";
-        m_typeInfoFile << "#include \"" << std::string(hdr.filePath.Get()) << "\"" << std::endl;
+        m_typeInfoFile << "#include \"" << std::string(hdr.filePath.Get()) << "\"\n";
+        m_typeInfoFileHasBinding = false;
     }
 
-    void Generator::GenerateModuleCodeFile(ReflectionDatabase const& database, ProjectInfo const& prj, List<ReflectedType> const& typesInModule)
+    void Generator::AppendBindingIncludesIfNeeded()
     {
-        mustache::data generateData;
- 
-        //-------------------------------------------------------------------------
-        // Header
-		StringAnsi moduleHeaderFilePath = prj.GetModuleHeaderDesc().filePath;
-        generateData.set("moduleHeaderFile", std::string(moduleHeaderFilePath.Get()));
-        //-------------------------------------------------------------------------
-        // Includes
-
-        List<String> autoGeneratedFiles;
-		String autoGeneratedDirectory = String(prj.path + SE_TEXT("/") + Settings::g_autogeneratedDirectory);
-		FileSystem::NormalizePath(autoGeneratedDirectory);
-		FileSystem::DirectoryGetFiles(autoGeneratedFiles, autoGeneratedDirectory, SE_TEXT("*.h"), DirectorySearchOption::TopOnly);
-
-        mustache::data includeFileListData(mustache::data::type::list);
-
-        for (auto& file : autoGeneratedFiles)
+        if (!m_typeInfoFileHasBinding)
         {
-            mustache::data includeFile;
-			includeFile.set("includeFile", std::string(file.ToStringAnsi().Get()));
-			includeFileListData.push_back(includeFile);
+            return;
         }
+        m_typeInfoFile << "#include \"Runtime/Scripting/ManagedCLR/CLRUtils.h\"\n";
+        m_typeInfoFile << "#include \"Runtime/Scripting/ScriptingObject.h\"\n";
+        m_typeInfoFile << "#include \"Runtime/Scripting/Internal/InternalCalls.h\"\n";
+        m_typeInfoFile << "#include \"Runtime/Scripting/ScriptingType.h\"\n";
+    }
 
-        generateData.set("includeFileList", includeFileListData);
+    // -------------------------------------------------------------------------
+    // Helper: Create ApiClass from ReflectedType::bindingInfo
+    // -------------------------------------------------------------------------
 
-        //-------------------------------------------------------------------------
-        // Registration functions
+    static ApiClass MakeApiClassFromReflectedType(DataType const& type)
+    {
+        ApiClass cls;
+        cls.name              = type.name;
+        cls.namespaceName     = type.namespaceName;
+        cls.baseClassName     = type.bindingInfo.baseClassName;
+        cls.isAbstract        = type.IsAbstract();
+        cls.isStruct           = type.IsStruct();
+        cls.isScriptingObject = type.bindingInfo.isScriptingObject;
+        cls.functions          = type.bindingInfo.functions;
+        cls.properties        = type.bindingInfo.bindingProperties;
+        cls.fields             = type.bindingInfo.fields;
+        cls.interfaces         = type.bindingInfo.interfaces;
+        cls.events             = type.bindingInfo.events;
+        cls.isSealed           = type.bindingInfo.isSealed;
+        cls.isStatic           = type.bindingInfo.isStatic;
+        cls.noSpawn            = type.bindingInfo.noSpawn;
+        cls.noConstructor      = type.bindingInfo.noConstructor;
+        cls.attributes         = type.bindingInfo.attributes;
+        cls.tag                = type.bindingInfo.tag;
+        return cls;
+    }
 
-        generateData.set("moduleClassName", std::string(prj.moduleClassName.ToStringAnsi().Get()));
-
-        mustache::data registrationTypeListData(mustache::data::type::list);
-        mustache::data registrationEnumListData(mustache::data::type::list);
-        mustache::data registrationMetaListData(mustache::data::type::list);
-
-
-        for ( auto& type : typesInModule )
+    static ApiEnum MakeApiEnumFromReflectedType(DataType const& type)
+    {
+        ApiEnum en;
+        en.name          = type.name;
+        en.namespaceName = type.namespaceName;
+        // Enum constants
+        for (auto& constant : type.enumConstants)
         {
-            mustache::data registrationTypeData;
-            if (type.m_isDevOnly)
-            {
-                registrationTypeData.set("isDevOnlyBegin", "#ifdef SGE_DEVELOPMENT");
-                registrationTypeData.set("isDevOnlyEnd", "#endif");
-            }
-            registrationTypeData.set("registerNamespace", std::string(type.namespaceName.Get()));
-            registrationTypeData.set("registerName", std::string(type.name.Get()));
-
-            if (type.IsEnum())
-            {
-                registrationEnumListData.push_back(registrationTypeData);
-            }
-            else if (type.IsMeta())
-            {
-                registrationMetaListData.push_back(registrationTypeData);
-            }
-            else
-            {
-                registrationTypeListData.push_back(registrationTypeData);
-            }
+            en.valueNames.Add(constant.label);
+            en.values.Add(constant.value);
         }
+        return en;
+    }
 
-        generateData.set("compositeTypeList", registrationTypeListData);
-        generateData.set("enumTypeList", registrationEnumListData);
-        generateData.set("metaTypeList", registrationMetaListData);
+    // -------------------------------------------------------------------------
+    // Helper: Generate C++ binding code for a ReflectedType
+    // -------------------------------------------------------------------------
 
-        //-------------------------------------------------------------------------
-        // generate
+    static void GenerateBindingCppForType(DataType const& type, StringAnsi const& assemblyType, StringAnsi& output)
+    {
+        BindingsCppGenerator gen;
+        ApiClass cls = MakeApiClassFromReflectedType(type);
+        if (cls.isStruct)
+        {
+            gen.GenerateCppStruct(cls, assemblyType, false, output);
+        }
+        else
+        {
+            gen.GenerateCppClass(cls, assemblyType, false, output);
+        }
+    }
 
-        mustache::mustache tmpl(m_CodeModuleTemplate.Get());
-        m_moduleFile.str(std::string());
-        m_moduleFile.clear();
-        m_moduleFile.flush();
-        m_moduleFile << tmpl.render(generateData);
+    static void GenerateBindingCppForEnum(DataType const& type, StringAnsi const& assemblyType, StringAnsi& output)
+    {
+        BindingsCppGenerator gen;
+        ApiEnum en = MakeApiEnumFromReflectedType(type);
+        gen.GenerateCppEnum(en, assemblyType, output);
+    }
+
+    static StringAnsi DeriveAssemblyType(StringAnsi const& assemblyName)
+    {
+        StringAnsi assemblyType = assemblyName;
+        if (assemblyType.StartsWith("SE."))
+        {
+            assemblyType = assemblyType.Substring(3);
+        }
+        return assemblyType;
     }
 
     bool Generator::Generate(ReflectionDatabase const& database, SolutionInfo const& solution)
@@ -394,19 +406,11 @@ namespace SE::ReflectTool
         m_pDatabase = &database;
         for ( auto& prj : solution.projects)
         {
-            // Ignore module less projects
-            if (prj.moduleHeaderID == HeaderID::Invalid )
-            {
-                continue;
-            }
-            
-
             // Ensure the auto generated directory exists
-			String autoGeneratedDirectory = ( prj.path + SE_TEXT("/") + Settings::g_autogeneratedDirectory );
-			String autoGeneratedModuleFile = ( prj.path + SE_TEXT("/") + Settings::g_moduleHeaderParentDirectoryName );
+			String autoGeneratedDirectory = String::Format(SE_TEXT("{0}/{1}"), prj.path, Settings::g_autogeneratedDirectory);
+			String autoGeneratedModuleFile =  String::Format(SE_TEXT("{0}/{1}"), prj.path, Settings::g_moduleHeaderParentDirectoryName);
 			FileSystem::NormalizePath(autoGeneratedDirectory);
 			FileSystem::NormalizePath(autoGeneratedModuleFile);
-//            autoGeneratedDirectory.EnsureDirectoryExists();
 
 			if (!FileSystem::DirectoryExists(autoGeneratedDirectory))
 			{
@@ -415,8 +419,6 @@ namespace SE::ReflectTool
 
             // Generate list of all expected header files in the auto generated directory
             List<String> expectedFiles;
-            //expectedFiles.Add( FileSystem::Path( autoGeneratedDirectory + Reflection::Settings::g_autogeneratedModuleFile ) );
-
             for ( auto const& headerInfo : prj.headerFiles )
             {
                 expectedFiles.Add(headerInfo.GetAutogeneratedTypeInfoFileName(autoGeneratedDirectory));
@@ -439,52 +441,111 @@ namespace SE::ReflectTool
             {
                 auto& headerInfo = prj.headerFiles[dirtyHeaderIdx];
 
-                if (headerInfo.headerId == prj.moduleHeaderID)
-                {
-                    continue;
-                }
-
 				String const typeInfoFilename = headerInfo.GetAutogeneratedTypeInfoFileName(autoGeneratedDirectory);
 
                 // Generate files
                 GenerateTypeInfoFileHeader(headerInfo, solution.path);
 
                 // Get all types for the header
-                List<ReflectedType> typesInHeader;
+                List<DataType> typesInHeader;
                 m_pDatabase->GetAllTypesForHeader( headerInfo.headerId, typesInHeader );
+
+                // Check if any type in this header has binding info
+                bool headerHasBinding = false;
+                for ( auto& type : typesInHeader )
+                {
+                    if (type.isAPI)
+                    {
+                        headerHasBinding = true;
+                        break;
+                    }
+                }
+                if (headerHasBinding)
+                {
+                    m_typeInfoFileHasBinding = true;
+                    AppendBindingIncludesIfNeeded();
+                }
+
+                // Derive assembly type for binding code
+                StringAnsi assemblyType;
+                if (headerHasBinding)
+                {
+                    for ( auto& type : typesInHeader )
+                    {
+                        if (type.isAPI && !type.bindingInfo.assemblyName.IsEmpty())
+                        {
+                            assemblyType = DeriveAssemblyType(type.bindingInfo.assemblyName);
+                        }
+                    }
+                }
+
+                if (headerHasBinding)
+                {
+                    m_typeInfoFile << "namespace SE {\n";
+                    m_typeInfoFile << "extern \"C\" BinaryModule* GetBinaryModule" << assemblyType.Get() << "();\n";
+                    m_typeInfoFile << "}\n";
+                }
 
                 for ( auto& type : typesInHeader )
                 {
                     // Generate enum info
                     if (type.IsEnum())
                     {
-                        CppGenerateEnum(this, m_typeInfoFile, prj.exportMacro, type, m_CodeCppEnumTemplate.Get());
+                        if (type.isReflect)
+                        {
+                            CppGenerateEnum(this, m_typeInfoFile, prj.exportMacro, type, m_CodeCppEnumTemplate.Get());
+                        }
+
+                        // Append C++ binding code for API_ENUM
+                        if (type.isAPI)
+                        {
+                            StringAnsi bindingOutput;
+                            GenerateBindingCppForEnum(type, assemblyType, bindingOutput);
+                            m_typeInfoFile << std::string(bindingOutput.Get());
+                        }
                     }
                     // Generate meta info
                     else if (type.IsMeta())
                     {
                         CppGenerateMeta(this, database, m_typeInfoFile, type, m_CodeCppMetaTemplate.Get());
                     }
-                    else // Generate type info
+                    // Generate type info
+                    else
                     {
-                        if (type.parentTypeID == StringID::Invalid )
+                        // API-only types (HasBinding but no parent) skip TTypeCompositeInfo
+                        if (type.isAPI && type.parentTypeID == StringID::Invalid)
                         {
-							StringAnsi const fullTypeName = type.namespaceName + type.name;
-                            return LogError( "Invalid parent hierarchy for type {0}, all registered types must derived from a registered type.", fullTypeName);
+                            StringAnsi bindingOutput;
+                            GenerateBindingCppForType(type, assemblyType, bindingOutput);
+                            m_typeInfoFile << std::string(bindingOutput.Get());
+                            continue;
                         }
 
-                        auto pTypeDesc = m_pDatabase->GetType( type.parentTypeID );
-                        ENGINE_ASSERT( pTypeDesc != nullptr );
+                        if (type.parentTypeID == StringID::Invalid )
+                        {
+                            return LogError( "Invalid parent hierarchy for type {0}::{1}, all registered types must derived from a registered type.", type.namespaceName, type.name);
+                        }
 
-                        CppGenerateType(this, database, m_typeInfoFile, prj.exportMacro, type, *pTypeDesc, m_CodeCppClassTemplate.Get());
+                        if (type.isReflect)
+                        {
+                            auto pTypeDesc = m_pDatabase->GetType( type.parentTypeID );
+                            ENGINE_ASSERT( pTypeDesc != nullptr );
+
+                            CppGenerateType(this, database, m_typeInfoFile, prj.exportMacro, type, *pTypeDesc, m_CodeCppClassTemplate.Get());
+                        }
+
+                        // Append C++ binding code for API_CLASS/API_STRUCT
+                        if (type.isAPI)
+                        {
+                            StringAnsi bindingOutput;
+                            GenerateBindingCppForType(type, assemblyType, bindingOutput);
+                            m_typeInfoFile << std::string(bindingOutput.Get());
+                       }
                     }
                 }
 
                 // Save generated file
-                if (!SaveStreamToFile(typeInfoFilename, m_typeInfoFile) )
-                {
-                    return LogError( "Could not save typeinfo file to disk: {0}", typeInfoFilename);
-                }
+                SaveStreamToFile(typeInfoFilename, m_typeInfoFile);
             }
 
             // Get project info from database as that will contain all necessary info like module class name
@@ -496,7 +557,7 @@ namespace SE::ReflectTool
             ENGINE_ASSERT( prj.id == pProjectDesc->id );
 
             // Get all types in project
-			List<ReflectedType> typesInProject;
+			List<DataType> typesInProject;
             m_pDatabase->GetAllTypesForProject(pProjectDesc->id, typesInProject);
             if (!SortTypesByDependencies( typesInProject))
             {
@@ -506,45 +567,177 @@ namespace SE::ReflectTool
             // Generate and save the module file
             GenerateModuleCodeFile(database, *pProjectDesc, typesInProject);
 
-			String const module_cpp = autoGeneratedModuleFile + SE_TEXT("/") + pProjectDesc->moduleClassName + Settings::g_autogeneratedModuleFileSuffix;
-            if (!SaveStreamToFile(module_cpp, m_moduleFile))
+			String const module_cpp = String::Format(SE_TEXT("{0}/{1}{2}"), autoGeneratedModuleFile, pProjectDesc->moduleClassName, StringView(Settings::g_autogeneratedModuleFileSuffix));
+            SaveStreamToFile(module_cpp, m_moduleFile);
+        }
+
+        // Generate C# bindings from unified data model
+        //-------------------------------------------------------------------------
+        {
+            std::cout << " * Generating C# Bindings - ";
+            Milliseconds csharpTime = 0;
             {
-                return LogError("Could not save module file to disk: {0}", module_cpp);
+                ScopedTimer<PlatformClock> timer(csharpTime);
+
+                BindingsCSharpGenerator csharpGen;
+
+                for (auto& prj : solution.projects)
+                {
+                    ProjectInfo const* pProjectDesc = m_pDatabase->GetProjectDesc(prj.id);
+                    if (pProjectDesc == nullptr)
+                    {
+                        continue;
+                    }
+
+                    List<DataType> typesInProject;
+                    m_pDatabase->GetAllTypesForProject(pProjectDesc->id, typesInProject);
+
+                    // Build BindingsHeaderInfo from ReflectedTypes with binding data
+                    Dictionary<HeaderID, BindingsHeaderInfo> headersByHeaderID;
+
+                    for (auto& type : typesInProject)
+                    {
+                        if (!type.isAPI)
+                            continue;
+
+                        auto& info = headersByHeaderID[type.headerID];
+                        if (info.assemblyName.IsEmpty())
+                        {
+                            info.assemblyName = type.bindingInfo.assemblyName;
+                            info.assemblyDir  = type.bindingInfo.assemblyDir;
+                            // Find header file path
+                            HeaderInfo const* pHdr = m_pDatabase->GetHeaderDesc(type.headerID);
+                            if (pHdr)
+                            {
+                                info.filePath = pHdr->filePath;
+                            }
+                        }
+
+                        if (type.IsEnum())
+                        {
+                            ApiEnum en = MakeApiEnumFromReflectedType(type);
+                            info.enums.Add(en);
+                        }
+                        else
+                        {
+                            ApiClass cls = MakeApiClassFromReflectedType(type);
+                            info.classes.Add(cls);
+                        }
+                    }
+
+                    // Generate C# files per header
+                    for (auto& pair : headersByHeaderID)
+                    {
+                        BindingsHeaderInfo& hdrInfo = pair.Value;
+                        if (!csharpGen.Generate(hdrInfo, solution.path))
+                        {
+                            std::cout << "Warning: C# generation failed for header: " << hdrInfo.filePath.Get() << std::endl;
+                        }
+                    }
+
+                    // Generate binary module files
+                    /*BindingsCppGenerator cppGen;
+                    BinaryModuleInfo modInfo;
+                    modInfo.name = pProjectDesc->name.ToStringAnsi();
+                    modInfo.assemblyType = DeriveAssemblyType(modInfo.name);
+                    modInfo.assemblyDir = pProjectDesc->path.ToStringAnsi();
+                    for (auto& pair : headersByHeaderID)
+                    {
+                        modInfo.headers.Add(&pair.Value);
+                    }
+                    if (!modInfo.headers.IsEmpty())
+                    {
+                        cppGen.GenerateBinaryModule(modInfo, solution.path);
+                    }*/
+                }
+            }
+            std::cout << "Complete! ( " << (float)csharpTime << "ms )" << std::endl;
+        }
+
+        return true;
+    }
+
+    void Generator::GenerateModuleCodeFile(ReflectionDatabase const& database, ProjectInfo const& prj, List<DataType> const& typesInModule)
+    {
+        mustache::data generateData;
+
+        //-------------------------------------------------------------------------
+        // Includes
+
+        List<String> autoGeneratedFiles;
+		String autoGeneratedDirectory = String(prj.path + SE_TEXT("/") + Settings::g_autogeneratedDirectory);
+		FileSystem::NormalizePath(autoGeneratedDirectory);
+		FileSystem::DirectoryGetFiles(autoGeneratedFiles, autoGeneratedDirectory, SE_TEXT("*.h"), DirectorySearchOption::TopOnly);
+
+        mustache::data includeFileListData(mustache::data::type::list);
+        for (auto& file : autoGeneratedFiles)
+        {
+            mustache::data includeFile;
+            includeFile.set("includeFile", std::string(file.ToStringAnsi().Get()));
+            includeFileListData.push_back(includeFile);
+        }
+        generateData.set("includeFileList", includeFileListData);
+
+        //-------------------------------------------------------------------------
+        // Registration functions
+
+        generateData.set("moduleClassName", std::string(prj.moduleClassName.ToStringAnsi().Get()));
+
+        mustache::data registrationTypeListData(mustache::data::type::list);
+        mustache::data registrationEnumListData(mustache::data::type::list);
+        mustache::data registrationMetaListData(mustache::data::type::list);
+
+        bool hasBinding = false;
+        for ( auto& type : typesInModule )
+        {
+            mustache::data registrationTypeData;
+            if (type.isDevOnly)
+            {
+                registrationTypeData.set("isDevOnlyBegin", "#ifdef SGE_DEVELOPMENT");
+                registrationTypeData.set("isDevOnlyEnd", "#endif");
+            }
+            registrationTypeData.set("registerNamespace", std::string(type.namespaceName.Get()));
+            registrationTypeData.set("registerName", std::string(type.name.Get()));
+
+            if (type.IsEnum())
+            {
+                registrationEnumListData.push_back(registrationTypeData);
+            }
+            else if (type.IsMeta())
+            {
+                registrationMetaListData.push_back(registrationTypeData);
+            }
+            else
+            {
+                registrationTypeListData.push_back(registrationTypeData);
+            }
+
+            if (type.isAPI)
+            {
+                hasBinding = true;
             }
         }
 
-        // Generate and save module type registration header
+        generateData.set("compositeTypeList", registrationTypeListData);
+        generateData.set("enumTypeList", registrationEnumListData);
+        generateData.set("metaTypeList", registrationMetaListData);
+
+
+        if (hasBinding)
+        {
+            std::string assemblyType = std::string(DeriveAssemblyType(prj.name.ToStringAnsi()).Get());
+            generateData.set("assemblyType", assemblyType);
+            generateData.set("modeName", std::string(prj.name.ToStringAnsi().Get()));
+        }
+
+
         //-------------------------------------------------------------------------
-
-        /*
-        if (!GenerateTypeRegistrationHeaderFiles(database, solution, m_engineTypeRegistrationFile, TypeRegistrationHeaderType::Engine, m_CodeTypeRegistrationTemplate))
-        {
-            return LogError( "Could not generate engine type registration header!" );
-        }
-
-        if (!GenerateTypeRegistrationHeaderFiles(database, solution, m_toolsTypeRegistrationFile, TypeRegistrationHeaderType::Tools, m_CodeTypeRegistrationTemplate))
-        {
-            return LogError( "Could not generate tools type registration header!" );
-        }
-
-        //-------------------------------------------------------------------------
-
-        FileSystem::Path const autoGeneratedPath = solution.m_path + Reflection::Settings::g_globalAutoGeneratedDirectory;
-        FileSystem::Path const engineTypeRegistration_h = autoGeneratedPath + Reflection::Settings::g_engineTypeRegistrationHeaderPath;
-        FileSystem::Path const toolsTypeRegistration_h = autoGeneratedPath + Reflection::Settings::g_toolsTypeRegistrationHeaderPath;
-
-        autoGeneratedPath.EnsureDirectoryExists();
-        if (!SaveStreamToFile(engineTypeRegistration_h, m_engineTypeRegistrationFile))
-        {
-            return LogError( "Could not save type registration header to disk: %s", engineTypeRegistration_h.c_str() );
-        }
-
-        autoGeneratedPath.EnsureDirectoryExists();
-        if (!SaveStreamToFile(toolsTypeRegistration_h, m_toolsTypeRegistrationFile))
-        {
-            return LogError( "Could not save type registration header to disk: %s", toolsTypeRegistration_h.c_str() );
-        }
-        */
-        return true;
+        // generate
+        mustache::mustache tmpl(m_CodeModuleTemplate.Get());
+        m_moduleFile.str(std::string());
+        m_moduleFile.clear();
+        m_moduleFile.flush();
+        m_moduleFile << tmpl.render(generateData);
     }
+
 }

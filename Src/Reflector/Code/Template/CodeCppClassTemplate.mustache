@@ -12,26 +12,26 @@
 namespace SE
 {
     template<>
-    class {{exportMacro}} TTypeCompositeInfo<::{{namespace}}{{typeName}}> final : public TypeCompositeInfo
+    class {{exportMacro}} TTypeCompositeInfo<::{{namespace}}::{{typeName}}> final : public TypeCompositeInfo
     {
-       static ::{{namespace}}{{typeName}} const* s_pDefaultInstance_{{typeIDUint}};
+       static ::{{namespace}}::{{typeName}} const* s_pDefaultInstance_{{typeIDUint}};
 
     public:
         static void RegisterType()
         {
             {{#IsNotAbstract}}
-            s_pDefaultInstance_{{typeIDUint}} = New<::{{namespace}}{{typeName}}>(nullptr);{{/IsNotAbstract}}
+            s_pDefaultInstance_{{typeIDUint}} = New<::{{namespace}}::{{typeName}}>(nullptr);{{/IsNotAbstract}}
 
-            ::{{namespace}}{{typeName}}::s_pTypeInfo = New<TTypeCompositeInfo<::{{namespace}}{{typeName}}>>(s_pDefaultInstance_{{typeIDUint}});
-            Types::RegisterType(::{{namespace}}{{typeName}}::s_pTypeInfo);
+            ::{{namespace}}::{{typeName}}::s_pTypeInfo = New<TTypeCompositeInfo<::{{namespace}}::{{typeName}}>>(s_pDefaultInstance_{{typeIDUint}});
+            Types::RegisterType(::{{namespace}}::{{typeName}}::s_pTypeInfo);
         }
 
         static void UnregisterType()
         {
-            Types::UnregisterType(::{{namespace}}{{typeName}}::s_pTypeInfo);
+            Types::UnregisterType(::{{namespace}}::{{typeName}}::s_pTypeInfo);
             {{#IsNotAbstract}}// Destroy default type instance
-            Delete(const_cast<::{{namespace}}{{typeName}}*>(s_pDefaultInstance_{{typeIDUint}}));{{/IsNotAbstract}}
-            Delete(const_cast<TypeCompositeInfo*>(::{{namespace}}{{typeName}}::s_pTypeInfo));
+            Delete(const_cast<::{{namespace}}::{{typeName}}*>(s_pDefaultInstance_{{typeIDUint}}));{{/IsNotAbstract}}
+            Delete(const_cast<TypeCompositeInfo*>(::{{namespace}}::{{typeName}}::s_pTypeInfo));
         }
 
     public:
@@ -42,11 +42,11 @@ namespace SE
         TTypeCompositeInfo(IType const* pDefaultInstance)
         {
             {{#ConstructorMethod}}// Create type info
-            id = TypeID(SE_TEXT("{{namespace}}{{typeName}}"));
-            size = sizeof(::{{namespace}}{{typeName}});
-            alignment = alignof(::{{namespace}}{{typeName}});
+            id = TypeID(SE_TEXT("{{namespace}}::{{typeName}}"));
+            size = sizeof(::{{namespace}}::{{typeName}});
+            alignment = alignof(::{{namespace}}::{{typeName}});
             name = SE_TEXT("{{typeName}}");
-            fullName = SE_TEXT("{{namespace}}{{typeName}}");
+            fullName = SE_TEXT("{{namespace}}::{{typeName}}");
 
             // Add type metadata
             isAbstract = {{isAbstract}};
@@ -60,10 +60,10 @@ namespace SE
 
             // Add parent info
             // Parent types
-            pParentTypeInfo = ::{{parentTypeNamespace}}{{parentTypeName}}::s_pTypeInfo;
+            pParentTypeInfo = ::{{parentTypeNamespace}}::{{parentTypeName}}::s_pTypeInfo;
 
             {{#isNotAbstract}}// Add properties
-            auto pActualDefaultInstance = reinterpret_cast<::{{namespace}}{{typeName}} const*>(pDefaultInstance);{{/isNotAbstract}}
+            auto pActualDefaultInstance = reinterpret_cast<::{{namespace}}::{{typeName}} const*>(pDefaultInstance);{{/isNotAbstract}}
 
             TypeProperty* propertyInfo = New<TypeProperty>();
             TypeID metaTypeID;
@@ -80,7 +80,7 @@ namespace SE
 
             // Abstract types cannot have default values since they cannot be instantiated
             {{#propertieIsNotAbstract}}propertyInfo->pDefaultValue = &pActualDefaultInstance->{{propertieName}};
-            propertyInfo->offset = offsetof(::{{namespace}}{{typeName}}, {{propertieName}});
+            propertyInfo->offset = offsetof(::{{namespace}}::{{typeName}}, {{propertieName}});
 
             {{#propertieDynamicArray}}propertyInfo->pDefaultArrayData = pActualDefaultInstance->{{propertieName}}.Get();
             propertyInfo->arraySize = (int32) pActualDefaultInstance->{{propertieName}}.Count();
@@ -102,8 +102,8 @@ namespace SE
         virtual IType* CreateType() const override final
         {
             {{#CreationMethod}}{{#IsNotAbstract}}
-            auto pMemory = PlatformAllocator::Allocate(sizeof(::{{namespace}}{{typeName}}), alignof(::{{namespace}}{{typeName}}));
-            return new (pMemory) ::{{namespace}}{{typeName}}(nullptr);{{/IsNotAbstract}}
+            auto pMemory = PlatformAllocator::Allocate(sizeof(::{{namespace}}::{{typeName}}), alignof(::{{namespace}}::{{typeName}}));
+            return new (pMemory) ::{{namespace}}::{{typeName}}(nullptr);{{/IsNotAbstract}}
             {{^IsNotAbstract}}
             ENGINE_UNREACHABLE_CODE();
             return nullptr;{{/IsNotAbstract}}{{/CreationMethod}}
@@ -112,7 +112,7 @@ namespace SE
         virtual void CreateTypeInPlace( IType* pAllocatedMemory ) const override final
         {
             {{#InPlaceCreationMethod}}{{#IsNotAbstract}}ENGINE_ASSERT( pAllocatedMemory != nullptr );
-            new (pAllocatedMemory) ::{{namespace}}{{typeName}}(nullptr);{{/IsNotAbstract}}{{^IsNotAbstract}}
+            new (pAllocatedMemory) ::{{namespace}}::{{typeName}}(nullptr);{{/IsNotAbstract}}{{^IsNotAbstract}}
             ENGINE_UNREACHABLE_CODE(); // Error! Trying to instantiate an abstract type!{{/IsNotAbstract}}{{/InPlaceCreationMethod}}
          }
 
@@ -145,7 +145,7 @@ namespace SE
 
         virtual uint8* GetArrayElementDataPtr(IType* pType, uint32 arrayID, int64 arrayIdx) const override final
         {
-            {{#ArrayElementDataPtrMethod}}auto pActualType = reinterpret_cast<::{{namespace}}{{typeName}}*>(pType);
+            {{#ArrayElementDataPtrMethod}}auto pActualType = reinterpret_cast<::{{namespace}}::{{typeName}}*>(pType);
             {{#propertyDesc}}{{isDevOnlyBegin}}
             {{#DynamicArray}}if ( arrayID == {{propertyID}})
             {
@@ -167,7 +167,7 @@ namespace SE
 
         virtual int64 GetArraySize( IType const* pTypeInstance, uint32 arrayID ) const override final
         {
-            {{#ArraySizeMethod}}auto pActualType = reinterpret_cast<::{{namespace}}{{typeName}} const*>(pTypeInstance);
+            {{#ArraySizeMethod}}auto pActualType = reinterpret_cast<::{{namespace}}::{{typeName}} const*>(pTypeInstance);
             ENGINE_ASSERT(pActualType != nullptr);{{#propertyDesc}}{{isDevOnlyBegin}}
             {{#DynamicArray}}if (arrayID == {{propertyID}})
             {
@@ -196,7 +196,7 @@ namespace SE
 
         virtual void ClearArray(IType* pTypeInstance, uint32 arrayID) const override final
         {
-            {{#ArrayClearMethod}}auto pActualType = reinterpret_cast<::{{namespace}}{{typeName}}*>(pTypeInstance);
+            {{#ArrayClearMethod}}auto pActualType = reinterpret_cast<::{{namespace}}::{{typeName}}*>(pTypeInstance);
             ENGINE_ASSERT(pActualType != nullptr);
             {{#propertyDesc}}{{isDevOnlyBegin}}
             if (arrayID == {{propertyID}})
@@ -210,7 +210,7 @@ namespace SE
 
         virtual void AddArrayElement(IType* pTypeInstance, uint32 arrayID) const override final
         {
-            {{#AddArrayElementMethod}}auto pActualType = reinterpret_cast<::{{namespace}}{{typeName}}*>(pTypeInstance);
+            {{#AddArrayElementMethod}}auto pActualType = reinterpret_cast<::{{namespace}}::{{typeName}}*>(pTypeInstance);
             ENGINE_ASSERT(pActualType != nullptr);
             {{#propertyDesc}}{{isDevOnlyBegin}}
             if (arrayID == {{propertyID}})
@@ -224,7 +224,7 @@ namespace SE
 
         virtual void InsertArrayElement(IType* pTypeInstance, uint32 arrayID, int64 insertionIdx) const override final
         {
-            {{#InsertArrayElementMethod}}auto pActualType = reinterpret_cast<::{{namespace}}{{typeName}}*>(pTypeInstance);
+            {{#InsertArrayElementMethod}}auto pActualType = reinterpret_cast<::{{namespace}}::{{typeName}}*>(pTypeInstance);
             ENGINE_ASSERT(pActualType != nullptr);
             {{#propertyDesc}}{{isDevOnlyBegin}}
             if (arrayID == {{propertyID}})
@@ -238,7 +238,7 @@ namespace SE
 
         virtual void MoveArrayElement(IType* pTypeInstance, uint32 arrayID, int64 originalElementIdx, int64 newElementIdx) const override final
         {
-            {{#MoveArrayElementMethod}}auto pActualType = reinterpret_cast<::{{namespace}}{{typeName}}*>(pTypeInstance);
+            {{#MoveArrayElementMethod}}auto pActualType = reinterpret_cast<::{{namespace}}::{{typeName}}*>(pTypeInstance);
             ENGINE_ASSERT(pActualType != nullptr);
             {{#propertyDesc}}{{isDevOnlyBegin}}
             if (arrayID == {{propertyID}})
@@ -254,7 +254,7 @@ namespace SE
 
         virtual void RemoveArrayElement(IType* pTypeInstance, uint32 arrayID, int64 elementIdx) const override final
         {
-            {{#RemoveArrayElementMethod}}auto pActualType = reinterpret_cast<::{{namespace}}{{typeName}}*>(pTypeInstance);
+            {{#RemoveArrayElementMethod}}auto pActualType = reinterpret_cast<::{{namespace}}::{{typeName}}*>(pTypeInstance);
             ENGINE_ASSERT(pActualType != nullptr);
             {{#propertyDesc}}{{isDevOnlyBegin}}
             if (arrayID == {{propertyID}})
@@ -273,8 +273,8 @@ namespace SE
 
         virtual bool AreAllPropertyValuesEqual( IType const* pTypeInstance, IType const* pOtherTypeInstance ) const override final
         {
-            {{#AreAllPropertyValuesEqual}}auto pType = reinterpret_cast<::{{namespace}}{{typeName}} const*>(pTypeInstance);
-            auto pOtherType = reinterpret_cast<::{{namespace}}{{typeName}} const*>(pOtherTypeInstance);
+            {{#AreAllPropertyValuesEqual}}auto pType = reinterpret_cast<::{{namespace}}::{{typeName}} const*>(pTypeInstance);
+            auto pOtherType = reinterpret_cast<::{{namespace}}::{{typeName}} const*>(pOtherTypeInstance);
             {{#propertyDesc}}{{isDevOnlyBegin}}
             if(!IsPropertyValueEqual(pType, pOtherType, {{propertyID}}))
             {
@@ -286,8 +286,8 @@ namespace SE
 
         virtual bool IsPropertyValueEqual(IType const* pTypeInstance, IType const* pOtherTypeInstance, uint32 propertyID, int32 arrayIdx = -1) const override final
         {
-            {{#IsPropertyEqualMethod}}auto pType = reinterpret_cast<::{{namespace}}{{typeName}} const*>(pTypeInstance);
-            auto pOtherType = reinterpret_cast<::{{namespace}}{{typeName}} const*>(pOtherTypeInstance);
+            {{#IsPropertyEqualMethod}}auto pType = reinterpret_cast<::{{namespace}}::{{typeName}} const*>(pTypeInstance);
+            auto pOtherType = reinterpret_cast<::{{namespace}}::{{typeName}} const*>(pOtherTypeInstance);
             {{#propertyDesc}}{{isDevOnlyBegin}}
             if (propertyID == {{propertyID}})
             {
@@ -331,8 +331,8 @@ namespace SE
 
         virtual void ResetToDefault( IType* pTypeInstance, uint32 propertyID ) const override final
         {
-            {{#SetToDefaultValueMethod}}auto pDefaultType = reinterpret_cast<::{{namespace}}{{typeName}} const*>(s_pDefaultInstance_{{typeIDUint}});
-            auto pActualType = reinterpret_cast<::{{namespace}}{{typeName}}*>(pTypeInstance);
+            {{#SetToDefaultValueMethod}}auto pDefaultType = reinterpret_cast<::{{namespace}}::{{typeName}} const*>(s_pDefaultInstance_{{typeIDUint}});
+            auto pActualType = reinterpret_cast<::{{namespace}}::{{typeName}}*>(pTypeInstance);
             ENGINE_ASSERT(pActualType != nullptr && pDefaultType != nullptr);
             {{#propertyDesc}}{{isDevOnlyBegin}}
             if (propertyID == {{propertyID}})
@@ -346,15 +346,15 @@ namespace SE
 
         virtual bool AreAllPropertiesSetToDefault(IType const *pTypeInstance) const override
         {
-            return AreAllPropertyValuesEqual(pTypeInstance, TTypeCompositeInfo<::{{namespace}}{{typeName}}>::s_pDefaultInstance_{{typeIDUint}});
+            return AreAllPropertyValuesEqual(pTypeInstance, TTypeCompositeInfo<::{{namespace}}::{{typeName}}>::s_pDefaultInstance_{{typeIDUint}});
         }
 
         virtual bool IsPropertyValueSetToDefault(IType const *pTypeInstance, uint32 propertyID, int32_t arrayIdx = -1) const override
         {
-            return IsPropertyValueEqual(pTypeInstance, TTypeCompositeInfo<::{{namespace}}{{typeName}}>::s_pDefaultInstance_{{typeIDUint}}, propertyID, arrayIdx);
+            return IsPropertyValueEqual(pTypeInstance, TTypeCompositeInfo<::{{namespace}}::{{typeName}}>::s_pDefaultInstance_{{typeIDUint}}, propertyID, arrayIdx);
         }
     };
 
-    ::{{namespace}}{{typeName}} const* TTypeCompositeInfo<::{{namespace}}{{typeName}}>::s_pDefaultInstance_{{typeIDUint}} = nullptr;
+    ::{{namespace}}::{{typeName}} const* TTypeCompositeInfo<::{{namespace}}::{{typeName}}>::s_pDefaultInstance_{{typeIDUint}} = nullptr;
 }
 {{isDevOnlyEnd}}

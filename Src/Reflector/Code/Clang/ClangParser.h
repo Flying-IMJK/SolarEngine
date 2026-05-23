@@ -2,7 +2,6 @@
 
 #include "ClangParserContext.h"
 #include "Core/Utilities/Time.h"
-
 //-------------------------------------------------------------------------
 
 namespace SE::ReflectTool
@@ -11,20 +10,12 @@ namespace SE::ReflectTool
     {
     public:
 
-        enum Pass
-        {
-            DevToolsPass,
-            NoDevToolsPass
-        };
-
-    public:
-
         ClangParser( SolutionInfo* pSolution, ReflectionDatabase* pDatabase, String const& reflectionDataPath );
 
         inline Milliseconds GetParsingTime() const { return m_totalParsingTime; }
         inline Milliseconds GetVisitingTime() const { return m_totalVisitingTime; }
 
-        bool Parse(List<HeaderInfo*> const& headers, Pass pass );
+        bool Parse(List<HeaderInfo*> const& headers);
 		StringAnsiView GetErrorMessage() const { return m_context.GetErrorMessage(); }
 
     private:

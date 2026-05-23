@@ -9,5 +9,5 @@ namespace SE::ReflectTool
 {
     class Generator;
 
-    void CppGenerateEnum(Generator* generator, std::stringstream &codeFile, String const &exportMacro, ReflectedType const &type, std::string templateStr);
+    void CppGenerateEnum(Generator* generator, std::stringstream &codeFile, String const &exportMacro, DataType const &type, std::string templateStr);
 }
