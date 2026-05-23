@@ -1,20 +1,14 @@
-#include "ClangVisitors.h"
+#include "ClangVisitors_Structure.h"
+#include "ClangVisitors_Enum.h"
 #include "../ReflectorSettingsAndUtils.h"
 #include "../Database/ReflectionDatabase.h"
 #include "Core/TypeSystem/Types.h"
-
-//-------------------------------------------------------------------------
-
-#include <string>
+#include "ClangVisitors_Macro.h"
 
 //-------------------------------------------------------------------------
 
 namespace SE::ReflectTool
 {
-    // -------------------------------------------------------------------------
-    // Binding extraction helpers
-    // -------------------------------------------------------------------------
-
     struct FieldTypeInfo
     {
         void GetFlattenedTemplateArgs(String &flattenedArgs) const
@@ -59,7 +53,7 @@ namespace SE::ReflectTool
         bool isConstantArray;
     };
 
-    static void GetFieldTypeInfo(ClangParserContext *pContext, DataType *pType, CXType type, FieldTypeInfo &info)
+    static void GetFieldTypeInfo(ClangParserContext *pContext, ReflectedType *pType, CXType type, FieldTypeInfo &info)
     {
         clang::QualType const fieldQualType = ClangUtils::GetQualType(type);
 
@@ -89,9 +83,9 @@ namespace SE::ReflectTool
         }
     }
 
-    static void GetAllDerivedProperties(ReflectionDatabase const *pDatabase, StringID parentTypeID, List<DataProperty> &results)
+    static void GetAllDerivedProperties(ReflectionDatabase const *pDatabase, StringID parentTypeID, List<ReflectedProperty> &results)
     {
-        DataType const *pParentDesc = pDatabase->GetType(parentTypeID);
+        ReflectedType const *pParentDesc = pDatabase->GetType(parentTypeID);
         if (pParentDesc != nullptr)
         {
             GetAllDerivedProperties(pDatabase, pParentDesc->parentTypeID, results);
@@ -102,7 +96,7 @@ namespace SE::ReflectTool
         }
     }
 
-    static void VisitConstructor(CXCursor cr, DataType *pType)
+    static void VisitConstructor(CXCursor cr, ReflectedType *pType)
     {
         /*CXType funcType = clang_getCursorType(cr);
         int numArgs = clang_getNumArgTypes(funcType);
@@ -160,365 +154,19 @@ namespace SE::ReflectTool
         pType->m_constructors.emplace_back(constructor);*/
     }
 
-    static bool VisitField(CXCursor cr, ClangParserContext *pContext, DataType *pClass, uint32_t const declStartPosition, int const lineNumber)
-    {
-        ReflectionMacro propertyReflectionMacro;
-        bool foundPropertyMacro = pContext->FindReflectionMacroForProperty(pClass->headerID, declStartPosition, propertyReflectionMacro);
-        if (foundPropertyMacro)
-        {
-            pClass->properties.Add(DataProperty(ClangUtils::GetCursorDisplayName(cr).ToStringAnsi(), lineNumber));
-            DataProperty &propertyDesc = pClass->properties.Last();
-
-            // Try read any user comments for this field
-            CXString const commentString = clang_Cursor_getBriefCommentText(cr);
-            if (commentString.data != nullptr)
-            {
-                propertyDesc.description = clang_getCString(commentString);
-                propertyDesc.description.Replace("\r", " ");
-                propertyDesc.description.FirstTrim();
-                propertyDesc.description.LastTrim();
-            }
-            clang_disposeString(commentString);
-
-            // If we dont have an explicit comment for the property, try to get it from the macro declaration
-            if (propertyDesc.description.IsEmpty())
-            {
-                propertyDesc.description = propertyReflectionMacro.macroComment.ToStringAnsi();
-            }
-
-            auto type = clang_getCursorType(cr);
-            auto const pFieldQualType = ClangUtils::GetQualType(type);
-            auto typeSpelling = ClangUtils::GetString(clang_getTypeSpelling(type));
-
-            // Check if template parameter
-            if (pFieldQualType->isTemplateTypeParmType())
-            {
-                pContext->LogError(SE_TEXT("Cannot expose template argument member ({0}) in class ({1})!"), propertyDesc.name, pClass->name);
-                return false;
-            }
-
-            // Check if this field is a c-style array
-            //-------------------------------------------------------------------------
-            if (pFieldQualType->isArrayType())
-            {
-                if (pFieldQualType->isVariableArrayType() || pFieldQualType->isIncompleteArrayType())
-                {
-                    pContext->LogError(SE_TEXT("Variable size array properties are not supported! Please change to List or fixed size!"));
-                    return false;
-                }
-
-                auto const pArrayType = (clang::ConstantArrayType *)pFieldQualType.getTypePtr();
-                propertyDesc.flags.SetFlag(TypeProperty::Flags::IsArray);
-                propertyDesc.arraySize = (int32_t)pArrayType->getSize().getSExtValue();
-
-                // Set property type to array type
-                type = clang_getElementType(type);
-            }
-
-            // Get field typename
-            //-------------------------------------------------------------------------
-
-            FieldTypeInfo fieldTypeInfo;
-            GetFieldTypeInfo(pContext, pClass, type, fieldTypeInfo);
-            ENGINE_ASSERT(!fieldTypeInfo.name.IsEmpty());
-            TypeID fieldTypeID(fieldTypeInfo.name);
-
-            // Additional processing for special types
-            //-------------------------------------------------------------------------
-
-            if (GetCoreTypeID(TypeIDCore::List) == fieldTypeID)
-            {
-                // We need to flag this in advance as we are about to change the field type ID
-                propertyDesc.flags.SetFlag(TypeProperty::Flags::IsDynamicArray);
-
-                // We need to remove the List type from the property info as we allow for templated types to be contained within arrays
-                FieldTypeInfo const &templateTypeInfo = fieldTypeInfo.templateArgs.First();
-                fieldTypeInfo = FieldTypeInfo(templateTypeInfo);
-                fieldTypeID = TypeID(fieldTypeInfo.name);
-
-                if (fieldTypeInfo.isConstantArray)
-                {
-                    pContext->LogError(SE_TEXT("We dont support arrays of arrays. Property: {0} in class: {1}"), propertyDesc.name, pClass->name);
-                    return false;
-                }
-            }
-            else if (StringID(SE_TEXT("::SE::String")) == fieldTypeID)
-            {
-                // We need to clear the template args since we have a type alias and clang is detected the template args for eastl::basic_string
-                fieldTypeInfo.templateArgs.Clear();
-            }
-
-            //-------------------------------------------------------------------------
-            // Set property typename and validate
-            // If it is a templated type, we only support one level of specialization for exposed properties, so flatten the type
-            propertyDesc.typeName = fieldTypeInfo.name.ToStringAnsi();
-            propertyDesc.typeID = fieldTypeID;
-            propertyDesc.metaData = propertyReflectionMacro.macroMetadata.ToStringAnsi();
-
-            if (!fieldTypeInfo.templateArgs.IsEmpty())
-            {
-                String flattenedArgs;
-                fieldTypeInfo.GetFlattenedTemplateArgs(flattenedArgs);
-                propertyDesc.templateArgTypeName = flattenedArgs.ToStringAnsi();
-            }
-
-            // Check for unsupported types
-            //-------------------------------------------------------------------------
-            // Core Types
-            if (IsCoreType(propertyDesc.typeID))
-            {
-                // Check if this field is a generic resource ptr
-                /*                    if (propertyDesc.m_typeID == TypeIDCore::ResourcePtr)
-                                    {
-                                        pContext->LogError(SE_TEXT("Generic resource pointers are not allowed to be exposed, please use a TResourcePtr instead! ( property: {0} in class: {0} )"), propertyDesc.name, pClass->name);
-                                        return CXChildVisit_Break;
-                                    }
-
-                                    if (propertyDesc.m_typeID == TypeIDCore::TResourcePtr && propertyDesc.m_templateArgTypeName == "SE::Resource::IResource")
-                                    {
-                                        pContext->LogError(SE_TEXT("Generic resource pointers ( TResourcePtr<IResource> ) are not allowed to be exposed, please use a specific resource type instead! ( property: {0} in class: {0} )"), propertyDesc.name, pClass->name);
-                                        return CXChildVisit_Break;
-                                    }*/
-
-                // Bit flags
-                /*if (propertyDesc.typeID == TypeIDCore::BitFlags)
-                {
-                    propertyDesc.flags.SetFlag(PropertyInfo::Flags::IsBitFlags);
-                }
-                else if (propertyDesc.typeID == TypeIDCore::TBitFlags)
-                {
-                    propertyDesc.flags.SetFlag(PropertyInfo::Flags::IsBitFlags);
-
-                    // Perform validation on the enum type for the bit-flags
-                    ReflectedType const *pFlagTypeDesc = pContext->m_pDatabase->GetType(propertyDesc.templateArgTypeName.ToString());
-                    if (pFlagTypeDesc == nullptr || !pFlagTypeDesc->IsEnum())
-                    {
-                        pContext->LogError(SE_TEXT("Unsupported type encountered: {0} for bitflags property: {1} in class: {2}"), propertyDesc.typeName, propertyDesc.name, pClass->name);
-                        return CXChildVisit_Break;
-                    }
-                }*/
-
-                // Arrays
-                /*if (propertyDesc.typeID == TypeIDCore::List)
-                {
-                    pContext->LogError(SE_TEXT("We dont support arrays of arrays. Property: {0} in class: {1}"), propertyDesc.name, pClass->name);
-                    return CXChildVisit_Break;
-                }*/
-            }
-            else // Non-Core Types
-            {
-                // Non-core types must have a valid type descriptor
-                DataType const *pPropertyTypeDesc = pContext->pDatabase->GetType(propertyDesc.typeID);
-                if (pPropertyTypeDesc == nullptr)
-                {
-                    pContext->LogError(SE_TEXT("Unsupported type encountered: {0} for property: {1} in class: {2}"), propertyDesc.typeName, propertyDesc.name, pClass->name);
-                    return false;
-                }
-
-                // Check for enum types - bitflags are a special case and are not an enum
-                if (pPropertyTypeDesc->IsEnum())
-                {
-                    propertyDesc.flags.SetFlag(TypeProperty::Flags::IsEnum);
-                }
-                else
-                {
-                    propertyDesc.flags.SetFlag(TypeProperty::Flags::IsStructure);
-                }
-            }
-        }
-
-        // --- Bindings: SE_PROPERTY(API) extraction ---
-        if (pClass->isAPI)
-        {
-            // First check if the already-found reflection macro also carries API
-            if (foundPropertyMacro && propertyReflectionMacro.hasAPI)
-            {
-                CXType fieldType = clang_getCursorType(cr);
-                ApiField field;
-                field.name       = ClangUtils::GetCursorSpellingAnsi(cr);
-                field.cppType    = ClangUtils::GetTypeSpellingAnsi(fieldType);
-                field.isReadOnly = false;
-                field.isStatic   = (clang_Cursor_getStorageClass(cr) == CX_SC_Static);
-                field.arraySize  = 0;
-                field.lineNumber = (int)lineNumber;
-                pClass->bindingInfo.fields.Add(field);
-            }
-            else
-            {
-                ReflectionMacro fieldBindingMacro;
-                if (pContext->FindBindingMacroForMember(pClass->headerID, declStartPosition, ReflectionMacroType::SEProperty, fieldBindingMacro))
-                {
-                    CXType fieldType = clang_getCursorType(cr);
-                    ApiField field;
-                    field.name       = ClangUtils::GetCursorSpellingAnsi(cr);
-                    field.cppType    = ClangUtils::GetTypeSpellingAnsi(fieldType);
-                    field.isReadOnly = false;
-                    field.isStatic   = (clang_Cursor_getStorageClass(cr) == CX_SC_Static);
-                    field.arraySize  = 0;
-                    field.lineNumber = (int)lineNumber;
-                    pClass->bindingInfo.fields.Add(field);
-                }
-            }
-        }
-
-        return true;
-    }
-
-    static bool VisitMethod(CXCursor cr, ClangParserContext *pContext, DataType *pClass, uint32_t const declStartPosition, int const lineNumber)
-    {
-        ReflectionMacro bindingMacro;
-        if (pContext->FindBindingMacroForMember(pClass->headerID, declStartPosition, ReflectionMacroType::SEFunction, bindingMacro))
-        {
-            if (pClass->isAPI)
-            {
-                ApiFunction fn;
-                fn.name       = ClangUtils::GetCursorSpellingAnsi(cr);
-                CXType fnType = clang_getCursorType(cr);
-                CXType retType = clang_getResultType(fnType);
-                fn.returnType = ClangUtils::GetTypeSpellingAnsi(retType);
-                fn.isStatic   = (clang_CXXMethod_isStatic(cr) != 0);
-                fn.isVirtual  = (clang_CXXMethod_isVirtual(cr) != 0);
-                fn.isConst    = (clang_CXXMethod_isConst(cr) != 0);
-                fn.uniqueName = fn.name;
-                fn.lineNumber = (int)lineNumber;
-                fn.entryPoint = StringAnsi::Format("{0}_{1}", pClass->name.Get(), fn.name.Get());
-
-                int numArgs = clang_Cursor_getNumArguments(cr);
-                for (int i = 0; i < numArgs; ++i)
-                {
-                    CXCursor argCr   = clang_Cursor_getArgument(cr, i);
-                    CXType   argType = clang_getCursorType(argCr);
-
-                    ApiParam param;
-                    param.name    = ClangUtils::GetCursorSpellingAnsi(argCr);
-                    param.cppType = ClangUtils::GetTypeSpellingAnsi(argType);
-
-                    CXType canonical = clang_getCanonicalType(argType);
-                    param.isPointer = (canonical.kind == CXType_Pointer);
-                    param.isRef     = (canonical.kind == CXType_LValueReference ||
-                                       canonical.kind == CXType_RValueReference);
-                    param.isConst   = (clang_isConstQualifiedType(canonical) != 0);
-                    param.isOut     = param.isRef && !param.isConst;
-
-                    fn.params.Add(param);
-                }
-
-                pClass->bindingInfo.functions.Add(fn);
-            }
-        }
-
-        if (pContext->FindBindingMacroForMember(pClass->headerID, declStartPosition, ReflectionMacroType::SEProperty, bindingMacro))
-        {
-            if (pClass->isAPI)
-            {
-                CXType fnType  = clang_getCursorType(cr);
-                CXType retType = clang_getResultType(fnType);
-                StringAnsi retTypeName = ClangUtils::GetTypeSpellingAnsi(retType);
-                StringAnsi fnName = ClangUtils::GetCursorSpellingAnsi(cr);
-
-                bool isGetter = (retTypeName != "void") && (clang_Cursor_getNumArguments(cr) == 0);
-                bool isSetter = (retTypeName == "void") && (clang_Cursor_getNumArguments(cr) == 1);
-
-                if (isGetter)
-                {
-                    StringAnsi propName = fnName;
-                    if (propName.StartsWith("Get"))
-                        propName = propName.Substring(3);
-
-                    ApiProperty* existing = nullptr;
-                    for (int i = 0; i < pClass->bindingInfo.bindingProperties.Count(); ++i)
-                    {
-                        if (pClass->bindingInfo.bindingProperties[i].name == propName)
-                        {
-                            existing = &pClass->bindingInfo.bindingProperties[i];
-                            break;
-                        }
-                    }
-
-                    if (existing)
-                    {
-                        existing->hasGetter  = true;
-                        existing->getterName = fnName;
-                        existing->cppType    = retTypeName;
-                        existing->getterUniqueName = fnName;
-                        existing->getterEntryPoint = StringAnsi::Format("{0}_{1}", pClass->name.Get(), fnName.Get());
-                    }
-                    else
-                    {
-                        ApiProperty prop;
-                        prop.name             = propName;
-                        prop.cppType          = retTypeName;
-                        prop.getterName       = fnName;
-                        prop.getterUniqueName = fnName;
-                        prop.getterEntryPoint = StringAnsi::Format("{0}_{1}", pClass->name.Get(), fnName.Get());
-                        prop.hasGetter  = true;
-                        prop.hasSetter  = false;
-                        prop.getterAccess = AccessLevel::Public;
-                        prop.setterAccess = AccessLevel::Public;
-                        prop.lineNumber = (int)lineNumber;
-                        pClass->bindingInfo.bindingProperties.Add(prop);
-                    }
-                }
-                else if (isSetter)
-                {
-                    StringAnsi propName = fnName;
-                    if (propName.StartsWith("Set"))
-                        propName = propName.Substring(3);
-
-                    ApiProperty* existing = nullptr;
-                    for (int i = 0; i < pClass->bindingInfo.bindingProperties.Count(); ++i)
-                    {
-                        if (pClass->bindingInfo.bindingProperties[i].name == propName)
-                        {
-                            existing = &pClass->bindingInfo.bindingProperties[i];
-                            break;
-                        }
-                    }
-
-                    if (existing)
-                    {
-                        existing->hasSetter  = true;
-                        existing->setterName = fnName;
-                        existing->setterUniqueName = fnName;
-                        existing->setterEntryPoint = StringAnsi::Format("{0}_{1}", pClass->name.Get(), fnName.Get());
-                    }
-                    else
-                    {
-                        CXCursor argCr   = clang_Cursor_getArgument(cr, 0);
-                        CXType   argType = clang_getCursorType(argCr);
-
-                        ApiProperty prop;
-                        prop.name             = propName;
-                        prop.cppType          = ClangUtils::GetTypeSpellingAnsi(argType);
-                        prop.setterName       = fnName;
-                        prop.setterUniqueName = fnName;
-                        prop.setterEntryPoint = StringAnsi::Format("{0}_{1}", pClass->name.Get(), fnName.Get());
-                        prop.hasGetter  = false;
-                        prop.hasSetter  = true;
-                        prop.getterAccess = AccessLevel::Public;
-                        prop.setterAccess = AccessLevel::Public;
-                        prop.lineNumber = (int)lineNumber;
-                        pClass->bindingInfo.bindingProperties.Add(prop);
-                    }
-                }
-            }
-        }
-
-        return true;
-    }
-
     //-------------------------------------------------------------------------
 
     CXChildVisitResult VisitStructureContents(CXCursor cr, CXCursor parent, CXClientData pClientData)
     {
-        ClangParserContext *pContext = static_cast<ClangParserContext *>(pClientData);
-        DataType *pClass = static_cast<DataType *>(pContext->pParentReflectedType);
+        auto pContext = reinterpret_cast<ClangParserContext *>(pClientData);
+        auto pClass = reinterpret_cast<ReflectedType *>(pContext->m_pParentReflectedType);
 
         int const lineNumber = ClangUtils::GetLineNumberForCursor(cr);
-        uint32 const declStartPosition = ClangUtils::GetStartPositionForCursor(cr);
         CXCursorKind kind = clang_getCursorKind(cr);
-
-        if (kind == CXCursor_CXXBaseSpecifier)
+        switch (kind)
+        {
+        // Add base class
+        case CXCursor_CXXBaseSpecifier:
         {
             if (pClass->parentTypeID != StringID::Invalid)
             {
@@ -529,7 +177,7 @@ namespace SE::ReflectTool
 
             // Get qualified base type
             clang::CXXBaseSpecifier *pBaseSpecifier = (clang::CXXBaseSpecifier *)cr.data[0];
-            String fullyQualifiedName;
+			String fullyQualifiedName;
             if (!ClangUtils::GetQualifiedNameForType(pBaseSpecifier->getType(), fullyQualifiedName))
             {
                 pContext->LogError(SE_TEXT("Failed to qualify typename for base class: {0}, base class = {1}"), pClass->name, ClangUtils::GetCursorDisplayName(cr));
@@ -537,7 +185,7 @@ namespace SE::ReflectTool
             }
 
             pClass->parentTypeID = StringID(fullyQualifiedName);
-            GetAllDerivedProperties(pContext->pDatabase, pClass->parentTypeID, pClass->properties);
+            GetAllDerivedProperties(pContext->m_pDatabase, pClass->parentTypeID, pClass->properties);
 
             // Remove duplicate properties added via the parent property traversal - do not change the order of the array
             for (int i = 0; i < pClass->properties.Count(); i++)
@@ -551,68 +199,196 @@ namespace SE::ReflectTool
                     }
                 }
             }
+        }
+        break;
 
-            // Populate binding info fields for base class
-            if (pClass->isAPI)
+        // Extract property info
+        case CXCursor_FieldDecl:
+        {
+            ReflectionMacro propertyReflectionMacro;
+            if (pContext->FindReflectionMacroForProperty(pClass->headerID, lineNumber, propertyReflectionMacro))
             {
-                pClass->bindingInfo.baseClassName = fullyQualifiedName.ToStringAnsi();
+                pClass->properties.Add(ReflectedProperty(ClangUtils::GetCursorDisplayName(cr).ToStringAnsi(), lineNumber));
+                ReflectedProperty &propertyDesc = pClass->properties.Last();
 
-                // Detect if the base class is a ScriptingObject
-                static const char* ScriptingObjectBases[] = {
-                    "SE::ScriptingObject",
-                    "SE::ManagedScriptingObject",
-                    "SE::PersistentScriptingObject",
-                    "SE::BinaryAsset",
-                    "SE::SceneObject",
-                    "SE::Asset",
-                    "SE::Script",
-                    "SE::Actor",
-                };
-
-                StringAnsi baseSimpleName = ClangUtils::GetTypeSpellingAnsi(clang_getCursorType(cr));
-                for (const char* name : ScriptingObjectBases)
+                // Try read any user comments for this field
+                CXString const commentString = clang_Cursor_getBriefCommentText(cr);
+                if (commentString.data != nullptr)
                 {
-                    if (baseSimpleName == name)
-                    {
-                        pClass->bindingInfo.isScriptingObject = true;
-                        break;
-                    }
+                    propertyDesc.description = clang_getCString(commentString);
+					propertyDesc.description.Replace("\r", " ");
+					propertyDesc.description.FirstTrim();
+					propertyDesc.description.LastTrim();
+                }
+                clang_disposeString(commentString);
+
+                // If we dont have an explicit comment for the property, try to get it from the macro declaration
+                if (propertyDesc.description.IsEmpty())
+                {
+                    propertyDesc.description = propertyReflectionMacro.macroComment.ToStringAnsi();
                 }
 
-                // If base class itself is already known as ScriptingObject, propagate
-                if (!pClass->bindingInfo.isScriptingObject)
+                auto type = clang_getCursorType(cr);
+                auto const pFieldQualType = ClangUtils::GetQualType(type);
+                auto typeSpelling = ClangUtils::GetString(clang_getTypeSpelling(type));
+
+                // Check if template parameter
+                if (pFieldQualType->isTemplateTypeParmType())
                 {
-                    DataType const* pBaseType = pContext->pDatabase->GetType(pClass->parentTypeID);
-                    if (pBaseType && pBaseType->isAPI && pBaseType->bindingInfo.isScriptingObject)
+                    pContext->LogError(SE_TEXT("Cannot expose template argument member ({0}) in class ({1})!"), propertyDesc.name, pClass->name);
+                    return CXChildVisit_Break;
+                }
+
+                // Check if this field is a c-style array
+                //-------------------------------------------------------------------------
+
+                if (pFieldQualType->isArrayType())
+                {
+                    if (pFieldQualType->isVariableArrayType() || pFieldQualType->isIncompleteArrayType())
                     {
-                        pClass->bindingInfo.isScriptingObject = true;
+                        pContext->LogError(SE_TEXT("Variable size array properties are not supported! Please change to List or fixed size!"));
+                        return CXChildVisit_Break;
+                    }
+
+                    auto const pArrayType = (clang::ConstantArrayType *)pFieldQualType.getTypePtr();
+                    propertyDesc.flags.SetFlag(TypeProperty::Flags::IsArray);
+                    propertyDesc.arraySize = (int32_t)pArrayType->getSize().getSExtValue();
+
+                    // Set property type to array type
+                    type = clang_getElementType(type);
+                }
+
+                // Get field typename
+                //-------------------------------------------------------------------------
+
+                FieldTypeInfo fieldTypeInfo;
+                GetFieldTypeInfo(pContext, pClass, type, fieldTypeInfo);
+                ENGINE_ASSERT(!fieldTypeInfo.name.IsEmpty());
+                TypeID fieldTypeID(fieldTypeInfo.name);
+
+                // Additional processing for special types
+                //-------------------------------------------------------------------------
+
+                if (GetCoreTypeID(TypeIDCore::List) == fieldTypeID)
+                {
+                    // We need to flag this in advance as we are about to change the field type ID
+                    propertyDesc.flags.SetFlag(TypeProperty::Flags::IsDynamicArray);
+
+                    // We need to remove the List type from the property info as we allow for templated types to be contained within arrays
+                    FieldTypeInfo const &templateTypeInfo = fieldTypeInfo.templateArgs.First();
+                    fieldTypeInfo = FieldTypeInfo(templateTypeInfo);
+                    fieldTypeID = TypeID(fieldTypeInfo.name);
+
+                    if (fieldTypeInfo.isConstantArray)
+                    {
+                        pContext->LogError(SE_TEXT("We dont support arrays of arrays. Property: {0} in class: {1}"), propertyDesc.name, pClass->name);
+                        return CXChildVisit_Break;
+                    }
+                }
+                else if (StringID(SE_TEXT("::SE::String")) == fieldTypeID)
+                {
+                    // We need to clear the template args since we have a type alias and clang is detected the template args for eastl::basic_string
+                    fieldTypeInfo.templateArgs.Clear();
+                }
+
+                //-------------------------------------------------------------------------
+                // Set property typename and validate
+                // If it is a templated type, we only support one level of specialization for exposed properties, so flatten the type
+                propertyDesc.typeName = fieldTypeInfo.name.ToStringAnsi();
+                propertyDesc.typeID = fieldTypeID;
+                propertyDesc.metaData = propertyReflectionMacro.macroContents.ToStringAnsi();
+
+                if (!fieldTypeInfo.templateArgs.IsEmpty())
+                {
+                    String flattenedArgs;
+                    fieldTypeInfo.GetFlattenedTemplateArgs(flattenedArgs);
+                    propertyDesc.templateArgTypeName = flattenedArgs.ToStringAnsi();
+                }
+
+                // Check for unsupported types
+                //-------------------------------------------------------------------------
+                // Core Types
+                if (IsCoreType(propertyDesc.typeID))
+                {
+                    // Check if this field is a generic resource ptr
+                    /*                    if (propertyDesc.m_typeID == TypeIDCore::ResourcePtr)
+                                        {
+                                            pContext->LogError(SE_TEXT("Generic resource pointers are not allowed to be exposed, please use a TResourcePtr instead! ( property: {0} in class: {0} )"), propertyDesc.name, pClass->name);
+                                            return CXChildVisit_Break;
+                                        }
+
+                                        if (propertyDesc.m_typeID == TypeIDCore::TResourcePtr && propertyDesc.m_templateArgTypeName == "SE::Resource::IResource")
+                                        {
+                                            pContext->LogError(SE_TEXT("Generic resource pointers ( TResourcePtr<IResource> ) are not allowed to be exposed, please use a specific resource type instead! ( property: {0} in class: {0} )"), propertyDesc.name, pClass->name);
+                                            return CXChildVisit_Break;
+                                        }*/
+
+                    // Bit flags
+                    /*if (propertyDesc.typeID == TypeIDCore::BitFlags)
+                    {
+                        propertyDesc.flags.SetFlag(PropertyInfo::Flags::IsBitFlags);
+                    }
+                    else if (propertyDesc.typeID == TypeIDCore::TBitFlags)
+                    {
+                        propertyDesc.flags.SetFlag(PropertyInfo::Flags::IsBitFlags);
+
+                        // Perform validation on the enum type for the bit-flags
+                        ReflectedType const *pFlagTypeDesc = pContext->m_pDatabase->GetType(propertyDesc.templateArgTypeName.ToString());
+                        if (pFlagTypeDesc == nullptr || !pFlagTypeDesc->IsEnum())
+                        {
+                            pContext->LogError(SE_TEXT("Unsupported type encountered: {0} for bitflags property: {1} in class: {2}"), propertyDesc.typeName, propertyDesc.name, pClass->name);
+                            return CXChildVisit_Break;
+                        }
+                    }*/
+
+                    // Arrays
+                    /*if (propertyDesc.typeID == TypeIDCore::List)
+                    {
+                        pContext->LogError(SE_TEXT("We dont support arrays of arrays. Property: {0} in class: {1}"), propertyDesc.name, pClass->name);
+                        return CXChildVisit_Break;
+                    }*/
+                }
+                else // Non-Core Types
+                {
+                    // Non-core types must have a valid type descriptor
+                    ReflectedType const *pPropertyTypeDesc = pContext->m_pDatabase->GetType(propertyDesc.typeID);
+                    if (pPropertyTypeDesc == nullptr)
+                    {
+                        pContext->LogError(SE_TEXT("Unsupported type encountered: {0} for property: {1} in class: {2}"), propertyDesc.typeName, propertyDesc.name, pClass->name);
+                        return CXChildVisit_Break;
+                    }
+
+                    // Check for enum types - bitflags are a special case and are not an enum
+                    if (pPropertyTypeDesc->IsEnum())
+                    {
+                        propertyDesc.flags.SetFlag(TypeProperty::Flags::IsEnum);
+                    }
+                    else
+                    {
+                        propertyDesc.flags.SetFlag(TypeProperty::Flags::IsStructure);
                     }
                 }
             }
+            break;
         }
-        else if (kind == CXCursor_Constructor)
-        {
+
+		// TODO 支持方法
+        case CXCursor_CXXMethod:
+
+        // Constructor Method
+        case CXCursor_Constructor:
             // VisitConstructor(cr);
+            break;
+        default:
+            break;
         }
-        else if (kind == CXCursor_FieldDecl)
-        {
-            if (!VisitField(cr, pContext, pClass, declStartPosition, lineNumber))
-            {
-                return CXChildVisit_Break;
-            }
-        }
-        else if (kind == CXCursor_CXXMethod)
-        {
-            VisitMethod(cr, pContext, pClass, declStartPosition, lineNumber);
-        }
-
         return CXChildVisit_Continue;
     }
 
     CXChildVisitResult VisitResourceStructureContents(CXCursor cr, CXCursor parent, CXClientData pClientData)
     {
-        auto pContext = static_cast<ClangParserContext *>(pClientData);
-        auto pResource = static_cast<ReflectedResourceType *>(pContext->pParentReflectedType);
+        auto pContext = reinterpret_cast<ClangParserContext *>(pClientData);
+        auto pResource = reinterpret_cast<ReflectedResourceType *>(pContext->m_pParentReflectedType);
 
         CXCursorKind kind = clang_getCursorKind(cr);
         switch (kind)
@@ -635,7 +411,7 @@ namespace SE::ReflectTool
         return CXChildVisit_Continue;
     }
 
-    CXChildVisitResult VisitStructure(ClangParserContext *pContext, CXCursor &cr, StringView const &headerFilePath, HeaderID const headerID, bool isStruct)
+    CXChildVisitResult VisitStructure(ClangParserContext *pContext, CXCursor &cr, StringView const &headerFilePath, HeaderID const headerID)
     {
         auto cursorName = ClangUtils::GetCursorDisplayName(cr);
 
@@ -649,15 +425,14 @@ namespace SE::ReflectTool
         ReflectionMacro macro;
         //-------------------------------------------------------------------------
         int const lineNumber = ClangUtils::GetLineNumberForCursor(cr);
-        uint32_t const declStartPosition = ClangUtils::GetStartPositionForCursor(cr);
-        if (pContext->FindReflectionMacroForMeta(headerID, declStartPosition, macro))
+        if (pContext->FindReflectionMacroForMeta(headerID, lineNumber, macro))
         {
             TypeID typeID = pContext->GenerateTypeID(fullyQualifiedCursorName);
-            DataType classDescriptor(typeID, cursorName.ToStringAnsi());
+            ReflectedType classDescriptor(typeID, cursorName.ToStringAnsi());
             classDescriptor.headerID = headerID;
             classDescriptor.namespaceName = pContext->GetCurrentNamespace().ToStringAnsi();
-            classDescriptor.flags.Flag(DataType::Flags::IsMeta, true);
-            pContext->pDatabase->RegisterType(&classDescriptor, false);
+            classDescriptor.flags.Flag(ReflectedType::Flags::IsMeta, true);
+            pContext->m_pDatabase->RegisterType(&classDescriptor, pContext->m_detectDevOnlyTypesAndProperties);
         }
 
         //-------------------------------------------------------------------------
@@ -672,9 +447,9 @@ namespace SE::ReflectTool
             ENGINE_ASSERT(macro.IsValid());
 
             // Modules
-            if (macro.IsModuleMacro())
+            if (macro.IsModuleMacro() && !pContext->m_detectDevOnlyTypesAndProperties)
             {
-                String const moduleName = pContext->GetCurrentNamespace() + cursorName;
+				String const moduleName = pContext->GetCurrentNamespace() + cursorName;
 
                 if (!pContext->SetModuleClassName(headerFilePath, moduleName))
                 {
@@ -686,86 +461,34 @@ namespace SE::ReflectTool
 
             //-------------------------------------------------------------------------
 
-            StringID typeID = pContext->GenerateTypeID(fullyQualifiedCursorName);
-            DataType classDescriptor(typeID, cursorName.ToStringAnsi());
-            classDescriptor.headerID = headerID;
-            classDescriptor.namespaceName = pContext->GetCurrentNamespace().ToStringAnsi();
-            classDescriptor.flags.Flag(DataType::Flags::IsAbstract, clang_CXXRecord_isAbstract(cr));
-            classDescriptor.flags.Flag(DataType::Flags::IsStruct, isStruct);
-            classDescriptor.isReflect = macro.hasReflect;
-
-            // Check for SE_CLASS/SE_STRUCT/SE_INTERFACE binding macro with API flag
-            if (macro.hasAPI)
+            if (macro.IsReflectedTypeMacro())
             {
-                classDescriptor.isAPI = macro.hasAPI;
-                StringAnsi assemblyName, assemblyDir;
-                pContext->GetAssemblyInfoForHeader(headerID, assemblyName, assemblyDir);
+                auto cursorType = clang_getCursorType(cr);
 
-                classDescriptor.bindingInfo.assemblyName = assemblyName;
-                classDescriptor.bindingInfo.assemblyDir = assemblyDir;
+                StringID typeID = pContext->GenerateTypeID(fullyQualifiedCursorName);
+                ReflectedType classDescriptor(typeID, cursorName.ToStringAnsi());
+                classDescriptor.headerID = headerID;
+                classDescriptor.namespaceName = pContext->GetCurrentNamespace().ToStringAnsi();
+                classDescriptor.flags.Flag(ReflectedType::Flags::IsAbstract, clang_CXXRecord_isAbstract(cr));
+                classDescriptor.flags.Flag(ReflectedType::Flags::IsStruct, true);
 
-                classDescriptor.bindingInfo.noSpawn = macro.macroContents.Contains(SE_TEXT("NoSpawn"));
-            }
+                // Record current parent type, and update it to the new type
+                void *pPreviousParentReflectedType = pContext->m_pParentReflectedType;
+                pContext->m_pParentReflectedType = &classDescriptor;
+                {
+                    clang_visitChildren(cr, VisitStructureContents, pContext);
+                }
+                // Reset parent type back to original parent
+                pContext->m_pParentReflectedType = pPreviousParentReflectedType;
 
-            // Record current parent type, and update it to the new type
-            void *pPreviousParentReflectedType = pContext->pParentReflectedType;
-            pContext->pParentReflectedType = &classDescriptor;
-            {
-                clang_visitChildren(cr, VisitStructureContents, pContext);
-            }
-            // Reset parent type back to original parent
-            pContext->pParentReflectedType = pPreviousParentReflectedType;
+                if (pContext->HasErrorOccured())
+                {
+                    return CXChildVisit_Break;
+                }
 
-            pContext->pDatabase->RegisterType(&classDescriptor, false);
-
-            if (pContext->HasErrorOccured())
-            {
-                return CXChildVisit_Break;
+                pContext->m_pDatabase->RegisterType(&classDescriptor, pContext->m_detectDevOnlyTypesAndProperties);
             }
         }
-
-        /*//-------------------------------------------------------------------------
-        // Handle SE_CLASS/SE_STRUCT/SE_INTERFACE without DEFINE_CLASS
-        // (API-only types that have no reflection macro)
-        if (!pContext->detectDevOnlyTypesAndProperties)
-        {
-            ReflectionMacro bindingMacro;
-            if (pContext->FindBindingMacroForType(headerID, cr, bindingMacro))
-            {
-                // Only create a new ReflectedType if we didn't already register one above
-                // (i.e. no DEFINE_CLASS was found, but a SE_CLASS/SE_STRUCT/SE_INTERFACE with API exists)
-                if (!macro.hasReflect)
-                {
-                    StringID typeID = pContext->GenerateTypeID(fullyQualifiedCursorName);
-                    ReflectedType classDescriptor(typeID, cursorName.ToStringAnsi());
-                    classDescriptor.headerID = headerID;
-                    classDescriptor.namespaceName = pContext->GetCurrentNamespace().ToStringAnsi();
-                    classDescriptor.flags.Flag(ReflectedType::Flags::IsAbstract, clang_CXXRecord_isAbstract(cr));
-                    classDescriptor.flags.Flag(ReflectedType::Flags::HasBinding, true);
-                    classDescriptor.bindingInfo.hasBinding = true;
-
-                    StringAnsi assemblyName, assemblyDir;
-                    pContext->GetAssemblyInfoForHeader(headerID, assemblyName, assemblyDir);
-                    classDescriptor.bindingInfo.assemblyName = assemblyName;
-                    classDescriptor.bindingInfo.assemblyDir = assemblyDir;
-
-                    // Record current parent type, and update it to the new type
-                    void *pPreviousParentReflectedType = pContext->pParentReflectedType;
-                    pContext->pParentReflectedType = &classDescriptor;
-                    {
-                        clang_visitChildren(cr, VisitStructureContents, pContext);
-                    }
-                    pContext->pParentReflectedType = pPreviousParentReflectedType;
-
-                    if (pContext->HasErrorOccured())
-                    {
-                        return CXChildVisit_Break;
-                    }
-
-                    pContext->pDatabase->RegisterType(&classDescriptor, pContext->detectDevOnlyTypesAndProperties);
-                }
-            }
-        }*/
 
         return CXChildVisit_Continue;
     }

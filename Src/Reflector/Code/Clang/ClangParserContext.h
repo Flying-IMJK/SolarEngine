@@ -3,7 +3,6 @@
 #include "ClangUtils.h"
 #include "../ReflectorSettingsAndUtils.h"
 #include "../Database/ReflectionProjectTypes.h"
-#include "../Database/DataTypes.h"
 #include "Core/Types/Collections/Dictionary.h"
 #include "Core/Types/Collections/List.h"
 #include "Core/Types/Strings/String.h"
@@ -24,10 +23,12 @@ namespace SE::ReflectTool
         ReflectionMacro( HeaderInfo const* pHeaderInfo, CXCursor cursor, CXSourceRange sourceRange, ReflectionMacroType type );
 
         bool IsValid() const { return type != ReflectionMacroType::Unknown; }
-        bool IsModuleMacro() const { return false; }
-        bool IsEnumMacro() const { return type == ReflectionMacroType::SEEnum && hasReflect; }
+        bool IsModuleMacro() const { return type == ReflectionMacroType::ReflectModule; }
+        bool IsEnumMacro() const { return type == ReflectionMacroType::ReflectEnum; }
         bool IsMetaMacro() const { return type == ReflectionMacroType::ReflectMeta; }
-        bool IsTypeMacro() const { return type == ReflectionMacroType::SEClass; }
+
+        // Should be registered as a type
+        bool IsReflectedTypeMacro() const { return type == ReflectionMacroType::ReflectType; }
     public:
 
         HeaderID            headerID;
@@ -36,10 +37,7 @@ namespace SE::ReflectTool
         uint32_t            positionEnd = 0xFFFFFFFF;
         ReflectionMacroType type = ReflectionMacroType::Unknown;
 		String	            macroComment;
-        bool                hasReflect = false;
-        bool                hasAPI = false;
-        String              macroMetadata;
-        List<String>        macroContents;
+        String    	        macroContents;
     };
 
     //-------------------------------------------------------------------------
@@ -65,11 +63,11 @@ namespace SE::ReflectTool
     public:
 
         ClangParserContext( SolutionInfo* pSolution, ReflectionDatabase* pDatabase )
-            : pTU( nullptr )
-            , pDatabase( pDatabase )
-            , pParentReflectedType( nullptr )
+            : m_pTU( nullptr )
+            , m_pDatabase( pDatabase )
+            , m_pParentReflectedType( nullptr )
             , m_inEngineNamespace( false )
-            , pSolution( pSolution )
+            , m_pSolution( pSolution )
         {
             ENGINE_ASSERT( pSolution != nullptr && pDatabase != nullptr );
         }
@@ -102,37 +100,32 @@ namespace SE::ReflectTool
         // Try to find a reflection macro for a property
         // If we found a macro we will remove it from the list of macros to reduce the cost of future searches
         // Returns true if a macro was found
-        bool FindReflectionMacroForEnum( HeaderID headerID, CXCursor const& cr, ReflectionMacro& macro );
-        bool FindReflectionMacroForProperty( HeaderID headerID, uint32_t declStartPosition, ReflectionMacro& reflectionMacro );
-        bool FindReflectionMacroForMeta( HeaderID headerID, uint32_t declStartPosition, ReflectionMacro& reflectionMacro );
+        bool FindReflectionMacroForEnum( HeaderID headerID, CXCursor const& cr, int lineNumber, ReflectionMacro& macro );
+        bool FindReflectionMacroForProperty( HeaderID headerID, uint32_t lineNumber, ReflectionMacro& reflectionMacro );
+        bool FindReflectionMacroForMeta( HeaderID headerID, uint32_t lineNumber, ReflectionMacro& reflectionMacro );
 
         // Check if we have any orphaned reflection macros
         // If we have any then we will populate the error message with all the details
         bool CheckForOrphanedReflectionMacros() const;
 
-        // ---- Bindings macro lookup (API_CLASS, API_ENUM, API_FUNCTION, etc.) ----
-        bool FindBindingMacroForType(HeaderID headerID, CXCursor const& cr, ReflectionMacro& macro);
-        bool FindBindingMacroForEnum(HeaderID headerID, CXCursor const& cr, ReflectionMacro& macro);
-        bool FindBindingMacroForMember(HeaderID headerID, uint32_t declStartPosition, ReflectionMacroType memberType, ReflectionMacro& macro);
-
-        // Get assembly name and directory for a given header
-        void GetAssemblyInfoForHeader(HeaderID headerID, StringAnsi& outAssemblyName, StringAnsi& outAssemblyDir) const;
-
     public:
 
-        CXTranslationUnit*                                      pTU;
+        CXTranslationUnit*                                      m_pTU;
 
-        SolutionInfo*                                           pSolution;
-        ReflectionDatabase*                                     pDatabase;
-        List<HeaderToVisit>                                     headersToVisit;
+        // Should we do a full pass or just update the flags?
+        bool                                                    m_detectDevOnlyTypesAndProperties = false;
+
+        SolutionInfo*                                           m_pSolution;
+        ReflectionDatabase*                                     m_pDatabase;
+        List<HeaderToVisit>                                     m_headersToVisit;
 
         // The current parent/enclosing reflected type
-        void*                                                   pParentReflectedType;
+        void*                                                   m_pParentReflectedType;
 
     private:
 
-        Dictionary<HeaderID, List<ReflectionMacro>>              m_TypeReflectionMacros;
-		Dictionary<HeaderID, List<ReflectionMacro>>              m_InTypeReflectionMacros;
+        Dictionary<HeaderID, List<ReflectionMacro>>              m_typeReflectionMacros;
+		Dictionary<HeaderID, List<ReflectionMacro>>              m_propertyReflectionMacros;
 
         mutable StringAnsi                                      m_errorMessage;
 		List<String>                                          	m_namespaceStack;
@@ -141,6 +134,6 @@ namespace SE::ReflectTool
         bool                                                  	m_inEngineNamespace;
 
 
-        bool FindReflectionMacro(List<ReflectionMacro> &macrosForHeader, HeaderID headerID, uint32 declStartPosition, ReflectionMacroType macroType, ReflectionMacro& reflectionMacro );
+        bool FindReflectionMacro(List<ReflectionMacro> &macrosForHeader, HeaderID headerID, uint32 lineNumber, ReflectionMacroType macroType, ReflectionMacro& reflectionMacro );
     };
 }

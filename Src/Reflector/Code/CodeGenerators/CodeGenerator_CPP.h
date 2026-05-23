@@ -28,8 +28,7 @@ namespace SE::ReflectTool
 
         // File specific functions
         void GenerateTypeInfoFileHeader(HeaderInfo const &hdr, StringView solutionPath);
-        void AppendBindingIncludesIfNeeded();
-        void GenerateModuleCodeFile(ReflectionDatabase const& database, ProjectInfo const &prj, List<DataType> const &typesInModule);
+        void GenerateModuleCodeFile(ReflectionDatabase const& database, ProjectInfo const &prj, List<ReflectedType> const &typesInModule);
 
         // Utils
         static bool SaveStreamToFile(String const &filePath, std::stringstream &stream);
@@ -39,12 +38,12 @@ namespace SE::ReflectTool
         std::stringstream m_moduleFile;
         std::stringstream m_engineTypeRegistrationFile;
         std::stringstream m_toolsTypeRegistrationFile;
-        bool m_typeInfoFileHasBinding = false;
         mutable StringAnsi m_errorMessage;
 
         StringAnsi m_CodeModuleTemplate;
         StringAnsi m_CodeCppMetaTemplate;
 		StringAnsi m_CodeCppEnumTemplate;
 		StringAnsi m_CodeCppClassTemplate;
+		StringAnsi m_CodeTypeRegistrationTemplate;
     };
 }

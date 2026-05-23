@@ -9,13 +9,10 @@ namespace SE::ReflectTool
     static void CalculateFullNamespace(List<String> const &namespaceStack, String &fullNamespace)
     {
         fullNamespace.Clear();
-        for (int i = 0; i < namespaceStack.Count(); i++)
+        for (auto &str : namespaceStack)
         {
-            fullNamespace.Append(namespaceStack[i]);
-            if (i != namespaceStack.Count() - 1)
-            {
-                fullNamespace.Append(SE_TEXT("::"));
-            }
+            fullNamespace.Append(str);
+            fullNamespace.Append(SE_TEXT("::"));
         }
     }
 
@@ -75,47 +72,8 @@ namespace SE::ReflectTool
 
     //-------------------------------------------------------------------------
 
-    static void SplitRespectingBrackets(String const &str, Char delimiter, List<String> &outParts)
-    {
-        int32 depth = 0;
-        bool inQuote = false;
-        int32 start = 0;
-
-        for (int32 i = 0; i < str.Length(); i++)
-        {
-            Char c = str[i];
-            if (c == SE_TEXT('"'))
-            {
-                inQuote = !inQuote;
-            }
-            else if (!inQuote)
-            {
-                if (c == SE_TEXT('(') || c == SE_TEXT('[') || c == SE_TEXT('{'))
-                {
-                    depth++;
-                }
-                else if (c == SE_TEXT(')') || c == SE_TEXT(']') || c == SE_TEXT('}'))
-                {
-                    depth--;
-                }
-                else if (c == delimiter && depth == 0)
-                {
-                    outParts.Add(str.Substring(start, i - start));
-                    start = i + 1;
-                }
-            }
-        }
-
-        if (start < str.Length())
-        {
-            outParts.Add(str.Substring(start, str.Length() - start));
-        }
-    }
-
-    //-------------------------------------------------------------------------
-
     ReflectionMacro::ReflectionMacro(HeaderInfo const *pHeaderInfo, CXCursor cursor, CXSourceRange sourceRange, ReflectionMacroType type)
-        : headerID(pHeaderInfo->headerId), positionStart(sourceRange.begin_int_data), positionEnd(sourceRange.end_int_data), type(type)
+        : headerID(pHeaderInfo->headerId), type(type), positionStart(sourceRange.begin_int_data), positionEnd(sourceRange.end_int_data)
     {
         ENGINE_ASSERT(type < ReflectionMacroType::NumMacros);
 
@@ -123,68 +81,44 @@ namespace SE::ReflectTool
 
         //-------------------------------------------------------------------------
 
-        // macroComment = TryToParseMacro(pHeaderInfo->fileContents, lineNumber);
+        macroComment = TryToParseMacro(pHeaderInfo->fileContents, lineNumber);
 
         //-------------------------------------------------------------------------
 
-        // Read the contents of the macro for all annotation types
-        //-------------------------------------------------------------------------
-        bool needsParamParsing = (type == ReflectionMacroType::SEClass ||
-                                   type == ReflectionMacroType::SEStruct ||
-                                   type == ReflectionMacroType::SEInterface ||
-                                   type == ReflectionMacroType::SEEnum ||
-                                   type == ReflectionMacroType::SEProperty ||
-                                   type == ReflectionMacroType::SEFunction ||
-                                   type == ReflectionMacroType::SEEvent);
-
-        if (needsParamParsing)
+        if (type == ReflectionMacroType::ReflectProperty)
         {
+            // Read the contents of the macro
+            //-------------------------------------------------------------------------
             CXToken *tokens = nullptr;
             uint32 numTokens = 0;
             CXTranslationUnit translationUnit = clang_Cursor_getTranslationUnit(cursor);
             clang_tokenize(translationUnit, sourceRange, &tokens, &numTokens);
-            String rawContents;
             for (uint32 n = 0; n < numTokens; n++)
             {
-                rawContents += ClangUtils::GetString(clang_getTokenSpelling(translationUnit, tokens[n]));
+                macroContents += ClangUtils::GetString(clang_getTokenSpelling(translationUnit, tokens[n]));
             }
             clang_disposeTokens(translationUnit, tokens, numTokens);
 
-            String macroContent;
-            // Extract content between parentheses
-            int32 startIdx = rawContents.FindFirstOf(SE_TEXT("("));
-            int32 endIdx = rawContents.FindLast(SE_TEXT(')'));
+            // Check if we have a metadata macro
+            //-------------------------------------------------------------------------
+
+            int32 startIdx = macroContents.FindFirstOf(SE_TEXT("("));
+            int32 endIdx = macroContents.FindLast(SE_TEXT(')'));
             if (startIdx != INVALID_INDEX && endIdx != INVALID_INDEX && endIdx > (startIdx + 1))
             {
-                macroContent = rawContents.Substring(startIdx + 1, endIdx - startIdx - 1);
+                // Property macro contents are JSON, so apply some enclosing formatting
+                if (type == ReflectionMacroType::ReflectProperty)
+                {
+                    macroContents = macroContents.Substring(startIdx + 1, endIdx - startIdx - 1);
+                }
+                else // Just keep the contents without the braces
+                {
+                    macroContents = macroContents.Substring(startIdx + 1, endIdx - startIdx - 1);
+                }
             }
             else
             {
-                macroContent.Clear();
-            }
-
-            if (!macroContent.IsEmpty())
-            {
-                List<String> params;
-                SplitRespectingBrackets(macroContent, SE_TEXT(','), params);
-
-                for (auto &param : params)
-                {
-                    param.FirstTrim();
-                    param.LastTrim();
-
-                    if (param == SE_TEXT("Reflect"))
-                    {
-                        hasReflect = true;
-                    }else if (param == SE_TEXT("API"))
-                    {
-                        hasAPI = true;
-                    }
-                    else
-                    {
-                        macroContents.Add(param);
-                    }
-                }
+                macroContents.Clear();
             }
         }
     }
@@ -194,10 +128,10 @@ namespace SE::ReflectTool
     HeaderInfo const *ClangParserContext::GetHeaderInfo(HeaderID headerID) const
     {
 		Function<bool(HeaderToVisit const &)> predicate = [headerID](HeaderToVisit const & headerToVisit){ return headerToVisit.m_ID == headerID;};
-		int index = ListExtensions::IndexOf(headersToVisit, predicate);
+		int index = ListExtensions::IndexOf(m_headersToVisit, predicate);
         if (index != INVALID_INDEX)
         {
-            return headersToVisit[index].m_pHeaderInfo;
+            return m_headersToVisit[index].m_pHeaderInfo;
         }
 
         return nullptr;
@@ -208,9 +142,9 @@ namespace SE::ReflectTool
         ENGINE_ASSERT(m_namespaceStack.IsEmpty());
         ENGINE_ASSERT(m_structureStack.IsEmpty());
 
-        pTU = pTU;
-        m_InTypeReflectionMacros.Clear();
-        m_TypeReflectionMacros.Clear();
+        m_pTU = pTU;
+        m_propertyReflectionMacros.Clear();
+        m_typeReflectionMacros.Clear();
         m_inEngineNamespace = false;
         m_errorMessage.Clear();
     }
@@ -241,7 +175,7 @@ namespace SE::ReflectTool
 
     bool ClangParserContext::SetModuleClassName(StringView const &headerFilePath, String const &moduleClassName)
     {
-        for (auto &prj : pSolution->projects)
+        for (auto &prj : m_pSolution->projects)
         {
             if (FileSystem::IsUnderDirectory(headerFilePath, prj.path))
             {
@@ -258,7 +192,7 @@ namespace SE::ReflectTool
                 {
                     prj.moduleClassName = moduleClassName;
                 }
-
+                
                 return true;
             }
         }
@@ -278,66 +212,30 @@ namespace SE::ReflectTool
         ENGINE_ASSERT(foundMacro.headerID != StringID::Invalid);
         ENGINE_ASSERT(foundMacro.type != ReflectionMacroType::Unknown);
 
-        // Property/member level macros
-        if (foundMacro.type == ReflectionMacroType::SEProperty
-            || foundMacro.type == ReflectionMacroType::SEFunction
-            || foundMacro.type == ReflectionMacroType::SEEvent)
+        if (foundMacro.type == ReflectionMacroType::ReflectProperty)
         {
-            List<ReflectionMacro> &macrosForHeader = m_InTypeReflectionMacros[foundMacro.headerID];
+            List<ReflectionMacro> &macrosForHeader = m_propertyReflectionMacros[foundMacro.headerID];
             macrosForHeader.Add(foundMacro);
         }
-        else // Type-level macros (DefineClass, DefineClassDefault, ReflectModule, SEClass, SEStruct, SEInterface, SEEnum, ReflectMeta)
+        else // All other types
         {
-            List<ReflectionMacro> &macrosForHeader = m_TypeReflectionMacros[foundMacro.headerID];
+            List<ReflectionMacro> &macrosForHeader = m_typeReflectionMacros[foundMacro.headerID];
             macrosForHeader.Add(foundMacro);
         }
     }
 
-    bool ClangParserContext::FindReflectionMacroForEnum(HeaderID headerID, CXCursor const &cr, ReflectionMacro &macro)
+    bool ClangParserContext::FindReflectionMacroForEnum(HeaderID headerID, CXCursor const &cr, int lineNumber, ReflectionMacro &macro)
     {
         // Try get macros for this header
         //-------------------------------------------------------------------------
-        auto headerIter = m_TypeReflectionMacros.Find(headerID);
-        if (headerIter == m_TypeReflectionMacros.end())
+        auto headerIter = m_typeReflectionMacros.Find(headerID);
+        if (headerIter == m_typeReflectionMacros.end())
         {
             return false;
         }
 
         List<ReflectionMacro> &macrosForHeader = headerIter->Value;
-        uint32_t const declBeginPosition = ClangUtils::GetStartPositionForCursor(cr);
-
-        // Look for SE_ENUM with hasReflect == true
-        //-------------------------------------------------------------------------
-        int bestIndex = -1;
-        uint32_t bestDistance = UINT32_MAX;
-
-        for (int index = 0; index < macrosForHeader.Count(); index++)
-        {
-            auto &item = macrosForHeader[index];
-
-            if (item.type != ReflectionMacroType::SEEnum || !item.hasReflect)
-                continue;
-
-            // Macro must be before the declaration
-            if (item.positionEnd > declBeginPosition)
-                continue;
-
-            uint32_t distance = declBeginPosition - item.positionEnd;
-            if (distance < bestDistance)
-            {
-                bestDistance = distance;
-                bestIndex = index;
-            }
-        }
-
-        if (bestIndex >= 0)
-        {
-            macro = macrosForHeader[bestIndex];
-            macrosForHeader.RemoveAt(bestIndex);
-            return true;
-        }
-
-        return false;
+        return FindReflectionMacro(macrosForHeader, headerID, lineNumber, ReflectionMacroType::ReflectEnum, macro);
     }
 
     bool ClangParserContext::FindReflectionMacroForType(HeaderID headerID, CXCursor const& cr, ReflectionMacro& macro)
@@ -345,116 +243,72 @@ namespace SE::ReflectTool
         // Try get macros for this header
         //-------------------------------------------------------------------------
 
-        auto headerIter = m_TypeReflectionMacros.Find(headerID);
-        if (headerIter == m_TypeReflectionMacros.end())
+        auto headerIter = m_typeReflectionMacros.Find(headerID);
+        if (headerIter == m_typeReflectionMacros.end())
         {
             return false;
         }
 
         List<ReflectionMacro> &macrosForHeader = headerIter->Value;
-        uint32_t const declBeginPosition = ClangUtils::GetStartPositionForCursor(cr);
 
-        // Look for SE_CLASS that is closest before the declaration
+        // Check the header macros
         //-------------------------------------------------------------------------
-        int bestIndex = -1;
-        uint32_t bestDistance = UINT32_MAX;
+
+        CXSourceRange const typeRange = clang_getCursorExtent(cr);
 
         for (int index = 0; index < macrosForHeader.Count(); index++)
         {
-            auto& item = macrosForHeader[index];
+            auto item = macrosForHeader.At(index);
+            bool macroWithinCursorExtents = item.positionEnd == (typeRange.begin_int_data - 1);
+            macroWithinCursorExtents |= item.positionStart > typeRange.begin_int_data && item.positionStart < typeRange.end_int_data;
 
-            if (item.type != ReflectionMacroType::SEClass)
-                continue;
-
-            // Macro must be before the declaration
-            if (item.positionEnd > declBeginPosition)
-                continue;
-
-            uint32_t distance = declBeginPosition - item.positionEnd;
-            if (distance < bestDistance)
+            if (macroWithinCursorExtents)
             {
-                bestDistance = distance;
-                bestIndex = index;
+                macro = item;
+                macrosForHeader.RemoveAt(index);
+                return true;
             }
-        }
-
-        if (bestIndex >= 0)
-        {
-            macro = macrosForHeader[bestIndex];
-            macrosForHeader.RemoveAt(bestIndex);
-            return true;
         }
 
         return false;
     }
 
-    bool ClangParserContext::FindReflectionMacroForProperty(HeaderID headerID, uint32_t declStartPosition, ReflectionMacro &reflectionMacro)
+    bool ClangParserContext::FindReflectionMacroForProperty(HeaderID headerID, uint32 lineNumber, ReflectionMacro &reflectionMacro)
     {
         // Try get macros for this header
         //-------------------------------------------------------------------------
-        auto headerIter = m_InTypeReflectionMacros.Find(headerID);
-        if (headerIter == m_InTypeReflectionMacros.end())
+        auto headerIter = m_propertyReflectionMacros.Find(headerID);
+        if (headerIter == m_propertyReflectionMacros.end())
         {
             return false;
         }
 
         List<ReflectionMacro> &macrosForHeader = headerIter->Value;
-
-        // Look for SE_PROPERTY with hasReflect == true, nearest to the declaration
-        int bestIndex = -1;
-        uint32_t bestDistance = UINT32_MAX;
-
-        for (int index = 0; index < macrosForHeader.Count(); index++)
-        {
-            auto &item = macrosForHeader[index];
-
-            if (item.type == ReflectionMacroType::SEProperty)
-            {
-                // Macro must be before the declaration
-                if (item.positionEnd > declStartPosition)
-                {
-                    continue;
-                }
-
-                uint32_t distance = declStartPosition - item.positionEnd;
-                if (distance < bestDistance)
-                {
-                    bestDistance = distance;
-                    bestIndex = index;
-                }
-            }
-        }
-
-        if (bestIndex >= 0)
-        {
-            reflectionMacro = macrosForHeader[bestIndex];
-            macrosForHeader.RemoveAt(bestIndex);
-            return true;
-        }
-
-        return false;
+        return FindReflectionMacro(macrosForHeader, headerID, lineNumber, ReflectionMacroType::ReflectProperty, reflectionMacro);
     }
 
-    bool ClangParserContext::FindReflectionMacroForMeta(HeaderID headerID, uint32_t declStartPosition, ReflectionMacro& reflectionMacro)
+    bool ClangParserContext::FindReflectionMacroForMeta(HeaderID headerID, uint32_t lineNumber, ReflectionMacro& reflectionMacro)
     {
         // Try get macros for this header
         //-------------------------------------------------------------------------
-        auto headerIter = m_TypeReflectionMacros.Find(headerID);
-        if (headerIter == m_TypeReflectionMacros.end())
+        auto headerIter = m_typeReflectionMacros.Find(headerID);
+        if (headerIter == m_typeReflectionMacros.end())
         {
             return false;
         }
 
         List<ReflectionMacro> &macrosForHeader = headerIter->Value;
-        return FindReflectionMacro(macrosForHeader, headerID, declStartPosition, ReflectionMacroType::ReflectMeta, reflectionMacro);
+        return FindReflectionMacro(macrosForHeader, headerID, lineNumber, ReflectionMacroType::ReflectMeta, reflectionMacro);
     }
 
-    bool ClangParserContext::FindReflectionMacro(List<ReflectionMacro> &macrosForHeader, HeaderID headerID, uint32 declStartPosition, ReflectionMacroType macroType, ReflectionMacro& reflectionMacro)
+    bool ClangParserContext::FindReflectionMacro(List<ReflectionMacro> &macrosForHeader, HeaderID headerID, uint32 lineNumber, ReflectionMacroType macroType, ReflectionMacro& reflectionMacro)
     {
-        // Find the nearest macro of the given type that appears before the declaration
+        // Try to find the macro
         //-------------------------------------------------------------------------
-        int bestIndex = -1;
-        uint32_t bestDistance = UINT32_MAX;
+        int foundMacros[2] = {macrosForHeader.Count(), macrosForHeader.Count()};
+
+        bool hasMacroOnLineAbove = false;
+        bool hasMacroOnSameLine = false;
 
         for (int index = 0; index < macrosForHeader.Count(); index++)
         {
@@ -465,25 +319,36 @@ namespace SE::ReflectTool
                 continue;
             }
 
-            // Macro must be before the declaration
-            if (iter.positionEnd > declStartPosition)
-                continue;
-
-            uint32_t distance = declStartPosition - iter.positionEnd;
-            if (distance < bestDistance)
+            if (iter.lineNumber == lineNumber - 1)
             {
-                bestDistance = distance;
-                bestIndex = index;
+                foundMacros[0] = index;
+                hasMacroOnLineAbove = true;
+            }
+            else if (iter.lineNumber == lineNumber)
+            {
+                foundMacros[1] = index;
+                hasMacroOnSameLine = true;
+                // Macros on the same line take priority!
+                break;
             }
         }
 
-        if (bestIndex < 0)
+        // If we have a macro on the same line as well as the line above this is a mistake in the source file
+        if (hasMacroOnLineAbove && hasMacroOnSameLine)
+        {
+            LogError(SE_TEXT("Multiple reflection macros detected on line {0} in file: {1}"), lineNumber, headerID.ToString());
+            return false;
+        }
+
+        // We didnt find a macro
+        if (!hasMacroOnLineAbove && !hasMacroOnSameLine)
         {
             return false;
         }
 
-        reflectionMacro = macrosForHeader[bestIndex];
-        macrosForHeader.RemoveAt(bestIndex);
+        int foundMacroIter = hasMacroOnLineAbove ? foundMacros[0] : foundMacros[1];
+        reflectionMacro = macrosForHeader[foundMacroIter];
+        macrosForHeader.RemoveAt(foundMacroIter);
         return true;
     }
 
@@ -495,7 +360,7 @@ namespace SE::ReflectTool
 
         //-------------------------------------------------------------------------
 
-        for (auto &macroHeaderPair : m_TypeReflectionMacros)
+        for (auto &macroHeaderPair : m_typeReflectionMacros)
         {
             for (auto &macro : macroHeaderPair.Value)
             {
@@ -506,7 +371,7 @@ namespace SE::ReflectTool
 
         //-------------------------------------------------------------------------
 
-        for (auto &macroHeaderPair : m_InTypeReflectionMacros)
+        for (auto &macroHeaderPair : m_propertyReflectionMacros)
         {
             for (auto &macro : macroHeaderPair.Value)
             {
@@ -518,155 +383,5 @@ namespace SE::ReflectTool
         //-------------------------------------------------------------------------
 
         return hasOrphans;
-    }
-
-    // -------------------------------------------------------------------------
-    // Bindings macro lookup helpers
-    // -------------------------------------------------------------------------
-
-    bool ClangParserContext::FindBindingMacroForType(HeaderID headerID, CXCursor const& cr, ReflectionMacro& macro)
-    {
-        auto headerIter = m_TypeReflectionMacros.Find(headerID);
-        if (headerIter == m_TypeReflectionMacros.end())
-            return false;
-
-        List<ReflectionMacro>& macrosForHeader = headerIter->Value;
-        uint32_t const declBeginPosition = ClangUtils::GetStartPositionForCursor(cr);
-
-        // Look for SE_CLASS/SE_STRUCT/SE_INTERFACE with hasAPI that is closest before the declaration
-        //-------------------------------------------------------------------------
-        int bestIndex = -1;
-        uint32_t bestDistance = UINT32_MAX;
-
-        for (int index = 0; index < macrosForHeader.Count(); index++)
-        {
-            auto& item = macrosForHeader[index];
-
-            if ((item.type != ReflectionMacroType::SEClass &&
-                 item.type != ReflectionMacroType::SEStruct &&
-                 item.type != ReflectionMacroType::SEInterface) || !item.hasAPI)
-                continue;
-
-            // Macro must be before the declaration
-            if (item.positionEnd > declBeginPosition)
-                continue;
-
-            uint32_t distance = declBeginPosition - item.positionEnd;
-            if (distance < bestDistance)
-            {
-                bestDistance = distance;
-                bestIndex = index;
-            }
-        }
-
-        if (bestIndex >= 0)
-        {
-            macro = macrosForHeader[bestIndex];
-            macrosForHeader.RemoveAt(bestIndex);
-            return true;
-        }
-
-        return false;
-    }
-
-    bool ClangParserContext::FindBindingMacroForEnum(HeaderID headerID, CXCursor const& cr, ReflectionMacro& macro)
-    {
-        auto headerIter = m_TypeReflectionMacros.Find(headerID);
-        if (headerIter == m_TypeReflectionMacros.end())
-            return false;
-
-        List<ReflectionMacro>& macrosForHeader = headerIter->Value;
-        uint32_t const declBeginPosition = ClangUtils::GetStartPositionForCursor(cr);
-
-        // Look for SE_ENUM with hasAPI == true, nearest to the declaration
-        int bestIndex = -1;
-        uint32_t bestDistance = UINT32_MAX;
-
-        for (int index = 0; index < macrosForHeader.Count(); index++)
-        {
-            auto &item = macrosForHeader[index];
-
-            if (item.type != ReflectionMacroType::SEEnum || !item.hasAPI)
-                continue;
-
-            // Macro must be before the declaration
-            if (item.positionEnd > declBeginPosition)
-                continue;
-
-            uint32_t distance = declBeginPosition - item.positionEnd;
-            if (distance < bestDistance)
-            {
-                bestDistance = distance;
-                bestIndex = index;
-            }
-        }
-
-        if (bestIndex >= 0)
-        {
-            macro = macrosForHeader[bestIndex];
-            macrosForHeader.RemoveAt(bestIndex);
-            return true;
-        }
-
-        return false;
-    }
-
-    bool ClangParserContext::FindBindingMacroForMember(HeaderID headerID, uint32_t declStartPosition, ReflectionMacroType memberType, ReflectionMacro& macro)
-    {
-        auto headerIter = m_InTypeReflectionMacros.Find(headerID);
-        if (headerIter == m_InTypeReflectionMacros.end())
-            return false;
-
-        List<ReflectionMacro>& macrosForHeader = headerIter->Value;
-
-        // Look for matching SE_PROPERTY/SE_FUNCTION/SE_EVENT with hasAPI, nearest to the declaration
-        int bestIndex = -1;
-        uint32_t bestDistance = UINT32_MAX;
-
-        for (int index = 0; index < macrosForHeader.Count(); index++)
-        {
-            auto &item = macrosForHeader[index];
-
-            if (item.type != memberType || !item.hasAPI)
-                continue;
-
-            // Macro must be before the declaration
-            if (item.positionEnd > declStartPosition)
-                continue;
-
-            uint32_t distance = declStartPosition - item.positionEnd;
-            if (distance < bestDistance)
-            {
-                bestDistance = distance;
-                bestIndex = index;
-            }
-        }
-
-        if (bestIndex >= 0)
-        {
-            macro = macrosForHeader[bestIndex];
-            macrosForHeader.RemoveAt(bestIndex);
-            return true;
-        }
-
-        return false;
-    }
-
-    void ClangParserContext::GetAssemblyInfoForHeader(HeaderID headerID, StringAnsi& outAssemblyName, StringAnsi& outAssemblyDir) const
-    {
-        if (!pSolution)
-            return;
-        for (auto& prj : pSolution->projects)
-        {
-            for (auto& hdr : prj.headerFiles)
-            {
-                if (hdr.headerId == headerID)
-                {
-                    outAssemblyName = prj.name.ToStringAnsi();
-                    outAssemblyDir  = prj.path.ToStringAnsi();
-                    return;
-                }
-            }
-        }
     }
 }

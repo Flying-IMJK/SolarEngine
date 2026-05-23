@@ -1,4 +1,4 @@
-#include "DataTypes.h"
+#include "ReflectionDataTypes.h"
 
 #include "Core/Types/Strings/String.h"
 #include "Core/ThirdParty/rapidjson/document.h"
@@ -36,7 +36,7 @@ namespace SE::ReflectTool
 
     //-------------------------------------------------------------------------
 
-    DataProperty const* DataType::GetPropertyDescriptor( StringID propertyID ) const
+    ReflectedProperty const* ReflectedType::GetPropertyDescriptor( StringID propertyID ) const
     {
         ENGINE_ASSERT( typeID != StringID::Invalid && !IsAbstract() && !IsEnum() );
         for ( auto const& prop : properties )
@@ -50,7 +50,7 @@ namespace SE::ReflectTool
         return nullptr;
     }
 
-	StringAnsi DataProperty::GetFriendlyName() const
+	StringAnsi ReflectedProperty::GetFriendlyName() const
     {
 		StringAnsi name = this->name;
 		name.Replace("m_", "");
@@ -71,7 +71,7 @@ namespace SE::ReflectTool
     }
     //-------------------------------------------------------------------------
 
-    void DataType::AddEnumConstant( ReflectedEnumConstant const& constant )
+    void ReflectedType::AddEnumConstant( ReflectedEnumConstant const& constant )
     {
         ENGINE_ASSERT( typeID != StringID::Invalid && IsEnum() );
         ENGINE_ASSERT( constant.ID != StringID::Invalid );
@@ -80,7 +80,7 @@ namespace SE::ReflectTool
 		enumConstants.Add( constant );
     }
 
-    bool DataType::GetValueFromEnumLabel( StringID labelID, uint32_t& value ) const
+    bool ReflectedType::GetValueFromEnumLabel( StringID labelID, uint32_t& value ) const
     {
         ENGINE_ASSERT( typeID != StringID::Invalid && IsEnum() );
 
@@ -96,7 +96,7 @@ namespace SE::ReflectTool
         return false;
     }
 
-    bool DataType::IsValidEnumLabelID( StringID labelID ) const
+    bool ReflectedType::IsValidEnumLabelID( StringID labelID ) const
     {
         for ( auto const& constant : enumConstants )
         {
@@ -109,14 +109,14 @@ namespace SE::ReflectTool
         return false;
     }
 
-	StringAnsi DataType::GetFriendlyName() const
+	StringAnsi ReflectedType::GetFriendlyName() const
     {
 		StringAnsi friendlyName = name;
         GenerateFriendlyName( friendlyName );
         return friendlyName;
     }
 
-	StringAnsi DataType::GetCategory() const
+	StringAnsi ReflectedType::GetCategory() const
     {
 		StringAnsi category = namespaceName;
 		category.Replace(Settings::g_engineNamespacePlusDelimiter, "");
@@ -133,7 +133,7 @@ namespace SE::ReflectTool
         return category;
     }
 
-    bool DataType::HasArrayProperties() const
+    bool ReflectedType::HasArrayProperties() const
     {
         for ( auto& propertyDesc : properties )
         {
@@ -146,7 +146,7 @@ namespace SE::ReflectTool
         return false;
     }
 
-    bool DataType::HasDynamicArrayProperties() const
+    bool ReflectedType::HasDynamicArrayProperties() const
     {
         for ( auto& propertyDesc : properties )
         {
@@ -159,7 +159,7 @@ namespace SE::ReflectTool
         return false;
     }
 
-    bool DataType::HasResourcePtrProperties() const
+    bool ReflectedType::HasResourcePtrProperties() const
     {
 /*        for ( auto& propertyDesc : m_properties )
         {
@@ -177,7 +177,7 @@ namespace SE::ReflectTool
         return false;
     }
 
-    bool DataType::HasResourcePtrOrStructProperties() const
+    bool ReflectedType::HasResourcePtrOrStructProperties() const
     {
 /*        for ( auto& propertyDesc : m_properties )
         {

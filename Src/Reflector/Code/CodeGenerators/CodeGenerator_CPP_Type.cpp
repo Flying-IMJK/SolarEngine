@@ -11,7 +11,7 @@ namespace SE::ReflectTool
     // Factory/Serialization Methods
     //-------------------------------------------------------------------------
     
-    static mustache::data GenerateCreationMethod(DataType const& type )
+    static mustache::data GenerateCreationMethod(ReflectedType const& type )
     {
         mustache::data generateData;
 
@@ -31,7 +31,7 @@ namespace SE::ReflectTool
     // Array Methods
     //-------------------------------------------------------------------------
 
-    static bool GenerateArrayAccessorMethod(DataType const& type, mustache::data &generateData)
+    static bool GenerateArrayAccessorMethod(ReflectedType const& type, mustache::data &generateData)
     {
         if ( type.HasArrayProperties() && type.properties.Count() > 0)
         {
@@ -79,7 +79,7 @@ namespace SE::ReflectTool
         return false;
     }
 
-    static mustache::data GenerateArrayElementSizeMethod(DataType const& type )
+    static mustache::data GenerateArrayElementSizeMethod(ReflectedType const& type )
     {
         mustache::data propertyDescDataList = mustache::data::type::list;
         for ( auto& propertyDesc : type.properties )
@@ -108,7 +108,7 @@ namespace SE::ReflectTool
         return propertyDescDataList;
     }
 
-    static bool GenerateArrayElementOperateMethod(DataType const& type, mustache::data &generateData)
+    static bool GenerateArrayElementOperateMethod(ReflectedType const& type, mustache::data &generateData)
     {
         if (type.HasDynamicArrayProperties() && type.properties.Count() > 0)
         {
@@ -150,7 +150,7 @@ namespace SE::ReflectTool
     // Default Value Methods
     //-------------------------------------------------------------------------
 
-    static bool GenerateAreAllPropertiesEqualMethod(DataType const& type, mustache::data generateData)
+    static bool GenerateAreAllPropertiesEqualMethod(ReflectedType const& type, mustache::data generateData)
     {
         if (type.HasProperties() && type.properties.Count() > 0)
         {
@@ -181,7 +181,7 @@ namespace SE::ReflectTool
         return false;
     }
 
-    static bool GenerateIsPropertyEqualMethod(DataType const& type, mustache::data &generateData)
+    static bool GenerateIsPropertyEqualMethod(ReflectedType const& type, mustache::data &generateData)
     {
 
         if ( type.HasProperties() && type.properties.Count() > 0)
@@ -264,7 +264,7 @@ namespace SE::ReflectTool
         return false;
     }
     
-    static bool GenerateSetToDefaultValueMethod(DataType const& type, mustache::data &generateData)
+    static bool GenerateSetToDefaultValueMethod(ReflectedType const& type, mustache::data &generateData)
     {
         if ( type.HasProperties() && type.properties.Count() > 0)
         {
@@ -318,7 +318,7 @@ namespace SE::ReflectTool
     //-------------------------------------------------------------------------
     // Resource Methods
     //-------------------------------------------------------------------------
-    static bool GenerateResourcesMethod(DataType const& type, mustache::data &generateData)
+    static bool GenerateResourcesMethod(ReflectedType const& type, mustache::data &generateData)
     {
         if (type.HasResourcePtrOrStructProperties() && type.properties.Count() > 0)
         {
@@ -418,7 +418,7 @@ namespace SE::ReflectTool
         return false;
     }
 
-    static mustache::data GenerateExpectedResourceTypeMethod(DataType const& type )
+    static mustache::data GenerateExpectedResourceTypeMethod(ReflectedType const& type )
     {
         mustache::data generateData;
 
@@ -469,12 +469,12 @@ namespace SE::ReflectTool
     //-------------------------------------------------------------------------
     // Type Registration Methods
     //-------------------------------------------------------------------------
-    static mustache::data GenerateTypeInfoConstructor(DataType const& type, DataType const& parentType )
+    static mustache::data GenerateTypeInfoConstructor(ReflectedType const& type, ReflectedType const& parentType )
     {
         mustache::data generateData;
 
         // The pass by value here is intentional!
-        auto GeneratePropertyRegistrationCode = [type] (DataProperty prop, mustache::data &propertiesData)
+        auto GeneratePropertyRegistrationCode = [type] (ReflectedProperty prop, mustache::data &propertiesData)
         {
 		  	StringAnsi templateSpecializationString;
 			if (prop.templateArgTypeName.IsEmpty())
@@ -598,7 +598,7 @@ namespace SE::ReflectTool
         generateData.set("typeName", type.name.Get());
         generateData.set("isAbstract", type.IsAbstract() ? "true":"false");
         generateData.set("category", type.GetCategory().Get());
-        generateData.set("isDevOnly", type.isDevOnly ? "true":"false");
+        generateData.set("isDevOnly", type.m_isDevOnly ? "true":"false");
         generateData.set("parentTypeNamespace", parentType.namespaceName.Get());
         generateData.set("parentTypeName", parentType.name.Get());
         generateData.set("hasProperties", type.HasProperties());
@@ -631,11 +631,11 @@ namespace SE::ReflectTool
     // File generation
     //-------------------------------------------------------------------------
 
-    static mustache::data GenerateTypeInfoFile(ReflectionDatabase const& database, String const& exportMacro, DataType const& type, DataType const& parentType )
+    static mustache::data GenerateTypeInfoFile(ReflectionDatabase const& database, String const& exportMacro, ReflectedType const& type, ReflectedType const& parentType )
     {
         mustache::data generateTypeData;
         // Dev Flag
-        if ( type.isDevOnly )
+        if ( type.m_isDevOnly )
         {
             generateTypeData.set("isDevOnlyBegin", "#ifdef SGE_DEVELOPMENT");
         }
@@ -771,7 +771,7 @@ namespace SE::ReflectTool
         // Dev Flag
         //-------------------------------------------------------------------------
 
-        if (type.isDevOnly)
+        if (type.m_isDevOnly)
         {
             generateTypeData.set("isDevOnlyEnd", "#endif");;
         }
@@ -782,7 +782,7 @@ namespace SE::ReflectTool
     //-------------------------------------------------------------------------
 
     void CppGenerateType(Generator* generator,  ReflectionDatabase const& database, std::stringstream& codeFile, String const& exportMacro,
-            DataType const& type, DataType const& parentType, std::string templateStr)
+            ReflectedType const& type, ReflectedType const& parentType, std::string templateStr)
     {
         //GenerateTypeInfoFile( codeFile, database, exportMacro, type, parentType );
         mustache::data data = GenerateTypeInfoFile(database, exportMacro, type, parentType);

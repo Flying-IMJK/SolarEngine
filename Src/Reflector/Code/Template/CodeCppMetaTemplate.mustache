@@ -8,17 +8,17 @@
 namespace SE
 {
     template <>
-    class TTypeMetaInfo<::{{namespace}}::{{typeName}}> : public TypeMetaInfo
+    class TTypeMetaInfo<::{{namespace}}{{typeName}}> : public TypeMetaInfo
     {
     public:
-        static TTypeMetaInfo<::{{namespace}}::{{typeName}}> * s_pMetaInfo;
+        static TTypeMetaInfo<::{{namespace}}{{typeName}}> * s_pMetaInfo;
 
         // Static registration Function
         //-------------------------------------------------------------------------
         static void RegisterType()
         {
             ENGINE_ASSERT(s_pMetaInfo == nullptr);
-            s_pMetaInfo = New<TTypeMetaInfo<::{{namespace}}::{{typeName}}>>();
+            s_pMetaInfo = New<TTypeMetaInfo<::{{namespace}}{{typeName}}>>();
 
             Types::RegisterMeta(s_pMetaInfo);
         };
@@ -34,20 +34,20 @@ namespace SE
 
         TTypeMetaInfo()
         {
-            id = TypeID(SE_TEXT("{{namespace}}::{{typeName}}"));
-            size = sizeof(::{{namespace}}::{{typeName}});
-            alignment = alignof(::{{namespace}}::{{typeName}});
+            id = TypeID(SE_TEXT("{{namespace}}{{typeName}}"));
+            size = sizeof(::{{namespace}}{{typeName}});
+            alignment = alignof(::{{namespace}}{{typeName}});
             name = SE_TEXT("{{typeName}}");
-            fullName = SE_TEXT("{{namespace}}::{{typeName}}");
+            fullName = SE_TEXT("{{namespace}}{{typeName}}");
         }
 
 
         TypeMetaAttribute* Create() const override
         {
-            return New<::{{namespace}}::{{typeName}}>();
+            return New<::{{namespace}}{{typeName}}>();
         }
     };
 
-    TTypeMetaInfo<::{{namespace}}::{{typeName}}> * TTypeMetaInfo<::{{namespace}}::{{typeName}}>::s_pMetaInfo = nullptr;
+    TTypeMetaInfo<::{{namespace}}{{typeName}}> * TTypeMetaInfo<::{{namespace}}{{typeName}}>::s_pMetaInfo = nullptr;
 }
 {{isDevOnlyEnd}}

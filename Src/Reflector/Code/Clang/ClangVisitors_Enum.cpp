@@ -1,4 +1,4 @@
-#include "ClangVisitors.h"
+#include "ClangVisitors_Enum.h"
 #include "../Database/ReflectionDatabase.h"
 
 //-------------------------------------------------------------------------
@@ -7,12 +7,12 @@ namespace SE::ReflectTool
 {
     static CXChildVisitResult VisitEnumContents( CXCursor cr, CXCursor parent, CXClientData pClientData )
     {
-        auto pContext = static_cast<ClangParserContext*>( pClientData );
+        auto pContext = reinterpret_cast<ClangParserContext*>( pClientData );
 
         CXCursorKind kind = clang_getCursorKind( cr );
         if ( kind == CXCursor_EnumConstantDecl )
         {
-            auto pEnum = reinterpret_cast<DataType*>( pContext->pParentReflectedType );
+            auto pEnum = reinterpret_cast<ReflectedType*>( pContext->m_pParentReflectedType );
             clang::EnumConstantDecl* pEnumConstantDecl = ( clang::EnumConstantDecl* ) cr.data[0];
 
             ReflectedEnumConstant constant;
@@ -115,39 +115,29 @@ namespace SE::ReflectTool
             return CXChildVisit_Continue;
         }
 
+        int const lineNumber = ClangUtils::GetLineNumberForCursor(cr);
+
         ReflectionMacro macro;
-        if ( pContext->FindReflectionMacroForEnum(headerID, cr, macro) )
+        if ( pContext->FindReflectionMacroForEnum( headerID, cr, lineNumber, macro ) )
         {
-            if (!pContext->pDatabase->IsTypeRegistered(enumTypeID) )
+            if ( pContext->m_detectDevOnlyTypesAndProperties || !pContext->m_pDatabase->IsTypeRegistered( enumTypeID ) )
             {
-                DataType enumDescriptor( enumTypeID, cursorName.ToStringAnsi());
+                ReflectedType enumDescriptor( enumTypeID, cursorName.ToStringAnsi());
                 enumDescriptor.headerID = headerID;
                 enumDescriptor.namespaceName = pContext->GetCurrentNamespace().ToStringAnsi();
-                enumDescriptor.flags.SetFlag( DataType::Flags::IsEnum );
+                enumDescriptor.flags.SetFlag( ReflectedType::Flags::IsEnum );
                 enumDescriptor.underlyingType = underlyingCoreType;
-                enumDescriptor.isReflect = macro.hasReflect;
-
-                // Check for SE_ENUM binding (hasAPI flag)
-                if (macro.hasAPI)
-                {
-                    // Same macro carries both Reflect and API
-                    enumDescriptor.isAPI = true;
-                    StringAnsi assemblyName, assemblyDir;
-                    pContext->GetAssemblyInfoForHeader(headerID, assemblyName, assemblyDir);
-                    enumDescriptor.bindingInfo.assemblyName = assemblyName;
-                    enumDescriptor.bindingInfo.assemblyDir = assemblyDir;
-                }
 
                 // Record current parent type, and update it to the new type
-                void* pPreviousParentReflectedType = pContext->pParentReflectedType;
-                pContext->pParentReflectedType = &enumDescriptor;
+                void* pPreviousParentReflectedType = pContext->m_pParentReflectedType;
+                pContext->m_pParentReflectedType = &enumDescriptor;
                 {
                     clang_visitChildren( cr, VisitEnumContents, pContext );
                 }
                 // Reset parent type back to original parent
-                pContext->pParentReflectedType = pPreviousParentReflectedType;
+                pContext->m_pParentReflectedType = pPreviousParentReflectedType;
 
-                pContext->pDatabase->RegisterType( &enumDescriptor, false);
+                pContext->m_pDatabase->RegisterType( &enumDescriptor, pContext->m_detectDevOnlyTypesAndProperties );
             }
         }
 

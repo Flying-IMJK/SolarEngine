@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DataTypes.h"
+#include "ReflectionDataTypes.h"
 #include "Core/TypeSystem/Property/TypePropertyPath.h"
 
 #include <vector>
@@ -42,19 +42,19 @@ namespace SE::ReflectTool
         // Type functions
         //-------------------------------------------------------------------------
 
-        DataType const *GetType(StringID typeID) const;
-        DataType *GetType(StringID typeID);
-		std::vector<DataType> const &GetAllTypes() const { return m_reflectedTypes; }
+        ReflectedType const *GetType(StringID typeID) const;
+        ReflectedType *GetType(StringID typeID);
+		std::vector<ReflectedType> const &GetAllTypes() const { return m_reflectedTypes; }
         bool IsTypeRegistered(StringID typeID) const;
         bool IsTypeDerivedFrom(StringID typeID, StringID parentTypeID) const;
-        void GetAllTypesForHeader(HeaderID headerID, List<DataType> &types) const;
-        void GetAllTypesForProject(ProjectID projectID, List<DataType> &types) const;
-        void RegisterType(DataType const *pType, bool onlyUpdateDevFlag);
+        void GetAllTypesForHeader(HeaderID headerID, List<ReflectedType> &types) const;
+        void GetAllTypesForProject(ProjectID projectID, List<ReflectedType> &types) const;
+        void RegisterType(ReflectedType const *pType, bool onlyUpdateDevFlag);
 
         // Property functions
         //-------------------------------------------------------------------------
 
-        DataProperty const *GetPropertyTypeDescriptor(StringID typeID, TypePropertyPath const &pathID) const;
+        ReflectedProperty const *GetPropertyTypeDescriptor(StringID typeID, TypePropertyPath const &pathID) const;
 
         // Cleaning
         //-------------------------------------------------------------------------
@@ -70,15 +70,13 @@ namespace SE::ReflectTool
         bool CreateTables();
         bool DropTables();
 
-        bool ReadAdditionalTypeData(DataType &type);
-        bool ReadAdditionalEnumData(DataType &type);
+        bool ReadAdditionalTypeData(ReflectedType &type);
+        bool ReadAdditionalEnumData(ReflectedType &type);
         bool ReadAdditionalResourceTypeData(ReflectedResourceType &type);
-        bool ReadAdditionalBindingData(DataType &type);
 
-        bool WriteAdditionalTypeData(DataType const &type);
-        bool WriteAdditionalEnumData(DataType const &type);
+        bool WriteAdditionalTypeData(ReflectedType const &type);
+        bool WriteAdditionalEnumData(ReflectedType const &type);
         bool WriteAdditionalResourceTypeData(ReflectedResourceType const &type);
-        bool WriteAdditionalBindingData(DataType const &type);
 
         // SQLite
         //-------------------------------------------------------------------------
@@ -99,8 +97,8 @@ namespace SE::ReflectTool
         mutable StringAnsi m_errorMessage;
         mutable char m_statementBuffer[s_defaultStatementBufferSize] = {0};
 
-        DataType m_reflectedTypeBase;
-        std::vector<DataType> m_reflectedTypes;
+        ReflectedType m_reflectedTypeBase;
+        std::vector<ReflectedType> m_reflectedTypes;
 		std::vector<HeaderInfo> m_reflectedHeaders;
 		std::vector<ProjectInfo> m_reflectedProjects;
 		std::vector<ReflectedResourceType> m_reflectedResourceTypes;

@@ -8,17 +8,17 @@
 namespace SE
 {
     template<>
-    class TTypeEnumInfo<::{{namespace}}::{{typeName}}> final : public TypeEnumInfo
+    class TTypeEnumInfo<::{{namespace}}{{typeName}}> final : public TypeEnumInfo
     {
     public:
-        static TTypeEnumInfo<::{{namespace}}::{{typeName}}> * s_pTypeInfo;
+        static TTypeEnumInfo<::{{namespace}}{{typeName}}> * s_pTypeInfo;
 
         // Static registration Function
         //-------------------------------------------------------------------------
         static void RegisterType()
         {
             ENGINE_ASSERT(s_pTypeInfo == nullptr);
-            s_pTypeInfo = New<TTypeEnumInfo<::{{namespace}}::{{typeName}}>>();
+            s_pTypeInfo = New<TTypeEnumInfo<::{{namespace}}{{typeName}}>>();
 
             Types::RegisterEnum(s_pTypeInfo);
         };
@@ -37,11 +37,11 @@ namespace SE
         TTypeEnumInfo()
         {
             // Create type info
-            id = TypeID(SE_TEXT("{{namespace}}::{{typeName}}"));
-            size = sizeof(::{{namespace}}::{{typeName}});
-            alignment = alignof(::{{namespace}}::{{typeName}});
+            id = TypeID(SE_TEXT("{{namespace}}{{typeName}}"));
+            size = sizeof(::{{namespace}}{{typeName}});
+            alignment = alignof(::{{namespace}}{{typeName}});
             name = SE_TEXT("{{typeName}}");
-            fullName = SE_TEXT("{{namespace}}::{{typeName}}");
+            fullName = SE_TEXT("{{namespace}}{{typeName}}");
             underlyingType = {{underlyingType}};
 
             TypeEnumInfo::ConstantInfo constantInfo;
@@ -54,6 +54,6 @@ namespace SE
         };
     };
 
-    TTypeEnumInfo<::{{namespace}}::{{typeName}}> * TTypeEnumInfo<::{{namespace}}::{{typeName}}>::s_pTypeInfo = nullptr;
+    TTypeEnumInfo<::{{namespace}}{{typeName}}> * TTypeEnumInfo<::{{namespace}}{{typeName}}>::s_pTypeInfo = nullptr;
 }
 {{isDevOnlyEnd}}

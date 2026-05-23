@@ -12,10 +12,10 @@ namespace SE::ReflectTool
         // Create the base class for all registered engine types
         //-------------------------------------------------------------------------
         String str = String::Format(SE_TEXT("{0}::{1}"), Settings::g_engineNamespace, Settings::g_reflectedTypeInterfaceClassName);
-        m_reflectedTypeBase = DataType(StringID(str), StringAnsi(Settings::g_reflectedTypeInterfaceClassName));
-        m_reflectedTypeBase.flags.SetFlag(DataType::Flags::IsAbstract);
+        m_reflectedTypeBase = ReflectedType(StringID(str), StringAnsi(Settings::g_reflectedTypeInterfaceClassName));
+        m_reflectedTypeBase.flags.SetFlag(ReflectedType::Flags::IsAbstract);
 
-        str = String::Format(SE_TEXT("{0}"), Settings::g_engineNamespace);
+        str = String::Format(SE_TEXT("{0}::"), Settings::g_engineNamespace);
         m_reflectedTypeBase.namespaceName = str.Get();
     }
 
@@ -225,7 +225,7 @@ namespace SE::ReflectTool
 
     //-------------------------------------------------------------------------
 
-    DataType const *ReflectionDatabase::GetType(StringID typeID) const
+    ReflectedType const *ReflectionDatabase::GetType(StringID typeID) const
     {
         if (m_reflectedTypeBase.typeID == typeID)
         {
@@ -243,9 +243,9 @@ namespace SE::ReflectTool
         return nullptr;
     }
 
-    DataType* ReflectionDatabase::GetType(StringID typeID)
+    ReflectedType* ReflectionDatabase::GetType(StringID typeID)
     {
-        return const_cast<DataType *>(const_cast<ReflectionDatabase const *>(this)->GetType(typeID));
+        return const_cast<ReflectedType *>(const_cast<ReflectionDatabase const *>(this)->GetType(typeID));
     }
 
     bool ReflectionDatabase::IsTypeRegistered(StringID typeID) const
@@ -288,7 +288,7 @@ namespace SE::ReflectTool
         return false;
     }
 
-    void ReflectionDatabase::GetAllTypesForHeader(HeaderID headerID, List<DataType> &types) const
+    void ReflectionDatabase::GetAllTypesForHeader(HeaderID headerID, List<ReflectedType> &types) const
     {
         for (auto const &type : m_reflectedTypes)
         {
@@ -299,7 +299,7 @@ namespace SE::ReflectTool
         }
     }
 
-    void ReflectionDatabase::GetAllTypesForProject(ProjectID projectID, List<DataType> &types) const
+    void ReflectionDatabase::GetAllTypesForProject(ProjectID projectID, List<ReflectedType> &types) const
     {
         for (auto const &hdr : m_reflectedHeaders)
         {
@@ -310,13 +310,13 @@ namespace SE::ReflectTool
         }
     }
 
-    void ReflectionDatabase::RegisterType(DataType const *pType, bool onlyUpdateDevFlag)
+    void ReflectionDatabase::RegisterType(ReflectedType const *pType, bool onlyUpdateDevFlag)
     {
         if (onlyUpdateDevFlag)
         {
             auto pReflectedType = GetType(pType->typeID);
             ENGINE_ASSERT(pReflectedType != nullptr);
-            pReflectedType->isDevOnly = false;
+            pReflectedType->m_isDevOnly = false;
 
             for (auto const &property : pType->properties)
             {
@@ -334,11 +334,11 @@ namespace SE::ReflectTool
         }
     }
 
-    DataProperty const *ReflectionDatabase::GetPropertyTypeDescriptor(StringID typeID, TypePropertyPath const &pathID) const
+    ReflectedProperty const *ReflectionDatabase::GetPropertyTypeDescriptor(StringID typeID, TypePropertyPath const &pathID) const
     {
-        DataProperty const *pResolvedPropertyTypeDesc = nullptr;
+        ReflectedProperty const *pResolvedPropertyTypeDesc = nullptr;
 
-        DataType const *pCurrentTypeDesc = GetType(typeID);
+        ReflectedType const *pCurrentTypeDesc = GetType(typeID);
         if (pCurrentTypeDesc == nullptr)
         {
             return pResolvedPropertyTypeDesc;
@@ -504,6 +504,7 @@ namespace SE::ReflectTool
                 project.path = (char const *)sqlite3_column_text(pStatement, 2);
                 project.exportMacro = (char const *)sqlite3_column_text(pStatement, 3);
                 project.moduleClassNameFull = (char const *)sqlite3_column_text(pStatement, 4);
+                project.moduleHeaderID = StringID(sqlite3_column_int(pStatement, 5));
                 project.dependencyCount = sqlite3_column_int(pStatement, 6);
                 m_reflectedProjects.emplace_back(project);
             }
@@ -553,7 +554,7 @@ namespace SE::ReflectTool
         {
             while (sqlite3_step(pStatement) == SQLITE_ROW)
             {
-                DataType type;
+                ReflectedType type;
                 type.typeID = TypeID(sqlite3_column_int(pStatement, 0));
                 type.parentTypeID = TypeID(sqlite3_column_int(pStatement, 1));
                 type.headerID = StringID(sqlite3_column_int(pStatement, 2));
@@ -574,16 +575,6 @@ namespace SE::ReflectTool
                     if (!ReadAdditionalTypeData(type))
                     {
                         return false;
-                    }
-                }
-
-                // Read binding data (if present)
-                if (type.isAPI)
-                {
-                    if (!ReadAdditionalBindingData(type))
-                    {
-                        // Gracefully handle missing tables (pre-merge databases)
-                        // If the binding tables don't exist yet, just skip
                     }
                 }
 
@@ -664,8 +655,8 @@ namespace SE::ReflectTool
 
         for (auto const &project : m_reflectedProjects)
         {
-            if (!ExecuteSimpleQuery("INSERT OR REPLACE INTO `Modules`(`ModuleID`, `Name`, `Path`, `ExportMacro`, `ModuleClassName`, `DependencyCount`) VALUES ( %u, \"%s\", \"%s\",\"%s\",\"%s\", %u);",
-				(uint32_t)project.id, project.name.Get(), project.path.ToStringAnsi().Get(), project.exportMacro.Get(), project.moduleClassNameFull.Get(), project.dependencyCount))
+            if (!ExecuteSimpleQuery("INSERT OR REPLACE INTO `Modules`(`ModuleID`, `Name`, `Path`, `ExportMacro`, `ModuleClassName`, `ModuleHeaderID`, `DependencyCount`) VALUES ( %u, \"%s\", \"%s\",\"%s\",\"%s\", %u, %u);",
+				(uint32_t)project.id, project.name.Get(), project.path.ToStringAnsi().Get(), project.exportMacro.Get(), project.moduleClassNameFull.Get(), (uint32_t)project.moduleHeaderID, project.dependencyCount))
             {
                 return false;
             }
@@ -704,15 +695,6 @@ namespace SE::ReflectTool
             else
             {
                 if (!WriteAdditionalTypeData(type))
-                {
-                    return false;
-                }
-            }
-
-            // Write binding data (if present)
-            if (type.isAPI)
-            {
-                if (!WriteAdditionalBindingData(type))
                 {
                     return false;
                 }
@@ -758,7 +740,7 @@ namespace SE::ReflectTool
         // Project / Header tables
         //-------------------------------------------------------------------------
 
-        if (!ExecuteSimpleQuery("CREATE TABLE IF NOT EXISTS `Modules` ( `ModuleID` INTEGER UNIQUE, `Name` TEXT UNIQUE, `Path` TEXT, `ExportMacro` TEXT, `ModuleClassName` TEXT NOT NULL, `DependencyCount` INTEGER, PRIMARY KEY( `ModuleID` ) );"))
+        if (!ExecuteSimpleQuery("CREATE TABLE IF NOT EXISTS `Modules` ( `ModuleID` INTEGER UNIQUE, `Name` TEXT UNIQUE, `Path` TEXT, `ExportMacro` TEXT, `ModuleClassName` TEXT NOT NULL, `ModuleHeaderID` INTEGER UNIQUE NOT NULL, `DependencyCount` INTEGER, PRIMARY KEY( `ModuleID` ) );"))
         {
             return false;
         }
@@ -800,54 +782,6 @@ namespace SE::ReflectTool
         //-------------------------------------------------------------------------
 
         if (!ExecuteSimpleQuery("CREATE TABLE IF NOT EXISTS `DatabaseInfo` ( `LastUpdated` NUMERIC, PRIMARY KEY( `LastUpdated`) );"))
-        {
-            return false;
-        }
-
-        // Binding data tables
-        //-------------------------------------------------------------------------
-
-        if (!ExecuteSimpleQuery("CREATE TABLE IF NOT EXISTS `TypeBindings` ( `TypeID` INTEGER NOT NULL, `IsSealed` INTEGER DEFAULT 0, `IsStatic` INTEGER DEFAULT 0, `NoSpawn` INTEGER DEFAULT 0, `NoConstructor` INTEGER DEFAULT 0, `Attributes` TEXT DEFAULT '', `Tag` TEXT DEFAULT '', `AssemblyName` TEXT DEFAULT '', `AssemblyDir` TEXT DEFAULT '', PRIMARY KEY(`TypeID`) );"))
-        {
-            return false;
-        }
-
-        if (!ExecuteSimpleQuery("CREATE TABLE IF NOT EXISTS `ApiFunctions` ( `TypeID` INTEGER NOT NULL, `Name` TEXT NOT NULL, `ReturnType` TEXT, `IsStatic` INTEGER DEFAULT 0, `IsVirtual` INTEGER DEFAULT 0, `IsConst` INTEGER DEFAULT 0, `UniqueName` TEXT, `EntryPoint` TEXT, `NoProxy` INTEGER DEFAULT 0, `IsHidden` INTEGER DEFAULT 0, `IsSealed` INTEGER DEFAULT 0, `Attributes` TEXT DEFAULT '', `Tag` TEXT DEFAULT '', `LineNumber` INTEGER DEFAULT -1, PRIMARY KEY(`TypeID`, `Name`) );"))
-        {
-            return false;
-        }
-
-        if (!ExecuteSimpleQuery("CREATE TABLE IF NOT EXISTS `ApiFunctionParams` ( `TypeID` INTEGER NOT NULL, `FunctionName` TEXT NOT NULL, `ParamIndex` INTEGER NOT NULL, `CppType` TEXT, `Name` TEXT, `IsPointer` INTEGER DEFAULT 0, `IsConst` INTEGER DEFAULT 0, `IsRef` INTEGER DEFAULT 0, `IsOut` INTEGER DEFAULT 0, `DefaultValue` TEXT DEFAULT '', `Attributes` TEXT DEFAULT '', PRIMARY KEY(`TypeID`, `FunctionName`, `ParamIndex`) );"))
-        {
-            return false;
-        }
-
-        if (!ExecuteSimpleQuery("CREATE TABLE IF NOT EXISTS `ApiProperties` ( `TypeID` INTEGER NOT NULL, `CppType` TEXT, `Name` TEXT NOT NULL, `GetterName` TEXT, `SetterName` TEXT, `GetterUniqueName` TEXT, `SetterUniqueName` TEXT, `GetterEntryPoint` TEXT, `SetterEntryPoint` TEXT, `HasGetter` INTEGER DEFAULT 0, `HasSetter` INTEGER DEFAULT 0, `GetterAccess` INTEGER DEFAULT 2, `SetterAccess` INTEGER DEFAULT 2, `Attributes` TEXT DEFAULT '', `LineNumber` INTEGER DEFAULT -1, PRIMARY KEY(`TypeID`, `Name`) );"))
-        {
-            return false;
-        }
-
-        if (!ExecuteSimpleQuery("CREATE TABLE IF NOT EXISTS `ApiFields` ( `TypeID` INTEGER NOT NULL, `CppType` TEXT, `Name` TEXT NOT NULL, `IsReadOnly` INTEGER DEFAULT 0, `IsStatic` INTEGER DEFAULT 0, `IsHidden` INTEGER DEFAULT 0, `Attributes` TEXT DEFAULT '', `ArraySize` INTEGER DEFAULT 0, `LineNumber` INTEGER DEFAULT -1, PRIMARY KEY(`TypeID`, `Name`) );"))
-        {
-            return false;
-        }
-
-        if (!ExecuteSimpleQuery("CREATE TABLE IF NOT EXISTS `ApiEvents` ( `TypeID` INTEGER NOT NULL, `Name` TEXT NOT NULL, `CppType` TEXT, `NamespaceName` TEXT DEFAULT '', `IsStatic` INTEGER DEFAULT 0, `Access` INTEGER DEFAULT 2, `Attributes` TEXT DEFAULT '', `LineNumber` INTEGER DEFAULT -1, PRIMARY KEY(`TypeID`, `Name`) );"))
-        {
-            return false;
-        }
-
-        if (!ExecuteSimpleQuery("CREATE TABLE IF NOT EXISTS `ApiEventParams` ( `TypeID` INTEGER NOT NULL, `EventName` TEXT NOT NULL, `ParamIndex` INTEGER NOT NULL, `CppType` TEXT, `Name` TEXT, `IsPointer` INTEGER DEFAULT 0, `IsConst` INTEGER DEFAULT 0, `IsRef` INTEGER DEFAULT 0, `IsOut` INTEGER DEFAULT 0, `DefaultValue` TEXT DEFAULT '', `Attributes` TEXT DEFAULT '', PRIMARY KEY(`TypeID`, `EventName`, `ParamIndex`) );"))
-        {
-            return false;
-        }
-
-        if (!ExecuteSimpleQuery("CREATE TABLE IF NOT EXISTS `ApiInterfaces` ( `TypeID` INTEGER NOT NULL, `Name` TEXT NOT NULL, `NamespaceName` TEXT DEFAULT '', `Access` INTEGER DEFAULT 2, `Attributes` TEXT DEFAULT '', `LineNumber` INTEGER DEFAULT -1, PRIMARY KEY(`TypeID`, `Name`) );"))
-        {
-            return false;
-        }
-
-        if (!ExecuteSimpleQuery("CREATE TABLE IF NOT EXISTS `ApiInterfaceFunctions` ( `TypeID` INTEGER NOT NULL, `InterfaceName` TEXT NOT NULL, `Name` TEXT NOT NULL, `ReturnType` TEXT, `IsStatic` INTEGER DEFAULT 0, `IsVirtual` INTEGER DEFAULT 0, `IsConst` INTEGER DEFAULT 0, `UniqueName` TEXT, `Attributes` TEXT DEFAULT '', `LineNumber` INTEGER DEFAULT -1, PRIMARY KEY(`TypeID`, `InterfaceName`, `Name`) );"))
         {
             return false;
         }
@@ -899,57 +833,12 @@ namespace SE::ReflectTool
             return false;
         }
 
-        if (!ExecuteSimpleQuery("DROP TABLE IF EXISTS `TypeBindings`;"))
-        {
-            return false;
-        }
-
-        if (!ExecuteSimpleQuery("DROP TABLE IF EXISTS `ApiFunctions`;"))
-        {
-            return false;
-        }
-
-        if (!ExecuteSimpleQuery("DROP TABLE IF EXISTS `ApiFunctionParams`;"))
-        {
-            return false;
-        }
-
-        if (!ExecuteSimpleQuery("DROP TABLE IF EXISTS `ApiProperties`;"))
-        {
-            return false;
-        }
-
-        if (!ExecuteSimpleQuery("DROP TABLE IF EXISTS `ApiFields`;"))
-        {
-            return false;
-        }
-
-        if (!ExecuteSimpleQuery("DROP TABLE IF EXISTS `ApiEvents`;"))
-        {
-            return false;
-        }
-
-        if (!ExecuteSimpleQuery("DROP TABLE IF EXISTS `ApiEventParams`;"))
-        {
-            return false;
-        }
-
-        if (!ExecuteSimpleQuery("DROP TABLE IF EXISTS `ApiInterfaces`;"))
-        {
-            return false;
-        }
-
-        if (!ExecuteSimpleQuery("DROP TABLE IF EXISTS `ApiInterfaceFunctions`;"))
-        {
-            return false;
-        }
-
         return true;
     }
 
     //-------------------------------------------------------------------------
 
-    bool ReflectionDatabase::ReadAdditionalTypeData(DataType &type)
+    bool ReflectionDatabase::ReadAdditionalTypeData(ReflectedType &type)
     {
         ENGINE_ASSERT(type.typeID != StringID::Invalid && !type.IsEnum());
 
@@ -963,7 +852,7 @@ namespace SE::ReflectTool
         {
             while (sqlite3_step(pStatement) == SQLITE_ROW)
             {
-                DataProperty propDesc;
+                ReflectedProperty propDesc;
                 propDesc.lineNumber = sqlite3_column_int(pStatement, 1);
                 propDesc.typeID = TypeID(sqlite3_column_int(pStatement, 3));
                 propDesc.name = (char const *)sqlite3_column_text(pStatement, 4);
@@ -985,7 +874,7 @@ namespace SE::ReflectTool
             }
 
             //-------------------------------------------------------------------------
-			Function<bool(DataProperty const &, DataProperty const &)> compare = [](DataProperty const &a, DataProperty const &b)
+			Function<bool(ReflectedProperty const &, ReflectedProperty const &)> compare = [](ReflectedProperty const &a, ReflectedProperty const &b)
 			{ return a.lineNumber < b.lineNumber; };
 
 			Sorting::QuickSort(type.properties, compare);
@@ -999,7 +888,7 @@ namespace SE::ReflectTool
         return false;
     }
 
-    bool ReflectionDatabase::ReadAdditionalEnumData(DataType &type)
+    bool ReflectionDatabase::ReadAdditionalEnumData(ReflectedType &type)
     {
         ENGINE_ASSERT(type.typeID != StringID::Invalid && type.IsEnum());
 
@@ -1057,7 +946,7 @@ namespace SE::ReflectTool
         return true;
     }
 
-    bool ReflectionDatabase::WriteAdditionalTypeData(DataType const &type)
+    bool ReflectionDatabase::WriteAdditionalTypeData(ReflectedType const &type)
     {
         // Delete old properties
         if (!ExecuteSimpleQuery("DELETE FROM `Properties` WHERE `OwnerTypeID` = %u;", (uint32_t)type.typeID))
@@ -1087,7 +976,7 @@ namespace SE::ReflectTool
         return true;
     }
 
-    bool ReflectionDatabase::WriteAdditionalEnumData(DataType const &type)
+    bool ReflectionDatabase::WriteAdditionalEnumData(ReflectedType const &type)
     {
         // Fill enum values table with all constants
         if (!ExecuteSimpleQuery("DELETE FROM `EnumConstants` WHERE `TypeID` = %u;", (uint32_t)type.typeID))
@@ -1124,446 +1013,6 @@ namespace SE::ReflectTool
 				type.typeID.ToString().Get(), parent.ToString().Get()))
             {
                 return false;
-            }
-        }
-
-        return true;
-    }
-
-    //-------------------------------------------------------------------------
-
-    bool ReflectionDatabase::ReadAdditionalBindingData(DataType &type)
-    {
-        ENGINE_ASSERT(type.isAPI);
-
-        sqlite3_stmt *pStatement = nullptr;
-        auto typeID = (uint32_t)type.typeID;
-
-        // Read TypeBindings metadata
-        FillStatementBuffer("SELECT * FROM `TypeBindings` WHERE `TypeID` = %u;", typeID);
-        if (IsValidSQLiteResult(sqlite3_prepare_v2(m_pDatabase, m_statementBuffer, -1, &pStatement, nullptr)))
-        {
-            if (sqlite3_step(pStatement) == SQLITE_ROW)
-            {
-                type.bindingInfo.isSealed = sqlite3_column_int(pStatement, 1) != 0;
-                type.bindingInfo.isStatic = sqlite3_column_int(pStatement, 2) != 0;
-                type.bindingInfo.noSpawn = sqlite3_column_int(pStatement, 3) != 0;
-                type.bindingInfo.noConstructor = sqlite3_column_int(pStatement, 4) != 0;
-                type.bindingInfo.attributes = (char const *)sqlite3_column_text(pStatement, 5);
-                type.bindingInfo.tag = (char const *)sqlite3_column_text(pStatement, 6);
-                type.bindingInfo.assemblyName = (char const *)sqlite3_column_text(pStatement, 7);
-                type.bindingInfo.assemblyDir = (char const *)sqlite3_column_text(pStatement, 8);
-            }
-            sqlite3_finalize(pStatement);
-            pStatement = nullptr;
-        }
-        else
-        {
-            // Table may not exist in pre-merge databases
-            return true;
-        }
-
-        // Read ApiFunctions
-        FillStatementBuffer("SELECT * FROM `ApiFunctions` WHERE `TypeID` = %u ORDER BY `LineNumber`;", typeID);
-        if (IsValidSQLiteResult(sqlite3_prepare_v2(m_pDatabase, m_statementBuffer, -1, &pStatement, nullptr)))
-        {
-            while (sqlite3_step(pStatement) == SQLITE_ROW)
-            {
-                ApiFunction fn;
-                fn.name = (char const *)sqlite3_column_text(pStatement, 1);
-                fn.returnType = (char const *)sqlite3_column_text(pStatement, 2);
-                fn.isStatic = sqlite3_column_int(pStatement, 3) != 0;
-                fn.isVirtual = sqlite3_column_int(pStatement, 4) != 0;
-                fn.isConst = sqlite3_column_int(pStatement, 5) != 0;
-                fn.uniqueName = (char const *)sqlite3_column_text(pStatement, 6);
-                fn.entryPoint = (char const *)sqlite3_column_text(pStatement, 7);
-                fn.noProxy = sqlite3_column_int(pStatement, 8) != 0;
-                fn.isHidden = sqlite3_column_int(pStatement, 9) != 0;
-                fn.isSealed = sqlite3_column_int(pStatement, 10) != 0;
-                fn.attributes = (char const *)sqlite3_column_text(pStatement, 11);
-                fn.tag = (char const *)sqlite3_column_text(pStatement, 12);
-                fn.lineNumber = sqlite3_column_int(pStatement, 13);
-                type.bindingInfo.functions.Add(fn);
-            }
-            sqlite3_finalize(pStatement);
-            pStatement = nullptr;
-        }
-
-        // Read ApiFunctionParams for each function
-        for (auto &fn : type.bindingInfo.functions)
-        {
-            StringAnsi escapedName = fn.name;
-            escapedName.Replace("'", "''");
-            FillStatementBuffer("SELECT * FROM `ApiFunctionParams` WHERE `TypeID` = %u AND `FunctionName` = '%s' ORDER BY `ParamIndex`;", typeID, escapedName.Get());
-            if (IsValidSQLiteResult(sqlite3_prepare_v2(m_pDatabase, m_statementBuffer, -1, &pStatement, nullptr)))
-            {
-                while (sqlite3_step(pStatement) == SQLITE_ROW)
-                {
-                    ApiParam param;
-                    param.cppType = (char const *)sqlite3_column_text(pStatement, 3);
-                    param.name = (char const *)sqlite3_column_text(pStatement, 4);
-                    param.isPointer = sqlite3_column_int(pStatement, 5) != 0;
-                    param.isConst = sqlite3_column_int(pStatement, 6) != 0;
-                    param.isRef = sqlite3_column_int(pStatement, 7) != 0;
-                    param.isOut = sqlite3_column_int(pStatement, 8) != 0;
-                    param.defaultValue = (char const *)sqlite3_column_text(pStatement, 9);
-                    param.attributes = (char const *)sqlite3_column_text(pStatement, 10);
-                    fn.params.Add(param);
-                }
-                sqlite3_finalize(pStatement);
-                pStatement = nullptr;
-            }
-        }
-
-        // Read ApiProperties
-        FillStatementBuffer("SELECT * FROM `ApiProperties` WHERE `TypeID` = %u ORDER BY `LineNumber`;", typeID);
-        if (IsValidSQLiteResult(sqlite3_prepare_v2(m_pDatabase, m_statementBuffer, -1, &pStatement, nullptr)))
-        {
-            while (sqlite3_step(pStatement) == SQLITE_ROW)
-            {
-                ApiProperty prop;
-                prop.cppType = (char const *)sqlite3_column_text(pStatement, 1);
-                prop.name = (char const *)sqlite3_column_text(pStatement, 2);
-                prop.getterName = (char const *)sqlite3_column_text(pStatement, 3);
-                prop.setterName = (char const *)sqlite3_column_text(pStatement, 4);
-                prop.getterUniqueName = (char const *)sqlite3_column_text(pStatement, 5);
-                prop.setterUniqueName = (char const *)sqlite3_column_text(pStatement, 6);
-                prop.getterEntryPoint = (char const *)sqlite3_column_text(pStatement, 7);
-                prop.setterEntryPoint = (char const *)sqlite3_column_text(pStatement, 8);
-                prop.hasGetter = sqlite3_column_int(pStatement, 9) != 0;
-                prop.hasSetter = sqlite3_column_int(pStatement, 10) != 0;
-                prop.getterAccess = (AccessLevel)sqlite3_column_int(pStatement, 11);
-                prop.setterAccess = (AccessLevel)sqlite3_column_int(pStatement, 12);
-                prop.attributes = (char const *)sqlite3_column_text(pStatement, 13);
-                prop.lineNumber = sqlite3_column_int(pStatement, 14);
-                type.bindingInfo.bindingProperties.Add(prop);
-            }
-            sqlite3_finalize(pStatement);
-            pStatement = nullptr;
-        }
-
-        // Read ApiFields
-        FillStatementBuffer("SELECT * FROM `ApiFields` WHERE `TypeID` = %u ORDER BY `LineNumber`;", typeID);
-        if (IsValidSQLiteResult(sqlite3_prepare_v2(m_pDatabase, m_statementBuffer, -1, &pStatement, nullptr)))
-        {
-            while (sqlite3_step(pStatement) == SQLITE_ROW)
-            {
-                ApiField field;
-                field.cppType = (char const *)sqlite3_column_text(pStatement, 1);
-                field.name = (char const *)sqlite3_column_text(pStatement, 2);
-                field.isReadOnly = sqlite3_column_int(pStatement, 3) != 0;
-                field.isStatic = sqlite3_column_int(pStatement, 4) != 0;
-                field.isHidden = sqlite3_column_int(pStatement, 5) != 0;
-                field.attributes = (char const *)sqlite3_column_text(pStatement, 6);
-                field.arraySize = sqlite3_column_int(pStatement, 7);
-                field.lineNumber = sqlite3_column_int(pStatement, 8);
-                type.bindingInfo.fields.Add(field);
-            }
-            sqlite3_finalize(pStatement);
-            pStatement = nullptr;
-        }
-
-        // Read ApiEvents
-        FillStatementBuffer("SELECT * FROM `ApiEvents` WHERE `TypeID` = %u ORDER BY `LineNumber`;", typeID);
-        if (IsValidSQLiteResult(sqlite3_prepare_v2(m_pDatabase, m_statementBuffer, -1, &pStatement, nullptr)))
-        {
-            while (sqlite3_step(pStatement) == SQLITE_ROW)
-            {
-                ApiEvent evt;
-                evt.name = (char const *)sqlite3_column_text(pStatement, 1);
-                evt.cppType = (char const *)sqlite3_column_text(pStatement, 2);
-                evt.namespaceName = (char const *)sqlite3_column_text(pStatement, 3);
-                evt.isStatic = sqlite3_column_int(pStatement, 4) != 0;
-                evt.access = (AccessLevel)sqlite3_column_int(pStatement, 5);
-                evt.attributes = (char const *)sqlite3_column_text(pStatement, 6);
-                evt.lineNumber = sqlite3_column_int(pStatement, 7);
-                type.bindingInfo.events.Add(evt);
-            }
-            sqlite3_finalize(pStatement);
-            pStatement = nullptr;
-        }
-
-        // Read ApiEventParams for each event
-        for (auto &evt : type.bindingInfo.events)
-        {
-            StringAnsi escapedName = evt.name;
-            escapedName.Replace("'", "''");
-            FillStatementBuffer("SELECT * FROM `ApiEventParams` WHERE `TypeID` = %u AND `EventName` = '%s' ORDER BY `ParamIndex`;", typeID, escapedName.Get());
-            if (IsValidSQLiteResult(sqlite3_prepare_v2(m_pDatabase, m_statementBuffer, -1, &pStatement, nullptr)))
-            {
-                while (sqlite3_step(pStatement) == SQLITE_ROW)
-                {
-                    ApiParam param;
-                    param.cppType = (char const *)sqlite3_column_text(pStatement, 3);
-                    param.name = (char const *)sqlite3_column_text(pStatement, 4);
-                    param.isPointer = sqlite3_column_int(pStatement, 5) != 0;
-                    param.isConst = sqlite3_column_int(pStatement, 6) != 0;
-                    param.isRef = sqlite3_column_int(pStatement, 7) != 0;
-                    param.isOut = sqlite3_column_int(pStatement, 8) != 0;
-                    param.defaultValue = (char const *)sqlite3_column_text(pStatement, 9);
-                    param.attributes = (char const *)sqlite3_column_text(pStatement, 10);
-                    evt.params.Add(param);
-                }
-                sqlite3_finalize(pStatement);
-                pStatement = nullptr;
-            }
-        }
-
-        // Read ApiInterfaces
-        FillStatementBuffer("SELECT * FROM `ApiInterfaces` WHERE `TypeID` = %u ORDER BY `LineNumber`;", typeID);
-        if (IsValidSQLiteResult(sqlite3_prepare_v2(m_pDatabase, m_statementBuffer, -1, &pStatement, nullptr)))
-        {
-            while (sqlite3_step(pStatement) == SQLITE_ROW)
-            {
-                ApiInterface iface;
-                iface.name = (char const *)sqlite3_column_text(pStatement, 1);
-                iface.namespaceName = (char const *)sqlite3_column_text(pStatement, 2);
-                iface.access = (AccessLevel)sqlite3_column_int(pStatement, 3);
-                iface.attributes = (char const *)sqlite3_column_text(pStatement, 4);
-                iface.lineNumber = sqlite3_column_int(pStatement, 5);
-                type.bindingInfo.interfaces.Add(iface);
-            }
-            sqlite3_finalize(pStatement);
-            pStatement = nullptr;
-        }
-
-        // Read ApiInterfaceFunctions for each interface
-        for (auto &iface : type.bindingInfo.interfaces)
-        {
-            StringAnsi escapedName = iface.name;
-            escapedName.Replace("'", "''");
-            FillStatementBuffer("SELECT * FROM `ApiInterfaceFunctions` WHERE `TypeID` = %u AND `InterfaceName` = '%s' ORDER BY `LineNumber`;", typeID, escapedName.Get());
-            if (IsValidSQLiteResult(sqlite3_prepare_v2(m_pDatabase, m_statementBuffer, -1, &pStatement, nullptr)))
-            {
-                while (sqlite3_step(pStatement) == SQLITE_ROW)
-                {
-                    ApiFunction fn;
-                    fn.name = (char const *)sqlite3_column_text(pStatement, 2);
-                    fn.returnType = (char const *)sqlite3_column_text(pStatement, 3);
-                    fn.isStatic = sqlite3_column_int(pStatement, 4) != 0;
-                    fn.isVirtual = sqlite3_column_int(pStatement, 5) != 0;
-                    fn.isConst = sqlite3_column_int(pStatement, 6) != 0;
-                    fn.uniqueName = (char const *)sqlite3_column_text(pStatement, 7);
-                    fn.attributes = (char const *)sqlite3_column_text(pStatement, 8);
-                    fn.lineNumber = sqlite3_column_int(pStatement, 9);
-                    iface.functions.Add(fn);
-                }
-                sqlite3_finalize(pStatement);
-                pStatement = nullptr;
-            }
-        }
-
-        return true;
-    }
-
-    bool ReflectionDatabase::WriteAdditionalBindingData(DataType const &type)
-    {
-        ENGINE_ASSERT(type.isAPI);
-
-        auto typeID = (uint32_t)type.typeID;
-
-        StringAnsi escapedAttributes = type.bindingInfo.attributes;
-        escapedAttributes.Replace("\"", "\"\"");
-        StringAnsi escapedTag = type.bindingInfo.tag;
-        escapedTag.Replace("\"", "\"\"");
-        StringAnsi escapedAssemblyName = type.bindingInfo.assemblyName;
-        escapedAssemblyName.Replace("\"", "\"\"");
-        StringAnsi escapedAssemblyDir = type.bindingInfo.assemblyDir;
-        escapedAssemblyDir.Replace("\"", "\"\"");
-
-        // Write TypeBindings
-        if (!ExecuteSimpleQuery("INSERT OR REPLACE INTO `TypeBindings`(`TypeID`,`IsSealed`,`IsStatic`,`NoSpawn`,`NoConstructor`,`Attributes`,`Tag`,`AssemblyName`,`AssemblyDir`) VALUES ( %u, %d, %d, %d, %d, \"%s\", \"%s\", \"%s\", \"%s\" );",
-            typeID, type.bindingInfo.isSealed ? 1 : 0, type.bindingInfo.isStatic ? 1 : 0, type.bindingInfo.noSpawn ? 1 : 0, type.bindingInfo.noConstructor ? 1 : 0,
-            escapedAttributes.Get(), escapedTag.Get(), escapedAssemblyName.Get(), escapedAssemblyDir.Get()))
-        {
-            return false;
-        }
-
-        // Delete old binding data for this type
-        ExecuteSimpleQuery("DELETE FROM `ApiFunctions` WHERE `TypeID` = %u;", typeID);
-        ExecuteSimpleQuery("DELETE FROM `ApiFunctionParams` WHERE `TypeID` = %u;", typeID);
-        ExecuteSimpleQuery("DELETE FROM `ApiProperties` WHERE `TypeID` = %u;", typeID);
-        ExecuteSimpleQuery("DELETE FROM `ApiFields` WHERE `TypeID` = %u;", typeID);
-        ExecuteSimpleQuery("DELETE FROM `ApiEvents` WHERE `TypeID` = %u;", typeID);
-        ExecuteSimpleQuery("DELETE FROM `ApiEventParams` WHERE `TypeID` = %u;", typeID);
-        ExecuteSimpleQuery("DELETE FROM `ApiInterfaces` WHERE `TypeID` = %u;", typeID);
-        ExecuteSimpleQuery("DELETE FROM `ApiInterfaceFunctions` WHERE `TypeID` = %u;", typeID);
-
-        // Write ApiFunctions and their params
-        for (auto const &fn : type.bindingInfo.functions)
-        {
-            StringAnsi escReturnType = fn.returnType;
-            escReturnType.Replace("\"", "\"\"");
-            StringAnsi escUniqueName = fn.uniqueName;
-            escUniqueName.Replace("\"", "\"\"");
-            StringAnsi escEntryPoint = fn.entryPoint;
-            escEntryPoint.Replace("\"", "\"\"");
-            StringAnsi escFnAttributes = fn.attributes;
-            escFnAttributes.Replace("\"", "\"\"");
-            StringAnsi escFnTag = fn.tag;
-            escFnTag.Replace("\"", "\"\"");
-            StringAnsi escFnName = fn.name;
-            escFnName.Replace("\"", "\"\"");
-
-            if (!ExecuteSimpleQuery("INSERT INTO `ApiFunctions`(`TypeID`,`Name`,`ReturnType`,`IsStatic`,`IsVirtual`,`IsConst`,`UniqueName`,`EntryPoint`,`NoProxy`,`IsHidden`,`IsSealed`,`Attributes`,`Tag`,`LineNumber`) VALUES ( %u, \"%s\", \"%s\", %d, %d, %d, \"%s\", \"%s\", %d, %d, %d, \"%s\", \"%s\", %d );",
-                typeID, escFnName.Get(), escReturnType.Get(), fn.isStatic ? 1 : 0, fn.isVirtual ? 1 : 0, fn.isConst ? 1 : 0,
-                escUniqueName.Get(), escEntryPoint.Get(), fn.noProxy ? 1 : 0, fn.isHidden ? 1 : 0, fn.isSealed ? 1 : 0,
-                escFnAttributes.Get(), escFnTag.Get(), fn.lineNumber))
-            {
-                return false;
-            }
-
-            // Write function params
-            int paramIdx = 0;
-            for (auto const &param : fn.params)
-            {
-                StringAnsi escParamType = param.cppType;
-                escParamType.Replace("\"", "\"\"");
-                StringAnsi escParamName = param.name;
-                escParamName.Replace("\"", "\"\"");
-                StringAnsi escParamDefault = param.defaultValue;
-                escParamDefault.Replace("\"", "\"\"");
-                StringAnsi escParamAttributes = param.attributes;
-                escParamAttributes.Replace("\"", "\"\"");
-
-                if (!ExecuteSimpleQuery("INSERT INTO `ApiFunctionParams`(`TypeID`,`FunctionName`,`ParamIndex`,`CppType`,`Name`,`IsPointer`,`IsConst`,`IsRef`,`IsOut`,`DefaultValue`,`Attributes`) VALUES ( %u, \"%s\", %d, \"%s\", \"%s\", %d, %d, %d, %d, \"%s\", \"%s\" );",
-                    typeID, escFnName.Get(), paramIdx, escParamType.Get(), escParamName.Get(),
-                    param.isPointer ? 1 : 0, param.isConst ? 1 : 0, param.isRef ? 1 : 0, param.isOut ? 1 : 0,
-                    escParamDefault.Get(), escParamAttributes.Get()))
-                {
-                    return false;
-                }
-                paramIdx++;
-            }
-        }
-
-        // Write ApiProperties
-        for (auto const &prop : type.bindingInfo.bindingProperties)
-        {
-            StringAnsi escCppType = prop.cppType;
-            escCppType.Replace("\"", "\"\"");
-            StringAnsi escPropName = prop.name;
-            escPropName.Replace("\"", "\"\"");
-            StringAnsi escGetterName = prop.getterName;
-            escGetterName.Replace("\"", "\"\"");
-            StringAnsi escSetterName = prop.setterName;
-            escSetterName.Replace("\"", "\"\"");
-            StringAnsi escGetterUnique = prop.getterUniqueName;
-            escGetterUnique.Replace("\"", "\"\"");
-            StringAnsi escSetterUnique = prop.setterUniqueName;
-            escSetterUnique.Replace("\"", "\"\"");
-            StringAnsi escGetterEP = prop.getterEntryPoint;
-            escGetterEP.Replace("\"", "\"\"");
-            StringAnsi escSetterEP = prop.setterEntryPoint;
-            escSetterEP.Replace("\"", "\"\"");
-            StringAnsi escPropAttrs = prop.attributes;
-            escPropAttrs.Replace("\"", "\"\"");
-
-            if (!ExecuteSimpleQuery("INSERT INTO `ApiProperties`(`TypeID`,`CppType`,`Name`,`GetterName`,`SetterName`,`GetterUniqueName`,`SetterUniqueName`,`GetterEntryPoint`,`SetterEntryPoint`,`HasGetter`,`HasSetter`,`GetterAccess`,`SetterAccess`,`Attributes`,`LineNumber`) VALUES ( %u, \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", %d, %d, %d, %d, \"%s\", %d );",
-                typeID, escCppType.Get(), escPropName.Get(), escGetterName.Get(), escSetterName.Get(),
-                escGetterUnique.Get(), escSetterUnique.Get(), escGetterEP.Get(), escSetterEP.Get(),
-                prop.hasGetter ? 1 : 0, prop.hasSetter ? 1 : 0, (int)prop.getterAccess, (int)prop.setterAccess,
-                escPropAttrs.Get(), prop.lineNumber))
-            {
-                return false;
-            }
-        }
-
-        // Write ApiFields
-        for (auto const &field : type.bindingInfo.fields)
-        {
-            StringAnsi escCppType = field.cppType;
-            escCppType.Replace("\"", "\"\"");
-            StringAnsi escFieldName = field.name;
-            escFieldName.Replace("\"", "\"\"");
-            StringAnsi escFieldAttrs = field.attributes;
-            escFieldAttrs.Replace("\"", "\"\"");
-
-            if (!ExecuteSimpleQuery("INSERT INTO `ApiFields`(`TypeID`,`CppType`,`Name`,`IsReadOnly`,`IsStatic`,`IsHidden`,`Attributes`,`ArraySize`,`LineNumber`) VALUES ( %u, \"%s\", \"%s\", %d, %d, %d, \"%s\", %d, %d );",
-                typeID, escCppType.Get(), escFieldName.Get(), field.isReadOnly ? 1 : 0, field.isStatic ? 1 : 0, field.isHidden ? 1 : 0,
-                escFieldAttrs.Get(), field.arraySize, field.lineNumber))
-            {
-                return false;
-            }
-        }
-
-        // Write ApiEvents and their params
-        for (auto const &evt : type.bindingInfo.events)
-        {
-            StringAnsi escEvtName = evt.name;
-            escEvtName.Replace("\"", "\"\"");
-            StringAnsi escEvtType = evt.cppType;
-            escEvtType.Replace("\"", "\"\"");
-            StringAnsi escEvtNS = evt.namespaceName;
-            escEvtNS.Replace("\"", "\"\"");
-            StringAnsi escEvtAttrs = evt.attributes;
-            escEvtAttrs.Replace("\"", "\"\"");
-
-            if (!ExecuteSimpleQuery("INSERT INTO `ApiEvents`(`TypeID`,`Name`,`CppType`,`NamespaceName`,`IsStatic`,`Access`,`Attributes`,`LineNumber`) VALUES ( %u, \"%s\", \"%s\", \"%s\", %d, %d, \"%s\", %d );",
-                typeID, escEvtName.Get(), escEvtType.Get(), escEvtNS.Get(), evt.isStatic ? 1 : 0, (int)evt.access, escEvtAttrs.Get(), evt.lineNumber))
-            {
-                return false;
-            }
-
-            // Write event params
-            int paramIdx = 0;
-            for (auto const &param : evt.params)
-            {
-                StringAnsi escParamType = param.cppType;
-                escParamType.Replace("\"", "\"\"");
-                StringAnsi escParamName = param.name;
-                escParamName.Replace("\"", "\"\"");
-                StringAnsi escParamDefault = param.defaultValue;
-                escParamDefault.Replace("\"", "\"\"");
-                StringAnsi escParamAttributes = param.attributes;
-                escParamAttributes.Replace("\"", "\"\"");
-
-                if (!ExecuteSimpleQuery("INSERT INTO `ApiEventParams`(`TypeID`,`EventName`,`ParamIndex`,`CppType`,`Name`,`IsPointer`,`IsConst`,`IsRef`,`IsOut`,`DefaultValue`,`Attributes`) VALUES ( %u, \"%s\", %d, \"%s\", \"%s\", %d, %d, %d, %d, \"%s\", \"%s\" );",
-                    typeID, escEvtName.Get(), paramIdx, escParamType.Get(), escParamName.Get(),
-                    param.isPointer ? 1 : 0, param.isConst ? 1 : 0, param.isRef ? 1 : 0, param.isOut ? 1 : 0,
-                    escParamDefault.Get(), escParamAttributes.Get()))
-                {
-                    return false;
-                }
-                paramIdx++;
-            }
-        }
-
-        // Write ApiInterfaces and their functions
-        for (auto const &iface : type.bindingInfo.interfaces)
-        {
-            StringAnsi escIfaceName = iface.name;
-            escIfaceName.Replace("\"", "\"\"");
-            StringAnsi escIfaceNS = iface.namespaceName;
-            escIfaceNS.Replace("\"", "\"\"");
-            StringAnsi escIfaceAttrs = iface.attributes;
-            escIfaceAttrs.Replace("\"", "\"\"");
-
-            if (!ExecuteSimpleQuery("INSERT INTO `ApiInterfaces`(`TypeID`,`Name`,`NamespaceName`,`Access`,`Attributes`,`LineNumber`) VALUES ( %u, \"%s\", \"%s\", %d, \"%s\", %d );",
-                typeID, escIfaceName.Get(), escIfaceNS.Get(), (int)iface.access, escIfaceAttrs.Get(), iface.lineNumber))
-            {
-                return false;
-            }
-
-            // Write interface functions
-            for (auto const &fn : iface.functions)
-            {
-                StringAnsi escFnName = fn.name;
-                escFnName.Replace("\"", "\"\"");
-                StringAnsi escReturnType = fn.returnType;
-                escReturnType.Replace("\"", "\"\"");
-                StringAnsi escUniqueName = fn.uniqueName;
-                escUniqueName.Replace("\"", "\"\"");
-                StringAnsi escFnAttrs = fn.attributes;
-                escFnAttrs.Replace("\"", "\"\"");
-
-                if (!ExecuteSimpleQuery("INSERT INTO `ApiInterfaceFunctions`(`TypeID`,`InterfaceName`,`Name`,`ReturnType`,`IsStatic`,`IsVirtual`,`IsConst`,`UniqueName`,`Attributes`,`LineNumber`) VALUES ( %u, \"%s\", \"%s\", \"%s\", %d, %d, %d, \"%s\", \"%s\", %d );",
-                    typeID, escIfaceName.Get(), escFnName.Get(), escReturnType.Get(),
-                    fn.isStatic ? 1 : 0, fn.isVirtual ? 1 : 0, fn.isConst ? 1 : 0,
-                    escUniqueName.Get(), escFnAttrs.Get(), fn.lineNumber))
-                {
-                    return false;
-                }
             }
         }
 

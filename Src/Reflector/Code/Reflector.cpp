@@ -16,9 +16,6 @@
 #include <iostream>
 #include <filesystem>
 
-#include "Core/CoreModule.h"
-#include "Core/Logging/LoggingSystem.h"
-
 //-------------------------------------------------------------------------
 
 namespace SE::ReflectTool
@@ -266,6 +263,9 @@ namespace SE::ReflectTool
     {
         ENGINE_ASSERT(FileSystem::IsUnderDirectory(prjObject.path, m_solution.path));
 
+        bool moduleHeaderFound = false;
+        bool moduleHeaderUnregistered = false;
+
         ProjectInfo prj;
         prj.name = prjObject.name;
         prj.id = ProjectInfo::GetProjectID(prjObject.path);
@@ -287,6 +287,20 @@ namespace SE::ReflectTool
             }
 
 			String const headerFilePath(prj.parentPath + SE_TEXT("/") + sourceFile);
+
+            // Is this the module header file?
+            // 判断是否为模块头文件
+            bool isModuleHeader = false;
+			StringView parentDirectory = FileSystem::GetParentDirectory(headerFilePath);
+            if (parentDirectory.EndsWith(Settings::g_moduleHeaderParentDirectoryName))
+            {
+                if (FileSystem::GetFileName(headerFilePath).EndsWith(Settings::g_moduleHeaderSuffix))
+                {
+                    isModuleHeader = true;
+                    moduleHeaderFound = true;
+                }
+            }
+
             String headerFileFullPath = prj.parentPath + SE_TEXT("/") + sourceFile;
 
             List<StringAnsi> headerFileContents;
@@ -304,11 +318,22 @@ namespace SE::ReflectTool
 
                     // emplace_back to registered timestamp cache, use in up to date checks
                     m_registeredHeaderTimestamps.emplace_back(HeaderTimestamp(headerInfo.headerId, headerInfo.timestamp));
+
+                    if (isModuleHeader)
+                    {
+                        prj.moduleHeaderID = headerInfo.headerId;
+                    }
                 }
                 break;
 
                 case HeaderProcessResult::IgnoreHeader:
                 {
+                    // If the module file isn't registered ignore the entire project
+                    if (isModuleHeader)
+                    {
+                        moduleHeaderUnregistered = true;
+                        break;
+                    }
                 }
                 break;
 
@@ -333,6 +358,12 @@ namespace SE::ReflectTool
 
         std::cout << " * Project: " << prj.name.ToStringAnsi().Get() << " - ";
 
+        if (moduleHeaderFound && moduleHeaderUnregistered)
+        {
+            std::cout << "Ignored! ( Module not registered! )" << std::endl;
+            return true;
+        }
+
         // Only add projects to the list that have headers to parse
         if (prj.headerFiles.empty())
         {
@@ -341,6 +372,10 @@ namespace SE::ReflectTool
         }
 
         std::cout << "Done! ( " << prj.headerFiles.size() << " header(s) found! )";
+        if (!moduleHeaderFound)
+        {
+            std::cout << " ( Module-less project )";
+        }
         std::cout << std::endl;
 
 		m_solution.projects.Add(prj);
@@ -642,46 +677,85 @@ namespace SE::ReflectTool
             if (!prj.dirtyHeaders.empty())
             {
                 // emplace_back all dirty headers to the list of file to be parsed
+                bool moduleHeaderAdded = false;
                 for (auto &hdr : prj.dirtyHeaders)
                 {
+                    if (hdr != prj.moduleHeaderID)
+                    {
+                        moduleHeaderAdded = true;
+                    }
+
                     headersToParse.Add(&prj.headerFiles[hdr]);
 
                     // Erase all types associated with this header from the database
                     m_database.DeleteTypesForHeader(prj.headerFiles[hdr].headerId);
+                }
+
+                // emplace_back module header file if not already added
+                if (!moduleHeaderAdded)
+                {
+                    for (auto &hdr : prj.headerFiles)
+                    {
+                        if (hdr.headerId == prj.moduleHeaderID)
+                        {
+                            headersToParse.Add(&hdr);
+                            break;
+                        }
+                    }
                 }
             }
         }
 
         //-------------------------------------------------------------------------
 
-        ClangParser clangParser(&m_solution, &m_database, m_reflectionDataPath);
-
         if (!headersToParse.IsEmpty())
         {
-            std::cout << " * Reflecting C++ Code -" << std::endl;;
-            if (!clangParser.Parse(headersToParse))
+            std::cout << " * Reflecting C++ Code - First Pass (With Dev Tools) - " << std::endl;
+
+            // Parse headers
+            ClangParser clangParser(&m_solution, &m_database, m_reflectionDataPath);
+            if (!clangParser.Parse(headersToParse, ClangParser::DevToolsPass))
             {
                 std::cout << "Error occurred!\n\n  Error: " << clangParser.GetErrorMessage().Get() << std::endl;
                 return false;
             }
+
             Milliseconds clangParsingTime = clangParser.GetParsingTime();
             Milliseconds clangVisitingTime = clangParser.GetVisitingTime();
-            std::cout << "Complete! ( P:" << clangParsingTime << "ms, V:" << clangVisitingTime << "ms )" << std::endl;
+            std::cout << "Complete! ( P:" << (float)clangParsingTime << "ms, V:" << (float)clangVisitingTime << "ms )" << std::endl;
+
+            std::cout << " * Reflecting C++ Code - Second Pass (No Dev Tools) - " << std::endl;;
+
+            // Second parse to detect dev-only types
+            if (!clangParser.Parse(headersToParse, ClangParser::NoDevToolsPass))
+            {
+                std::cout << "Error occurred!\n\n  Error: " << clangParser.GetErrorMessage().Get() << std::endl;
+                return false;
+            }
+            clangParsingTime = clangParser.GetParsingTime();
+            clangVisitingTime = clangParser.GetVisitingTime();
+            std::cout << "Complete! ( P:" << (float)clangParsingTime << "ms, V:" << (float)clangVisitingTime << "ms )" << std::endl;
 
             // Finalize database data
             m_database.UpdateProjectList(m_solution.projects);
         }
 
         //-------------------------------------------------------------------------
-        // Run code generation (C++ type-info + bindings from unified data model)
-        //-------------------------------------------------------------------------
+
+        std::cout << " * Generating Code - ";
+        Milliseconds time = 0;
+
+        Generator generator;
         {
-            Generator generator;
+            ScopedTimer<PlatformClock> timer(time);
             if (!generator.Generate(m_database, m_solution))
             {
+                std::cout << "Error Occurred: " << generator.GetErrorMessage() << std::endl;
                 return LogError(generator.GetErrorMessage());
             }
         }
+
+        std::cout << "Complete! ( " << (float)time << "ms )" << std::endl;
 
         //-------------------------------------------------------------------------
 
@@ -762,8 +836,6 @@ int main(int argc, char *argv[])
     // Execute reflector
     //-------------------------------------------------------------------------
     SE::CoreTypeRegistry::Initialize();
-    SE::Log::System::Initialize();
-
 	int exitCode = 1;
 
 	SE::FileSystem::NormalizePath(slnRootPath);
@@ -788,7 +860,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    SE::Log::System::Shutdown();
     SE::CoreTypeRegistry::Shutdown();
 
     return exitCode;

@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include "Database/ReflectionDatabase.h"
+#include "Core/Utilities/Time.h"
 #include "Core/Types/Strings/String.h"
 
 //-------------------------------------------------------------------------
