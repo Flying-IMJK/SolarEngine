@@ -8,7 +8,7 @@ namespace SE::Editor
 
     class MainMenuButton : public Control
     {
-        SE_CLASS_DEFAULT(MainMenuButton, Control)
+        SE_DEFINE_CLASS_DEFAULT(MainMenuButton, Control)
     public:
         /// <summary>
         /// The button text.

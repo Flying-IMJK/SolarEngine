@@ -29,7 +29,7 @@ namespace SE
     /// </summary>
     class SE_API_RUNTIME Control : public IType// : IComparable,
     {
-        SE_CLASS(Control, IType)
+        SE_DEFINE_CLASS(Control, IType)
     protected:
         struct AnchorPresetData
         {

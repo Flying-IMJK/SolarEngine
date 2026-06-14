@@ -13,6 +13,7 @@ namespace SE::Editor
 
 namespace SE
 {
+	class ManagedEditor;
 	class ProjectInfo;
 }
 
@@ -38,6 +39,8 @@ namespace SE::Editor
 	public:
 
 		static EditorApp& Ins();
+
+		ManagedEditor* managedEditor;
 
 		/// <summary>
 		/// Information about the loaded game project.

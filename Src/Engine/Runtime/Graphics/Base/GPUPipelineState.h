@@ -10,7 +10,7 @@ namespace SE
 	/// <summary>
 	/// Stencil operation modes.
 	/// </summary>
-	SE_ENUM(StencilOperation)
+	SE_ENUM(Reflect)
 	enum class StencilOperation
 	{
 		// Keep the existing stencil data.

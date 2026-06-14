@@ -13,7 +13,7 @@ namespace SE::Editor
 
 	class ContentOperate : public IType
 	{
-		SE_CLASS_DEFAULT(ContentOperate, IType)
+		SE_DEFINE_CLASS_DEFAULT(ContentOperate, IType)
 	public:
 		~ContentOperate() override = default;
 

@@ -5,7 +5,7 @@ namespace SE::Editor
 {
 	class CameraGraphNode : public ActorGraphNode
 	{
-		SE_CLASS_DEFAULT(CameraGraphNode, ActorGraphNode)
+		SE_DEFINE_CLASS_DEFAULT(CameraGraphNode, ActorGraphNode)
 	public:
 		CameraGraphNode(::SE::Actor* actor);
 

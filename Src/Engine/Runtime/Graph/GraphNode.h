@@ -50,7 +50,7 @@ namespace SE
         /// <param name="parent">Parent node</param>
         /// <param name="id">Unique box id</param>
         /// <param name="type">Connections type</param>
-        GraphBox(void* parent, byte id, const VariantTypeHandle::Types type)
+        GraphBox(void* parent, byte id, const VariantTypes type)
             : Parent(parent)
             , ID(id)
             , Type(type)

@@ -172,16 +172,13 @@ namespace SE
 	}
 
 
-	Asset::Asset()
-		: m_RefCount(0), m_LoadState(0), m_LoadingTask(0), m_DeleteFileOnUnload(false), m_IsVirtual(false), m_Id()
+	Asset::Asset(const SpawnParams& params, const AssetInfo* info) : ManagedScriptingObject(params)
+		, m_RefCount(0)
+		, m_LoadState(0)
+		, m_LoadingTask(0)
+		, m_DeleteFileOnUnload(false)
+		, m_IsVirtual(false)
 	{
-
-	}
-
-	Asset::Asset(const AssetInfo* info)
-		: m_RefCount(0), m_LoadState(0), m_LoadingTask(0), m_DeleteFileOnUnload(false), m_IsVirtual(false), m_Id(info->id)
-	{
-
 	}
 
 	String AssetInfo::ToString() const

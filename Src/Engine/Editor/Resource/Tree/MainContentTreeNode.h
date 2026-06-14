@@ -15,7 +15,7 @@ namespace SE::Editor
 	/// </summary>
 	class MainContentTreeNode : public ContentTreeNode
 	{
-		SE_CLASS_DEFAULT(MainContentTreeNode, ContentTreeNode)
+		SE_DEFINE_CLASS_DEFAULT(MainContentTreeNode, ContentTreeNode)
 	private:
 		 FileSystemWatcher* _watcher;
 

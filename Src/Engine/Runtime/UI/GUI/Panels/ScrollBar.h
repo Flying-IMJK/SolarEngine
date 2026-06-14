@@ -8,7 +8,7 @@ namespace SE
 
 	class SE_API_RUNTIME ScrollBar : public Control
 	{
-		SE_CLASS(ScrollBar, Control)
+		SE_DEFINE_CLASS(ScrollBar, Control)
 	private:
 
 	    // Scrolling

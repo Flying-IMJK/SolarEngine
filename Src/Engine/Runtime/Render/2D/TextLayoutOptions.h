@@ -54,37 +54,37 @@ namespace SE
         /// <summary>
         /// The layout rectangle (text bounds).
         /// </summary>
-        // API_FIELD(Attributes="EditorOrder(0)")
+        // SE_PROPERTY(API, Attributes="EditorOrder(0)")
         Rectangle Bounds;
 
         /// <summary>
         /// The horizontal alignment mode.
         /// </summary>
-        // API_FIELD(Attributes="EditorOrder(10)")
+        // SE_PROPERTY(API, Attributes="EditorOrder(10)")
         TextAlignment HorizontalAlignment;
 
         /// <summary>
         /// The vertical alignment mode.
         /// </summary>
-        // API_FIELD(Attributes="EditorOrder(20)")
+        // SE_PROPERTY(API, Attributes="EditorOrder(20)")
         TextAlignment VerticalAlignment;
 
         /// <summary>
         /// The text wrapping mode.
         /// </summary>
-        // API_FIELD(Attributes="EditorOrder(30), DefaultValue(TextWrapping.NoWrap)")
+        // SE_PROPERTY(API, Attributes="EditorOrder(30), DefaultValue(TextWrapping.NoWrap)")
         TextWrapping TextWrapping = TextWrapping::NoWrap;
 
         /// <summary>
         /// The text scale factor. Default is 1.
         /// </summary>
-        // API_FIELD(Attributes="EditorOrder(40), DefaultValue(1.0f), Limit(-1000, 1000, 0.01f)")
+        // SE_PROPERTY(API, Attributes="EditorOrder(40), DefaultValue(1.0f), Limit(-1000, 1000, 0.01f)")
         float Scale = 1.0f;
 
         /// <summary>
         /// Base line gap scale. Default is 1.
         /// </summary>
-        // API_FIELD(Attributes="EditorOrder(50), DefaultValue(1.0f), Limit(-1000, 1000, 0.01f)")
+        // SE_PROPERTY(API, Attributes="EditorOrder(50), DefaultValue(1.0f), Limit(-1000, 1000, 0.01f)")
         float BaseLinesGapScale = 1.0f;
 
         /// <summary>

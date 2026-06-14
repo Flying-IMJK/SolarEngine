@@ -6,7 +6,7 @@ namespace SE::Editor
 {
 	class ContextMenuButton : public ContextMenuItem
 	{
-		SE_CLASS_DEFAULT(ContextMenuButton, ContextMenuItem)
+		SE_DEFINE_CLASS_DEFAULT(ContextMenuButton, ContextMenuItem)
 	private:
 		bool _isMouseDown = false;
 

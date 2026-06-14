@@ -10,7 +10,7 @@ source_group(TREE ${EngineRootDir}/Applications/Win32 FILES ${EditorHeadFiles} $
 
 add_executable(${EDITOR_TARGET_NAME} WIN32 ${EditorHeadFiles} ${EditorSourceFiles} ${EditorResourceFiles})
 
-target_link_libraries(${EDITOR_TARGET_NAME} PRIVATE SE.Core SE.Runtime SE.Editor)
+target_link_libraries(${EDITOR_TARGET_NAME} PRIVATE SECore SERuntime SEEditor)
 
 set_target_properties(${EDITOR_TARGET_NAME} PROPERTIES OUTPUT_NAME "SE")
 
@@ -19,4 +19,4 @@ target_include_directories(${EDITOR_TARGET_NAME} PRIVATE
     ${EngineDir}
 )
 
-add_dependencies(${EDITOR_TARGET_NAME} SE.Core SE.Runtime SE.Editor)
+add_dependencies(${EDITOR_TARGET_NAME} SECore SERuntime SEEditor)

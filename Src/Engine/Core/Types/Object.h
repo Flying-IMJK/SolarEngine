@@ -10,9 +10,10 @@ namespace SE
 	/// <summary>
 	/// Base for Engine objects.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class SE_API_CORE Object : public IType
 	{
-		SE_CLASS(Object, IType)
+		SE_DEFINE_CLASS(Object, IType)
 	public:
 			/*/// <summary>
 			/// The object flags.

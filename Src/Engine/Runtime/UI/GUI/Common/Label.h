@@ -31,7 +31,7 @@ namespace SE
 
 	class SE_API_RUNTIME Label : public ContainerControl
     {
-		SE_CLASS(Label, ContainerControl)
+		SE_DEFINE_CLASS(Label, ContainerControl)
 	protected:
         /// <summary>
         /// The text.

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BinaryModule.h"
-#include "Runtime/Scripting/ManagedCLR/SEAssembly.h"
+#include "Runtime/Scripting/ManagedCLR/CLRAssembly.h"
 
 
 
@@ -18,7 +18,7 @@ namespace SE
         /// </summary>
         /// <param name="assembly">The module C# assembly.</param>
         /// <returns>The found binary module or null if missing.</returns>
-        static ManagedBinaryModule* GetModule(const SEAssembly* assembly);
+        static ManagedBinaryModule* GetModule(const CLRAssembly* assembly);
 
     private:
 
@@ -37,39 +37,39 @@ namespace SE
         /// Initializes a new instance of the <see cref="ManagedBinaryModule" /> class.
         /// </summary>
         /// <param name="assembly">The managed assembly. Object will be deleted within the scripting assembly.</param>
-        explicit ManagedBinaryModule(SEAssembly* assembly);
+        explicit ManagedBinaryModule(CLRAssembly* assembly);
 
         /// <summary>
         /// Finalizes an instance of the <see cref="ManagedBinaryModule"/> class.
         /// </summary>
-        ~ManagedBinaryModule();
+        ~ManagedBinaryModule() override;
 
     public:
 
         /// <summary>
         /// The managed assembly (C# DLL).
         /// </summary>
-        SEAssembly* Assembly;
+        CLRAssembly* Assembly;
 
         /// <summary>
         /// The scripting types cache that maps the managed class to the scripting type index. Build after assembly is loaded and scripting types get the managed classes information.
         /// </summary>
-        Dictionary<SEClass*, int32, HeapAllocation> ClassToTypeIndex;
+        Dictionary<CLRClass*, int32, HeapAllocation> ClassToTypeIndex;
 
 
         static ScriptingObject* ManagedObjectSpawn(const ScriptingObjectSpawnParams& params);
-        static SEMethod* FindMethod(SEClass* mclass, const ScriptingTypeMethodSignature& signature);
+        static CLRMethod* FindMethod(CLRClass* mclass, const ScriptingTypeMethodSignature& signature);
 
-        static ManagedBinaryModule* FindModule(const SEClass* klass);
-        static ScriptingTypeHandle FindType(const SEClass* klass);
+        static ManagedBinaryModule* FindModule(const CLRClass* klass);
+        static ScriptingTypeHandle FindType(const CLRClass* klass);
 
     private:
 
-        void OnLoading(SEAssembly* assembly);
-        void OnLoaded(SEAssembly* assembly);
-        void InitType(SEClass* mclass);
-        void OnUnloading(SEAssembly* assembly);
-        void OnUnloaded(SEAssembly* assembly);
+        void OnLoading(CLRAssembly* assembly);
+        void OnLoaded(CLRAssembly* assembly);
+        void InitType(CLRClass* mclass);
+        void OnUnloading(CLRAssembly* assembly);
+        void OnUnloaded(CLRAssembly* assembly);
 
     public:
 

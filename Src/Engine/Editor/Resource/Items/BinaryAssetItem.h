@@ -15,7 +15,7 @@ namespace SE::Editor
     /// <seealso cref="FlaxEditor.Content.AssetItem" />
     class BinaryAssetItem : public AssetItem
     {
-        SE_CLASS_DEFAULT(BinaryAssetItem, AssetItem)
+        SE_DEFINE_CLASS_DEFAULT(BinaryAssetItem, AssetItem)
     public:
         /// <summary>
         /// Initializes a new instance of the <see cref="BinaryAssetItem"/> class.
@@ -50,7 +50,7 @@ namespace SE::Editor
     /// <seealso cref="FlaxEditor.Content.BinaryAssetItem" />
     class TextureAssetItem : public BinaryAssetItem
     {
-        SE_CLASS_DEFAULT(TextureAssetItem, BinaryAssetItem)
+        SE_DEFINE_CLASS_DEFAULT(TextureAssetItem, BinaryAssetItem)
     public:
         /// <inheritdoc />
         TextureAssetItem(StringView path, UID id, TypeID typeID);
@@ -66,7 +66,7 @@ namespace SE::Editor
     /// <seealso cref="FlaxEditor.Content.BinaryAssetItem" />
     class ModelItem : public BinaryAssetItem
     {
-        SE_CLASS_DEFAULT(ModelItem, BinaryAssetItem)
+        SE_DEFINE_CLASS_DEFAULT(ModelItem, BinaryAssetItem)
     public:
         /// <inheritdoc />
         ModelItem(StringView path, UID id, TypeID typeID);

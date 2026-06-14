@@ -16,7 +16,7 @@ namespace SE::Editor
     class DockWindow : public Panel
     {
         friend class MasterDockPanel;
-        SE_CLASS_DEFAULT(DockWindow, Panel)
+        SE_DEFINE_CLASS_DEFAULT(DockWindow, Panel)
     private:
         String _title;
         Float2 _titleSize;

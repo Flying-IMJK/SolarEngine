@@ -23,7 +23,7 @@ namespace SE::Render
 
     class RenderWorldSettings : public IEntityWorldSettings
     {
-        SE_CLASS(RenderWorldSettings);
+        DEFINE_CLASS(RenderWorldSettings);
 
     public:
 

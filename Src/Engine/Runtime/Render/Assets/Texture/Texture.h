@@ -6,12 +6,13 @@ namespace SE
 {
 	#define ASSET_VERSION_TEXTURE 4
 
+	SE_CLASS(Reflect, API, NoSpawn)
 	class SE_API_RUNTIME Texture : public TextureBase
 	{
-		SE_CLASS_DEFAULT(Texture, TextureBase);
+		SE_DEFINE_CLASS_DEFAULT(Texture, TextureBase);
+		ASSET_HEADER(Texture);
 
 	public:
-		Texture(const AssetInfo* info);
 
 		/// <summary>
 		/// Gets the texture format type.

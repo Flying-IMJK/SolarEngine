@@ -49,14 +49,3 @@ macro (GameNetworkingSocketsLink target)
     )
 
 endmacro()
-
-macro (GameNetworkingSocketsLinkReflector target)
-    # copy resources on post build
-    add_custom_command(TARGET ${target} POST_BUILD
-    # directory
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${NETWORKING_SHARED_LIBRARY_DIR}
-        $<TARGET_FILE_DIR:${target}>
-    )
-
-endmacro()

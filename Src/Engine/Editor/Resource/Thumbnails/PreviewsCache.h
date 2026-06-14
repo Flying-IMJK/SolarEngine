@@ -10,9 +10,11 @@ namespace SE::Editor
     // <summary>
     /// Asset which contains set of asset items thumbnails (cached previews).
     /// </summary>
+    SE_CLASS(Reflect, API, NoSpawn)
     class PreviewsCache final : public SpriteAtlas
     {
-        SE_CLASS_DEFAULT(PreviewsCache, SpriteAtlas)
+        SE_DEFINE_CLASS_DEFAULT(PreviewsCache, SpriteAtlas)
+        ASSET_HEADER(PreviewsCache);
         friend class FlushTask;
     public:
         /// <summary>
@@ -51,8 +53,6 @@ namespace SE::Editor
         FlushTask* _flushTask = nullptr;
 
     public:
-
-        PreviewsCache(const AssetInfo* info);
 
         /// <summary>
         /// Determines whether this atlas is ready (is loaded and has texture streamed).

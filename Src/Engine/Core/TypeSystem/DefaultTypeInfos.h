@@ -43,7 +43,7 @@ namespace SE
             ENGINE_UNREACHABLE_CODE();
         }
 
-        virtual IType const *GetDefaultInstance() const
+        IType const *GetDefaultInstance() const override
         {
             return nullptr;
         }

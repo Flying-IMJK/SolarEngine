@@ -36,7 +36,7 @@ namespace SE::Editor
 
 	class ContentView : public ContainerControl, IContentItemOwner
 	{
-		SE_CLASS(ContentView, ContainerControl)
+		SE_DEFINE_CLASS(ContentView, ContainerControl)
 	private:
 	    List<ContentItem*> _items = List<ContentItem*>(256);
 	    List<ContentItem*> _selection = List<ContentItem*>();

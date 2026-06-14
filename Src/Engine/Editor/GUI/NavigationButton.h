@@ -8,7 +8,7 @@ namespace SE::Editor
     /// </summary>
     class NavigationButton : public Button
     {
-        SE_CLASS(NavigationButton, Button)
+        SE_DEFINE_CLASS(NavigationButton, Button)
     protected:
         /// <summary>
         /// The valid drag is over flag.

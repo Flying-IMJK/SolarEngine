@@ -19,7 +19,7 @@ namespace SE
 {
     BINARY_ASSET_FACTORY(Material, false);
 
-    Material::Material(const AssetInfo* info) : MaterialBase(info)
+    Material::Material(const SpawnParams& params, const AssetInfo* info) : MaterialBase(params, info)
     {
     }
 

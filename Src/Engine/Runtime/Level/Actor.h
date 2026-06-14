@@ -11,6 +11,7 @@ namespace SE
 {
 	class Scene;
 
+	SE_CLASS(Reflect)
 	class SE_API_RUNTIME Actor : public SceneObject
 	{
 		friend class SceneRendering;
@@ -22,7 +23,7 @@ namespace SE
 		friend class Prefab;
 		friend class PrefabInstanceData;
 
-		SE_CLASS(Actor, SceneObject);
+		SE_DEFINE_CLASS(Actor, SceneObject);
 	protected:
 		uint16 m_IsActive : 1;
 		uint16 m_IsActiveInHierarchy : 1;
@@ -567,9 +568,10 @@ namespace SE
 		void Deserialize(DeserializeContext& context) override;
 	};
 
+	SE_CLASS(Reflect)
 	class SE_API_RUNTIME RenderActor : public Actor, public IRender
 	{
-		SE_CLASS(RenderActor, Actor);
+		SE_DEFINE_CLASS(RenderActor, Actor);
 	public:
 		RenderActor() {}
 		// [IRender]

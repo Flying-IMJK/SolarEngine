@@ -9,7 +9,7 @@ namespace SE
     /// </summary>
     class SE_API_RUNTIME TextBoxBase : public ContainerControl
     {
-        SE_CLASS(TextBoxBase, ContainerControl)
+        SE_DEFINE_CLASS(TextBoxBase, ContainerControl)
     public:
         /// <summary>
         /// The delete control character (used for text filtering).

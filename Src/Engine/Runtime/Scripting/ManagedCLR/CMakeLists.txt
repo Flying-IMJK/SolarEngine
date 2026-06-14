@@ -1,19 +1,19 @@
 
 RUNTIME_ADD(
-        SETypes.h
-        SEClass.h
-        SEMethod.h
-        SEAssembly.h
-        SEDomain.h
-        SEEvent.h
-        SEField.h
-        SEProperty.h
-        SEException.h
-        SECore.h
-        SECore.cpp
+        CLRTypes.h
+        CLRClass.h
+        CLRMethod.h
+        CLRAssembly.h
+        CLRDomain.h
+        CLREvent.h
+        CLRField.h
+        CLRProperty.h
+        CLRException.h
+        CLRCore.h
+        CLRCore.cpp
 
-        SEUtils.h
-        SEUtils.cpp
+        CLRUtils.h
+        CLRUtils.cpp
 
         Runtime/DotNet.cpp
 )

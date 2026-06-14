@@ -6,7 +6,7 @@ namespace SE
 
 	class SE_API_RUNTIME HScrollBar : public ScrollBar
 	{
-		SE_CLASS(HScrollBar, ScrollBar)
+		SE_DEFINE_CLASS(HScrollBar, ScrollBar)
 	public:
 
 		HScrollBar();

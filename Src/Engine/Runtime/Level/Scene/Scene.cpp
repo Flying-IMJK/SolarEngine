@@ -14,7 +14,7 @@ namespace SE
 {
 	JSON_ASSET_FACTORY(SceneAsset);
 
-	SceneAsset::SceneAsset(const AssetInfo* info) : JsonAsset(info)
+	SceneAsset::SceneAsset(const SpawnParams& params, const AssetInfo* info) : JsonAsset(params, info)
 	{
 	}
 

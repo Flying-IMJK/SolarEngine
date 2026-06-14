@@ -3,7 +3,6 @@ add_subdirectory(stb)
 add_subdirectory(vulkan)
 add_subdirectory(detex)
 add_subdirectory(meshoptimizer)
-add_subdirectory(netCore)
 
 RUNTIME_ADD(
     LZ4/lz4.h

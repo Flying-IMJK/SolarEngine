@@ -1,5 +1,6 @@
 #include "EditorApp.h"
 
+#include "ManagedEditor.h"
 #include "Modules/EditorModule.h"
 #include "Modules/SettingModule.h"
 #include "Modules/UIModule.h"
@@ -228,11 +229,14 @@ namespace SE::Editor
 		IniFile settings;
 		globalSettings.LoadSettings(settings);
 
+		managedEditor = New<ManagedEditor>();
 		return true;
 	}
 
 	void EditorApp::BeforeRun()
 	{
+		managedEditor->Init();
+
 		RegisterModule(settingModule = New<SettingModule>(this));
 		RegisterModule(uiModule = New<UIModule>(this));
 		RegisterModule(sceneModule = New<SceneModule>(this));

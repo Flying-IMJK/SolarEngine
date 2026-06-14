@@ -1,89 +1,86 @@
 #pragma once
 
+#include "ScriptingType.h"
 #include "Runtime/API.h"
 #include "Core/Types/Object.h"
 #include "Core/Types/Delegate.h"
 #include "Core/Types/UID.h"
-#include "Runtime/Scripting/ScriptingTypeHandle.h"
-#include "Runtime/Scripting/ManagedCLR/SEGCHandle.h"
 
 namespace SE
 {
-    class SEObject;
-    class SEClass;
-
     /// <summary>
-    /// Parameters used when spawning a ScriptingObject.
+    /// Represents object from unmanaged memory that can use accessed via scripting.
     /// </summary>
-    struct SE_API_RUNTIME ScriptingObjectSpawnParams
-    {
-        /// <summary>The unique object ID.</summary>
-        UID ID;
-
-        /// <summary>The scripting type handle for this object.</summary>
-        ScriptingTypeHandle Type;
-
-        ScriptingObjectSpawnParams(const UID& id, const ScriptingTypeHandle& type)
-            : ID(id)
-            , Type(type)
-        {
-        }
-    };
-
-    /// <summary>
-    /// Base class for C++ objects that have a corresponding C# managed instance.
-    /// Bridges C++ object lifetime with C# GC-managed objects via GC handles.
-    ///
-    /// Lifecycle:
-    ///   1. Constructed with SpawnParams (ID + type handle)
-    ///   2. CreateManaged() creates the C# instance and stores a strong GC handle
-    ///   3. RegisterObject() adds to the global registry
-    ///   4. UnregisterObject() removes from the global registry
-    ///   5. DestroyManaged() releases the GC handle and notifies C# side
-    ///   6. Destructor asserts _gcHandle == 0 (no leaks)
-    /// </summary>
+    SE_CLASS(Reflect)
     class SE_API_RUNTIME ScriptingObject : public Object
     {
-        SE_CLASS(ScriptingObject, Object)
+        friend class Scripting;
+        friend class BinaryModule;
+        friend class ScriptingObjectInternal;
+        SE_DEFINE_CLASS(ScriptingObject, Object)
+        SCRIPTING_TYPE_NO_SPAWN(ScriptingObject);
 
     public:
         typedef ScriptingObjectSpawnParams SpawnParams;
 
     protected:
-        /// <summary>GC handle to the corresponding C# managed instance.</summary>
-        GCHandle _gcHandle;
-
-        /// <summary>Scripting type handle identifying the C++ type.</summary>
-        ScriptingTypeHandle _type;
-
-        /// <summary>Unique object identifier (shared between C++ and C# sides).</summary>
-        UID _id;
+        CLRGCHandle m_GcHandle;
+        ScriptingTypeHandle m_Type;
+        UID m_Id;
 
     public:
         /// <summary>
-        /// Constructs a ScriptingObject with the given spawn parameters.
+        /// Initializes a new instance of the <see cref="ScriptingObject"/> class.
         /// </summary>
+        /// <param name="params">The object initialization parameters.</param>
         explicit ScriptingObject(const SpawnParams& params);
 
         /// <summary>
-        /// Destructor — asserts that the GC handle has been released (no leaks).
+        /// Finalizes an instance of the <see cref="ScriptingObject"/> class.
         /// </summary>
         ~ScriptingObject() override;
 
     public:
+        // Spawns a new objects of the given type.
+        static ScriptingObject* NewObject(const ScriptingTypeHandle& typeHandle);
+
+        template<typename T>
+        static T* NewObject()
+        {
+            return (T*)NewObject(T::TypeInitializer);
+        }
+
+        template<typename T>
+        static T* NewObject(const ScriptingTypeHandle& typeHandle)
+        {
+            auto obj = NewObject(typeHandle);
+            if (obj && !obj->Is<T>())
+            {
+                Delete(obj);
+                obj = nullptr;
+            }
+            return (T*)obj;
+        }
+
+    public:
         /// <summary>
-        /// Gets the current managed instance (may be null if not yet created or already destroyed).
-        /// Does NOT create the managed instance if missing.
+        /// Event fired when object gets deleted.
         /// </summary>
-        SEObject* GetManagedInstance() const;
+        Delegate<ScriptingObject*> Deleted;
+
+    public:
+        /// <summary>
+        /// Gets the managed instance object.
+        /// </summary>
+        CLRObject* GetManagedInstance() const;
 
         /// <summary>
-        /// Gets the managed instance, creating it lazily if not yet present.
+        /// Gets the managed instance object or creates it if missing.
         /// </summary>
-        SEObject* GetOrCreateManagedInstance() const;
+        CLRObject* GetOrCreateManagedInstance() const;
 
         /// <summary>
-        /// Returns true if the managed instance is currently alive.
+        /// Determines whether managed instance is alive.
         /// </summary>
         FORCE_INLINE bool HasManagedInstance() const
         {
@@ -91,131 +88,170 @@ namespace SE
         }
 
         /// <summary>
-        /// Gets the SEClass descriptor for this object's C# type.
-        /// </summary>
-        SEClass* GetClass() const;
-
-        /// <summary>
         /// Gets the unique object ID.
         /// </summary>
-        FORCE_INLINE const UID& GetID() const { return _id; }
+        FORCE_INLINE const UID& GetID() const
+        {
+            return m_Id;
+        }
 
         /// <summary>
-        /// Gets the scripting type handle.
+        /// Gets the scripting type handle of this object.
         /// </summary>
-        FORCE_INLINE const ScriptingTypeHandle& GetTypeHandle() const { return _type; }
-
-    public:
-        /// <summary>
-        /// Creates the corresponding C# managed instance and establishes the GC handle link.
-        /// Returns false on success, true on failure.
-        /// </summary>
-        virtual bool CreateManaged();
+        FORCE_INLINE const ScriptingTypeHandle& GetTypeHandle() const
+        {
+            return m_Type;
+        }
 
         /// <summary>
-        /// Destroys the managed instance: calls OnScriptingDispose() on C# side and frees the GC handle.
+        /// Gets the scripting type of this object.
         /// </summary>
-        virtual void DestroyManaged();
+        FORCE_INLINE const ScriptingType& GetScriptType() const
+        {
+            return m_Type.GetType();
+        }
 
         /// <summary>
-        /// Sets the managed instance directly (used when C# creates the object first).
-        /// Stores a strong GC handle.
+        /// Gets the type class of this object.
         /// </summary>
-        virtual void SetManagedInstance(SEObject* instance);
-
-        /// <summary>
-        /// Called when the managed instance is deleted (GC handle becomes invalid).
-        /// Base implementation releases the GC handle and unregisters the object.
-        /// </summary>
-        virtual void OnManagedInstanceDeleted();
-
-        /// <summary>
-        /// Called by C# side when the scripting object is being disposed.
-        /// Base implementation unregisters and destroys the managed side.
-        /// </summary>
-        virtual void OnScriptingDispose();
+        CLRClass* GetClass() const;
 
     public:
-        /// <summary>
-        /// Returns true if this object is registered in the global object registry.
-        /// </summary>
-        bool IsRegistered() const;
+        // Tries to cast native interface object to scripting object instance. Returns null if fails.
+        static ScriptingObject* FromInterface(void* interfaceObj, const ScriptingTypeHandle& interfaceType);
 
-        /// <summary>
-        /// Registers this object in the global object registry.
-        /// Must not be called if already registered.
-        /// </summary>
-        void RegisterObject();
+        template<typename T>
+        static ScriptingObject* FromInterface(T* interfaceObj)
+        {
+            return FromInterface(interfaceObj, T::TypeInitializer);
+        }
 
-        /// <summary>
-        /// Unregisters this object from the global object registry.
-        /// Must not be called if not registered.
-        /// </summary>
-        void UnregisterObject();
+        static void* ToInterface(ScriptingObject* obj, const ScriptingTypeHandle& interfaceType);
 
-    public:
-        /// <summary>
-        /// Checks if a managed type can be cast from one class to another.
-        /// </summary>
-        static bool CanCast(const SEClass* from, const SEClass* to);
+        template<typename T>
+        static T* ToInterface(ScriptingObject* obj)
+        {
+            return (T*)ToInterface(obj, T::TypeInitializer);
+        }
 
-        /// <summary>
-        /// Retrieves the C++ ScriptingObject* from a managed C# object's __unmanagedPtr field.
-        /// </summary>
-        static ScriptingObject* ToNative(SEObject* obj);
+        static ScriptingObject* ToNative(CLRObject* obj);
 
-        /// <summary>
-        /// Gets (or creates) the managed instance for a C++ ScriptingObject.
-        /// </summary>
-        FORCE_INLINE static SEObject* ToManaged(const ScriptingObject* obj)
+        FORCE_INLINE static CLRObject* ToManaged(const ScriptingObject* obj)
         {
             return obj ? obj->GetOrCreateManagedInstance() : nullptr;
         }
 
+        FORCE_INLINE static CLRObject* ToManaged(ScriptingObject* obj)
+        {
+            return obj ? obj->GetOrCreateManagedInstance() : nullptr;
+        }
+
+        /// <summary>
+        /// Checks if can cast one scripting object type into another type.
+        /// </summary>
+        /// <param name="from">The object type for the cast.</param>
+        /// <param name="to">The destination type to the cast.</param>
+        /// <returns>True if can, otherwise false.</returns>
+        static bool CanCast(const ScriptingTypeHandle& from, const ScriptingTypeHandle& to);
+
+        /// <summary>
+        /// Checks if can cast one scripting object type into another type.
+        /// </summary>
+        /// <param name="from">The object class for the cast.</param>
+        /// <param name="to">The destination class to the cast.</param>
+        /// <returns>True if can, otherwise false.</returns>
+        static bool CanCast(const CLRClass* from, const CLRClass* to);
+
+        template<typename T>
+        static T* Cast(ScriptingObject* obj)
+        {
+            return obj && CanCast(obj->GetClass(), T::GetStaticClass()) ? static_cast<T*>(obj) : nullptr;
+        }
+
+        bool Is(const ScriptingTypeHandle& type) const;
+
+        bool Is(const CLRClass* type) const
+        {
+            return CanCast(GetClass(), type);
+        }
+
+        template<typename T>
+        bool Is() const
+        {
+            return CanCast(GetClass(), T::GetStaticClass());
+        }
+
     public:
-        /// <summary>Event fired when this object is deleted.</summary>
-        Delegate<ScriptingObject*> Deleted;
+        /// <summary>
+        /// Changes the object id (both managed and unmanaged). Warning! Use with caution as object ID is what it identifies it and change might cause issues.
+        /// </summary>
+        /// <param name="newId">The new ID.</param>
+        virtual void ChangeID(const UID& newId);
+
+    public:
+        virtual void SetManagedInstance(CLRObject* instance);
+        virtual void OnManagedInstanceDeleted();
+        virtual void OnScriptingDispose();
+
+        virtual bool CreateManaged();
+        virtual void DestroyManaged();
+
+    public:
+        /// <summary>
+        /// Determines whether this object is registered or not (can be found by the queries and used in a game).
+        /// </summary>
+        FORCE_INLINE bool IsRegistered() const
+        {
+            return false;// (Flags & ObjectFlags::IsRegistered) != ObjectFlags::None;
+        }
+
+        /// <summary>
+        /// Registers the object (cannot be called when objects has been already registered).
+        /// </summary>
+        void RegisterObject();
+
+        /// <summary>
+        /// Unregisters the object (cannot be called when objects has not been already registered).
+        /// </summary>
+        void UnregisterObject();
+
+    protected:
+
+        /// <summary>
+        /// Create a new managed object.
+        /// </summary>
+        CLRObject* CreateManagedInternal();
 
     public:
         // [Object]
-        String ToString() const override;
         void OnDeleteObject() override;
-
-    protected:
-        /// <summary>
-        /// Internal helper: creates the managed instance via SECore::ScriptingObjectHelper.
-        /// </summary>
-        SEObject* CreateManagedInternal();
-
-    private:
-        bool _isRegistered;
+        String ToString() const override;
     };
 
     /// <summary>
-    /// ScriptingObject variant whose lifetime is controlled by the C# GC.
-    /// Uses a weak GC handle so the GC can collect the managed instance.
-    /// When the managed instance is collected, OnManagedInstanceDeleted() is called
-    /// which deletes this C++ object as well.
+    /// Managed object that uses weak GC handle to track the target object location in memory. 
+    /// Can be destroyed by the GC.
+    /// Used by the objects that lifetime is controlled by the C# side.
     /// </summary>
+    SE_CLASS(Reflect)
     class SE_API_RUNTIME ManagedScriptingObject : public ScriptingObject
     {
-        SE_CLASS(ManagedScriptingObject, ScriptingObject)
-
+        SE_DEFINE_CLASS(ManagedScriptingObject, ScriptingObject)
     public:
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ManagedScriptingObject"/> class.
+        /// </summary>
+        /// <param name="params">The object initialization parameters.</param>
         explicit ManagedScriptingObject(const SpawnParams& params);
 
     public:
         // [ScriptingObject]
-        void SetManagedInstance(SEObject* instance) override;
+        void SetManagedInstance(CLRObject* instance) override;
         void OnManagedInstanceDeleted() override;
         void OnScriptingDispose() override;
         bool CreateManaged() override;
     };
 
-    /// <summary>
-    /// Finds a registered ScriptingObject by its unique ID and optional type filter.
-    /// Returns nullptr if not found or type doesn't match.
-    /// </summary>
-    extern SE_API_RUNTIME ScriptingObject* FindObject(const UID& id, SEClass* type = nullptr);
-
+    extern SE_API_RUNTIME class ScriptingObject* FindObject(const UID& id, class MClass* type);
+    
 } // namespace SE

@@ -33,7 +33,7 @@ namespace SE::Editor
 
 	class CustomEditor : public IType
 	{
-		SE_CLASS_DEFAULT(CustomEditor, IType)
+		SE_DEFINE_CLASS_DEFAULT(CustomEditor, IType)
 	public:
 		~CustomEditor() override = default;
 

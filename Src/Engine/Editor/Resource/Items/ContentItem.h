@@ -41,7 +41,7 @@ namespace SE::Editor
 	/// <summary>
 	/// Content item filter types used for searching.
 	/// </summary>
-	SE_ENUM(ContentItemSearchFilter)
+	SE_ENUM(Reflect)
 	enum class ContentItemSearchFilter
 	{
 		/// <summary>
@@ -142,7 +142,7 @@ namespace SE::Editor
 
 	class ContentItem : public Control
 	{
-		SE_CLASS_DEFAULT(ContentItem, Control)
+		SE_DEFINE_CLASS_DEFAULT(ContentItem, Control)
 	public:
 	    /// <summary>
 	    /// The default margin size.

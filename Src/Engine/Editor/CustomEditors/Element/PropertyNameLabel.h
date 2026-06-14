@@ -14,7 +14,7 @@ namespace SE::Editor
 	/// </summary>
 	class PropertyNameLabel : public Control
 	{
-		SE_CLASS(PropertyNameLabel, Control)
+		DEFINE_CLASS(PropertyNameLabel, Control)
 
 	public:
 		/// <summary>
@@ -74,7 +74,7 @@ namespace SE::Editor
 	/// </summary>
 	class ClickablePropertyNameLabel : public PropertyNameLabel
 	{
-		SE_CLASS(ClickablePropertyNameLabel, PropertyNameLabel)
+		DEFINE_CLASS(ClickablePropertyNameLabel, PropertyNameLabel)
 
 	public:
 		/// <summary>
@@ -115,7 +115,7 @@ namespace SE::Editor
 	/// </summary>
 	class DraggablePropertyNameLabel : public PropertyNameLabel
 	{
-		SE_CLASS(DraggablePropertyNameLabel, PropertyNameLabel)
+		DEFINE_CLASS(DraggablePropertyNameLabel, PropertyNameLabel)
 
 	public:
 		/// <summary>
@@ -156,7 +156,7 @@ namespace SE::Editor
 	/// </summary>
 	class CheckablePropertyNameLabel : public PropertyNameLabel
 	{
-		SE_CLASS(CheckablePropertyNameLabel, PropertyNameLabel)
+		DEFINE_CLASS(CheckablePropertyNameLabel, PropertyNameLabel)
 
 	public:
 		/// <summary>

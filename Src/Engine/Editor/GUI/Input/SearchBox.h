@@ -14,7 +14,7 @@ namespace SE::Editor
 	/// </summary>
 	class SearchBox : public TextBox
 	{
-		SE_CLASS(SearchBox, TextBox)
+		SE_DEFINE_CLASS(SearchBox, TextBox)
 	public:
 		/// <summary>
 		/// A button that clears the search bar.

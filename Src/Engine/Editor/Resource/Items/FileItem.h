@@ -8,7 +8,7 @@ namespace SE::Editor
 	/// </summary>
 	class FileItem : public ContentItem
 	{
-		SE_CLASS_DEFAULT(FileItem, ContentItem)
+		SE_DEFINE_CLASS_DEFAULT(FileItem, ContentItem)
 	public:
 		/// <summary>
 		/// Initializes a new instance of the <see cref="FileItem"/> class.

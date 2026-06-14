@@ -108,11 +108,11 @@ namespace SE
         return true;
     }
 
-    MaterialValue MaterialGenerator::getUVs(VariantTypeHandle::Types::Float2, SE_TEXT("input.TexCoord"));
-    MaterialValue MaterialGenerator::getTime(VariantTypeHandle::Types::Float, SE_TEXT("TimeParam"));
-    MaterialValue MaterialGenerator::getNormal(VariantTypeHandle::Types::Float3, SE_TEXT("input.TBN[2]"));
-    MaterialValue MaterialGenerator::getNormalZero(VariantTypeHandle::Types::Float3, SE_TEXT("float3(0, 0, 1)"));
-    MaterialValue MaterialGenerator::getVertexColor(VariantTypeHandle::Types::Float4, SE_TEXT("GetVertexColor(input)"));
+    MaterialValue MaterialGenerator::getUVs(VariantTypes::Float2, SE_TEXT("input.TexCoord"));
+    MaterialValue MaterialGenerator::getTime(VariantTypes::Float, SE_TEXT("TimeParam"));
+    MaterialValue MaterialGenerator::getNormal(VariantTypes::Float3, SE_TEXT("input.TBN[2]"));
+    MaterialValue MaterialGenerator::getNormalZero(VariantTypes::Float3, SE_TEXT("float3(0, 0, 1)"));
+    MaterialValue MaterialGenerator::getVertexColor(VariantTypes::Float4, SE_TEXT("GetVertexColor(input)"));
 
     MaterialGenerator::MaterialGenerator()
     {
@@ -389,7 +389,7 @@ namespace SE
         }
         else
         {
-            materialVarPS = Value(VariantTypeHandle::Types::Void, baseLayer->GetVariableName(nullptr));
+            materialVarPS = Value(VariantTypes::Void, baseLayer->GetVariableName(nullptr));
             _writer.Write(SE_TEXT("\tMaterial {0} = (Material)0;\n"), materialVarPS.Value);
             if (baseLayer->Domain == MaterialDomain::Surface || baseLayer->Domain == MaterialDomain::Terrain || baseLayer->Domain == MaterialDomain::Particle || baseLayer->Domain == MaterialDomain::Deformable)
             {
@@ -817,15 +817,15 @@ namespace SE
     void MaterialGenerator::createGradients(Node* caller)
     {
         if (_ddx.IsInvalid())
-            _ddx = writeLocal(VariantTypeHandle::Types::Float2, SE_TEXT("ddx(input.TexCoord.xy)"), caller);
+            _ddx = writeLocal(VariantTypes::Float2, SE_TEXT("ddx(input.TexCoord.xy)"), caller);
         if (_ddy.IsInvalid())
-            _ddy = writeLocal(VariantTypeHandle::Types::Float2, SE_TEXT("ddy(input.TexCoord.xy)"), caller);
+            _ddy = writeLocal(VariantTypes::Float2, SE_TEXT("ddy(input.TexCoord.xy)"), caller);
     }
 
     MaterialGenerator::Value MaterialGenerator::getCameraVector(Node* caller)
     {
         if (_cameraVector.IsInvalid())
-            _cameraVector = writeLocal(VariantTypeHandle::Types::Float3, SE_TEXT("normalize(ViewPos.xyz - input.WorldPosition.xyz)"), caller);
+            _cameraVector = writeLocal(VariantTypes::Float3, SE_TEXT("normalize(ViewPos.xyz - input.WorldPosition.xyz)"), caller);
         return _cameraVector;
     }
 
@@ -862,10 +862,10 @@ namespace SE
         case 30:
         {
             // Get input vector
-            auto v = tryGetValue(node->GetBox(0), Value::InitForZero(VariantTypeHandle::Types::Float3));
+            auto v = tryGetValue(node->GetBox(0), Value::InitForZero(VariantTypes::Float3));
 
             // Select transformation spaces
-            ENGINE_ASSERT(node->Values[0].Type == VariantTypeHandle::Types::Int && node->Values[1].Type == VariantTypeHandle::Types::Int);
+            ENGINE_ASSERT(node->Values[0].Type == VariantTypes::Int && node->Values[1].Type == VariantTypes::Int);
             ENGINE_ASSERT(Math::RangeInclusive(node->Values[0].AsInt, 0, (int32)TransformCoordinateSystem::MAX - 1));
             ENGINE_ASSERT(Math::RangeInclusive(node->Values[1].AsInt, 0, (int32)TransformCoordinateSystem::MAX - 1));
             auto inputType = static_cast<TransformCoordinateSystem>(node->Values[0].AsInt);
@@ -953,7 +953,7 @@ namespace SE
                 ENGINE_ASSERT(format != nullptr);
 
                 // Write operation
-                value = writeLocal(VariantTypeHandle::Types::Float3, String::Format(format, v.Value), node);
+                value = writeLocal(VariantTypes::Float3, String::Format(format, v.Value), node);
             }
             break;
         }
@@ -979,20 +979,20 @@ namespace SE
     MaterialGenerator::MaterialGraphBoxesMapping MaterialGenerator::MaterialGraphBoxesMappings[] =
     {
         { 0, nullptr, MaterialTreeType::PixelShader, MaterialValue::Zero },
-        { 1, SE_TEXT("Color"), MaterialTreeType::PixelShader, MaterialValue::InitForOne(VariantTypeHandle::Types::Float3) },
-        { 2, SE_TEXT("Mask"), MaterialTreeType::PixelShader, MaterialValue::InitForOne(VariantTypeHandle::Types::Float) },
-        { 3, SE_TEXT("Emissive"), MaterialTreeType::PixelShader, MaterialValue::InitForZero(VariantTypeHandle::Types::Float3) },
-        { 4, SE_TEXT("Metalness"), MaterialTreeType::PixelShader, MaterialValue::InitForZero(VariantTypeHandle::Types::Float) },
-        { 5, SE_TEXT("Specular"), MaterialTreeType::PixelShader, MaterialValue::InitForHalf(VariantTypeHandle::Types::Float) },
-        { 6, SE_TEXT("Roughness"), MaterialTreeType::PixelShader, MaterialValue::InitForHalf(VariantTypeHandle::Types::Float) },
-        { 7, SE_TEXT("AO"), MaterialTreeType::PixelShader, MaterialValue::InitForOne(VariantTypeHandle::Types::Float) },
-        { 8, SE_TEXT("TangentNormal"), MaterialTreeType::PixelShader, MaterialValue(VariantTypeHandle::Types::Float3, SE_TEXT("float3(0, 0, 1.0)")) },
-        { 9, SE_TEXT("Opacity"), MaterialTreeType::PixelShader, MaterialValue::InitForOne(VariantTypeHandle::Types::Float) },
-        { 10, SE_TEXT("Refraction"), MaterialTreeType::PixelShader, MaterialValue::InitForOne(VariantTypeHandle::Types::Float) },
-        { 11, SE_TEXT("PositionOffset"), MaterialTreeType::VertexShader, MaterialValue::InitForZero(VariantTypeHandle::Types::Float3) },
-        { 12, SE_TEXT("TessellationMultiplier"), MaterialTreeType::VertexShader, MaterialValue(VariantTypeHandle::Types::Float, SE_TEXT("4.0f")) },
-        { 13, SE_TEXT("WorldDisplacement"), MaterialTreeType::DomainShader, MaterialValue::InitForZero(VariantTypeHandle::Types::Float3) },
-        { 14, SE_TEXT("SubsurfaceColor"), MaterialTreeType::PixelShader, MaterialValue::InitForZero(VariantTypeHandle::Types::Float3) },
+        { 1, SE_TEXT("Color"), MaterialTreeType::PixelShader, MaterialValue::InitForOne(VariantTypes::Float3) },
+        { 2, SE_TEXT("Mask"), MaterialTreeType::PixelShader, MaterialValue::InitForOne(VariantTypes::Float) },
+        { 3, SE_TEXT("Emissive"), MaterialTreeType::PixelShader, MaterialValue::InitForZero(VariantTypes::Float3) },
+        { 4, SE_TEXT("Metalness"), MaterialTreeType::PixelShader, MaterialValue::InitForZero(VariantTypes::Float) },
+        { 5, SE_TEXT("Specular"), MaterialTreeType::PixelShader, MaterialValue::InitForHalf(VariantTypes::Float) },
+        { 6, SE_TEXT("Roughness"), MaterialTreeType::PixelShader, MaterialValue::InitForHalf(VariantTypes::Float) },
+        { 7, SE_TEXT("AO"), MaterialTreeType::PixelShader, MaterialValue::InitForOne(VariantTypes::Float) },
+        { 8, SE_TEXT("TangentNormal"), MaterialTreeType::PixelShader, MaterialValue(VariantTypes::Float3, SE_TEXT("float3(0, 0, 1.0)")) },
+        { 9, SE_TEXT("Opacity"), MaterialTreeType::PixelShader, MaterialValue::InitForOne(VariantTypes::Float) },
+        { 10, SE_TEXT("Refraction"), MaterialTreeType::PixelShader, MaterialValue::InitForOne(VariantTypes::Float) },
+        { 11, SE_TEXT("PositionOffset"), MaterialTreeType::VertexShader, MaterialValue::InitForZero(VariantTypes::Float3) },
+        { 12, SE_TEXT("TessellationMultiplier"), MaterialTreeType::VertexShader, MaterialValue(VariantTypes::Float, SE_TEXT("4.0f")) },
+        { 13, SE_TEXT("WorldDisplacement"), MaterialTreeType::DomainShader, MaterialValue::InitForZero(VariantTypes::Float3) },
+        { 14, SE_TEXT("SubsurfaceColor"), MaterialTreeType::PixelShader, MaterialValue::InitForZero(VariantTypes::Float3) },
     };
     
     const MaterialGenerator::MaterialGraphBoxesMapping& MaterialGenerator::GetMaterialRootNodeBox(MaterialGraphBoxes box)

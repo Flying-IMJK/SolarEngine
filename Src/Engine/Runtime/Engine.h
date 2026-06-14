@@ -1,9 +1,8 @@
 #pragma once
 
-#include "Core/_Generated/CoreModule.h"
+#include "Core/CoreModule.h"
 #include "Core/Types/Delegate.h"
 
-#include "Runtime/_Generated/RuntimeModule.h"
 #include "App.h"
 //-------------------------------------------------------------------------
 
@@ -96,32 +95,15 @@ namespace SE
 		static void OnExit();
 
 	private:
-
 		static void OnPause();
 		static void OnUnpause();
 
-	public:
-
-/*        bool Initialize( Int2 const& windowDimensions );
-        bool Shutdown();
-        bool Update();*/
-
-        // Needed for window processor access
-        //inline EntityWorldManager* GetEntityWorldManager() { return &m_entityWorldManager; }
-
     protected:
-
-/*        virtual bool GetResourceProvider(ModuleContext& moduleContext, ResourceProvider*& provider);
-        virtual void ReleaseResourceProvider(ResourceGlobalSettings const* pResourceSettings);*/
-
-    protected:
-
         Function<bool(String const&)>                   m_fatalErrorHandler;
 
         // Modules
         //-------------------------------------------------------------------------
         CoreModule                                      m_CoreModule;
-        RuntimeModule                                   m_RuntimeModule;
 
         // Application data
         //-------------------------------------------------------------------------

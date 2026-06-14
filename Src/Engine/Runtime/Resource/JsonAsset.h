@@ -10,23 +10,16 @@ namespace SE
     /// Base class for all Json-format assets.
     /// </summary>
     /// <seealso cref="Asset" />
+	SE_CLASS(Reflect, API, NoSpawn, Abstract)
     class SE_API_RUNTIME JsonAssetBase : public Asset
     {
-        SE_CLASS(JsonAssetBase, Asset);
+        SE_DEFINE_CLASS(JsonAssetBase, Asset);
+    	ASSET_HEADER(JsonAssetBase);
     protected:
         String m_Path;
         bool m_IsVirtualDocument = false;
 
-    protected:
-        /// <summary>
-        /// Initializes a new instance of the <see cref="JsonAssetBase"/> class.
-        /// </summary>
-        /// <param name="info">The asset object information.</param>
-        explicit JsonAssetBase(const AssetInfo* info);
-
     public:
-
-    	JsonAssetBase();
 
         /// <summary>
         /// The parsed json document.
@@ -115,9 +108,11 @@ namespace SE
 	/// Generic type of Json-format asset. It provides the managed representation of this resource data so it can be accessed via C# API.
 	/// </summary>
 	/// <seealso cref="JsonAssetBase" />
+	SE_CLASS(Reflect, API, NoSpawn)
 	class SE_API_RUNTIME JsonAsset : public JsonAssetBase
 	{
-		SE_CLASS_DEFAULT(JsonAsset, JsonAssetBase);
+		SE_DEFINE_CLASS(JsonAsset, JsonAssetBase);
+		ASSET_HEADER(JsonAsset);
 	private:
 		bool _isAfterReload = false;
 
@@ -143,10 +138,6 @@ namespace SE
 			const TypeID& type = Typeof<T>();
 			return Instance && Types::IsTypeDerivedFrom(InstanceType, type) ? (T*)Instance : nullptr;
 		}
-
-	public:
-		// [JsonAssetBase]
-		explicit JsonAsset(const AssetInfo* info);
 
 		uint64 GetMemoryUsage() const override;
 

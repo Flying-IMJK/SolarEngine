@@ -47,7 +47,7 @@ namespace SE::Editor
 
 	class CustomEditorPresenter : public LayoutElementsContainer
 	{
-		SE_CLASS(CustomEditorPresenter, LayoutElementsContainer)
+		SE_DEFINE_CLASS(CustomEditorPresenter, LayoutElementsContainer)
 	public:
 		/// <summary>
 		/// The panel control.

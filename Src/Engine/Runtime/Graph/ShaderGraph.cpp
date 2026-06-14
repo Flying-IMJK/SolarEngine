@@ -206,8 +206,8 @@ namespace SE
             // Cross
         case 18:
         {
-            Value v1 = tryGetValue(node->GetBox(0), 0, Value::Zero).Cast(VariantTypeHandle::Types::Float3);
-            Value v2 = tryGetValue(node->GetBox(1), 1, Value::Zero).Cast(VariantTypeHandle::Types::Float3);
+            Value v1 = tryGetValue(node->GetBox(0), 0, Value::Zero).Cast(VariantTypes::Float3);
+            Value v2 = tryGetValue(node->GetBox(1), 1, Value::Zero).Cast(VariantTypes::Float3);
             const Char* function = _mathFunctions[node->TypeID - 7];
             value = writeFunction2(node, v1, v2, function);
             break;
@@ -409,8 +409,8 @@ namespace SE
             // Rotate Vector
         case 49:
         {
-            const Value quaternion = tryGetValue(node->GetBox(0), Value::InitForZero(VariantTypeHandle::Types::Quaternion)).Cast(VariantTypeHandle::Types::Quaternion);
-            const Value vector = tryGetValue(node->GetBox(1), Float3::Forward).Cast(VariantTypeHandle::Types::Float3);
+            const Value quaternion = tryGetValue(node->GetBox(0), Value::InitForZero(VariantTypes::Quaternion)).Cast(VariantTypes::Quaternion);
+            const Value vector = tryGetValue(node->GetBox(1), Float3::Forward).Cast(VariantTypes::Float3);
             value = writeLocal(ValueType::Float3, String::Format(SE_TEXT("QuatRotateVector({0}, {1})"), quaternion.Value, vector.Value), node);
             break;
         }
@@ -804,8 +804,8 @@ _writer.Write(SE_TEXT("#ifdef " defineName "\n\t{0} = {1};\n#endif\n"), value.Va
         {
             _includes.Add(SE_TEXT("./Flax/Noise.hlsl"));
             const Char* format;
-            ValueType pointType = VariantTypeHandle::Types::Float2;
-            ValueType resultType = VariantTypeHandle::Types::Float;
+            ValueType pointType = VariantTypes::Float2;
+            ValueType resultType = VariantTypes::Float;
             switch (node->TypeID)
             {
             case 30:
@@ -816,15 +816,15 @@ _writer.Write(SE_TEXT("#ifdef " defineName "\n\t{0} = {1};\n#endif\n"), value.Va
                 break;
             case 32:
                 format = SE_TEXT("WorleyNoise({0})");
-                resultType = VariantTypeHandle::Types::Float2;
+                resultType = VariantTypes::Float2;
                 break;
             case 33:
                 format = SE_TEXT("VoronoiNoise({0})");
-                resultType = VariantTypeHandle::Types::Float3;
+                resultType = VariantTypes::Float3;
                 break;
             case 34:
                 format = SE_TEXT("CustomNoise({0})");
-                pointType = VariantTypeHandle::Types::Float3;
+                pointType = VariantTypes::Float3;
                 break;
             }
             value = writeLocal(resultType, String::Format(format, tryGetValue(node->GetBox(0), Value::Zero).Cast(pointType).Value), node);

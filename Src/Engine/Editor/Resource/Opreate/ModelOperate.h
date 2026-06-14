@@ -8,7 +8,7 @@ namespace SE::Editor
     /// </summary>
     class ModelOperate : public BinaryAssetOperate
     {
-        SE_CLASS_DEFAULT(ModelOperate, BinaryAssetOperate)
+        SE_DEFINE_CLASS_DEFAULT(ModelOperate, BinaryAssetOperate)
         // private ModelPreview _preview;
     public:
 

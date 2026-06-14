@@ -9,3 +9,16 @@
 #else
 #define SE_API_RUNTIME DLLIMPORT
 #endif
+
+namespace SE
+{
+	class BinaryModule;
+	extern "C" SE_API_RUNTIME BinaryModule* GetBinaryModuleSERuntime();
+
+#ifdef SE_EDITOR
+
+	extern "C" SE_API_RUNTIME BinaryModule* GetBinaryModuleSEEditor();
+
+#endif
+
+}

@@ -79,7 +79,7 @@ namespace SE
 	/// </summary>
 	struct SE_API_RUNTIME GPUBufferDescription : IType
 	{
-		SE_CLASS_DEFAULT(GPUBufferDescription, IType);
+		SE_DEFINE_CLASS_DEFAULT(GPUBufferDescription, IType);
 
 		/// <summary>
 		/// The buffer total size.

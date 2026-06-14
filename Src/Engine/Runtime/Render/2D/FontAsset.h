@@ -88,23 +88,22 @@ namespace SE
     /// <summary>
     /// Font asset contains glyph collection and cached data used to render text.
     /// </summary>
+    SE_CLASS(API, NoSpawn, Reflect)
     class SE_API_RUNTIME FontAsset final : public BinaryAsset
     {
-        SE_CLASS(FontAsset, BinaryAsset);
+        SE_DEFINE_CLASS(FontAsset, BinaryAsset);
+        ASSET_HEADER(FontAsset);
         friend Font;
 
     private:
-        FT_Face m_Face;
-        FontOptions m_Options;
+        FT_Face m_Face = nullptr;
+        FontOptions m_Options = {};
         BytesContainer m_FontFile;
         List<Font*, InlinedAllocation<32>> m_Fonts;
         AssetRef<FontAsset> m_VirtualBold;
         AssetRef<FontAsset> m_VirtualItalic;
 
     public:
-        FontAsset();
-        explicit FontAsset(const AssetInfo* info);
-
         /// <summary>
         /// Gets the font family name.
         /// </summary>

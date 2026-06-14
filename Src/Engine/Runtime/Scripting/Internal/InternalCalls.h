@@ -2,9 +2,9 @@
 
 #include "Core/Logging/Logging.h"
 #include "Runtime/Scripting/ScriptingType.h"
-#include "Runtime/Scripting/ManagedCLR/SETypes.h"
+#include "Runtime/Scripting/ManagedCLR/CLRTypes.h"
 
-// #if defined(__clang__)
+#if defined(__clang__)
 // Helper utility to override vtable entry with automatic restore
 // See BindingsGenerator.Cpp.cs that generates virtuall method wrappers for scripting to properly call overriden base method
 struct SE_API_RUNTIME VTableFunctionInjector
@@ -15,7 +15,7 @@ struct SE_API_RUNTIME VTableFunctionInjector
     VTableFunctionInjector(void* object, void* originalFunc, void* func)
     {
         void** vtable = *(void***)object;
-        const int32 vtableIndex = GetVTableIndex(vtable, 200, originalFunc);
+        const int32 vtableIndex = SE::GetVTableIndex(vtable, 200, originalFunc);
         VTableAddr = vtable + vtableIndex;
         OriginalValue = *VTableAddr;
         *VTableAddr = func;
@@ -30,16 +30,10 @@ struct SE_API_RUNTIME VTableFunctionInjector
 #define MSVC_FUNC_EXPORT(name) __pragma(comment(linker, "/EXPORT:" #name "=" __FUNCDNAME__))
 #endif
 
-#if USE_CSHARP
 
-#if USE_NETCORE
 #define ADD_INTERNAL_CALL(fullName, method)
 #define DEFINE_INTERNAL_CALL(returnType) extern "C" DLLEXPORT returnType
-#else
-extern "C" FLAXENGINE_API void mono_add_internal_call(const char* name, const void* method);
-#define ADD_INTERNAL_CALL(fullName, method) mono_add_internal_call(fullName, (const void*)method)
-#define DEFINE_INTERNAL_CALL(returnType) static returnType
-#endif
+
 
 #if BUILD_RELEASE && 0
 
@@ -79,13 +73,3 @@ extern "C" FLAXENGINE_API void mono_add_internal_call(const char* name, const vo
 
 #endif
 
-#else
-
-#define ADD_INTERNAL_CALL(fullName, method)
-#define DEFINE_INTERNAL_CALL(returnType) static returnType
-#define INTERNAL_CALL_CHECK(obj)
-#define INTERNAL_CALL_CHECK_EXP(expression)
-#define INTERNAL_CALL_CHECK_RETURN(obj, defaultValue)
-#define INTERNAL_CALL_CHECK_EXP_RETURN(expression, defaultValue)
-
-#endif

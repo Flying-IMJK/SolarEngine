@@ -1,13 +1,14 @@
 #pragma once
 
-#include "Runtime/API.h"
+#include "Core/Types/UID.h"
 #include "Core/Types/Strings/String.h"
-#include "Runtime/Scripting/ManagedCLR/SETypes.h"
-#include "Runtime/Utilities/Variant.h"
+#include "Runtime/API.h"
+#include "Runtime/Scripting/ManagedCLR/CLRTypes.h"
 
 namespace SE
 {
-    class SEMethod;
+    struct Variant;
+    class CLRMethod;
     class BinaryModule;
     class ManagedBinaryModule;
     class NativeBinaryModule;
@@ -66,9 +67,7 @@ namespace SE
         String ToString(bool withAssembly = false) const;
 
         const ScriptingType& GetType() const;
-#if USE_CSHARP
-        MClass* GetClass() const;
-#endif
+        CLRClass* GetClass() const;
         bool IsSubclassOf(ScriptingTypeHandle c) const;
         bool IsAssignableFrom(ScriptingTypeHandle c) const;
 
@@ -113,13 +112,13 @@ namespace SE
     {
         typedef void (*InitRuntimeHandler)();
         typedef ScriptingObject* (*SpawnHandler)(const ScriptingObjectSpawnParams& params);
-        typedef void (*SetupScriptVTableHandler)(SEClass* mclass, void**& scriptVTable, void**& scriptVTableBase);
+        typedef void (*SetupScriptVTableHandler)(CLRClass* mclass, void**& scriptVTable, void**& scriptVTableBase);
         typedef void (*SetupScriptObjectVTableHandler)(void** scriptVTable, void** scriptVTableBase, void** vtable, int32 entriesCount, int32 wrapperIndex);
         typedef void (*Ctor)(void* ptr);
         typedef void (*Dtor)(void* ptr);
         typedef void (*Copy)(void* dst, void* src);
-        typedef SEObject* (*Box)(void* ptr);
-        typedef void (*Unbox)(void* ptr, SEObject* managed);
+        typedef CLRObject* (*Box)(void* ptr);
+        typedef void (*Unbox)(void* ptr, CLRObject* managed);
         typedef void (*GetField)(void* ptr, const String& name, Variant& value);
         typedef void (*SetField)(void* ptr, const String& name, const Variant& value);
         typedef void* (*GetInterfaceWrapper)(ScriptingObject* obj);
@@ -143,7 +142,7 @@ namespace SE
         /// <summary>
         /// The managed class (cached, can be null if missing).
         /// </summary>
-        SEClass* ManagedClass;
+        CLRClass* ManagedClass;
 
         /// <summary>
         /// The binary module that contains this type (cannot be null).
@@ -328,6 +327,7 @@ namespace SE
     /// </summary>
     struct SE_API_RUNTIME ScriptingTypeInitializer : ScriptingTypeHandle
     {
+        ScriptingTypeInitializer() = default;
         ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime = ScriptingType::DefaultInitRuntime, ScriptingType::SpawnHandler spawn = ScriptingType::DefaultSpawn, ScriptingTypeInitializer* baseType = nullptr, ScriptingType::SetupScriptVTableHandler setupScriptVTable = nullptr, ScriptingType::SetupScriptObjectVTableHandler setupScriptObjectVTable = nullptr, const ScriptingType::InterfaceImplementation* interfaces = nullptr);
         ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::Ctor ctor, ScriptingType::Dtor dtor, ScriptingTypeInitializer* baseType = nullptr, const ScriptingType::InterfaceImplementation* interfaces = nullptr);
         ScriptingTypeInitializer(BinaryModule* module, const StringAnsiView& fullname, int32 size, ScriptingType::InitRuntimeHandler initRuntime, ScriptingType::Ctor ctor, ScriptingType::Dtor dtor, ScriptingType::Copy copy, ScriptingType::Box box, ScriptingType::Unbox unbox, ScriptingType::GetField getField, ScriptingType::SetField setField, ScriptingTypeInitializer* baseType = nullptr, const ScriptingType::InterfaceImplementation* interfaces = nullptr);
@@ -350,6 +350,12 @@ namespace SE
         /// </summary>
         const ScriptingTypeHandle Type;
 
+        FORCE_INLINE ScriptingObjectSpawnParams(const UID& id, const ScriptingTypeHandle* typeHandle)
+            : ID(id)
+            , Type(*typeHandle)
+        {
+        }
+
         FORCE_INLINE ScriptingObjectSpawnParams(const UID& id, const ScriptingTypeHandle& typeHandle)
             : ID(id)
             , Type(typeHandle)
@@ -357,107 +363,113 @@ namespace SE
         }
     };
 
-    /// <summary>
-/// Helper define used to declare required components for native structures that have managed type.
-/// </summary>
-#define DECLARE_SCRIPTING_TYPE_STRUCTURE(type) \
-public: \
-friend class type##Internal; \
-static ScriptingTypeInitializer TypeInitializer; \
-FORCE_INLINE static const ScriptingType& GetStaticType() { return TypeInitializer.GetType(); } \
-FORCE_INLINE static MClass* GetStaticClass() { return TypeInitializer.GetType().ManagedClass; }
+    template <class T>
+    ScriptingTypeInitializer GetScriptingTypeHandle()
+    {
+        return ScriptingTypeInitializer();
+    }
 
     /// <summary>
-/// Helper define used to declare required components for native types that have managed type (for objects that cannot be spawned).
-/// </summary>
-#define DECLARE_SCRIPTING_TYPE_NO_SPAWN(type) \
-public: \
-friend class type##Internal; \
-static ScriptingTypeInitializer TypeInitializer; \
-FORCE_INLINE static const ScriptingType& GetStaticType() { return TypeInitializer.GetType(); } \
-FORCE_INLINE static MClass* GetStaticClass() { return TypeInitializer.GetType().ManagedClass; }
+    /// Helper define used to declare required components for native structures that have managed type.
+    /// </summary>
+    #define SCRIPTING_TYPE_STRUCTURE(type) \
+    public: \
+    friend class type##Internal; \
+    static ScriptingTypeInitializer TypeInitializer; \
+    FORCE_INLINE static const ScriptingType& GetScriptingType() { return TypeInitializer.GetType(); } \
+    FORCE_INLINE static CLRClass* GetScriptingClass() { return TypeInitializer.GetType().ManagedClass; }
 
     /// <summary>
-/// Helper define used to declare required components for native types that have managed type (for objects that can be spawned).
-/// </summary>
-#define DECLARE_SCRIPTING_TYPE(type) \
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(type); \
-static type* Spawn(const SpawnParams& params) { return ::New<type>(params); } \
-explicit type() : type(SpawnParams(UID::New(), type::TypeInitializer)) { } \
-explicit type(const SpawnParams& params)
+    /// Helper define used to declare required components for native types that have managed type (for objects that cannot be spawned).
+    /// </summary>
+    #define SCRIPTING_TYPE_NO_SPAWN(type) \
+    public: \
+    friend class type##Internal; \
+    static ScriptingTypeInitializer TypeInitializer; \
+    FORCE_INLINE static const ScriptingType& GetScriptingType() { return TypeInitializer.GetType(); } \
+    FORCE_INLINE static CLRClass* GetScriptingClass() { return TypeInitializer.GetType().ManagedClass; }
 
     /// <summary>
-/// Helper define used to declare required components for native types that have managed type (for objects that can be spawned) including default constructors implementations.
-/// </summary>
-#define DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(type, baseType) \
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(type); \
-static type* Spawn(const SpawnParams& params) { return ::New<type>(params); } \
-explicit type(const SpawnParams& params) : baseType(params) { } \
-explicit type() : baseType(SpawnParams(UID::New(), type::TypeInitializer)) { }
+    /// Helper define used to declare required components for native types that have managed type (for objects that can be spawned).
+    /// </summary>
+    #define SCRIPTING_TYPE(type) \
+    SCRIPTING_TYPE_NO_SPAWN(type); \
+    static type* Spawn(const SpawnParams& params) { return ::New<type>(params); } \
+    explicit type() : type(SpawnParams(UID::New(), type::TypeInitializer)) { } \
+    explicit type(const SpawnParams& params)
 
     /// <summary>
-/// Helper define used to implement required components for native types that have managed type (for objects that can be spawned).
-/// </summary>
-#define IMPLEMENT_SCRIPTING_TYPE(type, baseType, assemblyType, typeName, setupScriptVTable, setupScriptObjectVTable) \
-ScriptingTypeInitializer type::TypeInitializer \
-( \
-(BinaryModule*)CONCAT_MACROS(GetBinaryModule, assemblyType)(), \
-StringAnsiView(typeName, ARRAY_COUNT(typeName) - 1), \
-sizeof(type), \
-&type##Internal::InitRuntime, \
-(ScriptingType::SpawnHandler)&type::Spawn, \
-&baseType::TypeInitializer, \
-setupScriptVTable, \
-setupScriptObjectVTable \
-);
+    /// Helper define used to declare required components for native types that have managed type (for objects that can be spawned) including default constructors implementations.
+    /// </summary>
+    #define SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(type, baseType) \
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(type); \
+    static type* Spawn(const SpawnParams& params) { return ::New<type>(params); } \
+    explicit type(const SpawnParams& params) : baseType(params) { } \
+    explicit type() : baseType(SpawnParams(UID::New(), type::TypeInitializer)) { }
 
     /// <summary>
-/// Helper define used to implement required components for native types that have managed type (for objects that can be spawned).
-/// </summary>
-#define IMPLEMENT_SCRIPTING_TYPE_NO_BASE(type, assemblyType, typeName, setupScriptVTable, setupScriptObjectVTable) \
-ScriptingTypeInitializer type::TypeInitializer \
-( \
-(BinaryModule*)CONCAT_MACROS(GetBinaryModule, assemblyType)(), \
-StringAnsiView(typeName, ARRAY_COUNT(typeName) - 1), \
-sizeof(type), \
-&type##Internal::InitRuntime, \
-(ScriptingType::SpawnHandler)&type::Spawn, \
-nullptr, \
-setupScriptVTable, \
-setupScriptObjectVTable \
-);
+    /// Helper define used to implement required components for native types that have managed type (for objects that can be spawned).
+    /// </summary>
+    #define IMPLEMENT_SCRIPTING_TYPE(type, baseType, assemblyType, typeName, setupScriptVTable, setupScriptObjectVTable) \
+    ScriptingTypeInitializer type::TypeInitializer \
+    ( \
+    (BinaryModule*)CONCAT_MACROS(GetBinaryModule, assemblyType)(), \
+    StringAnsiView(typeName, ARRAY_SIZE(typeName) - 1), \
+    sizeof(type), \
+    &type##Internal::InitRuntime, \
+    (ScriptingType::SpawnHandler)&type::Spawn, \
+    &baseType::TypeInitializer, \
+    setupScriptVTable, \
+    setupScriptObjectVTable \
+    );
 
     /// <summary>
-/// Helper define used to implement required components for native types that have managed type (for objects that cannot be spawned). With base class specified.
-/// </summary>
-#define IMPLEMENT_SCRIPTING_TYPE_NO_SPAWN_WITH_BASE(type, baseType, assemblyType, typeName, setupScriptVTable, setupScriptObjectVTable) \
-ScriptingTypeInitializer type::TypeInitializer \
-( \
-(BinaryModule*)CONCAT_MACROS(GetBinaryModule, assemblyType)(), \
-StringAnsiView(typeName, ARRAY_COUNT(typeName) - 1), \
-sizeof(type), \
-&type##Internal::InitRuntime, \
-&ScriptingType::DefaultSpawn, \
-&baseType::TypeInitializer, \
-setupScriptVTable, \
-setupScriptObjectVTable \
-);
+    /// Helper define used to implement required components for native types that have managed type (for objects that can be spawned).
+    /// </summary>
+    #define IMPLEMENT_SCRIPTING_TYPE_NO_BASE(type, assemblyType, typeName, setupScriptVTable, setupScriptObjectVTable) \
+    ScriptingTypeInitializer type::TypeInitializer \
+    ( \
+    (BinaryModule*)CONCAT_MACROS(GetBinaryModule, assemblyType)(), \
+    StringAnsiView(typeName, ARRAY_SIZE(typeName) - 1), \
+    sizeof(type), \
+    &type##Internal::InitRuntime, \
+    (ScriptingType::SpawnHandler)&type::Spawn, \
+    nullptr, \
+    setupScriptVTable, \
+    setupScriptObjectVTable \
+    );
 
     /// <summary>
-/// Helper define used to implement required components for native types that have managed type (for objects that cannot be spawned).
-/// </summary>
-#define IMPLEMENT_SCRIPTING_TYPE_NO_SPAWN(type, assemblyType, typeName, setupScriptVTable, setupScriptObjectVTable) \
-ScriptingTypeInitializer type::TypeInitializer \
-( \
-(BinaryModule*)CONCAT_MACROS(GetBinaryModule, assemblyType)(), \
-StringAnsiView(typeName, ARRAY_COUNT(typeName) - 1), \
-sizeof(type), \
-&type##Internal::InitRuntime, \
-&ScriptingType::DefaultSpawn, \
-nullptr, \
-setupScriptVTable, \
-setupScriptObjectVTable \
-);
+    /// Helper define used to implement required components for native types that have managed type (for objects that cannot be spawned). With base class specified.
+    /// </summary>
+    #define IMPLEMENT_SCRIPTING_TYPE_NO_SPAWN_WITH_BASE(type, baseType, assemblyType, typeName, setupScriptVTable, setupScriptObjectVTable) \
+    ScriptingTypeInitializer type::TypeInitializer \
+    ( \
+    (BinaryModule*)CONCAT_MACROS(GetBinaryModule, assemblyType)(), \
+    StringAnsiView(typeName, ARRAY_SIZE(typeName) - 1), \
+    sizeof(type), \
+    &type##Internal::InitRuntime, \
+    &ScriptingType::DefaultSpawn, \
+    &baseType::TypeInitializer, \
+    setupScriptVTable, \
+    setupScriptObjectVTable \
+    );
+
+    /// <summary>
+    /// Helper define used to implement required components for native types that have managed type (for objects that cannot be spawned).
+    /// </summary>
+    #define IMPLEMENT_SCRIPTING_TYPE_NO_SPAWN(type, assemblyType, typeName, setupScriptVTable, setupScriptObjectVTable) \
+    ScriptingTypeInitializer type::TypeInitializer \
+    ( \
+    (BinaryModule*)CONCAT_MACROS(GetBinaryModule, assemblyType)(), \
+    StringAnsiView(typeName, ARRAY_SIZE(typeName) - 1), \
+    sizeof(type), \
+    &type##Internal::InitRuntime, \
+    &ScriptingType::DefaultSpawn, \
+    nullptr, \
+    setupScriptVTable, \
+    setupScriptObjectVTable \
+    );
 
     /// <summary>
     /// The core library assembly. Main C# library with core functionalities.

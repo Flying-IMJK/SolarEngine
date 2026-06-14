@@ -1,6 +1,6 @@
 
 # 设置工程名 使用语言c/c++
-set(CORE_TARGET SE.Core)
+set(CORE_TARGET SECore)
 
 macro(CORE_ADD)
     set(SOURCE_FILES "")
@@ -29,6 +29,8 @@ set(CoreHeadFiles
         ${CMAKE_CURRENT_SOURCE_DIR}/API.h
         ${CMAKE_CURRENT_SOURCE_DIR}/Systems.h
         ${CMAKE_CURRENT_SOURCE_DIR}/Templates.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/CoreModule.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/CoreModule.cpp
 )
 
 set(CoreSourceFiles
@@ -73,4 +75,4 @@ endif()
 target_compile_definitions(${CORE_TARGET} PRIVATE SE_DLL_CORE TRACY_ENABLE TRACY_EXPORTS)
 
 ### precompile
-PRECOMPILE_PROJECT(${CORE_TARGET} SE.Core ${CoreHeadFiles})
+PRECOMPILE_PROJECT(${CORE_TARGET} ${CORE_TARGET} ${CoreHeadFiles})

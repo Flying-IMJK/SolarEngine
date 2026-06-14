@@ -17,7 +17,7 @@ namespace SE::Editor
 
 	class ScenesGraphNode : public IType
 	{
-		SE_CLASS_DEFAULT(ScenesGraphNode, IType)
+		SE_DEFINE_CLASS_DEFAULT(ScenesGraphNode, IType)
 	public:
 		/// <summary>
 		/// Gets the children list.

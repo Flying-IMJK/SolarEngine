@@ -101,19 +101,19 @@ namespace SE
         case MaterialParameterType::CubeTexture:
             switch (value.Type.Type)
             {
-            case VariantTypeHandle::Types::Null:
+            case VariantTypes::Null:
                 m_AsAsset = nullptr;
                 break;
             /*case MaterialVariantType::Types::Guid:
                 m_AsAsset = AssetContent::LoadAsync<TextureBase>(*(SGUID*)value.AsData);
                     break;*/
-            case VariantTypeHandle::Types::Pointer:
+            case VariantTypes::Pointer:
                 m_AsAsset = (TextureBase*)value.AsPointer;
                     break;
-            case VariantTypeHandle::Types::Object:
+            case VariantTypes::Object:
                 m_AsAsset = TypeCast<TextureBase>(value.AsObject);
                     break;
-            case VariantTypeHandle::Types::Asset:
+            case VariantTypes::Asset:
                 m_AsAsset = TypeCast<TextureBase>(value.AsAsset);
                     break;
             default:

@@ -9,7 +9,7 @@ namespace SE
 
     class SE_API_RUNTIME Tooltip : public ContainerControl
     {
-        SE_CLASS(Tooltip, ContainerControl)
+        SE_DEFINE_CLASS(Tooltip, ContainerControl)
     private:
         float m_TimeToPopupLeft;
         Control* m_LastTarget;

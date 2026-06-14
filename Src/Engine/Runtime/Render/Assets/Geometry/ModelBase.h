@@ -23,10 +23,11 @@ namespace SE
     /// <summary>
     /// Base class for asset types that can contain a model resource.
     /// </summary>
+    SE_CLASS(Reflect, API, NoSpawn)
     class SE_API_RUNTIME ModelBase : public BinaryAsset, public StreamableResource
     {
-        SE_CLASS_DEFAULT(ModelBase, BinaryAsset);
-
+        SE_DEFINE_CLASS_DEFAULT(ModelBase, BinaryAsset);
+        ASSET_HEADER(ModelBase);
     public:
         /// <summary>
         /// The Sign Distant Field (SDF) data for the model.
@@ -80,9 +81,7 @@ namespace SE
         };
 
     protected:
-        explicit ModelBase(const AssetInfo* info, StreamingGroup* group)
-            : BinaryAsset(info)
-            , StreamableResource(group)
+        explicit ModelBase(const SpawnParams& params, const AssetInfo* info, StreamingGroup* group) : BinaryAsset(params, info), StreamableResource(group)
         {
         }
 

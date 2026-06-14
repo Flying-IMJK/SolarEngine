@@ -14,7 +14,7 @@ namespace SE::Editor
     /// <seealso cref="TreeNode" />
     class ContentTreeNode : public TreeNode
     {
-        SE_CLASS_DEFAULT(ContentTreeNode, TreeNode)
+        SE_DEFINE_CLASS_DEFAULT(ContentTreeNode, TreeNode)
     private:
         Ref<DragItems> _dragOverItems;
         List<Rectangle> _highlights;
@@ -133,7 +133,7 @@ namespace SE::Editor
     /// <seealso cref="FlaxEditor.Content.ContentTreeNode" />
     class RootContentTreeNode : public ContentTreeNode
     {
-        SE_CLASS(RootContentTreeNode, ContentTreeNode)
+        SE_DEFINE_CLASS(RootContentTreeNode, ContentTreeNode)
     public:
         RootContentTreeNode();
 

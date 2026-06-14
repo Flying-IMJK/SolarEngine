@@ -10,7 +10,7 @@ namespace SE::Editor
 	/// </summary>
 	class NavigationBar : public Panel
 	{
-		SE_CLASS(NavigationBar, Panel)
+		SE_DEFINE_CLASS(NavigationBar, Panel)
 	public:
 		/// <summary>
 		/// The default buttons margin.

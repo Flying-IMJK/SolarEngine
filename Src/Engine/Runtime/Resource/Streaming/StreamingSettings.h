@@ -11,13 +11,13 @@ namespace SE
 	/// </summary>
 	class SE_API_RUNTIME StreamingSettings : public SettingsBase
 	{
-		SE_CLASS(StreamingSettings, SettingsBase);
+		DEFINE_CLASS(StreamingSettings, SettingsBase);
 	public:
 
 		/// <summary>
 		/// Textures streaming configuration (per-group).
 		/// </summary>
-		API_FIELD(Attributes="EditorOrder(100), EditorDisplay(\"Textures\")")
+		SE_PROPERTY(API, Attributes="EditorOrder(100), EditorDisplay(\"Textures\")")
 		List<TextureGroup, InlinedAllocation<32>> TextureGroups;
 
 	public:

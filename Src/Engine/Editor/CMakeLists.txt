@@ -1,5 +1,5 @@
 # 设置工程名 使用语言c/c++
-set(EDITOR_TARGET SE.Editor)
+set(EDITOR_TARGET SEEditor)
 
 include(${EngineLibDir}/ISPCTextureCompressor/link.cmake)
 
@@ -13,6 +13,12 @@ macro(EDITOR_ADD)
             else()
                 list(APPEND HEAD_FILES ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE_FILE})
             endif()
+        elseif(SOURCE_FILE MATCHES ".*\.cs")
+            if(SOURCE_FILE MATCHES "^/.*")
+                list(APPEND CSHARP_FILES ${SOURCE_FILE})
+            else()
+                list(APPEND CSHARP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE_FILE})
+            endif()
         else()
             if(SOURCE_FILE MATCHES "^/.*")
                 list(APPEND SOURCE_FILES ${SOURCE_FILE})
@@ -23,8 +29,11 @@ macro(EDITOR_ADD)
     endforeach()
     set(EditorHeadFiles ${EditorHeadFiles} ${HEAD_FILES} PARENT_SCOPE)
     set(EditorSourceFiles ${EditorSourceFiles} ${SOURCE_FILES} PARENT_SCOPE)
+    set(EditorCSharpFiles ${EditorCSharpFiles} ${CSHARP_FILES} PARENT_SCOPE)
 endmacro()
 
+set(EditorCSharpFiles
+)
 
 set(EditorHeadFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/API.h
@@ -32,13 +41,16 @@ set(EditorHeadFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/EditorContext.h
     ${CMAKE_CURRENT_SOURCE_DIR}/EditorAssets.h
     ${CMAKE_CURRENT_SOURCE_DIR}/EditorIcons.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ManagedEditor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Test.h
 )
 
 set(EditorSourceFiles
+    ${CMAKE_CURRENT_SOURCE_DIR}/API.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/EditorApp.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/EditorContext.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/EditorAssets.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ManagedEditor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Test.cpp
 )
 
@@ -52,6 +64,7 @@ add_subdirectory(CustomEditors)
 add_subdirectory(Resource)
 add_subdirectory(Windows)
 add_subdirectory(SceneGraph)
+add_subdirectory(CSharp)
 
 
 source_group(TREE ${EngineEditorDir} FILES ${EditorSourceFiles} ${EditorHeadFiles})
@@ -61,19 +74,20 @@ add_library(${EDITOR_TARGET} SHARED "${EditorHeadFiles}" "${EditorSourceFiles}")
 
 target_include_directories(${EDITOR_TARGET}
     PUBLIC ${EngineDir}
-    PUBLIC ${EngineCoreDir}/ThirdParty
     PUBLIC ${EngineEditorDir}/ThirdParty
-    PUBLIC ${EngineRuntimeDir}/ThirdParty
 )
 
-target_link_libraries(${EDITOR_TARGET} PUBLIC SE.Core SE.Runtime)
+target_link_libraries(${EDITOR_TARGET} PUBLIC SECore SERuntime)
 
-add_dependencies(${EDITOR_TARGET} SE.Runtime)
+# 引擎C#运行时库
+CSHARP_TARGET(${EDITOR_TARGET} "${EditorCSharpFiles}" "${CMAKE_CURRENT_SOURCE_DIR}/EditorCSharp.csproj")
 
 # 第三方链接库
 ISPCTextureCompressorLink(${EDITOR_TARGET})
 
 target_compile_definitions(${EDITOR_TARGET} PRIVATE SE_DLL_EDITOR)
 
+add_dependencies(${EDITOR_TARGET} ${EDITOR_TARGET}.CSharp SERuntime SECore)
+
 ### precompile
-PRECOMPILE_PROJECT(${EDITOR_TARGET} SE.Editor ${EditorHeadFiles})
+PRECOMPILE_PROJECT(${EDITOR_TARGET} ${EDITOR_TARGET} ${EditorHeadFiles})

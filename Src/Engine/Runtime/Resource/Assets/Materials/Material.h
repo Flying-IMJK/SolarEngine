@@ -12,9 +12,11 @@ namespace SE
 	// <summary>
 	/// Material asset that contains shader for rendering models on the GPU.
 	/// </summary>
+	SE_CLASS(Reflect, API, NoSpawn)
 	class SE_API_RUNTIME Material final : public MaterialBase, public IShaderAsset
 	{
-		SE_CLASS_DEFAULT(Material, MaterialBase);
+		SE_DEFINE_CLASS_DEFAULT(Material, MaterialBase);
+		ASSET_HEADER(Material);
 	private:
 		MaterialShader* m_MaterialShader = nullptr;
 		ShaderStorage::Header _shaderHeader;

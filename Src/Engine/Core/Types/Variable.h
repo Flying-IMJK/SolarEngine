@@ -76,6 +76,45 @@ public:												\
 	typedef wchar_t Char;
 #endif
 
+	// Declares full set of operators for the enum type (using binary operation on integer values)
+	#define SE_ENUM_OPERATORS(T)																				\
+	inline constexpr bool operator!(T a) { return !(__underlying_type(T))a; }									\
+	inline constexpr T operator~(T a) { return (T)~(__underlying_type(T))a; }									\
+	inline constexpr T operator|(T a, T b) { return (T)((__underlying_type(T))a | (__underlying_type(T))b); }	\
+	inline constexpr T operator&(T a, T b) { return (T)((__underlying_type(T))a & (__underlying_type(T))b); }	\
+	inline constexpr T operator^(T a, T b) { return (T)((__underlying_type(T))a ^ (__underlying_type(T))b); }	\
+	inline T& operator|=(T& a, T b) { return a = (T)((__underlying_type(T))a | (__underlying_type(T))b); }		\
+	inline T& operator&=(T& a, T b) { return a = (T)((__underlying_type(T))a & (__underlying_type(T))b); }		\
+	inline T& operator^=(T& a, T b) { return a = (T)((__underlying_type(T))a ^ (__underlying_type(T))b); }
+
+	// Returns true if given enum value has one or more enum flags set
+	template<typename T>
+	constexpr bool EnumHasAnyFlags(T value, T flags)
+	{
+		return ((__underlying_type(T))value & (__underlying_type(T))flags) != 0;
+	}
+
+	// Returns true if given enum value has all of the enum flags set
+	template<typename T>
+	constexpr bool EnumHasAllFlags(T value, T flags)
+	{
+		return ((__underlying_type(T))value & (__underlying_type(T))flags) == (__underlying_type(T))flags;
+	}
+
+	// Returns true if given enum value has none of enum flags set
+	template<typename T>
+	constexpr bool EnumHasNoneFlags(T value, T flags)
+	{
+		return ((__underlying_type(T))value & (__underlying_type(T))flags) == 0;
+	}
+
+	// Returns enum value with additional enum flags set
+	template<typename T>
+	constexpr T EnumAddFlags(T value, T flags)
+	{
+		return (T)((__underlying_type(T))value | (__underlying_type(T))flags);
+	}
+
 
 	class String;
 	class StringAnsi;

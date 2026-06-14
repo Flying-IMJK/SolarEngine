@@ -11,7 +11,7 @@ namespace SE
 {
     class GPUPipelineState;
 
-    SE_ENUM(SkyType)
+    SE_ENUM(Reflect)
     enum class SkyType
     {
         SkyBox = 0,
@@ -23,7 +23,7 @@ namespace SE
     /// </summary>
     class SE_API_RUNTIME Sky : public RenderActor, public ISkyRenderer/*, public IAtmosphericFogRenderer,*/
     {
-        SE_CLASS(Sky, RenderActor);
+        SE_DEFINE_CLASS(Sky, RenderActor);
     private:
         AssetRef<Shader> _shader;
         GPUPipelineState* _psSky;
@@ -40,38 +40,38 @@ namespace SE
         /// <summary>
         /// The cube texture to draw.
         /// </summary>
-        // API_FIELD(Attributes="EditorOrder(10), DefaultValue(null), EditorDisplay(\"Skybox\")")
+        // SE_PROPERTY(API, Attributes="EditorOrder(10), DefaultValue(null), EditorDisplay(\"Skybox\")")
         AssetRef<CubeTexture> CubeTexture;
 
         /// <summary>
         /// The skybox texture tint color.
         /// </summary>
-        // API_FIELD(Attributes="EditorOrder(40), DefaultValue(typeof(Color), \"1,1,1,1\"), EditorDisplay(\"Skybox\")")
+        // SE_PROPERTY(API, Attributes="EditorOrder(40), DefaultValue(typeof(Color), \"1,1,1,1\"), EditorDisplay(\"Skybox\")")
         Color Color = Colors::White;
 
         /// <summary>
         /// The skybox texture exposure value. Can be used to make skybox brighter or dimmer.
         /// </summary>
-        // API_FIELD(Attributes="EditorOrder(50), DefaultValue(0.0f), Limit(-100, 100, 0.01f), EditorDisplay(\"Skybox\")")
+        // SE_PROPERTY(API, Attributes="EditorOrder(50), DefaultValue(0.0f), Limit(-100, 100, 0.01f), EditorDisplay(\"Skybox\")")
         float Exposure = 0.0f;
 
     public:
         /// <summary>
         /// Directional light that is used to simulate the sun.
         /// </summary>
-        // API_FIELD(Attributes="EditorOrder(10), DefaultValue(null), EditorDisplay(\"Sky\")")
+        // SE_PROPERTY(API, Attributes="EditorOrder(10), DefaultValue(null), EditorDisplay(\"Sky\")")
         // ScriptingObjectReference<DirectionalLight> SunLight;
 
         /// <summary>
         /// The sun disc scale.
         /// </summary>
-        // API_FIELD(Attributes="EditorOrder(20), DefaultValue(2.0f), EditorDisplay(\"Sky\"), Limit(0, 100, 0.01f)")
+        // SE_PROPERTY(API, Attributes="EditorOrder(20), DefaultValue(2.0f), EditorDisplay(\"Sky\"), Limit(0, 100, 0.01f)")
         float SunDiscScale = 2.0f;
 
         /// <summary>
         /// The sun power.
         /// </summary>
-        // API_FIELD(Attributes="EditorOrder(30), DefaultValue(8.0f), EditorDisplay(\"Sky\"), Limit(0, 1000, 0.01f)")
+        // SE_PROPERTY(API, Attributes="EditorOrder(30), DefaultValue(8.0f), EditorDisplay(\"Sky\"), Limit(0, 1000, 0.01f)")
         float SunPower = 8.0f;
 
     private:

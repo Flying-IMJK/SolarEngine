@@ -1,6 +1,7 @@
 
 #include "ScriptingType.h"
 #include "Runtime/Scripting/Binary/BinaryModule.h"
+#include "Runtime/Scripting/ScriptingObject.h"
 
 namespace SE
 {
@@ -28,15 +29,13 @@ namespace SE
         return Module->Types[TypeIndex];
     }
 
-#if USE_CSHARP
 
-    MClass* ScriptingTypeHandle::GetClass() const
+    CLRClass* ScriptingTypeHandle::GetClass() const
     {
-        ASSERT_LOW_LAYER(Module && Module->Types[TypeIndex].ManagedClass);
+        ENGINE_ASSERT(Module && Module->Types[TypeIndex].ManagedClass);
         return Module->Types[TypeIndex].ManagedClass;
     }
 
-#endif
 
     bool ScriptingTypeHandle::IsSubclassOf(ScriptingTypeHandle c) const
     {
@@ -450,7 +449,7 @@ namespace SE
 
         // Duplicate vtable
         Script.VTable = (void**)((byte*)Platform::Allocate(totalSize, 16) + prefixSize);
-        Utilities::UnsafeMemoryCopy((byte*)Script.VTable - prefixSize, (byte*)vtable - prefixSize, prefixSize + size);
+        Platform::MemoryCopy((byte*)Script.VTable - prefixSize, (byte*)vtable - prefixSize, prefixSize + size);
 
         // Override vtable entries
         if (interfacesCount)
@@ -483,7 +482,7 @@ namespace SE
                         const int32 interfaceSize = interfaceCount * sizeof(void*);
 
                         // Duplicate interface vtable
-                        Utilities::UnsafeMemoryCopy((byte*)Script.VTable + interfaceOffset, (byte*)vtableInterface - prefixSize, prefixSize + interfaceSize);
+                        Platform::MemoryCopy((byte*)Script.VTable + interfaceOffset, (byte*)vtableInterface - prefixSize, prefixSize + interfaceSize);
 
                         // Override interface vtable entries
                         const auto scriptOffset = interfaces->ScriptVTableOffset;

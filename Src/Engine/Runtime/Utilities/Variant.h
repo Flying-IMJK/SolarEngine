@@ -52,6 +52,7 @@ namespace SE
 
         Array,
         Dictionary,
+        ManagedObject,
         Typename,
 
         Int2,
@@ -110,6 +111,7 @@ namespace SE
 
         explicit VariantTypeHandle(VariantTypes type, const StringView& typeName);
         explicit VariantTypeHandle(VariantTypes type, const StringAnsiView& typeName);
+        explicit VariantTypeHandle(VariantTypes type, const CLRClass* klass);
         explicit VariantTypeHandle(const StringAnsiView& typeName);
         VariantTypeHandle(const VariantTypeHandle& other);
         VariantTypeHandle(VariantTypeHandle&& other) noexcept;
@@ -164,7 +166,7 @@ namespace SE
             double AsDouble;
             void* AsPointer;
 
-            Object* AsObject;
+            ScriptingObject* AsObject;
             Asset* AsAsset;
 
             struct
@@ -195,7 +197,7 @@ namespace SE
         static const Variant True;
 
     public:
-        FORCE_INLINE Variant()
+        Variant()
         {
         }
 
@@ -215,7 +217,7 @@ namespace SE
         Variant(float v);
         Variant(double v);
         Variant(void* v);
-        Variant(Object* v);
+        Variant(ScriptingObject* v);
         Variant(Asset* v);
         Variant(const StringView& v);
         Variant(const StringAnsiView& v);
@@ -422,6 +424,5 @@ namespace SE
         void FreeStructure();
     };
 
-
+    SE_API_RUNTIME uint32 GetHash(const Variant& key);
 } // SE
-

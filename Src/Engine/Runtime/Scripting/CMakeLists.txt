@@ -5,12 +5,12 @@ add_subdirectory(ManagedCLR)
 
 
 RUNTIME_ADD(
+        Events.h
         Scripting.h
         Scripting.cpp
         ScriptingType.h
         ScriptingType.cpp
         ScriptingObject.h
         ScriptingObject.cpp
-        ManagedScriptingObject.h
 )
 

@@ -15,7 +15,7 @@ namespace SE::Editor
 	/// </summary>
 	class ProjectTreeNode : public ContentTreeNode
 	{
-		SE_CLASS_DEFAULT(ProjectTreeNode, ContentTreeNode)
+		SE_DEFINE_CLASS_DEFAULT(ProjectTreeNode, ContentTreeNode)
 	public:
 		/// <summary>
 		/// The project/

@@ -8,6 +8,7 @@
 #include "Core/Logging/LoggingSystem.h"
 #include "Core/Platform/Platform.h"
 #include "Core/Types/DateTime.h"
+#include "Core/Systems.h"
 
 #include "EngineContext.h"
 #include "Graphics/GPUContext.h"

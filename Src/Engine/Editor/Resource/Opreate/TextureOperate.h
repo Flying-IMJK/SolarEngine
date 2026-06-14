@@ -9,7 +9,7 @@ namespace SE::Editor
     /// </summary>
     class TextureOperate : public BinaryAssetOperate
     {
-        SE_CLASS_DEFAULT(TextureOperate, BinaryAssetOperate)
+        SE_DEFINE_CLASS_DEFAULT(TextureOperate, BinaryAssetOperate)
     public:
         /// <inheritdoc />
         bool CanReimport(ContentItem* item) override

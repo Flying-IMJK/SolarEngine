@@ -41,7 +41,7 @@ namespace SE
             if (varName.IsEmpty())
             {
                 // Create material variable
-                MaterialValue defaultValue = MaterialValue::InitForZero(VariantTypeHandle::Types::Void);
+                MaterialValue defaultValue = MaterialValue::InitForZero(VariantTypes::Void);
                 varName = writeLocal(defaultValue, node).Value;
 
                 // Check if use custom UVs
@@ -56,7 +56,7 @@ namespace SE
                     // TODO: better idea would to be to use variable for current UVs, by default=input.TexCoord.xy could be modified when sampling layers
 
                     // Cache original pixel UVs
-                    orginalUVs = writeLocal(VariantTypeHandle::Types::Float2, SE_TEXT("input.TexCoord.xy"), node).Value;
+                    orginalUVs = writeLocal(VariantTypes::Float2, SE_TEXT("input.TexCoord.xy"), node).Value;
 
                     // Modify current pixel UVs
                     _writer.Write(*String::Format(SE_TEXT("\tinput.TexCoord.xy = {0};\n"), customUVs));
@@ -138,7 +138,7 @@ namespace SE
             ASSERT(varName.HasChars());
 
             // Use value
-            value = MaterialValue(VariantTypeHandle::Types::Void, varName);
+            value = MaterialValue(VariantTypes::Void, varName);
             break;
         }
             // Blend Linear
@@ -146,7 +146,7 @@ namespace SE
         case 5:
         case 8:
         {
-            const Value defaultValue = MaterialValue::InitForZero(VariantTypeHandle::Types::Void);
+            const Value defaultValue = MaterialValue::InitForZero(VariantTypes::Void);
             Value alpha = tryGetValue(node->GetBox(2), 0, Value::Zero).AsFloat();
             if (alpha.IsZero())
             {
@@ -174,11 +174,11 @@ namespace SE
                 // Height Layer Blend
                 auto bottomHeight = tryGetValue(node->GetBox(4), Value::Zero);
                 auto topHeight = tryGetValue(node->GetBox(5), Value::Zero);
-                auto bottomHeightScaled = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("{0} * (1.0 - {1})"), bottomHeight.Value, alpha.Value), node);
-                auto topHeightScaled = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("{0} * {1}"), topHeight.Value, alpha.Value), node);
-                auto heightStart = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("max({0}, {1}) - 0.05"), bottomHeightScaled.Value, topHeightScaled.Value), node);
-                auto bottomLevel = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("max({0} - {1}, 0.0001)"), topHeightScaled.Value, heightStart.Value), node);
-                alpha = writeLocal(VariantTypeHandle::Types::Float, alpha.Value, node);
+                auto bottomHeightScaled = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("{0} * (1.0 - {1})"), bottomHeight.Value, alpha.Value), node);
+                auto topHeightScaled = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("{0} * {1}"), topHeight.Value, alpha.Value), node);
+                auto heightStart = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("max({0}, {1}) - 0.05"), bottomHeightScaled.Value, topHeightScaled.Value), node);
+                auto bottomLevel = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("max({0} - {1}, 0.0001)"), topHeightScaled.Value, heightStart.Value), node);
+                alpha = writeLocal(VariantTypes::Float, alpha.Value, node);
                 _writer.Write(SE_TEXT("\t{0} = {1} / (max({2} - {3}, 0) + {4});\n"), alpha.Value, bottomLevel.Value, bottomHeightScaled.Value, heightStart.Value, bottomLevel.Value);
             }
 #define EAT_BOX(type) writeBlending(MaterialGraphBoxes::type, value, bottom, top, alpha)
@@ -221,7 +221,7 @@ namespace SE
         case 3:
         {
             // Create new layer
-            const MaterialValue defaultValue = MaterialValue::InitForZero(VariantTypeHandle::Types::Void);
+            const MaterialValue defaultValue = MaterialValue::InitForZero(VariantTypes::Void);
             value = writeLocal(defaultValue, node);
 
             // Sample layer
@@ -271,7 +271,7 @@ namespace SE
         case 7:
         {
             // Get layer
-            MaterialValue defaultValue = MaterialValue::InitForZero(VariantTypeHandle::Types::Void);
+            MaterialValue defaultValue = MaterialValue::InitForZero(VariantTypes::Void);
             MaterialValue layer = tryGetValue(node->GetBox(0), defaultValue);
 
             // Extract component or use default value if cannot use that box in the current tree
@@ -290,7 +290,7 @@ namespace SE
         case 6:
         {
             // Create new layer
-            const MaterialValue defaultValue = MaterialValue::InitForZero(VariantTypeHandle::Types::Void);
+            const MaterialValue defaultValue = MaterialValue::InitForZero(VariantTypes::Void);
             value = writeLocal(defaultValue, node);
 
             // Sample layer

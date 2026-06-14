@@ -16,7 +16,7 @@ namespace SE
 	/// <summary>
 	/// Create/Import new asset callback result
 	/// </summary>
-	SE_ENUM(CreateAssetResult)
+	SE_ENUM(Reflect)
 	enum class CreateAssetResult
 	{
 		Ok, Abort, Error, CannotSaveFile, InvalidPath, CannotAllocateChunk, InvalidTypeID, Skip

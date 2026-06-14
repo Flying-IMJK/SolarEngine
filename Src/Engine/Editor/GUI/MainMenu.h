@@ -18,7 +18,7 @@ namespace SE::Editor
 
     class MainMenu : public ContainerControl
     {
-	    SE_CLASS_DEFAULT(MainMenu, ContainerControl)
+	    SE_DEFINE_CLASS_DEFAULT(MainMenu, ContainerControl)
 	private:
 #if PLATFORM_WINDOWS
     	Function<void(const Float2&, WindowHitCodes&, bool&)> m_hitTestCall;

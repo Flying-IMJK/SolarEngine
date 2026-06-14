@@ -1,16 +1,16 @@
 
 #include "NativeBinaryModule.h"
-#include "Runtime/Scripting/ManagedCLR/SEMethod.h"
+#include "Runtime/Scripting/ManagedCLR/CLRMethod.h"
 
 
 namespace SE
 {
 	NativeBinaryModule::NativeBinaryModule(const StringAnsiView& name)
-	: NativeBinaryModule(New<SEAssembly>(nullptr, name))
+	: NativeBinaryModule(New<CLRAssembly>(nullptr, name))
 	{
 	}
 
-	NativeBinaryModule::NativeBinaryModule(SEAssembly* assembly)
+	NativeBinaryModule::NativeBinaryModule(CLRAssembly* assembly)
 		: ManagedBinaryModule(assembly)
 		, Library(nullptr)
 	{
@@ -21,7 +21,7 @@ namespace SE
 		ManagedBinaryModule::Destroy(isReloading);
 
 		// Skip native code unloading from core libs
-		if (this == GetBinaryModuleCorlib() || this == GetBinaryModuleFlaxEngine())
+		if (this == GetBinaryModuleCorlib() || this == GetBinaryModuleSERuntime())
 			return;
 
 		// Release native library

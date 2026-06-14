@@ -30,7 +30,7 @@ endif()
  
 macro (SlangLink target)
 
-    include_directories(${EngineLibDir}/slang/include)
+    target_include_directories(${target} PRIVATE ${EngineLibDir}/slang/include)
 
     target_link_libraries(${target} PUBLIC
          slang
@@ -38,14 +38,14 @@ macro (SlangLink target)
 
     target_link_directories(${target} PUBLIC ${SLANG_LIBRARY_DIR})
     ##使用宏来加载动态库dll1和dll2
-#    ADD_DELAYLOAD_FLAGS(${target} slang)
+    ADD_DELAYLOAD_FLAGS(${target} slang)
 
     # copy resources on post build
     add_custom_command(TARGET ${target} POST_BUILD
     # directory
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${SLANG_SHARED_LIBRARY_DIR}
-        ${ProjectBuildDir}#[[/${EngineLibRootDir}/ShaderCompiler]]
+        ${ProjectBuildDir}/${EngineLibRootDir}/slang
     )
 
 endmacro()

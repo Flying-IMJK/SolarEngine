@@ -40,7 +40,7 @@ namespace SE
 		/// <summary>
 		/// Empty constructor.
 		/// </summary>
-		TimeSpan()
+		TimeSpan(): Ticks(0)
 		{
 		}
 

@@ -10,7 +10,7 @@ namespace SE
 
     class SE_API_RUNTIME Button : public ContainerControl
     {
-        SE_CLASS(Button, ContainerControl)
+        SE_DEFINE_CLASS(Button, ContainerControl)
     public:
         /// <summary>
         /// The default height for the buttons.

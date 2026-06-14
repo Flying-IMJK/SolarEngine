@@ -8,7 +8,7 @@ namespace SE::Editor
 	/// </summary>
 	class SceneItem : public JsonAssetItem
 	{
-		SE_CLASS(SceneItem, JsonAssetItem)
+		SE_DEFINE_CLASS(SceneItem, JsonAssetItem)
 	public:
 		/// <summary>
 		/// Initializes a new instance of the <see cref="SceneItem"/> class.

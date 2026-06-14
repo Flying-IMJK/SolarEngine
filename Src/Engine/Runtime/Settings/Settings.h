@@ -11,7 +11,7 @@ namespace SE
 
     class SE_API_RUNTIME ISettings : public IType
     {
-        SE_CLASS_DEFAULT(ISettings, IType);
+        SE_DEFINE_CLASS_DEFAULT(ISettings, IType);
     };
 
     //-------------------------------------------------------------------------
@@ -24,7 +24,7 @@ namespace SE
 
     class SE_API_RUNTIME GlobalSettings : public ISettings
     {
-        SE_CLASS_DEFAULT(GlobalSettings, ISettings);
+        SE_DEFINE_CLASS_DEFAULT(GlobalSettings, ISettings);
 
         virtual bool LoadSettings( IniFile const& ini ) = 0;
         virtual bool SaveSettings( IniFile& ini ) const = 0;

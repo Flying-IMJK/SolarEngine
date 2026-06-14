@@ -95,8 +95,8 @@ namespace SE
     BINARY_ASSET_FACTORY(Model, false);
 
 
-    Model::Model(const AssetInfo* info)
-        : ModelBase(info, StreamingGroups::Instance().Models())
+    Model::Model(const SpawnParams& params, const AssetInfo* info)
+        : ModelBase(params, info, StreamingGroups::Instance().Models())
     {
         /*if (EnableModelSDF == 0 && GPUDevice::instance)
         {

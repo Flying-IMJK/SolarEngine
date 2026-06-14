@@ -9,7 +9,7 @@ namespace SE
 {
     class GPUGlobalSettings : public GlobalSettings
     {
-        SE_CLASS(GPUGlobalSettings, GlobalSettings);
+        SE_DEFINE_CLASS(GPUGlobalSettings, GlobalSettings);
 
     public:
     	GPUGlobalSettings();

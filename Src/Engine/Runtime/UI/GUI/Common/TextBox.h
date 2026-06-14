@@ -6,7 +6,7 @@ namespace SE
 {
     class SE_API_RUNTIME TextBox : public TextBoxBase
     {
-        SE_CLASS(TextBox, TextBoxBase)
+        SE_DEFINE_CLASS(TextBox, TextBoxBase)
     public:
         /// <summary>
         /// Gets or sets the watermark text to show grayed when textbox is empty.

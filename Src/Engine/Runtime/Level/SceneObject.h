@@ -25,10 +25,10 @@ namespace SE
 		void OnDone();
 	};
 
-
+	SE_CLASS(Reflect)
 	class SE_API_RUNTIME SceneObject : public Object, public ISerializable
 	{
-		SE_CLASS(SceneObject, Object);
+		SE_DEFINE_CLASS(SceneObject, Object);
 
 		friend class PrefabInstanceData;
 		friend class PrefabManager;

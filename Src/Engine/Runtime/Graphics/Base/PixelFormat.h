@@ -11,7 +11,7 @@ namespace SE
 	 * @param SFloat 有符号浮点数
 	 * @param SRGB RGB分量是无符号归一化值，使用sRGB非线性编码，而A（如果存在）是无符号归一化值
 	 */
-	SE_ENUM(PixelFormat)
+	SE_ENUM(Reflect)
 	enum class PixelFormat : int32
 	{
 		Undefined = 0,

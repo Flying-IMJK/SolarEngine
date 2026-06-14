@@ -6,7 +6,7 @@ namespace SE
 {
 	BINARY_ASSET_FACTORY(Texture, false);
 
-	Texture::Texture(const AssetInfo* info): TextureBase(info)
+	Texture::Texture(const SpawnParams& params, const AssetInfo* info): TextureBase(params, info)
 	{
 
 	};

@@ -138,8 +138,7 @@ namespace SE
         sprite.Area = value;
     }
 
-    SpriteAtlas::SpriteAtlas(const AssetInfo* info)
-        : TextureBase(info)
+    SpriteAtlas::SpriteAtlas(const SpawnParams& params, const AssetInfo* info) : TextureBase(params, info)
     {
     }
 

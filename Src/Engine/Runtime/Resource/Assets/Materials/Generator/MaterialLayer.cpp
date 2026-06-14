@@ -176,7 +176,7 @@ UsageFlags.RemoveFlag(MaterialUsage::feature);
         {
 #define ADD_BOX(type, valueType) \
 if (layer->Root->Boxes.Count() <= static_cast<int32>(MaterialGraphBoxes::type)) \
-layer->Root->Boxes.Add(MaterialGraphBox(layer->Root, static_cast<int32>(MaterialGraphBoxes::type), VariantType::Types::valueType))
+layer->Root->Boxes.Add(MaterialGraphBox(layer->Root, static_cast<int32>(MaterialGraphBoxes::type), VariantTypes::valueType))
             ADD_BOX(TessellationMultiplier, Float);
             ADD_BOX(WorldDisplacement, Float3);
             ADD_BOX(SubsurfaceColor, Float3);
@@ -214,7 +214,7 @@ layer->Root->Boxes.Add(MaterialGraphBox(layer->Root, static_cast<int32>(Material
         rootNode.ID = 1;
         rootNode.Type = ROOT_NODE_TYPE;
         rootNode.Boxes.Resize(static_cast<int32>(MaterialGraphBoxes::MAX));
-#define INIT_BOX(type, valueType) rootNode.Boxes[static_cast<int32>(MaterialGraphBoxes::type)] = MaterialGraphBox(&rootNode, static_cast<int32>(MaterialGraphBoxes::type), VariantType::Types::valueType)
+#define INIT_BOX(type, valueType) rootNode.Boxes[static_cast<int32>(MaterialGraphBoxes::type)] = MaterialGraphBox(&rootNode, static_cast<int32>(MaterialGraphBoxes::type), VariantTypes::valueType)
         INIT_BOX(Layer, Void);
         INIT_BOX(Color, Float3);
         INIT_BOX(Mask, Float);

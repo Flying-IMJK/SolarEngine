@@ -12,7 +12,7 @@ namespace SE::Editor
     /// </summary>
     class EditorWindow : public DockWindow
     {
-        SE_CLASS_DEFAULT(EditorWindow, DockWindow)
+        SE_DEFINE_CLASS_DEFAULT(EditorWindow, DockWindow)
     public:
         /// <summary>
         /// Gets the editor object.

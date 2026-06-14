@@ -12,7 +12,7 @@ namespace SE::Editor
     {
         friend class UndoStack;
 
-        SE_CLASS_DEFAULT(IUndoableAction, IType)
+        SE_DEFINE_CLASS_DEFAULT(IUndoableAction, IType)
 
     public:
         ~IUndoableAction() override = default;
@@ -28,7 +28,7 @@ namespace SE::Editor
     {
         friend class UndoStack;
 
-        SE_CLASS_DEFAULT(CompoundStackAction, IUndoableAction)
+        SE_DEFINE_CLASS_DEFAULT(CompoundStackAction, IUndoableAction)
 
     public:
         ~CompoundStackAction() override

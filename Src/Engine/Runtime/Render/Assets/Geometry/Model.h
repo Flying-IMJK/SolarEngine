@@ -25,11 +25,15 @@ namespace SE
     /// <summary>
     /// Model asset that contains model object made of meshes which can rendered on the GPU.
     /// </summary>
+    SE_CLASS(Reflect, API, NoSpawn)
     class SE_API_RUNTIME Model : public ModelBase
     {
-        SE_CLASS_DEFAULT(Model, ModelBase);
         friend Mesh;
         friend StreamModelLODTask;
+
+        SE_DEFINE_CLASS_DEFAULT(Model, ModelBase);
+        ASSET_HEADER(Model);
+
     private:
         int32 m_LoadedLODs = 0;
         StreamModelLODTask* m_StreamingTask = nullptr;
@@ -46,8 +50,6 @@ namespace SE
         // SDFData SDF;
 
     public:
-        Model(const AssetInfo* info);
-
         /// <summary>
         /// Finalizes an instance of the <see cref="Model"/> class.
         /// </summary>

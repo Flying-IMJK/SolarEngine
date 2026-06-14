@@ -22,7 +22,7 @@ namespace SE::Editor
 
     class Tree : public ContainerControl
     {
-        SE_CLASS(Tree, ContainerControl)
+        SE_DEFINE_CLASS(Tree, ContainerControl)
     public:
         /// <summary>
         /// The key updates timeout in seconds.

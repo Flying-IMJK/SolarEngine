@@ -28,7 +28,7 @@ namespace SE
 	/// </summary>
 	class SE_API_RUNTIME IBrush : public IType
 	{
-		SE_CLASS(IBrush, IType)
+		SE_DEFINE_CLASS(IBrush, IType)
     protected:
 		virtual Float2 __GetSize() = 0;
 

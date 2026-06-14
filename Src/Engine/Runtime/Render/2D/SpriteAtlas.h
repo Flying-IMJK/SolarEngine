@@ -132,13 +132,13 @@ namespace SE
     /// Sprite atlas asset that contains collection of sprites combined into a single texture.
     /// </summary>
     /// <seealso cref="TextureBase" />
+    SE_CLASS(Reflect, API, NoSpawn)
     class SE_API_RUNTIME SpriteAtlas : public TextureBase
     {
-        SE_CLASS_DEFAULT(SpriteAtlas, TextureBase)
+        SE_DEFINE_CLASS_DEFAULT(SpriteAtlas, TextureBase)
+        ASSET_HEADER(SpriteAtlas);
 
     public:
-        explicit SpriteAtlas(const AssetInfo* info);
-
         /// <summary>
         /// List with all tiles in the sprite atlas.
         /// </summary>

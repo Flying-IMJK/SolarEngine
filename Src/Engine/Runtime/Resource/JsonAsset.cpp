@@ -15,16 +15,9 @@
 
 namespace SE
 {
-    JsonAssetBase::JsonAssetBase(const AssetInfo* info)
-        : Asset(info)
+    JsonAssetBase::JsonAssetBase(const SpawnParams& params, const AssetInfo* info)
+        : Asset(params, info)
         , m_Path(info->path)
-        , Data(nullptr)
-        , DataEngineBuild(0)
-    {
-    }
-
-    JsonAssetBase::JsonAssetBase() :
-        m_Path(String::Empty)
         , Data(nullptr)
         , DataEngineBuild(0)
     {
@@ -314,7 +307,7 @@ namespace SE
 #endif
 
 
-    JsonAsset::JsonAsset(const AssetInfo* info) : JsonAssetBase(info)
+    JsonAsset::JsonAsset(const SpawnParams& params, const AssetInfo* info) : JsonAssetBase(params, info), Instance(nullptr)
     {
     }
 

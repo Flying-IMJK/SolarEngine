@@ -10,7 +10,7 @@ namespace SE
 
 	class SE_API_RUNTIME DragData : public IType
 	{
-		SE_CLASS(DragData, IType)
+		SE_DEFINE_CLASS(DragData, IType)
 	public:
 		~DragData() override = default;
 		DragData() = default;
@@ -19,7 +19,7 @@ namespace SE
 
 	class SE_API_RUNTIME DragDataText : public DragData
 	{
-		SE_CLASS(DragDataText, DragData)
+		SE_DEFINE_CLASS(DragDataText, DragData)
 	public:
 		/// <summary>
 		/// The text.
@@ -46,7 +46,7 @@ namespace SE
 	/// <seealso cref="FlaxEngine.GUI.DragData" />
 	class SE_API_RUNTIME DragDataFiles : public DragData
 	{
-		SE_CLASS(DragDataFiles, DragData)
+		SE_DEFINE_CLASS(DragDataFiles, DragData)
 	public:
 		/// <summary>
 		/// The file paths collection.

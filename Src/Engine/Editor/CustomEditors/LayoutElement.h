@@ -13,7 +13,7 @@ namespace SE::Editor
 	/// </summary>
 	class LayoutElement : public IType
 	{
-		SE_CLASS_DEFAULT(LayoutElement, IType)
+		SE_DEFINE_CLASS_DEFAULT(LayoutElement, IType)
 	public:
 		/// <summary>
 		/// Gets the control represented by this element.

@@ -11,7 +11,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     {
     // World Position
     case 2:
-        value = Value(VariantTypeHandle::Types::Float3, SE_TEXT("input.WorldPosition.xyz"));
+        value = Value(VariantTypes::Float3, SE_TEXT("input.WorldPosition.xyz"));
         break;
     // View
     case 3:
@@ -20,15 +20,15 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         {
         // Position
         case 0:
-            value = Value(VariantTypeHandle::Types::Float3, SE_TEXT("ViewPos"));
+            value = Value(VariantTypes::Float3, SE_TEXT("ViewPos"));
             break;
         // Direction
         case 1:
-            value = Value(VariantTypeHandle::Types::Float3, SE_TEXT("ViewDir"));
+            value = Value(VariantTypes::Float3, SE_TEXT("ViewDir"));
             break;
         // Far Plane
         case 2:
-            value = Value(VariantTypeHandle::Types::Float, SE_TEXT("ViewFar"));
+            value = Value(VariantTypes::Float, SE_TEXT("ViewFar"));
             break;
         default: ENGINE_UNREACHABLE_CODE();
         }
@@ -50,12 +50,12 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         if (layer && layer->Domain == MaterialDomain::Surface && node->Values.Count() > 0 && node->Values[0].AsBool)
         {
             // Transform world position into main viewport texcoord space
-            Value clipPosition = writeLocal(VariantTypeHandle::Types::Float4, SE_TEXT("mul(float4(input.WorldPosition.xyz, 1), MainViewProjectionMatrix)"), node);
-            Value uvPos = writeLocal(VariantTypeHandle::Types::Float2, String::Format(SE_TEXT("(({0}.xy / {0}.w) * float2(0.5, -0.5) + float2(0.5, 0.5))"), clipPosition.Value), node);
+            Value clipPosition = writeLocal(VariantTypes::Float4, SE_TEXT("mul(float4(input.WorldPosition.xyz, 1), MainViewProjectionMatrix)"), node);
+            Value uvPos = writeLocal(VariantTypes::Float2, String::Format(SE_TEXT("(({0}.xy / {0}.w) * float2(0.5, -0.5) + float2(0.5, 0.5))"), clipPosition.Value), node);
 
             // Position
             if (box->ID == 0)
-                value = writeLocal(VariantTypeHandle::Types::Float2, String::Format(SE_TEXT("{0} * MainScreenSize.xy"), uvPos.Value), node);
+                value = writeLocal(VariantTypes::Float2, String::Format(SE_TEXT("{0} * MainScreenSize.xy"), uvPos.Value), node);
                 // Texcoord
             else if (box->ID == 1)
                 value = uvPos;
@@ -64,10 +64,10 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         {
             // Position
             if (box->ID == 0)
-                value = Value(VariantTypeHandle::Types::Float2, SE_TEXT("input.SvPosition.xy"));
+                value = Value(VariantTypes::Float2, SE_TEXT("input.SvPosition.xy"));
                 // Texcoord
             else if (box->ID == 1)
-                value = writeLocal(VariantTypeHandle::Types::Float2, SE_TEXT("input.SvPosition.xy * ScreenSize.zw"), node);
+                value = writeLocal(VariantTypes::Float2, SE_TEXT("input.SvPosition.xy * ScreenSize.zw"), node);
         }
         break;
     }
@@ -77,9 +77,9 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         // Check if use main view position
         const auto layer = GetRootLayer();
         if (layer && layer->Domain == MaterialDomain::Surface && node->Values.Count() > 0 && node->Values[0].AsBool)
-            value = Value(VariantTypeHandle::Types::Float2, box->ID == 0 ? SE_TEXT("MainScreenSize.xy") : SE_TEXT("MainScreenSize.zw"));
+            value = Value(VariantTypes::Float2, box->ID == 0 ? SE_TEXT("MainScreenSize.xy") : SE_TEXT("MainScreenSize.zw"));
         else
-            value = Value(VariantTypeHandle::Types::Float2, box->ID == 0 ? SE_TEXT("ScreenSize.xy") : SE_TEXT("ScreenSize.zw"));
+            value = Value(VariantTypes::Float2, box->ID == 0 ? SE_TEXT("ScreenSize.xy") : SE_TEXT("ScreenSize.zw"));
         break;
     }
     // Custom code
@@ -104,7 +104,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
             const auto outputBox = node->GetBox(Output0BoxID + i);
             if (outputBox && outputBox->HasConnection())
             {
-                values[i] = writeLocal(VariantTypeHandle::Types::Float4, node);
+                values[i] = writeLocal(VariantTypes::Float4, node);
             }
         }
 
@@ -118,8 +118,8 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
             if (inputBox && inputBox->HasConnection())
             {
                 auto inputValue = tryGetValue(inputBox, Value::Zero);
-                if (inputValue.Type != VariantTypeHandle::Types::Float4)
-                    inputValue = inputValue.Cast(VariantTypeHandle::Types::Float4);
+                if (inputValue.Type != VariantTypes::Float4)
+                    inputValue = inputValue.Cast(VariantTypes::Float4);
                 code.Replace(*inputName, *inputValue.Value, StringSearchCase::CaseSensitive);
             }
         }
@@ -153,11 +153,11 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     }
     // Object Position
     case 9:
-        value = Value(VariantTypeHandle::Types::Float3, SE_TEXT("GetObjectPosition(input)"));
+        value = Value(VariantTypes::Float3, SE_TEXT("GetObjectPosition(input)"));
         break;
     // Two Sided Sign
     case 10:
-        value = Value(VariantTypeHandle::Types::Float, SE_TEXT("input.TwoSidedSign"));
+        value = Value(VariantTypes::Float, SE_TEXT("input.TwoSidedSign"));
         break;
     // Camera Depth Fade
     case 11:
@@ -167,11 +167,11 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
 
         // TODO: for pixel shader it could calc PixelDepth = mul(float4(WorldPos.xyz, 1), ViewProjMatrix).w and use it
 
-        auto x1 = writeLocal(VariantTypeHandle::Types::Float3, SE_TEXT("ViewPos - input.WorldPosition"), node);
-        auto x2 = writeLocal(VariantTypeHandle::Types::Float3, SE_TEXT("TransformViewVectorToWorld(input, float3(0, 0, -1))"), node);
-        auto x3 = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("dot(normalize({0}), {1}) * length({0})"), x1.Value, x2.Value), node);
-        auto x4 = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("{0} - {1}"), x3.Value, fadeOffset.Value), node);
-        auto x5 = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("saturate({0} / {1})"), x4.Value, faeLength.Value), node);
+        auto x1 = writeLocal(VariantTypes::Float3, SE_TEXT("ViewPos - input.WorldPosition"), node);
+        auto x2 = writeLocal(VariantTypes::Float3, SE_TEXT("TransformViewVectorToWorld(input, float3(0, 0, -1))"), node);
+        auto x3 = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("dot(normalize({0}), {1}) * length({0})"), x1.Value, x2.Value), node);
+        auto x4 = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("{0} - {1}"), x3.Value, fadeOffset.Value), node);
+        auto x5 = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("saturate({0} / {1})"), x4.Value, faeLength.Value), node);
 
         value = x5;
         break;
@@ -183,31 +183,31 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         break;
     // Pre-skinned Local Position
     case 13:
-        value = _treeType == MaterialTreeType::VertexShader ? Value(VariantTypeHandle::Types::Float3, SE_TEXT("input.PreSkinnedPosition")) : Value::Zero;
+        value = _treeType == MaterialTreeType::VertexShader ? Value(VariantTypes::Float3, SE_TEXT("input.PreSkinnedPosition")) : Value::Zero;
         break;
     // Pre-skinned Local Normal
     case 14:
-        value = _treeType == MaterialTreeType::VertexShader ? Value(VariantTypeHandle::Types::Float3, SE_TEXT("input.PreSkinnedNormal")) : Value::Zero;
+        value = _treeType == MaterialTreeType::VertexShader ? Value(VariantTypes::Float3, SE_TEXT("input.PreSkinnedNormal")) : Value::Zero;
         break;
     // Depth
     case 15:
-        value = writeLocal(VariantTypeHandle::Types::Float, SE_TEXT("distance(ViewPos, input.WorldPosition)"), node);
+        value = writeLocal(VariantTypes::Float, SE_TEXT("distance(ViewPos, input.WorldPosition)"), node);
         break;
     // Tangent
     case 16:
-        value = Value(VariantTypeHandle::Types::Float3, SE_TEXT("input.TBN[0]"));
+        value = Value(VariantTypes::Float3, SE_TEXT("input.TBN[0]"));
         break;
     // Bitangent
     case 17:
-        value = Value(VariantTypeHandle::Types::Float3, SE_TEXT("input.TBN[1]"));
+        value = Value(VariantTypes::Float3, SE_TEXT("input.TBN[1]"));
         break;
     // Camera Position
     case 18:
-        value = Value(VariantTypeHandle::Types::Float3, SE_TEXT("ViewPos"));
+        value = Value(VariantTypes::Float3, SE_TEXT("ViewPos"));
         break;
     // Per Instance Random
     case 19:
-        value = Value(VariantTypeHandle::Types::Float, SE_TEXT("GetPerInstanceRandom(input)"));
+        value = Value(VariantTypes::Float, SE_TEXT("GetPerInstanceRandom(input)"));
         break;
     // Interpolate VS To PS
     case 20:
@@ -239,7 +239,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         }
 
         // Indicate the interpolator slot usage
-        value = Value(VariantTypeHandle::Types::Float4, String::Format(SE_TEXT("input.CustomVSToPS[{0}]"), _vsToPsInterpolants.Count()));
+        value = Value(VariantTypes::Float4, String::Format(SE_TEXT("input.CustomVSToPS[{0}]"), _vsToPsInterpolants.Count()));
         _vsToPsInterpolants.Add(input);
         break;
     }
@@ -248,7 +248,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     {
         MaterialLayer* baseLayer = GetRootLayer();
         if (baseLayer->Domain == MaterialDomain::Terrain)
-            value = Value(VariantTypeHandle::Types::Float, SE_TEXT("input.HolesMask"));
+            value = Value(VariantTypes::Float, SE_TEXT("input.HolesMask"));
         else
             value = Value::One;
         break;
@@ -273,33 +273,33 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
 
         const int32 slotIndex = layer / 4;
         const int32 componentIndex = layer % 4;
-        value = Value(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("input.Layers[{0}][{1}]"), slotIndex, componentIndex));
+        value = Value(VariantTypes::Float, String::Format(SE_TEXT("input.Layers[{0}][{1}]"), slotIndex, componentIndex));
         break;
     }
     // Depth Fade
     case 23:
     {
         // Calculate screen-space UVs
-        auto screenUVs = writeLocal(VariantTypeHandle::Types::Float2, SE_TEXT("input.SvPosition.xy * ScreenSize.zw"), node);
+        auto screenUVs = writeLocal(VariantTypes::Float2, SE_TEXT("input.SvPosition.xy * ScreenSize.zw"), node);
 
         // Sample scene depth buffer
         auto sceneDepthTexture = findOrAddSceneTexture(MaterialSceneTextures::SceneDepth);
-        auto depthSample = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("{0}.SampleLevel(SamplerLinearClamp, {1}, 0).x"), sceneDepthTexture.ShaderName, screenUVs.Value), node);
+        auto depthSample = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("{0}.SampleLevel(SamplerLinearClamp, {1}, 0).x"), sceneDepthTexture.ShaderName, screenUVs.Value), node);
 
         // Linearize raw device depth
         Value sceneDepth;
         linearizeSceneDepth(node, depthSample, sceneDepth);
 
         // Calculate pixel depth
-        auto posVS = writeLocal(VariantTypeHandle::Types::Float, SE_TEXT("mul(float4(input.WorldPosition.xyz, 1), ViewMatrix).z"), node);
+        auto posVS = writeLocal(VariantTypes::Float, SE_TEXT("mul(float4(input.WorldPosition.xyz, 1), ViewMatrix).z"), node);
 
         // Compute depth difference
-        auto depthDiff = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("{0} * ViewFar - {1}"), sceneDepth.Value, posVS.Value), node);
+        auto depthDiff = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("{0} * ViewFar - {1}"), sceneDepth.Value, posVS.Value), node);
 
         auto fadeDistance = tryGetValue(node->GetBox(0), node->Values[0]).AsFloat();
 
         // Apply smoothing factor and clamp the result
-        value = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("saturate({0} / {1})"), depthDiff.Value, fadeDistance.Value), node);
+        value = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("saturate({0} / {1})"), depthDiff.Value, fadeDistance.Value), node);
         break;
     }
     // Material Function
@@ -359,7 +359,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     }
     // Object Size
     case 25:
-        value = Value(VariantTypeHandle::Types::Float3, SE_TEXT("GetObjectSize(input)"));
+        value = Value(VariantTypes::Float3, SE_TEXT("GetObjectSize(input)"));
         break;
     // Blend Normals
     case 26:
@@ -526,12 +526,12 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         const auto layer = GetRootLayer();
         if (layer && layer->Domain == MaterialDomain::GUI)
         {
-            value = Value(VariantTypeHandle::Types::Float2, box->ID == 0 ? SE_TEXT("ViewSize.xy") : SE_TEXT("ViewSize.zw"));
+            value = Value(VariantTypes::Float2, box->ID == 0 ? SE_TEXT("ViewSize.xy") : SE_TEXT("ViewSize.zw"));
         }
         else
         {
             // Fallback to Screen Size
-            value = Value(VariantTypeHandle::Types::Float2, box->ID == 0 ? SE_TEXT("ScreenSize.xy") : SE_TEXT("ScreenSize.zw"));
+            value = Value(VariantTypes::Float2, box->ID == 0 ? SE_TEXT("ScreenSize.xy") : SE_TEXT("ScreenSize.zw"));
         }
         break;
     }

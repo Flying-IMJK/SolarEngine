@@ -6,7 +6,7 @@
 
 #include "Runtime/API.h"
 #include "AssetInfo.h"
-
+#include "Runtime/Scripting/ScriptingObject.h"
 
 namespace SE
 {
@@ -14,12 +14,21 @@ namespace SE
 	class LoadAssetTask;
 	class AssetContent;
 
+#define ASSET_HEADER(type)	\
+	SCRIPTING_TYPE_NO_SPAWN(type);	\
+	public:							\
+	explicit type(const SpawnParams& params, const AssetInfo* info)
+
 	/// <summary>
 	/// Asset objects base class.
 	/// </summary>
-	class SE_API_RUNTIME Asset : public Object /*: public ManagedScriptingObject*/
+	SE_CLASS(Reflect, API, NoSpawn)
+	class SE_API_RUNTIME Asset : public ManagedScriptingObject
 	{
-		SE_CLASS(Asset, Object);
+		SE_DEFINE_CLASS(Asset, ManagedScriptingObject);
+		SCRIPTING_TYPE_NO_SPAWN(Asset);
+
+
 		friend class AssetContent;
 		friend class LoadAssetTask;
 		friend class AssetContentSystem;
@@ -27,7 +36,7 @@ namespace SE
 		/// <summary>
 		/// The asset loading result.
 		/// </summary>
-		SE_ENUM(LoadResult)
+		SE_ENUM(Reflect)
 		enum class LoadResult
 		{
 			Ok, Failed, MissingDataChunk, CannotLoadData, CannotLoadStorage, CannotLoadInitData, InvalidData
@@ -41,16 +50,19 @@ namespace SE
 			LoadFailed,
 		};
 
-		volatile int64 m_RefCount;
-		volatile int64 m_LoadState;
-		volatile intptr m_LoadingTask;
+		volatile int64 m_RefCount = 0;
+		volatile int64 m_LoadState = 0;
+		volatile intptr m_LoadingTask = 0;
 
-		int8 m_DeleteFileOnUnload: 1; // Indicates that asset source file should be removed on asset unload
-		int8 m_IsVirtual: 1; // Indicates that asset is pure virtual (generated or temporary, has no storage so won't be saved)
-		UID m_Id;
+		bool m_DeleteFileOnUnload = false; // Indicates that asset source file should be removed on asset unload
+		bool m_IsVirtual = false; // Indicates that asset is pure virtual (generated or temporary, has no storage so won't be saved)
 	public:
-		Asset();
-		Asset(const AssetInfo* info);
+		/// <summary>
+		/// Initializes a new instance of the <see cref="Asset"/> class.
+		/// </summary>
+		/// <param name="params">The object initialization parameters.</param>
+		/// <param name="info">The asset object information.</param>
+		explicit Asset(const SpawnParams& params, const AssetInfo* info);
 
 	public:
 		typedef Delegate<Asset*> EventType;
@@ -79,7 +91,7 @@ namespace SE
 		/// <summary>
 		/// Gets asset's reference count. Asset will be automatically unloaded when this reaches zero.
 		/// </summary>
-		int32 GetReferencesCount() const;
+		SE_FUNCTION(API) int32 GetReferencesCount() const;
 
 		/// <summary>
 		/// Adds reference to that asset.
@@ -102,14 +114,6 @@ namespace SE
 		/// Gets the path to the asset storage file. In Editor, it reflects the actual file, in cooked Game, it fakes the Editor path to be informative for developers.
 		/// </summary>
 		virtual const String& GetPath() const = 0;
-
-		/// <summary>
-		/// Gets the unique object ID.
-		/// </summary>
-		FORCE_INLINE const UID& GetID() const
-		{
-			return m_Id;
-		}
 
 		/// <summary>
 		/// Returns true if asset is loaded, otherwise false.
@@ -250,7 +254,7 @@ namespace SE
 		void DestroyManaged() override;
 		void OnManagedInstanceDeleted() override;
 		void OnScriptingDispose() override;*/
-		void ChangeID(const UID& newId);
+		void ChangeID(const UID& newId) override;
 	};
 
 } // SE

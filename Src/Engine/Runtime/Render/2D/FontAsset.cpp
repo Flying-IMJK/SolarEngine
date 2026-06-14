@@ -16,13 +16,7 @@ namespace SE
 
     BINARY_ASSET_FACTORY(FontAsset, false);
 
-    FontAsset::FontAsset() : m_Face(nullptr)
-    {
-    }
-
-    FontAsset::FontAsset(const AssetInfo* info)
-        : BinaryAsset(info)
-        , m_Face(nullptr)
+    FontAsset::FontAsset(const SpawnParams& params, const AssetInfo* info): BinaryAsset(params, info), m_Face(nullptr), m_Options()
     {
     }
 

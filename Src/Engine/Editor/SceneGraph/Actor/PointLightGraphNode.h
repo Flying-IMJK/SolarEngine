@@ -6,7 +6,7 @@ namespace SE::Editor
 
 	class PointLightGraphNode : public ActorGraphNode
 	{
-		SE_CLASS_DEFAULT(PointLightGraphNode, ActorGraphNode)
+		SE_DEFINE_CLASS_DEFAULT(PointLightGraphNode, ActorGraphNode)
 	public:
 		PointLightGraphNode(::SE::Actor* actor);
 	};

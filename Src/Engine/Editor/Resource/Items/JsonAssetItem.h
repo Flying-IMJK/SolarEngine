@@ -8,7 +8,7 @@ namespace SE::Editor
 	/// </summary>
 	class JsonAssetItem : public AssetItem
 	{
-		SE_CLASS(JsonAssetItem, AssetItem)
+		SE_DEFINE_CLASS(JsonAssetItem, AssetItem)
 
 	protected:
 		/// <summary>

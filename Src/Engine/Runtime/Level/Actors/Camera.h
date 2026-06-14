@@ -14,7 +14,7 @@ namespace SE
 /// </summary>
 class SE_API_RUNTIME Camera final : public Actor
 {
-    SE_CLASS(Camera, Actor)
+    SE_DEFINE_CLASS(Camera, Actor)
 
     // List with all created cameras actors on the scene
     static List<Camera*> Cameras;
@@ -63,7 +63,7 @@ public:
     /// <summary>
     /// Gets the value indicating if camera should use perspective rendering mode, otherwise it will use orthographic projection.
     /// </summary>
-    // API_PROPERTY(Attributes="EditorOrder(10), DefaultValue(true), EditorDisplay(\"Camera\")")
+    // SE_PROPERTY(API, Attributes="EditorOrder(10), DefaultValue(true), EditorDisplay(\"Camera\")")
     bool GetUsePerspective() const;
 
     /// <summary>
@@ -74,7 +74,7 @@ public:
     /// <summary>
     /// Gets the camera's field of view (in degrees).
     /// </summary>
-    // API_PROPERTY(Attributes="EditorOrder(20), DefaultValue(60.0f), Limit(0, 179), EditorDisplay(\"Camera\", \"Field Of View\"), VisibleIf(nameof(UsePerspective)), ValueCategory(Utils.ValueCategory.Angle)")
+    // SE_PROPERTY(API, Attributes="EditorOrder(20), DefaultValue(60.0f), Limit(0, 179), EditorDisplay(\"Camera\", \"Field Of View\"), VisibleIf(nameof(UsePerspective)), ValueCategory(Utils.ValueCategory.Angle)")
     float GetFieldOfView() const;
 
     /// <summary>
@@ -85,7 +85,7 @@ public:
     /// <summary>
     /// Gets the custom aspect ratio. 0 if not use custom value.
     /// </summary>
-    // API_PROPERTY(Attributes="EditorOrder(50), DefaultValue(0.0f), Limit(0, 10, 0.01f), EditorDisplay(\"Camera\"), VisibleIf(nameof(UsePerspective))")
+    // SE_PROPERTY(API, Attributes="EditorOrder(50), DefaultValue(0.0f), Limit(0, 10, 0.01f), EditorDisplay(\"Camera\"), VisibleIf(nameof(UsePerspective))")
     float GetCustomAspectRatio() const;
 
     /// <summary>
@@ -96,7 +96,7 @@ public:
     /// <summary>
     /// Gets camera's near plane distance.
     /// </summary>
-    // API_PROPERTY(Attributes="EditorOrder(30), DefaultValue(10.0f), Limit(0, 1000, 0.05f), EditorDisplay(\"Camera\"), ValueCategory(Utils.ValueCategory.Distance)")
+    // SE_PROPERTY(API, Attributes="EditorOrder(30), DefaultValue(10.0f), Limit(0, 1000, 0.05f), EditorDisplay(\"Camera\"), ValueCategory(Utils.ValueCategory.Distance)")
     float GetNearPlane() const;
 
     /// <summary>
@@ -107,7 +107,7 @@ public:
     /// <summary>
     /// Gets camera's far plane distance.
     /// </summary>
-    // API_PROPERTY(Attributes="EditorOrder(40), DefaultValue(40000.0f), Limit(0, float.MaxValue, 5), EditorDisplay(\"Camera\"), ValueCategory(Utils.ValueCategory.Distance)")
+    // SE_PROPERTY(API, Attributes="EditorOrder(40), DefaultValue(40000.0f), Limit(0, float.MaxValue, 5), EditorDisplay(\"Camera\"), ValueCategory(Utils.ValueCategory.Distance)")
     float GetFarPlane() const;
 
     /// <summary>
@@ -118,7 +118,7 @@ public:
     /// <summary>
     /// Gets the orthographic projection scale.
     /// </summary>
-    // API_PROPERTY(Attributes="EditorOrder(60), DefaultValue(1.0f), Limit(0.0001f, 1000, 0.01f), EditorDisplay(\"Camera\"), VisibleIf(nameof(UsePerspective), true)")
+    // SE_PROPERTY(API, Attributes="EditorOrder(60), DefaultValue(1.0f), Limit(0.0001f, 1000, 0.01f), EditorDisplay(\"Camera\"), VisibleIf(nameof(UsePerspective), true)")
     float GetOrthographicScale() const;
 
     /// <summary>
@@ -134,13 +134,13 @@ public:
     /// <summary>
     /// Frame rendering flags used to switch between graphics features for this camera.
     /// </summary>
-    // API_FIELD(Attributes = "EditorOrder(110), EditorDisplay(\"Camera\")")
+    // SE_PROPERTY(API, Attributes = "EditorOrder(110), EditorDisplay(\"Camera\")")
     // ViewFlags RenderFlags = ViewFlags::DefaultGame;
 
     /// <summary>
     /// Describes frame rendering modes for this camera.
     /// </summary>
-    // API_FIELD(Attributes = "EditorOrder(120), EditorDisplay(\"Camera\")")
+    // SE_PROPERTY(API, Attributes = "EditorOrder(120), EditorDisplay(\"Camera\")")
     ViewMode RenderMode = ViewMode::Default;
 
 public:

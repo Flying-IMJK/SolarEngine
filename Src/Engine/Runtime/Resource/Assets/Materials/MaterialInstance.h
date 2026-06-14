@@ -7,15 +7,15 @@ namespace SE
     /// <summary>
     /// Instance of the <seealso cref="Material" /> with custom set of material parameter values.
     /// </summary>
+    SE_CLASS(Reflect, API, NoSpawn)
     class SE_API_RUNTIME MaterialInstance : public MaterialBase
     {
-        SE_CLASS_DEFAULT(MaterialInstance, MaterialBase);
+        SE_DEFINE_CLASS_DEFAULT(MaterialInstance, MaterialBase);
+        ASSET_HEADER(MaterialInstance);
     private:
         MaterialBase* _baseMaterial = nullptr;
 
     public:
-        MaterialInstance(const AssetInfo* info);
-
         /// <summary>
         /// Gets the base material. If value gets changed parameters collection is restored to the default values of the new material.
         /// </summary>

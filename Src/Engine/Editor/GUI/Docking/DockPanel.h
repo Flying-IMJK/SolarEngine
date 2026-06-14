@@ -64,7 +64,7 @@ namespace SE::Editor
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
     class DockPanel : public ContainerControl
     {
-        SE_CLASS_DEFAULT(DockPanel, ContainerControl)
+        SE_DEFINE_CLASS_DEFAULT(DockPanel, ContainerControl)
     public:
         /// <summary>
         /// The default dock tabs header height.

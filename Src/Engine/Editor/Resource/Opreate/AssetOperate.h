@@ -17,7 +17,7 @@ namespace SE::Editor
     /// </summary>
     class AssetOperate : public ContentOperate
     {
-        SE_CLASS_DEFAULT(AssetOperate, ContentOperate)
+        SE_DEFINE_CLASS_DEFAULT(AssetOperate, ContentOperate)
     protected:
         bool __GetIsAsset() override { return true; }
 

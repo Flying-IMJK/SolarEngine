@@ -30,7 +30,7 @@ namespace SE::Editor
 	/// </summary>
 	class ButtonElement : public LayoutElement
 	{
-		SE_CLASS_DEFAULT(ButtonElement, LayoutElement)
+		SE_DEFINE_CLASS_DEFAULT(ButtonElement, LayoutElement)
 	public:
 		Button* Button = nullptr;
 		Control* GetControl() override;
@@ -41,7 +41,7 @@ namespace SE::Editor
 	/// </summary>
 	class SpaceElement : public LayoutElement
 	{
-		SE_CLASS_DEFAULT(SpaceElement, LayoutElement)
+		SE_DEFINE_CLASS_DEFAULT(SpaceElement, LayoutElement)
 	public:
 		Spacer* Spacer = nullptr;
 		void Init(float height);
@@ -53,7 +53,7 @@ namespace SE::Editor
 	/// </summary>
 	class TextBoxElement : public LayoutElement
 	{
-		SE_CLASS_DEFAULT(TextBoxElement, LayoutElement)
+		SE_DEFINE_CLASS_DEFAULT(TextBoxElement, LayoutElement)
 	public:
 		TextBox* TextBox = nullptr;
 		Control* GetControl() override;
@@ -64,7 +64,7 @@ namespace SE::Editor
 	/// </summary>
 	class CheckBoxElement : public LayoutElement
 	{
-		SE_CLASS_DEFAULT(CheckBoxElement, LayoutElement)
+		SE_DEFINE_CLASS_DEFAULT(CheckBoxElement, LayoutElement)
 	public:
 		CheckBox* CheckBox = nullptr;
 		Control* GetControl() override;
@@ -75,7 +75,7 @@ namespace SE::Editor
 	/// </summary>
 	class DoubleValueElement : public LayoutElement
 	{
-		SE_CLASS_DEFAULT(DoubleValueElement, LayoutElement)
+		SE_DEFINE_CLASS_DEFAULT(DoubleValueElement, LayoutElement)
 	public:
 		DoubleValueBox* ValueBox = nullptr;
 		Control* GetControl() override;
@@ -86,7 +86,7 @@ namespace SE::Editor
 	/// </summary>
 	class IntegerValueElement : public LayoutElement
 	{
-		SE_CLASS_DEFAULT(IntegerValueElement, LayoutElement)
+		SE_DEFINE_CLASS_DEFAULT(IntegerValueElement, LayoutElement)
 	public:
 		IntegerValueBox* ValueBox = nullptr;
 		Control* GetControl() override;
@@ -97,7 +97,7 @@ namespace SE::Editor
 	/// </summary>
 	class SliderElement : public LayoutElement
 	{
-		SE_CLASS_DEFAULT(SliderElement, LayoutElement)
+		SE_DEFINE_CLASS_DEFAULT(SliderElement, LayoutElement)
 	public:
 		Slider* Slider = nullptr;
 		Control* GetControl() override;
@@ -108,7 +108,7 @@ namespace SE::Editor
 	/// </summary>
 	class ComboBoxElement : public LayoutElement
 	{
-		SE_CLASS_DEFAULT(ComboBoxElement, LayoutElement)
+		SE_DEFINE_CLASS_DEFAULT(ComboBoxElement, LayoutElement)
 	public:
 		ComboBox* ComboBox = nullptr;
 		Control* GetControl() override;
@@ -119,7 +119,7 @@ namespace SE::Editor
 	/// </summary>
 	class EnumElement : public LayoutElement
 	{
-		SE_CLASS_DEFAULT(EnumElement, LayoutElement)
+		SE_DEFINE_CLASS_DEFAULT(EnumElement, LayoutElement)
 	public:
 		EnumComboBox* ComboBox = nullptr;
 		Control* GetControl() override;
@@ -130,7 +130,7 @@ namespace SE::Editor
 	/// </summary>
 	class ImageElement : public LayoutElement
 	{
-		SE_CLASS_DEFAULT(ImageElement, LayoutElement)
+		SE_DEFINE_CLASS_DEFAULT(ImageElement, LayoutElement)
 	public:
 		Image* Image = nullptr;
 		Control* GetControl() override;

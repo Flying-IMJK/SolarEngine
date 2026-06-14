@@ -2,6 +2,8 @@
 
 #include "IAssetFactory.h"
 #include "Core/TypeSystem/Types.h"
+#include "Runtime/Resource/AssetInfo.h"
+#include "Runtime/Scripting/ScriptingType.h"
 
 namespace SE
 {
@@ -60,7 +62,9 @@ namespace SE
 		// [BinaryAssetFactoryBase]
 		BinaryAsset* Create(const AssetInfo* info) override
 		{
-			return ::SE::New<T>(info);
+			ScriptingObjectSpawnParams params(info->id, GetScriptingTypeHandle<T>());
+			return ::SE::New<T>(params, info);
 		}
 	};
+
 }// SE

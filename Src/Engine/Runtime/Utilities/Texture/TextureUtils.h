@@ -21,78 +21,78 @@ namespace SE
 		/// </summary>
 		struct SE_API_RUNTIME Options : IType, ISerializable
 		{
-			SE_CLASS_DEFAULT(Options, IType);
+			SE_DEFINE_CLASS_DEFAULT(Options, IType);
 
 			// Texture format type.
-			// SE_PROPERTY(Attributes = "EditorOrder(0)")
+			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(0)")
 			TextureFormatType Type = TextureFormatType::ColorRGBA;
 
 			// True if texture should be imported as a texture atlas (with sprites).
-			// SE_PROPERTY(Attributes = "EditorOrder(10)")
+			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(10)")
 			bool IsAtlas = false;
 
 			// True if disable dynamic texture streaming.
-			// SE_PROPERTY(Attributes = "EditorOrder(20)")
+			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(20)")
 			bool NeverStream = false;
 
 			// True if disable dynamic texture streaming.
-			// SE_PROPERTY(Attributes = "EditorOrder(30)")
+			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(30)")
 			bool Compress = true;
 
 			// True if texture channels have independent data (for compression methods).
-			// SE_PROPERTY(Attributes = "EditorOrder(40)")
+			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(40)")
 			bool IndependentChannels = false;
 
 			// True if use sRGB format for texture data. Recommended for color maps and diffuse color textures.
-			// SE_PROPERTY(Attributes = "EditorOrder(50), EditorDisplay(null, \"sRGB\")")
+			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(50), EditorDisplay(null, \"sRGB\")")
 			bool sRGB = false;
 
 			// True if generate mip maps chain for the texture.
-			// SE_PROPERTY(Attributes = "EditorOrder(60)")
+			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(60)")
 			bool GenerateMipMaps = true;
 
 			// True if flip Y coordinate of the texture.
-			// SE_PROPERTY(Attributes = "EditorOrder(70)")
+			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(70)")
 			bool FlipY = false;
 
 			// True if to invert the green channel on a normal map. Good for OpenGL to DirectX conversion.
-			// SE_PROPERTY(Attributes = "EditorOrder(71)")
+			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(71)")
 			bool InvertGreenChannel = false;
 
 			// Texture size scale. Allows increasing or decreasing the imported texture resolution. Default is 1.
-			// SE_PROPERTY(Attributes = "EditorOrder(80), Limit(0.0001f, 1000.0f, 0.01f)")
+			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(80), Limit(0.0001f, 1000.0f, 0.01f)")
 			float Scale = 1.0f;
 
 			// Maximum size of the texture (for both width and height). Higher resolution textures will be resized during importing process. Used to clip textures that are too big.
-			// SE_PROPERTY(Attributes = "HideInEditor")
+			// SE_PROPERTY(Reflect, Attributes = "HideInEditor")
 			int32 MaxSize = 8192;
 
 			// True if resize texture on import. Use SizeX/SizeY properties to define texture width and height. Texture scale property will be ignored.
-			// SE_PROPERTY(Attributes = "EditorOrder(100)")
+			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(100)")
 			bool Resize = false;
 
 			// The width of the imported texture. If Resize property is set to true then texture will be resized during the import to this value during the import, otherwise it will be ignored.
-			// SE_PROPERTY(Attributes = "HideInEditor")
+			// SE_PROPERTY(Reflect, Attributes = "HideInEditor")
 			int32 SizeX = 1024;
 
 			// The height of the imported texture. If Resize property is set to true then texture will be resized during the import to this value during the import, otherwise it will be ignored.
-			// SE_PROPERTY(Attributes = "HideInEditor")
+			// SE_PROPERTY(Reflect, Attributes = "HideInEditor")
 			int32 SizeY = 1024;
 
 			// Check to preserve alpha coverage in generated mips for alpha test reference. Scales mipmap alpha values to preserve alpha coverage based on an alpha test reference value.
-			// SE_PROPERTY(Attributes = "EditorOrder(200)")
+			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(200)")
 			bool PreserveAlphaCoverage = false;
 
 			// The reference value for the alpha coverage preserving.
-			// SE_PROPERTY(Attributes = "EditorOrder(210), VisibleIf(\"PreserveAlphaCoverage\")")
+			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(210), VisibleIf(\"PreserveAlphaCoverage\")")
 			float PreserveAlphaCoverageReference = 0.5f;
 
 			// The texture group for streaming (negative if unused). See Streaming Settings.
-			// SE_PROPERTY(Attributes = "EditorOrder(300), CustomEditorAlias(\"FlaxEditor.CustomEditors.Dedicated.TextureGroupEditor\")")
+			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(300), CustomEditorAlias(\"FlaxEditor.CustomEditors.Dedicated.TextureGroupEditor\")")
 			int32 TextureGroup = -1;
 
 			// The sprites for the sprite sheet import mode.
-			// SE_PROPERTY(Attributes = "HideInEditor")
+			// SE_PROPERTY(Reflect, Attributes = "HideInEditor")
 			List<Sprite> Sprites;
 
 			// Function used for fast importing textures used by internal parts of the engine

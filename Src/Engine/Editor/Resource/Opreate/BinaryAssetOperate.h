@@ -8,7 +8,7 @@ namespace SE::Editor
     /// </summary>
     class BinaryAssetOperate : public AssetOperate
     {
-        SE_CLASS_DEFAULT(BinaryAssetOperate, AssetOperate)
+        SE_DEFINE_CLASS_DEFAULT(BinaryAssetOperate, AssetOperate)
     public:
         /// <inheritdoc />
         bool IsProxyFor(ContentItem* item) override;

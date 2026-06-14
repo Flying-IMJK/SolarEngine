@@ -12,10 +12,10 @@ namespace SE::Log
 {
     enum class Severity
     {
-        Info = 0,
-        Warning,
-        Error,
-        Fatal,
+        Info = 1,
+        Warning = 2,
+        Error = 3,
+        Fatal = 4,
     };
 
     enum class NotificationType

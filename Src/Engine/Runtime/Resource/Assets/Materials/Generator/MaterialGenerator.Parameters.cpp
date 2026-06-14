@@ -17,14 +17,14 @@ namespace SE
                 switch (param->Type)
                 {
                 case MaterialParameterType::Bool:
-                    value = Value(VariantTypeHandle::Types::Bool, param->ShaderName);
+                    value = Value(VariantTypes::Bool, param->ShaderName);
                     break;
                 case MaterialParameterType::Integer:
                 case MaterialParameterType::SceneTexture:
-                    value = Value(VariantTypeHandle::Types::Int, param->ShaderName);
+                    value = Value(VariantTypes::Int, param->ShaderName);
                     break;
                 case MaterialParameterType::Float:
-                    value = Value(VariantTypeHandle::Types::Float, param->ShaderName);
+                    value = Value(VariantTypes::Float, param->ShaderName);
                     break;
                 case MaterialParameterType::Vector2:
                 case MaterialParameterType::Vector3:
@@ -64,7 +64,7 @@ namespace SE
                 case MaterialParameterType::ChannelMask:
                 {
                     const auto input = tryGetValue(node->GetBox(0), Value::Zero);
-                    value = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("dot({0}, {1})"), input.Value, param->ShaderName), node);
+                    value = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("dot({0}, {1})"), input.Value, param->ShaderName), node);
                     break;
                 }
                 case MaterialParameterType::CubeTexture:

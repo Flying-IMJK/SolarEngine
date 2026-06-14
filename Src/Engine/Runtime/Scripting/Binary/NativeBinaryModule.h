@@ -21,7 +21,7 @@ namespace SE
     	/// Initializes a new instance of the <see cref="NativeBinaryModule" /> class.
     	/// </summary>
     	/// <param name="assembly">The managed assembly. Object will be deleted within the scripting assembly.</param>
-    	explicit NativeBinaryModule(SEAssembly* assembly);
+    	explicit NativeBinaryModule(CLRAssembly* assembly);
 
     public:
 

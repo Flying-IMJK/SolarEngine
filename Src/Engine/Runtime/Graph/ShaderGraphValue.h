@@ -15,7 +15,7 @@ namespace SE
         /// <summary>
         /// The value type.
         /// </summary>
-        VariantTypeHandle::Types Type;
+        VariantTypes Type;
 
         /// <summary>
         /// The shader value.
@@ -53,7 +53,7 @@ namespace SE
         /// Initializes a new instance of the <see cref="ShaderGraphValue"/> struct.
         /// </summary>
         ShaderGraphValue()
-            : Type(VariantTypeHandle::Types::Null)
+            : Type(VariantTypes::Null)
         {
         }
 
@@ -62,7 +62,7 @@ namespace SE
         /// </summary>
         /// <param name="type">The type.</param>
         /// <param name="value">The value.</param>
-        ShaderGraphValue(VariantTypeHandle::Types type, const Char* value)
+        ShaderGraphValue(VariantTypes type, const Char* value)
             : Type(type)
             , Value(value)
         {
@@ -73,7 +73,7 @@ namespace SE
         /// </summary>
         /// <param name="type">The type.</param>
         /// <param name="value">The value.</param>
-        ShaderGraphValue(VariantTypeHandle::Types type, const String&& value)
+        ShaderGraphValue(VariantTypes type, const String&& value)
             : Type(type)
             , Value(MoveTemp(value))
         {
@@ -84,7 +84,7 @@ namespace SE
         /// </summary>
         /// <param name="type">The type.</param>
         /// <param name="value">The value.</param>
-        ShaderGraphValue(VariantTypeHandle::Types type, const String& value)
+        ShaderGraphValue(VariantTypes type, const String& value)
             : Type(type)
             , Value(value)
         {
@@ -95,7 +95,7 @@ namespace SE
         /// </summary>
         /// <param name="value">The value.</param>
         explicit ShaderGraphValue(const bool value)
-            : Type(VariantTypeHandle::Types::Bool)
+            : Type(VariantTypes::Bool)
             , Value(value ? SE_TEXT("true") : SE_TEXT("false"))
         {
         }
@@ -105,7 +105,7 @@ namespace SE
         /// </summary>
         /// <param name="value">The value.</param>
         explicit ShaderGraphValue(const float value)
-            : Type(VariantTypeHandle::Types::Float)
+            : Type(VariantTypes::Float)
             , Value(StringUtils::ToString(value))
         {
         }
@@ -115,7 +115,7 @@ namespace SE
         /// </summary>
         /// <param name="value">The value.</param>
         explicit ShaderGraphValue(const double value)
-            : Type(VariantTypeHandle::Types::Float)
+            : Type(VariantTypes::Float)
             , Value(StringUtils::ToString(value))
         {
         }
@@ -125,7 +125,7 @@ namespace SE
         /// </summary>
         /// <param name="value">The value.</param>
         explicit ShaderGraphValue(const int32 value)
-            : Type(VariantTypeHandle::Types::Int)
+            : Type(VariantTypes::Int)
             , Value(StringUtils::ToString(value))
         {
         }
@@ -142,7 +142,7 @@ namespace SE
         /// </summary>
         FORCE_INLINE bool IsValid() const
         {
-            return Type != VariantTypeHandle::Types::Null;
+            return Type != VariantTypes::Null;
         }
 
         /// <summary>
@@ -150,7 +150,7 @@ namespace SE
         /// </summary>
         FORCE_INLINE bool IsInvalid() const
         {
-            return Type == VariantTypeHandle::Types::Null;
+            return Type == VariantTypes::Null;
         }
 
         /// <summary>
@@ -173,7 +173,7 @@ namespace SE
         /// </summary>
         void Clear()
         {
-            Type = VariantTypeHandle::Types::Null;
+            Type = VariantTypes::Null;
             Value.Clear();
         }
 
@@ -234,21 +234,21 @@ namespace SE
         /// </summary>
         /// <param name="type">The graph connection type.</param>
         /// <returns>Initial value for given type.</returns>
-        static ShaderGraphValue InitForZero(VariantTypeHandle::Types type);
+        static ShaderGraphValue InitForZero(VariantTypes type);
 
         /// <summary>
         /// Initializes the shader variable for given connection type Half.
         /// </summary>
         /// <param name="type">The graph connection type.</param>
         /// <returns>Initial value for given type.</returns>
-        static ShaderGraphValue InitForHalf(VariantTypeHandle::Types type);
+        static ShaderGraphValue InitForHalf(VariantTypes type);
 
         /// <summary>
         /// Initializes the shader variable for given connection type One.
         /// </summary>
         /// <param name="type">The graph connection type.</param>
         /// <returns>Initial value for given type.</returns>
-        static ShaderGraphValue InitForOne(VariantTypeHandle::Types type);
+        static ShaderGraphValue InitForOne(VariantTypes type);
 
         /// <summary>
         /// Create float2 from X and Y values.
@@ -259,10 +259,10 @@ namespace SE
         static ShaderGraphValue Float2(const ShaderGraphValue& x, const ShaderGraphValue& y)
         {
             return ShaderGraphValue(
-                VariantTypeHandle::Types::Float2,
+                VariantTypes::Float2,
                 String::Format(SE_TEXT("float2({0}, {1})"),
-                               Cast(x, VariantTypeHandle::Types::Float).Value,
-                               Cast(y, VariantTypeHandle::Types::Float).Value));
+                               Cast(x, VariantTypes::Float).Value,
+                               Cast(y, VariantTypes::Float).Value));
         }
 
         /// <summary>
@@ -275,11 +275,11 @@ namespace SE
         static ShaderGraphValue Float3(const ShaderGraphValue& x, const ShaderGraphValue& y, const ShaderGraphValue& z)
         {
             return ShaderGraphValue(
-                VariantTypeHandle::Types::Float3,
+                VariantTypes::Float3,
                 String::Format(SE_TEXT("float3({0}, {1}, {2})"),
-                               Cast(x, VariantTypeHandle::Types::Float).Value,
-                               Cast(y, VariantTypeHandle::Types::Float).Value,
-                               Cast(z, VariantTypeHandle::Types::Float).Value));
+                               Cast(x, VariantTypes::Float).Value,
+                               Cast(y, VariantTypes::Float).Value,
+                               Cast(z, VariantTypes::Float).Value));
         }
 
         /// <summary>
@@ -293,12 +293,12 @@ namespace SE
         static ShaderGraphValue Float4(const ShaderGraphValue& x, const ShaderGraphValue& y, const ShaderGraphValue& z, const ShaderGraphValue& w)
         {
             return ShaderGraphValue(
-                VariantTypeHandle::Types::Float4,
+                VariantTypes::Float4,
                 String::Format(SE_TEXT("float4({0}, {1}, {2}, {3})"),
-                               Cast(x, VariantTypeHandle::Types::Float).Value,
-                               Cast(y, VariantTypeHandle::Types::Float).Value,
-                               Cast(z, VariantTypeHandle::Types::Float).Value,
-                               Cast(w, VariantTypeHandle::Types::Float).Value));
+                               Cast(x, VariantTypes::Float).Value,
+                               Cast(y, VariantTypes::Float).Value,
+                               Cast(z, VariantTypes::Float).Value,
+                               Cast(w, VariantTypes::Float).Value));
         }
 
     public:
@@ -308,7 +308,7 @@ namespace SE
         /// <returns>The X component.</returns>
         ShaderGraphValue GetX() const
         {
-            return ShaderGraphValue(VariantTypeHandle::Types::Float, Value + _subs[0]);
+            return ShaderGraphValue(VariantTypes::Float, Value + _subs[0]);
         }
 
         /// <summary>
@@ -336,7 +336,7 @@ namespace SE
         /// <returns>Bool</returns>
         ShaderGraphValue AsBool() const
         {
-            return Cast(*this, VariantTypeHandle::Types::Bool);
+            return Cast(*this, VariantTypes::Bool);
         }
 
         /// <summary>
@@ -345,7 +345,7 @@ namespace SE
         /// <returns>Integer</returns>
         ShaderGraphValue AsInt() const
         {
-            return Cast(*this, VariantTypeHandle::Types::Int);
+            return Cast(*this, VariantTypes::Int);
         }
 
         /// <summary>
@@ -354,7 +354,7 @@ namespace SE
         /// <returns>UnsignedInteger</returns>
         ShaderGraphValue AsUint() const
         {
-            return Cast(*this, VariantTypeHandle::Types::Uint);
+            return Cast(*this, VariantTypes::Uint);
         }
 
         /// <summary>
@@ -363,7 +363,7 @@ namespace SE
         /// <returns>Float</returns>
         ShaderGraphValue AsFloat() const
         {
-            return Cast(*this, VariantTypeHandle::Types::Float);
+            return Cast(*this, VariantTypes::Float);
         }
 
         /// <summary>
@@ -372,7 +372,7 @@ namespace SE
         /// <returns>Float2</returns>
         ShaderGraphValue AsFloat2() const
         {
-            return Cast(*this, VariantTypeHandle::Types::Float2);
+            return Cast(*this, VariantTypes::Float2);
         }
 
         /// <summary>
@@ -381,7 +381,7 @@ namespace SE
         /// <returns>Float3</returns>
         ShaderGraphValue AsFloat3() const
         {
-            return Cast(*this, VariantTypeHandle::Types::Float3);
+            return Cast(*this, VariantTypes::Float3);
         }
 
         /// <summary>
@@ -390,7 +390,7 @@ namespace SE
         /// <returns>Float4</returns>
         ShaderGraphValue AsFloat4() const
         {
-            return Cast(*this, VariantTypeHandle::Types::Float4);
+            return Cast(*this, VariantTypes::Float4);
         }
 
         /// <summary>
@@ -398,7 +398,7 @@ namespace SE
         /// </summary>
         /// <param name="to">The result type.</param>
         /// <returns>The result value.</returns>
-        ShaderGraphValue Cast(const VariantTypeHandle::Types to) const
+        ShaderGraphValue Cast(const VariantTypes to) const
         {
             return Cast(*this, to);
         }
@@ -409,7 +409,7 @@ namespace SE
         /// <param name="v">The value to cast.</param>
         /// <param name="to">The result type.</param>
         /// <returns>The result value.</returns>
-        static ShaderGraphValue Cast(const ShaderGraphValue& v, VariantTypeHandle::Types to);
+        static ShaderGraphValue Cast(const ShaderGraphValue& v, VariantTypes to);
 
     public:
         // [Object]

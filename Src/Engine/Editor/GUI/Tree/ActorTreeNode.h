@@ -21,7 +21,7 @@ namespace SE::Editor
     
     class ActorTreeNode : public TreeNode
     {
-        SE_CLASS(ActorTreeNode, TreeNode)
+        SE_DEFINE_CLASS(ActorTreeNode, TreeNode)
     private:
         int _orderInParent;
         DragActors* _dragActors;

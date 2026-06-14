@@ -12,7 +12,7 @@ namespace SE::Editor
     /// <seealso cref="FlaxEditor.CustomEditors.LayoutElement" />
     class FloatValueElement : public LayoutElement, public IFloatValueElement
     {
-        SE_CLASS(FloatValueElement, LayoutElement)
+        SE_DEFINE_CLASS(FloatValueElement, LayoutElement)
     public:
         /// <summary>
         /// The float value box.

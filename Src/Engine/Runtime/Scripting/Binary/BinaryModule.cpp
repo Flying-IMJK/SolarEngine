@@ -1,66 +1,95 @@
-// BinaryModule.cpp — Base script assembly container.
-// Requirements: 4.3
 
 #include "BinaryModule.h"
-#include "Core/Logging/Logging.h"
+
+#include "ManagedBinaryModule.h"
+#include "Runtime/Scripting/Events.h"
+#include "Runtime/Scripting/ScriptingObject.h"
 
 namespace SE
 {
-    int32 BinaryModule::RegisterType(ScriptingType& type)
+    ManagedBinaryModule* GetBinaryModuleCorlib()
     {
-        if (type.Fullname.IsEmpty())
+        static ManagedBinaryModule assembly("corlib");
+        return &assembly;
+    }
+
+
+    CriticalSection BinaryModule::Locker;
+
+    BinaryModule::BinaryModulesList& BinaryModule::GetModules()
+    {
+        static BinaryModulesList modules;
+        return modules;
+    }
+
+    BinaryModule* BinaryModule::GetModule(const StringAnsiView& name)
+    {
+        BinaryModule* result = nullptr;
+        auto& modules = GetModules();
+        for (int32 i = 0; i < modules.Count(); i++)
         {
-            LOG_ERROR("Scripting", "BinaryModule::RegisterType — type has empty fullname.");
-            return -1;
+            if (modules[i]->GetName() == name)
+            {
+                result = modules[i];
+                break;
+            }
+        }
+        return result;
+    }
+
+    BinaryModule::BinaryModule()
+    {
+        // Register
+        GetModules().Add(this);
+    }
+
+    void* BinaryModule::FindMethod(const ScriptingTypeHandle& typeHandle, const ScriptingTypeMethodSignature& signature)
+    {
+        return FindMethod(typeHandle, signature.Name, signature.Params.Count());
+    }
+
+    void BinaryModule::Destroy(bool isReloading)
+    {
+        // Destroy any default script instances
+        for (const auto& type : Types)
+        {
+            if (type.Type == ScriptingTypes::Script && type.Script.DefaultInstance)
+            {
+                Delete(type.Script.DefaultInstance);
+                type.Script.DefaultInstance = nullptr;
+            }
         }
 
-        const std::string key(type.Fullname.Get());
-
-        // Prevent duplicate registration.
-        if (TypeNameToTypeIndex.count(key))
+        // Remove any scripting events
+        for (auto i = ScriptingEvents::EventsTable.begin(); i.IsNotEnd(); ++i)
         {
-            LOG_WARNING("Scripting", "BinaryModule::RegisterType — type '{}' is already registered.", key.c_str());
-            return TypeNameToTypeIndex[key];
+            const ScriptingTypeHandle type = i->Key.First;
+            if (type.Module == this)
+            {
+                ScriptingEvents::EventsTable.Remove(i);
+            }
         }
 
-        const int32 index = static_cast<int32>(Types.size());
-        type.Module    = this;
-        type.TypeIndex = index;
-
-        Types.push_back(type);
-        TypeNameToTypeIndex[key] = index;
-
-        return index;
+        // Unregister
+        GetModules().RemoveKeepOrder(this);
     }
 
-    bool BinaryModule::FindScriptingType(const char* fullname, int32& outIndex) const
+
+    List<GetBinaryModuleFunc, InlinedAllocation<64>>& StaticallyLinkedBinaryModuleInitializer::GetStaticallyLinkedBinaryModules()
     {
-        if (!fullname)
-            return false;
-
-        auto it = TypeNameToTypeIndex.find(fullname);
-        if (it == TypeNameToTypeIndex.end())
-            return false;
-
-        outIndex = it->second;
-        return true;
+        static List<GetBinaryModuleFunc, InlinedAllocation<64>> modules;
+        return modules;
     }
 
-    ScriptingTypeHandle BinaryModule::FindScriptingType(const char* fullname) const
+    StaticallyLinkedBinaryModuleInitializer::StaticallyLinkedBinaryModuleInitializer(GetBinaryModuleFunc getter)
+        : _getter(getter)
     {
-        int32 index = -1;
-        if (!FindScriptingType(fullname, index))
-            return ScriptingTypeHandle{};
-
-        return ScriptingTypeHandle{ const_cast<BinaryModule*>(this), index };
+        GetStaticallyLinkedBinaryModules().Add(getter);
     }
 
-    ScriptingTypeHandle BinaryModule::GetTypeHandle(int32 index)
+    StaticallyLinkedBinaryModuleInitializer::~StaticallyLinkedBinaryModuleInitializer()
     {
-        if (index < 0 || index >= static_cast<int32>(Types.size()))
-            return ScriptingTypeHandle{};
-
-        return ScriptingTypeHandle{ this, index };
+        GetStaticallyLinkedBinaryModules().Remove(_getter);
     }
 
 } // namespace SE

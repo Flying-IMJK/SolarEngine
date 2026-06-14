@@ -16,7 +16,7 @@ namespace SE
 		/// <summary>
 		/// Describes work result value
 		/// </summary>
-		SE_ENUM(Result)
+		SE_ENUM(Reflect)
 		enum class Result
 		{
 			Ok,

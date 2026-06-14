@@ -13,7 +13,7 @@ namespace SE
 	class GPUContextVulkan;
 	class GPUResource;
 
-	SE_ENUM(GPUResourceType)
+	SE_ENUM(Reflect)
 	enum class GPUResourceType
 	{
 		// GPU render target texture

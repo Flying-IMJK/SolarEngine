@@ -38,7 +38,7 @@ namespace SE
 		/// <summary>
 		/// Empty constructor.
 		/// </summary>
-		DateTime()
+		DateTime(): Ticks(0)
 		{
 		}
 

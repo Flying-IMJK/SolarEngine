@@ -13,19 +13,19 @@ namespace SE::GraphUtilities
         v.SetType(a.Type);
         switch (a.Type.Type)
         {
-        case VariantTypeHandle::Types::Bool:
+        case VariantTypes::Bool:
             v.AsBool = op(a.AsBool ? 1.0f : 0.0f) > Math::ZeroTolerance;
             break;
-        case VariantTypeHandle::Types::Int:
+        case VariantTypes::Int:
             v.AsInt = (int32)op((float)a.AsInt);
             break;
-        case VariantTypeHandle::Types::Uint:
+        case VariantTypes::Uint:
             v.AsUint = (uint32)op((float)a.AsUint);
             break;
-        case VariantTypeHandle::Types::Float:
+        case VariantTypes::Float:
             v.AsFloat = op(a.AsFloat);
             break;
-        case VariantTypeHandle::Types::Float2:
+        case VariantTypes::Float2:
         {
             Float2& vv = *(Float2*)v.AsData;
             const Float2& aa = *(const Float2*)a.AsData;
@@ -33,7 +33,7 @@ namespace SE::GraphUtilities
             vv.y = op(aa.y);
             break;
         }
-        case VariantTypeHandle::Types::Float3:
+        case VariantTypes::Float3:
         {
             Float3& vv = *(Float3*)v.AsData;
             const Float3& aa = *(const Float3*)a.AsData;
@@ -42,8 +42,8 @@ namespace SE::GraphUtilities
             vv.z = op(aa.z);
             break;
         }
-        case VariantTypeHandle::Types::Float4:
-        case VariantTypeHandle::Types::Color:
+        case VariantTypes::Float4:
+        case VariantTypes::Color:
         {
             Float4& vv = *(Float4*)v.AsData;
             const Float4& aa = *(const Float4*)a.AsData;
@@ -53,7 +53,7 @@ namespace SE::GraphUtilities
             vv.w = op(aa.w);
             break;
         }
-        case VariantTypeHandle::Types::Double2:
+        case VariantTypes::Double2:
         {
             Double2& vv = *(Double2*)v.AsData;
             const Double2& aa = *(const Double2*)a.AsData;
@@ -61,7 +61,7 @@ namespace SE::GraphUtilities
             vv.y = (double)op((float)aa.y);
             break;
         }
-        case VariantTypeHandle::Types::Double3:
+        case VariantTypes::Double3:
         {
             Double3& vv = *(Double3*)v.AsData;
             const Double3& aa = *(const Double3*)a.AsData;
@@ -70,7 +70,7 @@ namespace SE::GraphUtilities
             vv.z = (double)op((float)aa.z);
             break;
         }
-        case VariantTypeHandle::Types::Double4:
+        case VariantTypes::Double4:
         {
             Double4& vv = *(Double4*)v.AsBlob.Data;
             const Double4& aa = *(const Double4*)a.AsBlob.Data;
@@ -80,7 +80,7 @@ namespace SE::GraphUtilities
             vv.w = (double)op((float)aa.w);
             break;
         }
-        case VariantTypeHandle::Types::Quaternion:
+        case VariantTypes::Quaternion:
         {
             Quaternion& vv = *(Quaternion*)v.AsData;
             const Quaternion& aa = *(const Quaternion*)a.AsData;
@@ -90,7 +90,7 @@ namespace SE::GraphUtilities
             vv.w = op(aa.w);
             break;
         }
-        case VariantTypeHandle::Types::Transform:
+        case VariantTypes::Transform:
         {
             Transform& vv = *(Transform*)v.AsBlob.Data;
             const Transform& aa = *(const Transform*)a.AsBlob.Data;
@@ -117,19 +117,19 @@ namespace SE::GraphUtilities
         v.SetType(a.Type);
         switch (a.Type.Type)
         {
-        case VariantTypeHandle::Types::Bool:
+        case VariantTypes::Bool:
             v.AsBool = op(a.AsBool ? 1.0f : 0.0f, b.AsBool ? 1.0f : 0.0f) > Math::ZeroTolerance;
             break;
-        case VariantTypeHandle::Types::Int:
+        case VariantTypes::Int:
             v.AsInt = (int32)op((float)a.AsInt, (float)b.AsInt);
             break;
-        case VariantTypeHandle::Types::Uint:
+        case VariantTypes::Uint:
             v.AsUint = (uint32)op((float)a.AsUint, (float)b.AsUint);
             break;
-        case VariantTypeHandle::Types::Float:
+        case VariantTypes::Float:
             v.AsFloat = op(a.AsFloat, b.AsFloat);
             break;
-        case VariantTypeHandle::Types::Float2:
+        case VariantTypes::Float2:
         {
             Float2& vv = *(Float2*)v.AsData;
             const Float2& aa = *(const Float2*)a.AsData;
@@ -138,7 +138,7 @@ namespace SE::GraphUtilities
             vv.y = op(aa.y, bb.y);
             break;
         }
-        case VariantTypeHandle::Types::Float3:
+        case VariantTypes::Float3:
         {
             Float3& vv = *(Float3*)v.AsData;
             const Float3& aa = *(const Float3*)a.AsData;
@@ -148,8 +148,8 @@ namespace SE::GraphUtilities
             vv.z = op(aa.z, bb.z);
             break;
         }
-        case VariantTypeHandle::Types::Float4:
-        case VariantTypeHandle::Types::Color:
+        case VariantTypes::Float4:
+        case VariantTypes::Color:
         {
             Float4& vv = *(Float4*)v.AsData;
             const Float4& aa = *(const Float4*)a.AsData;
@@ -160,7 +160,7 @@ namespace SE::GraphUtilities
             vv.w = op(aa.w, bb.w);
             break;
         }
-        case VariantTypeHandle::Types::Double2:
+        case VariantTypes::Double2:
         {
             Double2& vv = *(Double2*)v.AsData;
             const Double2& aa = *(const Double2*)a.AsData;
@@ -169,7 +169,7 @@ namespace SE::GraphUtilities
             vv.y = (double)op((float)aa.y, (float)bb.y);
             break;
         }
-        case VariantTypeHandle::Types::Double3:
+        case VariantTypes::Double3:
         {
             Double3& vv = *(Double3*)v.AsData;
             const Double3& aa = *(const Double3*)a.AsData;
@@ -179,7 +179,7 @@ namespace SE::GraphUtilities
             vv.z = (double)op((float)aa.z, (float)bb.z);
             break;
         }
-        case VariantTypeHandle::Types::Double4:
+        case VariantTypes::Double4:
         {
             Double4& vv = *(Double4*)v.AsBlob.Data;
             const Double4& aa = *(const Double4*)a.AsBlob.Data;
@@ -190,7 +190,7 @@ namespace SE::GraphUtilities
             vv.w = (double)op((float)aa.w, (float)bb.w);
             break;
         }
-        case VariantTypeHandle::Types::Quaternion:
+        case VariantTypes::Quaternion:
         {
             Quaternion& vv = *(Quaternion*)v.AsData;
             const Quaternion& aa = *(const Quaternion*)a.AsData;
@@ -201,7 +201,7 @@ namespace SE::GraphUtilities
             vv.w = op(aa.w, bb.w);
             break;
         }
-        case VariantTypeHandle::Types::Transform:
+        case VariantTypes::Transform:
         {
             Transform& vv = *(Transform*)v.AsBlob.Data;
             const Transform& aa = *(const Transform*)a.AsBlob.Data;
@@ -229,19 +229,19 @@ namespace SE::GraphUtilities
         v.SetType(a.Type);
         switch (a.Type.Type)
         {
-        case VariantTypeHandle::Types::Bool:
+        case VariantTypes::Bool:
             v.AsBool = op(a.AsBool ? 1.0f : 0.0f, b.AsBool ? 1.0f : 0.0f, c.AsBool ? 1.0f : 0.0f) > Math::ZeroTolerance;
             break;
-        case VariantTypeHandle::Types::Int:
+        case VariantTypes::Int:
             v.AsInt = (int32)op((float)a.AsInt, (float)b.AsInt, (float)c.AsInt);
             break;
-        case VariantTypeHandle::Types::Uint:
+        case VariantTypes::Uint:
             v.AsUint = (int32)op((float)a.AsUint, (float)b.AsUint, (float)c.AsUint);
             break;
-        case VariantTypeHandle::Types::Float:
+        case VariantTypes::Float:
             v.AsFloat = op(a.AsFloat, b.AsFloat, c.AsFloat);
             break;
-        case VariantTypeHandle::Types::Float2:
+        case VariantTypes::Float2:
         {
             Float2& vv = *(Float2*)v.AsData;
             const Float2& aa = *(const Float2*)a.AsData;
@@ -251,7 +251,7 @@ namespace SE::GraphUtilities
             vv.y = op(aa.y, bb.y, cc.y);
             break;
         }
-        case VariantTypeHandle::Types::Float3:
+        case VariantTypes::Float3:
         {
             Float3& vv = *(Float3*)v.AsData;
             const Float3& aa = *(const Float3*)a.AsData;
@@ -262,8 +262,8 @@ namespace SE::GraphUtilities
             vv.z = op(aa.z, bb.z, cc.z);
             break;
         }
-        case VariantTypeHandle::Types::Float4:
-        case VariantTypeHandle::Types::Color:
+        case VariantTypes::Float4:
+        case VariantTypes::Color:
         {
             Float4& vv = *(Float4*)v.AsData;
             const Float4& aa = *(const Float4*)a.AsData;
@@ -275,7 +275,7 @@ namespace SE::GraphUtilities
             vv.w = op(aa.w, bb.w, cc.w);
             break;
         }
-        case VariantTypeHandle::Types::Double2:
+        case VariantTypes::Double2:
         {
             Double2& vv = *(Double2*)v.AsData;
             const Double2& aa = *(const Double2*)a.AsData;
@@ -285,7 +285,7 @@ namespace SE::GraphUtilities
             vv.y = (double)op((float)aa.y, (float)bb.y, (float)cc.y);
             break;
         }
-        case VariantTypeHandle::Types::Double3:
+        case VariantTypes::Double3:
         {
             Double3& vv = *(Double3*)v.AsData;
             const Double3& aa = *(const Double3*)a.AsData;
@@ -296,7 +296,7 @@ namespace SE::GraphUtilities
             vv.z = (double)op((float)aa.z, (float)bb.z, (float)cc.z);
             break;
         }
-        case VariantTypeHandle::Types::Double4:
+        case VariantTypes::Double4:
         {
             Double4& vv = *(Double4*)v.AsBlob.Data;
             const Double4& aa = *(const Double4*)a.AsBlob.Data;
@@ -308,7 +308,7 @@ namespace SE::GraphUtilities
             vv.w = (double)op((float)aa.w, (float)bb.w, (float)cc.w);
             break;
         }
-        case VariantTypeHandle::Types::Quaternion:
+        case VariantTypes::Quaternion:
         {
             Quaternion& vv = *(Quaternion*)v.AsData;
             const Quaternion& aa = *(const Quaternion*)a.AsData;
@@ -320,7 +320,7 @@ namespace SE::GraphUtilities
             vv.w = op(aa.w, bb.w, cc.w);
             break;
         }
-        case VariantTypeHandle::Types::Transform:
+        case VariantTypes::Transform:
         {
             Transform& vv = *(Transform*)v.AsBlob.Data;
             const Transform& aa = *(const Transform*)a.AsBlob.Data;
@@ -546,31 +546,31 @@ namespace SE::GraphUtilities
         ApplySomeMathHere(v, a, b, op);
     }
 
-    int32 CountComponents(VariantTypeHandle::Types type)
+    int32 CountComponents(VariantTypes type)
     {
         switch (type)
         {
-        case VariantTypeHandle::Types::Bool:
-        case VariantTypeHandle::Types::Int:
-        case VariantTypeHandle::Types::Int64:
-        case VariantTypeHandle::Types::Uint:
-        case VariantTypeHandle::Types::Uint64:
-        case VariantTypeHandle::Types::Float:
-        case VariantTypeHandle::Types::Double:
-        case VariantTypeHandle::Types::Pointer:
+        case VariantTypes::Bool:
+        case VariantTypes::Int:
+        case VariantTypes::Int64:
+        case VariantTypes::Uint:
+        case VariantTypes::Uint64:
+        case VariantTypes::Float:
+        case VariantTypes::Double:
+        case VariantTypes::Pointer:
             return 1;
-        case VariantTypeHandle::Types::Float2:
-        case VariantTypeHandle::Types::Double2:
-        case VariantTypeHandle::Types::Int2:
+        case VariantTypes::Float2:
+        case VariantTypes::Double2:
+        case VariantTypes::Int2:
             return 2;
-        case VariantTypeHandle::Types::Float3:
-        case VariantTypeHandle::Types::Double3:
-        case VariantTypeHandle::Types::Int3:
+        case VariantTypes::Float3:
+        case VariantTypes::Double3:
+        case VariantTypes::Int3:
             return 3;
-        case VariantTypeHandle::Types::Float4:
-        case VariantTypeHandle::Types::Double4:
-        case VariantTypeHandle::Types::Int4:
-        case VariantTypeHandle::Types::Color:
+        case VariantTypes::Float4:
+        case VariantTypes::Double4:
+        case VariantTypes::Int4:
+        case VariantTypes::Color:
             return 4;
         default:
             return 0;

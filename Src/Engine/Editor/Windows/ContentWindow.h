@@ -305,7 +305,7 @@ namespace SE::Editor
 	public:
 		class ViewDropdown : public ComboBox
         {
-			SE_CLASS_DEFAULT(ViewDropdown, ComboBox)
+			SE_DEFINE_CLASS_DEFAULT(ViewDropdown, ComboBox)
 		public:
 			void OnClicked(int index);
 

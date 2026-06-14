@@ -30,7 +30,7 @@ namespace SE::Editor
 	/// </summary>
 	class GenericEditor : public CustomEditor
 	{
-		SE_CLASS(GenericEditor, CustomEditor)
+		SE_DEFINE_CLASS(GenericEditor, CustomEditor)
 
 	public:
 		/// <summary>

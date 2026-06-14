@@ -13,7 +13,7 @@ namespace SE::Editor
     /// </summary>
     class ContentNavigationButton : public NavigationButton
     {
-        SE_CLASS(ContentNavigationButton, NavigationButton)
+        SE_DEFINE_CLASS(ContentNavigationButton, NavigationButton)
     private:
          DragItems* _dragOverItems;
 
@@ -59,7 +59,7 @@ namespace SE::Editor
 
     class ContentNavigationSeparator final : public ComboBox
     {
-        SE_CLASS_DEFAULT(ContentNavigationSeparator, ComboBox)
+        SE_DEFINE_CLASS_DEFAULT(ContentNavigationSeparator, ComboBox)
     public:
         ContentNavigationButton* Target;
 

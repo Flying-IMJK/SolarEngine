@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Target .NET 8.0 for nethost compatibility -->
+    <TargetFramework>net8.0</TargetFramework>
+    <!-- 允许匹配已安装的任意 8.x 运行时，而非精确匹配 8.0.0 -->
+    <RollForward>latestMajor</RollForward>
+    <AssemblyName>SEEditorCSharp</AssemblyName>
+    <RootNamespace>SE</RootNamespace>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Optimize>false</Optimize>
+    <!-- Suppress default items; sources will be added explicitly or via globbing -->
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <!-- Intermediate output paths are set by CMake via MSBuild properties (BaseIntermediateOutputPath/BaseOutputPath) -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <UseCommonOutputDirectory>true</UseCommonOutputDirectory>
+
+    <!-- Rider/Visual Studio 输出路径配置 -->
+    <!-- 当使用 Rider 直接构建时，输出到解决方案级别的 Intermediate 目录 -->
+    <BaseOutputPath>$(SolutionDir)Intermediate\Editor\bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(SolutionDir)Intermediate\Editor\obj\</BaseIntermediateOutputPath>
+
+  </PropertyGroup>
+
+  <!-- Runtime config for nethost loading -->
+  <PropertyGroup>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <!-- Editor-mode compile symbol: set SE_EDITOR=true when building for the editor -->
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);SE_EDITOR</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include= "..\Runtime\RuntimeCSharp.csproj" />
+  </ItemGroup>
+
+  <!-- All .cs files in this directory are included automatically by the SDK glob.
+       Explicit <Compile> entries are only needed for files outside this directory. -->
+  <!-- Task 2: ScriptingLoadContext.cs — included via SDK glob -->
+  <!-- Task 4: NativeInterop.cs       — included via SDK glob -->
+  <!-- Task 10: ScriptingObject.cs, Script.cs — included via SDK glob when added -->
+
+</Project>

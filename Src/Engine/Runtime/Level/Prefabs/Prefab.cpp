@@ -18,14 +18,8 @@
 
 namespace SE
 {
-    Prefab::Prefab() :_isCreatingDefaultInstance(false)
-       , _defaultInstance(nullptr)
-       , ObjectsCount(0)
-    {
-    }
-
-    Prefab::Prefab(const AssetInfo* info)
-       : JsonAssetBase(info)
+    Prefab::Prefab(const SpawnParams& params, const AssetInfo* info)
+       : JsonAssetBase(params, info)
        , _isCreatingDefaultInstance(false)
        , _defaultInstance(nullptr)
        , ObjectsCount(0)

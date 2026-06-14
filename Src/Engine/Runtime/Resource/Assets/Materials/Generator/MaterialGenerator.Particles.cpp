@@ -40,32 +40,32 @@ namespace SE
         }
 
         // Read particle data from the buffer
-        VariantTypeHandle::Types type;
+        VariantTypes type;
         const Char* format;
         switch (valueType)
         {
         case ParticleAttributeValueTypes::Float:
-            type = VariantTypeHandle::Types::Float;
+            type = VariantTypes::Float;
             format = SE_TEXT("GetParticleFloat({1}, {0})");
             break;
         case ParticleAttributeValueTypes::Float2:
-            type = VariantTypeHandle::Types::Float2;
+            type = VariantTypes::Float2;
             format = SE_TEXT("GetParticleVec2({1}, {0})");
             break;
         case ParticleAttributeValueTypes::Float3:
-            type = VariantTypeHandle::Types::Float3;
+            type = VariantTypes::Float3;
             format = SE_TEXT("GetParticleVec3({1}, {0})");
             break;
         case ParticleAttributeValueTypes::Float4:
-            type = VariantTypeHandle::Types::Float4;
+            type = VariantTypes::Float4;
             format = SE_TEXT("GetParticleVec4({1}, {0})");
             break;
         case ParticleAttributeValueTypes::Int:
-            type = VariantTypeHandle::Types::Int;
+            type = VariantTypes::Int;
             format = SE_TEXT("GetParticleInt({1}, {0})");
             break;
         case ParticleAttributeValueTypes::Uint:
-            type = VariantTypeHandle::Types::Uint;
+            type = VariantTypes::Uint;
             format = SE_TEXT("GetParticleUint({1}, {0})");
             break;
         default:
@@ -128,67 +128,67 @@ namespace SE
             mp.AsBool = false;
             switch (param->Type.Type)
             {
-            case VariantTypeHandle::Types::Bool:
+            case VariantTypes::Bool:
                 mp.Type = MaterialParameterType::Bool;
                 mp.AsBool = param->Value.AsBool;
                 break;
-            case VariantTypeHandle::Types::Int:
+            case VariantTypes::Int:
                 mp.Type = MaterialParameterType::Integer;
                 mp.AsInteger = param->Value.AsInt;
                 break;
-            case VariantTypeHandle::Types::Int64:
+            case VariantTypes::Int64:
                 mp.Type = MaterialParameterType::Integer;
                 mp.AsInteger = (int32)param->Value.AsInt64;
                 break;
-            case VariantTypeHandle::Types::Uint:
+            case VariantTypes::Uint:
                 mp.Type = MaterialParameterType::Integer;
                 mp.AsInteger = (int32)param->Value.AsUint;
                 break;
-            case VariantTypeHandle::Types::Uint64:
+            case VariantTypes::Uint64:
                 mp.Type = MaterialParameterType::Integer;
                 mp.AsInteger = (int32)param->Value.AsUint64;
                 break;
-            case VariantTypeHandle::Types::Float:
+            case VariantTypes::Float:
                 mp.Type = MaterialParameterType::Float;
                 mp.AsFloat = param->Value.AsFloat;
                 break;
-            case VariantTypeHandle::Types::Double:
+            case VariantTypes::Double:
                 mp.Type = MaterialParameterType::Float;
                 mp.AsFloat = (float)param->Value.AsDouble;
                 break;
-            case VariantTypeHandle::Types::Float2:
+            case VariantTypes::Float2:
                 mp.Type = MaterialParameterType::Vector2;
                 mp.AsFloat2 = param->Value.AsFloat2();
                 break;
-            case VariantTypeHandle::Types::Float3:
+            case VariantTypes::Float3:
                 mp.Type = MaterialParameterType::Vector3;
                 mp.AsFloat3 = param->Value.AsFloat3();
                 break;
-            case VariantTypeHandle::Types::Float4:
+            case VariantTypes::Float4:
                 mp.Type = MaterialParameterType::Vector4;
                 *(Float4*)&mp.AsData = param->Value.AsFloat4();
                 break;
-            case VariantTypeHandle::Types::Double2:
+            case VariantTypes::Double2:
                 mp.Type = MaterialParameterType::Vector2;
                 mp.AsFloat2 = (Float2)param->Value.AsDouble2();
                 break;
-            case VariantTypeHandle::Types::Double3:
+            case VariantTypes::Double3:
                 mp.Type = MaterialParameterType::Vector3;
                 mp.AsFloat3 = (Float3)param->Value.AsDouble3();
                 break;
-            case VariantTypeHandle::Types::Double4:
+            case VariantTypes::Double4:
                 mp.Type = MaterialParameterType::Vector4;
                 *(Float4*)&mp.AsData = (Float4)param->Value.AsDouble4();
                 break;
-            case VariantTypeHandle::Types::Color:
+            case VariantTypes::Color:
                 mp.Type = MaterialParameterType::Color;
                 mp.AsColor = param->Value.AsColor();
                 break;
-            case VariantTypeHandle::Types::Matrix:
+            case VariantTypes::Matrix:
                 mp.Type = MaterialParameterType::Matrix;
                 *(Matrix*)&mp.AsData = *(Matrix*)param->Value.AsBlob.Data;
                 break;
-            case VariantTypeHandle::Types::Asset:
+            case VariantTypes::Asset:
                 if (!param->Type.TypeName)
                 {
                     OnError(nullptr, nullptr, String::Format(SE_TEXT("Invalid or unsupported material parameter type {0}."), param->Type.ToString()));
@@ -209,7 +209,7 @@ namespace SE
                     OnError(nullptr, nullptr, String::Format(SE_TEXT("Invalid or unsupported material parameter type {0}."), param->Type.ToString()));
                 mp.AsGuid = (UID)param->Value;
                 break;
-            case VariantTypeHandle::Types::Object:
+            case VariantTypes::Object:
                 if (!param->Type.TypeName)
                 {
                     OnError(nullptr, nullptr, String::Format(SE_TEXT("Invalid or unsupported material parameter type {0}."), param->Type.ToString()));
@@ -221,7 +221,7 @@ namespace SE
                     OnError(nullptr, nullptr, String::Format(SE_TEXT("Invalid or unsupported material parameter type {0}."), param->Type.ToString()));
                 mp.AsGuid = (UID)param->Value;
                 break;
-            case VariantTypeHandle::Types::Enum:
+            case VariantTypes::Enum:
                 if (!param->Type.TypeName)
                 {
                     OnError(nullptr, nullptr, String::Format(SE_TEXT("Invalid or unsupported material parameter type {0}."), param->Type.ToString()));
@@ -262,7 +262,7 @@ namespace SE
             // Particle Attribute (by index)
         case 303:
         {
-            const auto particleIndex = Value::Cast(tryGetValue(node->GetBox(1), Value(VariantTypeHandle::Types::Uint, SE_TEXT("input.ParticleIndex"))), VariantTypeHandle::Types::Uint);
+            const auto particleIndex = Value::Cast(tryGetValue(node->GetBox(1), Value(VariantTypes::Uint, SE_TEXT("input.ParticleIndex"))), VariantTypes::Uint);
             value = AccessParticleAttribute(node, (StringView)node->Values[0], static_cast<ParticleAttributeValueTypes>(node->Values[1].AsInt), particleIndex.Value.Get());
             break;
         }

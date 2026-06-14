@@ -6,7 +6,7 @@ namespace SE
 {
     class SE_API_RUNTIME RootControl : public ContainerControl
     {
-        SE_CLASS(RootControl, ContainerControl)
+        SE_DEFINE_CLASS(RootControl, ContainerControl)
     private:
         static ContainerControl* _gameRoot;
         // static CanvasContainer _canvasContainer = new CanvasContainer();

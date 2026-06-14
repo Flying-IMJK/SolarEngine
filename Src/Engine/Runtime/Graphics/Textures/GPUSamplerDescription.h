@@ -8,7 +8,7 @@ namespace SE
 	/// <summary>
 	/// GPU sampler filter modes.
 	/// </summary>
-	SE_ENUM(GPUSamplerFilter)
+	SE_ENUM(Reflect)
 	enum class GPUSamplerFilter
 	{
 		/// <summary>Filter using the nearest found pixel. Texture appears pixelated.</summary>
@@ -26,7 +26,7 @@ namespace SE
 	/// <summary>
 	/// GPU sampler address modes.
 	/// </summary>
-	SE_ENUM(GPUSamplerAddressMode)
+	SE_ENUM(Reflect)
 	enum class GPUSamplerAddressMode
 	{
 		/// <summary>Texture coordinates wrap back to the valid range.</summary>
@@ -44,7 +44,7 @@ namespace SE
 	/// <summary>
 	/// GPU sampler comparision function types.
 	/// </summary>
-	SE_ENUM(GPUSamplerCompareFunction)
+	SE_ENUM(Reflect)
 	enum class GPUSamplerCompareFunction
 	{
 		/// <summary>Never pass the comparison.</summary>
@@ -58,7 +58,7 @@ namespace SE
 	/// <summary>
 	/// GPU sampler border color types.
 	/// </summary>
-	SE_ENUM(GPUSamplerBorderColor)
+	SE_ENUM(Reflect)
 	enum class GPUSamplerBorderColor
 	{
 		/// <summary>

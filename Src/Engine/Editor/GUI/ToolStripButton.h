@@ -11,7 +11,7 @@ namespace SE::Editor
     /// </summary>
     class ToolStripButton : public Control
     {
-        SE_CLASS_DEFAULT(ToolStripButton, Control)
+        SE_DEFINE_CLASS_DEFAULT(ToolStripButton, Control)
     private:
         SpriteHandle _icon;
         String _text;

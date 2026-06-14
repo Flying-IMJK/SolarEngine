@@ -9,7 +9,7 @@ namespace SE
 
     class SE_API_RUNTIME TextureBrush final : public IBrush
     {
-        SE_CLASS(TextureBrush, IBrush)
+        SE_DEFINE_CLASS(TextureBrush, IBrush)
     public:
         /// <summary>
         /// The texture.

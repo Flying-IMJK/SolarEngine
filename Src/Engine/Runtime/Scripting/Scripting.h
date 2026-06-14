@@ -1,94 +1,221 @@
 #pragma once
 
-#include "Runtime/API.h"
 #include "Core/Types/Delegate.h"
+
+#include "Runtime/Scripting/ScriptingType.h"
+#include "Runtime/API.h"
+#include "Runtime/Scripting/ManagedCLR/CLRTypes.h"
 
 namespace SE
 {
+    namespace Threading
+    {
+        template<typename T, int32 MaxThreads>
+        class ThreadLocal;
+    }
+
+    struct ScriptingTypeHandle;
+    class BinaryModule;
     class ScriptingObject;
-    class SEClass;
 
     /// <summary>
-    /// Global scripting manager.
-    ///
-    /// Responsibilities:
-    ///   - Maintains the global object registry (ID → ScriptingObject*).
-    ///   - Provides FindObject() lookup by GUID and optional type filter.
-    ///   - Handles ManagedInstanceDeleted callbacks from the C# side.
-    ///   - Fires ScriptsReloading / ScriptsReloaded events during hot-reload (editor only).
-    ///
+    /// Embedded managed scripting runtime service.
     /// </summary>
     class SE_API_RUNTIME Scripting
     {
+        friend ScriptingObject;
+        friend BinaryModule;
+        SCRIPTING_TYPE_NO_SPAWN(Scripting);
     public:
-        // -----------------------------------------------------------------------
-        // Lifecycle
-        // -----------------------------------------------------------------------
 
         /// <summary>
-        /// Initializes the scripting system (CLR host, type caches, etc.).
-        /// Returns false on success, true on failure.
+        /// Action fired when scripting loads a binary module (eg. with game scripts).
         /// </summary>
-        static bool Initialize();
+        static Delegate<BinaryModule*> BinaryModuleLoaded;
 
         /// <summary>
-        /// Shuts down the scripting system and releases all managed resources.
+        /// Action fired on scripting engine loaded (always main thread).
         /// </summary>
-        static void Shutdown();
+        static Delegate<> ScriptsLoaded;
 
         /// <summary>
-        /// Registers a ScriptingObject in the global registry.
-        /// The object must have a valid, unique ID.
+        /// Action fired on scripting engine unloading start (always main thread).
         /// </summary>
-        static void RegisterObject(ScriptingObject* obj);
+        static Delegate<> ScriptsUnload;
 
         /// <summary>
-        /// Removes a ScriptingObject from the global registry.
+        /// Action fired on scripting engine reload start (always main thread).
         /// </summary>
-        static void UnregisterObject(ScriptingObject* obj);
-
-        /// <summary>
-        /// Finds a registered ScriptingObject by its unique ID.
-        /// Returns nullptr if not found.
-        /// </summary>
-        static ScriptingObject* TryFindObject(const UID& id);
-
-        /// <summary>
-        /// Finds a registered ScriptingObject by its unique ID and optional type filter.
-        /// If type is non-null, the object's managed class must be a subclass of type.
-        /// Returns nullptr if not found or type doesn't match.
-        /// </summary>
-        static ScriptingObject* FindObject(const UID& id, SEClass* type = nullptr);
-
-        // -----------------------------------------------------------------------
-        // Managed instance callbacks
-        // -----------------------------------------------------------------------
-
-        /// <summary>
-        /// Called by the C# side when a managed ScriptingObject instance is deleted by the GC.
-        /// Forwards to obj->OnManagedInstanceDeleted().
-        /// </summary>
-        static void OnManagedInstanceDeleted(ScriptingObject* obj);
-
-        /// <summary>
-        /// Called when a ScriptingObject's ID changes (updates the registry key).
-        /// </summary>
-        static void OnObjectIdChanged(ScriptingObject* obj, const UID& oldId);
-
-        // -----------------------------------------------------------------------
-        // Events (editor hot-reload)
-        // -----------------------------------------------------------------------
-
-        /// <summary>Fired before scripts are reloaded (editor only).</summary>
         static Delegate<> ScriptsReloading;
 
-        /// <summary>Fired after scripts have been reloaded (editor only).</summary>
+        /// <summary>
+        /// Action fired on scripting engine reload start (always main thread).
+        /// </summary>
         static Delegate<> ScriptsReloaded;
 
-#ifdef SE_EDITOR
-        /// <summary>Triggers a script hot-reload cycle (editor only).</summary>
-        static void ReloadScripts();
-#endif
-    };
+    public:
 
+        /// <summary>
+        /// Gets the root domain.
+        /// </summary>
+        static CLRDomain* GetRootDomain();
+
+        /// <summary>
+        /// Gets the scripts domain (it can be the root domain if not using separate domain for scripting).
+        /// </summary>
+        static CLRDomain* GetScriptsDomain();
+
+    public:
+
+        /// <summary>
+        /// Load/Reload scripts now
+        /// </summary>
+        /// <returns>True if failed or cannot be done, otherwise false</returns>
+        static bool Load();
+
+        /// <summary>
+        /// Release scripting layer (will destroy internal scripts data)
+        /// </summary>
+        static void Release();
+
+#if SE_EDITOR
+        /// <summary>
+        /// Reloads scripts.
+        /// </summary>
+        /// <param name="canTriggerSceneReload">True if allow to scene scripts reload callback, otherwise it won't be possible.</param>
+        static void Reload(bool canTriggerSceneReload = true);
+#endif
+
+    public:
+
+        /// <summary>
+        /// Gets all registered scripting objects.
+        /// </summary>
+        /// <remarks>Use with caution due to potentially large memory allocation.</remarks>
+        /// <returns>The collection of the objects.</returns>
+        static List<ScriptingObject*, HeapAllocation> GetObjects();
+
+        /// <summary>
+        /// Finds the class with given fully qualified name within whole assembly.
+        /// </summary>
+        /// <param name="fullname">The full name of the type eg: System.Int64.</param>
+        /// <returns>The SEClass object or null if missing.</returns>
+        static CLRClass* FindClass(const StringAnsiView& fullname);
+
+        /// <summary>
+        /// Finds the scripting type of the given fullname by searching loaded scripting assemblies.
+        /// </summary>
+        /// <param name="fullname">The full name of the type eg: System.Int64.</param>
+        /// <returns>The scripting type or invalid type if missing.</returns>
+        static ScriptingTypeHandle FindScriptingType(const StringAnsiView& fullname);
+
+        /// <summary>
+        /// Creates a new instance of the given type object (native construction).
+        /// </summary>
+        /// <param name="type">The scripting object type class.</param>
+        /// <returns>The created object or null if failed.</returns>
+        static ScriptingObject* NewObject(const ScriptingTypeHandle& type);
+
+        /// <summary>
+        /// Creates a new instance of the given class object (native construction).
+        /// </summary>
+        /// <param name="type">The Managed type class.</param>
+        /// <returns>The created object or null if failed.</returns>
+        static ScriptingObject* NewObject(const CLRClass* type);
+
+    public:
+
+        typedef Dictionary<UID, UID, HeapAllocation> IdsMappingTable;
+
+        /// <summary>
+        /// The objects lookup identifier mapping used to override the object ids on FindObject call (used by the object references deserialization).
+        /// </summary>
+        static Threading::ThreadLocal<IdsMappingTable*, PLATFORM_THREADS_LIMIT> ObjectsLookupIdMapping;
+
+        /// <summary>
+        /// Finds the object by the given identifier. Searches registered scene objects and optionally assets. Logs warning if fails.
+        /// </summary>
+        /// <param name="id">The object unique identifier.</param>
+        /// <returns>The found object or null if missing.</returns>
+        template<typename T>
+        FORCE_INLINE static T* FindObject(const UID& id)
+        {
+            return (T*)FindObject(id, T::GetStaticClass());
+        }
+
+        /// <summary>
+        /// Finds the object by the given identifier. Searches registered scene objects and optionally assets. Logs warning if fails.
+        /// </summary>
+        /// <param name="id">The object unique identifier.</param>
+        /// <param name="type">The type of the object to find (optional).</param>
+        /// <returns>The found object or null if missing.</returns>
+        static ScriptingObject* FindObject(UID id, const CLRClass* type = nullptr);
+
+        /// <summary>
+        /// Tries to find the object by the given class.
+        /// </summary>
+        /// <param name="type">The type of the object to find.</param>
+        /// <returns>The found object or null if missing.</returns>
+        static ScriptingObject* TryFindObject(const CLRClass* type);
+
+        /// <summary>
+        /// Tries to find the object by the given identifier.
+        /// </summary>
+        /// <param name="id">The object unique identifier.</param>
+        /// <returns>The found object or null if missing.</returns>
+        template<typename T>
+        FORCE_INLINE static T* TryFindObject(const UID& id)
+        {
+            return (T*)TryFindObject(id, T::GetStaticClass());
+        }
+
+        /// <summary>
+        /// Tries to find the object by the given identifier.
+        /// </summary>
+        /// <param name="id">The object unique identifier.</param>
+        /// <param name="type">The type of the object to find (optional).</param>
+        /// <returns>The found object or null if missing.</returns>
+        static ScriptingObject* TryFindObject(UID id, const CLRClass* type = nullptr);
+
+        /// <summary>
+        /// Finds the object by the given managed instance handle. Searches only registered scene objects.
+        /// </summary>
+        /// <param name="managedInstance">The managed instance pointer.</param>
+        /// <returns>The found object or null if missing.</returns>
+        static ScriptingObject* FindObject(const CLRObject* managedInstance);
+
+        /// <summary>
+        /// Event called by the internal call on a finalizer thread when the managed objects gets deleted by the GC.
+        /// </summary>
+        /// <param name="obj">The unmanaged object pointer that was related to the managed object.</param>
+        static void OnManagedInstanceDeleted(ScriptingObject* obj);
+
+    public:
+
+        /// <summary>
+        /// Returns true if game modules are loaded.
+        /// </summary>
+        static bool HasGameModulesLoaded();
+
+        /// <summary>
+        /// Returns true if every assembly is loaded.
+        /// </summary>
+        static bool IsEveryAssemblyLoaded();
+
+        /// <summary>
+        /// Returns true if given type is from one of the game scripts assemblies.
+        /// </summary>
+        static bool IsTypeFromGameScripts(const CLRClass* type);
+
+        static void ProcessBuildInfoPath(String& path, const String& projectFolderPath);
+
+    private:
+
+        static bool LoadBinaryModules(const String& path, const String& projectFolderPath);
+
+        // Scripting Object API
+        static void RegisterObject(ScriptingObject* obj);
+        static void UnregisterObject(ScriptingObject* obj);
+        static void OnObjectIdChanged(ScriptingObject* obj, const UID& oldId);
+    };
 } // namespace SE

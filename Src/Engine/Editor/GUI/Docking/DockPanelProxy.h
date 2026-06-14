@@ -13,7 +13,7 @@ namespace SE::Editor
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
     class DockPanelProxy : public ContainerControl
     {
-        SE_CLASS_DEFAULT(DockPanelProxy, ContainerControl)
+        SE_DEFINE_CLASS_DEFAULT(DockPanelProxy, ContainerControl)
     public:
         /// <summary>
         /// The is mouse down flag (left button).

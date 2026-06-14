@@ -13,18 +13,18 @@ namespace SE
 	// Content and assets statistics container.
 	class SE_API_RUNTIME ContentStats : public IType
 	{
-		SE_CLASS_DEFAULT(ContentStats, IType);
+		SE_DEFINE_CLASS_DEFAULT(ContentStats, IType);
 
 		// Amount of asset objects in memory.
-//		SE_PROPERTY()
+//		SE_PROPERTY(Reflect)
 		int32 AssetsCount = 0;
-//		SE_PROPERTY()
+//		SE_PROPERTY(Reflect)
 		// Amount of loaded assets.
 		int32 LoadedAssetsCount = 0;
-//		SE_PROPERTY()
+//		SE_PROPERTY(Reflect)
 		// Amount of loading assets. Zero if all assets are loaded in.
 		int32 LoadingAssetsCount = 0;
-//		SE_PROPERTY()
+//		SE_PROPERTY(Reflect)
 		// Amount of virtual assets (don't have representation in file).
 		int32 VirtualAssetsCount = 0;
 

@@ -21,7 +21,7 @@ namespace SE::Editor
     /// </remarks>
     class ComboBox : public Control
     {
-        SE_CLASS(ComboBox, Control)
+        SE_DEFINE_CLASS(ComboBox, Control)
     public:
         /// <summary>
         /// The default height of the control.

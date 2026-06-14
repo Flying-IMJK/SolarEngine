@@ -35,7 +35,7 @@ namespace SE
         {
             // Return texture object
             value.Value = texture->ShaderName;
-            value.Type = VariantTypeHandle::Types::Object;
+            value.Type = VariantTypes::Object;
             return nullptr;
         }
 
@@ -53,7 +53,7 @@ namespace SE
                 auto textureParamId = texture->ID;
                 ASSERT(textureParamId.IsValid());
                 MaterialValue v = tryGetValue(uvBox, getUVs);
-                uv = MaterialValue::Cast(v, use3dUVs ? VariantTypeHandle::Types::Float3 : VariantTypeHandle::Types::Float2).Value;
+                uv = MaterialValue::Cast(v, use3dUVs ? VariantTypes::Float3 : VariantTypes::Float2).Value;
 
                 // Restore texture (during tryGetValue pointer could go invalid)
                 texture = findParam(textureParamId);
@@ -77,7 +77,7 @@ namespace SE
 
                 // Sample encoded normal map
                 const String sampledValue = String::Format(format, texture->ShaderName, sampler, uv);
-                const auto normalVector = writeLocal(VariantTypeHandle::Types::Float3, sampledValue, parent);
+                const auto normalVector = writeLocal(VariantTypes::Float3, sampledValue, parent);
 
                 // Decode normal vector
                 _writer.Write(SE_TEXT("\t{0}.xy = {0}.xy * 2.0 - 1.0;\n"), normalVector.Value);
@@ -108,7 +108,7 @@ namespace SE
 
                 // Sample texture
                 String sampledValue = String::Format(format, texture->ShaderName, sampler, uv, _ddx.Value, _ddy.Value);
-                valueBox->Cache = writeLocal(VariantTypeHandle::Types::Float4, sampledValue, parent);
+                valueBox->Cache = writeLocal(VariantTypes::Float4, sampledValue, parent);
             }
         }
 
@@ -159,7 +159,7 @@ namespace SE
 
     void MaterialGenerator::linearizeSceneDepth(Node* caller, const Value& depth, Value& value)
     {
-        value = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("ViewInfo.w / ({0}.x - ViewInfo.z)"), depth.Value), caller);
+        value = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("ViewInfo.w / ({0}.x - ViewInfo.z)"), depth.Value), caller);
     }
 
     void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
@@ -242,7 +242,7 @@ namespace SE
                 break;
             }
             auto heightTexture = eatBox(heightTextureBox->GetParent<Node>(), heightTextureBox->FirstConnection());
-            if (heightTexture.Type != VariantTypeHandle::Types::Object)
+            if (heightTexture.Type != VariantTypes::Object)
             {
                 value = Value::Zero;
                 // TODO: handle invalid connection data error
@@ -259,12 +259,12 @@ namespace SE
             Value scale = tryGetValue(node->GetBox(1), node->Values[0]);
             Value minSteps = tryGetValue(node->GetBox(2), node->Values[1]);
             Value maxSteps = tryGetValue(node->GetBox(3), node->Values[2]);
-            Value result = writeLocal(VariantTypeHandle::Types::Float2, uvs.Value, node);
+            Value result = writeLocal(VariantTypes::Float2, uvs.Value, node);
             createGradients(node);
             ASSERT(node->Values[3].Type == VariantType::Types::Int && Math::IsInRange(node->Values[3].AsInt, 0, 3));
             auto channel = _subs[node->Values[3].AsInt];
             Value cameraVectorWS = getCameraVector(node);
-            Value cameraVectorTS = writeLocal(VariantTypeHandle::Types::Float3, String::Format(SE_TEXT("TransformWorldVectorToTangent(input, {0})"), cameraVectorWS.Value), node);
+            Value cameraVectorTS = writeLocal(VariantTypes::Float3, String::Format(SE_TEXT("TransformWorldVectorToTangent(input, {0})"), cameraVectorWS.Value), node);
             auto code = String::Format(SE_TEXT(
                 "	{{\n"
                 "	float vLength = length({8}.rg);\n"
@@ -345,7 +345,7 @@ namespace SE
                 auto gBuffer2Sample = sampleTextureRaw(node, value, box, &gBuffer2Param);
                 if (gBuffer2Sample == nullptr)
                     break;
-                value = writeLocal(VariantTypeHandle::Types::Float3, String::Format(SE_TEXT("GetDiffuseColor({0}.rgb, {1}.g)"), gBuffer0Sample->Value, gBuffer2Sample->Value), node);
+                value = writeLocal(VariantTypes::Float3, String::Format(SE_TEXT("GetDiffuseColor({0}.rgb, {1}.g)"), gBuffer0Sample->Value, gBuffer2Sample->Value), node);
                 break;
             }
             case MaterialSceneTextures::SpecularColor:
@@ -358,7 +358,7 @@ namespace SE
                 auto gBuffer2Sample = sampleTextureRaw(node, value, box, &gBuffer2Param);
                 if (gBuffer2Sample == nullptr)
                     break;
-                value = writeLocal(VariantTypeHandle::Types::Float3, String::Format(SE_TEXT("GetSpecularColor({0}.rgb, {1}.b, {1}.g)"), gBuffer0Sample->Value, gBuffer2Sample->Value), node);
+                value = writeLocal(VariantTypes::Float3, String::Format(SE_TEXT("GetSpecularColor({0}.rgb, {1}.b, {1}.g)"), gBuffer0Sample->Value, gBuffer2Sample->Value), node);
                 break;
             }
             case MaterialSceneTextures::WorldNormal:
@@ -367,7 +367,7 @@ namespace SE
                 auto gBuffer1Sample = sampleTextureRaw(node, value, box, &gBuffer1Param);
                 if (gBuffer1Sample == nullptr)
                     break;
-                value = writeLocal(VariantTypeHandle::Types::Float3, String::Format(SE_TEXT("DecodeNormal({0}.rgb)"), gBuffer1Sample->Value), node);
+                value = writeLocal(VariantTypes::Float3, String::Format(SE_TEXT("DecodeNormal({0}.rgb)"), gBuffer1Sample->Value), node);
                 break;
             }
             case MaterialSceneTextures::AmbientOcclusion:
@@ -376,7 +376,7 @@ namespace SE
                 auto gBuffer2Sample = sampleTextureRaw(node, value, box, &gBuffer2Param);
                 if (gBuffer2Sample == nullptr)
                     break;
-                value = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("{0}.a"), gBuffer2Sample->Value), node);
+                value = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("{0}.a"), gBuffer2Sample->Value), node);
                 break;
             }
             case MaterialSceneTextures::Metalness:
@@ -385,7 +385,7 @@ namespace SE
                 auto gBuffer2Sample = sampleTextureRaw(node, value, box, &gBuffer2Param);
                 if (gBuffer2Sample == nullptr)
                     break;
-                value = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("{0}.g"), gBuffer2Sample->Value), node);
+                value = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("{0}.g"), gBuffer2Sample->Value), node);
                 break;
             }
             case MaterialSceneTextures::Roughness:
@@ -394,7 +394,7 @@ namespace SE
                 auto gBuffer0Sample = sampleTextureRaw(node, value, box, &gBuffer0Param);
                 if (gBuffer0Sample == nullptr)
                     break;
-                value = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("{0}.r"), gBuffer0Sample->Value), node);
+                value = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("{0}.r"), gBuffer0Sample->Value), node);
                 break;
             }
             case MaterialSceneTextures::Specular:
@@ -403,7 +403,7 @@ namespace SE
                 auto gBuffer2Sample = sampleTextureRaw(node, value, box, &gBuffer2Param);
                 if (gBuffer2Sample == nullptr)
                     break;
-                value = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("{0}.b"), gBuffer2Sample->Value), node);
+                value = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("{0}.b"), gBuffer2Sample->Value), node);
                 break;
             }
             case MaterialSceneTextures::ShadingModel:
@@ -412,7 +412,7 @@ namespace SE
                 auto gBuffer1Sample = sampleTextureRaw(node, value, box, &gBuffer1Param);
                 if (gBuffer1Sample == nullptr)
                     break;
-                value = writeLocal(VariantTypeHandle::Types::Int, String::Format(SE_TEXT("(int)({0}.a * 3.999)"), gBuffer1Sample->Value), node);
+                value = writeLocal(VariantTypes::Int, String::Format(SE_TEXT("(int)({0}.a * 3.999)"), gBuffer1Sample->Value), node);
                 break;
             }
             case MaterialSceneTextures::WorldPosition:
@@ -426,10 +426,10 @@ namespace SE
                 bool useCustomUVs = uvBox->HasConnection();
                 String uv;
                 if (useCustomUVs)
-                    uv = MaterialValue::Cast(tryGetValue(uvBox, getUVs), VariantTypeHandle::Types::Float2).Value;
+                    uv = MaterialValue::Cast(tryGetValue(uvBox, getUVs), VariantTypes::Float2).Value;
                 else
                     uv = SE_TEXT("input.TexCoord.xy");
-                value = writeLocal(VariantTypeHandle::Types::Float3, String::Format(SE_TEXT("GetWorldPos({1}, {0}.rgb)"), depthSample->Value, uv), node);
+                value = writeLocal(VariantTypes::Float3, String::Format(SE_TEXT("GetWorldPos({1}, {0}.rgb)"), depthSample->Value, uv), node);
                 break;
             }
             default:
@@ -533,7 +533,7 @@ namespace SE
             const bool isVolume = textureParam->Type == MaterialParameterType::GPUTextureVolume;
             const bool isNormalMap = textureParam->Type == MaterialParameterType::NormalMap;
             const bool use3dUVs = isCubemap || isArray || isVolume;
-            uvs = Value::Cast(uvs, use3dUVs ? VariantTypeHandle::Types::Float3 : VariantTypeHandle::Types::Float2);
+            uvs = Value::Cast(uvs, use3dUVs ? VariantTypes::Float3 : VariantTypes::Float2);
 
             // Get other inputs
             const auto level = tryGetValue(levelBox, node->Values[1]);
@@ -577,7 +577,7 @@ namespace SE
                         format = SE_TEXT("{0}.Sample({1}, {2})");
                 }
                 const String sampledValue = String::Format(format, texture.Value, samplerName, uvs.Value, level.Value, offset.Value);
-                textureBox->Cache = writeLocal(VariantTypeHandle::Types::Float4, sampledValue, node);
+                textureBox->Cache = writeLocal(VariantTypes::Float4, sampledValue, node);
             }
             else
             {
@@ -644,27 +644,27 @@ namespace SE
         case 10:
         {
             // Get input values
-            auto uv = Value::Cast(tryGetValue(node->GetBox(0), getUVs), VariantTypeHandle::Types::Float2);
-            auto frame = Value::Cast(tryGetValue(node->GetBox(1), node->Values[0]), VariantTypeHandle::Types::Float);
-            auto framesXY = Value::Cast(tryGetValue(node->GetBox(2), node->Values[1]), VariantTypeHandle::Types::Float2);
-            auto invertX = Value::Cast(tryGetValue(node->GetBox(3), node->Values[2]), VariantTypeHandle::Types::Float);
-            auto invertY = Value::Cast(tryGetValue(node->GetBox(4), node->Values[3]), VariantTypeHandle::Types::Float);
+            auto uv = Value::Cast(tryGetValue(node->GetBox(0), getUVs), VariantTypes::Float2);
+            auto frame = Value::Cast(tryGetValue(node->GetBox(1), node->Values[0]), VariantTypes::Float);
+            auto framesXY = Value::Cast(tryGetValue(node->GetBox(2), node->Values[1]), VariantTypes::Float2);
+            auto invertX = Value::Cast(tryGetValue(node->GetBox(3), node->Values[2]), VariantTypes::Float);
+            auto invertY = Value::Cast(tryGetValue(node->GetBox(4), node->Values[3]), VariantTypes::Float);
 
             // Write operations
-            auto framesCount = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("{0}.x * {1}.y"), framesXY.Value, framesXY.Value), node);
-            frame = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("fmod({0}, {1})"), frame.Value, framesCount.Value), node);
+            auto framesCount = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("{0}.x * {1}.y"), framesXY.Value, framesXY.Value), node);
+            frame = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("fmod({0}, {1})"), frame.Value, framesCount.Value), node);
             auto framesXYInv = writeOperation2(node, Value::One.AsFloat2(), framesXY, '/');
-            auto frameY = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("abs({0} * {1}.y - (floor({2} * {3}.x) + {0} * 1))"), invertY.Value, framesXY.Value, frame.Value, framesXYInv.Value), node);
-            auto frameX = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("abs({0} * {1}.x - (({2} - {1}.x * floor({2} * {3}.x)) + {0} * 1))"), invertX.Value, framesXY.Value, frame.Value, framesXYInv.Value), node);
-            value = writeLocal(VariantTypeHandle::Types::Float2, String::Format(SE_TEXT("({3} + float2({0}, {1})) * {2}"), frameX.Value, frameY.Value, framesXYInv.Value, uv.Value), node);
+            auto frameY = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("abs({0} * {1}.y - (floor({2} * {3}.x) + {0} * 1))"), invertY.Value, framesXY.Value, frame.Value, framesXYInv.Value), node);
+            auto frameX = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("abs({0} * {1}.x - (({2} - {1}.x * floor({2} * {3}.x)) + {0} * 1))"), invertX.Value, framesXY.Value, frame.Value, framesXYInv.Value), node);
+            value = writeLocal(VariantTypes::Float2, String::Format(SE_TEXT("({3} + float2({0}, {1})) * {2}"), frameX.Value, frameY.Value, framesXYInv.Value, uv.Value), node);
             break;
         }
             // Sample Global SDF
         case 14:
         {
             auto param = findOrAddGlobalSDF();
-            Value worldPosition = tryGetValue(node->GetBox(1), Value(VariantTypeHandle::Types::Float3, SE_TEXT("input.WorldPosition.xyz"))).Cast(VariantTypeHandle::Types::Float3);
-            value = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("SampleGlobalSDF({0}, {0}_Tex, {1})"), param.ShaderName, worldPosition.Value), node);
+            Value worldPosition = tryGetValue(node->GetBox(1), Value(VariantTypes::Float3, SE_TEXT("input.WorldPosition.xyz"))).Cast(VariantTypes::Float3);
+            value = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("SampleGlobalSDF({0}, {0}_Tex, {1})"), param.ShaderName, worldPosition.Value), node);
             _includes.Add(SE_TEXT("./Flax/GlobalSignDistanceField.hlsl"));
             break;
         }
@@ -674,9 +674,9 @@ namespace SE
             auto gradientBox = node->GetBox(0);
             auto distanceBox = node->GetBox(2);
             auto param = findOrAddGlobalSDF();
-            Value worldPosition = tryGetValue(node->GetBox(1), Value(VariantTypeHandle::Types::Float3, SE_TEXT("input.WorldPosition.xyz"))).Cast(VariantTypeHandle::Types::Float3);
-            auto distance = writeLocal(VariantTypeHandle::Types::Float, node);
-            auto gradient = writeLocal(VariantTypeHandle::Types::Float3, String::Format(SE_TEXT("SampleGlobalSDFGradient({0}, {0}_Tex, {1}, {2})"), param.ShaderName, worldPosition.Value, distance.Value), node);
+            Value worldPosition = tryGetValue(node->GetBox(1), Value(VariantTypes::Float3, SE_TEXT("input.WorldPosition.xyz"))).Cast(VariantTypes::Float3);
+            auto distance = writeLocal(VariantTypes::Float, node);
+            auto gradient = writeLocal(VariantTypes::Float3, String::Format(SE_TEXT("SampleGlobalSDFGradient({0}, {0}_Tex, {1}, {2})"), param.ShaderName, worldPosition.Value, distance.Value), node);
             _includes.Add(SE_TEXT("./Flax/GlobalSignDistanceField.hlsl"));
             gradientBox->Cache = gradient;
             distanceBox->Cache = distance;

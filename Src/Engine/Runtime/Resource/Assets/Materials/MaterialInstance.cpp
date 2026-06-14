@@ -12,7 +12,7 @@ namespace SE
     BINARY_ASSET_FACTORY(MaterialInstance, false);
 
 
-    MaterialInstance::MaterialInstance(const AssetInfo* info) : MaterialBase(info)
+    MaterialInstance::MaterialInstance(const SpawnParams& params, const AssetInfo* info) : MaterialBase(params, info)
     {
     }
 

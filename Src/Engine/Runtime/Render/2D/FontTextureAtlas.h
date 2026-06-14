@@ -24,9 +24,11 @@ namespace SE
     /// <summary>
     /// Texture resource that contains an atlas of cached font glyphs.
     /// </summary>
+    SE_CLASS(Reflect, API, NoSpawn)
     class SE_API_RUNTIME FontTextureAtlas : public Texture
     {
-        SE_CLASS(FontTextureAtlas, Texture);
+        SE_DEFINE_CLASS(FontTextureAtlas, Texture);
+        ASSET_HEADER(FontTextureAtlas);
     private:
 
         struct RowData
@@ -76,11 +78,6 @@ namespace SE
         List<FontTextureAtlasSlot*> _freeSlots;
 
     public:
-
-        FontTextureAtlas();
-
-        FontTextureAtlas(const AssetInfo* info);
-
         /// <summary>
         /// Initializes a new instance of the <see cref="FontTextureAtlas"/> class.
         /// </summary>

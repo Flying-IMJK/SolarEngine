@@ -21,7 +21,7 @@ namespace SE
 	{
 	}
 
-	TextureBase::TextureBase(const AssetInfo* info) : BinaryAsset(info),
+	TextureBase::TextureBase(const SpawnParams& params, const AssetInfo* info) : BinaryAsset(params, info),
 			_texture(this, FileSystem::GetFileName(info->path)), _customData(nullptr), _parent(this)
 	{
 

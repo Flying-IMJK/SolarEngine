@@ -16,7 +16,7 @@ namespace SE::Editor
     /// <seealso cref="DockPanel" />
     class FloatWindowDockPanel : public DockPanel
     {
-        SE_CLASS_DEFAULT(FloatWindowDockPanel, DockPanel)
+        SE_DEFINE_CLASS_DEFAULT(FloatWindowDockPanel, DockPanel)
     private:
         MasterDockPanel* _masterPanel;
         WindowRootControl* _window;

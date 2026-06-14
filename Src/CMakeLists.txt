@@ -30,6 +30,30 @@ MACRO(SET_TARGET_DLL_OUTPUT_DIR target dir)
     )
 ENDMACRO()
 
+#CSharp Target
+MACRO(CSHARP_TARGET target sourceFiles configFile)
+    set(CSHARP_INTERMEDIATE_DIR "${CMAKE_BINARY_DIR}/CSharp/${target}")
+
+    add_custom_command(
+            OUTPUT  "${ProjectBuildDir}/${target}.CSharp.dll"
+            COMMAND ${CMAKE_COMMAND} -E env DOTNET_CLI_UI_LANGUAGE=en dotnet build
+            ${configFile}
+            --configuration ${CSHARP_CONFIGURATION}
+            --output        "${ProjectBuildDir}"
+            -p:BaseIntermediateOutputPath="${CSHARP_INTERMEDIATE_DIR}/obj/"
+            -p:BaseOutputPath="${CSHARP_INTERMEDIATE_DIR}/bin/"
+            --nologo
+            -v minimal
+            ${CSHARP_EDITOR_FLAG}
+            DEPENDS ${sourceFiles} ${configFile}
+            COMMENT "Building ${target} (dotnet build)..."
+            VERBATIM
+    )
+
+    add_custom_target(${target}.CSharp ALL
+            DEPENDS "${ProjectBuildDir}/${target}.CSharp.dll"
+    )
+ENDMACRO()
 
 ############### 配置 ###############
 
@@ -53,12 +77,25 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     add_definitions("-D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING")
 endif()
 
+# 将 CMake 的 USE_EDITOR 选项传递给 dotnet build
+if(USE_EDITOR)
+    set(CSHARP_EDITOR_FLAG "/p:SE_EDITOR=true")
+else()
+    set(CSHARP_EDITOR_FLAG "/p:SE_EDITOR=false")
+endif()
+
+# Debug / Release 配置映射
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CSHARP_CONFIGURATION "Debug")
+else()
+    set(CSHARP_CONFIGURATION "Release")
+endif()
+
 ###################################
 
 add_subdirectory(Libraries)
-add_subdirectory(Reflector/Code)
+add_subdirectory(BuildTool/Code)
 add_subdirectory(Engine/Core)
-#add_subdirectory(Engine/CSharp)
 add_subdirectory(Engine/Runtime)
 add_subdirectory(Engine/Editor)
 add_subdirectory(Applications)
@@ -76,15 +113,15 @@ add_custom_target(SE.Resources ALL
 )
 
 ############### 引擎反射 ###############
-include(Reflector/Code/precompile.cmake)
+include(BuildTool/Code/precompile.cmake)
 
 ############### 引擎代码编译依赖 ###############
-add_dependencies(SE.Reflector SE.Core)
-add_dependencies(${PRECOMPILE_REBUILD_TARGET} SE.Reflector)
-add_dependencies(${PRECOMPILE_CLEAR_TARGET} SE.Reflector)
-add_dependencies(${PRECOMPILE_TARGET} SE.Reflector)
+add_dependencies(SEBuildTool SECore)
+add_dependencies(${PRECOMPILE_REBUILD_TARGET} SEBuildTool)
+add_dependencies(${PRECOMPILE_CLEAR_TARGET} SEBuildTool)
+add_dependencies(${PRECOMPILE_TARGET} SEBuildTool)
 
 #add_dependencies(SE.Runtime SE.Core SE.Resources SE.CSharp)
-add_dependencies(SE.Editor SE.Runtime)
+add_dependencies(SEEditor SERuntime)
 
 

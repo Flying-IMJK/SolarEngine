@@ -7,7 +7,7 @@ namespace SE::Editor
 
 	class ContextMenuItem : public ContainerControl
 	{
-		SE_CLASS(ContextMenuItem, ContainerControl)
+		SE_DEFINE_CLASS(ContextMenuItem, ContainerControl)
 	public:
 		/// <summary>
 		/// Gets the parent context menu.

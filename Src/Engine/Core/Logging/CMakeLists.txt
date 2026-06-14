@@ -13,4 +13,5 @@ CORE_ADD(
         Exceptions/ArgumentOutOfRangeException.h
         Exceptions/ArgumentNullException.h
         Exceptions/InvalidOperationException.h
+        Exceptions/FileNotFoundException.h
 )

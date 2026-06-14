@@ -935,13 +935,13 @@ namespace SE
 		if (result == 0)
 		{
 			//LOG_WIN32_LAST_ERROR;
-			return true;
+			return false;
 		}
 		if (bufferSize < result)
 		{
 			value.ReserveSpace(result);
 			result = GetEnvironmentVariableW(*name, *value, result);
-			if (!result)
+			if (result == 0)
 			{
 				LOG_WIN32_LAST_ERROR;
 				return FALSE;
@@ -951,7 +951,7 @@ namespace SE
 		{
 			value.Set(buffer, result);
 		}
-		return false;
+		return true;
 	}
 
 	bool WindowsPlatform::SetEnvironmentVariable(const String& name, const String& value)
@@ -959,9 +959,9 @@ namespace SE
 		if (!SetEnvironmentVariableW(*name, *value))
 		{
 			LOG_WIN32_LAST_ERROR;
-			return true;
+			return false;
 		}
-		return false;
+		return true;
 	}
 
 	bool IsProcRunning(HANDLE handle)

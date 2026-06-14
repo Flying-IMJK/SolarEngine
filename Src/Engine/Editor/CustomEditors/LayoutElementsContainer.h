@@ -36,7 +36,7 @@ namespace SE::Editor
 
 	class LayoutElementsContainer : public LayoutElement
 	{
-		SE_CLASS_DEFAULT(LayoutElementsContainer, LayoutElement)
+		SE_DEFINE_CLASS_DEFAULT(LayoutElementsContainer, LayoutElement)
 	public:
 		/// <summary>
 		/// Helper flag that is set to true if this container is in root presenter area, otherwise it's one of child groups.
@@ -144,7 +144,7 @@ namespace SE::Editor
 	/// </summary>
 	class GroupElement : public LayoutElementsContainer
 	{
-		SE_CLASS_DEFAULT(GroupElement, LayoutElementsContainer)
+		SE_DEFINE_CLASS_DEFAULT(GroupElement, LayoutElementsContainer)
 	public:
 		void* Panel = nullptr; // DropPanel*
 		ContainerControl* GetContainerControl() override;
@@ -156,7 +156,7 @@ namespace SE::Editor
 	/// </summary>
 	class HorizontalPanelElement : public LayoutElementsContainer
 	{
-		SE_CLASS_DEFAULT(HorizontalPanelElement, LayoutElementsContainer)
+		SE_DEFINE_CLASS_DEFAULT(HorizontalPanelElement, LayoutElementsContainer)
 	public:
 		void* Panel = nullptr; // HorizontalPanel*
 		ContainerControl* GetContainerControl() override;
@@ -168,7 +168,7 @@ namespace SE::Editor
 	/// </summary>
 	class VerticalPanelElement : public LayoutElementsContainer
 	{
-		SE_CLASS_DEFAULT(VerticalPanelElement, LayoutElementsContainer)
+		SE_DEFINE_CLASS_DEFAULT(VerticalPanelElement, LayoutElementsContainer)
 	public:
 		void* Panel = nullptr; // VerticalPanel*
 		ContainerControl* GetContainerControl() override;

@@ -12,7 +12,7 @@ namespace SE::Editor
 
     class TreeNode : public ContainerControl
     {
-        SE_CLASS(TreeNode, ContainerControl)
+        SE_DEFINE_CLASS(TreeNode, ContainerControl)
     public:
         /// <summary>
         /// The default drag insert position margin.

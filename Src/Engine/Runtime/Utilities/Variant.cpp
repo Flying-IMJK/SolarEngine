@@ -17,6 +17,7 @@
 #include "Core/Utilities/Formatting.h"
 #include "Core/Types/Strings/StringView.h"
 #include "Runtime/Resource/Storage/AssetStorages.h"
+#include "Runtime/Scripting/ManagedCLR/CLRClass.h"
 
 namespace SE
 {
@@ -89,6 +90,21 @@ namespace SE
         int32 length = typeName.Length();
         if (length)
         {
+            TypeName = static_cast<char*>(PlatformAllocator::Allocate(length + 1));
+            Platform::MemoryCopy(TypeName, typeName.Get(), length);
+            TypeName[length] = 0;
+        }
+    }
+
+    VariantTypeHandle::VariantTypeHandle(VariantTypes type, const CLRClass* klass)
+    {
+        Type = type;
+        TypeName = nullptr;
+
+        if (klass)
+        {
+            const StringAnsi& typeName = klass->GetFullName();
+            const int32 length = typeName.Length();
             TypeName = static_cast<char*>(PlatformAllocator::Allocate(length + 1));
             Platform::MemoryCopy(TypeName, typeName.Get(), length);
             TypeName[length] = 0;
@@ -556,7 +572,7 @@ namespace SE
         AsPointer = v;
     }
 
-    Variant::Variant(Object* v)
+    Variant::Variant(ScriptingObject* v)
         : Type(VariantTypes::Object)
     {
         AsObject = v;

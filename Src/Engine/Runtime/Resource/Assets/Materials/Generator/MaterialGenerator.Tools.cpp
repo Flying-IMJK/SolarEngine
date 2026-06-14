@@ -20,11 +20,11 @@ namespace SE
             Value normal = tryGetValue(node->GetBox(2), getNormal).AsFloat3();
 
             // Write operations
-            auto local1 = writeFunction2(node, normal, cameraVector, SE_TEXT("dot"), VariantTypeHandle::Types::Float);
+            auto local1 = writeFunction2(node, normal, cameraVector, SE_TEXT("dot"), VariantTypes::Float);
             auto local2 = writeFunction2(node, Value::Zero, local1, SE_TEXT("max"));
             auto local3 = writeOperation2(node, Value::One, local2, '-');
-            auto local4 = writeFunction2(node, local3, exponent, SE_TEXT("ClampedPow"), VariantTypeHandle::Types::Float);
-            auto local5 = writeLocal(VariantTypeHandle::Types::Float, String::Format(SE_TEXT("{0} * (1.0 - {1})"), local4.Value, fraction.Value), node);
+            auto local4 = writeFunction2(node, local3, exponent, SE_TEXT("ClampedPow"), VariantTypes::Float);
+            auto local5 = writeLocal(VariantTypes::Float, String::Format(SE_TEXT("{0} * (1.0 - {1})"), local4.Value, fraction.Value), node);
             auto local6 = writeOperation2(node, local5, fraction, '+');
             _includes.Add(SE_TEXT("./Flax/Math.hlsl"));
 
@@ -41,8 +41,8 @@ namespace SE
             Value luminanceFactors = Value(node->Values[0].AsFloat3());
 
             // Write operations
-            auto dot = writeFunction2(node, input, luminanceFactors, SE_TEXT("dot"), VariantTypeHandle::Types::Float);
-            value = writeFunction3(node, input, dot, scale, SE_TEXT("lerp"), VariantTypeHandle::Types::Float3);
+            auto dot = writeFunction2(node, input, luminanceFactors, SE_TEXT("dot"), VariantTypes::Float);
+            value = writeFunction3(node, input, dot, scale, SE_TEXT("lerp"), VariantTypes::Float3);
             break;
         }
             // Time

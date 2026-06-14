@@ -8,7 +8,7 @@ namespace SE
 
     class SE_API_RUNTIME Image : public ContainerControl
     {
-        SE_CLASS(Image, ContainerControl)
+        SE_DEFINE_CLASS(Image, ContainerControl)
     public:
         /// <summary>
         /// Gets or sets the image source.

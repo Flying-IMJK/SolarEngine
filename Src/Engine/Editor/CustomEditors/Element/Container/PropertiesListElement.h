@@ -8,7 +8,7 @@ namespace SE::Editor
 	/// </summary>
 	class PropertiesListElement : public LayoutElementsContainer
 	{
-		SE_CLASS_DEFAULT(PropertiesListElement, LayoutElementsContainer)
+		SE_DEFINE_CLASS_DEFAULT(PropertiesListElement, LayoutElementsContainer)
 	public:
 		void* Properties = nullptr; // PropertiesList*
 		List<PropertyNameLabel*> Labels;

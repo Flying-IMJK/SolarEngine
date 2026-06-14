@@ -11,9 +11,11 @@ namespace SE
 	/// Base class for all binary assets.
 	/// </summary>
 	/// <seealso cref="Asset" />
+	SE_CLASS(Reflect, API, NoSpawn, Abstract)
 	class SE_API_RUNTIME BinaryAsset : public Asset
 	{
-		SE_CLASS(BinaryAsset, Asset);
+		SE_DEFINE_CLASS(BinaryAsset, Asset);
+		ASSET_HEADER(BinaryAsset);
 	protected:
 		AssetHeader m_Header;
 		StorageReference m_StorageRef; // Allow asset to have missing storage reference but only before asset is loaded or if it's virtual
@@ -22,7 +24,6 @@ namespace SE
 
 	public:
 		BinaryAsset();
-		BinaryAsset(const AssetInfo* info);
 
 		/// <summary>
 		/// Finalizes an instance of the <see cref="BinaryAsset"/> class.

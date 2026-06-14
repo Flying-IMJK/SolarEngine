@@ -31,7 +31,7 @@ namespace SE
         {
         }
 
-        ShaderGraphBox(void* parent, byte id, const VariantTypeHandle::Types type)
+        ShaderGraphBox(void* parent, byte id, const VariantTypes type)
             : GraphBox(parent, id, type)
         {
         }
@@ -193,7 +193,7 @@ namespace SE
         typedef ShaderGraph<>::Box Box;
         typedef ShaderGraph<>::Parameter Parameter;
         typedef ShaderGraphValue Value;
-        typedef VariantTypeHandle::Types ValueType;
+        typedef VariantTypes ValueType;
         typedef Delegate<Node*, Box*, const StringView&> ErrorHandler;
         typedef Function<void(Box*, Node*, Value&)> ProcessBoxHandler;
 

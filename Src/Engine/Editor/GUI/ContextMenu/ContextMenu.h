@@ -15,7 +15,7 @@ namespace SE::Editor
 
 	class ContextMenu : public ContextMenuBase
     {
-		SE_CLASS(ContextMenu, ContextMenuBase)
+		SE_DEFINE_CLASS(ContextMenu, ContextMenuBase)
 	protected:
 	    /// <summary>
 	    /// The items container.

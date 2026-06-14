@@ -10,7 +10,7 @@ namespace SE::Editor
 	/// </summary>
 	class NewItem : public ContentItem
 	{
-		SE_CLASS_DEFAULT(NewItem, ContentItem)
+		SE_DEFINE_CLASS_DEFAULT(NewItem, ContentItem)
 	public:
 		/// <summary>
 		/// Gets the proxy object related to the created asset.

@@ -8,7 +8,7 @@
 namespace SE
 {
 
-	MaterialBase::MaterialBase(const AssetInfo* info) : BinaryAsset(info)
+	MaterialBase::MaterialBase(const SpawnParams& params, const AssetInfo* info) : BinaryAsset(params, info)
 	{
 	}
 

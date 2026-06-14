@@ -10,7 +10,7 @@ namespace SE
 
 	class SE_API_RUNTIME ModelInstance : public RenderActor
 	{
-		SE_CLASS(ModelInstance, RenderActor);
+		SE_DEFINE_CLASS(ModelInstance, RenderActor);
 
 	public:
 		/// <summary>

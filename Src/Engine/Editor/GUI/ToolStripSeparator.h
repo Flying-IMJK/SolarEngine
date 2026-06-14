@@ -8,7 +8,7 @@ namespace SE::Editor
 	/// </summary>
 	class ToolStripSeparator : public Control
 	{
-		SE_CLASS_DEFAULT(ToolStripSeparator, Control)
+		SE_DEFINE_CLASS_DEFAULT(ToolStripSeparator, Control)
 	public:
 		/// <summary>
 		/// Initializes a new instance of the <see cref="ToolStripSeparator"/> class.

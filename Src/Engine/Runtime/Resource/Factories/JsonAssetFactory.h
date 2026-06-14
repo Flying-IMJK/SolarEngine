@@ -1,5 +1,6 @@
 #pragma once
 #include "IAssetFactory.h"
+#include "Runtime/Scripting/ScriptingType.h"
 
 namespace SE
 {
@@ -38,7 +39,8 @@ namespace SE
 		// [JsonAssetFactoryBase]
 		JsonAssetBase* Create(const AssetInfo* info) override
 		{
-			return ::SE::New<T>(info);
+			ScriptingObjectSpawnParams params(info->id, T::TypeInitializer);
+			return ::SE::New<T>(params, info);
 		}
 	};
 }

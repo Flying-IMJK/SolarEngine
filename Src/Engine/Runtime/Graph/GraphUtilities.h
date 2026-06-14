@@ -17,7 +17,7 @@ namespace SE::GraphUtilities {
 	void ApplySomeMathHere(uint16 typeId, Variant& v, Variant& a);
 	void ApplySomeMathHere(uint16 typeId, Variant& v, Variant& a, Variant& b);
 
-	int32 CountComponents(VariantTypeHandle::Types type);
+	int32 CountComponents(VariantTypes type);
 
 
 	void GenerateShaderConstantBuffer(TextWriterUnicode& writer, List<SerializedMaterialParam>& parameters);

@@ -14,7 +14,7 @@ namespace SE::Editor
     /// </summary>
     class AssetItem : public ContentItem
     {
-        SE_CLASS_DEFAULT(AssetItem, ContentItem)
+        SE_DEFINE_CLASS_DEFAULT(AssetItem, ContentItem)
     public:
         /// <summary>
         /// Gets the asset unique identifier.

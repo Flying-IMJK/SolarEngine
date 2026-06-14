@@ -6,7 +6,7 @@ namespace SE
 
 	class SE_API_RUNTIME VScrollBar : public ScrollBar
 	{
-		SE_CLASS(VScrollBar, ScrollBar)
+		SE_DEFINE_CLASS(VScrollBar, ScrollBar)
 	public:
 
 		VScrollBar();

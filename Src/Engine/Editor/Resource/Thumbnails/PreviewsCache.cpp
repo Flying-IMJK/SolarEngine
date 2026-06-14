@@ -113,7 +113,7 @@ namespace SE::Editor
     BINARY_ASSET_FACTORY(PreviewsCache, true);
 
 
-    PreviewsCache::PreviewsCache(const AssetInfo* info): SpriteAtlas(info)
+    PreviewsCache::PreviewsCache(const SpawnParams& params, const AssetInfo* info): SpriteAtlas(params, info)
     {
     }
 

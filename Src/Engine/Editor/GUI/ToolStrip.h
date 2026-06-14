@@ -12,7 +12,7 @@ namespace SE::Editor
     /// </summary>
     class ToolStrip : public ContainerControl
     {
-        SE_CLASS_DEFAULT(ToolStrip, ContainerControl)
+        SE_DEFINE_CLASS_DEFAULT(ToolStrip, ContainerControl)
     public:
         /// <summary>
         /// The default margin vertically.

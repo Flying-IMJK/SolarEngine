@@ -9,9 +9,11 @@ namespace SE
 {
     class MaterialInstance;
 
+    SE_CLASS(Reflect, API, NoSpawn, Abstract)
     class SE_API_RUNTIME MaterialBase : public BinaryAsset, public IMaterial
     {
-        SE_CLASS_DEFAULT(MaterialBase, BinaryAsset);
+        SE_DEFINE_CLASS_DEFAULT(MaterialBase, BinaryAsset);
+        ASSET_HEADER(MaterialBase);
     public:
         /// <summary>
         /// The material parameters collection.
@@ -29,8 +31,6 @@ namespace SE
         virtual bool IsMaterialInstance() const = 0;
 
     public:
-        MaterialBase(const AssetInfo* info);
-
         /// <summary>
         /// Gets the material parameters collection.
         /// </summary>

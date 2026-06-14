@@ -158,29 +158,18 @@ namespace SE
 //-------------------------------------------------------------------------
 // Reflection Macros
 //-------------------------------------------------------------------------
-// SE_META
-// class nameAttribute : public TypeMetaAttribute
-// {
-//
-// }
-#define SE_META()
 
-// Flag this enum for reflection and expose it to the tools/serializers
-// SE_ENUM
-// class enum name
-// {
-//
-// }
-#define SE_ENUM(TypeName)
-
+//-------------------------------------------------------------------------
+// Code-Injecting Macros (expand to C++ code at compile time)
+//-------------------------------------------------------------------------
 
 // Flag this type for reflection and expose it to the tools/serializers
 // class name : BaseClass
 // {
-//    SE_CLASS(name, BaseCass);
+//    DEFINE_CLASS(name, BaseClass);
 // }
 //
-#define SE_CLASS(TypeName, BaseTypeName)                                                \
+#define SE_DEFINE_CLASS(TypeName, BaseTypeName)                                                \
         friend TypeCompositeInfo;                                                       \
         template<typename TType> friend class TTypeCompositeInfo;                       \
     public:                                                                             \
@@ -189,7 +178,7 @@ namespace SE
         virtual TypeCompositeInfo const* GetTypeInfo() const override { ENGINE_ASSERT( s_pTypeInfo != nullptr ); return TypeName::s_pTypeInfo; }  \
         virtual TypeID GetType() const override { ENGINE_ASSERT(s_pTypeInfo != nullptr); return s_pTypeInfo->id; }
 
-#define SE_CLASS_DEFAULT(TypeName, BaseTypeName)                                        \
+#define SE_DEFINE_CLASS_DEFAULT(TypeName, BaseTypeName)                                        \
         friend TypeCompositeInfo;                                                       \
         template<typename TType> friend class TTypeCompositeInfo;                       \
     public:                                                                             \
@@ -199,20 +188,51 @@ namespace SE
         virtual TypeCompositeInfo const* GetTypeInfo() const override { ENGINE_ASSERT( s_pTypeInfo != nullptr ); return TypeName::s_pTypeInfo; }  \
         virtual TypeID GetType() const override { ENGINE_ASSERT(s_pTypeInfo != nullptr); return s_pTypeInfo->id; }
 
+// Flag a class as the module class for that project
+#define ENGINE_REFLECT_MODULE           \
+        public:                         \
+        static void RegisterTypes();    \
+        static void UnregisterTypes();
 
-// Flag this member variable (i.e. class property) for reflection and expose it to the tools/serializers
-// Users can fill the contents with a JSON string to define per variable meta data
+//-------------------------------------------------------------------------
+// Annotation-Only Macros (empty at compile time, parsed by Reflector)
+//-------------------------------------------------------------------------
+
+// SE_META
+// class nameAttribute : public TypeMetaAttribute
+// {
 //
-// Currently Supported Meta Data:
-// * "Category" : "Lorem Ipsum" - Create a category for this property
-// * "Description" : "Lorem Ipsum" - Provides tooltip help text for this property
-// * "IsToolsReadOnly" : true/false - Allows the tools to edit this property, by default all properties are writable
-// * "ShowAsStaticArray" : true/false - Removes the resizing controls from a dynamic array
-// * "CustomEditor" : "MyEditorID" - Allows for a custom editor to be used in the property grid without creating a new type
+// }
+#define SE_META()
+
+// Flag this enum for reflection and/or C# binding
+// Parameters: Reflect, API
+// SE_ENUM(Reflect)             - reflection only
+// SE_ENUM(API)                 - binding only
+// SE_ENUM(Reflect, API)        - reflection + binding
+#define SE_ENUM(...)
+
+// Flag this class/struct/interface for reflection and/or C# binding
+// Parameters: Reflect, API, NoSpawn, Abstract, Attributes=...
+// [API] binding [NoSpawn] [Abstract]
+// [Reflect] reflection
+#define SE_CLASS(...)
+#define SE_STRUCT(...)
+#define SE_INTERFACE(...)
+
+// Flag this member variable for reflection and/or C# binding
+// Parameters: Reflect, API, plus JSON metadata
+// SE_PROPERTY(Reflect, Category="MyCategory")     - reflection only
+// SE_PROPERTY(API, ReadOnly)                       - binding only
+// SE_PROPERTY(Reflect, API, Category="MyCategory") - reflection + binding
 #define SE_PROPERTY(...)
 
-// Flag a class as the module class for that project
-#define ENGINE_REFLECT_MODULE \
-        public: \
-        static void RegisterTypes(); \
-        static void UnregisterTypes();
+// Flag this method for reflection and/or C# binding
+// Parameters: Reflect, API, Static
+// SE_FUNCTION(API)             - binding only
+// SE_FUNCTION(Reflect, API)    - reflection + binding
+#define SE_FUNCTION(...)
+
+// Flag this event for C# binding
+// Parameters: API
+#define SE_EVENT(...)

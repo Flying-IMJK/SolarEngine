@@ -14,7 +14,7 @@ namespace SE
 	/// <summary>
 	/// Describes texture compression format type
 	/// </summary>
-	SE_ENUM(TextureFormatType)
+	SE_ENUM(Reflect)
 	enum class TextureFormatType : byte
 	{
 		// Invalid value.
@@ -155,7 +155,7 @@ namespace SE
 	/// <summary>
 	/// Defines the dimension of a texture object.
 	/// </summary>
-	SE_ENUM(TextureDimensions)
+	SE_ENUM(Reflect)
 	enum class TextureDimensions
 	{
 		/// <summary>

@@ -62,11 +62,13 @@ namespace SE
 	/// <summary>
 	/// Base class for <see cref="Texture"/>, <see cref="SpriteAtlas"/>, <see cref="IESProfile"/> and other assets that can contain texture data.
 	/// </summary>
+	SE_CLASS(Reflect, API, NoSpawn, Abstract)
 	class SE_API_RUNTIME TextureBase : public BinaryAsset
 	{
 		friend class StreamingTexture;
 
-		SE_CLASS(TextureBase, BinaryAsset)
+		SE_DEFINE_CLASS(TextureBase, BinaryAsset)
+		ASSET_HEADER(TextureBase);
 	protected:
 		StreamingTexture _texture;
 		TextureInitData* _customData;
@@ -74,8 +76,6 @@ namespace SE
 
 	public:
 		TextureBase();
-
-		TextureBase(const AssetInfo* info);
 
 		/// <summary>
 		/// Gets GPU texture object allocated by the asset.

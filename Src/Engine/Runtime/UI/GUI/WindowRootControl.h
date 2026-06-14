@@ -8,7 +8,7 @@ namespace SE
 
 	class SE_API_RUNTIME WindowRootControl : public RootControl
 	{
-	    SE_CLASS(WindowRootControl, RootControl)
+	    SE_DEFINE_CLASS(WindowRootControl, RootControl)
 	private:
         GraphicWindow* _window;
         Control* _focusedControl;

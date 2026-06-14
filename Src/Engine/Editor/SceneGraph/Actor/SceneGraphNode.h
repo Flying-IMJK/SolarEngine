@@ -12,7 +12,7 @@ namespace SE::Editor
 
 	class SceneGraphNode : public ActorGraphNode
 	{
-		SE_CLASS_DEFAULT(SceneGraphNode, ActorGraphNode)
+		SE_DEFINE_CLASS_DEFAULT(SceneGraphNode, ActorGraphNode)
 	private:
 		 bool _isEdited;
 

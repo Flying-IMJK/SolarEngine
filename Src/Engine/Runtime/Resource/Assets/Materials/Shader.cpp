@@ -10,7 +10,7 @@ namespace SE
 {
 	BINARY_ASSET_FACTORY(Shader, false);
 
-	Shader::Shader(const AssetInfo* info) : BinaryAsset(info)
+	Shader::Shader(const SpawnParams& params, const AssetInfo* info) : BinaryAsset(params, info)
 	{
 		ENGINE_ASSERT(GPUDevice::instance);
 		m_GpuShader = GPUDevice::instance->CreateShader(info->path);

@@ -5,7 +5,7 @@ namespace SE::Editor
 {
 	class SceneOperate : public AssetOperate
 	{
-		SE_CLASS_DEFAULT(SceneOperate, AssetOperate)
+		SE_DEFINE_CLASS_DEFAULT(SceneOperate, AssetOperate)
 
 	public:
 		/// <summary>

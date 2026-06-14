@@ -37,7 +37,7 @@ namespace SE::Editor
 
     class ContextMenuBase : public ContainerControl
     {
-        SE_CLASS(ContextMenuBase, ContainerControl)
+        SE_DEFINE_CLASS(ContextMenuBase, ContainerControl)
     private:
         ContextMenuDirection _direction;
         ContextMenuBase* _parentCM;

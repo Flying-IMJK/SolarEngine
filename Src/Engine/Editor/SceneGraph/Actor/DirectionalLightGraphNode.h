@@ -6,7 +6,7 @@ namespace SE::Editor
 
 	class DirectionalLightGraphNode : public ActorGraphNode
 	{
-		SE_CLASS_DEFAULT(DirectionalLightGraphNode, ActorGraphNode)
+		SE_DEFINE_CLASS_DEFAULT(DirectionalLightGraphNode, ActorGraphNode)
 	public:
 		DirectionalLightGraphNode(::SE::Actor* actor);
 

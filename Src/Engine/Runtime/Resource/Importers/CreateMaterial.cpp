@@ -21,7 +21,7 @@ namespace SE
             node.ID = layer->Graph.Nodes.Count();
             node.Type = GRAPH_NODE_MAKE_TYPE(2, 3);
             node.Boxes.Resize(1);
-            node.Boxes[0] = MaterialGraphBox(&node, 0, VariantTypeHandle::Types::Float); // Value
+            node.Boxes[0] = MaterialGraphBox(&node, 0, VariantTypes::Float); // Value
             node.Values.Resize(1);
             node.Values[0] = value;
             return &node;
@@ -36,11 +36,11 @@ namespace SE
             node.ID = layer->Graph.Nodes.Count();
             node.Type = GRAPH_NODE_MAKE_TYPE(2, 7);
             node.Boxes.Resize(5);
-            node.Boxes[0] = MaterialGraphBox(&node, 0, VariantTypeHandle::Types::Float4); // Color
-            node.Boxes[1] = MaterialGraphBox(&node, 1, VariantTypeHandle::Types::Float); // R
-            node.Boxes[2] = MaterialGraphBox(&node, 2, VariantTypeHandle::Types::Float); // G
-            node.Boxes[3] = MaterialGraphBox(&node, 3, VariantTypeHandle::Types::Float); // B
-            node.Boxes[4] = MaterialGraphBox(&node, 4, VariantTypeHandle::Types::Float); // A
+            node.Boxes[0] = MaterialGraphBox(&node, 0, VariantTypes::Float4); // Color
+            node.Boxes[1] = MaterialGraphBox(&node, 1, VariantTypes::Float); // R
+            node.Boxes[2] = MaterialGraphBox(&node, 2, VariantTypes::Float); // G
+            node.Boxes[3] = MaterialGraphBox(&node, 3, VariantTypes::Float); // B
+            node.Boxes[4] = MaterialGraphBox(&node, 4, VariantTypes::Float); // A
             node.Values.Resize(1);
             node.Values[0] = value;
             return &node;
@@ -52,9 +52,9 @@ namespace SE
             node.ID = layer->Graph.Nodes.Count();
             node.Type = GRAPH_NODE_MAKE_TYPE(3, 3);
             node.Boxes.Resize(3);
-            node.Boxes[0] = MaterialGraphBox(&node, 0, VariantTypeHandle::Types::Float4); // A
-            node.Boxes[1] = MaterialGraphBox(&node, 1, VariantTypeHandle::Types::Float4); // B
-            node.Boxes[2] = MaterialGraphBox(&node, 2, VariantTypeHandle::Types::Float4); // Result
+            node.Boxes[0] = MaterialGraphBox(&node, 0, VariantTypes::Float4); // A
+            node.Boxes[1] = MaterialGraphBox(&node, 1, VariantTypes::Float4); // B
+            node.Boxes[2] = MaterialGraphBox(&node, 2, VariantTypes::Float4); // Result
             node.Values.Resize(2);
             node.Values[0] = 1.0f;
             node.Values[1] = 1.0f;
@@ -69,13 +69,13 @@ namespace SE
             node.ID = layer->Graph.Nodes.Count();
             node.Type = GRAPH_NODE_MAKE_TYPE(5, normalMap ? 4 : 1);
             node.Boxes.Resize(7);
-            node.Boxes[0] = MaterialGraphBox(&node, 0, VariantTypeHandle::Types::Float2); // UVs
-            node.Boxes[6] = MaterialGraphBox(&node, 6, VariantTypeHandle::Types::Object); // Texture Reference
-            node.Boxes[1] = MaterialGraphBox(&node, 1, VariantTypeHandle::Types::Float4); // Color
-            node.Boxes[2] = MaterialGraphBox(&node, 2, VariantTypeHandle::Types::Float); // R
-            node.Boxes[3] = MaterialGraphBox(&node, 3, VariantTypeHandle::Types::Float); // G
-            node.Boxes[4] = MaterialGraphBox(&node, 4, VariantTypeHandle::Types::Float); // B
-            node.Boxes[5] = MaterialGraphBox(&node, 5, VariantTypeHandle::Types::Float); // A
+            node.Boxes[0] = MaterialGraphBox(&node, 0, VariantTypes::Float2); // UVs
+            node.Boxes[6] = MaterialGraphBox(&node, 6, VariantTypes::Object); // Texture Reference
+            node.Boxes[1] = MaterialGraphBox(&node, 1, VariantTypes::Float4); // Color
+            node.Boxes[2] = MaterialGraphBox(&node, 2, VariantTypes::Float); // R
+            node.Boxes[3] = MaterialGraphBox(&node, 3, VariantTypes::Float); // G
+            node.Boxes[4] = MaterialGraphBox(&node, 4, VariantTypes::Float); // B
+            node.Boxes[5] = MaterialGraphBox(&node, 5, VariantTypes::Float); // A
             node.Values.Resize(1);
             node.Values[0] = textureId;
             return &node;

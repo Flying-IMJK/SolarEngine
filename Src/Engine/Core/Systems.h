@@ -1,10 +1,11 @@
 #pragma once
 
-#include "../../Core/Logging/Logging.h"
-#include "../../Core/Types/Collections/Dictionary.h"
-#include "../../Core/Types/Variable.h"
-#include "../../Core/Types/Delegate.h"
-#include "../../Core/Types/Strings/String.h"
+#include "Core/Logging/Logging.h"
+#include "Core/Types/Collections/Dictionary.h"
+#include "Core/Types/Variable.h"
+#include "Core/Types/Delegate.h"
+#include "Core/Types/Strings/String.h"
+#include "TypeSystem/IType.h"
 
 //-------------------------------------------------------------------------
 // Defines an interface for an engine system

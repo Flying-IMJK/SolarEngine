@@ -10,7 +10,7 @@
 
 namespace SE
 {
-	SE_ENUM(GPUResourceUsage)
+	SE_ENUM(Reflect)
 	enum class GPUResourceUsage
 	{
 		/// <summary>
@@ -64,7 +64,7 @@ namespace SE
 	/// <summary>
 	/// Describes how a mapped GPU resource will be accessed.
 	/// </summary>
-	SE_ENUM(GPUResourceMapMode)
+	SE_ENUM(Reflect)
 	enum class GPUResourceMapMode
 	{
 		/// <summary>
@@ -331,7 +331,7 @@ namespace SE
 	/// <summary>
 	/// 多样本采样等级
 	/// </summary>
-	SE_ENUM(MSAALevel)
+	SE_ENUM(Reflect)
 	enum class MSAALevel : int32
 	{
 		/// <summary>
@@ -508,7 +508,7 @@ namespace SE
 		Phong = 3,
 	};
 
-	SE_ENUM(GPURendererType)
+	SE_ENUM(Reflect)
 	enum class GPURendererType
 	{
 		Vulkan,
@@ -570,7 +570,7 @@ namespace SE
         PS5,      // Playstation 5
     };
 
-	SE_ENUM(RHIShaderModel)
+	SE_ENUM(Reflect)
     enum class RHIShaderModel
     {
         SM_5_0,
@@ -628,7 +628,7 @@ namespace SE
         DecrementAndWarp
     };
 
-	SE_ENUM(RHIFilter)
+	SE_ENUM(Reflect)
     enum class RHIFilter
     {
         MIN_MAG_MIP_POINT,

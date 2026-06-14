@@ -6,11 +6,11 @@ namespace SE
 	/// <summary>
 	/// The scene asset.
 	/// </summary>
+	SE_CLASS(Reflect, API, NoSpawn)
 	class SE_API_RUNTIME SceneAsset : public JsonAsset
 	{
-		SE_CLASS_DEFAULT(SceneAsset, JsonAsset);
-	public:
-		explicit SceneAsset(const AssetInfo* info);
+		SE_DEFINE_CLASS(SceneAsset, JsonAsset);
+		ASSET_HEADER(SceneAsset);
 
 	protected:
 		bool IsInternalType() const override;

@@ -7,7 +7,7 @@ namespace SE
 {
 	class SE_API_RUNTIME ContainerControl : public Control
 	{
-	    SE_CLASS(ContainerControl, Control)
+	    SE_DEFINE_CLASS(ContainerControl, Control)
 	private:
 		/// <summary>
 		/// The layout locking flag.

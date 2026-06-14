@@ -15,7 +15,7 @@ namespace SE
         friend class Level;
         friend class LevelSystem;
 
-        SE_CLASS(Scene, Actor);
+        SE_DEFINE_CLASS(Scene, Actor);
 
     public:
         Scene();

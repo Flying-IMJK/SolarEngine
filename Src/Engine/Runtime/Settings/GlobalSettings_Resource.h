@@ -9,7 +9,7 @@ namespace SE
 {
     class SE_API_RUNTIME ResourceGlobalSettings : public GlobalSettings
     {
-        SE_CLASS(ResourceGlobalSettings, GlobalSettings);
+        SE_DEFINE_CLASS(ResourceGlobalSettings, GlobalSettings);
 
         // Paths
         //-------------------------------------------------------------------------

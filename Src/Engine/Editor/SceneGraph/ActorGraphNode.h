@@ -18,7 +18,7 @@ namespace SE::Editor
 
     class ActorGraphNode : public ScenesGraphNode
     {
-        SE_CLASS(ActorGraphNode, ScenesGraphNode)
+        SE_DEFINE_CLASS(ActorGraphNode, ScenesGraphNode)
     protected:
         /// <summary>
         /// The linked actor object.

@@ -17,14 +17,16 @@
 
 namespace SE
 {
-	BinaryAsset::BinaryAsset()
-		: Asset(), m_StorageRef(nullptr) // We link storage container later
-		, m_IsSaving(false), storage(nullptr)
+	BinaryAsset::BinaryAsset(const SpawnParams& params, const AssetInfo* info)
+		: Asset(params, info)
+		, m_StorageRef(nullptr) // We link storage container later
+		, m_IsSaving(false)
+		, storage(nullptr)
 	{
 	}
 
-	BinaryAsset::BinaryAsset(const AssetInfo* info)
-		: Asset(info), m_StorageRef(nullptr) // We link storage container later
+
+	BinaryAsset::BinaryAsset() : Asset(nullptr), m_StorageRef(nullptr) // We link storage container later
 		, m_IsSaving(false), storage(nullptr)
 	{
 	}

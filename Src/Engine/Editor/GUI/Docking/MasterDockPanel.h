@@ -13,7 +13,7 @@ namespace SE::Editor
     /// </summary>
     class MasterDockPanel : public DockPanel
     {
-        SE_CLASS_DEFAULT(MasterDockPanel, DockPanel)
+        SE_DEFINE_CLASS_DEFAULT(MasterDockPanel, DockPanel)
     public:
         /// <summary>
         /// Array with all created dock windows for that master panel.

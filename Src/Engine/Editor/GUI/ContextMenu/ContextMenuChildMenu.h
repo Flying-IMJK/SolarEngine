@@ -8,7 +8,7 @@ namespace SE::Editor
 
 	class ContextMenuChildMenu : public ContextMenuButton
     {
-		SE_CLASS_DEFAULT(ContextMenuChildMenu, ContextMenuButton)
+		SE_DEFINE_CLASS_DEFAULT(ContextMenuChildMenu, ContextMenuButton)
 	public:
         /// <summary>
         /// The child context menu.

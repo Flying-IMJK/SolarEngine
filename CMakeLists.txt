@@ -51,7 +51,7 @@ set(EngineEditorDir  "${EngineDir}/Editor")    # 编辑器
 ############### 设置Lib ###############
 set(EngineLibRootDir  "Lib")  # DLL 存放根路径
 # DLL 搜索路径列表
-set(EngineLoadLibDirList "./,${EngineLibRootDir},${EngineLibRootDir}/GameNetworkingSocket,${EngineLibRootDir}/ShaderCompiler,${EngineLibRootDir}/Assimp")
+set(EngineLoadLibDirList "${EngineLibRootDir},${EngineLibRootDir}/GameNetworkingSocket,${EngineLibRootDir}/ShaderCompiler,${EngineLibRootDir}/Assimp")
 
 if (USE_PROFILER)
     add_compile_definitions(SE_PROFILER)

@@ -12,7 +12,7 @@ namespace SE
 	/// <summary>
 	/// Hardware mouse cursor behavior.
 	/// </summary>
-	SE_ENUM(CursorLockMode)
+	SE_ENUM(Reflect)
 	enum class CursorLockMode
 	{
 		/// <summary>
@@ -34,7 +34,7 @@ namespace SE
 	/// <summary>
 	/// Mouse buttons types.
 	/// </summary>
-	SE_ENUM(MouseButton)
+	SE_ENUM(Reflect)
 	enum class MouseButton
 	{
 		/// <summary>
@@ -73,7 +73,7 @@ namespace SE
 	/// <summary>
 	/// Axis for gamepad.
 	/// </summary>
-	SE_ENUM(GamepadAxis)
+	SE_ENUM(Reflect)
 	enum class GamepadAxis
 	{
 		/// <summary>
@@ -117,7 +117,7 @@ namespace SE
 	/// <summary>
 	/// Buttons for gamepad.
 	/// </summary>
-	SE_ENUM(GamepadButton)
+	SE_ENUM(Reflect)
 	enum class GamepadButton
 	{
 		/// <summary>
@@ -251,7 +251,7 @@ namespace SE
 	/// <summary>
 	/// The input action event trigger modes.
 	/// </summary>
-	SE_ENUM(InputActionMode)
+	SE_ENUM(Reflect)
 	enum class InputActionMode
 	{
 		/// <summary>
@@ -273,7 +273,7 @@ namespace SE
 	/// <summary>
 	/// The input action event phases.
 	/// </summary>
-	SE_ENUM(InputActionState)
+	SE_ENUM(Reflect)
 	enum class InputActionState
 	{
 		/// <summary>
@@ -305,7 +305,7 @@ namespace SE
 	/// <summary>
 	/// The input gamepad index.
 	/// </summary>
-	SE_ENUM(InputGamepadIndex)
+	SE_ENUM(Reflect)
 	enum class InputGamepadIndex
 	{
 		/// <summary>
@@ -347,7 +347,7 @@ namespace SE
 	/// <summary>
 	/// The input axes types.
 	/// </summary>
-	SE_ENUM(InputAxisType)
+	SE_ENUM(Reflect)
 	enum class InputAxisType
 	{
 		/// <summary>

@@ -3,7 +3,7 @@
 #include "Runtime/API.h"
 #include "Core/Types/Strings/String.h"
 #include "Runtime/Scripting/ScriptingType.h"
-
+#include "Runtime/Utilities/Variant.h"
 
 namespace SE
 {
@@ -241,6 +241,22 @@ namespace SE
         /// </summary>
         /// <param name="isReloading">If true module is during reloading and should force release the runtime data. Used for C# assembly to cleanup it's runtime data in Mono (or other scripting runtime).</param>
         virtual void Destroy(bool isReloading);
+    };
+
+    typedef BinaryModule* (*GetBinaryModuleFunc)();
+
+    // Helper utility for registering native binary modules that are statically linked.
+    class SE_API_RUNTIME StaticallyLinkedBinaryModuleInitializer
+    {
+    private:
+
+        GetBinaryModuleFunc _getter;
+
+    public:
+
+        static List<GetBinaryModuleFunc, InlinedAllocation<64>>& GetStaticallyLinkedBinaryModules();
+        explicit StaticallyLinkedBinaryModuleInitializer(GetBinaryModuleFunc getter);
+        ~StaticallyLinkedBinaryModuleInitializer();
     };
 
 } // namespace SE

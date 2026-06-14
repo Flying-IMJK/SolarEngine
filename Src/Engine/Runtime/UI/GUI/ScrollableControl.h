@@ -6,7 +6,7 @@ namespace SE
 {
 	class SE_API_RUNTIME ScrollableControl : public ContainerControl
 	{
-		SE_CLASS(ScrollableControl, ContainerControl)
+		SE_DEFINE_CLASS(ScrollableControl, ContainerControl)
 protected:
         /// <summary>
         /// The view offset. Useful to offset contents of the container (used by the scrollbars and drop panels).

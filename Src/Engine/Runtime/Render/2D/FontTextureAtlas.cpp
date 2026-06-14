@@ -9,16 +9,8 @@ namespace SE
 {
     BINARY_ASSET_FACTORY(FontTextureAtlas, true);
 
-    FontTextureAtlas::FontTextureAtlas() :
-        _width(0)
-        , _height(0)
-        , _isDirty(true)
-        , _root(nullptr)
-    {
-    }
-
-    FontTextureAtlas::FontTextureAtlas(const AssetInfo* info)
-        : Texture(info)
+    FontTextureAtlas::FontTextureAtlas(const SpawnParams& params, const AssetInfo* info)
+        : Texture(params, info)
         , _width(0)
         , _height(0)
         , _isDirty(true)
@@ -26,6 +18,9 @@ namespace SE
     {
     }
 
+    FontTextureAtlas::FontTextureAtlas(PixelFormat format, PaddingStyle paddingStyle, int32 index)
+    {
+    }
     uint32 FontTextureAtlas::GetPaddingAmount() const
     {
         return _paddingStyle == NoPadding ? 0 : 1;

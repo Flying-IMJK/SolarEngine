@@ -10,7 +10,7 @@ namespace SE
 
 	class SE_API_RUNTIME StaticModel : public ModelInstance
 	{
-		SE_CLASS(StaticModel, ModelInstance);
+		SE_DEFINE_CLASS(StaticModel, ModelInstance);
 
 	private:
 		GeometryDrawStateData _drawState;

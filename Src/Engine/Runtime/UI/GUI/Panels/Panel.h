@@ -10,7 +10,7 @@ namespace SE
 
 	class SE_API_RUNTIME Panel : public ScrollableControl
 	{
-		SE_CLASS(Panel, ScrollableControl)
+		SE_DEFINE_CLASS(Panel, ScrollableControl)
 private:
         bool _layoutChanged;
         bool _alwaysShowScrollbars;

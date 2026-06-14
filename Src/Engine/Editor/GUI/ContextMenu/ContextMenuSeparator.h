@@ -5,7 +5,7 @@ namespace SE::Editor
 {
 	class ContextMenuSeparator : public ContextMenuItem
 	{
-		SE_CLASS_DEFAULT(ContextMenuSeparator, ContextMenuItem)
+		SE_DEFINE_CLASS_DEFAULT(ContextMenuSeparator, ContextMenuItem)
 	public:
 		/// <summary>
 		/// Initializes a new instance of the <see cref="ContextMenuSeparator"/> class.

@@ -24,12 +24,6 @@ namespace SE
     	friend class Typer;
 
 		template <typename T> friend TypeID Typeof();
-	private:
-		static void RegisterTyper(TypeRegister* pRegister);
-		static void UnregisterTyper(TypeRegister* pRegister);
-
-		static void RegisterTypeID(StableID id, TypeID typeId);
-		static void UnRegisterTypeID(StableID id, TypeID typeId);
     public:
 
         Types();
@@ -37,6 +31,12 @@ namespace SE
 
 		static void InitTypeSystem();
 		static void UnInitTypeSystem();
+
+    	static void RegisterTyper(TypeRegister* pRegister);
+    	static void UnregisterTyper(TypeRegister* pRegister);
+
+    	static void RegisterTypeID(StableID id, TypeID typeId);
+    	static void UnRegisterTypeID(StableID id, TypeID typeId);
 
         //-------------------------------------------------------------------------
         // Type
