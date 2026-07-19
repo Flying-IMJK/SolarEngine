@@ -1,0 +1,16 @@
+RUNTIME_ADD(
+        ColorConverter.cs
+        Double2Converter.cs
+        Double3Converter.cs
+        Double4Converter.cs
+        Float2Converter.cs
+        Float3Converter.cs
+        Float4Converter.cs
+        Int2Converter.cs
+        Int3Converter.cs
+        Int4Converter.cs
+        QuaternionConverter.cs
+        Vector2Converter.cs
+        Vector3Converter.cs
+        Vector4Converter.cs
+)
