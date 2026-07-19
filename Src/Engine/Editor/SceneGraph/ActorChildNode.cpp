@@ -3,7 +3,7 @@
 #include "ActorChildNode.h"
 
 #include "ActorGraphNode.h"
-#include "Core/Types/Strings/String.h"
+#include "Runtime/Core/Types/Strings/String.h"
 
 namespace SE::Editor
 {

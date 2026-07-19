@@ -2,22 +2,28 @@
 // Generates C# binding declarations using direct string building.
 
 #include "CodeGenerator_BindingsCSharp.h"
+#include "CodeGenerator_BindingsModel.h"
 #include "CodeGenerator_BindingsTypeMap.h"
-#include "Core/Platform/File.h"
-#include "Core/Platform/FileSystem.h"
+#include "Core/FileSystem.h"
+#include "Core/Utils.h"
 
 #include <fstream>
 #include <string>
 
-#include "../ReflectorSettingsAndUtils.h"
+#include "CodeGenerator_Utils.h"
 
-namespace SE::ReflectTool
+namespace SE::BuildTool
 {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
-    StringAnsi BindingsCSharpGenerator::GetAccessString(AccessLevel access) const
+    static bool IsInjectedCSharpCode(ApiInjectedCode const& code)
+    {
+        return Utils::String::ToLowerCopy(code.lang) == "csharp";
+    }
+
+    std::string BindingsCSharpGenerator::GetAccessString(AccessLevel access) const
     {
         switch (access)
         {
@@ -29,125 +35,170 @@ namespace SE::ReflectTool
         }
     }
 
-    StringAnsi BindingsCSharpGenerator::GetCSharpNamespace(const StringAnsi& namespaceName) const
+    static void GenerateCSharpComment(std::string& output, const std::string& indent, const std::string& comment)
     {
-        if (namespaceName.IsEmpty())
-            return StringAnsi("SE");
-        // Replace :: with . for C# namespace syntax
-        StringAnsi result = namespaceName;
-        int pos;
-        while ((pos = result.Find("::")) != INVALID_INDEX)
-        {
-            result = result.Substring(0, pos) + "." + result.Substring(pos + 2);
-        }
-        return result;
+        if (comment.empty())
+            return;
+        output += Utils::String::Format("{0}/// <summary>\n", indent);
+        output += Utils::String::Format("{0}/// {1}\n", indent, EscapeCSharpXml(comment));
+        output += Utils::String::Format("{0}/// </summary>\n", indent);
     }
 
-    StringAnsi BindingsCSharpGenerator::BuildCSharpParams(const ApiFunction& fn, bool forPublic) const
+    static bool IsValidCSharpAttributeList(const std::string& attributes)
     {
-        StringAnsi params;
-        for (int i = 0; i < fn.params.Count(); ++i)
+        if (attributes.empty() || !Utils::String::StartsWith(attributes, "["))
+            return false;
+
+        const char* raw = attributes.c_str();
+        for (int i = 0; i < attributes.length(); ++i)
+        {
+            const unsigned char ch = (unsigned char)raw[i];
+            if (ch < 32 && ch != '\r' && ch != '\n' && ch != '\t')
+                return false;
+        }
+        return true;
+    }
+
+    static void AppendDllImport(std::string& output, const std::string& assemblyName, const std::string& entryPoint)
+    {
+        output += Utils::String::Format("        [DllImport(\"{0}\", EntryPoint = \"{1}\", CharSet = CharSet.Unicode)]\n",assemblyName, entryPoint);
+    }
+
+    static std::string NormalizeCSharpDefaultValue(const ApiParam& param)
+    {
+        std::string value = param.defaultValue;
+        Utils::String::TrimStart(value);
+        Utils::String::TrimEnd(value);
+        if (value.empty())
+            return value;
+
+        Utils::String::ReplaceAll(value, " :: ", "::");
+        Utils::String::ReplaceAll(value, ":: ", "::");
+        Utils::String::ReplaceAll(value, " ::", "::");
+        Utils::String::ReplaceAll(value, "nullptr", "null");
+        Utils::String::ReplaceAll(value, "NULL", "null");
+
+        int pos;
+        while ((pos = Utils::String::Find(value, "::")) != INVALID_INDEX)
+        {
+            value = value.substr(0, pos) + "." + value.substr(pos + 2);
+        }
+        return value;
+    }
+
+    std::string BindingsCSharpGenerator::BuildCSharpParams(const ApiFunction& fn, bool forPublic) const
+    {
+        std::string params;
+        for (int i = 0; i < fn.params.size(); ++i)
         {
             if (i > 0) params += ", ";
 
-            StringAnsi type = forPublic ? GetCSharpPublicType(fn.params[i].cppType) : GetCSharpInteropType(fn.params[i].cppType);
+            std::string type = forPublic ? GetCSharpPublicType(fn.params[i].cppType) : GetCSharpInteropType(fn.params[i].cppType);
 
             // Pass by ref for non-interop
             if (forPublic && UsePassByReference(fn.params[i].cppType) && !fn.params[i].isOut)
             {
-                params += StringAnsi::Format("ref {0} {1}", type.Get(), fn.params[i].name.Get());
+                params += Utils::String::Format("ref {0} {1}", type, MakeCSharpIdentifier(fn.params[i].name));
             }
             else if (forPublic && fn.params[i].isOut)
             {
-                params += StringAnsi::Format("out {0} {1}", type.Get(), fn.params[i].name.Get());
+                params += Utils::String::Format("out {0} {1}", type, MakeCSharpIdentifier(fn.params[i].name));
             }
             else
             {
                 // Add marshal attribute for interop params
                 if (!forPublic)
                 {
-                    StringAnsi marshalAttr = GetCSharpParamMarshalAttribute(fn.params[i].cppType, fn.params[i].name);
-                    if (!marshalAttr.IsEmpty())
-                        params += StringAnsi::Format("{0} ", marshalAttr.Get());
+                    std::string marshalAttr = GetCSharpParamMarshalAttribute(fn.params[i].cppType, fn.params[i].name);
+                    if (!marshalAttr.empty())
+                        params += Utils::String::Format("{0} ", marshalAttr);
                 }
-                params += StringAnsi::Format("{0} {1}", type.Get(), fn.params[i].name.Get());
+                std::string defaultValue;
+                if (forPublic && !fn.params[i].defaultValue.empty() && !fn.params[i].isOut && !UsePassByReference(fn.params[i].cppType))
+                    defaultValue = Utils::String::Format(" = {0}", NormalizeCSharpDefaultValue(fn.params[i]));
+                params += Utils::String::Format("{0} {1}{2}", type, MakeCSharpIdentifier(fn.params[i].name), defaultValue);
             }
         }
         return params;
     }
 
-    StringAnsi BindingsCSharpGenerator::BuildCSharpInteropParams(const ApiClass& cls, const ApiFunction& fn) const
+    std::string BindingsCSharpGenerator::BuildCSharpInteropParams(const ApiClass& cls, const ApiFunction& fn) const
     {
-        StringAnsi params;
+        std::string params;
         if (!fn.isStatic)
             params += "IntPtr __obj";
 
-        for (int i = 0; i < fn.params.Count(); ++i)
+        for (int i = 0; i < fn.params.size(); ++i)
         {
-            if (params.Length() > 0) params += ", ";
-            StringAnsi interopType = GetCSharpInteropType(fn.params[i].cppType);
-            StringAnsi marshalAttr = GetCSharpParamMarshalAttribute(fn.params[i].cppType, fn.params[i].name);
+            if (params.length() > 0) params += ", ";
+            std::string interopType = GetCSharpInteropType(fn.params[i].cppType);
+            std::string marshalAttr = GetCSharpParamMarshalAttribute(fn.params[i].cppType, fn.params[i].name);
 
-            if (!marshalAttr.IsEmpty())
-                params += StringAnsi::Format("{0} ", marshalAttr.Get());
-            params += StringAnsi::Format("{0} {1}", interopType.Get(), fn.params[i].name.Get());
+            if (!marshalAttr.empty())
+                params += Utils::String::Format("{0} ", marshalAttr);
+            if (fn.params[i].isOut)
+                params += "out ";
+            else if (UsePassByReference(fn.params[i].cppType))
+                params += "ref ";
+            params += Utils::String::Format("{0} {1}", interopType, MakeCSharpIdentifier(fn.params[i].name));
         }
         return params;
     }
 
-    StringAnsi BindingsCSharpGenerator::BuildCSharpCallArgs(const ApiClass& cls, const ApiFunction& fn, bool isInterop) const
+    std::string BindingsCSharpGenerator::BuildCSharpCallArgs(const ApiClass& cls, const ApiFunction& fn, bool isInterop) const
     {
-        StringAnsi args;
+        std::string args;
         if (!fn.isStatic && isInterop)
             args += "__unmanagedPtr";
 
-        for (int i = 0; i < fn.params.Count(); ++i)
+        for (int i = 0; i < fn.params.size(); ++i)
         {
-            if (args.Length() > 0) args += ", ";
+            if (args.length() > 0) args += ", ";
 
             if (isInterop)
             {
                 // Convert to interop representation
-                StringAnsi toInterop = GetCSharpToInterop(fn.params[i].cppType, fn.params[i].name);
-                if (UsePassByReference(fn.params[i].cppType))
-                    args += StringAnsi::Format("ref {0}", toInterop.Get());
-                else if (fn.params[i].isOut)
-                    args += StringAnsi::Format("out {0}", fn.params[i].name.Get());
+                std::string paramName = MakeCSharpIdentifier(fn.params[i].name);
+                std::string toInterop = GetCSharpToInterop(fn.params[i].cppType, paramName);
+                if (fn.params[i].isOut)
+                    args += Utils::String::Format("out {0}", paramName);
+                else if (UsePassByReference(fn.params[i].cppType))
+                    args += Utils::String::Format("ref {0}", toInterop);
                 else
                     args += toInterop;
             }
             else
             {
-                // Public call — forward as-is with ref/out keywords
-                if (UsePassByReference(fn.params[i].cppType))
-                    args += StringAnsi::Format("ref {0}", fn.params[i].name.Get());
-                else if (fn.params[i].isOut)
-                    args += StringAnsi::Format("out {0}", fn.params[i].name.Get());
+                // Public call - forward as-is with ref/out keywords
+                if (fn.params[i].isOut)
+                    args += Utils::String::Format("out {0}", MakeCSharpIdentifier(fn.params[i].name));
+                else if (UsePassByReference(fn.params[i].cppType))
+                    args += Utils::String::Format("ref {0}", MakeCSharpIdentifier(fn.params[i].name));
                 else
-                    args += fn.params[i].name;
+                    args += MakeCSharpIdentifier(fn.params[i].name);
             }
         }
         return args;
     }
 
     // -------------------------------------------------------------------------
-    // [LibraryImport] declaration for a single function
+    // [DllImport] declaration for a single function
     // -------------------------------------------------------------------------
 
     void BindingsCSharpGenerator::GenerateCSharpWrapperFunction(const ApiClass& cls, const ApiFunction& fn,
-                                                                const StringAnsi& assemblyName, StringAnsi& output)
+                                                                const std::string& assemblyName, std::string& output)
     {
-        StringAnsi interopRetType = GetCSharpInteropType(fn.returnType);
-        StringAnsi interopParams = BuildCSharpInteropParams(cls, fn);
-        StringAnsi returnMarshalAttr = GetCSharpReturnMarshalAttribute(fn.returnType);
-        StringAnsi internalName = StringAnsi::Format("Internal_{0}", fn.uniqueName.Get());
+        std::string interopRetType = GetCSharpInteropType(fn.returnType);
+        std::string interopParams = BuildCSharpInteropParams(cls, fn);
+        std::string returnMarshalAttr = GetCSharpReturnMarshalAttribute(fn.returnType);
+        std::string internalName = Utils::String::Format("Internal_{0}", fn.uniqueName);
 
-        output += StringAnsi::Format("        [LibraryImport(\"{0}\", EntryPoint = \"{1}\", StringMarshalling = StringMarshalling.Utf16)]\n",
-            assemblyName.Get(), fn.entryPoint.Get());
-        if (!returnMarshalAttr.IsEmpty())
-            output += StringAnsi::Format("        {0}\n", returnMarshalAttr.Get());
-        output += StringAnsi::Format("        internal static partial {0} {1}({2});\n\n",
-            interopRetType.Get(), internalName.Get(), interopParams.Get());
+        AppendDllImport(output, assemblyName, fn.entryPoint);
+        if (!returnMarshalAttr.empty())
+        {
+            output += Utils::String::Format("        {0}\n", returnMarshalAttr);
+        }
+        output += Utils::String::Format("        internal static extern {0} {1}({2});\n\n", interopRetType, internalName, interopParams);
     }
 
     // -------------------------------------------------------------------------
@@ -155,31 +206,34 @@ namespace SE::ReflectTool
     // -------------------------------------------------------------------------
 
     void BindingsCSharpGenerator::GenerateCSharpWrapperFunctionCall(const ApiClass& cls, const ApiFunction& fn,
-                                                                     StringAnsi& output)
+                                                                     std::string& output)
     {
-        StringAnsi publicRetType = GetCSharpPublicType(fn.returnType);
-        StringAnsi publicParams = BuildCSharpParams(fn, true);
+        std::string publicRetType = GetCSharpPublicType(fn.returnType);
+        std::string publicParams = BuildCSharpParams(fn, true);
         bool retIsVoid = (fn.returnType == "void");
-        StringAnsi access = GetAccessString(fn.isHidden ? AccessLevel::Private : AccessLevel::Public);
-        StringAnsi staticKeyword = fn.isStatic ? "static " : "";
+        std::string access = GetAccessString(fn.isHidden ? AccessLevel::Private : AccessLevel::Public);
+        std::string staticKeyword = fn.isStatic ? "static " : "";
 
-        output += StringAnsi::Format("        {0} {1}{2}{3} {4}({5})\n",
-            access.Get(), staticKeyword.Get(),
-            retIsVoid ? "void" : publicRetType.Get(),
-            StringAnsi(" "), fn.name.Get(), publicParams.Get());
+        GenerateCSharpComment(output, "        ", fn.comment);
+        if (IsValidCSharpAttributeList(fn.attributes))
+            output += Utils::String::Format("        {0}\n", fn.attributes);
+        output += Utils::String::Format("        {0} {1}{2}{3} {4}({5})\n",
+            access, staticKeyword,
+            retIsVoid ? "void" : publicRetType,
+            std::string(" "), MakeCSharpIdentifier(fn.name), publicParams);
         output += "        {\n";
 
-        StringAnsi interopCall = StringAnsi::Format("Internal_{0}({1})",
-            fn.uniqueName.Get(), BuildCSharpCallArgs(cls, fn, true).Get());
+        std::string interopCall = Utils::String::Format("Internal_{0}({1})",
+            fn.uniqueName, BuildCSharpCallArgs(cls, fn, true));
 
         if (retIsVoid)
         {
-            output += StringAnsi::Format("            {0};\n", interopCall.Get());
+            output += Utils::String::Format("            {0};\n", interopCall);
         }
         else
         {
-            StringAnsi fromInterop = GetCSharpFromInterop(fn.returnType, interopCall);
-            output += StringAnsi::Format("            return {0};\n", fromInterop.Get());
+            std::string fromInterop = GetCSharpFromInterop(fn.returnType, interopCall);
+            output += Utils::String::Format("            return {0};\n", fromInterop);
         }
         output += "        }\n\n";
     }
@@ -189,55 +243,56 @@ namespace SE::ReflectTool
     // -------------------------------------------------------------------------
 
     void BindingsCSharpGenerator::GenerateCSharpPropertyAccessors(const ApiClass& cls, const ApiProperty& prop,
-                                                                   const StringAnsi& assemblyName, StringAnsi& output)
+                                                                   const std::string& assemblyName, std::string& output)
     {
-        StringAnsi publicType = GetCSharpPublicType(prop.cppType);
-        StringAnsi interopType = GetCSharpInteropType(prop.cppType);
+        std::string publicType = GetCSharpPublicType(prop.cppType);
+        std::string interopType = GetCSharpInteropType(prop.cppType);
 
-        // Getter [LibraryImport]
+        // Getter [DllImport]
         if (prop.hasGetter)
         {
-            StringAnsi getterMarshal = GetCSharpReturnMarshalAttribute(prop.cppType);
-            output += StringAnsi::Format("        [LibraryImport(\"{0}\", EntryPoint = \"{1}\", StringMarshalling = StringMarshalling.Utf16)]\n",
-                assemblyName.Get(), prop.getterEntryPoint.Get());
-            if (!getterMarshal.IsEmpty())
-                output += StringAnsi::Format("        {0}\n", getterMarshal.Get());
-            output += StringAnsi::Format("        internal static partial {0} Internal_{1}(IntPtr __obj);\n\n",
-                interopType.Get(), prop.getterUniqueName.Get());
+            std::string getterMarshal = GetCSharpReturnMarshalAttribute(prop.cppType);
+            AppendDllImport(output, assemblyName, prop.getterEntryPoint);
+            if (!getterMarshal.empty())
+                output += Utils::String::Format("        {0}\n", getterMarshal);
+            output += Utils::String::Format("        internal static extern {0} Internal_{1}(IntPtr __obj);\n\n",
+                interopType, prop.getterUniqueName);
         }
 
-        // Setter [LibraryImport]
+        // Setter [DllImport]
         if (prop.hasSetter)
         {
-            StringAnsi setterParamMarshal = GetCSharpParamMarshalAttribute(prop.cppType, "value");
-            StringAnsi setterParamPrefix;
-            if (!setterParamMarshal.IsEmpty())
-                setterParamPrefix = StringAnsi::Format("{0} ", setterParamMarshal.Get());
+            std::string setterParamMarshal = GetCSharpParamMarshalAttribute(prop.cppType, "value");
+            std::string setterParamPrefix;
+            if (!setterParamMarshal.empty())
+                setterParamPrefix = Utils::String::Format("{0} ", setterParamMarshal);
 
-            output += StringAnsi::Format("        [LibraryImport(\"{0}\", EntryPoint = \"{1}\", StringMarshalling = StringMarshalling.Utf16)]\n",
-                assemblyName.Get(), prop.setterEntryPoint.Get());
-            output += StringAnsi::Format("        internal static partial void Internal_{0}(IntPtr __obj, {1}{2} value);\n\n",
-                prop.setterUniqueName.Get(), setterParamPrefix.Get(), interopType.Get());
+            AppendDllImport(output, assemblyName, prop.setterEntryPoint);
+            output += Utils::String::Format("        internal static extern void Internal_{0}(IntPtr __obj, {1}{2} value);\n\n",
+                prop.setterUniqueName, setterParamPrefix, interopType);
         }
 
         // Public property declaration
-        StringAnsi propAccess = GetAccessString(prop.getterAccess);
-        output += StringAnsi::Format("        {0} {1} {2}\n        {{\n", propAccess.Get(), publicType.Get(), prop.name.Get());
+        std::string propAccess = GetAccessString(prop.getterAccess);
+        GenerateCSharpComment(output, "        ", prop.comment);
+        if (IsValidCSharpAttributeList(prop.attributes))
+            output += Utils::String::Format("        {0}\n", prop.attributes);
+        output += Utils::String::Format("        {0} {1} {2}\n        {\n", propAccess, publicType, MakeCSharpIdentifier(prop.name));
 
         if (prop.hasGetter)
         {
-            StringAnsi getterCall = StringAnsi::Format("Internal_{0}(__unmanagedPtr)", prop.getterUniqueName.Get());
-            StringAnsi fromInterop = GetCSharpFromInterop(prop.cppType, getterCall);
-            StringAnsi getterAccess = GetAccessString(prop.getterAccess);
-            output += StringAnsi::Format("            {0}get {{ return {1}; }}\n", getterAccess.Get(), fromInterop.Get());
+            std::string getterCall = Utils::String::Format("Internal_{0}(__unmanagedPtr)", prop.getterUniqueName);
+            std::string fromInterop = GetCSharpFromInterop(prop.cppType, getterCall);
+            std::string getterAccess = GetAccessString(prop.getterAccess);
+            output += Utils::String::Format("            {0}get { return {1}; }\n", getterAccess, fromInterop);
         }
 
         if (prop.hasSetter)
         {
-            StringAnsi toInterop = GetCSharpToInterop(prop.cppType, StringAnsi("value"));
-            StringAnsi setterAccess = GetAccessString(prop.setterAccess);
-            output += StringAnsi::Format("            {0}set {{ Internal_{1}(__unmanagedPtr, {2}); }}\n",
-                setterAccess.Get(), prop.setterUniqueName.Get(), toInterop.Get());
+            std::string toInterop = GetCSharpToInterop(prop.cppType, std::string("value"));
+            std::string setterAccess = GetAccessString(prop.setterAccess);
+            output += Utils::String::Format("            {0}set { Internal_{1}(__unmanagedPtr, {2}); }\n",
+                setterAccess, prop.setterUniqueName, toInterop);
         }
 
         output += "        }\n\n";
@@ -248,12 +303,12 @@ namespace SE::ReflectTool
     // -------------------------------------------------------------------------
 
     void BindingsCSharpGenerator::GenerateCSharpFieldAccessors(const ApiClass& cls, const ApiField& field,
-                                                                const StringAnsi& assemblyName, StringAnsi& output)
+                                                                const std::string& assemblyName, std::string& output)
     {
-        StringAnsi publicType = GetCSharpPublicType(field.cppType);
-        StringAnsi interopType = GetCSharpInteropType(field.cppType);
-        StringAnsi stripped = StripTypeQualifiers(field.cppType);
-        const TypeMapping* map = FindTypeMapping(stripped.Get());
+        std::string publicType = GetCSharpPublicType(field.cppType);
+        std::string interopType = GetCSharpInteropType(field.cppType);
+        std::string stripped = StripTypeQualifiers(field.cppType);
+        const TypeMapping* map = FindTypeMapping(stripped.c_str());
 
         // Static fields become properties (get/set via InternalCall)
         // Instance fields with arraySize become fixed-size buffers
@@ -261,65 +316,70 @@ namespace SE::ReflectTool
 
         if (field.isStatic)
         {
-            // Static field → [LibraryImport] getter/setter + public property
+            // Static field → [DllImport] getter/setter + public property
 
             // Getter InternalCall
-            StringAnsi getterMarshal = GetCSharpReturnMarshalAttribute(field.cppType);
-            output += StringAnsi::Format("        [LibraryImport(\"{0}\", EntryPoint = \"{1}_{2}_Get\", StringMarshalling = StringMarshalling.Utf16)]\n",
-                assemblyName.Get(), cls.name.Get(), field.name.Get());
-            if (!getterMarshal.IsEmpty())
-                output += StringAnsi::Format("        {0}\n", getterMarshal.Get());
-            output += StringAnsi::Format("        internal static partial {0} Internal_{1}_Get(IntPtr __obj);\n\n",
-                interopType.Get(), field.name.Get());
+            std::string getterMarshal = GetCSharpReturnMarshalAttribute(field.cppType);
+            AppendDllImport(output, assemblyName, Utils::String::Format("{0}_{1}_Get", cls.name, field.name));
+            if (!getterMarshal.empty())
+                output += Utils::String::Format("        {0}\n", getterMarshal);
+            output += Utils::String::Format("        internal static extern {0} Internal_{1}_Get(IntPtr __obj);\n\n",
+                interopType, field.name);
 
             // Setter InternalCall (if not readonly)
             if (!field.isReadOnly)
             {
-                StringAnsi setterParamMarshal = GetCSharpParamMarshalAttribute(field.cppType, "value");
-                StringAnsi setterParamPrefix;
-                if (!setterParamMarshal.IsEmpty())
-                    setterParamPrefix = StringAnsi::Format("{0} ", setterParamMarshal.Get());
+                std::string setterParamMarshal = GetCSharpParamMarshalAttribute(field.cppType, "value");
+                std::string setterParamPrefix;
+                if (!setterParamMarshal.empty())
+                    setterParamPrefix = Utils::String::Format("{0} ", setterParamMarshal);
 
-                output += StringAnsi::Format("        [LibraryImport(\"{0}\", EntryPoint = \"{1}_{2}_Set\", StringMarshalling = StringMarshalling.Utf16)]\n",
-                    assemblyName.Get(), cls.name.Get(), field.name.Get());
-                output += StringAnsi::Format("        internal static partial void Internal_{0}_Set(IntPtr __obj, {1}{2} value);\n\n",
-                    field.name.Get(), setterParamPrefix.Get(), interopType.Get());
+                AppendDllImport(output, assemblyName, Utils::String::Format("{0}_{1}_Set", cls.name, field.name));
+                output += Utils::String::Format("        internal static extern void Internal_{0}_Set(IntPtr __obj, {1}{2} value);\n\n",
+                    field.name, setterParamPrefix, interopType);
             }
 
             // Public static property
-            StringAnsi fieldAccess = GetAccessString(field.isHidden ? AccessLevel::Private : AccessLevel::Public);
-            output += StringAnsi::Format("        {0} static {1} {2}\n        {{\n",
-                fieldAccess.Get(), publicType.Get(), field.name.Get());
+            std::string fieldAccess = GetAccessString(field.isHidden ? AccessLevel::Private : AccessLevel::Public);
+            GenerateCSharpComment(output, "        ", field.comment);
+            if (IsValidCSharpAttributeList(field.attributes))
+                output += Utils::String::Format("        {0}\n", field.attributes);
+            output += Utils::String::Format("        {0} static {1} {2}\n        {\n",
+                fieldAccess, publicType, MakeCSharpIdentifier(field.name));
 
-            StringAnsi getterCall = StringAnsi::Format("Internal_{0}_Get(IntPtr.Zero)", field.name.Get());
-            StringAnsi fromInterop = GetCSharpFromInterop(field.cppType, getterCall);
-            output += StringAnsi::Format("            get {{ return {0}; }}\n", fromInterop.Get());
+            std::string getterCall = Utils::String::Format("Internal_{0}_Get(IntPtr.Zero)", field.name);
+            std::string fromInterop = GetCSharpFromInterop(field.cppType, getterCall);
+            output += Utils::String::Format("            get { return {0}; }\n", fromInterop);
 
             if (!field.isReadOnly)
             {
-                StringAnsi toInterop = GetCSharpToInterop(field.cppType, StringAnsi("value"));
-                output += StringAnsi::Format("            set {{ Internal_{0}_Set(IntPtr.Zero, {1}); }}\n",
-                    field.name.Get(), toInterop.Get());
+                std::string toInterop = GetCSharpToInterop(field.cppType, std::string("value"));
+                output += Utils::String::Format("            set { Internal_{0}_Set(IntPtr.Zero, {1}); }\n",
+                    field.name, toInterop);
             }
             output += "        }\n\n";
         }
         else if (field.arraySize > 0)
         {
             // Fixed-size array → fixed buffer
-            output += StringAnsi::Format("        public fixed {0} {1}[{2}];\n\n",
-                publicType.Get(), field.name.Get(), field.arraySize);
+            GenerateCSharpComment(output, "        ", field.comment);
+            output += Utils::String::Format("        public fixed {0} {1}[{2}];\n\n",
+                publicType, MakeCSharpIdentifier(field.name), field.arraySize);
         }
         else
         {
             // Regular instance field
-            StringAnsi fieldAccess = GetAccessString(field.isHidden ? AccessLevel::Private : AccessLevel::Public);
-            StringAnsi fieldDecl = StringAnsi::Format("        {0} {1} {2}", fieldAccess.Get(), publicType.Get(), field.name.Get());
+            std::string fieldAccess = GetAccessString(field.isHidden ? AccessLevel::Private : AccessLevel::Public);
+            GenerateCSharpComment(output, "        ", field.comment);
+            if (IsValidCSharpAttributeList(field.attributes))
+                output += Utils::String::Format("        {0}\n", field.attributes);
+            std::string fieldDecl = Utils::String::Format("        {0} {1} {2}", fieldAccess, publicType, MakeCSharpIdentifier(field.name));
 
             // Add marshal attributes for special types
             if (stripped == "bool")
-                fieldDecl = StringAnsi::Format("        {0} [MarshalAs(UnmanagedType.U1)] {1} {2}", fieldAccess.Get(), publicType.Get(), field.name.Get());
+                fieldDecl = Utils::String::Format("        [MarshalAs(UnmanagedType.U1)]\n        {0} {1} {2}", fieldAccess, publicType, MakeCSharpIdentifier(field.name));
             else if (map && map->isString)
-                fieldDecl = StringAnsi::Format("        {0} [MarshalAs(UnmanagedType.LPUTF8Str)] {1} {2}", fieldAccess.Get(), publicType.Get(), field.name.Get());
+                fieldDecl = Utils::String::Format("        [MarshalAs(UnmanagedType.LPUTF8Str)]\n        {0} {1} {2}", fieldAccess, publicType, MakeCSharpIdentifier(field.name));
 
             fieldDecl += ";\n\n";
             output += fieldDecl;
@@ -331,72 +391,73 @@ namespace SE::ReflectTool
     // -------------------------------------------------------------------------
 
     void BindingsCSharpGenerator::GenerateCSharpEventAccessors(const ApiClass& cls, const ApiEvent& evt,
-                                                                const StringAnsi& assemblyName, StringAnsi& output)
+                                                                const std::string& assemblyName, std::string& output)
     {
         // Build the C# delegate type for the event
-        StringAnsi delegateParams;
-        for (int i = 0; i < evt.params.Count(); ++i)
+        std::string delegateParams;
+        for (int i = 0; i < evt.params.size(); ++i)
         {
             if (i > 0) delegateParams += ", ";
-            StringAnsi publicType = GetCSharpPublicType(evt.params[i].cppType);
+            std::string publicType = GetCSharpPublicType(evt.params[i].cppType);
             if (UsePassByReference(evt.params[i].cppType))
-                delegateParams += StringAnsi::Format("ref {0} {1}", publicType.Get(), evt.params[i].name.Get());
+                delegateParams += Utils::String::Format("ref {0} {1}", publicType, evt.params[i].name);
             else
-                delegateParams += StringAnsi::Format("{0} {1}", publicType.Get(), evt.params[i].name.Get());
+                delegateParams += Utils::String::Format("{0} {1}", publicType, evt.params[i].name);
         }
 
         // _Bind InternalCall
-        output += StringAnsi::Format("        [LibraryImport(\"{0}\", EntryPoint = \"{1}_{2}_ManagedBind\", StringMarshalling = StringMarshalling.Utf16)]\n",
-            assemblyName.Get(), cls.name.Get(), evt.name.Get());
-        output += StringAnsi::Format("        internal static partial void Internal_{0}_Bind(IntPtr __obj, bool bind);\n\n", evt.name.Get());
+        AppendDllImport(output, assemblyName, Utils::String::Format("{0}_{1}_ManagedBind", cls.name, evt.name));
+        output += Utils::String::Format("        internal static extern void Internal_{0}_Bind(IntPtr __obj, bool bind);\n\n", evt.name);
 
         // _Invoke InternalCall
-        StringAnsi invokeParams = "IntPtr __obj";
-        for (int i = 0; i < evt.params.Count(); ++i)
+        std::string invokeParams = "IntPtr __obj";
+        for (int i = 0; i < evt.params.size(); ++i)
         {
             invokeParams += ", ";
-            StringAnsi interopType = GetCSharpInteropType(evt.params[i].cppType);
-            StringAnsi marshalAttr = GetCSharpParamMarshalAttribute(evt.params[i].cppType, evt.params[i].name);
-            if (!marshalAttr.IsEmpty())
-                invokeParams += StringAnsi::Format("{0} ", marshalAttr.Get());
-            invokeParams += StringAnsi::Format("{0} {1}", interopType.Get(), evt.params[i].name.Get());
+            std::string interopType = GetCSharpInteropType(evt.params[i].cppType);
+            std::string marshalAttr = GetCSharpParamMarshalAttribute(evt.params[i].cppType, evt.params[i].name);
+            if (!marshalAttr.empty())
+                invokeParams += Utils::String::Format("{0} ", marshalAttr);
+            invokeParams += Utils::String::Format("{0} {1}", interopType, evt.params[i].name);
         }
-        output += StringAnsi::Format("        [LibraryImport(\"{0}\", EntryPoint = \"{1}_{2}_ManagedWrapper\", StringMarshalling = StringMarshalling.Utf16)]\n",
-            assemblyName.Get(), cls.name.Get(), evt.name.Get());
-        output += StringAnsi::Format("        internal static partial void Internal_{0}_Invoke({1});\n\n", evt.name.Get(), invokeParams.Get());
+        AppendDllImport(output, assemblyName, Utils::String::Format("{0}_{1}_ManagedWrapper", cls.name, evt.name));
+        output += Utils::String::Format("        internal static extern void Internal_{0}_Invoke({1});\n\n", evt.name, invokeParams);
 
         // Binding count tracking
-        StringAnsi evtAccess = GetAccessString(evt.access);
-        output += StringAnsi::Format("        private int _{0}BindCount;\n", evt.name.Get());
+        std::string evtAccess = GetAccessString(evt.access);
+        output += Utils::String::Format("        private int _{0}BindCount;\n", evt.name);
 
         // Event declaration with add/remove
-        output += StringAnsi::Format("        {0} event Action<{1}> {2}\n        {{\n",
-            evtAccess.Get(), delegateParams.Get(), evt.name.Get());
+        output += Utils::String::Format("        {0} event Action<{1}> {2}\n        {\n",
+            evtAccess, delegateParams, evt.name);
         output += "            add\n            {\n";
-        output += StringAnsi::Format("                if (Interlocked.Exchange(ref _{0}BindCount, _{0}BindCount + 1) == 0)\n", evt.name.Get());
-        output += StringAnsi::Format("                    Internal_{0}_Bind(__unmanagedPtr, true);\n", evt.name.Get());
+        output += Utils::String::Format("                if (Interlocked.Exchange(ref _{0}BindCount, _{0}BindCount + 1) == 0)\n", evt.name);
+        output += Utils::String::Format("                    Internal_{0}_Bind(__unmanagedPtr, true);\n", evt.name);
         output += "                _" + evt.name + " += value;\n";
         output += "            }\n";
         output += "            remove\n            {\n";
-        output += StringAnsi::Format("                if (Interlocked.Decrement(ref _{0}BindCount) == 0)\n", evt.name.Get());
-        output += StringAnsi::Format("                    Internal_{0}_Bind(__unmanagedPtr, false);\n", evt.name.Get());
+        output += Utils::String::Format("                if (Interlocked.Decrement(ref _{0}BindCount) == 0)\n", evt.name);
+        output += Utils::String::Format("                    Internal_{0}_Bind(__unmanagedPtr, false);\n", evt.name);
         output += "                _" + evt.name + " -= value;\n";
         output += "            }\n";
         output += "        }\n\n";
 
         // Private backing delegate
-        output += StringAnsi::Format("        private event Action<{0}> _{1};\n\n", delegateParams.Get(), evt.name.Get());
+        output += Utils::String::Format("        private event Action<{0}> _{1};\n\n", delegateParams, evt.name);
     }
 
     // -------------------------------------------------------------------------
     // Class marshaller (ManagedHandleMarshaller for ScriptingObject types)
     // -------------------------------------------------------------------------
 
-    void BindingsCSharpGenerator::GenerateCSharpClassMarshaller(const ApiClass& cls, StringAnsi& output)
+    void BindingsCSharpGenerator::GenerateCSharpClassMarshaller(const ApiClass& cls, std::string& output)
     {
-        output += StringAnsi::Format("        internal struct {0}Marshaller\n        {{\n", cls.name.Get());
-        output += StringAnsi::Format("            public static {0} ConvertToManaged(IntPtr unmanaged) => unmanaged != IntPtr.Zero ? new {0}() {{ __unmanagedPtr = unmanaged }} : null;\n", cls.name.Get());
-        output += StringAnsi::Format("            public static IntPtr ConvertToUnmanaged({0} managed) => managed != null ? managed.__unmanagedPtr : IntPtr.Zero;\n", cls.name.Get());
+        output += Utils::String::Format("        internal struct {0}Marshaller\n        {{\n", cls.name);
+        if (cls.isAbstract)
+            output += Utils::String::Format("            public static {0} ConvertToManaged(IntPtr unmanaged) => null;\n", cls.name);
+        else
+            output += Utils::String::Format("            public static {0} ConvertToManaged(IntPtr unmanaged) => unmanaged != IntPtr.Zero ? new {0}() {{ __unmanagedPtr = unmanaged }} : null;\n", cls.name);
+        output += Utils::String::Format("            public static IntPtr ConvertToUnmanaged({0} managed) => managed != null ? managed.__unmanagedPtr : IntPtr.Zero;\n", cls.name);
         output += "        }\n\n";
     }
 
@@ -404,66 +465,66 @@ namespace SE::ReflectTool
     // Struct marshaller (CustomMarshaller with blittable internal)
     // -------------------------------------------------------------------------
 
-    void BindingsCSharpGenerator::GenerateCSharpStructMarshaller(const ApiClass& cls, StringAnsi& output)
+    void BindingsCSharpGenerator::GenerateCSharpStructMarshaller(const ApiClass& cls, std::string& output)
     {
-        output += StringAnsi::Format("        [CustomMarshaller(typeof({0}), MarshalMode.Default, typeof({0}.{0}Marshaller))]\n", cls.name.Get());
-        output += StringAnsi::Format("        internal static partial class {0}Marshaller\n        {{\n", cls.name.Get());
+        output += Utils::String::Format("        [CustomMarshaller(typeof({0}), MarshalMode.Default, typeof({0}Marshaller))]\n", cls.name);
+        output += Utils::String::Format("        internal static partial class {0}Marshaller\n        {{\n", cls.name);
 
         // Blittable internal representation
-        output += StringAnsi::Format("            internal struct {0}Internal\n            {{\n", cls.name.Get());
+        output += Utils::String::Format("            internal struct {0}Internal\n            {{\n", cls.name);
         for (auto& field : cls.fields)
         {
             if (field.isStatic) continue;
-            StringAnsi fieldType = GetCSharpInteropType(field.cppType);
+            std::string fieldType = GetCSharpInteropType(field.cppType);
             if (field.arraySize > 0)
-                output += StringAnsi::Format("                public fixed {0} {1}[{2}];\n", fieldType.Get(), field.name.Get(), field.arraySize);
+                output += Utils::String::Format("                public fixed {0} {1}[{2}];\n", fieldType, field.name, field.arraySize);
             else
-                output += StringAnsi::Format("                public {0} {1};\n", fieldType.Get(), field.name.Get());
+                output += Utils::String::Format("                public {0} {1};\n", fieldType, field.name);
         }
         output += "            }\n\n";
 
         // ToManaged
-        output += StringAnsi::Format("            public static {0} ToManaged({0}Internal unmanaged)\n            {{\n", cls.name.Get());
-        output += StringAnsi::Format("                var result = new {0}();\n", cls.name.Get());
+        output += Utils::String::Format("            public static {0} ToManaged({0}Internal unmanaged)\n            {{\n", cls.name);
+        output += Utils::String::Format("                var result = new {0}();\n", cls.name);
         for (auto& field : cls.fields)
         {
             if (field.isStatic) continue;
             if (field.arraySize > 0)
             {
-                output += StringAnsi::Format("                for (int i = 0; i < {0}; i++) result.{1}[i] = unmanaged.{1}[i];\n",
-                    field.arraySize, field.name.Get());
+                output += Utils::String::Format("                for (int i = 0; i < {0}; i++) result.{1}[i] = unmanaged.{1}[i];\n",
+                    field.arraySize, field.name);
             }
             else
             {
-                StringAnsi fromInterop = GetCSharpFromInterop(field.cppType, StringAnsi::Format("unmanaged.{0}", field.name.Get()));
-                output += StringAnsi::Format("                result.{0} = {1};\n", field.name.Get(), fromInterop.Get());
+                std::string fromInterop = GetCSharpFromInterop(field.cppType, Utils::String::Format("unmanaged.{0}", field.name));
+                output += Utils::String::Format("                result.{0} = {1};\n", field.name, fromInterop);
             }
         }
         output += "                return result;\n";
         output += "            }\n\n";
 
         // ToNative
-        output += StringAnsi::Format("            public static {0}Internal ToNative({0} managed)\n            {{\n", cls.name.Get());
-        output += StringAnsi::Format("                var result = new {0}Internal();\n", cls.name.Get());
+        output += Utils::String::Format("            public static {0}Internal ToNative({0} managed)\n            {{\n", cls.name);
+        output += Utils::String::Format("                var result = new {0}Internal();\n", cls.name);
         for (auto& field : cls.fields)
         {
             if (field.isStatic) continue;
             if (field.arraySize > 0)
             {
-                output += StringAnsi::Format("                for (int i = 0; i < {0}; i++) result.{1}[i] = managed.{1}[i];\n",
-                    field.arraySize, field.name.Get());
+                output += Utils::String::Format("                for (int i = 0; i < {0}; i++) result.{1}[i] = managed.{1}[i];\n",
+                    field.arraySize, field.name);
             }
             else
             {
-                StringAnsi toInterop = GetCSharpToInterop(field.cppType, StringAnsi::Format("managed.{0}", field.name.Get()));
-                output += StringAnsi::Format("                result.{0} = {1};\n", field.name.Get(), toInterop.Get());
+                std::string toInterop = GetCSharpToInterop(field.cppType, Utils::String::Format("managed.{0}", field.name));
+                output += Utils::String::Format("                result.{0} = {1};\n", field.name, toInterop);
             }
         }
         output += "                return result;\n";
         output += "            }\n\n";
 
         // Free
-        output += StringAnsi::Format("            public static void Free({0}Internal unmanaged) {{ }}\n", cls.name.Get());
+        output += Utils::String::Format("            public static void Free({0}Internal unmanaged) {{ }}\n", cls.name);
 
         output += "        }\n\n";
     }
@@ -472,40 +533,42 @@ namespace SE::ReflectTool
     // Class generation
     // -------------------------------------------------------------------------
 
-    void BindingsCSharpGenerator::GenerateCSharpClass(const ApiClass& cls, const StringAnsi& assemblyName,
-                                                        StringAnsi& output)
+    void BindingsCSharpGenerator::GenerateCSharpClass(const ApiClass& cls, const std::string& assemblyName,
+                                                        std::string& output)
     {
-        StringAnsi nsName = GetCSharpNamespace(cls.namespaceName);
-        if (!nsName.IsEmpty())
-            output += StringAnsi::Format("namespace {0}\n{{\n", nsName.Get());
+        std::string nsName = CodeGeneratorUtils::GetFullCSNameSpaceName(cls.namespaceNameList);
+        if (!nsName.empty())
+        {
+            output += Utils::String::Format("namespace {0}\n{{\n", nsName);
+        }
 
         // Class declaration
-        StringAnsi classKeyword = cls.isStatic ? "static " : (cls.isSealed ? "sealed " : "");
-        StringAnsi abstractKeyword = cls.isAbstract ? "abstract " : "";
+        std::string classKeyword = cls.isStatic ? "static " : "";
+        std::string sealedKeyword = cls.isSealed ? "sealed " : "";
+        std::string abstractKeyword = cls.isAbstract ? "abstract " : "";
 
-        output += StringAnsi::Format("    [Unmanaged]\n");
-        if (!cls.isStruct)
-            output += StringAnsi::Format("    [NativeMarshalling(typeof({0}.{0}Marshaller))]\n", cls.name.Get());
-
+        GenerateCSharpComment(output, "    ", cls.comment);
         // User attributes
-        if (!cls.attributes.IsEmpty())
-            output += StringAnsi::Format("    {0}\n", cls.attributes.Get());
+        if (IsValidCSharpAttributeList(cls.attributes))
+            output += Utils::String::Format("    {0}\n", cls.attributes);
 
-        output += StringAnsi::Format("    public unsafe {0}{1}{2}partial class {3}",
-            abstractKeyword.Get(), classKeyword.Get(), cls.isStruct ? "" : "", cls.name.Get());
+        output += Utils::String::Format("    public unsafe {0}{1}{2}{3}partial class {4}",
+            abstractKeyword, classKeyword, sealedKeyword, cls.isStruct ? "" : "", MakeCSharpIdentifier(cls.name));
 
         // Base class
-        if (!cls.baseClassName.IsEmpty())
-            output += StringAnsi::Format(" : {0}", GetCSharpPublicType(cls.baseClassName).Get());
+        if (!cls.baseClassName.empty())
+        {
+            output += Utils::String::Format(" : {0}", GetCSharpPublicType(cls.baseClassName));
+        }
 
         // Interface implementations
-        if (!cls.interfaces.IsEmpty())
+        if (!cls.interfaces.empty())
         {
-            if (cls.baseClassName.IsEmpty())
+            if (cls.baseClassName.empty())
                 output += " : ";
             else
                 output += ", ";
-            for (int i = 0; i < cls.interfaces.Count(); ++i)
+            for (int i = 0; i < cls.interfaces.size(); ++i)
             {
                 if (i > 0) output += ", ";
                 output += cls.interfaces[i].name;
@@ -515,41 +578,56 @@ namespace SE::ReflectTool
         output += "\n    {\n";
 
         // Unmanaged pointer
-        output += "        internal IntPtr __unmanagedPtr;\n\n";
+        if (!cls.isStatic)
+        {
+            output += "        internal IntPtr __unmanagedPtr = IntPtr.Zero;\n\n";
+        }
 
         // Constructor (if not abstract, not static, not noConstructor)
         if (!cls.isAbstract && !cls.isStatic && !cls.noConstructor && !cls.noSpawn)
         {
-            output += StringAnsi::Format("        public {0}() {{ }}\n\n", cls.name.Get());
-            output += StringAnsi::Format("        internal {0}(IntPtr nativePtr) {{ __unmanagedPtr = nativePtr; }}\n\n", cls.name.Get());
+            output += Utils::String::Format("        public {0}() {{ }}\n\n", MakeCSharpIdentifier(cls.name));
+            output += Utils::String::Format("        internal {0}(IntPtr nativePtr) {{ __unmanagedPtr = nativePtr; }}\n\n", MakeCSharpIdentifier(cls.name));
         }
 
         // Events
         for (auto& evt : cls.events)
+        {
             GenerateCSharpEventAccessors(cls, evt, assemblyName, output);
+        }
 
         // Properties
         for (auto& prop : cls.properties)
+        {
             GenerateCSharpPropertyAccessors(cls, prop, assemblyName, output);
+        }
 
-        // Functions — first generate all [LibraryImport] declarations, then public wrappers
+        // Functions - first generate all [LibraryImport] declarations, then public wrappers
         for (auto& fn : cls.functions)
+        {
             GenerateCSharpWrapperFunction(cls, fn, assemblyName, output);
+        }
 
         for (auto& fn : cls.functions)
+        {
             GenerateCSharpWrapperFunctionCall(cls, fn, output);
+        }
 
         // Fields
         for (auto& field : cls.fields)
+        {
             GenerateCSharpFieldAccessors(cls, field, assemblyName, output);
+        }
 
         // Marshaller
-        if (!cls.isStruct)
+        if (!cls.isStruct && !cls.isStatic)
+        {
             GenerateCSharpClassMarshaller(cls, output);
+        }
 
         output += "    }\n";
 
-        if (!nsName.IsEmpty())
+        if (!nsName.empty())
             output += "}\n";
         output += "\n";
     }
@@ -558,28 +636,28 @@ namespace SE::ReflectTool
     // Structure generation
     // -------------------------------------------------------------------------
 
-    void BindingsCSharpGenerator::GenerateCSharpStructure(const ApiClass& cls, const StringAnsi& assemblyName,
-                                                            StringAnsi& output)
+    void BindingsCSharpGenerator::GenerateCSharpStructure(const ApiClass& cls, const std::string& assemblyName,
+                                                            std::string& output)
     {
-        StringAnsi nsName = GetCSharpNamespace(cls.namespaceName);
-        if (!nsName.IsEmpty())
-            output += StringAnsi::Format("namespace {0}\n{{\n", nsName.Get());
+        std::string nsName = CodeGeneratorUtils::GetFullCSNameSpaceName(cls.namespaceNameList);
+        if (!nsName.empty())
+        {
+            output += Utils::String::Format("namespace {0}\n{{\n", nsName);
+        }
 
         // Marshaller (must come before the struct for CustomMarshaller attribute)
         GenerateCSharpStructMarshaller(cls, output);
 
         // Struct declaration
-        output += StringAnsi::Format("    [StructLayout(LayoutKind.Sequential)\n");
-        if (cls.fields.Count() > 0)
-            output += StringAnsi::Format("    [NativeMarshalling(typeof({0}.{0}Marshaller))]\n", cls.name.Get());
+        GenerateCSharpComment(output, "    ", cls.comment);
+        output += Utils::String::Format("    [StructLayout(LayoutKind.Sequential)]\n");
+        if (IsValidCSharpAttributeList(cls.attributes))
+            output += Utils::String::Format("    {0}\n", cls.attributes);
 
-        if (!cls.attributes.IsEmpty())
-            output += StringAnsi::Format("    {0}\n", cls.attributes.Get());
+        output += Utils::String::Format("    public unsafe partial struct {0}", MakeCSharpIdentifier(cls.name));
 
-        output += StringAnsi::Format("    public unsafe partial struct {0}", cls.name.Get());
-
-        if (!cls.baseClassName.IsEmpty())
-            output += StringAnsi::Format(" : {0}", GetCSharpPublicType(cls.baseClassName).Get());
+        if (!cls.baseClassName.empty())
+            output += Utils::String::Format(" : {0}", GetCSharpPublicType(cls.baseClassName));
 
         output += "\n    {\n";
 
@@ -591,7 +669,7 @@ namespace SE::ReflectTool
         for (auto& prop : cls.properties)
             GenerateCSharpPropertyAccessors(cls, prop, assemblyName, output);
 
-        // Functions — LibraryImport + public wrappers
+        // Functions - LibraryImport + public wrappers
         for (auto& fn : cls.functions)
             GenerateCSharpWrapperFunction(cls, fn, assemblyName, output);
 
@@ -599,11 +677,11 @@ namespace SE::ReflectTool
             GenerateCSharpWrapperFunctionCall(cls, fn, output);
 
         // Default property
-        output += StringAnsi::Format("        public static {0} Default => new {0}();\n\n", cls.name.Get());
+        output += Utils::String::Format("        public static {0} Default => new {0}();\n\n", cls.name);
 
         output += "    }\n";
 
-        if (!nsName.IsEmpty())
+        if (!nsName.empty())
             output += "}\n";
         output += "\n";
     }
@@ -612,20 +690,24 @@ namespace SE::ReflectTool
     // Enum generation
     // -------------------------------------------------------------------------
 
-    void BindingsCSharpGenerator::GenerateCSharpEnum(const ApiEnum& en, StringAnsi& output)
+    void BindingsCSharpGenerator::GenerateCSharpEnum(const ApiEnum& en, std::string& output)
     {
-        StringAnsi nsName = GetCSharpNamespace(en.namespaceName);
-        if (!nsName.IsEmpty())
-            output += StringAnsi::Format("namespace {0}\n{{\n", nsName.Get());
+        std::string nsName = CodeGeneratorUtils::GetFullCSNameSpaceName(en.namespaceScopeList);
+        if (!nsName.empty())
+        {
+            output += Utils::String::Format("namespace {0}\n{{\n", nsName);
+        }
 
         // Enum declaration
-        output += StringAnsi::Format("    [Unmanaged]\n");
-        if (!en.attributes.IsEmpty())
-            output += StringAnsi::Format("    {0}\n", en.attributes.Get());
+        GenerateCSharpComment(output, "    ", en.comment);
+        if (IsValidCSharpAttributeList(en.attributes))
+        {
+            output += Utils::String::Format("    {0}\n", en.attributes);
+        }
 
         // Map underlying type
-        StringAnsi csUnderlyingType;
-        StringAnsi stripped = StripTypeQualifiers(en.underlyingType);
+        std::string csUnderlyingType;
+        std::string stripped = StripTypeQualifiers(en.underlyingType);
         if (stripped == "uint8")   csUnderlyingType = "byte";
         else if (stripped == "int8")    csUnderlyingType = "sbyte";
         else if (stripped == "uint16")  csUnderlyingType = "ushort";
@@ -636,19 +718,21 @@ namespace SE::ReflectTool
         else if (stripped == "int64")   csUnderlyingType = "long";
         else                            csUnderlyingType = "int"; // default
 
-        output += StringAnsi::Format("    public enum {0} : {1}\n    {{\n", en.name.Get(), csUnderlyingType.Get());
+        output += Utils::String::Format("    public enum {0} : {1}\n    {{\n", MakeCSharpIdentifier(en.name), csUnderlyingType);
 
-        for (int i = 0; i < en.valueNames.Count(); ++i)
+        for (int i = 0; i < en.valueNames.size(); ++i)
         {
-            output += StringAnsi::Format("        {0} = {1}", en.valueNames[i].Get(), en.values[i]);
-            if (i < en.valueNames.Count() - 1)
+            if (i < en.valueComments.size())
+                GenerateCSharpComment(output, "        ", en.valueComments[i]);
+            output += Utils::String::Format("        {0} = {1}", MakeCSharpIdentifier(en.valueNames[i]), en.values[i]);
+            if (i < en.valueNames.size() - 1)
                 output += ",";
             output += "\n";
         }
 
         output += "    }\n";
 
-        if (!nsName.IsEmpty())
+        if (!nsName.empty())
             output += "}\n";
         output += "\n";
     }
@@ -657,91 +741,134 @@ namespace SE::ReflectTool
     // Interface generation
     // -------------------------------------------------------------------------
 
-    void BindingsCSharpGenerator::GenerateCSharpInterface(const ApiInterface& iface, StringAnsi& output)
+    void BindingsCSharpGenerator::GenerateCSharpInterface(const ApiInterface& iface, std::string& output)
     {
-        StringAnsi nsName = GetCSharpNamespace(iface.namespaceName);
-        if (!nsName.IsEmpty())
-            output += StringAnsi::Format("namespace {0}\n{{\n", nsName.Get());
+        std::string nsName = CodeGeneratorUtils::GetFullCSNameSpaceName(iface.namespaceNameList);
+        if (!nsName.empty())
+        {
+            output += Utils::String::Format("namespace {0}\n{{\n", nsName);
+        }
 
-        output += StringAnsi::Format("    [Unmanaged]\n");
-        if (!iface.attributes.IsEmpty())
-            output += StringAnsi::Format("    {0}\n", iface.attributes.Get());
+        GenerateCSharpComment(output, "    ", iface.comment);
+        if (IsValidCSharpAttributeList(iface.attributes))
+        {
+            output += Utils::String::Format("    {0}\n", iface.attributes);
+        }
 
-        output += StringAnsi::Format("    public unsafe partial interface {0}\n    {{\n", iface.name.Get());
+        output += Utils::String::Format("    public unsafe partial interface {0}\n    {{\n", MakeCSharpIdentifier(iface.name));
 
         // Function signatures
         for (auto& fn : iface.functions)
         {
-            StringAnsi publicRetType = GetCSharpPublicType(fn.returnType);
-            StringAnsi publicParams = BuildCSharpParams(fn, true);
-            output += StringAnsi::Format("        {0} {1}({2});\n",
-                fn.returnType == "void" ? "void" : publicRetType.Get(),
-                fn.name.Get(), publicParams.Get());
+            std::string publicRetType = GetCSharpPublicType(fn.returnType);
+            std::string publicParams = BuildCSharpParams(fn, true);
+            GenerateCSharpComment(output, "        ", fn.comment);
+            output += Utils::String::Format("        {0} {1}({2});\n",
+                fn.returnType == "void" ? "void" : publicRetType,
+                MakeCSharpIdentifier(fn.name), publicParams);
         }
 
         output += "    }\n\n";
 
         // Interface Marshaller
-        output += StringAnsi::Format("    internal struct {0}Marshaller\n    {{\n", iface.name.Get());
-        output += StringAnsi::Format("        public static {0} ConvertToManaged(IntPtr unmanaged) => default;\n", iface.name.Get());
-        output += StringAnsi::Format("        public static IntPtr ConvertToUnmanaged({0} managed) => IntPtr.Zero;\n", iface.name.Get());
+        output += Utils::String::Format("    internal struct {0}Marshaller\n    {{\n", iface.name);
+        output += Utils::String::Format("        public static {0} ConvertToManaged(IntPtr unmanaged) => default;\n", iface.name);
+        output += Utils::String::Format("        public static IntPtr ConvertToUnmanaged({0} managed) => IntPtr.Zero;\n", iface.name);
         output += "    }\n";
 
-        if (!nsName.IsEmpty())
+        if (!nsName.empty())
+        {
             output += "}\n";
+        }
         output += "\n";
     }
 
     // -------------------------------------------------------------------------
-    // Generate — entry point for a single header
+    // Generate - entry point for a single header
     // -------------------------------------------------------------------------
 
     bool BindingsCSharpGenerator::Generate(const BindingsHeaderInfo& headerInfo,
-                                            const String& solutionRoot)
+                                            const std::string& solutionRoot)
     {
-        if (headerInfo.classes.IsEmpty() && headerInfo.enums.IsEmpty()
-            && headerInfo.interfaces.IsEmpty() && headerInfo.events.IsEmpty())
+        bool hasCSharpInjectedCode = false;
+        for (auto const& code : headerInfo.injectedCode)
+        {
+            if (IsInjectedCSharpCode(code))
+            {
+                hasCSharpInjectedCode = true;
+                break;
+            }
+        }
+        if (headerInfo.classes.empty() && headerInfo.enums.empty()
+            && headerInfo.interfaces.empty() && headerInfo.events.empty()
+            && !hasCSharpInjectedCode)
             return true;
 
-        StringAnsi output;
+        std::string output;
         output += "//-------------------------------------------------------------------------\n";
-        output += "// Auto-generated by BindingsGenerator — do not edit manually.\n";
-        output += StringAnsi::Format("// Source: {0}\n", headerInfo.filePath.Get());
+        output += "// Auto-generated by BindingsGenerator - do not edit manually.\n";
+        output += Utils::String::Format("// Source: {0}\n", headerInfo.filePath);
         output += "//-------------------------------------------------------------------------\n";
+        output += "#pragma warning disable CS0108\n";
+        output += "#pragma warning disable CS8603\n";
+        output += "#pragma warning disable CS8625\n";
         output += "using System;\n";
         output += "using System.Runtime.InteropServices;\n";
+        output += "using System.Runtime.InteropServices.Marshalling;\n";
         output += "using System.Threading;\n";
+        for (auto const& code : headerInfo.injectedCode)
+        {
+            if (IsInjectedCSharpCode(code))
+            {
+                output += code.code;
+                if (!Utils::String::EndsWith(output, '\n'))
+                {
+                    output += "\n";
+                }
+            }
+        }
         output += "\n";
 
         // Generate enums first
         for (auto& en : headerInfo.enums)
+        {
             GenerateCSharpEnum(en, output);
+        }
 
         // Generate interfaces
         for (auto& iface : headerInfo.interfaces)
+        {
             GenerateCSharpInterface(iface, output);
+        }
 
         // Generate classes/structs
         for (auto& cls : headerInfo.classes)
         {
             if (cls.isStruct)
+            {
                 GenerateCSharpStructure(cls, headerInfo.assemblyName, output);
+            }
             else
+            {
                 GenerateCSharpClass(cls, headerInfo.assemblyName, output);
+            }
         }
 
-        StringAnsi baseName = FileSystem::GetFileNameWithoutExtension(headerInfo.filePath.ToString()).ToStringAnsi();
-        String assemblyDir = headerInfo.assemblyDir.ToString();
-        String outDir = assemblyDir + Settings::g_autogeneratedDirectory;
+        std::string baseName = FileSystem::GetFileNameWithoutExtension(headerInfo.filePath);
+        std::string assemblyDir = headerInfo.assemblyDir;
+        std::string outDir = Utils::String::Format("{0}/{1}", assemblyDir, Settings::g_autogeneratedDirectory);
+        FileSystem::NormalizePath(outDir);
         if (!FileSystem::DirectoryExists(outDir))
+        {
             FileSystem::CreateDirectory(outDir);
+        }
 
-        String outPath = outDir + SE_TEXT("/") + baseName.ToString() + SE_TEXT(".CSharp.cs");
-        return SaveFile(outPath, std::string(output.Get()));
+        std::string outPath = outDir + "/" + baseName + ".CSharp.cs";
+        return SaveFile(outPath, std::string(output.c_str()));
     }
 
-    bool BindingsCSharpGenerator::GenerateAll(const List<BindingsHeaderInfo>& headers,
-                                               const String& solutionRoot)
+    bool BindingsCSharpGenerator::GenerateAll(const std::vector<BindingsHeaderInfo>& headers,
+                                               const std::string& solutionRoot)
     {
         for (auto& h : headers)
         {
@@ -757,43 +884,53 @@ namespace SE::ReflectTool
 
     bool BindingsCSharpGenerator::GenerateBinaryModuleAssemblyInfo(const BinaryModuleInfo& module)
     {
-        StringAnsi output;
+        std::string output;
         output += "//-------------------------------------------------------------------------\n";
-        output += "// Auto-generated by BindingsGenerator — do not edit manually.\n";
+        output += "// Auto-generated by BindingsGenerator - do not edit manually.\n";
         output += "//-------------------------------------------------------------------------\n";
         output += "using System.Reflection;\n";
         output += "using System.Runtime.InteropServices;\n\n";
 
-        output += StringAnsi::Format("[assembly: AssemblyTitle(\"{0}\")]\n", module.name.Get());
-        output += StringAnsi::Format("[assembly: AssemblyVersion(\"1.0.0.0\")]\n");
-        output += StringAnsi::Format("[assembly: AssemblyFileVersion(\"1.0.0.0\")]\n");
-        output += StringAnsi::Format("[assembly: AssemblyProduct(\"{0}\")]\n", module.name.Get());
+        output += Utils::String::Format("[assembly: AssemblyTitle(\"{0}\")]\n", module.name);
+        output += Utils::String::Format("[assembly: AssemblyVersion(\"1.0.0.0\")]\n");
+        output += Utils::String::Format("[assembly: AssemblyFileVersion(\"1.0.0.0\")]\n");
+        output += Utils::String::Format("[assembly: AssemblyProduct(\"{0}\")]\n", module.name);
         output += "[assembly: ComVisible(false)]\n";
 
-        String outDir = module.assemblyDir.ToString() + Settings::g_autogeneratedDirectory;
+        std::string moduleDir = module.assemblyDir;
+        std::string outDir = Utils::String::Format("{0}/{1}", moduleDir, Settings::g_autogeneratedDirectory);
+        FileSystem::NormalizePath(outDir);
         if (!FileSystem::DirectoryExists(outDir))
+        {
             FileSystem::CreateDirectory(outDir);
+        }
 
-        String outPath = outDir + SE_TEXT("/") + module.assemblyType.ToString() + SE_TEXT(".Gen.cs");
-        return SaveFile(outPath, std::string(output.Get()));
+        std::string outPath = outDir + "/" + module.assemblyType + ".Gen.cs";
+        return SaveFile(outPath, std::string(output.c_str()));
     }
 
     // -------------------------------------------------------------------------
     // SaveFile
     // -------------------------------------------------------------------------
 
-    bool BindingsCSharpGenerator::SaveFile(const String& path, const std::string& content)
+    bool BindingsCSharpGenerator::SaveFile(const std::string& path, const std::string& content)
     {
-        String parentDir = FileSystem::GetParentDirectory(path);
+        std::string parentDir = FileSystem::GetParentDirectory(path);
         if (!FileSystem::DirectoryExists(parentDir))
             FileSystem::CreateDirectory(parentDir);
 
-        StringAnsi pathAnsi(path);
-        std::ofstream f(pathAnsi.Get(), std::ios::out | std::ios::trunc);
+        std::string existing;
+        if (FileSystem::FileExists(path) && Utils::ReadAllText(path, existing) && existing == content.c_str())
+        {
+            return true;
+        }
+
+        std::string pathAnsi(path);
+        std::ofstream f(pathAnsi.c_str(), std::ios::out | std::ios::trunc);
         if (!f.is_open())
             return false;
         f << content;
         return true;
     }
 
-} // namespace SE::ReflectTool
+} // namespace SE::BuildTool

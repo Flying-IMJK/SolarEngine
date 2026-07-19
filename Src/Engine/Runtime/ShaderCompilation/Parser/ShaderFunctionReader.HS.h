@@ -3,7 +3,7 @@
 #pragma once
 
 #include "ShaderFunctionReader.h"
-#include "Core/Math/Math.h"
+#include "Runtime/Core/Math/Math.h"
 
 namespace SE::ShaderParser
 {

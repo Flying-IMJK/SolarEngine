@@ -1,23 +1,22 @@
 
 #include "Variant.h"
 
-#include "Core/Math/Transform.h"
+#include "Runtime/Core/Math/Transform.h"
 
-#include "Core/Math/BoundingVolumes.h"
-#include "Core/Math/Color.h"
-#include "Core/Math/Matrix.h"
-#include "Core/Math/Vector2.h"
-#include "Core/Math/Vector3.h"
-#include "Core/Math/Vector4.h"
-#include "Core/Math/Line.h"
-#include "Core/Math/Rectangle.h"
-#include "Core/Platform/Platform.h"
-#include "Core/Platform/StringUtils.h"
-#include "Core/Serialization/WriteStream.h"
-#include "Core/Utilities/Formatting.h"
-#include "Core/Types/Strings/StringView.h"
+#include "Runtime/Core/Math/BoundingVolumes.h"
+#include "Runtime/Core/Math/Color.h"
+#include "Runtime/Core/Math/Matrix.h"
+#include "Runtime/Core/Math/Vector2.h"
+#include "Runtime/Core/Math/Vector3.h"
+#include "Runtime/Core/Math/Vector4.h"
+#include "Runtime/Core/Math/Line.h"
+#include "Runtime/Core/Math/Rectangle.h"
+#include "Runtime/Core/Platform/Platform.h"
+#include "Runtime/Core/Platform/StringUtils.h"
+#include "Runtime/Core/Serialization/WriteStream.h"
+#include "Runtime/Core/Types/Strings/StringView.h"
 #include "Runtime/Resource/Storage/AssetStorages.h"
-#include "Runtime/Scripting/ManagedCLR/CLRClass.h"
+#include "Runtime/Core/Scripting/ManagedCLR/CLRClass.h"
 
 namespace SE
 {

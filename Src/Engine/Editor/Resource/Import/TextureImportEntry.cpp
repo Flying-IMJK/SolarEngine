@@ -1,6 +1,6 @@
 
 #include "TextureImportEntry.h"
-#include "Core/Platform/FileSystem.h"
+#include "Runtime/Core/Platform/FileSystem.h"
 #include "Runtime/Resource/Importers/AssetsImportingSystem.h"
 
 namespace SE::Editor

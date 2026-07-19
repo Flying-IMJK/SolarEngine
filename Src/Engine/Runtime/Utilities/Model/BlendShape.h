@@ -1,6 +1,6 @@
 #pragma once
-#include "Core/Math/Vector3.h"
-#include "Core/Types/Strings/String.h"
+#include "Runtime/Core/Math/Vector3.h"
+#include "Runtime/Core/Types/Strings/String.h"
 
 namespace SE
 {

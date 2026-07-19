@@ -12,9 +12,9 @@
 #include "Runtime/UI/GUI/Panels/SplitPanel.h"
 #include "Runtime/UI/GUI/Panels/VerticalPanel.h"
 #include "Runtime/UI/GUI/Panels/Panel.h"
-#include "Core/Thread/Threading.h"
-#include "Core/Logging/LoggingSystem.h"
-#include "Core/Platform/FileSystem.h"
+#include "Runtime/Core/Thread/Threading.h"
+#include "Runtime/Core/Logging/LoggingSystem.h"
+#include "Runtime/Core/Platform/FileSystem.h"
 #include "Editor/EditorApp.h"
 
 namespace SE::Editor

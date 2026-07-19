@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Core/Logging/Exceptions/InvalidOperationException.h"
-#include "Core/Math/Rectangle.h"
-#include "Core/Types/Property.h"
-#include "Core/Types/Strings/StringView.h"
+#include "Runtime/Core/Logging/Exceptions/InvalidOperationException.h"
+#include "Runtime/Core/Math/Rectangle.h"
+#include "Runtime/Core/Types/Property.h"
+#include "Runtime/Core/Types/Strings/StringView.h"
 #include "Runtime/Render/Assets/Texture/TextureBase.h"
 #include "Runtime/Resource/AssetRef.h"
 

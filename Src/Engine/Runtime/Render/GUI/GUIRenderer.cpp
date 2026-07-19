@@ -1,14 +1,14 @@
 #include "GUIRenderer.h"
 
-#include "Core/Systems.h"
-#include "Core/Memory/Memory.h"
-#include "Core/Types/Strings/String.h"
-#include "Core/Thread/Threading.h"
+#include "Runtime/Core/Systems.h"
+#include "Runtime/Core/Memory/Memory.h"
+#include "Runtime/Core/Types/Strings/String.h"
+#include "Runtime/Core/Thread/Threading.h"
 
-#include "Core/Platform/FileSystem.h"
-#include "Core/Serialization/MemoryWriteStream.h"
-#include "Core/Platform/Window.h"
-#include "Core/Profiler/Profiler.h"
+#include "Runtime/Core/Platform/FileSystem.h"
+#include "Runtime/Core/Serialization/MemoryWriteStream.h"
+#include "Runtime/Core/Platform/Window.h"
+#include "Runtime/Core/Profiler/Profiler.h"
 
 #include "Runtime/Graphics/GPUContext.h"
 #include "Runtime/Graphics/DynamicBuffer.h"
@@ -23,15 +23,12 @@
 #include "Runtime/Graphics/Textures/GPUTextureDescription.h"
 #include "Runtime/EngineContext.h"
 #include "Runtime/ShaderCompilation/ShadersCompilation.h"
-#include "Runtime/SGUI/GUIFont.h"
-#include "Runtime/SGUI/Fonts/FontData.h"
-#include "Runtime/SGUI/Fonts/MaterialDesignIcons.h"
 
 
-#include "Imgui/misc/freetype/imgui_freetype.h"
-#include "Imgui/imgui_impl_win32.h"
-#include "Imgui/imgui.h"
-#include "Imgui/imgui_internal.h"
+// #include "Imgui/misc/freetype/imgui_freetype.h"
+// #include "Imgui/imgui_impl_win32.h"
+// #include "Imgui/imgui.h"
+// #include "Imgui/imgui_internal.h"
 #include "Runtime/Resource/AssetContent.h"
 #include "Runtime/Resource/Assets/Materials/Shader.h"
 
@@ -100,7 +97,7 @@ namespace SE
     }*/
 
     //-------------------------------------------------------------------------
-	struct GUIRendererData
+	/*struct GUIRendererData
 	{
 		DynamicIndexBuffer* m_IndexBuffer;
 		DynamicVertexBuffer* m_VertexBuffer;
@@ -464,7 +461,7 @@ namespace SE
 
                 RenderData(context, pViewport->DrawData);
 			}
-		}*/
+		}#1#
 	}
 
 	void GUIRenderer::FrameBegin(float deltaTime)
@@ -473,5 +470,5 @@ namespace SE
 		io.DeltaTime = deltaTime;
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
-	}
+	}*/
 }

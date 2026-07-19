@@ -1,8 +1,8 @@
 
 #include "Margin.h"
 
-#include "Core/Math/Rectangle.h"
-#include "Core/Types/Strings/String.h"
+#include "Runtime/Core/Math/Rectangle.h"
+#include "Runtime/Core/Types/Strings/String.h"
 
 namespace SE
 {

@@ -1,9 +1,9 @@
 #pragma once
 #include "EditorModule.h"
-#include "Core/Types/UID.h"
-#include "Core/Types/Collections/Dictionary.h"
-#include "Core/TypeSystem/TypeID.h"
-#include "Core/Types/Delegate.h"
+#include "Runtime/Core/Types/UID.h"
+#include "Runtime/Core/Types/Collections/Dictionary.h"
+#include "Runtime/Core/TypeSystem/TypeID.h"
+#include "Runtime/Core/Types/Delegate.h"
 
 namespace SE
 {

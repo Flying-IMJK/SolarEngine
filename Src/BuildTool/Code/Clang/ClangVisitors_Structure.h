@@ -4,7 +4,8 @@
 
 //-------------------------------------------------------------------------
 
-namespace SE::ReflectTool
+namespace SE::BuildTool
 {
-	CXChildVisitResult VisitStructure( ClangParserContext* pContext, CXCursor& cr, StringView const& headerFilePath, HeaderID const headerID, bool isStruct);
+	CXChildVisitResult VisitStructure( ClangParserContext* pContext, CXCursor& cr, std::string_view const& headerFilePath, HeaderID const headerID, bool isStruct);
+	CXChildVisitResult VisitTemplateStructure(ClangParserContext* pContext, CXCursor& cr, std::string_view const& headerFilePath, HeaderID const headerID);
 }

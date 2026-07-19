@@ -11,6 +11,7 @@ namespace SE::Editor
     /// <summary>
     /// A navigation button for <see cref="Windows.ContentWindow"/>.
     /// </summary>
+    SE_CLASS(Reflect)
     class ContentNavigationButton : public NavigationButton
     {
         SE_DEFINE_CLASS(ContentNavigationButton, NavigationButton)
@@ -57,6 +58,7 @@ namespace SE::Editor
 
     };
 
+    SE_CLASS(Reflect)
     class ContentNavigationSeparator final : public ComboBox
     {
         SE_DEFINE_CLASS_DEFAULT(ContentNavigationSeparator, ComboBox)

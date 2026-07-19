@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Core/Thread/ConcurrentTaskQueue.h"
-#include "Core/Types/Collections/List.h"
+#include "Runtime/Core/Thread/ConcurrentTaskQueue.h"
+#include "Runtime/Core/Types/Collections/List.h"
 
 namespace SE
 {

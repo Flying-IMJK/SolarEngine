@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Core/Math/Matrix.h"
-#include "Core/Types/Variable.h"
-#include "Core/Math/Rectangle.h"
+#include "Runtime/Core/Math/Matrix.h"
+#include "Runtime/Core/Types/Variable.h"
+#include "Runtime/Core/Math/Rectangle.h"
 
 namespace SE
 {

@@ -3,7 +3,7 @@
 #include "MainContentTreeNode.h"
 
 #include "ProjectTreeNode.h"
-#include "Core/Platform/Windows/WindowsFileSystemWatcher.h"
+#include "Runtime/Core/Platform/Windows/WindowsFileSystemWatcher.h"
 #include "Editor/EditorApp.h"
 #include "Editor/Modules/AssetDatabaseModule.h"
 

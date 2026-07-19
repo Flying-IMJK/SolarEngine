@@ -1,11 +1,10 @@
 #pragma once
 
-#include "Core/Math/NumericRange.h"
+#include "Runtime/Core/Math/NumericRange.h"
 #include "Runtime/Graphics/Base/GPUPipelineState.h"
 #include "Runtime/Render/RendererPass.h"
 #include "Runtime/Resource/AssetRef.h"
 #include "Runtime/Resource/Assets/Materials/Shader.h"
-#include "Runtime/SGUI/GUIGizmos.h"
 
 namespace SE
 {
@@ -19,7 +18,7 @@ namespace SE
 	class GPUTexture;
 	class GPUPipelineState;
 
-	struct GizmosViewData
+	/*struct GizmosViewData
 	{
 		Matrix  viewMatrix;
 		Matrix  projectionMatrix;
@@ -70,7 +69,7 @@ namespace SE
 		constexpr static uint32 const m_MaxLinesPerDrawCall = 100000;
 		constexpr static uint32 const m_MaxTrianglesPerDrawCall = 100000;
 
-	};
+	};*/
 
 } // SE
 

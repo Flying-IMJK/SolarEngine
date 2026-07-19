@@ -1,9 +1,9 @@
 
 #include "AssetImportingModule.h"
-#include "Core/Platform/FileSystem.h"
-#include "Core/Thread/Threading.h"
-#include "Core/Platform/MessageBox.h"
-#include "Core/Thread/JobSystem.h"
+#include "Runtime/Core/Platform/FileSystem.h"
+#include "Runtime/Core/Thread/Threading.h"
+#include "Runtime/Core/Platform/MessageBox.h"
+#include "Runtime/Core/Thread/JobSystem.h"
 #include "Editor/Resource/Import/ImportRequest.h"
 #include "Editor/Resource/Import/FolderImportEntry.h"
 #include "Editor/Resource/Import/ModelImportEntry.h"

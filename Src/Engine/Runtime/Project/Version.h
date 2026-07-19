@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Core/Types/Variable.h"
-#include "Core/Templates.h"
+#include "Runtime/Core/Types/Variable.h"
+#include "Runtime/Core/Templates.h"
 
 #include "Runtime/API.h"
 

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Core/Math/BoundingVolumes.h"
-#include "Core/Types/Object.h"
-#include "Core/Types/Collections/DataContainer.h"
-#include "Core/Types/BitFlags.h"
+#include "Runtime/Core/Math/BoundingVolumes.h"
+#include "Runtime/Core/Types/Object.h"
+#include "Runtime/Core/Types/Collections/DataContainer.h"
+#include "Runtime/Core/Types/BitFlags.h"
 #include "Runtime/API.h"
 #include "Runtime/Render/RenderEnum.h"
 

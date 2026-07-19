@@ -1,12 +1,13 @@
 #pragma once
 
-#include "Core/Math/Rectangle.h"
+#include "Runtime/Core/Math/Rectangle.h"
 
 namespace SE
 {
     /// <summary>
     /// Specifies the alignment of the text along horizontal or vertical direction in the layout box.
     /// </summary>
+    SE_ENUM(API)
     enum class TextAlignment
     {
         /// <summary>
@@ -28,6 +29,7 @@ namespace SE
     /// <summary>
     /// Specifies text wrapping to be used in a particular multiline paragraph.
     /// </summary>
+    SE_ENUM(API)
     enum class TextWrapping
     {
         /// <summary>
@@ -49,42 +51,43 @@ namespace SE
     /// <summary>
     /// Structure which describes text layout properties.
     /// </summary>
+    SE_STRUCT(API)
     struct TextLayoutOptions
     {
         /// <summary>
         /// The layout rectangle (text bounds).
         /// </summary>
-        // SE_PROPERTY(API, Attributes="EditorOrder(0)")
+        SE_PROPERTY(API)
         Rectangle Bounds;
 
         /// <summary>
         /// The horizontal alignment mode.
         /// </summary>
-        // SE_PROPERTY(API, Attributes="EditorOrder(10)")
+        SE_PROPERTY(API)
         TextAlignment HorizontalAlignment;
 
         /// <summary>
         /// The vertical alignment mode.
         /// </summary>
-        // SE_PROPERTY(API, Attributes="EditorOrder(20)")
+        SE_PROPERTY(API)
         TextAlignment VerticalAlignment;
 
         /// <summary>
         /// The text wrapping mode.
         /// </summary>
-        // SE_PROPERTY(API, Attributes="EditorOrder(30), DefaultValue(TextWrapping.NoWrap)")
+        SE_PROPERTY(API)
         TextWrapping TextWrapping = TextWrapping::NoWrap;
 
         /// <summary>
         /// The text scale factor. Default is 1.
         /// </summary>
-        // SE_PROPERTY(API, Attributes="EditorOrder(40), DefaultValue(1.0f), Limit(-1000, 1000, 0.01f)")
+        SE_PROPERTY(API)
         float Scale = 1.0f;
 
         /// <summary>
         /// Base line gap scale. Default is 1.
         /// </summary>
-        // SE_PROPERTY(API, Attributes="EditorOrder(50), DefaultValue(1.0f), Limit(-1000, 1000, 0.01f)")
+        SE_PROPERTY(API)
         float BaseLinesGapScale = 1.0f;
 
         /// <summary>

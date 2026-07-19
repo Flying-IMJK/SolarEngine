@@ -4,7 +4,7 @@
 #include "Runtime/Render/2D/SpriteAtlas.h"
 #include "Runtime/Graphics/Textures/GPUTexture.h"
 #include "Runtime/Render/Assets/Texture/TextureData.h"
-#include "Core/Serialization/ISerializable.h"
+#include "Runtime/Core/Serialization/ISerializable.h"
 
 namespace SE
 {
@@ -19,6 +19,7 @@ namespace SE
 		/// <summary>
 		/// Texture import options.
 		/// </summary>
+		SE_STRUCT(Reflect)
 		struct SE_API_RUNTIME Options : IType, ISerializable
 		{
 			SE_DEFINE_CLASS_DEFAULT(Options, IType);

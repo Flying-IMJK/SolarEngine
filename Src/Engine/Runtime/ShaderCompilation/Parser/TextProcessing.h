@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Core/Types/Variable.h"
-#include "Core/Platform/StringUtils.h"
-#include "Core/Types/Strings/String.h"
+#include "Runtime/Core/Types/Variable.h"
+#include "Runtime/Core/Platform/StringUtils.h"
+#include "Runtime/Core/Types/Strings/String.h"
 
 namespace SE
 {

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Core/Types/UID.h"
-#include "Core/Types/Object.h"
-#include "Core/Types/Delegate.h"
+#include "Runtime/Core/Types/UID.h"
+#include "Runtime/Core/Scripting/ScriptingObject.h"
+#include "Runtime/Core/Types/Delegate.h"
 
 #include "Runtime/API.h"
 // GPU_ENABLE_RESOURCE_NAMING 这个宏没有引入 子类继承GPUResource ，而子类定义了宏而基类没有定义,导致子类转换到基类时出现内存不一致问题
@@ -41,12 +41,18 @@ namespace SE
 	};
 
 
-	class SE_API_RUNTIME GPUResourceView
+	SE_CLASS(API, Abstract, NoSpawn, Attributes="HideInEditor")
+	class SE_API_RUNTIME GPUResourceView : public ScriptingObject
 	{
+		SCRIPTING_TYPE_NO_SPAWN(GPUResourceView);
+
 	protected:
 		static double DummyLastRenderTime;
 
-		public:
+		GPUResourceView();
+		explicit GPUResourceView(const SpawnParams& params);
+
+	public:
 		virtual ~GPUResourceView() = default;
 		// Points to the cache used by the resource for the resource visibility/usage detection. Written during rendering when resource view is used.
 		double* LastRenderTime;
@@ -57,20 +63,22 @@ namespace SE
 		virtual void* GetNativePtr() const = 0;
 	};
 
-	class SE_API_RUNTIME GPUResource : public Object
+	SE_CLASS(API, Abstract, NoSpawn)
+	class SE_API_RUNTIME GPUResource : public ScriptingObject
 	{
-		NON_COPYABLE(GPUResource)
+		SCRIPTING_TYPE_NO_SPAWN(GPUResource);
 	protected:
 		uint64 m_MemoryUsage = 0;
-		UID m_Guid = UID::Empty;
 #if GPU_ENABLE_RESOURCE_NAMING
 		Char* m_NamePtr = nullptr;
 		int32 m_NameSize = 0, m_NameCapacity = 0;
 #endif
-	public:
-		GPUResource();
 
 	public:
+		GPUResource();
+		explicit GPUResource(const SpawnParams& params);
+		~GPUResource() override;
+
 		// Points to the cache used by the resource for the resource visibility/usage detection. Written during rendering when resource is used.
 		double lastRenderTime = -1;
 

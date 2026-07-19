@@ -1,17 +1,18 @@
 
 #include "AssetContent.h"
 #include "AssetsCache.h"
+#include "spirv_common.hpp"
 
-#include "Core/Systems.h"
-#include "Core/Profiler/Profiler.h"
-#include "Core/Thread/Threading.h"
-#include "Core/Platform/FileSystem.h"
+#include "Runtime/Core/Systems.h"
+#include "Runtime/Core/Profiler/Profiler.h"
+#include "Runtime/Core/Thread/Threading.h"
+#include "Runtime/Core/Platform/FileSystem.h"
 #include "../Utilities/Time.h"
 #include "Runtime/Resource/Storage/AssetStorages.h"
 #include "Runtime/Resource/Storage/JsonStorageProxy.h"
 #include "Runtime/EngineContext.h"
 #include "Runtime/Resource/Factories/IAssetFactory.h"
-#include "Core/TypeSystem/Types.h"
+#include "Runtime/Core/TypeSystem/Types.h"
 
 namespace SE
 {
@@ -82,7 +83,12 @@ namespace SE
 			{
 				continue;
 			}
-			contentData->Factories.Add(factoryRegister->GetAssetType(), factoryRegister->Create());
+			TypeID assetType = factoryRegister->GetAssetType();
+			IAssetFactory* factory = factoryRegister->Create();
+
+			LOG_INFO("Assets", "Register Asset {0} Factory", assetType.ToString());
+
+			contentData->Factories.Add(assetType, factory);
 		}
 
 		// Load assets registry

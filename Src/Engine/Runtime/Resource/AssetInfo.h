@@ -1,8 +1,8 @@
 
 #pragma once
 
-#include "Core/TypeSystem/IType.h"
-#include "Core/Types/UID.h"
+#include "Runtime/Core/TypeSystem/IType.h"
+#include "Runtime/Core/Types/UID.h"
 #include "Runtime/API.h"
 
 namespace SE

@@ -2,9 +2,9 @@
 #include "SceneRendering.h"
 
 #include "RenderList.h"
-#include "Core/Profiler/ProfilerCPU.h"
-#include "Core/Thread/JobSystem.h"
-#include "Core/Thread/Threading.h"
+#include "Runtime/Core/Profiler/ProfilerCPU.h"
+#include "Runtime/Core/Thread/JobSystem.h"
+#include "Runtime/Core/Thread/Threading.h"
 #include "Runtime/Level/Actor.h"
 
 namespace SE

@@ -2,12 +2,10 @@
 
 #include <iostream>
 #include "Database/ReflectionDatabase.h"
-#include "Core/Utilities/Time.h"
-#include "Core/Types/Strings/String.h"
 
 //-------------------------------------------------------------------------
 
-namespace SE::ReflectTool
+namespace SE::BuildTool
 {
     class Reflector
     {
@@ -28,15 +26,15 @@ namespace SE::ReflectTool
 
         struct ProjectObject
         {
-			String name;
-            String path;
-			String includeFile;
+			std::string name;
+            std::string path;
+			std::string includeFile;
         };
 
     public:
         Reflector() = default;
 
-        bool ParseSolution(String slnRootPath, String &slnPath);
+        bool ParseSolution(std::string slnRootPath, std::string &slnPath);
         bool Clean();
         bool Build();
 
@@ -51,32 +49,32 @@ namespace SE::ReflectTool
         template<typename... Params>
         bool LogError(char const *pErrorFormat, Params&... args) const
         {
-			StringAnsi msg = StringAnsi::Format(pErrorFormat, args...);
+			std::string msg = Utils::String::Format(pErrorFormat, args...);
 
-            std::cout << "Error: " << msg.Get() << std::endl;
+            std::cout << "Error: " << msg << std::endl;
             return false;
         }
 
 		template<typename... Params>
 		bool LogError(char const *pErrorFormat, Params const &... args) const
 		{
-			StringAnsi msg = StringAnsi::Format(pErrorFormat, args...);
+			std::string msg = Utils::String::Format(pErrorFormat, args...);
 
-			std::cout << "Error: " << msg.Get() << std::endl;
+			std::cout << "Error: " << msg << std::endl;
 			return false;
 		}
 
         bool ParseProject(ProjectObject &prjPath);
 
-        HeaderProcessResult ProcessHeaderFile(String &filePath, String &exportMacro, List<StringAnsi> &headerFileContents);
-		DateTime CalculateHeaderChecksum(String &engineIncludePath, String &filePath);
+        HeaderProcessResult ProcessHeaderFile(std::string &filePath, std::string &exportMacro, std::vector<std::string> &headerFileContents);
+		uint64_t CalculateHeaderChecksum(std::string &engineIncludePath, std::string &filePath);
 
         bool UpToDateCheck();
         bool ReflectRegisteredHeaders();
         bool WriteTypeData();
 
     private:
-		String m_reflectionDataPath;
+		std::string m_reflectionDataPath;
         SolutionInfo m_solution;
         ReflectionDatabase m_database;
 

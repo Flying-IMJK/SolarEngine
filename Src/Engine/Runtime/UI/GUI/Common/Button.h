@@ -8,6 +8,7 @@ namespace SE
     class Font;
     class MaterialBase;
 
+    SE_CLASS(Reflect)
     class SE_API_RUNTIME Button : public ContainerControl
     {
         SE_DEFINE_CLASS(Button, ContainerControl)

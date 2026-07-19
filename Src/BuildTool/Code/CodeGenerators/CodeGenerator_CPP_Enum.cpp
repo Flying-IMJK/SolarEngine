@@ -1,20 +1,20 @@
 #include "CodeGenerator_CPP_Enum.h"
-#include "Core/TypeSystem/TypeID.h"
-#include "Core/Types/Collections/Sorting.h"
+
+#include "CodeGenerator_Utils.h"
 //-------------------------------------------------------------------------
 
-namespace SE::ReflectTool
+namespace SE::BuildTool
 {
-    static mustache::data GenerateFile(String const &exportMacro, DataType const &type)
+    static mustache::data GenerateFile(std::string const &exportMacro, TypeData const &type)
     {
         mustache::data generatorData;
 
-        List<int32_t> sortingConstantIndices; // Sorted list of constant indices
-        List<int32_t> sortedOrder;            // Final order for each constant
+        std::vector<int32_t> sortingConstantIndices; // Sorted list of constant indices
+        std::vector<int32_t> sortedOrder;            // Final order for each constant
 
-        for (auto i = 0u; i < type.enumConstants.Count(); i++)
+        for (auto i = 0u; i < type.enumConstants.size(); i++)
         {
-            sortingConstantIndices.Add(i);
+            sortingConstantIndices.push_back(i);
         }
 
         Function<bool(const int32_t &, const int32_t &)> Comparator = [&type](const int32_t &a, const int32_t &b)
@@ -24,11 +24,11 @@ namespace SE::ReflectTool
             return elemA.label < elemB.label;
         };
 
-        Sorting::QuickSort(sortingConstantIndices, Comparator);
+        Utils::Vector::QuickSort(sortingConstantIndices, Comparator);
 
-        sortedOrder.Resize(sortingConstantIndices.Count());
+        sortedOrder.resize(sortingConstantIndices.size());
 
-        for (auto i = 0u; i < type.enumConstants.Count(); i++)
+        for (auto i = 0u; i < type.enumConstants.size(); i++)
         {
             sortedOrder[sortingConstantIndices[i]] = i;
         }
@@ -39,35 +39,42 @@ namespace SE::ReflectTool
             generatorData.set("isDevOnlyEnd", "#endif");
         }
 
-        generatorData.set("namespace", type.namespaceName.Get());
-        generatorData.set("typeName", type.name.Get());
+        std::string namespaceName = CodeGeneratorUtils::GetFullCNameSpaceName(type.namespaceScopeList).c_str();
+        if (type.structScopeList.size() > 0)
+        {
+            namespaceName.append("::");
+            namespaceName.append(CodeGeneratorUtils::GetFullCNameSpaceName(type.structScopeList).c_str());
+        }
 
-        generatorData.set("friendlyName", type.GetFriendlyName().Get());
-        generatorData.set("Category", type.GetCategory().Get());
+        generatorData.set("namespace", namespaceName);
+        generatorData.set("typeName", type.name.c_str());
+
+        generatorData.set("friendlyName", type.GetFriendlyName().c_str());
+        generatorData.set("Category", type.GetCategory().c_str());
 
         switch (type.underlyingType)
         {
-        case TypeIDCore::Uint8:
+        case Utils::TypeIDCore::Uint8:
                 generatorData.set("underlyingType", "TypeIDCore::Uint8");
             break;
 
-        case TypeIDCore::Int8:
+        case Utils::TypeIDCore::Int8:
                 generatorData.set("underlyingType", "TypeIDCore::Int8");
             break;
 
-        case TypeIDCore::Uint16:
+        case Utils::TypeIDCore::Uint16:
                 generatorData.set("underlyingType", "TypeIDCore::Uint16");
             break;
 
-        case TypeIDCore::Int16:
+        case Utils::TypeIDCore::Int16:
                 generatorData.set("underlyingType", "TypeIDCore::Int16");
             break;
 
-        case TypeIDCore::Uint32:
+        case Utils::TypeIDCore::Uint32:
                  generatorData.set("underlyingType", "TypeIDCore::Uint32");
             break;
 
-        case TypeIDCore::Int32:
+        case Utils::TypeIDCore::Int32:
                  generatorData.set("underlyingType", "TypeIDCore::Int32");
             break;
 
@@ -77,16 +84,16 @@ namespace SE::ReflectTool
         }
 
         mustache::data enumConstantsData(mustache::data::type::list);
-        for (auto i = 0u; i < type.enumConstants.Count(); i++)
+        for (auto i = 0u; i < type.enumConstants.size(); i++)
         {
             mustache::data enumConstantData;
-			StringAnsi escapedDescription = type.enumConstants[i].description;
-			escapedDescription.Replace("\"", "\\\"");
+			std::string escapedDescription = type.enumConstants[i].description;
+			Utils::String::ReplaceAll(escapedDescription, "\"", "\\\"");
 
-            enumConstantData.set("enumConstantLabel", type.enumConstants[i].label.Get());
+            enumConstantData.set("enumConstantLabel", type.enumConstants[i].label.c_str());
             enumConstantData.set("enumConstantValue", std::to_string(type.enumConstants[i].value));
             enumConstantData.set("enumConstantSortedOrder", std::to_string(sortedOrder[i]));
-            enumConstantData.set("enumConstantEscapedDescription", escapedDescription.Get());
+            enumConstantData.set("enumConstantEscapedDescription", escapedDescription.c_str());
             enumConstantsData.push_back(enumConstantData);
         }
 
@@ -97,9 +104,9 @@ namespace SE::ReflectTool
 
     //-------------------------------------------------------------------------
 
-    void CppGenerateEnum(Generator* generator, std::stringstream &codeFile, String const &exportMacro, DataType const &type, std::string templateStr)
+    void CppGenerateEnum(Generator* generator, std::stringstream &codeFile, std::string const &exportMacro, TypeData const &type, std::string templateStr)
     {
-        ENGINE_ASSERT(type.IsEnum());
+        ENGINE_ASSERT(type.IsFlag(TypeData::Flags::IsEnum));
         // GenerateFile(codeFile, exportMacro, type);
 
         mustache::data data = GenerateFile(exportMacro, type);

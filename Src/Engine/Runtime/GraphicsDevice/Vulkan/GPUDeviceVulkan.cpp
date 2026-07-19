@@ -1,8 +1,8 @@
 #include "GPUDeviceVulkan.h"
 
-#include "Core/Types/Collections/HashSet.h"
-#include "Core/Profiler/Profiler.h"
-#include "Core/Types/Strings/StringConverter.h"
+#include "Runtime/Core/Types/Collections/HashSet.h"
+#include "Runtime/Core/Profiler/Profiler.h"
+#include "Runtime/Core/Types/Strings/StringConverter.h"
 
 #include "Runtime/EngineContext.h"
 #include "GPUSwapChainVulkan.h"

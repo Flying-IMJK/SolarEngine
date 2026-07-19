@@ -1,21 +1,19 @@
 #include "ReflectionDatabase.h"
-#include "../ReflectorSettingsAndUtils.h"
-#include "Core/TypeSystem/Types.h"
-#include "Core/Types/Collections/Sorting.h"
+#include "Core/Utils.h"
 
 //-------------------------------------------------------------------------
 
-namespace SE::ReflectTool
+namespace SE::BuildTool
 {
     ReflectionDatabase::ReflectionDatabase()
     {
         // Create the base class for all registered engine types
         //-------------------------------------------------------------------------
-        String str = String::Format(SE_TEXT("{0}::{1}"), Settings::g_engineNamespace, Settings::g_reflectedTypeInterfaceClassName);
-        m_reflectedTypeBase = DataType(StringID(str), StringAnsi(Settings::g_reflectedTypeInterfaceClassName));
-        m_reflectedTypeBase.flags.SetFlag(DataType::Flags::IsAbstract);
+        std::string str = Utils::String::Format("{0}::{1}", std::string_view(Settings::g_engineNamespace), Settings::g_reflectedTypeInterfaceClassName);
+        m_reflectedTypeBase = TypeData(StringID(str), std::string(Settings::g_reflectedTypeInterfaceClassName));
+        m_reflectedTypeBase.flags.SetFlag(TypeData::Flags::IsAbstract);
 
-        m_reflectedTypeBase.namespaceName = Settings::g_engineNamespace;
+        m_reflectedTypeBase.namespaceScopeList.push_back(Settings::g_engineNamespace);
     }
 
     ReflectionDatabase::~ReflectionDatabase()
@@ -28,7 +26,7 @@ namespace SE::ReflectTool
 
     //-------------------------------------------------------------------------
 
-    bool ReflectionDatabase::Connect(StringAnsi const &databasePath, bool readOnlyAccess, bool useMutex)
+    bool ReflectionDatabase::Connect(std::string const &databasePath, bool readOnlyAccess, bool useMutex)
     {
         int32 sqlFlags = 0;
 
@@ -48,14 +46,14 @@ namespace SE::ReflectTool
 
         //-------------------------------------------------------------------------
 
-        auto const result = sqlite3_open_v2(databasePath.Get(), &m_pDatabase, sqlFlags, nullptr);
+        auto const result = sqlite3_open_v2(databasePath.c_str(), &m_pDatabase, sqlFlags, nullptr);
         sqlite3_busy_timeout(m_pDatabase, 2500);
 
         if (result != SQLITE_OK)
         {
             sqlite3_close(m_pDatabase);
             m_pDatabase = nullptr;
-            m_errorMessage = StringAnsi::Format("Couldn't open sqlite database: {0}", databasePath);
+            m_errorMessage = Utils::String::Format("Couldn't open sqlite database: {0}", databasePath);
             return false;
         }
 
@@ -80,7 +78,7 @@ namespace SE::ReflectTool
     {
         if (result != SQLITE_OK)
         {
-            m_errorMessage = StringAnsi::Format("{0} ( {1} )", sqlite3_errstr(result), sqlite3_errmsg(m_pDatabase));
+            m_errorMessage = Utils::String::Format("{0} ( {1} )", sqlite3_errstr(result), sqlite3_errmsg(m_pDatabase));
             return false;
         }
 
@@ -111,7 +109,7 @@ namespace SE::ReflectTool
         // Execute statement
         if (!IsValidSQLiteResult(sqlite3_exec(m_pDatabase, m_statementBuffer, nullptr, nullptr, nullptr)))
         {
-            StringAnsi const sqlStatementStr = StringAnsi::Format(" ( SQL: {0} )", m_statementBuffer);
+            std::string const sqlStatementStr = Utils::String::Format(" ( SQL: {0} )", m_statementBuffer);
             m_errorMessage += sqlStatementStr;
             return false;
         }
@@ -159,7 +157,7 @@ namespace SE::ReflectTool
         return nullptr;
     }
 
-    void ReflectionDatabase::UpdateProjectList(List<ProjectInfo> const &registeredProjects)
+    void ReflectionDatabase::UpdateProjectList(std::vector<ProjectInfo> const &registeredProjects)
     {
         DeleteObseleteProjects(registeredProjects);
 
@@ -183,11 +181,11 @@ namespace SE::ReflectTool
                 {
                     updatedProject.moduleHeaderID = existingProj->moduleHeaderID;
                 }
-                if (updatedProject.moduleClassNameFull.IsEmpty())
+                if (updatedProject.moduleClassNameFull.empty())
                 {
                     updatedProject.moduleClassNameFull = existingProj->moduleClassNameFull;
                 }
-                if (updatedProject.moduleClassName.IsEmpty())
+                if (updatedProject.moduleClassName.empty())
                 {
                     updatedProject.moduleClassName = existingProj->moduleClassName;
                 }
@@ -238,7 +236,7 @@ namespace SE::ReflectTool
 
     //-------------------------------------------------------------------------
 
-    DataType const *ReflectionDatabase::GetType(StringID typeID) const
+    TypeData const *ReflectionDatabase::GetType(StringID typeID) const
     {
         if (m_reflectedTypeBase.typeID == typeID)
         {
@@ -256,9 +254,9 @@ namespace SE::ReflectTool
         return nullptr;
     }
 
-    DataType* ReflectionDatabase::GetType(StringID typeID)
+    TypeData* ReflectionDatabase::GetType(StringID typeID)
     {
-        return const_cast<DataType *>(const_cast<ReflectionDatabase const *>(this)->GetType(typeID));
+        return const_cast<TypeData *>(const_cast<ReflectionDatabase const *>(this)->GetType(typeID));
     }
 
     bool ReflectionDatabase::IsTypeRegistered(StringID typeID) const
@@ -301,18 +299,18 @@ namespace SE::ReflectTool
         return false;
     }
 
-    void ReflectionDatabase::GetAllTypesForHeader(HeaderID headerID, List<DataType> &types) const
+    void ReflectionDatabase::GetAllTypesForHeader(HeaderID headerID, std::vector<TypeData> &types) const
     {
         for (auto const &type : m_reflectedTypes)
         {
             if (type.headerID == headerID)
             {
-                types.Add(type);
+                types.push_back(type);
             }
         }
     }
 
-    void ReflectionDatabase::GetAllTypesForProject(ProjectID projectID, List<DataType> &types) const
+    void ReflectionDatabase::GetAllTypesForProject(ProjectID projectID, std::vector<TypeData> &types) const
     {
         for (auto const &hdr : m_reflectedHeaders)
         {
@@ -323,7 +321,7 @@ namespace SE::ReflectTool
         }
     }
 
-    void ReflectionDatabase::RegisterType(DataType const *pType, bool onlyUpdateDevFlag)
+    void ReflectionDatabase::RegisterType(TypeData const *pType, bool onlyUpdateDevFlag)
     {
         if (onlyUpdateDevFlag)
         {
@@ -333,10 +331,10 @@ namespace SE::ReflectTool
 
             for (auto const &property : pType->properties)
             {
-                int foundIterIndex = pReflectedType->properties.Find(property);
+                int foundIterIndex = Utils::Vector::FindIndex(pReflectedType->properties, property);
                 if (foundIterIndex != INVALID_INDEX)
                 {
-					pReflectedType->properties.At(foundIterIndex).isDevOnly = false;
+					pReflectedType->properties[(size_t)foundIterIndex].isDevOnly = false;
                 }
             }
         }
@@ -347,11 +345,11 @@ namespace SE::ReflectTool
         }
     }
 
-    DataProperty const *ReflectionDatabase::GetPropertyTypeDescriptor(StringID typeID, TypePropertyPath const &pathID) const
+    PropertyData const *ReflectionDatabase::GetPropertyTypeDescriptor(StringID typeID, TypePropertyPath const &pathID) const
     {
-        DataProperty const *pResolvedPropertyTypeDesc = nullptr;
+        PropertyData const *pResolvedPropertyTypeDesc = nullptr;
 
-        DataType const *pCurrentTypeDesc = GetType(typeID);
+        TypeData const *pCurrentTypeDesc = GetType(typeID);
         if (pCurrentTypeDesc == nullptr)
         {
             return pResolvedPropertyTypeDesc;
@@ -456,12 +454,12 @@ namespace SE::ReflectTool
         }
     }
 
-    void ReflectionDatabase::DeleteObseleteHeadersAndTypes(List<HeaderID> const &registeredHeaders)
+    void ReflectionDatabase::DeleteObseleteHeadersAndTypes(std::vector<HeaderID> const &registeredHeaders)
     {
         for (auto i = (int32_t)m_reflectedHeaders.size() - 1; i >= 0; i--)
         {
             auto const hdrID = m_reflectedHeaders[i].headerId;
-            if (!registeredHeaders.Contains( hdrID))
+            if (!Utils::Vector::Contains(registeredHeaders, hdrID))
             {
                 DeleteTypesForHeader(hdrID);
                 m_reflectedHeaders.erase(m_reflectedHeaders.begin() + i);
@@ -469,7 +467,7 @@ namespace SE::ReflectTool
         }
     }
 
-    void ReflectionDatabase::DeleteObseleteProjects(List<ProjectInfo> const &registeredProjects)
+    void ReflectionDatabase::DeleteObseleteProjects(std::vector<ProjectInfo> const &registeredProjects)
     {
         for (auto i = (int32_t)m_reflectedProjects.size() - 1; i >= 0; i--)
         {
@@ -486,7 +484,7 @@ namespace SE::ReflectTool
 
     //-------------------------------------------------------------------------
 
-    bool ReflectionDatabase::ReadDatabase(StringAnsi const &databasePath)
+    bool ReflectionDatabase::ReadDatabase(std::string const &databasePath)
     {
         if (!Connect(databasePath, false))
         {
@@ -567,16 +565,16 @@ namespace SE::ReflectTool
         {
             while (sqlite3_step(pStatement) == SQLITE_ROW)
             {
-                DataType type;
+                TypeData type;
                 type.typeID = TypeID(sqlite3_column_int(pStatement, 0));
                 type.parentTypeID = TypeID(sqlite3_column_int(pStatement, 1));
                 type.headerID = StringID(sqlite3_column_int(pStatement, 2));
                 type.name = (char const *)sqlite3_column_text(pStatement, 3);
-                type.namespaceName = (char const *)sqlite3_column_text(pStatement, 4);
+                type.namespaceScopeList = Utils::SplitString((char const *)sqlite3_column_text(pStatement, 4), "::");
                 type.flags.Set((uint32_t)sqlite3_column_int(pStatement, 5));
 
                 // Read additional type data
-                if (type.IsEnum())
+                if (type.IsFlag(TypeData::Flags::IsEnum))
                 {
                     if (!ReadAdditionalEnumData(type))
                     {
@@ -642,7 +640,7 @@ namespace SE::ReflectTool
         return Disconnect();
     }
 
-    bool ReflectionDatabase::WriteDatabase(StringAnsi const &databasePath)
+    bool ReflectionDatabase::WriteDatabase(std::string const &databasePath)
     {
         if (!Connect(databasePath, false))
         {
@@ -669,7 +667,7 @@ namespace SE::ReflectTool
         for (auto const &project : m_reflectedProjects)
         {
             if (!ExecuteSimpleQuery("INSERT OR REPLACE INTO `Modules`(`ModuleID`, `Name`, `Path`, `ExportMacro`, `ModuleClassName`, `ModuleHeaderID`, `DependencyCount`) VALUES ( %u, \"%s\", \"%s\",\"%s\",\"%s\", %u, %u);",
-				(uint32_t)project.id, project.name.Get(), project.path.ToStringAnsi().Get(), project.exportMacro.Get(), project.moduleClassNameFull.Get(), (uint32_t)project.moduleHeaderID, project.dependencyCount))
+				(uint32_t)project.id, project.name.c_str(), project.path.c_str(), project.exportMacro.c_str(), project.moduleClassNameFull.c_str(), (uint32_t)project.moduleHeaderID, project.dependencyCount))
             {
                 return false;
             }
@@ -681,7 +679,7 @@ namespace SE::ReflectTool
         for (auto const &header : m_reflectedHeaders)
         {
             if (!ExecuteSimpleQuery("INSERT OR REPLACE INTO `HeaderFiles`(`HeaderID`,`ModuleID`,`FilePath`,`TimeStamp`,`Checksum`) VALUES ( %u, %u, \"%s\",%llu,%llu);",
-				(uint32_t)header.headerId, (uint32_t)header.projectID, header.filePath.Get(), header.timestamp, header.checksum))
+				(uint32_t)header.headerId, (uint32_t)header.projectID, header.filePath.c_str(), header.timestamp, header.checksum))
             {
                 return false;
             }
@@ -692,13 +690,14 @@ namespace SE::ReflectTool
 
         for (auto const &type : m_reflectedTypes)
         {
+            std::string namespaceName = Utils::CombineStringList(type.namespaceScopeList, "::");
             if (!ExecuteSimpleQuery("INSERT OR REPLACE INTO `Types`(`TypeID`, `ParentID`, `HeaderID`,`Name`,`Namespace`,`TypeFlags`) VALUES ( %u, %u, %u, \"%s\", \"%s\", %u );",
-				(uint32_t)type.typeID, (uint32_t)type.parentTypeID, (uint32_t)type.headerID, type.name.Get(), type.namespaceName.Get(), (uint32_t)type.flags.Get()))
+				(uint32_t)type.typeID, (uint32_t)type.parentTypeID, (uint32_t)type.headerID, type.name.c_str(), namespaceName.c_str(), (uint32_t)type.flags.Get()))
             {
                 return false;
             }
 
-            if (type.IsEnum())
+            if (type.IsFlag(TypeData::Flags::IsEnum))
             {
                 if (!WriteAdditionalEnumData(type))
                 {
@@ -851,9 +850,9 @@ namespace SE::ReflectTool
 
     //-------------------------------------------------------------------------
 
-    bool ReflectionDatabase::ReadAdditionalTypeData(DataType &type)
+    bool ReflectionDatabase::ReadAdditionalTypeData(TypeData &type)
     {
-        ENGINE_ASSERT(type.typeID != StringID::Invalid && !type.IsEnum());
+        ENGINE_ASSERT(type.typeID != StringID::Invalid && !type.IsFlag(TypeData::Flags::IsEnum));
 
         sqlite3_stmt *pStatement = nullptr;
 
@@ -865,7 +864,7 @@ namespace SE::ReflectTool
         {
             while (sqlite3_step(pStatement) == SQLITE_ROW)
             {
-                DataProperty propDesc;
+                PropertyData propDesc;
                 propDesc.lineNumber = sqlite3_column_int(pStatement, 1);
                 propDesc.typeID = TypeID(sqlite3_column_int(pStatement, 3));
                 propDesc.name = (char const *)sqlite3_column_text(pStatement, 4);
@@ -875,10 +874,10 @@ namespace SE::ReflectTool
                 propDesc.flags.Set((uint32_t)sqlite3_column_int(pStatement, 8));
                 propDesc.arraySize = sqlite3_column_int(pStatement, 9);
                 propDesc.metaData = (char const *)sqlite3_column_text(pStatement, 10);
-                propDesc.propertyID = TypeID(propDesc.name.ToString());
+                propDesc.propertyID = TypeID(propDesc.name);
                 ENGINE_ASSERT(propDesc.propertyID == (uint32_t)sqlite3_column_int(pStatement, 0)); // Ensure the property ID matches the recorded one
 
-                type.properties.Add(propDesc);
+                type.properties.push_back(propDesc);
             }
 
             if (!IsValidSQLiteResult(sqlite3_finalize(pStatement)))
@@ -887,10 +886,10 @@ namespace SE::ReflectTool
             }
 
             //-------------------------------------------------------------------------
-			Function<bool(DataProperty const &, DataProperty const &)> compare = [](DataProperty const &a, DataProperty const &b)
+			Function<bool(PropertyData const &, PropertyData const &)> compare = [](PropertyData const &a, PropertyData const &b)
 			{ return a.lineNumber < b.lineNumber; };
 
-			Sorting::QuickSort(type.properties, compare);
+			Utils::Vector::QuickSort(type.properties, compare);
 
             //-------------------------------------------------------------------------
 
@@ -901,9 +900,9 @@ namespace SE::ReflectTool
         return false;
     }
 
-    bool ReflectionDatabase::ReadAdditionalEnumData(DataType &type)
+    bool ReflectionDatabase::ReadAdditionalEnumData(TypeData &type)
     {
-        ENGINE_ASSERT(type.typeID != StringID::Invalid && type.IsEnum());
+        ENGINE_ASSERT(type.typeID != StringID::Invalid && type.IsFlag(TypeData::Flags::IsEnum));
 
         sqlite3_stmt *pStatement = nullptr;
         FillStatementBuffer("SELECT `Label`, `Value`, `Description` FROM `EnumConstants` WHERE `EnumConstants`.TypeID = %u;", (uint32_t)type.typeID);
@@ -911,9 +910,9 @@ namespace SE::ReflectTool
         {
             while (sqlite3_step(pStatement) == SQLITE_ROW)
             {
-                ReflectedEnumConstant constantDesc;
+                EnumDataConstant constantDesc;
                 constantDesc.label = (char const *)sqlite3_column_text(pStatement, 0);
-                constantDesc.ID = StringID(String(constantDesc.label));
+                constantDesc.ID = StringID(std::string(constantDesc.label));
                 constantDesc.value = sqlite3_column_int(pStatement, 1);
                 constantDesc.description = (char const *)sqlite3_column_text(pStatement, 2);
                 type.AddEnumConstant(constantDesc);
@@ -937,12 +936,12 @@ namespace SE::ReflectTool
 
         sqlite3_stmt *pStatement = nullptr;
         FillStatementBuffer("SELECT `ResourceTypeParents`.ParentTypeID FROM `ResourceTypeParents` INNER JOIN `ResourceTypes` ON `ResourceTypes`.TypeID = `ResourceTypeParents`.ParentTypeID WHERE `ResourceTypeParents`.TypeID = \"%s\";",
-			type.typeID.ToString().Get());
+			type.typeID.ToString().c_str());
         if (IsValidSQLiteResult(sqlite3_prepare_v2(m_pDatabase, m_statementBuffer, -1, &pStatement, nullptr)))
         {
             while (sqlite3_step(pStatement) == SQLITE_ROW)
             {
-                type.parents.Add(StringID(String((char const *)sqlite3_column_text(pStatement, 0))));
+                type.parents.push_back(StringID(std::string((char const *)sqlite3_column_text(pStatement, 0))));
             }
 
             if (!IsValidSQLiteResult(sqlite3_finalize(pStatement)))
@@ -959,7 +958,7 @@ namespace SE::ReflectTool
         return true;
     }
 
-    bool ReflectionDatabase::WriteAdditionalTypeData(DataType const &type)
+    bool ReflectionDatabase::WriteAdditionalTypeData(TypeData const &type)
     {
         // Delete old properties
         if (!ExecuteSimpleQuery("DELETE FROM `Properties` WHERE `OwnerTypeID` = %u;", (uint32_t)type.typeID))
@@ -970,17 +969,17 @@ namespace SE::ReflectTool
         // Update properties
         for (auto &propertyDesc : type.properties)
         {
-			StringAnsi escapedDescription = propertyDesc.description;
-			escapedDescription.Replace("\"", "\"\"");
+		std::string escapedDescription = propertyDesc.description;
+			Utils::String::ReplaceAll(escapedDescription, "\"", "\"\"");
 
-			StringAnsi escapedMetaData;
+			std::string escapedMetaData;
             if (propertyDesc.HasMetaData())
             {
                 escapedMetaData = propertyDesc.metaData;
-				escapedMetaData.Replace("\"", "\"\"");
+				Utils::String::ReplaceAll(escapedMetaData, "\"", "\"\"");
             }
 
-            if (!ExecuteSimpleQuery("INSERT OR REPLACE INTO `Properties`(`PropertyID`, `LineNumber`, `OwnerTypeID`,`TypeID`,`Name`,`Description`,`TypeName`,`TemplateTypeName`,`PropertyFlags`,`ArraySize`,`MetaData`) VALUES ( %u, %d, %u, %u, \"%s\", \"%s\", \"%s\", \"%s\", %u, %d, \"%s\" );", (uint32_t)propertyDesc.propertyID, propertyDesc.lineNumber, (uint32_t)type.typeID, (uint32_t)propertyDesc.typeID, propertyDesc.name.Get(), escapedDescription.Get(), propertyDesc.typeName.Get(), propertyDesc.templateArgTypeName.Get(), (uint32_t)propertyDesc.flags.Get(), propertyDesc.arraySize, escapedMetaData.Get()))
+            if (!ExecuteSimpleQuery("INSERT OR REPLACE INTO `Properties`(`PropertyID`, `LineNumber`, `OwnerTypeID`,`TypeID`,`Name`,`Description`,`TypeName`,`TemplateTypeName`,`PropertyFlags`,`ArraySize`,`MetaData`) VALUES ( %u, %d, %u, %u, \"%s\", \"%s\", \"%s\", \"%s\", %u, %d, \"%s\" );", (uint32_t)propertyDesc.propertyID, propertyDesc.lineNumber, (uint32_t)type.typeID, (uint32_t)propertyDesc.typeID, propertyDesc.name.c_str(), escapedDescription.c_str(), propertyDesc.typeName.c_str(), propertyDesc.templateArgTypeName.c_str(), (uint32_t)propertyDesc.flags.Get(), propertyDesc.arraySize, escapedMetaData.c_str()))
             {
                 return false;
             }
@@ -989,7 +988,7 @@ namespace SE::ReflectTool
         return true;
     }
 
-    bool ReflectionDatabase::WriteAdditionalEnumData(DataType const &type)
+    bool ReflectionDatabase::WriteAdditionalEnumData(TypeData const &type)
     {
         // Fill enum values table with all constants
         if (!ExecuteSimpleQuery("DELETE FROM `EnumConstants` WHERE `TypeID` = %u;", (uint32_t)type.typeID))
@@ -999,10 +998,10 @@ namespace SE::ReflectTool
 
         for (auto const &enumConstant : type.enumConstants)
         {
-			StringAnsi escapedDescription = enumConstant.description;
-			escapedDescription.Replace("\"", "\"\"");
+		std::string escapedDescription = enumConstant.description;
+			Utils::String::ReplaceAll(escapedDescription, "\"", "\"\"");
 
-            if (!ExecuteSimpleQuery("INSERT INTO `EnumConstants`(`TypeID`,`Label`,`Value`, `Description`) VALUES ( %u, \"%s\", %u, \"%s\" );", (uint32_t)type.typeID, enumConstant.label.Get(), enumConstant.value, escapedDescription.Get()))
+            if (!ExecuteSimpleQuery("INSERT INTO `EnumConstants`(`TypeID`,`Label`,`Value`, `Description`) VALUES ( %u, \"%s\", %u, \"%s\" );", (uint32_t)type.typeID, enumConstant.label.c_str(), enumConstant.value, escapedDescription.c_str()))
             {
                 return false;
             }
@@ -1014,7 +1013,7 @@ namespace SE::ReflectTool
     bool ReflectionDatabase::WriteAdditionalResourceTypeData(ReflectedResourceType const &type)
     {
         // Delete old parents
-        if (!ExecuteSimpleQuery("DELETE FROM `ResourceTypeParents` WHERE `TypeID` = \"%s\";", type.typeID.ToString().Get()))
+        if (!ExecuteSimpleQuery("DELETE FROM `ResourceTypeParents` WHERE `TypeID` = \"%s\";", type.typeID.ToString().c_str()))
         {
             return false;
         }
@@ -1023,7 +1022,7 @@ namespace SE::ReflectTool
         for (auto &parent : type.parents)
         {
             if (!ExecuteSimpleQuery("INSERT INTO `ResourceTypeParents`(`TypeID`, `ParentTypeID`) VALUES ( \"%s\", \"%s\" );",
-				type.typeID.ToString().Get(), parent.ToString().Get()))
+				type.typeID.ToString().c_str(), parent.ToString().c_str()))
             {
                 return false;
             }

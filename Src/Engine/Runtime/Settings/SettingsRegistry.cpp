@@ -1,8 +1,8 @@
 #include "SettingsRegistry.h"
-#include "Core/TypeSystem/Types.h"
-#include "Core/Utilities/IniFile.h"
-#include "Core/Memory/Memory.h"
-#include "Core/Types/Collections/ListExtensions.h"
+#include "Runtime/Core/TypeSystem/Types.h"
+#include "Runtime/Core/IniFile.h"
+#include "Runtime/Core/Memory/Memory.h"
+#include "Runtime/Core/Types/Collections/ListExtensions.h"
 
 //-------------------------------------------------------------------------
 

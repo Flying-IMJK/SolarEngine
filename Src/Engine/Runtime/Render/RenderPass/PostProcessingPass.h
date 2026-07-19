@@ -1,8 +1,8 @@
 #pragma once
-#include "Core/Math/Color.h"
-#include "Core/Math/Matrix.h"
-#include "Core/Math/Vector2.h"
-#include "Core/Math/Vector3.h"
+#include "Runtime/Core/Math/Color.h"
+#include "Runtime/Core/Math/Matrix.h"
+#include "Runtime/Core/Math/Vector2.h"
+#include "Runtime/Core/Math/Vector3.h"
 #include "Runtime/Graphics/Base/GPUPipelineStatePermutations.h"
 #include "Runtime/Render/RenderContext.h"
 #include "Runtime/Render/RendererPass.h"

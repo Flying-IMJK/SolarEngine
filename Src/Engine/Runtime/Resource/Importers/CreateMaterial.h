@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Types.h"
-#include "Core/Math/Color.h"
-#include "Core/Types/UID.h"
+#include "Runtime/Core/Math/Color.h"
+#include "Runtime/Core/Types/UID.h"
 #include "Runtime/Render/Assets/Material/MaterialInfo.h"
 
 namespace SE

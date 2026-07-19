@@ -2,9 +2,9 @@
 
 #include "GraphicShaderParser.h"
 
-#include "Core/Types/Collections/List.h"
-#include "Core/Profiler/ProfilerCPU.h"
-#include "Core/Logging/Logging.h"
+#include "Runtime/Core/Types/Collections/List.h"
+#include "Runtime/Core/Profiler/ProfilerCPU.h"
+#include "Runtime/Core/Logging/Logging.h"
 #include "TextProcessing.h"
 #include "ShaderFunctionReader.CB.h"
 #include "ShaderFunctionReader.VS.h"

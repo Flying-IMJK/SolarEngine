@@ -1,5 +1,5 @@
 #include "RenderUtils.h"
-#include "Core/Utilities/Encoding.h"
+#include "Runtime/Core/Encoding.h"
 #include "../../Utilities/Time.h"
 #include "Runtime/Graphics/GPUContext.h"
 

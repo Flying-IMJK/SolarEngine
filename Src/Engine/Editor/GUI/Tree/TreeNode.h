@@ -10,6 +10,7 @@ namespace SE::Editor
 {
     class Tree;
 
+    SE_CLASS(Reflect)
     class TreeNode : public ContainerControl
     {
         SE_DEFINE_CLASS(TreeNode, ContainerControl)

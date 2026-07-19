@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../API.h"
-#include "../../Core/Types/TimeSpan.h"
+#include "Runtime/Core/Types/TimeSpan.h"
 
 namespace SE
 {

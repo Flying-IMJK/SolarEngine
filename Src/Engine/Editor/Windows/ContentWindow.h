@@ -303,6 +303,7 @@ namespace SE::Editor
 #pragma endregion
 
 	public:
+		SE_CLASS(Reflect)
 		class ViewDropdown : public ComboBox
         {
 			SE_DEFINE_CLASS_DEFAULT(ViewDropdown, ComboBox)

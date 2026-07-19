@@ -1,6 +1,6 @@
 #pragma once
-#include "Core/Math/Curves.h"
-#include "Core/Serialization/TextWriter.h"
+#include "Runtime/Core/Math/Curves.h"
+#include "Runtime/Core/Serialization/TextWriter.h"
 #include "Runtime/Render/Assets/Material/MaterialParams.h"
 #include "Runtime/Utilities/Variant.h"
 

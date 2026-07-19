@@ -1,8 +1,8 @@
 #pragma once
-#include "Core/Serialization/MemoryWriteStream.h"
-#include "Core/Types/UID.h"
-#include "Core/Types/Collections/DataContainer.h"
-#include "Core/Types/Strings/String.h"
+#include "Runtime/Core/Serialization/MemoryWriteStream.h"
+#include "Runtime/Core/Types/UID.h"
+#include "Runtime/Core/Types/Collections/DataContainer.h"
+#include "Runtime/Core/Types/Strings/String.h"
 #include "Runtime/Graphics/Base/GPUEnums.h"
 
 namespace SE

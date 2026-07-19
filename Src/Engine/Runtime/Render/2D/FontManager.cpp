@@ -4,10 +4,10 @@
 #include "Font.h"
 #include "FontAsset.h"
 #include "FontTextureAtlas.h"
-#include "Core/Systems.h"
+#include "Runtime/Core/Systems.h"
 
-#include "Core/Logging/Logging.h"
-#include "Core/Thread/Threading.h"
+#include "Runtime/Core/Logging/Logging.h"
+#include "Runtime/Core/Thread/Threading.h"
 
 #include "Runtime/Resource/AssetContent.h"
 #include "Runtime/Resource/AssetRef.h"

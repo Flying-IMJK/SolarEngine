@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Editor/CustomEditors/LayoutElement.h"
-#include "Core/TypeSystem/TypeID.h"
+#include "Runtime/Core/TypeSystem/TypeID.h"
 
 namespace SE
 {
@@ -28,6 +28,7 @@ namespace SE::Editor
 	/// <summary>
 	/// Button element for user interaction.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class ButtonElement : public LayoutElement
 	{
 		SE_DEFINE_CLASS_DEFAULT(ButtonElement, LayoutElement)
@@ -39,6 +40,7 @@ namespace SE::Editor
 	/// <summary>
 	/// Space element for vertical spacing.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class SpaceElement : public LayoutElement
 	{
 		SE_DEFINE_CLASS_DEFAULT(SpaceElement, LayoutElement)
@@ -51,6 +53,7 @@ namespace SE::Editor
 	/// <summary>
 	/// TextBox element for text input.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class TextBoxElement : public LayoutElement
 	{
 		SE_DEFINE_CLASS_DEFAULT(TextBoxElement, LayoutElement)
@@ -62,6 +65,7 @@ namespace SE::Editor
 	/// <summary>
 	/// CheckBox element for boolean values.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class CheckBoxElement : public LayoutElement
 	{
 		SE_DEFINE_CLASS_DEFAULT(CheckBoxElement, LayoutElement)
@@ -73,6 +77,7 @@ namespace SE::Editor
 	/// <summary>
 	/// DoubleValue element for double input.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class DoubleValueElement : public LayoutElement
 	{
 		SE_DEFINE_CLASS_DEFAULT(DoubleValueElement, LayoutElement)
@@ -84,6 +89,7 @@ namespace SE::Editor
 	/// <summary>
 	/// IntegerValue element for integer input.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class IntegerValueElement : public LayoutElement
 	{
 		SE_DEFINE_CLASS_DEFAULT(IntegerValueElement, LayoutElement)
@@ -95,6 +101,7 @@ namespace SE::Editor
 	/// <summary>
 	/// Slider element for range value input.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class SliderElement : public LayoutElement
 	{
 		SE_DEFINE_CLASS_DEFAULT(SliderElement, LayoutElement)
@@ -106,6 +113,7 @@ namespace SE::Editor
 	/// <summary>
 	/// ComboBox element for dropdown selection.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class ComboBoxElement : public LayoutElement
 	{
 		SE_DEFINE_CLASS_DEFAULT(ComboBoxElement, LayoutElement)
@@ -117,6 +125,7 @@ namespace SE::Editor
 	/// <summary>
 	/// Enum element for enum value selection.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class EnumElement : public LayoutElement
 	{
 		SE_DEFINE_CLASS_DEFAULT(EnumElement, LayoutElement)
@@ -128,6 +137,7 @@ namespace SE::Editor
 	/// <summary>
 	/// Image element for displaying images.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class ImageElement : public LayoutElement
 	{
 		SE_DEFINE_CLASS_DEFAULT(ImageElement, LayoutElement)

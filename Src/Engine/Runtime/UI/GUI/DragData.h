@@ -8,6 +8,7 @@ namespace SE
 		File
 	};
 
+	SE_CLASS(Reflect)
 	class SE_API_RUNTIME DragData : public IType
 	{
 		SE_DEFINE_CLASS(DragData, IType)
@@ -17,6 +18,7 @@ namespace SE
 		virtual DragDataType GetDataType() const = 0;
 	};
 
+	SE_CLASS(Reflect)
 	class SE_API_RUNTIME DragDataText : public DragData
 	{
 		SE_DEFINE_CLASS(DragDataText, DragData)
@@ -44,6 +46,7 @@ namespace SE
 	/// The drag and drop files.
 	/// </summary>
 	/// <seealso cref="FlaxEngine.GUI.DragData" />
+	SE_CLASS(Reflect)
 	class SE_API_RUNTIME DragDataFiles : public DragData
 	{
 		SE_DEFINE_CLASS(DragDataFiles, DragData)

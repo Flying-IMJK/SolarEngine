@@ -2,7 +2,7 @@
 #include "SceneObject.h"
 
 #include "Actor.h"
-#include "Core/Serialization/Serialization.h"
+#include "Runtime/Core/Serialization/Serialization.h"
 #include "Prefabs/Prefab.h"
 #include "Runtime/Resource/AssetContent.h"
 

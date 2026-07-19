@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Math/Rectangle.h"
+#include "Runtime/Core/Math/Rectangle.h"
 
 namespace SE
 {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Core/Thread/Threading.h"
-#include "Core/Types/Strings/StringView.h"
+#include "Runtime/Core/Thread/Threading.h"
+#include "Runtime/Core/Types/Strings/StringView.h"
 
 #include "Runtime/API.h"
 #include "Runtime/Graphics/Base/GPUEnums.h"

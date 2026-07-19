@@ -8,6 +8,7 @@ namespace SE::Editor
 	/// <summary>
 	/// Helper content item used to mock UI during creating new assets by <see cref="FlaxEditor.Windows.ContentWindow"/>.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class NewItem : public ContentItem
 	{
 		SE_DEFINE_CLASS_DEFAULT(NewItem, ContentItem)

@@ -1,5 +1,5 @@
 #pragma once
-#include "Core/Types/Strings/String.h"
+#include "Runtime/Core/Types/Strings/String.h"
 #include "Runtime/Render/2D/FontReference.h"
 
 namespace SE

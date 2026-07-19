@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Core/Types/Strings/String.h"
-#include "Core/Platform/FileSystem.h"
+#include "Runtime/Core/Types/Strings/String.h"
+#include "Runtime/Core/Platform/FileSystem.h"
 #include "Runtime/EngineContext.h"
 
 namespace SE

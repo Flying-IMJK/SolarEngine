@@ -1,13 +1,14 @@
 #pragma once
 #include "Editor/API.h"
-#include "Core/TypeSystem/IType.h"
-#include "Core/Types/Collections/List.h"
-#include "Core/Types/Event.h"
+#include "Runtime/Core/TypeSystem/IType.h"
+#include "Runtime/Core/Types/Collections/List.h"
+#include "Runtime/Core/Types/Event.h"
 
 //-------------------------------------------------------------------------
 
 namespace SE::Editor
 {
+    SE_CLASS(Reflect)
     class SE_API_EDITOR IUndoableAction : public IType
     {
         friend class UndoStack;
@@ -24,6 +25,7 @@ namespace SE::Editor
 
     //-------------------------------------------------------------------------
 
+    SE_CLASS(Reflect)
     class SE_API_EDITOR CompoundStackAction final : public IUndoableAction
     {
         friend class UndoStack;

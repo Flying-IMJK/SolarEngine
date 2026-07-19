@@ -1,6 +1,6 @@
 #pragma once
-#include "Core/Types/UID.h"
-#include "Core/Types/Variable.h"
+#include "Runtime/Core/Types/UID.h"
+#include "Runtime/Core/Types/Variable.h"
 #include "Runtime//API.h"
 
 namespace SE

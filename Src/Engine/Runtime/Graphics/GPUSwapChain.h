@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Core/Types/Variable.h"
-#include "Core/Math/Vector2.h"
-#include "Core/Platform/Window.h"
+#include "Runtime/Core/Types/Variable.h"
+#include "Runtime/Core/Math/Vector2.h"
+#include "Runtime/Core/Platform/Window.h"
 #include "Runtime/Graphics/Base/PixelFormat.h"
 #include "Base/GPUResource.h"
 

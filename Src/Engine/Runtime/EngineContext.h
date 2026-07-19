@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Runtime/API.h"
-#include "Core/Types/Variable.h"
+#include "Runtime/Core/Types/Variable.h"
 
 namespace SE
 {

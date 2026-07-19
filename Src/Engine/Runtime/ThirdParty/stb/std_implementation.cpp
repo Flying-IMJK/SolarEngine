@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Core/Memory/Memory.h"
-#include "Core/Math/Math.h"
+#include "Runtime/Core/Memory/Memory.h"
+#include "Runtime/Core/Math/Math.h"
+#include "Runtime/Core/Logging/Logging.h"
 
 //-------------------------------------------------------------------------
 #define STB_TRUETYPE_IMPLEMENTATION

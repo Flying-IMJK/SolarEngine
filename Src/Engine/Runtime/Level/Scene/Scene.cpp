@@ -3,8 +3,8 @@
 #include "Scene.h"
 #include "SceneAsset.h"
 
-#include "Core/Platform/Windows/WindowsFileSystem.h"
-#include "Core/Serialization/Serialization.h"
+#include "Runtime/Core/Platform/Windows/WindowsFileSystem.h"
+#include "Runtime/Core/Serialization/Serialization.h"
 #include "Runtime/Resource/AssetContent.h"
 #include "Runtime/Resource/AssetInfo.h"
 #include "Runtime/Resource/Factories/IAssetFactory.h"

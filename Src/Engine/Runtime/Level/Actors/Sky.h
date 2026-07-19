@@ -21,6 +21,7 @@ namespace SE
     /// <summary>
     /// Sky actor renders atmosphere around the scene with fog and sky.
     /// </summary>
+    SE_CLASS(Reflect)
     class SE_API_RUNTIME Sky : public RenderActor, public ISkyRenderer/*, public IAtmosphericFogRenderer,*/
     {
         SE_DEFINE_CLASS(Sky, RenderActor);

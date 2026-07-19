@@ -2,12 +2,12 @@
 #include "Prefab.h"
 #include "PrefabManager.h"
 
-#include "Core/Logging/Exception.h"
-#include "Core/Logging/Exceptions/ArgumentNullException.h"
-#include "Core/Profiler/ProfilerCPU.h"
-#include "Core/Serialization/JsonTools.h"
-#include "Core/Thread/Threading.h"
-#include "Core/Types/DateTime.h"
+#include "Runtime/Core/Logging/Exception.h"
+#include "Runtime/Core/Logging/Exceptions/ArgumentNullException.h"
+#include "Runtime/Core/Profiler/ProfilerCPU.h"
+#include "Runtime/Core/Serialization/JsonTools.h"
+#include "Runtime/Core/Thread/Threading.h"
+#include "Runtime/Core/Types/DateTime.h"
 #include "Runtime/Level/ActorsCache.h"
 #include "Runtime/Level/SceneObjectsFactory.h"
 #include "Runtime/Level/SceneQuery.h"
@@ -597,7 +597,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
         if (!IsLoaded())
         {
             Log::Exception(SE_TEXT("Cannot apply changes on not loaded prefab asset."));
-            return true;
+            return false;
         }
         if (targetActor == nullptr)
         {
@@ -607,12 +607,12 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
         if (targetActor->GetPrefabID() != GetID())
         {
             Log::Exception(SE_TEXT("Cannot apply changes to the prefab. Prefab instance root object has link to the other prefab."));
-            return true;
+            return false;
         }
         if (GetDefaultInstance() == nullptr)
         {
             LOG_WARNING("Level", "Failed to create default prefab instance for the prefab asset.");
-            return true;
+            return false;
         }
         if (targetActor->GetPrefabObjectID() != GetRootObjectId())
         {
@@ -622,7 +622,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
             if (!newRootDefault || !newRootDataPtr || !*newRootDataPtr)
             {
                 LOG_ERROR("Level", "Cannot change the prefab root object to the actor that is not yet added to the prefab.");
-                return true;
+                return false;
             }
             const DeserializeStream& newRootData = **newRootDataPtr;
             UID prefabId, prefabObjectID;
@@ -632,7 +632,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
                 if (nestedPrefab && nestedPrefab->GetRootObjectId() != prefabObjectID)
                 {
                     LOG_ERROR("Level", "Cannot change the prefab root object is from other nested prefab (excluding root of that nested prefab prefab).");
-                    return true;
+                    return false;
                 }
             }
         }
@@ -646,7 +646,9 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
             };
             const auto task = Threading::Task::StartNew(New<Threading::MainThreadActionTask>(action));
             if (task->Wait(TimeSpan::FromSeconds(10)))
+            {
                 result = true;
+            }
             return result;
         }
 
@@ -655,10 +657,10 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
             PROFILE_CPU_NAMED("Prefab.FindCyclicReferences");
 
             ENGINE_ASSERT(GetDefaultInstance() != nullptr);
-            if (FindCyclicReferences(targetActor, targetActor->GetPrefabObjectID()))
+            if (!FindCyclicReferences(targetActor, targetActor->GetPrefabObjectID()))
             {
                 Log::Exception(SE_TEXT("Cannot apply changes to the prefab. Cyclic reference found in the actor."));
-                return true;
+                return false;
             }
         }
 
@@ -720,14 +722,16 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
         }
 
         // Use internal call to improve shared collections memory sharing
-        if (ApplyAllInternal(targetActor, true, thisPrefabInstancesData))
-            return true;
+        if (!ApplyAllInternal(targetActor, true, thisPrefabInstancesData))
+        {
+            return false;
+        }
 
         SyncNestedPrefabs(allPrefabs, allPrefabsInstancesData);
 
         const auto endTime = DateTime::NowUTC();
         LOG_INFO("Level", "Prefab updated! {0} ms", (int32)(endTime - startTime).GetTotalMilliseconds());
-        return false;
+        return true;
     }
 
     bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPrefab, PrefabInstancesData& prefabInstancesData)

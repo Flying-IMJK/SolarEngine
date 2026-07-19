@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/TypeSystem/IType.h"
+#include "Runtime/Core/TypeSystem/IType.h"
 #include "Runtime/Graphics/Shaders/GPUShaderProgram.h"
 #include "GPUResource.h"
 #include "GPUEnums.h"
@@ -36,9 +36,13 @@ namespace SE
 	/// <summary>
 	/// Describes full graphics pipeline state within single object.
 	/// </summary>
+	SE_CLASS(API, Sealed)
 	class SE_API_RUNTIME GPUPipelineState : public GPUResource
 	{
+		SCRIPTING_TYPE_NO_SPAWN(GPUPipelineState);
+
 	public:
+		static GPUPipelineState* Spawn(const SpawnParams& params);
 		static GPUPipelineState* New();
 
 	public:

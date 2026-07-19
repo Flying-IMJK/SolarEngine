@@ -154,7 +154,7 @@ namespace SE
 			else
 			{
 				// Create async resource copy task
-				auto copyTask = New<GPUUploadBufferTask>(this, 0, Span<byte>((const byte*)m_Desc.InitData, m_Desc.Size), true);
+				auto copyTask = ::SE::New<GPUUploadBufferTask>(this, 0, Span(static_cast<const byte*>(m_Desc.InitData), m_Desc.Size), true);
 				ENGINE_ASSERT(copyTask->HasReference(this));
 				copyTask->Start();
 			}
@@ -165,9 +165,9 @@ namespace SE
 		{
 #if GPU_ENABLE_RESOURCE_NAMING
 			String name = String(GetName()) + SE_TEXT(".Counter");
-			Counter = New<GPUBufferVulkan>(m_Device, name);
+			Counter = ::SE::New<GPUBufferVulkan>(m_Device, name);
 #else
-			Counter = ::New<GPUBufferVulkan>(_device, StringView::Empty);
+			Counter = ::SE::New<GPUBufferVulkan>(_device, StringView::Empty);
 #endif
 			if (Counter->Init(GPUBufferDescription::Raw(4, GPUBufferFlags::UnorderedAccess)))
 			{
@@ -175,7 +175,7 @@ namespace SE
 				return false;
 			}
 		}
-			// Check if need to bind buffer to the shaders
+		// Check if need to bind buffer to the shaders
 		else if (useSRV || useUAV)
 		{
 			// Create buffer view

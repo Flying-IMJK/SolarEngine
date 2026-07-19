@@ -1,6 +1,6 @@
 #pragma once
 #include "ScenesGraphNode.h"
-#include "Core/Templates.h"
+#include "Runtime/Core/Templates.h"
 
 namespace SE::Editor
 {

@@ -1,9 +1,9 @@
 
 #include "SpriteAtlas.h"
 
-#include "Core/Serialization/MemoryReadStream.h"
-#include "Core/Serialization/MemoryWriteStream.h"
-#include "Core/Thread/Threading.h"
+#include "Runtime/Core/Serialization/MemoryReadStream.h"
+#include "Runtime/Core/Serialization/MemoryWriteStream.h"
+#include "Runtime/Core/Thread/Threading.h"
 #include "Runtime/Graphics/GPUDevice.h"
 #include "Runtime/Resource/Factories/BinaryAssetFactory.h"
 

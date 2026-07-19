@@ -1,6 +1,6 @@
 #pragma once
 #include "LayoutElement.h"
-#include "Core/Types/Collections/List.h"
+#include "Runtime/Core/Types/Collections/List.h"
 #include "Runtime/Render/2D/TextLayoutOptions.h"
 
 namespace SE
@@ -34,6 +34,7 @@ namespace SE::Editor
 	class CustomEditorPresenter;
 	class ValueContainer;
 
+	SE_CLASS(Reflect)
 	class LayoutElementsContainer : public LayoutElement
 	{
 		SE_DEFINE_CLASS_DEFAULT(LayoutElementsContainer, LayoutElement)
@@ -142,6 +143,7 @@ namespace SE::Editor
 	/// <summary>
 	/// Group element - collapsible panel.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class GroupElement : public LayoutElementsContainer
 	{
 		SE_DEFINE_CLASS_DEFAULT(GroupElement, LayoutElementsContainer)
@@ -154,6 +156,7 @@ namespace SE::Editor
 	/// <summary>
 	/// Horizontal panel element.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class HorizontalPanelElement : public LayoutElementsContainer
 	{
 		SE_DEFINE_CLASS_DEFAULT(HorizontalPanelElement, LayoutElementsContainer)
@@ -166,6 +169,7 @@ namespace SE::Editor
 	/// <summary>
 	/// Vertical panel element.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class VerticalPanelElement : public LayoutElementsContainer
 	{
 		SE_DEFINE_CLASS_DEFAULT(VerticalPanelElement, LayoutElementsContainer)

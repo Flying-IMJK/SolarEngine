@@ -1,11 +1,11 @@
 
 #pragma once
 
-#include "Core/Types/Strings/String.h"
-#include "Core/Serialization/ISerializable.h"
+#include "Runtime/Core/Types/Strings/String.h"
+#include "Runtime/Core/Serialization/ISerializable.h"
 #include "Runtime/Graphics/Textures/GPUSamplerDescription.h"
 #if SE_EDITOR
-#include "Core/Types/Collections/Dictionary.h"
+#include "Runtime/Core/Types/Collections/Dictionary.h"
 #endif
 
 namespace SE
@@ -13,6 +13,7 @@ namespace SE
 	/// <summary>
 	/// Settings container for a group of textures. Defines the data streaming options and resource quality.
 	/// </summary>
+	SE_STRUCT(Reflect)
 	struct TextureGroup : IType
 	{
 		SE_DEFINE_CLASS_DEFAULT(TextureGroup, IType)

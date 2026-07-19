@@ -1,10 +1,11 @@
 #pragma once
 
 #include "Control.h"
-#include "Core/TypeSystem/Types.h"
+#include "Runtime/Core/TypeSystem/Types.h"
 
 namespace SE
 {
+	SE_CLASS(Reflect)
 	class SE_API_RUNTIME ContainerControl : public Control
 	{
 	    SE_DEFINE_CLASS(ContainerControl, Control)

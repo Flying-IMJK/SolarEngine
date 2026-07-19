@@ -1,8 +1,8 @@
 
 #include "LabelElement.h"
 
-#include "Core/Input/Input.h"
-#include "Core/Platform/Clipboard.h"
+#include "Runtime/Input/Input.h"
+#include "Runtime/Core/Platform/Clipboard.h"
 #include "Editor/GUI/ContextMenu/ContextMenu.h"
 #include "Editor/GUI/ContextMenu/ContextMenuButton.h"
 #include "Runtime/UI/GUI/Common/ClickableLabel.h"

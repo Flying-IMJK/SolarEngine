@@ -35,6 +35,7 @@ namespace SE::Editor
 		LeftUp,
 	};
 
+    SE_CLASS(Reflect)
     class ContextMenuBase : public ContainerControl
     {
         SE_DEFINE_CLASS(ContextMenuBase, ContainerControl)

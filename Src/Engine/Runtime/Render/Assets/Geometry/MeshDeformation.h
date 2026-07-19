@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Core/Math/BoundingVolumes.h"
-#include "Core/Types/Collections/Dictionary.h"
+#include "Runtime/Core/Math/BoundingVolumes.h"
+#include "Runtime/Core/Types/Collections/Dictionary.h"
 #include "Runtime/Graphics/DynamicBuffer.h"
 #include "Runtime/Render/RenderEnum.h"
 

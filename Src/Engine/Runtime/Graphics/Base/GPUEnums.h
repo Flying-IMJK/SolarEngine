@@ -3,9 +3,9 @@
 #include "Runtime/API.h"
 #include "PixelFormat.h"
 
-#include "Core/Types/Variable.h"
-#include "../../../Core/Types/Hash.h"
-#include "Core/TypeSystem/IType.h"
+#include "Runtime/Core/Types/Variable.h"
+#include "Runtime/Core/Types/Hash.h"
+#include "Runtime/Core/TypeSystem/IType.h"
 
 
 namespace SE

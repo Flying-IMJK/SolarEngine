@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Core/Types/Variable.h"
-#include "Core/Types/BitFlags.h"
+#include "Runtime/Core/Types/Variable.h"
+#include "Runtime/Core/Types/BitFlags.h"
 #include "VulkanInclude.h"
 
 #include "Runtime/Graphics/Base/GPUEnums.h"

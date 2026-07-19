@@ -1,0 +1,37 @@
+#include "Time.h"
+#include <chrono>
+
+#include "Runtime/Core/Logging/Logging.h"
+
+//-------------------------------------------------------------------------
+
+namespace SE
+{
+    Nanoseconds EngineClock::CurrentTime = 0;
+
+    //-------------------------------------------------------------------------
+
+    Nanoseconds::operator Microseconds() const
+    {
+        auto const duration = std::chrono::duration<uint64, std::chrono::steady_clock::period>( m_value );
+        uint64 const numMicroseconds = std::chrono::duration_cast<std::chrono::microseconds>( duration ).count();
+        return float( numMicroseconds );
+    }
+
+    //-------------------------------------------------------------------------
+
+    Nanoseconds PlatformClock::GetTime()
+    {
+        auto const time = std::chrono::high_resolution_clock::now();
+        uint64 const numNanosecondsSinceEpoch = time.time_since_epoch().count();
+        return Nanoseconds( numNanosecondsSinceEpoch );
+    }
+
+    //-------------------------------------------------------------------------
+
+    void EngineClock::Update( Milliseconds deltaTime )
+    {
+        ENGINE_ASSERT( deltaTime >= 0 );
+        CurrentTime += deltaTime.ToNanoseconds();
+    }
+}

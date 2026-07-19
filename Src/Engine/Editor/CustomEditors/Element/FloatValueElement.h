@@ -10,6 +10,7 @@ namespace SE::Editor
     /// The floating point value element.
     /// </summary>
     /// <seealso cref="FlaxEditor.CustomEditors.LayoutElement" />
+    SE_CLASS(Reflect)
     class FloatValueElement : public LayoutElement, public IFloatValueElement
     {
         SE_DEFINE_CLASS(FloatValueElement, LayoutElement)

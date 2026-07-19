@@ -1,7 +1,7 @@
 #pragma once
 #include "EditorWindow.h"
-#include "Core/Math/BoundingVolumes.h"
-#include "Core/Math/Transform.h"
+#include "Runtime/Core/Math/BoundingVolumes.h"
+#include "Runtime/Core/Math/Transform.h"
 #include "Editor/EditorApp.h"
 #include "Editor/GUI/Viewport/RenderOutputViewport.h"
 

@@ -3,7 +3,7 @@
 #include "GPUUploadBufferTask.h"
 #include "Runtime/Graphics/Textures/GPUTexture.h"
 #include "Runtime/Graphics/Base/GPUBuffer.h"
-#include "Core/Types/Object.h"
+#include "Runtime/Core/Types/Object.h"
 
 namespace SE
 {

@@ -1,5 +1,5 @@
 #pragma once
-#include "Core/Logging/Exceptions/ArgumentNullException.h"
+#include "Runtime/Core/Logging/Exceptions/ArgumentNullException.h"
 #include "Items/ContentItem.h"
 #include "Runtime/UI/GUI/ContainerControl.h"
 
@@ -34,6 +34,7 @@ namespace SE::Editor
 		AlphabeticReverse
 	};
 
+	SE_CLASS(Reflect)
 	class ContentView : public ContainerControl, IContentItemOwner
 	{
 		SE_DEFINE_CLASS(ContentView, ContainerControl)

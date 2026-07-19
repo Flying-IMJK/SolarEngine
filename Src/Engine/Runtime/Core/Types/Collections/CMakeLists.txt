@@ -1,0 +1,21 @@
+﻿
+RUNTIME_ADD(
+        Span.h
+        Config.h
+        List.h
+        ListExtensions.h
+        BitArray.h
+        ChunkedArray.h
+        RingBuffer.h
+        SamplesBuffer.h
+        ConcurrentBuffer.h
+        Dictionary.h
+        Queue.h
+        Queue.cpp
+        ConcurrentQueue.h
+        DataContainer.h
+        HashSet.h
+        Sorting.h
+        Sorting.cpp
+        CollectionPoolCache.h
+)

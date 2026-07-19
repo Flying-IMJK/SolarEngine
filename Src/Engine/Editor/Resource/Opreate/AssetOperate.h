@@ -15,6 +15,7 @@ namespace SE::Editor
     /// <summary>
     /// Base class for all asset proxy objects used to manage <see cref="AssetItem"/>.
     /// </summary>
+    SE_CLASS(Reflect)
     class AssetOperate : public ContentOperate
     {
         SE_DEFINE_CLASS_DEFAULT(AssetOperate, ContentOperate)

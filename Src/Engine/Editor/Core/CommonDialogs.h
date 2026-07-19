@@ -1,7 +1,7 @@
 #pragma once
 #include "Editor/API.h"
-#include "Core/Types/Strings/String.h"
-#include "Core/TypeSystem/TypeID.h"
+#include "Runtime/Core/Types/Strings/String.h"
+#include "Runtime/Core/TypeSystem/TypeID.h"
 //-------------------------------------------------------------------------
 
 namespace SE::Editor

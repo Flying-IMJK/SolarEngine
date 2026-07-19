@@ -1,5 +1,5 @@
 #pragma once
-#include "Core/TypeSystem/IType.h"
+#include "Runtime/Core/TypeSystem/IType.h"
 #include "Runtime/API.h"
 //-------------------------------------------------------------------------
 
@@ -9,6 +9,7 @@ namespace SE
 
     //-------------------------------------------------------------------------
 
+    SE_CLASS(Reflect)
     class SE_API_RUNTIME ISettings : public IType
     {
         SE_DEFINE_CLASS_DEFAULT(ISettings, IType);
@@ -22,6 +23,7 @@ namespace SE
     //
     // Derived global settings objects will be automatically created and registered!
 
+    SE_CLASS(Reflect)
     class SE_API_RUNTIME GlobalSettings : public ISettings
     {
         SE_DEFINE_CLASS_DEFAULT(GlobalSettings, ISettings);

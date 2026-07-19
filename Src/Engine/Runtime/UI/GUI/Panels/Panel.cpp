@@ -1,7 +1,7 @@
 
 #include "Panel.h"
 
-#include "Core/Input/Input.h"
+#include "Runtime/Input/Input.h"
 #include "Runtime/Render/2D/Render2D.h"
 
 namespace SE

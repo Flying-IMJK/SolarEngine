@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Mesh.h"
-#include "Core/Types/Object.h"
+#include "Runtime/Core/Types/Object.h"
 #include "Runtime/API.h"
 
 namespace SE

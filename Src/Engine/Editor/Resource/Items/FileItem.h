@@ -6,6 +6,7 @@ namespace SE::Editor
 	/// <summary>
 	/// Content item for the auxiliary files.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class FileItem : public ContentItem
 	{
 		SE_DEFINE_CLASS_DEFAULT(FileItem, ContentItem)

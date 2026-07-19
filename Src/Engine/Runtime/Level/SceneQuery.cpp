@@ -1,7 +1,7 @@
 
 #include "SceneQuery.h"
 
-#include "Core/Profiler/ProfilerCPU.h"
+#include "Runtime/Core/Profiler/ProfilerCPU.h"
 
 namespace SE
 {

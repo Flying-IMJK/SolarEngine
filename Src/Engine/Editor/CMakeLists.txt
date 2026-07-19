@@ -6,6 +6,7 @@ include(${EngineLibDir}/ISPCTextureCompressor/link.cmake)
 macro(EDITOR_ADD)
     set(SOURCE_FILES "")
     set(HEAD_FILES "")
+    set(CSHARP_FILES "")
     foreach(SOURCE_FILE ${ARGN})
         if(SOURCE_FILE MATCHES ".*\.h")
             if(SOURCE_FILE MATCHES "^/.*")
@@ -33,6 +34,7 @@ macro(EDITOR_ADD)
 endmacro()
 
 set(EditorCSharpFiles
+    ${CMAKE_CURRENT_SOURCE_DIR}/ManagedEditor.cs
 )
 
 set(EditorHeadFiles
@@ -41,7 +43,6 @@ set(EditorHeadFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/EditorContext.h
     ${CMAKE_CURRENT_SOURCE_DIR}/EditorAssets.h
     ${CMAKE_CURRENT_SOURCE_DIR}/EditorIcons.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ManagedEditor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Test.h
 )
 
@@ -50,7 +51,6 @@ set(EditorSourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/EditorApp.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/EditorContext.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/EditorAssets.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/ManagedEditor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Test.cpp
 )
 
@@ -64,8 +64,6 @@ add_subdirectory(CustomEditors)
 add_subdirectory(Resource)
 add_subdirectory(Windows)
 add_subdirectory(SceneGraph)
-add_subdirectory(CSharp)
-
 
 source_group(TREE ${EngineEditorDir} FILES ${EditorSourceFiles} ${EditorHeadFiles})
 
@@ -77,17 +75,17 @@ target_include_directories(${EDITOR_TARGET}
     PUBLIC ${EngineEditorDir}/ThirdParty
 )
 
-target_link_libraries(${EDITOR_TARGET} PUBLIC SECore SERuntime)
+target_link_libraries(${EDITOR_TARGET} PUBLIC SERuntime)
 
 # 引擎C#运行时库
-CSHARP_TARGET(${EDITOR_TARGET} "${EditorCSharpFiles}" "${CMAKE_CURRENT_SOURCE_DIR}/EditorCSharp.csproj")
+CSHARP_TARGET(${EDITOR_TARGET} "${EditorCSharpFiles}" "${CMAKE_CURRENT_SOURCE_DIR}/EditorCSharp.csproj" Editor)
 
 # 第三方链接库
 ISPCTextureCompressorLink(${EDITOR_TARGET})
 
 target_compile_definitions(${EDITOR_TARGET} PRIVATE SE_DLL_EDITOR)
 
-add_dependencies(${EDITOR_TARGET} ${EDITOR_TARGET}.CSharp SERuntime SECore)
+add_dependencies(${EDITOR_TARGET} ${EDITOR_TARGET}.CSharp SERuntime)
 
 ### precompile
 PRECOMPILE_PROJECT(${EDITOR_TARGET} ${EDITOR_TARGET} ${EditorHeadFiles})

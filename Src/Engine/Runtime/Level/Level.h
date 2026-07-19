@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Scene/Scene.h"
-#include "Core/Platform/CriticalSection.h"
-#include "Core/Types/Collections/List.h"
+#include "Runtime/Core/Platform/CriticalSection.h"
+#include "Runtime/Core/Types/Collections/List.h"
 
 namespace SE
 {

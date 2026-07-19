@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Core/Types/Collections/List.h"
-#include "Core/TypeSystem/TypeID.h"
-#include "Core/TypeSystem/Property/TypeProperty.h"
-#include "Core/TypeSystem/MetaData/TypeMetaContainer.h"
+#include "Runtime/Core/Types/Collections/List.h"
+#include "Runtime/Core/TypeSystem/TypeID.h"
+#include "Runtime/Core/TypeSystem/Property/TypeProperty.h"
+#include "Runtime/Core/TypeSystem/MetaData/TypeMetaContainer.h"
 
 namespace SE::Editor
 {

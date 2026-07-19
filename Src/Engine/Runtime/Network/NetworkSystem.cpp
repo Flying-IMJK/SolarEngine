@@ -1,12 +1,12 @@
 #include "NetworkSystem.h"
 
-#include "Core/Logging/Logging.h"
-#include "Core/Memory/Memory.h"
-#include "Core/Thread/Threading.h"
-#include "Core/Types/Collections/List.h"
-#include "Core/Types/Collections/ListExtensions.h"
-#include "Core/Platform/Platform.h"
-#include "Core/Types/Strings/String.h"
+#include "Runtime/Core/Logging/Logging.h"
+#include "Runtime/Core/Memory/Memory.h"
+#include "Runtime/Core/Thread/Threading.h"
+#include "Runtime/Core/Types/Collections/List.h"
+#include "Runtime/Core/Types/Collections/ListExtensions.h"
+#include "Runtime/Core/Platform/Platform.h"
+#include "Runtime/Core/Types/Strings/String.h"
 
 #include <steam/steamnetworkingsockets.h>
 #include <steam/isteamnetworkingutils.h>

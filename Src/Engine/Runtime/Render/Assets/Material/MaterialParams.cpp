@@ -2,9 +2,9 @@
 #include "MaterialParams.h"
 
 #include "../../../Utilities/Variant.h"
-#include "Core/Math/Matrix.h"
-#include "Core/Serialization/MemoryWriteStream.h"
-#include "Core/Serialization/ReadStream.h"
+#include "Runtime/Core/Math/Matrix.h"
+#include "Runtime/Core/Serialization/MemoryWriteStream.h"
+#include "Runtime/Core/Serialization/ReadStream.h"
 #include "Runtime/Graphics/GPUContext.h"
 #include "Runtime/Graphics/GPUDevice.h"
 #include "Runtime/Graphics/Textures/GPUTexture.h"

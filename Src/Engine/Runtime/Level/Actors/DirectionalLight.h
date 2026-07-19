@@ -7,6 +7,7 @@ namespace SE
     /// Directional light emits light from direction in space.
     /// </summary>
     // SE_CLASS(API, Attributes="ActorContextMenu(\"New/Lights/Directional Light\"), ActorToolbox(\"Lights\")")
+    SE_CLASS(Reflect)
     class SE_API_RUNTIME DirectionalLight : public LightWithShadow
     {
         SE_DEFINE_CLASS(DirectionalLight, LightWithShadow);

@@ -1,7 +1,7 @@
 #pragma once
-#include "Core/Types/Property.h"
-#include "Core/Types/Strings/String.h"
-#include "Core/TypeSystem/IType.h"
+#include "Runtime/Core/Types/Property.h"
+#include "Runtime/Core/Types/Strings/String.h"
+#include "Runtime/Core/TypeSystem/IType.h"
 
 namespace SE::Editor
 {
@@ -11,6 +11,7 @@ namespace SE::Editor
 	class EditorWindow;
 	class EditorApp;
 
+	SE_CLASS(Reflect)
 	class ContentOperate : public IType
 	{
 		SE_DEFINE_CLASS_DEFAULT(ContentOperate, IType)

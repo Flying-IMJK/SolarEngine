@@ -2,7 +2,7 @@
 
 #include "SpriteAtlasPacker.h"
 
-#include "Core/Types/Collections/Sorting.h"
+#include "Runtime/Core/Types/Collections/Sorting.h"
 
 namespace SE
 {

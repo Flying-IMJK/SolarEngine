@@ -5,13 +5,14 @@
 #include <clang/AST/Ast.h>
 #include <clang/AST/Type.h>
 #include <clang-c/Index.h>
+#include <Core/String.h>
 
-#include "Core/Types/Strings/StringID.h"
-#include "Core/Types/Strings/String.h"
+#include "Core/StringID.h"
+#include "Core/Utils.h"
 
 //-------------------------------------------------------------------------
 
-namespace SE
+namespace SE::BuildTool
 {
     namespace ClangUtils
     {
@@ -19,19 +20,19 @@ namespace SE
         // Cursors
         //-------------------------------------------------------------------------
 
-        inline String GetString(CXString &&string)
+        inline std::string GetString(CXString &&string)
         {
 			auto s = clang_getCString(string);
-			String str(s, StringUtils::Length(s));
+			std::string str(s, Utils::String::Length(s));
             clang_disposeString(string);
             return str;
         }
 
-        inline StringAnsi GetCursorDisplayName(CXCursor const &cr)
+        inline std::string GetCursorDisplayName(CXCursor const &cr)
         {
             auto displayName = clang_getCursorDisplayName(cr);
 			auto s = clang_getCString(displayName);
-			StringAnsi str(s, StringUtils::Length(s));
+			std::string str(s, Utils::String::Length(s));
 			clang_disposeString(displayName);
             return str;
         }
@@ -58,38 +59,38 @@ namespace SE
             return range.begin_int_data;
         }
 
-        inline StringAnsi GetTypeSpellingAnsi(CXType type)
+        inline std::string GetTypeSpellingAnsi(CXType type)
         {
             CXString spelling = clang_getTypeSpelling(type);
-            StringAnsi result(clang_getCString(spelling));
+            std::string result(clang_getCString(spelling));
             clang_disposeString(spelling);
             return result;
         }
 
-        inline StringAnsi GetCursorSpellingAnsi(CXCursor cr)
+        inline std::string GetCursorSpellingAnsi(CXCursor cr)
         {
             CXString spelling = clang_getCursorSpelling(cr);
-            StringAnsi result(clang_getCString(spelling));
+            std::string result(clang_getCString(spelling));
             clang_disposeString(spelling);
             return result;
         }
 
-        void GetDiagnostics(CXTranslationUnit &TU, List<StringView> &diagnostics);
+        void GetDiagnostics(CXTranslationUnit &TU, std::vector<std::string> &diagnostics);
 
-		String GetHeaderPathForCursor(CXCursor cr);
+		std::string GetHeaderPathForCursor(CXCursor cr);
 
         //-------------------------------------------------------------------------
         // QualTypes
         //-------------------------------------------------------------------------
 
-        bool GetQualifiedNameForType(clang::QualType type, String &qualifiedName);
+        bool GetQualifiedNameForType(clang::QualType type, std::string &qualifiedName);
 
         inline clang::QualType GetQualType(CXType type)
         {
             return clang::QualType::getFromOpaquePtr(type.data[0]);
         }
 
-        inline bool GetQualifiedNameForType(CXType type, String &qualifiedName)
+        inline bool GetQualifiedNameForType(CXType type, std::string &qualifiedName)
         {
             return GetQualifiedNameForType(GetQualType(type), qualifiedName);
         }
@@ -98,15 +99,15 @@ namespace SE
         // Misc
         //-------------------------------------------------------------------------
 
-        inline bool GetAllBaseClasses(List<StringID> &baseClasses, clang::CXXBaseSpecifier &baseSpecifier)
+        inline bool GetAllBaseClasses(std::vector<StringID> &baseClasses, clang::CXXBaseSpecifier &baseSpecifier)
         {
-			String fullyQualifiedName;
+			std::string fullyQualifiedName;
             if (!ClangUtils::GetQualifiedNameForType(baseSpecifier.getType(), fullyQualifiedName))
             {
                 return false;
             }
 
-            baseClasses.Add(StringID(fullyQualifiedName));
+            baseClasses.push_back(StringID(fullyQualifiedName));
 
             clang::CXXRecordDecl *pBaseSpecifierRecordDecl = baseSpecifier.getType()->getAsCXXRecordDecl();
             // 检查指针是否为NULL

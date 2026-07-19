@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Core/Types/Collections/ListExtensions.h"
-#include "Core/Types/Delegate.h"
-#include "Core/Types/Strings/String.h"
+#include "Runtime/Core/Types/Collections/ListExtensions.h"
+#include "Runtime/Core/Types/Delegate.h"
+#include "Runtime/Core/Types/Strings/String.h"
 
 #include "Runtime/API.h"
-#include "Core/Systems.h"
+#include "Runtime/Core/Systems.h"
 
 //-------------------------------------------------------------------------
 

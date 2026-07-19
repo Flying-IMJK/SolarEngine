@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Core/Types/Strings/String.h"
-#include "Core/Types/UID.h"
+#include "Runtime/Core/Types/Strings/String.h"
+#include "Runtime/Core/Types/UID.h"
 //#include "Engine/Core/Math/Ray.h"
-#include "Core/Types/Collections/List.h"
-#include "Core/Types/Collections/HashSet.h"
+#include "Runtime/Core/Types/Collections/List.h"
+#include "Runtime/Core/Types/Collections/HashSet.h"
 
 #include "Runtime/API.h"
 #include "Version.h"

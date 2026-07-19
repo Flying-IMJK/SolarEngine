@@ -1,6 +1,6 @@
 #include "GraphicShaderParser.h"
 
-#include "Core/Logging/Logging.h"
+#include "Runtime/Core/Logging/Logging.h"
 
 namespace SE::ShaderParser
 {

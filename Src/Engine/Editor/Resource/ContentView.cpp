@@ -1,10 +1,10 @@
 
 #include "ContentView.h"
 
-#include "Core/Input/Input.h"
-#include "Core/Types/Collections/Sorting.h"
-#include "Core/Platform/Clipboard.h"
-#include "Core/Types/Collections/ListExtensions.h"
+#include "Runtime/Input/Input.h"
+#include "Runtime/Core/Types/Collections/Sorting.h"
+#include "Runtime/Core/Platform/Clipboard.h"
+#include "Runtime/Core/Types/Collections/ListExtensions.h"
 #include "Editor/EditorApp.h"
 #include "Editor/Modules/AssetImportingModule.h"
 #include "Editor/Modules/WindowsModule.h"

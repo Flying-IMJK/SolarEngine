@@ -16,6 +16,7 @@ namespace SE::Editor
     class ActorChildNode;
     class ActorTreeNode;
 
+    SE_CLASS(Reflect)
     class ActorGraphNode : public ScenesGraphNode
     {
         SE_DEFINE_CLASS(ActorGraphNode, ScenesGraphNode)

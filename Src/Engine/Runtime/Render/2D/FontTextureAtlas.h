@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Math/Vector2.h"
+#include "Runtime/Core/Math/Vector2.h"
 #include "Runtime/Render/Assets/Texture/Texture.h"
 #include "Runtime/Utilities/RectPack.h"
 

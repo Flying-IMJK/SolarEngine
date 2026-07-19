@@ -20,6 +20,7 @@ namespace SE::Editor
     /// <param name="location">The location.</param>
     using NodeClickDelegate = Delegate<TreeNode*, Float2>;
 
+    SE_CLASS(Reflect)
     class Tree : public ContainerControl
     {
         SE_DEFINE_CLASS(Tree, ContainerControl)

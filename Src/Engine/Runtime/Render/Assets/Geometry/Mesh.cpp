@@ -2,14 +2,14 @@
 
 #include "Mesh.h"
 
-#include <Core/Math/Transform.h>
+#include <Runtime/Core/Math/Transform.h>
 
 #include "MeshDeformation.h"
 #include "Model.h"
 #include "ModelInstanceEntry.h"
 #include "ModelLOD.h"
-#include "Core/Profiler/ProfilerCPU.h"
-#include "Core/Serialization/MemoryReadStream.h"
+#include "Runtime/Core/Profiler/ProfilerCPU.h"
+#include "Runtime/Core/Serialization/MemoryReadStream.h"
 #include "Runtime/Graphics/GPUContext.h"
 #include "Runtime/Graphics/GPUDevice.h"
 #include "Runtime/Graphics/Base/GPUBuffer.h"

@@ -10,6 +10,7 @@ namespace SE
 namespace SE::Editor
 {
 
+	SE_CLASS(Reflect)
 	class SceneGraphNode : public ActorGraphNode
 	{
 		SE_DEFINE_CLASS_DEFAULT(SceneGraphNode, ActorGraphNode)

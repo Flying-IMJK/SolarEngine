@@ -1,22 +1,22 @@
 
 #include "AssetLoading.h"
 #include "AssetTask.h"
-#include "Core/Logging/Logging.h"
-#include "Core/Math/Math.h"
-#include "Core/Types/Collections/List.h"
-#include "Core/Platform/CPUInfo.h"
-#include "Core/Platform/Thread.h"
-#include "Core/Platform/ConditionVariable.h"
-#include "Core/Systems.h"
-#include "Core/Thread/Threading.h"
+#include "Runtime/Core/Logging/Logging.h"
+#include "Runtime/Core/Math/Math.h"
+#include "Runtime/Core/Types/Collections/List.h"
+#include "Runtime/Core/Platform/CPUInfo.h"
+#include "Runtime/Core/Platform/Thread.h"
+#include "Runtime/Core/Platform/ConditionVariable.h"
+#include "Runtime/Core/Systems.h"
+#include "Runtime/Core/Thread/Threading.h"
 #if SE_EDITOR && PLATFORM_WINDOWS
-#include "Core/Platform/Win32/IncludeWindowsHeaders.h"
+#include "Runtime/Core/Platform/Win32/IncludeWindowsHeaders.h"
 #include <propidlbase.h>
 #endif
 
 #include "Runtime/Resource/AssetConfig.h"
-#include "Core/Thread/ThreadLocal.h"
-#include "Core/TypeSystem/Types.h"
+#include "Runtime/Core/Thread/ThreadLocal.h"
+#include "Runtime/Core/TypeSystem/Types.h"
 
 namespace SE
 {

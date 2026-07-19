@@ -4,9 +4,9 @@
 
 #include "PreviewsCache.h"
 #include "ThumbnailRequest.h"
-#include "Core/Logging/Exception.h"
-#include "Core/Platform/Windows/WindowsFileSystem.h"
-#include "Core/Thread/Threading.h"
+#include "Runtime/Core/Logging/Exception.h"
+#include "Runtime/Core/Platform/Windows/WindowsFileSystem.h"
+#include "Runtime/Core/Thread/Threading.h"
 #include "Editor/EditorApp.h"
 #include "Editor/Modules/AssetDatabaseModule.h"
 #include "Editor/Resource/Items/AssetItem.h"

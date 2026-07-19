@@ -1,12 +1,10 @@
 #pragma once
 
 #include "ReflectionProjectTypes.h"
-#include "Core/TypeSystem/Info/TypeCompositeInfo.h"
-#include "Core/TypeSystem/CoreTypes.h"
 #include "Core/TypeSystem/Property/TypeProperty.h"
 
 //-------------------------------------------------------------------------
-namespace SE::ReflectTool
+namespace SE::BuildTool
 {
     // -------------------------------------------------------------------------
     // Access level for API types and members
@@ -40,119 +38,145 @@ namespace SE::ReflectTool
 
     struct ApiParam
     {
-        StringAnsi cppType;
-        StringAnsi name;
+        std::string cppType;
+        std::string name;
         bool       isPointer = false;
         bool       isConst = false;
         bool       isRef = false;
         bool       isOut = false;
-        StringAnsi defaultValue;
-        StringAnsi attributes;
+        std::string defaultValue;
+        std::string attributes;
+        std::string marshalAs;
+        std::string comment;
     };
 
     struct ApiFunction
     {
-        StringAnsi         name;
-        StringAnsi         returnType;
-        List<ApiParam>     params;
+        std::string         name;
+        std::string         returnType;
+        std::vector<ApiParam>     params;
         bool               isStatic = false;
         bool               isVirtual = false;
         bool               isConst = false;
-        StringAnsi         uniqueName;
-        StringAnsi         entryPoint;
+        std::string         uniqueName;
+        std::string         entryPoint;
         bool               noProxy = false;
         bool               isHidden = false;
         bool               isSealed = false;
-        StringAnsi         attributes;
-        StringAnsi         tag;
+        bool               isDeprecated = false;
+        AccessLevel        access = AccessLevel::Public;
+        std::string         attributes;
+        std::string         tag;
+        std::string         comment;
+        std::string         marshalAs;
         int                lineNumber = -1;
     };
 
     struct ApiProperty
     {
-        StringAnsi cppType;
-        StringAnsi name;
-        StringAnsi getterName;
-        StringAnsi setterName;
-        StringAnsi getterUniqueName;
-        StringAnsi setterUniqueName;
-        StringAnsi getterEntryPoint;
-        StringAnsi setterEntryPoint;
+        std::string cppType;
+        std::string name;
+        std::string getterName;
+        std::string setterName;
+        std::string getterUniqueName;
+        std::string setterUniqueName;
+        std::string getterEntryPoint;
+        std::string setterEntryPoint;
         bool       hasGetter = false;
         bool       hasSetter = false;
         AccessLevel getterAccess = AccessLevel::Public;
         AccessLevel setterAccess = AccessLevel::Public;
-        StringAnsi attributes;
+        std::string attributes;
+        std::string comment;
+        std::string marshalAs;
         int        lineNumber = -1;
     };
 
     struct ApiField
     {
-        StringAnsi cppType;
-        StringAnsi name;
+        std::string cppType;
+        std::string name;
         bool       isReadOnly = false;
         bool       isStatic = false;
         bool       isHidden = false;
-        StringAnsi attributes;
+        bool       isDeprecated = false;
+        std::string attributes;
+        std::string defaultValue;
+        std::string comment;
+        std::string marshalAs;
         int        arraySize = 0;
         int        lineNumber = -1;
     };
 
     struct ApiEvent
     {
-        StringAnsi         name;
-        StringAnsi         cppType;
-        StringAnsi         namespaceName;
-        List<ApiParam>     params;
+        std::string         name;
+        std::string         cppType;
+        std::vector<std::string>   namespaceNameList;
+        std::vector<ApiParam>     params;
         bool               isStatic = false;
         AccessLevel        access = AccessLevel::Public;
-        StringAnsi         attributes;
+        std::string         attributes;
+        std::string         comment;
         int                lineNumber = -1;
     };
 
     struct ApiInterface
     {
-        StringAnsi         name;
-        StringAnsi         namespaceName;
-        List<ApiFunction>  functions;
+        std::string         name;
+        std::string         nativeName;
+        std::vector<std::string>   namespaceNameList;
+        std::vector<ApiFunction>  functions;
         AccessLevel        access = AccessLevel::Public;
-        StringAnsi         attributes;
+        std::string         attributes;
+        std::string         comment;
         int                lineNumber = -1;
     };
 
     struct ApiEnum
     {
-        StringAnsi         name;
-        StringAnsi         namespaceName;
-        StringAnsi         underlyingType;
-        List<StringAnsi>   valueNames;
-        List<int64>        values;
+        std::string         name;
+        std::vector<std::string>   namespaceScopeList;
+        std::vector<std::string>   structScopeList;
+        std::string         underlyingType;
+        std::vector<std::string>   valueNames;
+        std::vector<int64>        values;
+        std::vector<std::string>   valueComments;
         AccessLevel        access = AccessLevel::Public;
-        StringAnsi         attributes;
+        std::string         attributes;
+        std::string         comment;
         int                lineNumber = -1;
     };
 
     struct ApiClass
     {
-        StringAnsi         name;
-        StringAnsi         namespaceName;
-        StringAnsi         baseClassName;
-        StringAnsi         headerFilePath;
-        List<ApiFunction>  functions;
-        List<ApiProperty>  properties;
-        List<ApiField>     fields;
-        List<ApiInterface> interfaces;
-        List<ApiEvent>     events;
+        std::string               name;
+        std::string               nativeName;
+        std::vector<std::string>  namespaceNameList;
+        std::vector<std::string>  structScopeList;
+        std::string               baseClassName;
+        std::string               headerFilePath;
+        std::vector<ApiFunction>  functions;
+        std::vector<ApiProperty>  properties;
+        std::vector<ApiField>     fields;
+        std::vector<ApiInterface> interfaces;
+        std::vector<ApiEvent>     events;
         bool               isAbstract = false;
+        bool               isTemplate = false;
         bool               isStruct = false;
+        bool               isPod = false;
         bool               isSealed = false;
         bool               isStatic = false;
         bool               noSpawn = false;
         bool               noConstructor = false;
         bool               isScriptingObject = false;
+        bool               isInterface = false;
+        bool               isDeprecated = false;
         AccessLevel        access = AccessLevel::Public;
-        StringAnsi         attributes;
-        StringAnsi         tag;
+        std::string         attributes;
+        std::string         tag;
+        std::string         comment;
+        std::string         marshalAs;
         int                lineNumber = -1;
     };
 
@@ -161,11 +185,11 @@ namespace SE::ReflectTool
     // -------------------------------------------------------------------------
     struct BindingInfo
     {
-        List<ApiFunction>  functions;
-        List<ApiProperty>  bindingProperties;
-        List<ApiField>     fields;
-        List<ApiInterface> interfaces;
-        List<ApiEvent>     events;
+        std::vector<ApiFunction>  functions;
+        std::vector<ApiProperty>  bindingProperties;
+        std::vector<ApiField>     fields;
+        std::vector<ApiInterface> interfaces;
+        std::vector<ApiEvent>     events;
 
         bool isSealed = false;
         bool isStatic = false;
@@ -173,27 +197,32 @@ namespace SE::ReflectTool
         bool noSpawn = false;
         bool noConstructor = false;
         bool isScriptingObject = false;
-        StringAnsi baseClassName;
-        StringAnsi attributes;
-        StringAnsi tag;
+        bool isInterface = false;
+        bool isDeprecated = false;
+        std::string name = "";
+        std::string baseClassName = "";
+        std::string attributes = "";
+        std::string tag = "";
+        std::string comment = "";
+        std::string marshalAs = "";
 
-        StringAnsi assemblyName;
-        StringAnsi assemblyDir;
+        std::string assemblyName = "";
+        std::string assemblyDir = "";
     };
 
-    struct DataProperty
+    struct PropertyData
     {
     public:
-        DataProperty() = default;
+        PropertyData() = default;
 
-        DataProperty( StringAnsi const& name, int32_t lineNumber )
-            : propertyID( name.ToString() )
+        PropertyData( std::string const& name, int32_t lineNumber )
+            : propertyID( name )
             , name( name )
             , lineNumber( lineNumber )
         {}
 
-        DataProperty( StringAnsi const& name, String const& typeName, int32_t lineNumber )
-            : propertyID( name.ToString() )
+        PropertyData( std::string const& name, std::string const& typeName, int32_t lineNumber )
+            : propertyID( name )
             , name( name )
             , typeName( typeName )
             , lineNumber( lineNumber )
@@ -207,85 +236,83 @@ namespace SE::ReflectTool
         inline bool IsDynamicArrayProperty() const { return flags.IsFlag( TypeProperty::Flags::IsDynamicArray ); }
         inline uint32_t GetArraySize() const { ENGINE_ASSERT( arraySize > 0 ); return (uint32_t) arraySize; }
 
-        inline bool operator==( DataProperty const& RHS ) const { return propertyID == RHS.propertyID; }
-        inline bool operator!=( DataProperty const& RHS ) const { return propertyID != RHS.propertyID; }
+        inline bool operator==( PropertyData const& RHS ) const { return propertyID == RHS.propertyID; }
+        inline bool operator!=( PropertyData const& RHS ) const { return propertyID != RHS.propertyID; }
 
         // Dev Info
         //-------------------------------------------------------------------------
 
-		StringAnsi GetFriendlyName() const;
-        StringAnsiView GetCategory() const { return category; }
+		std::string GetFriendlyName() const;
+        std::string_view GetCategory() const { return category; }
 
         // MetaData
         //-------------------------------------------------------------------------
 
-        bool HasMetaData() const { return !metaData.IsEmpty(); }
+        bool HasMetaData() const { return !metaData.empty(); }
 
     public:
 
         TypeID											propertyID;
         int												lineNumber = -1;
         TypeID											typeID;
-		StringAnsi                                      name;
-		StringAnsi                                      metaData;
-		StringAnsi                                      description;
-		StringAnsi                                      typeName;
-		StringAnsi                                      templateArgTypeName;
+		std::string                                     name;
+		std::string                                     metaData;
+		std::string                                     description;
+		std::string                                     typeName;
+		std::string                                     templateArgTypeName;
         int												arraySize = -1;
         EnumFlags<TypeProperty::Flags>                  flags;
         bool                                            isDevOnly = true;
 
         // From MetaData
-		StringAnsi		                                category;
+		std::string		                                category;
         bool                                            isToolsReadOnly = false;
         bool                                            showInRestrictedMode = false;
     };
 
     //-------------------------------------------------------------------------
 
-    struct ReflectedEnumConstant
+    struct EnumDataConstant
     {
         StringID                                        ID;
-		StringAnsi                                     	label;
+		std::string                                     label;
         int												value;
-		StringAnsi                                      description;
+		std::string                                     description;
     };
 
-    struct DataType
+    struct TypeData
     {
         enum class Flags
         {
-            IsAbstract = 1 << 0,
-            IsEnum = 1 << 1,
-        	IsStruct = 1 << 2,
-        	IsMeta = 1 << 3,
+            IsStruct = 1,
+            IsEnum = 2,
+            IsMeta = 4,
+            IsAbstract = 8,
+            IsTemplate = 16
         };
 
     public:
-		DataType() = default;
+        TypeData() = default;
 
-        DataType(StringID typeID, StringAnsi const& name ) : typeID( typeID ), name( name )
+        TypeData(StringID typeID, std::string const& name ) : typeID( typeID ), name( name )
         {}
 
-        inline bool IsAbstract() const { return flags.IsFlag( Flags::IsAbstract ); }
-        inline bool IsStruct() const { return flags.IsFlag( Flags::IsStruct ); }
-        inline bool IsEnum() const { return flags.IsFlag( Flags::IsEnum ); }
-    	inline bool IsMeta() const { return flags.IsFlag( Flags::IsMeta ); }
+        bool IsFlag(Flags flag) const { return flags.IsFlag( flag ); }
 
         // Structure functions
-        DataProperty const* GetPropertyDescriptor( StringID propertyID ) const;
+        PropertyData const* GetPropertyDescriptor( StringID propertyID ) const;
 
         // Enum functions
-        void AddEnumConstant( ReflectedEnumConstant const& constant );
+        void AddEnumConstant( EnumDataConstant const& constant );
         bool IsValidEnumLabelID( StringID labelID ) const;
         bool GetValueFromEnumLabel( StringID labelID, uint32& value ) const;
 
         // Dev tools helpers
-		StringAnsi GetFriendlyName() const;
-		StringAnsi GetCategory() const;
+        std::string GetFriendlyName() const;
+        std::string GetCategory() const;
 
         // Generate additional type info
-        inline bool HasProperties() const { return !properties.IsEmpty(); }
+        inline bool HasProperties() const { return !properties.empty(); }
         bool HasArrayProperties() const;
         bool HasDynamicArrayProperties() const;
         bool HasResourcePtrProperties() const;
@@ -296,21 +323,21 @@ namespace SE::ReflectTool
         bool isAPI = false;
         TypeID											typeID;
         HeaderID                                        headerID;
-		StringAnsi                                		name = "Invalid";
-		StringAnsi                                		namespaceName;
+        std::string                                		name = "Invalid";
+        std::vector<std::string>                        namespaceScopeList;
+        std::vector<std::string>                        structScopeList;
         EnumFlags<Flags>                                flags;
 
         // Structures
         StringID                                        parentTypeID;
-        List<DataProperty>                              properties;
+        std::vector<PropertyData>                       properties;
 
         // Enums
-        TypeIDCore                                      underlyingType = TypeIDCore::Uint8;
-		List<ReflectedEnumConstant>                     enumConstants;
+        Utils::TypeIDCore                               underlyingType = Utils::TypeIDCore::Uint8;
+        std::vector<EnumDataConstant>                   enumConstants;
 
         bool                                            isDevOnly = false;
 
-        // Bindings extension (populated when API_CLASS/API_STRUCT/API_ENUM is present)
         BindingInfo                                     bindingInfo;
     };
 
@@ -319,16 +346,16 @@ namespace SE::ReflectTool
     struct ReflectedResourceType
     {
         // Fill the resource type ID and the friendly name from the macro registration string
-        bool TryParseResourceRegistrationMacroString( String const& registrationStr );
+        bool TryParseResourceRegistrationMacroString( std::string const& registrationStr );
 
     public:
 
         TypeID                                          typeID;
         TypeID											resourceTypeID;
-		StringAnsi                                      friendlyName;
+		std::string                                      friendlyName;
         HeaderID                                        headerID;
-		StringAnsi                                      className;
-		StringAnsi                                      namespaceName;
-		List<StringID>                                  parents;
+		std::string                                      className;
+		std::string                                      namespaceName;
+		std::vector<StringID>                                  parents;
     };
 }

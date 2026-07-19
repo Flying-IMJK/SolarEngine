@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Core/Types/Collections/Dictionary.h"
-#include "Core/Thread/Threading.h"
+#include "Runtime/Core/Types/Collections/Dictionary.h"
+#include "Runtime/Core/Thread/Threading.h"
 #include "Runtime/Graphics/GPUDevice.h"
 #include "Runtime/Graphics/Base/GPUResource.h"
 #include "Runtime/Graphics/Textures/GPUTextureDescription.h"

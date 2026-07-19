@@ -146,6 +146,7 @@ namespace SE
         /// </summary>
         /// <param name="size">The font characters size.</param>
         /// <returns>The created font object.</returns>
+        SE_FUNCTION(API)
         Font* CreateFont(float size);
 
         /// <summary>

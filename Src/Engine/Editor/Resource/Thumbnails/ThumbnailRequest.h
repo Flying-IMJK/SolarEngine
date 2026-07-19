@@ -1,5 +1,5 @@
 #pragma once
-#include "Core/Types/Property.h"
+#include "Runtime/Core/Types/Property.h"
 #include "Runtime/Render/2D/SpriteAtlas.h"
 
 namespace SE

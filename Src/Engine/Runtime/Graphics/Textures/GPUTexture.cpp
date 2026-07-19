@@ -2,13 +2,13 @@
 #include "GPUTexture.h"
 #include "GPUTextureDescription.h"
 
-#include "Core/Math/Color.h"
-#include "Core/Math/Math.h"
-#include "Core/Math/Vector2.h"
-#include "Core/Math/Vector3.h"
-#include "Core/Profiler/Profiler.h"
-#include "Core/Thread/ThreadPool.h"
-#include "Core/Types/BitFlagsUtility.h"
+#include "Runtime/Core/Math/Color.h"
+#include "Runtime/Core/Math/Math.h"
+#include "Runtime/Core/Math/Vector2.h"
+#include "Runtime/Core/Math/Vector3.h"
+#include "Runtime/Core/Profiler/Profiler.h"
+#include "Runtime/Core/Thread/ThreadPool.h"
+#include "Runtime/Core/Types/BitFlagsUtility.h"
 
 #include "Runtime/Graphics/GPUContext.h"
 #include "Runtime/Graphics/GPUDevice.h"
@@ -229,12 +229,21 @@ namespace SE
 		}
 	}
 
+	GPUTexture* GPUTexture::Spawn(const SpawnParams& params)
+	{
+		return GPUDevice::instance->CreateTexture();
+	}
+
 	GPUTexture* GPUTexture::New()
 	{
 		return GPUDevice::instance->CreateTexture();
 	}
 
-	GPUTexture::GPUTexture() : m_ResidentMipLevels(0), m_SRGB(false), m_IsBlockCompressed(false)
+	GPUTexture::GPUTexture()
+		: GPUResource(SpawnParams(UID::New(), TypeInitializer))
+		, m_ResidentMipLevels(0)
+		, m_SRGB(false)
+		, m_IsBlockCompressed(false)
 	{
 		// Keep description data clear (we use _desc.MipLevels to check if it's has been initated)
 		m_Desc.Clear();

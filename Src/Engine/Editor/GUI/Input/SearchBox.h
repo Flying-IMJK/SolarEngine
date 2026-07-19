@@ -12,6 +12,7 @@ namespace SE::Editor
 	/// <summary>
 	/// Search box control which can gather text search input from the user.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class SearchBox : public TextBox
 	{
 		SE_DEFINE_CLASS(SearchBox, TextBox)

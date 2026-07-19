@@ -7,6 +7,7 @@ namespace SE::Editor
     /// <summary>
     /// A <see cref="Texture"/> asset operate object.
     /// </summary>
+    SE_CLASS(Reflect)
     class TextureOperate : public BinaryAssetOperate
     {
         SE_DEFINE_CLASS_DEFAULT(TextureOperate, BinaryAssetOperate)

@@ -1,9 +1,9 @@
 #pragma once
 
 
-#include "Core/Math/Vector4.h"
-#include "Core/Serialization/ISerializable.h"
-#include "Core/TypeSystem/IType.h"
+#include "Runtime/Core/Math/Vector4.h"
+#include "Runtime/Core/Serialization/ISerializable.h"
+#include "Runtime/Core/TypeSystem/IType.h"
 
 #include "Runtime/API.h"
 #include "Runtime/Render/Assets/Texture/Texture.h"
@@ -34,6 +34,7 @@ namespace SE
     /// <summary>
     /// Contains settings for Tone Mapping effect rendering.
     /// </summary>
+    SE_STRUCT(Reflect)
     struct SE_API_RUNTIME ToneMappingSettings : IType, ISerializable
     {
         SE_DEFINE_CLASS_DEFAULT(ToneMappingSettings, IType);
@@ -81,6 +82,7 @@ namespace SE
     /// <summary>
     /// Contains settings for Color Grading effect rendering.
     /// </summary>
+    SE_STRUCT(Reflect)
     struct SE_API_RUNTIME ColorGradingSettings : IType, ISerializable
     {
         // API_AUTO_SERIALIZATION();
@@ -267,6 +269,7 @@ namespace SE
     // <summary>
     /// Contains settings for rendering advanced visual effects and post effects.
     /// </summary>
+    SE_STRUCT(Reflect)
     struct SE_API_RUNTIME PostProcessSettings : IType, ISerializable
     {
         SE_DEFINE_CLASS_DEFAULT(PostProcessSettings, IType);

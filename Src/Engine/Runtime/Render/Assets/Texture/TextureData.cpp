@@ -1,8 +1,8 @@
 
 #include "TextureData.h"
 
-#include "Core/Math/Color.h"
-#include "Core/TypeSystem/CoreTypeConversions.h"
+#include "Runtime/Core/Math/Color.h"
+#include "Runtime/Core/TypeSystem/CoreTypeConversions.h"
 #include "Runtime/Utilities/Texture/TextureUtils.h"
 
 namespace SE

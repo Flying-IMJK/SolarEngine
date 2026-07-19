@@ -51,7 +51,7 @@ namespace SE
 		GPUBufferViewVulkan _view;
 	public:
 		GPUBufferVulkan(GPUDeviceVulkan* device, const StringView& name)
-			: GPUResourceVulkan<GPUBuffer>(device, name)
+			: GPUResourceVulkan<GPUBuffer>(device, name), Access(0)
 		{
 		}
 

@@ -8,6 +8,7 @@ namespace SE::Editor
 	/// <summary>
 	/// A navigation bar control. Shows the current location path with UI buttons to navigate around.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class NavigationBar : public Panel
 	{
 		SE_DEFINE_CLASS(NavigationBar, Panel)

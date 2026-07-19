@@ -1,7 +1,7 @@
 
 #include "GBufferPass.h"
 
-#include "Core/Profiler/Profiler.h"
+#include "Runtime/Core/Profiler/Profiler.h"
 #include "Runtime/Graphics/GPUContext.h"
 #include "Runtime/Graphics/GPUDevice.h"
 #include "Runtime/Graphics/Textures/GPUTexture.h"

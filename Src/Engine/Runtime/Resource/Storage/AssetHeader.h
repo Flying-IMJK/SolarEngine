@@ -1,14 +1,14 @@
 
 #pragma once
 
-#include "Core/Types/UID.h"
-#include "Core/Types/Strings/String.h"
-#include "Core/TypeSystem/TypeID.h"
+#include "Runtime/Core/Types/UID.h"
+#include "Runtime/Core/Types/Strings/String.h"
+#include "Runtime/Core/TypeSystem/TypeID.h"
 #if SE_EDITOR
-#include "Core/Types/DateTime.h"
-#include "Core/Types/Collections/List.h"
+#include "Runtime/Core/Types/DateTime.h"
+#include "Runtime/Core/Types/Collections/List.h"
 #endif
-#include "Core/Types/Collections/DataContainer.h"
+#include "Runtime/Core/Types/Collections/DataContainer.h"
 
 #include "StorageChunk.h"
 

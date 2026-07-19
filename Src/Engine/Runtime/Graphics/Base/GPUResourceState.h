@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Core/Types/Variable.h"
-#include "Core/Types/Collections/List.h"
+#include "Runtime/Core/Types/Variable.h"
+#include "Runtime/Core/Types/Collections/List.h"
 
 namespace SE
 {

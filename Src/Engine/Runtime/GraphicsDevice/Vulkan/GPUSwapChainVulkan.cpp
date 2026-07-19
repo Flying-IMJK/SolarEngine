@@ -6,7 +6,7 @@
 #include "GPUContextVulkan.h"
 #include "CmdBufferVulkan.h"
 #include "Runtime/Graphics/Base/GPULimits.h"
-#include "Core/Profiler/ProfilerCPU.h"
+#include "Runtime/Core/Profiler/ProfilerCPU.h"
 #include "Runtime/Graphics/Base/GPUUtils.h"
 #include "Runtime/GraphicsDevice/Vulkan/Win32/Win32VulkanPlatform.h"
 

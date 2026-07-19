@@ -11,6 +11,7 @@ namespace SE::Editor
     /// Proxy control used for docking <see cref="DockWindow*"/> inside <see cref="DockPanel"/>.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
+    SE_CLASS(Reflect)
     class DockPanelProxy : public ContainerControl
     {
         SE_DEFINE_CLASS_DEFAULT(DockPanelProxy, ContainerControl)

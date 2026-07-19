@@ -1,7 +1,7 @@
 
 #include "StreamingHandlers.h"
 #include "Streaming.h"
-#include "Core/Math/Math.h"
+#include "Runtime/Core/Math/Math.h"
 #include "Runtime/Render/Assets/Texture/StreamingTexture.h"
 #include "Runtime/Graphics/Textures/GPUTexture.h"
 #include "Runtime/Render/Assets/Geometry/Model.h"

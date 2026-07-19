@@ -1,10 +1,10 @@
 
 #include "ModelData.h"
 
-#include "Core/Logging/Exceptions/ArgumentNullException.h"
-#include "Core/Logging/Exceptions/ArgumentOutOfRangeException.h"
-#include "Core/Serialization/Serialization.h"
-#include "Core/Serialization/WriteStream.h"
+#include "Runtime/Core/Logging/Exceptions/ArgumentNullException.h"
+#include "Runtime/Core/Logging/Exceptions/ArgumentOutOfRangeException.h"
+#include "Runtime/Core/Serialization/Serialization.h"
+#include "Runtime/Core/Serialization/WriteStream.h"
 #include "Model.h"
 
 namespace SE

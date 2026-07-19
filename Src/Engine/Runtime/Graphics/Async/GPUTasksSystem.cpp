@@ -2,7 +2,7 @@
 
 #include "GPUTask.h"
 #include "GPUTasksExecutor.h"
-#include "Core/TypeSystem/Types.h"
+#include "Runtime/Core/TypeSystem/Types.h"
 #include "Runtime/Graphics/GPUDevice.h"
 
 namespace SE

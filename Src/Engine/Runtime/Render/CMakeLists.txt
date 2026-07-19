@@ -1,6 +1,5 @@
 ﻿
 add_subdirectory(Assets)
-add_subdirectory(World)
 add_subdirectory(Utils)
 add_subdirectory(GUI)
 add_subdirectory(RenderPass)

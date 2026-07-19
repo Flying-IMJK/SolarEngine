@@ -1,8 +1,8 @@
 #pragma once
 #include "Runtime/UI/GUI/Control.h"
-#include "Core/Math/Color.h"
-#include "Core/Types/Delegate.h"
-#include "Core/Types/Strings/String.h"
+#include "Runtime/Core/Math/Color.h"
+#include "Runtime/Core/Types/Delegate.h"
+#include "Runtime/Core/Types/Strings/String.h"
 
 namespace SE::Editor
 {
@@ -12,9 +12,10 @@ namespace SE::Editor
 	/// <summary>
 	/// Displays custom editor property name with support for context menu and visual feedback.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class PropertyNameLabel : public Control
 	{
-		DEFINE_CLASS(PropertyNameLabel, Control)
+		SE_DEFINE_CLASS(PropertyNameLabel, Control)
 
 	public:
 		/// <summary>
@@ -72,9 +73,10 @@ namespace SE::Editor
 	/// <summary>
 	/// Clickable property name label that fires mouse events.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class ClickablePropertyNameLabel : public PropertyNameLabel
 	{
-		DEFINE_CLASS(ClickablePropertyNameLabel, PropertyNameLabel)
+		SE_DEFINE_CLASS(ClickablePropertyNameLabel, PropertyNameLabel)
 
 	public:
 		/// <summary>
@@ -113,9 +115,10 @@ namespace SE::Editor
 	/// <summary>
 	/// Draggable property name label with drag events.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class DraggablePropertyNameLabel : public PropertyNameLabel
 	{
-		DEFINE_CLASS(DraggablePropertyNameLabel, PropertyNameLabel)
+		SE_DEFINE_CLASS(DraggablePropertyNameLabel, PropertyNameLabel)
 
 	public:
 		/// <summary>
@@ -154,9 +157,10 @@ namespace SE::Editor
 	/// <summary>
 	/// Checkable property name label with checkbox functionality.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class CheckablePropertyNameLabel : public PropertyNameLabel
 	{
-		DEFINE_CLASS(CheckablePropertyNameLabel, PropertyNameLabel)
+		SE_DEFINE_CLASS(CheckablePropertyNameLabel, PropertyNameLabel)
 
 	public:
 		/// <summary>

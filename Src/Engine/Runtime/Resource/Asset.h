@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Core/Types/Delegate.h"
-#include "Core/Platform/CriticalSection.h"
-#include "Core/Types/Object.h"
+#include "Runtime/Core/Types/Delegate.h"
+#include "Runtime/Core/Platform/CriticalSection.h"
+#include "Runtime/Core/Types/Object.h"
 
 #include "Runtime/API.h"
 #include "AssetInfo.h"
-#include "Runtime/Scripting/ScriptingObject.h"
+#include "Runtime/Core/Scripting/ScriptingObject.h"
 
 namespace SE
 {

@@ -10,8 +10,16 @@ set(LLVM "LLVM15")
 set("SOURCES"
     Reflector.h
     Reflector.cpp
-    ReflectorSettingsAndUtils.h
-    ReflectorSettingsAndUtils.cpp
+    Core/Utils.h
+    Core/Utils.cpp
+    Core/TopologicalSort.h
+    Core/TopologicalSort.cpp
+    Core/Time.h
+    Core/StringID.h
+    Core/String.h
+    Core/FileSystem.h
+    Core/Dictionary.h
+    Core/Json.h
 
     Database/ReflectionDatabase.h
     Database/ReflectionDatabase.cpp
@@ -27,8 +35,14 @@ set("SOURCES"
     CodeGenerators/CodeGenerator_CPP_Meta.cpp
     CodeGenerators/CodeGenerator_CPP.h
     CodeGenerators/CodeGenerator_CPP.cpp
+    CodeGenerators/CodeGenerator_Utils.h
+    CodeGenerators/CodeGenerator_Utils.cpp
 
     CodeGenerators/CodeGenerator_BindingsDataTypes.h
+    CodeGenerators/CodeGenerator_BindingsModel.h
+    CodeGenerators/CodeGenerator_BindingsModel.cpp
+    CodeGenerators/CodeGenerator_BindingsNativeStubs.h
+    CodeGenerators/CodeGenerator_BindingsNativeStubs.cpp
     CodeGenerators/CodeGenerator_BindingsTypeMap.h
     CodeGenerators/CodeGenerator_BindingsTypeMap.cpp
     CodeGenerators/CodeGenerator_BindingsCpp.h
@@ -51,8 +65,6 @@ set("SOURCES"
     Clang/ClangVisitors_TranslationUnit.h
     Clang/ClangVisitors_TranslationUnit.cpp
 
-    TopologicalSort.h
-    TopologicalSort.cpp
     mustache.hpp
 )
 
@@ -70,10 +82,13 @@ include_directories(${LLVM_INCLUDE_DIRS})
 # them in the solution explorer without them being added to the list of sources
 add_executable(${REFLECTOR_TARGET} ${SOURCES})
 
-target_link_libraries(${REFLECTOR_TARGET} SECore)
+target_link_libraries(${REFLECTOR_TARGET} sqlite3 fmt::fmt)
 
 target_include_directories(${REFLECTOR_TARGET}
-    PUBLIC ${EngineRootDir}/
+    PUBLIC ${EngineRootDir}/BuildTool/Code
+    PUBLIC ${EngineLibDir}/sqlite3
+    PUBLIC ${EngineLibDir}/assimp/contrib/rapidjson/include
+    PUBLIC ${EngineLibDir}/fmt/include
 )
 
 set_target_properties(${REFLECTOR_TARGET} PROPERTIES CXX_STANDARD 17)
@@ -128,13 +143,13 @@ endif()
 
 target_link_directories(${REFLECTOR_TARGET} PUBLIC ${LLVM_LIBRARY_DIR})
 
+file(GLOB LLVM_RUNTIME_FILES CONFIGURE_DEPENDS "${LLVM_SHARED_LIBRARY_DIR}/*")
+
 # copy resources on post build
 add_custom_command(TARGET ${REFLECTOR_TARGET} POST_BUILD
-	# mustache templates directory
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${LLVM_SHARED_LIBRARY_DIR}"
-		$<TARGET_FILE_DIR:${REFLECTOR_TARGET}>
-    COMMAND ${CMAKE_COMMAND} -E copy
-		"${ProjectBuildDir}/SECore.dll" "${ProjectBuildDir}/SECore.pdb"
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+        $<TARGET_FILE_DIR:${REFLECTOR_TARGET}>
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different
+		${LLVM_RUNTIME_FILES}
 		$<TARGET_FILE_DIR:${REFLECTOR_TARGET}>
 )

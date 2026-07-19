@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/TypeSystem/IType.h"
+#include "Runtime/Core/TypeSystem/IType.h"
 #include "Runtime/API.h"
 
 namespace SE

@@ -7,6 +7,7 @@ namespace SE
     /// <summary>
     /// Base class for all text box controls which can gather text input from the user.
     /// </summary>
+    SE_CLASS(Reflect)
     class SE_API_RUNTIME TextBoxBase : public ContainerControl
     {
         SE_DEFINE_CLASS(TextBoxBase, ContainerControl)

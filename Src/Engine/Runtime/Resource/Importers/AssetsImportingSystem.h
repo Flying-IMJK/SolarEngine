@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Core/Types/Strings/String.h"
-#include "Core/Types/UID.h"
+#include "Runtime/Core/Types/Strings/String.h"
+#include "Runtime/Core/Types/UID.h"
 #include "Runtime/API.h"
 
 #include "Types.h"

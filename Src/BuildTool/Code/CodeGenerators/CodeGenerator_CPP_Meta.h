@@ -5,11 +5,11 @@
 
 using namespace kainjow;
 
-namespace SE::ReflectTool
+namespace SE::BuildTool
 {
     class Generator;
 
-    void CppGenerateMeta(Generator* generator, ReflectionDatabase const& database, std::stringstream& codeFile, DataType const& type, std::string templateStr);
+    void CppGenerateMeta(Generator* generator, ReflectionDatabase const& database, std::stringstream& codeFile, TypeData const& type, std::string templateStr);
 
-    void CppParseMeta(Generator* generator, mustache::data& metaList, StringAnsi const& metaContext);
+    void CppParseMeta(Generator* generator, mustache::data& metaList, std::string const& metaContext);
 }

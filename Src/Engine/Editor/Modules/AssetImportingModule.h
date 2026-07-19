@@ -2,11 +2,11 @@
 
 #include "EditorModule.h"
 #include "Editor/Resource/Import/ImportFileEntry.h"
-#include "Core/Types/Strings/String.h"
-#include "Core/Types/Collections/Dictionary.h"
-#include "Core/Types/Delegate.h"
-#include "Core/Platform/CriticalSection.h"
-#include "Core/Thread/JobSystem.h"
+#include "Runtime/Core/Types/Strings/String.h"
+#include "Runtime/Core/Types/Collections/Dictionary.h"
+#include "Runtime/Core/Types/Delegate.h"
+#include "Runtime/Core/Platform/CriticalSection.h"
+#include "Runtime/Core/Thread/JobSystem.h"
 
 namespace SE::Editor
 {

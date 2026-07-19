@@ -3,11 +3,11 @@
 
 #include "Element/LabelElement.h"
 #include "CustomEditorFactory.h"
-#include "Core/Types/Object.h"
+#include "Runtime/Core/Types/Object.h"
 #include "Runtime/UI/GUI/Common/ClickableLabel.h"
 #include "Runtime/UI/GUI/Panels/Panel.h"
 #include "Values/ValueContainer.h"
-#include "Core/Types/Collections/Span.h"
+#include "Runtime/Core/Types/Collections/Span.h"
 
 namespace SE::Editor
 {

@@ -55,7 +55,8 @@ namespace SE
 		return GetHash(name) * 37 + permutationIndex;
 	}
 
-	GPUShader::GPUShader() : GPUResource()
+	GPUShader::GPUShader()
+		: GPUResource(SpawnParams(UID::New(), TypeInitializer))
 	{
 		Platform::MemoryClear(m_ConstantBuffers, sizeof(m_ConstantBuffers));
 	}

@@ -1,29 +1,29 @@
 #include "DataTypes.h"
 
-#include "Core/Types/Strings/String.h"
-#include "Core/ThirdParty/rapidjson/document.h"
+#include "Core/Utils.h"
+#include "Core/Json.h"
 //-------------------------------------------------------------------------
 
-namespace SE::ReflectTool
+namespace SE::BuildTool
 {
-    static void GenerateFriendlyName( StringAnsi& name )
+    static void GenerateFriendlyName( std::string& name )
     {
-        if ( name.Length() <= 1 )
+        if ( name.length() <= 1 )
         {
             return;
         }
 
         //-------------------------------------------------------------------------
 
-		name.Replace("_", " ");
+		Utils::String::ReplaceAll(name, "_", " ");
 
         name[0] = (char) toupper( name[0] );
 
         int32_t i = 1;
-        while ( i < name.Length() )
+        while ( i < name.length() )
         {
             // Only insert a space before a Capital letter, if it isnt the last letter and if it isnt followed or preceded by a capital letter
-            bool const shouldInsertSpace = isupper( name[i] ) && i != name.Length() - 1 && ( name[i - 1] != '/') && !isupper(name[i - 1]) && !isupper(name[i + 1]);
+            bool const shouldInsertSpace = isupper( name[i] ) && i != name.length() - 1 && ( name[i - 1] != '/') && !isupper(name[i - 1]) && !isupper(name[i + 1]);
             if ( shouldInsertSpace )
             {
                 name[i] = ' ';
@@ -36,9 +36,9 @@ namespace SE::ReflectTool
 
     //-------------------------------------------------------------------------
 
-    DataProperty const* DataType::GetPropertyDescriptor( StringID propertyID ) const
+    PropertyData const* TypeData::GetPropertyDescriptor( StringID propertyID ) const
     {
-        ENGINE_ASSERT( typeID != StringID::Invalid && !IsAbstract() && !IsEnum() );
+        ENGINE_ASSERT( typeID != StringID::Invalid && !IsFlag(TypeData::Flags::IsAbstract) && !IsFlag(TypeData::Flags::IsEnum));
         for ( auto const& prop : properties )
         {
             if ( prop.propertyID == propertyID )
@@ -50,19 +50,19 @@ namespace SE::ReflectTool
         return nullptr;
     }
 
-	StringAnsi DataProperty::GetFriendlyName() const
+	std::string PropertyData::GetFriendlyName() const
     {
-		StringAnsi name = this->name;
-		name.Replace("m_", "");
+		std::string name = this->name;
+		Utils::String::ReplaceAll(name, "m_", "");
 
-        if ( name.IsEmpty() )
+        if ( name.empty() )
         {
             return name;
         }
 
-        if ( name.Length() > 1 && name[0] == 'p' && isupper( name[1] ) )
+        if ( name.length() > 1 && name[0] == 'p' && isupper( name[1] ) )
         {
-            name = name.Substring( 1, name.Length() - 1 );
+            name = name.substr( 1, name.length() - 1 );
         }
 
         GenerateFriendlyName( name );
@@ -71,18 +71,18 @@ namespace SE::ReflectTool
     }
     //-------------------------------------------------------------------------
 
-    void DataType::AddEnumConstant( ReflectedEnumConstant const& constant )
+    void TypeData::AddEnumConstant( EnumDataConstant const& constant )
     {
-        ENGINE_ASSERT( typeID != StringID::Invalid && IsEnum() );
+        ENGINE_ASSERT( typeID != StringID::Invalid && IsFlag(TypeData::Flags::IsEnum) );
         ENGINE_ASSERT( constant.ID != StringID::Invalid );
         ENGINE_ASSERT( !IsValidEnumLabelID( constant.ID ) );
 
-		enumConstants.Add( constant );
+		enumConstants.push_back( constant );
     }
 
-    bool DataType::GetValueFromEnumLabel( StringID labelID, uint32_t& value ) const
+    bool TypeData::GetValueFromEnumLabel( StringID labelID, uint32_t& value ) const
     {
-        ENGINE_ASSERT( typeID != StringID::Invalid && IsEnum() );
+        ENGINE_ASSERT( typeID != StringID::Invalid && IsFlag(TypeData::Flags::IsEnum) );
 
         for ( auto const& constant : enumConstants )
         {
@@ -96,7 +96,7 @@ namespace SE::ReflectTool
         return false;
     }
 
-    bool DataType::IsValidEnumLabelID( StringID labelID ) const
+    bool TypeData::IsValidEnumLabelID( StringID labelID ) const
     {
         for ( auto const& constant : enumConstants )
         {
@@ -109,23 +109,23 @@ namespace SE::ReflectTool
         return false;
     }
 
-	StringAnsi DataType::GetFriendlyName() const
+	std::string TypeData::GetFriendlyName() const
     {
-		StringAnsi friendlyName = name;
+		std::string friendlyName = name;
         GenerateFriendlyName( friendlyName );
         return friendlyName;
     }
 
-	StringAnsi DataType::GetCategory() const
+	std::string TypeData::GetCategory() const
     {
-		StringAnsi category = namespaceName;
-		category.Replace(Settings::g_engineNamespacePlusDelimiter, "");
-		category.Replace("::", "/");
+		std::string category = Utils::CombineStringList(namespaceScopeList, "::");
+		Utils::String::ReplaceAll(category, Settings::g_engineNamespacePlusDelimiter, "");
+		Utils::String::ReplaceAll(category, "::", "/");
 
         // Remove trailing slash
-        if ( !category.IsEmpty() && category.EndsWith('/' ))
+        if ( !category.empty() && Utils::String::EndsWith(category, '/' ))
         {
-            category.Remove(category.Length() - 1, 1);
+            category.erase(category.length() - 1, 1);
         }
 
         GenerateFriendlyName( category );
@@ -133,7 +133,7 @@ namespace SE::ReflectTool
         return category;
     }
 
-    bool DataType::HasArrayProperties() const
+    bool TypeData::HasArrayProperties() const
     {
         for ( auto& propertyDesc : properties )
         {
@@ -146,7 +146,7 @@ namespace SE::ReflectTool
         return false;
     }
 
-    bool DataType::HasDynamicArrayProperties() const
+    bool TypeData::HasDynamicArrayProperties() const
     {
         for ( auto& propertyDesc : properties )
         {
@@ -159,7 +159,7 @@ namespace SE::ReflectTool
         return false;
     }
 
-    bool DataType::HasResourcePtrProperties() const
+    bool TypeData::HasResourcePtrProperties() const
     {
 /*        for ( auto& propertyDesc : m_properties )
         {
@@ -177,7 +177,7 @@ namespace SE::ReflectTool
         return false;
     }
 
-    bool DataType::HasResourcePtrOrStructProperties() const
+    bool TypeData::HasResourcePtrOrStructProperties() const
     {
 /*        for ( auto& propertyDesc : m_properties )
         {
@@ -202,28 +202,28 @@ namespace SE::ReflectTool
 
     //-------------------------------------------------------------------------
 
-    bool ReflectedResourceType::TryParseResourceRegistrationMacroString( String const& registrationStr )
+    bool ReflectedResourceType::TryParseResourceRegistrationMacroString( std::string const& registrationStr )
     {
         /*// Generate type ID string and get friendly name
-		int32 const resourceIDStartIdx = registrationStr.Find(SE_TEXT("\""), 0 );
+		int32 const resourceIDStartIdx = registrationStr.Find("\"", 0 );
         if ( resourceIDStartIdx == INVALID_INDEX )
         {
             return false;
         }
 
-		int32 const resourceIDEndIdx = registrationStr.Find( SE_TEXT("\""), resourceIDStartIdx + 1 );
+		int32 const resourceIDEndIdx = registrationStr.Find( "\"", resourceIDStartIdx + 1 );
         if ( resourceIDEndIdx == INVALID_INDEX )
         {
             return false;
         }
 
-		int32 const resourceFriendlyNameStartIdx = registrationStr.Find(SE_TEXT("\""), resourceIDEndIdx + 1 );
+		int32 const resourceFriendlyNameStartIdx = registrationStr.Find("\"", resourceIDEndIdx + 1 );
         if ( resourceFriendlyNameStartIdx == INVALID_INDEX )
         {
             return false;
         }
 
-		int32 const resourceFriendlyNameEndIdx = registrationStr.Find(SE_TEXT("\""), resourceFriendlyNameStartIdx + 1 );
+		int32 const resourceFriendlyNameEndIdx = registrationStr.Find("\"", resourceFriendlyNameStartIdx + 1 );
         if ( resourceFriendlyNameEndIdx == INVALID_INDEX )
         {
             return false;
@@ -242,7 +242,7 @@ namespace SE::ReflectTool
             return false;
         }
         
-        m_friendlyName = registrationStr.Substring( resourceFriendlyNameStartIdx + 1, resourceFriendlyNameEndIdx - resourceFriendlyNameStartIdx - 1 ).ToStringAnsi();
+        m_friendlyName = registrationStr.Substring( resourceFriendlyNameStartIdx + 1, resourceFriendlyNameEndIdx - resourceFriendlyNameStartIdx - 1 );
 */
         return true;
     }

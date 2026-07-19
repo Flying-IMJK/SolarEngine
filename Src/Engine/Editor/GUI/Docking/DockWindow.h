@@ -13,6 +13,7 @@ namespace SE::Editor
     /// <summary>
     /// Dockable window UI control.
     /// </summary>
+    SE_CLASS(Reflect)
     class DockWindow : public Panel
     {
         friend class MasterDockPanel;

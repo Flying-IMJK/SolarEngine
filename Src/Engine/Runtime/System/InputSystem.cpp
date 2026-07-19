@@ -3,13 +3,13 @@
 #include "Runtime/Engine.h"
 #include "Runtime/System/ProfilingSystem.h"
 
-#include "Core/Input/Input.h"
-#include "Core/Input/InputDevice.h"
-#include "Core/Input/Mouse.h"
-#include "Core/Input/Keyboard.h"
-#include "Core/Input/Gamepad.h"
-#include "Core/Platform/WindowsManager.h"
-#include "Core/Platform/CriticalSection.h"
+#include "Runtime/Input/Input.h"
+#include "Runtime/Input/InputDevice.h"
+#include "Runtime/Input/Mouse.h"
+#include "Runtime/Input/Keyboard.h"
+#include "Runtime/Input/Gamepad.h"
+#include "Runtime/Core/Platform/WindowsManager.h"
+#include "Runtime/Core/Platform/CriticalSection.h"
 
 namespace SE
 {

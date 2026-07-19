@@ -3,9 +3,9 @@
 
 #include "Runtime/Utilities/Variant.h"
 #include "Runtime/Resource/Factories/BinaryAssetFactory.h"
-#include "Core/Serialization/MemoryReadStream.h"
-#include "Core/Serialization/MemoryWriteStream.h"
-#include "Core/Thread/Threading.h"
+#include "Runtime/Core/Serialization/MemoryReadStream.h"
+#include "Runtime/Core/Serialization/MemoryWriteStream.h"
+#include "Runtime/Core/Thread/Threading.h"
 
 namespace SE
 {

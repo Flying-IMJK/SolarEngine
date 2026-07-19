@@ -1,6 +1,6 @@
 #include "ModelBase.h"
 
-#include "Core/Thread/Threading.h"
+#include "Runtime/Core/Thread/Threading.h"
 
 namespace SE
 {

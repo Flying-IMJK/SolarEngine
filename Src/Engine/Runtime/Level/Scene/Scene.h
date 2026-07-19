@@ -10,6 +10,7 @@ namespace SE
     /// <summary>
     /// The scene root object that contains a hierarchy of actors.
     /// </summary>
+    SE_CLASS(Reflect)
     class SE_API_RUNTIME Scene final : public Actor
     {
         friend class Level;

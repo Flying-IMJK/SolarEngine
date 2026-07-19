@@ -2,7 +2,7 @@
 
 #include "ShaderMeta.h"
 
-#include "Core/Types/Strings/String.h"
+#include "Runtime/Core/Types/Strings/String.h"
 #include "IShaderFunctionReader.h"
 #include "ITokenReadersContainer.h"
 

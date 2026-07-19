@@ -1,13 +1,13 @@
 
 #pragma once
 
-#include "Core/Types/Object.h"
-#include "Core/Types/Delegate.h"
-#include "Core/Types/Strings/String.h"
-#include "Core/Types/Collections/List.h"
-#include "Core/Platform/CriticalSection.h"
-#include "Core/Serialization/FileReadStream.h"
-#include "Core/Thread/ThreadLocal.h"
+#include "Runtime/Core/Types/Object.h"
+#include "Runtime/Core/Types/Delegate.h"
+#include "Runtime/Core/Types/Strings/String.h"
+#include "Runtime/Core/Types/Collections/List.h"
+#include "Runtime/Core/Platform/CriticalSection.h"
+#include "Runtime/Core/Serialization/FileReadStream.h"
+#include "Runtime/Core/Thread/ThreadLocal.h"
 #include "StorageChunk.h"
 #include "AssetHeader.h"
 #include "../AssetInfo.h"

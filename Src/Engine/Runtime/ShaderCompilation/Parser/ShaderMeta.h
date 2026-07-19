@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Core/Types/Collections/List.h"
-#include "Core/Math/Math.h"
+#include "Runtime/Core/Types/Collections/List.h"
+#include "Runtime/Core/Math/Math.h"
 #include "Runtime/Graphics/Base/PixelFormat.h"
 #include "Runtime/Graphics/Base/GPUEnums.h"
 #include "Runtime/Graphics/Shaders/Config.h"
 #include "Config.h"
-#include "Core/Types/BitFlags.h"
+#include "Runtime/Core/Types/BitFlags.h"
 
 namespace SE
 {

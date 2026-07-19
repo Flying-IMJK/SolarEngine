@@ -4,6 +4,7 @@
 namespace SE::Editor
 {
 
+	SE_CLASS(Reflect)
 	class DirectionalLightGraphNode : public ActorGraphNode
 	{
 		SE_DEFINE_CLASS_DEFAULT(DirectionalLightGraphNode, ActorGraphNode)

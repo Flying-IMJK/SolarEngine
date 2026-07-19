@@ -3,34 +3,41 @@
 // CodeGenerator_BindingsDataTypes.h
 // Retained types that are generation-only concerns (not part of DataType).
 
-#include "../Database/DataTypes.h"
-#include "Core/Types/Strings/String.h"
-#include "Core/Types/Collections/List.h"
+#include "Database/DataTypes.h"
 
-namespace SE::ReflectTool
+namespace SE::BuildTool
 {
+    /// Raw source code injected into generated binding files.
+    struct ApiInjectedCode
+    {
+        std::string lang;
+        std::string code;
+        int         lineNumber = -1;
+    };
+
     /// All API-annotated items extracted from a single header file.
-    /// Temporarily retained during the merge — will be removed once all generators
+    /// Temporarily retained during the merge - will be removed once all generators
     /// consume DataType::bindingInfo directly.
     struct BindingsHeaderInfo
     {
-        StringAnsi         filePath;
-        StringAnsi         assemblyName;  // e.g. "SE.Core", "SE.Runtime", "SE.Editor"
-        StringAnsi         assemblyDir;   // assembly TargetDir absolute path
+        std::string         filePath;
+        std::string         assemblyName;  // e.g. "SE.Core", "SE.Runtime", "SE.Editor"
+        std::string         assemblyDir;   // assembly TargetDir absolute path
         uint64             contentHash = 0;  // for incremental build
-        List<ApiClass>     classes;
-        List<ApiEnum>      enums;
-        List<ApiInterface> interfaces;
-        List<ApiEvent>     events;
+        std::vector<ApiClass>     classes;
+        std::vector<ApiEnum>      enums;
+        std::vector<ApiInterface> interfaces;
+        std::vector<ApiEvent>     events;
+        std::vector<ApiInjectedCode> injectedCode;
     };
 
     /// Information about a binary module for generating module-level files.
     struct BinaryModuleInfo
     {
-        StringAnsi name;           // e.g. "SE.Runtime"
-        StringAnsi assemblyType;    // e.g. "Runtime" (stripped from name)
-        StringAnsi assemblyDir;     // output directory
-        List<const BindingsHeaderInfo*> headers;
+        std::string name;           // e.g. "SE.Runtime"
+        std::string assemblyType;    // e.g. "Runtime" (stripped from name)
+        std::string assemblyDir;     // output directory
+        std::vector<const BindingsHeaderInfo*> headers;
     };
 
-} // namespace SE::ReflectTool
+} // namespace SE::BuildTool

@@ -16,12 +16,6 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <UseCommonOutputDirectory>true</UseCommonOutputDirectory>
-
-    <!-- Rider/Visual Studio 输出路径配置 -->
-    <!-- 当使用 Rider 直接构建时，输出到解决方案级别的 Intermediate 目录 -->
-    <BaseOutputPath>$(SolutionDir)Intermediate\Editor\bin\</BaseOutputPath>
-    <BaseIntermediateOutputPath>$(SolutionDir)Intermediate\Editor\obj\</BaseIntermediateOutputPath>
-
   </PropertyGroup>
 
   <!-- Runtime config for nethost loading -->

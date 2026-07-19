@@ -5,9 +5,9 @@
 
 using namespace kainjow;
 
-namespace SE::ReflectTool
+namespace SE::BuildTool
 {
     class Generator;
 
-    void CppGenerateEnum(Generator* generator, std::stringstream &codeFile, String const &exportMacro, DataType const &type, std::string templateStr);
+    void CppGenerateEnum(Generator* generator, std::stringstream &codeFile, std::string const &exportMacro, TypeData const &type, std::string templateStr);
 }

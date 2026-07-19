@@ -6,6 +6,7 @@ namespace SE
 {
 	#define ScrollBarDefaultSize 14
 
+	SE_CLASS(Reflect)
 	class SE_API_RUNTIME ScrollBar : public Control
 	{
 		SE_DEFINE_CLASS(ScrollBar, Control)

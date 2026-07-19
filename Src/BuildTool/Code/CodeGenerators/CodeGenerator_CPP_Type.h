@@ -1,14 +1,15 @@
 #pragma once
 
-#include "../Database/ReflectionDatabase.h"
-#include "../mustache.hpp"
-#include <sstream>
+#include <string>
 
-using namespace kainjow;
+//-------------------------------------------------------------------------
 
-namespace SE::ReflectTool
+namespace SE::BuildTool
 {
-    class Generator;
+	struct TypeData;
+	class ReflectionDatabase;
+	class Generator;
 
-    void CppGenerateType(Generator* generator, ReflectionDatabase const& database, std::stringstream& codeFile, String const& exportMacro, DataType const& type, DataType const& parentType, std::string templateStr);
+	void CppGenerateType(Generator* generator,  ReflectionDatabase const& database, std::stringstream& codeFile, std::string const& exportMacro,
+            TypeData const& type, TypeData const& parentType, std::string templateStr);
 }

@@ -13,6 +13,7 @@ namespace SE::Editor
 	/// <summary>
 	/// Content tree node used for main directories.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class MainContentTreeNode : public ContentTreeNode
 	{
 		SE_DEFINE_CLASS_DEFAULT(MainContentTreeNode, ContentTreeNode)

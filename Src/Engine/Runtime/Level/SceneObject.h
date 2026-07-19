@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Core/Types/Object.h"
-#include "Core/Serialization/ISerializable.h"
+#include "Runtime/Core/Types/Object.h"
+#include "Runtime/Core/Serialization/ISerializable.h"
 #include "Runtime/API.h"
 
 namespace SE

@@ -80,7 +80,7 @@ namespace SE
 		/// <summary>
 		/// Gets GPU texture object allocated by the asset.
 		/// </summary>
-		FORCE_INLINE GPUTexture* GetTexture() const
+        FORCE_INLINE GPUTexture* GetTexture() const
 		{
 			return _texture.GetTexture();
 		}
@@ -96,7 +96,8 @@ namespace SE
 		/// <summary>
 		/// Gets the total width of the texture. Actual resident size may be different due to dynamic content streaming. Returns 0 if texture is not loaded.
 		/// </summary>
-		FORCE_INLINE int32 Width() const
+        SE_FUNCTION(API)
+        FORCE_INLINE int32 Width() const
 		{
 			return _texture.TotalWidth();
 		}
@@ -104,7 +105,8 @@ namespace SE
 		/// <summary>
 		/// Gets the total height of the texture. Actual resident size may be different due to dynamic content streaming. Returns 0 if texture is not loaded.
 		/// </summary>
-		FORCE_INLINE int32 Height() const
+        SE_FUNCTION(API)
+        FORCE_INLINE int32 Height() const
 		{
 			return _texture.TotalHeight();
 		}
@@ -112,7 +114,8 @@ namespace SE
 		/// <summary>
 		/// Gets the total size of the texture. Actual resident size may be different due to dynamic content streaming. Returns Float2::Zero if texture is not loaded.
 		/// </summary>
-		Float2 Size() const;
+        SE_FUNCTION(API)
+        Float2 Size() const;
 
 		/// <summary>
 		/// Gets the total array size of the texture.

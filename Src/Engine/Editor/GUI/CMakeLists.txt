@@ -8,8 +8,11 @@ add_subdirectory(Input)
 add_subdirectory(Popups)
 
 EDITOR_ADD(
+    ClickableLabel.cs
+    ColumnDefinition.cs
     MainMenu.h
     MainMenu.cpp
+    MainMenu.cs
     MainMenuButton.h
     MainMenuButton.cpp
     ToolStripButton.h
@@ -20,10 +23,21 @@ EDITOR_ADD(
     ToolStripSeparator.cpp
     StatusBar.h
     StatusBar.cpp
+    StatusBar.cs
     ComboBox.h
     ComboBox.cpp
+    ComboBox.cs
+    EnumComboBox.cs
+    GuiGeometry.cs
+    HeadlessEditorPresentationHost.cs
+    IEditorPresentationHost.cs
+    NativeGuiPresentationHost.cs
     NavigationBar.h
     NavigationBar.cpp
+    NavigationBar.cs
     NavigationButton.h
     NavigationButton.cpp
+    Row.cs
+    Table.cs
+    ToolStrip.cs
 )

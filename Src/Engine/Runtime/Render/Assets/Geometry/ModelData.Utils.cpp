@@ -1,7 +1,7 @@
 
 #include "ModelData.h"
-#include "Core/Profiler/ProfilerCPU.h"
-#include "Core/Types/Collections/BitArray.h"
+#include "Runtime/Core/Profiler/ProfilerCPU.h"
+#include "Runtime/Core/Types/Collections/BitArray.h"
 #include "Runtime/Utilities/Model/VertexTriangleAdjacency.h"
 
 #include "assimp/SpatialSort.h"

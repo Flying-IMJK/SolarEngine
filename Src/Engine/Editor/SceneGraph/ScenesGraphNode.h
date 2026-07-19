@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Core/Math/Transform.h"
-#include "Core/Types/Property.h"
-#include "Core/Types/UID.h"
-#include "Core/Types/Collections/List.h"
-#include "Core/TypeSystem/IType.h"
+#include "Runtime/Core/Math/Transform.h"
+#include "Runtime/Core/Types/Property.h"
+#include "Runtime/Core/Types/UID.h"
+#include "Runtime/Core/Types/Collections/List.h"
+#include "Runtime/Core/TypeSystem/IType.h"
 
 namespace SE
 {
@@ -15,6 +15,7 @@ namespace SE::Editor
 {
 	class RootGraphNode;
 
+	SE_CLASS(Reflect)
 	class ScenesGraphNode : public IType
 	{
 		SE_DEFINE_CLASS_DEFAULT(ScenesGraphNode, IType)

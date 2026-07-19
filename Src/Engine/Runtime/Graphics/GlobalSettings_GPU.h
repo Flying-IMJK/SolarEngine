@@ -7,6 +7,7 @@
 
 namespace SE
 {
+    SE_CLASS(Reflect)
     class GPUGlobalSettings : public GlobalSettings
     {
         SE_DEFINE_CLASS(GPUGlobalSettings, GlobalSettings);

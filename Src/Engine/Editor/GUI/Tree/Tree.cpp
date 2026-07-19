@@ -1,8 +1,8 @@
 
 #include "Tree.h"
 #include "TreeNode.h"
-#include "Core/Types/Delegate.h"
-#include "Core/Types/Collections/ListExtensions.h"
+#include "Runtime/Core/Types/Delegate.h"
+#include "Runtime/Core/Types/Collections/ListExtensions.h"
 #include "Runtime/Graphics/GraphicWindow.h"
 #include "Runtime/UI/GUI/RootControl.h"
 #include "Runtime/UI/GUI/WindowRootControl.h"

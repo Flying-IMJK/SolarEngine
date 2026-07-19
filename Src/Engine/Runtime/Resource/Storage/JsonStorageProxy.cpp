@@ -1,12 +1,12 @@
 
 #include "JsonStorageProxy.h"
-#include "Core/Platform/File.h"
-#include "Core/Logging/Logging.h"
-#include "Core/Serialization/Json.h"
-#include "Core/Serialization/JsonTools.h"
-#include "Core/Serialization/JsonWriters.hpp"
-#include "Core/Logging/Exceptions/JsonParseException.h"
-#include "Core/Profiler/ProfilerCPU.h"
+#include "Runtime/Core/Platform/File.h"
+#include "Runtime/Core/Logging/Logging.h"
+#include "Runtime/Core/Serialization/Json.h"
+#include "Runtime/Core/Serialization/JsonTools.h"
+#include "Runtime/Core/Serialization/JsonWriters.hpp"
+#include "Runtime/Core/Logging/Exceptions/JsonParseException.h"
+#include "Runtime/Core/Profiler/ProfilerCPU.h"
 
 namespace SE
 {

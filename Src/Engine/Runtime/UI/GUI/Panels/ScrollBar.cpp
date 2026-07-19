@@ -5,7 +5,7 @@
 #include "Runtime/UI/GUI/RootControl.h"
 #include "Runtime/UI/GUI/ScrollableControl.h"
 
-#include "Core/Types/Delegate.h"
+#include "Runtime/Core/Types/Delegate.h"
 
 namespace SE
 {

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Core/Types/Variable.h"
-#include "Core/Math/Color.h"
-#include "Core/Types/BitFlags.h"
-#include "Core/TypeSystem/IType.h"
+#include "Runtime/Core/Types/Variable.h"
+#include "Runtime/Core/Math/Color.h"
+#include "Runtime/Core/Types/BitFlags.h"
+#include "Runtime/Core/TypeSystem/IType.h"
 
 #include "Runtime/API.h"
 #include "Runtime/Graphics/Base/GPUEnums.h"

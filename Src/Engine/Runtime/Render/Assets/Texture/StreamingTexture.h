@@ -2,7 +2,7 @@
 #pragma once
 
 #include "Runtime/Resource/Streaming/StreamableResource.h"
-#include "Core/Types/Object.h"
+#include "Runtime/Core/Types/Object.h"
 #include "Runtime/Graphics/Textures/GPUTextureDescription.h"
 
 namespace SE

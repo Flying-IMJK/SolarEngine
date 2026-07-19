@@ -4,8 +4,8 @@
 #include "../AssetConfig.h"
 
 #include "Runtime/API.h"
-#include "Core/Types/Collections/DataContainer.h"
-#include "Core/Types/BitFlags.h"
+#include "Runtime/Core/Types/Collections/DataContainer.h"
+#include "Runtime/Core/Types/BitFlags.h"
 
 namespace SE
 {

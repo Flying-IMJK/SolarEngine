@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Core/Math/Color.h"
-#include "Core/Math/Half.h"
-#include "Core/Math/Vector3.h"
+#include "Runtime/Core/Math/Color.h"
+#include "Runtime/Core/Math/Half.h"
+#include "Runtime/Core/Math/Vector3.h"
 #include "Runtime/Utilities/Texture/Packed.h"
 
 namespace SE

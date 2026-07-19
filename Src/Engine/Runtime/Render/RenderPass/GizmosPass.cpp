@@ -2,7 +2,7 @@
 
 #include "GizmosPass.h"
 
-#include "Core/Profiler/Profiler.h"
+#include "Runtime/Core/Profiler/Profiler.h"
 #include "Runtime/Graphics/DynamicBuffer.h"
 #include "Runtime/Graphics/GPUContext.h"
 #include "Runtime/Graphics/GPUDevice.h"
@@ -16,7 +16,7 @@ namespace SE
 
 
 
-	String GizmosPass::ToString() const
+	/*String GizmosPass::ToString() const
 	{
 		return RendererPass<GizmosPass>::ToString();
 	}
@@ -315,7 +315,7 @@ namespace SE
 
 		    renderContext.SetDepthTestMode( DepthTestMode::Off );
 		    DrawTextCommands( m_DrawCommands.opaqueDepthOff.m_textCommands, renderContext, viewport, textRenderfunc );
-		    DrawTextCommands( m_DrawCommands.transparentDepthOff.m_textCommands, renderContext, viewport, textRenderfunc );*/
+		    DrawTextCommands( m_DrawCommands.transparentDepthOff.m_textCommands, renderContext, viewport, textRenderfunc );#1#
 		}
-	}
+	}*/
 } // SE

@@ -12,6 +12,7 @@ namespace SE::Editor
     /// <summary>
     /// Asset item object.
     /// </summary>
+    SE_CLASS(Reflect)
     class AssetItem : public ContentItem
     {
         SE_DEFINE_CLASS_DEFAULT(AssetItem, ContentItem)

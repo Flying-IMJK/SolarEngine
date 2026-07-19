@@ -2,7 +2,7 @@
 #include "FolderImportEntry.h"
 
 #include "ImportRequest.h"
-#include "Core/Platform/Windows/WindowsFileSystem.h"
+#include "Runtime/Core/Platform/Windows/WindowsFileSystem.h"
 #include "Editor/EditorApp.h"
 #include "Editor/Modules/AssetDatabaseModule.h"
 #include "Editor/Modules/AssetImportingModule.h"

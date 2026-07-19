@@ -8,6 +8,7 @@
 namespace SE
 {
 
+	SE_CLASS(Reflect)
 	class SE_API_RUNTIME Panel : public ScrollableControl
 	{
 		SE_DEFINE_CLASS(Panel, ScrollableControl)

@@ -1,8 +1,8 @@
 
 #include "TextBoxBase.h"
 
-#include "Core/Platform/Clipboard.h"
-#include "Core/Input/Input.h"
+#include "Runtime/Core/Platform/Clipboard.h"
+#include "Runtime/Input/Input.h"
 #include "Runtime/UI/GUI/RootControl.h"
 #include "Runtime/UI/GUI/Style.h"
 #include "Runtime/UI/GUI/WindowRootControl.h"

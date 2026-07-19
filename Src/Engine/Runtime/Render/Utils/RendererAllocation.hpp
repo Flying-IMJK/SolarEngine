@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Memory/Memory.h"
+#include "Runtime/Core/Memory/Memory.h"
 #include "Runtime/API.h"
 
 namespace SE

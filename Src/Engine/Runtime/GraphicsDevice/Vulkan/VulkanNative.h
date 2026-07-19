@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Core/Types/Variable.h"
-#include "Core/Types/Collections/Queue.h"
-#include "Core/Thread/Threading.h"
-#include "Core/Memory/Memory.h"
-#include "Core/Types/Strings/StringView.h"
+#include "Runtime/Core/Types/Variable.h"
+#include "Runtime/Core/Types/Collections/Queue.h"
+#include "Runtime/Core/Thread/Threading.h"
+#include "Runtime/Core/Memory/Memory.h"
+#include "Runtime/Core/Types/Strings/StringView.h"
 
 #include "Runtime/Graphics/Base/GPUEnums.h"
 #include "Runtime/Graphics/Textures/GPUSampler.h"

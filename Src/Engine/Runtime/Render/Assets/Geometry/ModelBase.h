@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Math/Vector3.h"
+#include "Runtime/Core/Math/Vector3.h"
 #include "Runtime/Render/Assets/Material/MaterialSlot.h"
 #include "Runtime/Resource/BinaryAsset.h"
 #include "Runtime/Resource/Streaming/StreamableResource.h"

@@ -1,7 +1,7 @@
 
 #include "Version.h"
-#include "Core/Math/Math.h"
-#include "Core/Types/Strings/String.h"
+#include "Runtime/Core/Math/Math.h"
+#include "Runtime/Core/Types/Strings/String.h"
 
 namespace SE
 {

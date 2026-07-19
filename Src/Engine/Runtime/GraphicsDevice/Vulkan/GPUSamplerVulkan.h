@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Types/Strings/StringView.h"
+#include "Runtime/Core/Types/Strings/StringView.h"
 
 #include "Runtime/Graphics/Textures/GPUSampler.h"
 #include "GPUDeviceVulkan.h"

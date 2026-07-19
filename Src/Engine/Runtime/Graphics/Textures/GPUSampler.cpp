@@ -1,16 +1,23 @@
 
 #include "GPUSampler.h"
 #include "GPUSamplerDescription.h"
+#include "Runtime/Graphics/GPUDevice.h"
 
 namespace SE
 {
 	// GPUSampler
-	GPUSampler* GPUSampler::New()
+	GPUSampler* GPUSampler::Spawn(const SpawnParams& params)
 	{
-		return nullptr;
+		return GPUDevice::instance->CreateSampler();
 	}
 
-	GPUSampler::GPUSampler() : GPUResource()
+	GPUSampler* GPUSampler::New()
+	{
+		return GPUDevice::instance->CreateSampler();
+	}
+
+	GPUSampler::GPUSampler()
+		: GPUResource(SpawnParams(UID::New(), TypeInitializer))
 	{
 
 	}

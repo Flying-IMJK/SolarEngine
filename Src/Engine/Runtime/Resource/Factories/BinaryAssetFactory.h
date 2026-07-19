@@ -1,9 +1,9 @@
 #pragma once
 
 #include "IAssetFactory.h"
-#include "Core/TypeSystem/Types.h"
+#include "Runtime/Core/TypeSystem/Types.h"
 #include "Runtime/Resource/AssetInfo.h"
-#include "Runtime/Scripting/ScriptingType.h"
+#include "Runtime/Core/Scripting/ScriptingType.h"
 
 namespace SE
 {
@@ -62,7 +62,7 @@ namespace SE
 		// [BinaryAssetFactoryBase]
 		BinaryAsset* Create(const AssetInfo* info) override
 		{
-			ScriptingObjectSpawnParams params(info->id, GetScriptingTypeHandle<T>());
+			ScriptingObjectSpawnParams params(info->id, GetScriptingType<T>());
 			return ::SE::New<T>(params, info);
 		}
 	};

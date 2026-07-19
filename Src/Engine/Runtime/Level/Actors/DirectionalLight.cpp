@@ -1,7 +1,7 @@
 
 #include "DirectionalLight.h"
 
-#include "Core/Serialization/Serialization.h"
+#include "Runtime/Core/Serialization/Serialization.h"
 #include "Runtime/Render/RenderList.h"
 
 namespace SE

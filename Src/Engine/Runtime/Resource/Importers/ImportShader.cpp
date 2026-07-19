@@ -1,8 +1,8 @@
 
 #include "ImportShader.h"
 
-#include "Core/Platform/File.h"
-#include "Core/TypeSystem/Types.h"
+#include "Runtime/Core/Platform/File.h"
+#include "Runtime/Core/TypeSystem/Types.h"
 #include "Runtime/Resource/Assets/Materials/Shader.h"
 #include "Runtime/Resource/Assets/Materials/ShaderStorage.h"
 

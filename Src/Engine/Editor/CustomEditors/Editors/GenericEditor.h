@@ -1,7 +1,7 @@
 #pragma once
 #include "Editor/CustomEditors/CustomEditor.h"
-#include "Core/Types/Collections/List.h"
-#include "Core/TypeSystem/TypeID.h"
+#include "Runtime/Core/Types/Collections/List.h"
+#include "Runtime/Core/TypeSystem/TypeID.h"
 #include "Editor/CustomEditors/Values/ValueContainer.h"
 
 namespace SE
@@ -28,6 +28,7 @@ namespace SE::Editor
 	/// Generic editor for objects without custom editors.
 	/// Uses reflection to automatically generate property editors.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class GenericEditor : public CustomEditor
 	{
 		SE_DEFINE_CLASS(GenericEditor, CustomEditor)

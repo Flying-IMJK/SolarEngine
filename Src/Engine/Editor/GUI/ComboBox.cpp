@@ -3,8 +3,8 @@
 
 #include "ContextMenu/ContextMenu.h"
 #include "ContextMenu/ContextMenuButton.h"
-#include "Core/Types/Collections/ListExtensions.h"
-#include "Core/Types/Collections/Sorting.h"
+#include "Runtime/Core/Types/Collections/ListExtensions.h"
+#include "Runtime/Core/Types/Collections/Sorting.h"
 #include "Runtime/Graphics/GraphicWindow.h"
 #include "Runtime/Render/2D/Render2D.h"
 #include "Runtime/UI/GUI/Style.h"

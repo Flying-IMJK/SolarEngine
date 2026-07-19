@@ -7,6 +7,7 @@ namespace SE
     class GraphicWindow;
     class Control;
 
+    SE_CLASS(Reflect)
     class SE_API_RUNTIME Tooltip : public ContainerControl
     {
         SE_DEFINE_CLASS(Tooltip, ContainerControl)

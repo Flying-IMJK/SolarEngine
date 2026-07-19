@@ -1,7 +1,7 @@
 
 #include "PointLight.h"
 
-#include "Core/Serialization/Serialization.h"
+#include "Runtime/Core/Serialization/Serialization.h"
 #include "../Scene/Scene.h"
 #include "Runtime/Render/RenderList.h"
 

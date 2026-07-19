@@ -1,12 +1,13 @@
 #pragma once
 
-#include "Core/Math/Math.h"
+#include "Runtime/Core/Math/Math.h"
 #include "Settings.h"
 
 //-------------------------------------------------------------------------
 
 namespace SE
 {
+    SE_CLASS(Reflect)
     class SE_API_RUNTIME ResourceGlobalSettings : public GlobalSettings
     {
         SE_DEFINE_CLASS(ResourceGlobalSettings, GlobalSettings);

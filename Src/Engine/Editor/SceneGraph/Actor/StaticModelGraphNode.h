@@ -4,6 +4,7 @@
 namespace SE::Editor
 {
 
+	SE_CLASS(Reflect)
 	class StaticModelGraphNode : public ActorGraphNode
 	{
 		SE_DEFINE_CLASS_DEFAULT(StaticModelGraphNode, ActorGraphNode)

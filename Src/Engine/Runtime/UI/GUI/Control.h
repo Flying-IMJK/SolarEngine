@@ -4,15 +4,16 @@
 
 #include "Enums.h"
 #include "Margin.h"
-#include "Core/Math/Color.h"
-#include "Core/Math/Matrix3x3.h"
-#include "Core/Math/Rectangle.h"
-#include "Core/Math/Vector2.h"
-#include "Core/Platform/Base/WindowBase.h"
-#include "Core/Types/Delegate.h"
-#include "Core/Types/Collections/List.h"
-#include "Core/Types/Strings/String.h"
-#include "Core/Types/Property.h"
+#include "Runtime/Core/Math/Color.h"
+#include "Runtime/Core/Math/Matrix3x3.h"
+#include "Runtime/Core/Math/Rectangle.h"
+#include "Runtime/Core/Math/Vector2.h"
+#include "Runtime/Core/Platform/Base/WindowBase.h"
+#include "Runtime/Core/Types/Delegate.h"
+#include "Runtime/Core/Types/Collections/List.h"
+#include "Runtime/Core/Types/Strings/String.h"
+#include "Runtime/Core/Types/Property.h"
+#include "Runtime/Core/TypeSystem/Info/TypeCompositeInfo.h"
 
 namespace SE
 {
@@ -27,6 +28,7 @@ namespace SE
     /// <summary>Compare
     /// Base class for all GUI controls
     /// </summary>
+    SE_CLASS(Reflect)
     class SE_API_RUNTIME Control : public IType// : IComparable,
     {
         SE_DEFINE_CLASS(Control, IType)

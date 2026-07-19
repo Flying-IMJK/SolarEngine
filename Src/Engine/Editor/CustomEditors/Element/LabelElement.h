@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Types/Delegate.h"
+#include "Runtime/Core/Types/Delegate.h"
 #include "Editor/CustomEditors/LayoutElement.h"
 
 namespace SE

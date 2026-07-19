@@ -6,6 +6,7 @@ namespace SE
 {
     class IBrush;
 
+    SE_CLASS(Reflect)
     class SE_API_RUNTIME Image : public ContainerControl
     {
         SE_DEFINE_CLASS(Image, ContainerControl)

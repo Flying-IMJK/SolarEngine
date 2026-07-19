@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Base/GPUResource.h"
-#include "Core/Profiler/ProfilerGPU.h"
+#include "Runtime/Core/Profiler/ProfilerGPU.h"
 
 namespace SE
 {

@@ -12,6 +12,7 @@ namespace SE
 /// <summary>
 /// Describes the camera projection and view. Provides information about how to render scene (viewport location and direction, etc.).
 /// </summary>
+SE_CLASS(Reflect)
 class SE_API_RUNTIME Camera final : public Actor
 {
     SE_DEFINE_CLASS(Camera, Actor)

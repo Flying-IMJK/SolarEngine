@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Core/Math/Vector2.h"
-#include "Core/Types/Hash.h"
-#include "Core/Types/Property.h"
+#include "Runtime/Core/Math/Vector2.h"
+#include "Runtime/Core/Types/Hash.h"
+#include "Runtime/Core/Types/Property.h"
 #include "Runtime/API.h"
 
 namespace SE

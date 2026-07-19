@@ -9,6 +9,7 @@ namespace SE::Editor
     /// <summary>
     /// Tool strip button control.
     /// </summary>
+    SE_CLASS(Reflect)
     class ToolStripButton : public Control
     {
         SE_DEFINE_CLASS_DEFAULT(ToolStripButton, Control)

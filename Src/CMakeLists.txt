@@ -32,7 +32,7 @@ ENDMACRO()
 
 #CSharp Target
 MACRO(CSHARP_TARGET target sourceFiles configFile)
-    set(CSHARP_INTERMEDIATE_DIR "${CMAKE_BINARY_DIR}/CSharp/${target}")
+    set(CSHARP_INTERMEDIATE_DIR "${ProjectRootDir}/Intermediate/${target}")
 
     add_custom_command(
             OUTPUT  "${ProjectBuildDir}/${target}.CSharp.dll"
@@ -41,6 +41,7 @@ MACRO(CSHARP_TARGET target sourceFiles configFile)
             --configuration ${CSHARP_CONFIGURATION}
             --output        "${ProjectBuildDir}"
             -p:BaseIntermediateOutputPath="${CSHARP_INTERMEDIATE_DIR}/obj/"
+            -p:MSBuildProjectExtensionsPath="${CSHARP_INTERMEDIATE_DIR}/obj/"
             -p:BaseOutputPath="${CSHARP_INTERMEDIATE_DIR}/bin/"
             --nologo
             -v minimal
@@ -95,7 +96,6 @@ endif()
 
 add_subdirectory(Libraries)
 add_subdirectory(BuildTool/Code)
-add_subdirectory(Engine/Core)
 add_subdirectory(Engine/Runtime)
 add_subdirectory(Engine/Editor)
 add_subdirectory(Applications)
@@ -116,7 +116,6 @@ add_custom_target(SE.Resources ALL
 include(BuildTool/Code/precompile.cmake)
 
 ############### 引擎代码编译依赖 ###############
-add_dependencies(SEBuildTool SECore)
 add_dependencies(${PRECOMPILE_REBUILD_TARGET} SEBuildTool)
 add_dependencies(${PRECOMPILE_CLEAR_TARGET} SEBuildTool)
 add_dependencies(${PRECOMPILE_TARGET} SEBuildTool)

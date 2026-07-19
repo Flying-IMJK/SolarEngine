@@ -2,7 +2,7 @@
 #include "MeshDeformation.h"
 
 #include "MeshBase.h"
-#include "Core/Profiler/ProfilerCPU.h"
+#include "Runtime/Core/Profiler/ProfilerCPU.h"
 
 namespace SE
 {

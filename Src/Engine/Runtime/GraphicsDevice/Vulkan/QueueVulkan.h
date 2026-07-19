@@ -1,7 +1,7 @@
 #pragma once
 
-#include "COre/Types/Variable.h"
-#include "Core/Thread/Threading.h"
+#include "Runtime/Core/Types/Variable.h"
+#include "Runtime/Core/Thread/Threading.h"
 #include "VulkanInclude.h"
 
 namespace SE

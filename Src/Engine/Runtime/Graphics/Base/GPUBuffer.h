@@ -1,8 +1,8 @@
 #pragma once
 
 #include "GPUBufferDescription.h"
-#include "Core/Thread/Threading.h"
-#include "Core/Types/Collections/DataContainer.h"
+#include "Runtime/Core/Thread/Threading.h"
+#include "Runtime/Core/Types/Collections/DataContainer.h"
 
 namespace SE
 {
@@ -10,16 +10,25 @@ namespace SE
 	/// <summary>
 	/// Defines a view for the <see cref="GPUBuffer"/>. Used to bind buffer to the shaders (for input as shader resource or for input/output as unordered access).
 	/// </summary>
+	SE_CLASS(API, Sealed, NoSpawn)
 	class SE_API_RUNTIME GPUBufferView : public GPUResourceView
 	{
+		SCRIPTING_TYPE_NO_SPAWN(GPUBufferView);
+
 	protected:
 		GPUBufferView();
 	};
 
+	SE_CLASS(API, Sealed)
 	class SE_API_RUNTIME GPUBuffer : public GPUResource
 	{
+		SCRIPTING_TYPE_NO_SPAWN(GPUBuffer);
+		static GPUBuffer* Spawn(const SpawnParams& params);
+		static GPUBuffer* New();
+
 	protected:
 		GPUBufferDescription m_Desc;
+		GPUBuffer();
 
 	public:
 		inline bool IsAllocated() const

@@ -6,6 +6,7 @@ namespace SE::Editor
 {
     class ContextMenu;
 
+    SE_CLASS(Reflect)
     class MainMenuButton : public Control
     {
         SE_DEFINE_CLASS_DEFAULT(MainMenuButton, Control)

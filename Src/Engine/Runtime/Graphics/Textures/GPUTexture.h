@@ -6,7 +6,7 @@
 #include "Runtime/Render/Assets/Texture/TextureData.h"
 
 #include "GPUTextureDescription.h"
-#include "Core/Types/Delegate.h"
+#include "Runtime/Core/Types/Delegate.h"
 
 
 namespace SE
@@ -21,14 +21,18 @@ namespace SE
 	/// <summary>
 	/// Defines a view for the <see cref="GPUTexture"/> surface, full resource or any of the sub-parts. Can be used to define a single subresource of the texture, volume texture or texture array. Used to render to the texture and/or use textures in the shaders.
 	/// </summary>
+	SE_CLASS(API, Sealed, NoSpawn)
 	class SE_API_RUNTIME GPUTextureView : public GPUResourceView
 	{
+		SCRIPTING_TYPE_NO_SPAWN(GPUTextureView);
+
 	protected:
 		GPUResource* m_Parent = nullptr;
 		PixelFormat m_Format = PixelFormat::Undefined;
 		MSAALevel m_Msaa = MSAALevel::None;
 
-		GPUTextureView() : GPUResourceView()
+		GPUTextureView()
+			: GPUResourceView(SpawnParams(UID::New(), TypeInitializer))
 		{
 		}
 
@@ -65,9 +69,12 @@ namespace SE
 	/// <summary>
 	/// The GPU texture resource object. This class is able to create 2D/3D textures, volume textures and render targets.
 	/// </summary>
+	SE_CLASS(API, Sealed)
 	class SE_API_RUNTIME GPUTexture : public GPUResource
 	{
+		SCRIPTING_TYPE_NO_SPAWN(GPUTexture);
 	public:
+		static GPUTexture* Spawn(const SpawnParams& params);
 		static GPUTexture* New();
 
 	protected:

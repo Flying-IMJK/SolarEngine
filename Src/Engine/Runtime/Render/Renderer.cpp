@@ -16,10 +16,10 @@
 #include "RenderPass/LightPass.h"
 #include "Runtime/Graphics/RenderTargetPool.h"
 
-#include "Core/Systems.h"
-#include "Core/Profiler/ProfilerCPU.h"
-#include "Core/Profiler/ProfilerGPU.h"
-#include "Core/Thread/JobSystem.h"
+#include "Runtime/Core/Systems.h"
+#include "Runtime/Core/Profiler/ProfilerCPU.h"
+#include "Runtime/Core/Profiler/ProfilerGPU.h"
+#include "Runtime/Core/Thread/JobSystem.h"
 #include "RenderPass/ColorGradingPass.h"
 #include "RenderPass/GizmosPass.h"
 #include "RenderPass/PostProcessingPass.h"
@@ -69,7 +69,6 @@ namespace SE
 		rendererData->PassList.Add(&ColorGradingPass::Instance());
 		rendererData->PassList.Add(&PostProcessingPass::Instance());
 		rendererData->PassList.Add(&FXAA::Instance());
-		rendererData->PassList.Add(&GizmosPass::Instance());
 
 		// Init child services
 		for (int32 i = 0; i < rendererData->PassList.Count(); i++)
@@ -235,7 +234,7 @@ namespace SE
 		// Draw Gizmos
 		if (view.DrawGizmos)
 		{
-			GizmosPass::Instance().Draw(renderContext, frameBuffer);
+
 		}
 
 		// AA -> Back Buffer

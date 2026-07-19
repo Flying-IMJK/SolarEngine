@@ -1,10 +1,10 @@
 #pragma once
 
 #include "RenderEnum.h"
-#include "Core/Types/Variable.h"
-#include "Core/Math/Matrix.h"
-#include "Core/Math/BoundingVolumes.h"
-#include "Core/Types/BitFlags.h"
+#include "Runtime/Core/Types/Variable.h"
+#include "Runtime/Core/Math/Matrix.h"
+#include "Runtime/Core/Math/BoundingVolumes.h"
+#include "Runtime/Core/Types/BitFlags.h"
 
 #include "Runtime/API.h"
 #include "Utils/LayersMask.h"

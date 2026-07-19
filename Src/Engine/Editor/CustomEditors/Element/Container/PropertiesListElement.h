@@ -6,6 +6,7 @@ namespace SE::Editor
 	/// <summary>
 	/// Properties list element.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class PropertiesListElement : public LayoutElementsContainer
 	{
 		SE_DEFINE_CLASS_DEFAULT(PropertiesListElement, LayoutElementsContainer)

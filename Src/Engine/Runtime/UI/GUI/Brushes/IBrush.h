@@ -1,8 +1,9 @@
 #pragma once
 
-#include "Core/Types/Property.h"
-#include "Core/Types/Variable.h"
-#include "Core/TypeSystem/IType.h"
+#include "Runtime/Core/Types/Property.h"
+#include "Runtime/Core/Types/Variable.h"
+#include "Runtime/Core/TypeSystem/IType.h"
+#include "Runtime/Core/TypeSystem/Info/TypeCompositeInfo.h"
 #include "Runtime/API.h"
 
 namespace SE
@@ -26,6 +27,7 @@ namespace SE
 	/// <summary>
 	/// Interface that unifies input source textures, sprites, render targets, and any other brushes to be used in a more generic way.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class SE_API_RUNTIME IBrush : public IType
 	{
 		SE_DEFINE_CLASS(IBrush, IType)

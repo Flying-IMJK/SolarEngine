@@ -4,7 +4,7 @@
 #include "FontAsset.h"
 #include "FontManager.h"
 #include "IncludeFreeType.h"
-#include "Core/Thread/Threading.h"
+#include "Runtime/Core/Thread/Threading.h"
 
 namespace SE
 {

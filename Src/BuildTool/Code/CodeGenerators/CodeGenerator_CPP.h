@@ -6,7 +6,7 @@
 
 using namespace kainjow;
 
-namespace SE::ReflectTool
+namespace SE::BuildTool
 {
     class Generator
     {
@@ -14,12 +14,12 @@ namespace SE::ReflectTool
         Generator() : m_pDatabase(nullptr) {}
         ~Generator() {}
         bool Generate(ReflectionDatabase const &database, SolutionInfo const &solution);
-        char const *GetErrorMessage() const { return m_errorMessage.Get(); }
+        char const *GetErrorMessage() const { return m_errorMessage.c_str(); }
 
         template<typename... Params>
         bool LogError(const char * pErrorFormat, Params... params) const
         {
-            m_errorMessage = StringAnsi::Format(pErrorFormat, params...);
+            m_errorMessage = Utils::String::Format(pErrorFormat, params...);
             return false;
         }
 
@@ -27,12 +27,12 @@ namespace SE::ReflectTool
         void LoadTemplateFile(SolutionInfo const &solution);
 
         // File specific functions
-        void GenerateTypeInfoFileHeader(HeaderInfo const &hdr, StringView solutionPath);
+        void GenerateTypeInfoFileHeader(HeaderInfo const &hdr, std::string_view solutionPath);
         void AppendBindingIncludesIfNeeded();
-        void GenerateModuleCodeFile(ReflectionDatabase const& database, ProjectInfo const &prj, List<DataType> const &typesInModule);
+        void GenerateModuleCodeFile(ReflectionDatabase const& database, ProjectInfo const &prj, std::vector<TypeData> const &typesInModule);
 
         // Utils
-        static bool SaveStreamToFile(String const &filePath, std::stringstream &stream);
+        static bool SaveStreamToFile(std::string const &filePath, std::stringstream &stream);
     private:
         ReflectionDatabase const *m_pDatabase;
         std::stringstream m_typeInfoFile;
@@ -40,11 +40,11 @@ namespace SE::ReflectTool
         std::stringstream m_engineTypeRegistrationFile;
         std::stringstream m_toolsTypeRegistrationFile;
         bool m_typeInfoFileHasBinding = false;
-        mutable StringAnsi m_errorMessage;
+        mutable std::string m_errorMessage;
 
-        StringAnsi m_CodeModuleTemplate;
-        StringAnsi m_CodeCppMetaTemplate;
-		StringAnsi m_CodeCppEnumTemplate;
-		StringAnsi m_CodeCppClassTemplate;
+        std::string m_CodeModuleTemplate;
+        std::string m_CodeCppMetaTemplate;
+		std::string m_CodeCppEnumTemplate;
+		std::string m_CodeCppClassTemplate;
     };
 }

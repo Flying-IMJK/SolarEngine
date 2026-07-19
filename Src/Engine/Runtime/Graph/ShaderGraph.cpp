@@ -2,6 +2,8 @@
 
 #include "ShaderGraph.h"
 
+#include <Runtime/Core/Math/Vector4.h>
+
 #include "GraphUtilities.h"
 #include "Runtime/Render/Assets/Material/MaterialParams.h"
 

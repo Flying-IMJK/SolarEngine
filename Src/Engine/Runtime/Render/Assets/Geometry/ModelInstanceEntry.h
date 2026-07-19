@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Serialization/ISerializable.h"
+#include "Runtime/Core/Serialization/ISerializable.h"
 #include "Runtime/Render/RenderEnum.h"
 #include "Runtime/Resource/AssetRef.h"
 #include "../../../Resource/Assets/Materials/MaterialBase.h"

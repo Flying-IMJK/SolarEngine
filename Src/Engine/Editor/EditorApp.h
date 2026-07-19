@@ -25,6 +25,7 @@ namespace SE::Editor
 	class WindowsModule;
 	class EditorModule;
 	class SettingModule;
+	class ManagedEditor;
 
 	class SE_API_EDITOR EditorApp : public App
 	{
@@ -56,8 +57,8 @@ namespace SE::Editor
 
 	public:
 		int32 LoadProduct() override;
-		GraphicWindow* CreateMainWindow()  override;
-		GraphicWindow* GetMainWindow() override;
+		Window* CreateMainWindow()  override;
+		Window* GetMainWindow() override;
 		bool Init()  override;
 		void BeforeRun()  override;
 		void BeforeExit()  override;
@@ -77,8 +78,47 @@ namespace SE::Editor
 		void RegisterModule(EditorModule* module);
 
 		List<EditorModule*> m_Modules = List<EditorModule*>(16);
-		GraphicWindow* m_Window = nullptr;
+		// GraphicWindow* m_Window = nullptr;
 
 		EditorContext m_Context;
 	};
+
+	SE_CLASS(API, NoSpawn, Name="Editor")
+	class ManagedEditor : ScriptingObject
+	{
+		SCRIPTING_TYPE_NO_SPAWN(ManagedEditor);
+
+		static UID ObjectID;
+
+	public:
+		/// <summary>
+		/// Initializes a new instance of the <see cref="ManagedEditor"/> class.
+		/// </summary>
+		ManagedEditor();
+
+		/// <summary>
+		/// Finalizes an instance of the <see cref="ManagedEditor"/> class.
+		/// </summary>
+		~ManagedEditor() override;
+
+
+		void Init();
+		void Update();
+		void LateUpdate();
+		void Render();
+		void Exit();
+
+
+		/// <summary>
+		/// Gets the main window created by the c# editor.
+		/// </summary>
+		/// <returns>The main window</returns>
+		Window* GetMainWindow();
+
+	private:
+
+		void OnEditorAssemblyLoaded(CLRAssembly* assembly);
+		void InvokeManagedMethod(const char* methodName);
+	};
+
 }

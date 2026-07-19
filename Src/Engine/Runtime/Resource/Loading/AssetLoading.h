@@ -1,9 +1,9 @@
 
 #pragma once
 
-#include "Core/Thread/IRunnable.h"
-#include "Core/Systems.h"
-#include "Core/Thread/ConcurrentTaskQueue.h"
+#include "Runtime/Core/Thread/IRunnable.h"
+#include "Runtime/Core/Systems.h"
+#include "Runtime/Core/Thread/ConcurrentTaskQueue.h"
 
 namespace SE
 {

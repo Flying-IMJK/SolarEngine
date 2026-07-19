@@ -2,10 +2,10 @@
 #include "ProjectInfo.h"
 #include "Runtime/EngineContext.h"
 
-#include "Core/Serialization/JsonWriters.hpp"
-#include "Core/Platform/File.h"
-#include "Core/Platform/FileSystem.h"
-#include "Core/Serialization/JsonTools.h"
+#include "Runtime/Core/Serialization/JsonWriters.hpp"
+#include "Runtime/Core/Platform/File.h"
+#include "Runtime/Core/Platform/FileSystem.h"
+#include "Runtime/Core/Serialization/JsonTools.h"
 
 namespace SE
 {

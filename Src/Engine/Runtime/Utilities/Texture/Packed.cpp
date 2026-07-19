@@ -1,9 +1,9 @@
 
 #include "Packed.h"
-#include "Core/Math/Vector2.h"
-#include "Core/Math/Vector3.h"
-#include "Core/Math/Vector4.h"
-#include "Core/Math/Color.h"
+#include "Runtime/Core/Math/Vector2.h"
+#include "Runtime/Core/Math/Vector3.h"
+#include "Runtime/Core/Math/Vector4.h"
+#include "Runtime/Core/Math/Color.h"
 
 namespace SE
 {

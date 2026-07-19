@@ -5,7 +5,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#include "Core/Math/Math.h"
+#include "Runtime/Core/Math/Math.h"
 
 namespace SE
 {

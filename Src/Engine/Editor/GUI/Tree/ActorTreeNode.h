@@ -19,6 +19,7 @@ namespace SE::Editor
     class ActorGraphNode;
     class DragActors;
     
+    SE_CLASS(Reflect)
     class ActorTreeNode : public TreeNode
     {
         SE_DEFINE_CLASS(ActorTreeNode, TreeNode)

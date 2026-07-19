@@ -1,12 +1,10 @@
 #include "CodeGenerator_CPP_Meta.h"
 
-#include <Core/TypeSystem/Types.h>
-#include <Core/TypeSystem/Info/TypeMetaInfo.h>
-#include <core/typesystem/metadata/typemetaattribute.h>
+#include "CodeGenerator_Utils.h"
 
-namespace SE::ReflectTool
+namespace SE::BuildTool
 {
-	static mustache::data GenerateFile(DataType const &type)
+	static mustache::data GenerateFile(TypeData const &type)
 	{
 		mustache::data generatorData;
 
@@ -16,16 +14,18 @@ namespace SE::ReflectTool
 			generatorData.set("isDevOnlyEnd", "#endif");
 		}
 
-		generatorData.set("namespace", type.namespaceName.Get());
-		generatorData.set("typeName", type.name.Get());
-		generatorData.set("typeIDUint", std::to_string((type.typeID)));
+		std::string namespaceName = CodeGeneratorUtils::GetFullCNameSpaceName(type.namespaceScopeList);
+
+		generatorData.set("namespace", namespaceName);
+		generatorData.set("typeName", type.name.c_str());
+		generatorData.set("typeIDUint", std::to_string(type.typeID));
 
 		return generatorData;
 	}
 
-	void CppGenerateMeta(Generator* generator, ReflectionDatabase const& database, std::stringstream& codeFile, DataType const& type, std::string templateStr)
+	void CppGenerateMeta(Generator* generator, ReflectionDatabase const& database, std::stringstream& codeFile, TypeData const& type, std::string templateStr)
 	{
-		ENGINE_ASSERT(type.IsMeta());
+		ENGINE_ASSERT(type.IsFlag(TypeData::Flags::IsMeta));
 
 		mustache::data data = GenerateFile(type);
 		mustache::mustache tmpl(templateStr);
@@ -33,13 +33,13 @@ namespace SE::ReflectTool
 		codeFile << tmpl.render(data);
 	}
 
-	void CppParseMeta(Generator* generator, mustache::data& metaList, StringAnsi const& metaContext)
+	void CppParseMeta(Generator* generator, mustache::data& metaList, std::string const& metaContext)
 	{
 		/*TypeMetaInfo const* metaInfo = Types::GetMetaTypeInfo("SG::{{metaType}}");
 		if (metaInfo == nullptr)
 		{
 			rapidjson::Document document;
-			document.Parse(metaContext.Get(), metaContext.Length());
+			document.Parse(metaContext.c_str(), metaContext.length());
 			if (document.GetParseError() == rapidjson::kParseErrorNone)
 			{
 				Json::Array metaDatas = document.GetArray();
@@ -58,5 +58,4 @@ namespace SE::ReflectTool
 		}*/
 	}
 }
-
 

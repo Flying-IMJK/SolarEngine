@@ -1,10 +1,10 @@
 
 #include "ShaderGraphValue.h"
 
-#include "Core/Math/Quaternion.h"
-#include "Core/Math/Vector2.h"
-#include "Core/Math/Vector3.h"
-#include "Core/Math/Vector4.h"
+#include "Runtime/Core/Math/Quaternion.h"
+#include "Runtime/Core/Math/Vector2.h"
+#include "Runtime/Core/Math/Vector3.h"
+#include "Runtime/Core/Math/Vector4.h"
 
 namespace SE
 {

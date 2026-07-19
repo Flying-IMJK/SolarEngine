@@ -1,9 +1,9 @@
 #pragma once
 
 #include "EditorModule.h"
-#include "Core/Math/Vector2.h"
-#include "Core/Types/Pair.h"
-#include "Core/Types/Strings/String.h"
+#include "Runtime/Core/Math/Vector2.h"
+#include "Runtime/Core/Types/Pair.h"
+#include "Runtime/Core/Types/Strings/String.h"
 
 namespace SE
 {

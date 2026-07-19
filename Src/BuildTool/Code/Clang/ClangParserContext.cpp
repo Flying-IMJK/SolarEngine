@@ -1,54 +1,207 @@
 #include "ClangParserContext.h"
-#include "../ReflectorSettingsAndUtils.h"
-#include "Core/Types/Collections/ListExtensions.h"
+#include "Database/ReflectionDatabase.h"
+
+#include <algorithm>
+#include <cctype>
 
 //-------------------------------------------------------------------------
 
-namespace SE::ReflectTool
+namespace SE::BuildTool
 {
-    static void CalculateFullNamespace(List<String> const &namespaceStack, String &fullNamespace)
+    static std::string GetFullTypeName(std::vector<std::string> const& namespaces,
+                                       std::vector<std::string> const& structScopes,
+                                       std::string const& name)
     {
-        fullNamespace.Clear();
-        for (int i = 0; i < namespaceStack.Count(); i++)
+        std::string result;
+        if (!namespaces.empty())
         {
-            fullNamespace.Append(namespaceStack[i]);
-            if (i != namespaceStack.Count() - 1)
+            result = Utils::CombineStringList(namespaces, "::");
+        }
+        if (!structScopes.empty())
+        {
+            if (!result.empty())
+                result += "::";
+            result += Utils::CombineStringList(structScopes, "::");
+        }
+        if (!result.empty())
+            result += "::";
+        result += name;
+        return result;
+    }
+
+    static std::string GetUnqualifiedTypeName(std::string const& typeName)
+    {
+        int32 pos = Utils::String::FindLast(typeName, ':');
+        if (pos != INVALID_INDEX && pos > 0 && typeName[(size_t)pos - 1] == ':')
+        {
+            return typeName.substr((size_t)pos + 1);
+        }
+        return typeName;
+    }
+
+    static bool IsIdentifierChar(char value)
+    {
+        return std::isalnum((unsigned char)value) || value == '_';
+    }
+
+    static void ReplaceTemplateParameter(std::string& text, std::string const& parameterName, std::string const& argumentName)
+    {
+        if (text.empty() || parameterName.empty())
+            return;
+
+        size_t pos = 0;
+        while ((pos = text.find(parameterName, pos)) != std::string::npos)
+        {
+            bool leftBoundary = pos == 0 || !IsIdentifierChar(text[pos - 1]);
+            size_t endPos = pos + parameterName.length();
+            bool rightBoundary = endPos >= text.length() || !IsIdentifierChar(text[endPos]);
+            if (leftBoundary && rightBoundary)
             {
-                fullNamespace.Append(SE_TEXT("::"));
+                text.replace(pos, parameterName.length(), argumentName);
+                pos += argumentName.length();
+            }
+            else
+            {
+                pos = endPos;
+            }
+        }
+    }
+
+    static void InflateText(std::string& text, std::vector<std::string> const& parameters, std::vector<std::string> const& arguments)
+    {
+        uint32 const count = (uint32)std::min(parameters.size(), arguments.size());
+        for (uint32 i = 0; i < count; i++)
+        {
+            ReplaceTemplateParameter(text, parameters[i], arguments[i]);
+        }
+    }
+
+    static void InflateApiParam(ApiParam& param, std::vector<std::string> const& parameters, std::vector<std::string> const& arguments)
+    {
+        InflateText(param.cppType, parameters, arguments);
+    }
+
+    static void InflateApiFunction(ApiFunction& fn, std::vector<std::string> const& parameters, std::vector<std::string> const& arguments)
+    {
+        InflateText(fn.returnType, parameters, arguments);
+        for (auto& param : fn.params)
+        {
+            InflateApiParam(param, parameters, arguments);
+        }
+    }
+
+    static void InflateApiProperty(ApiProperty& prop, std::vector<std::string> const& parameters, std::vector<std::string> const& arguments)
+    {
+        InflateText(prop.cppType, parameters, arguments);
+    }
+
+    static void InflateApiField(ApiField& field, std::vector<std::string> const& parameters, std::vector<std::string> const& arguments)
+    {
+        InflateText(field.cppType, parameters, arguments);
+    }
+
+    static void InflateApiEvent(ApiEvent& evt, std::vector<std::string> const& parameters, std::vector<std::string> const& arguments)
+    {
+        InflateText(evt.cppType, parameters, arguments);
+        for (auto& param : evt.params)
+        {
+            InflateApiParam(param, parameters, arguments);
+        }
+    }
+
+    static void InflateTypeData(TypeData& type, std::vector<std::string> const& parameters, std::vector<std::string> const& arguments)
+    {
+        for (auto& property : type.properties)
+        {
+            InflateText(property.typeName, parameters, arguments);
+            InflateText(property.templateArgTypeName, parameters, arguments);
+            if (!property.typeName.empty())
+            {
+                property.typeID = TypeID(property.typeName);
+            }
+        }
+
+        for (auto& fn : type.bindingInfo.functions)
+        {
+            InflateApiFunction(fn, parameters, arguments);
+        }
+        for (auto& prop : type.bindingInfo.bindingProperties)
+        {
+            InflateApiProperty(prop, parameters, arguments);
+        }
+        for (auto& field : type.bindingInfo.fields)
+        {
+            InflateApiField(field, parameters, arguments);
+        }
+        for (auto& iface : type.bindingInfo.interfaces)
+        {
+            for (auto& fn : iface.functions)
+            {
+                InflateApiFunction(fn, parameters, arguments);
+            }
+        }
+        for (auto& evt : type.bindingInfo.events)
+        {
+            InflateApiEvent(evt, parameters, arguments);
+        }
+    }
+
+    static void CalculateFullNamespace(std::vector<std::string> const &namespaceStack, std::string &fullNamespace)
+    {
+        fullNamespace.clear();
+        for (int i = 0; i < namespaceStack.size(); i++)
+        {
+            fullNamespace.append(namespaceStack[i]);
+            if (i != namespaceStack.size() - 1)
+            {
+                fullNamespace.append("::");
+            }
+        }
+    }
+
+    static void CalculateFullStructScope(std::vector<std::string> const &structScope, std::string &fullStructScope)
+    {
+        fullStructScope.clear();
+        for (int i = 0; i < structScope.size(); i++)
+        {
+            fullStructScope.append(structScope[i]);
+            if (i != structScope.size() - 1)
+            {
+                fullStructScope.append("_");
             }
         }
     }
 
     // TODO: Support block comments
-    static String TryToParseMacro(List<StringAnsi> const &fileContents, int32 parsedMacroLineNumber)
+    static std::string TryToParseMacro(std::vector<std::string> const &fileContents, int32 parsedMacroLineNumber)
     {
         // Clang seems to have one less line of code in its parsed data
         int32 const lineNumber = parsedMacroLineNumber - 1;
 
         //-------------------------------------------------------------------------
 
-		String macroComment;
+		std::string macroComment;
 
-        auto SanitizeCommentString = [](String &comment)
+        auto SanitizeCommentString = [](std::string &comment)
         {
-		  	comment.Replace(SE_TEXT("\r"), SE_TEXT(" "));
-		  	comment.FirstTrim();
-			comment.LastTrim();
+		  	Utils::String::ReplaceAll(comment, "\r", " ");
+		  	Utils::String::TrimStart(comment);
+			Utils::String::TrimEnd(comment);
         };
 
         // Check same line as the macro
         //-------------------------------------------------------------------------
         // This takes precedence over comments placed above
 
-        int32 const sameLineFoundPos = fileContents[lineNumber].FindFirstOf("//");
+        int32 const sameLineFoundPos = Utils::String::Find(fileContents[lineNumber], "//");
         if (sameLineFoundPos != INVALID_INDEX)
         {
-            if (!macroComment.IsEmpty())
+            if (!macroComment.empty())
             {
                 macroComment += "\\n";
             }
 
-            macroComment = fileContents[lineNumber].Substring(sameLineFoundPos + 2, fileContents[lineNumber].Length() - sameLineFoundPos - 2).ToString();
+            macroComment = fileContents[lineNumber].substr(sameLineFoundPos + 2, fileContents[lineNumber].length() - sameLineFoundPos - 2);
             SanitizeCommentString(macroComment);
             return macroComment;
         }
@@ -59,10 +212,10 @@ namespace SE::ReflectTool
 
         if (lineNumber > 0)
         {
-            int32 const foundCommentPos = fileContents[lineNumber - 1].FindFirstOf("//");
+            int32 const foundCommentPos = Utils::String::Find(fileContents[lineNumber - 1], "//");
             if (foundCommentPos != INVALID_INDEX)
             {
-                macroComment = fileContents[lineNumber - 1].Substring(foundCommentPos + 2, fileContents[lineNumber - 1].Length() - foundCommentPos - 2).ToString();
+                macroComment = fileContents[lineNumber - 1].substr(foundCommentPos + 2, fileContents[lineNumber - 1].length() - foundCommentPos - 2);
                 SanitizeCommentString(macroComment);
                 return macroComment;
             }
@@ -75,40 +228,40 @@ namespace SE::ReflectTool
 
     //-------------------------------------------------------------------------
 
-    static void SplitRespectingBrackets(String const &str, Char delimiter, List<String> &outParts)
+    static void SplitRespectingBrackets(std::string const &str, Char delimiter, std::vector<std::string> &outParts)
     {
         int32 depth = 0;
         bool inQuote = false;
         int32 start = 0;
 
-        for (int32 i = 0; i < str.Length(); i++)
+        for (int32 i = 0; i < str.length(); i++)
         {
             Char c = str[i];
-            if (c == SE_TEXT('"'))
+            if (c == '"')
             {
                 inQuote = !inQuote;
             }
             else if (!inQuote)
             {
-                if (c == SE_TEXT('(') || c == SE_TEXT('[') || c == SE_TEXT('{'))
+                if (c == '(' || c == '[' || c == '{')
                 {
                     depth++;
                 }
-                else if (c == SE_TEXT(')') || c == SE_TEXT(']') || c == SE_TEXT('}'))
+                else if (c == ')' || c == ']' || c == '}')
                 {
                     depth--;
                 }
                 else if (c == delimiter && depth == 0)
                 {
-                    outParts.Add(str.Substring(start, i - start));
+                    outParts.push_back(str.substr(start, i - start));
                     start = i + 1;
                 }
             }
         }
 
-        if (start < str.Length())
+        if (start < str.length())
         {
-            outParts.Add(str.Substring(start, str.Length() - start));
+            outParts.push_back(str.substr(start, str.length() - start));
         }
     }
 
@@ -135,7 +288,8 @@ namespace SE::ReflectTool
                                    type == ReflectionMacroType::SEEnum ||
                                    type == ReflectionMacroType::SEProperty ||
                                    type == ReflectionMacroType::SEFunction ||
-                                   type == ReflectionMacroType::SEEvent);
+                                   type == ReflectionMacroType::SEEvent ||
+                                   type == ReflectionMacroType::SETypeDef);
 
         if (needsParamParsing)
         {
@@ -143,46 +297,46 @@ namespace SE::ReflectTool
             uint32 numTokens = 0;
             CXTranslationUnit translationUnit = clang_Cursor_getTranslationUnit(cursor);
             clang_tokenize(translationUnit, sourceRange, &tokens, &numTokens);
-            String rawContents;
+            std::string rawContents;
             for (uint32 n = 0; n < numTokens; n++)
             {
                 rawContents += ClangUtils::GetString(clang_getTokenSpelling(translationUnit, tokens[n]));
             }
             clang_disposeTokens(translationUnit, tokens, numTokens);
 
-            String macroContent;
+            std::string macroContent;
             // Extract content between parentheses
-            int32 startIdx = rawContents.FindFirstOf(SE_TEXT("("));
-            int32 endIdx = rawContents.FindLast(SE_TEXT(')'));
+            int32 startIdx = Utils::String::Find(rawContents, "(");
+            int32 endIdx = Utils::String::FindLast(rawContents, ')');
             if (startIdx != INVALID_INDEX && endIdx != INVALID_INDEX && endIdx > (startIdx + 1))
             {
-                macroContent = rawContents.Substring(startIdx + 1, endIdx - startIdx - 1);
+                macroContent = rawContents.substr(startIdx + 1, endIdx - startIdx - 1);
             }
             else
             {
-                macroContent.Clear();
+                macroContent.clear();
             }
 
-            if (!macroContent.IsEmpty())
+            if (!macroContent.empty())
             {
-                List<String> params;
-                SplitRespectingBrackets(macroContent, SE_TEXT(','), params);
+                std::vector<std::string> params;
+                SplitRespectingBrackets(macroContent, ',', params);
 
                 for (auto &param : params)
                 {
-                    param.FirstTrim();
-                    param.LastTrim();
+                    Utils::String::TrimStart(param);
+                    Utils::String::TrimEnd(param);
 
-                    if (param == SE_TEXT("Reflect"))
+                    if (param == "Reflect")
                     {
                         hasReflect = true;
-                    }else if (param == SE_TEXT("API"))
+                    }else if (param == "API")
                     {
                         hasAPI = true;
                     }
                     else
                     {
-                        macroContents.Add(param);
+                        macroContents.push_back(param);
                     }
                 }
             }
@@ -191,13 +345,28 @@ namespace SE::ReflectTool
 
     //-------------------------------------------------------------------------
 
+    bool MarkMacro::HasContent(std::string_view value) const
+    {
+        for (auto const& content : macroContents)
+        {
+            if (content == value)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    //-------------------------------------------------------------------------
+
     HeaderInfo const *ClangParserContext::GetHeaderInfo(HeaderID headerID) const
     {
-		Function<bool(HeaderToVisit const &)> predicate = [headerID](HeaderToVisit const & headerToVisit){ return headerToVisit.m_ID == headerID;};
-		int index = ListExtensions::IndexOf(headersToVisit, predicate);
-        if (index != INVALID_INDEX)
+        for (int i = 0; i < headersToVisit.size(); ++i)
         {
-            return headersToVisit[index].m_pHeaderInfo;
+            if (headersToVisit[i].m_ID == headerID)
+            {
+                return headersToVisit[i].m_pHeaderInfo;
+            }
         }
 
         return nullptr;
@@ -205,53 +374,63 @@ namespace SE::ReflectTool
 
     void ClangParserContext::Reset(CXTranslationUnit *pTU)
     {
-        ENGINE_ASSERT(m_namespaceStack.IsEmpty());
-        ENGINE_ASSERT(m_structureStack.IsEmpty());
+        assert(m_namespaceStack.empty());
+        assert(m_structureStack.empty());
 
         this->pTU = pTU;
         m_MarkMacros.Clear();
-        m_inEngineNamespace = false;
-        m_errorMessage.Clear();
+        m_TemplateTypes.clear();
+        m_TypeDefs.clear();
+        m_errorMessage.clear();
     }
 
-    void ClangParserContext::PushNamespace(String const &name)
+    void ClangParserContext::PushNamespace(std::string const &name)
     {
-        m_namespaceStack.Push(name);
+        m_namespaceStack.push_back(name);
         CalculateFullNamespace(m_namespaceStack, m_currentNamespace);
-
-        // On Root namespace
-        if (m_namespaceStack.Count() == 1)
-        {
-            m_inEngineNamespace = (name == Settings::g_engineNamespace);
-        }
     }
 
     void ClangParserContext::PopNamespace()
     {
-        m_namespaceStack.Pop();
+        m_namespaceStack.pop_back();
         CalculateFullNamespace(m_namespaceStack, m_currentNamespace);
-
-        // Reset engine namespace flag
-        if (m_namespaceStack.IsEmpty())
-        {
-            m_inEngineNamespace = false;
-        }
     }
 
-    bool ClangParserContext::SetModuleClassName(StringView const &headerFilePath, String const &moduleClassName)
+    void ClangParserContext::PushStruct(std::string const& name)
+    {
+        m_structureStack.push_back(name);
+        CalculateFullNamespace(m_structureStack, m_currentStructScope);
+    }
+
+    void ClangParserContext::PopStruct()
+    {
+        m_structureStack.pop_back();
+    }
+
+    std::vector<std::string> ClangParserContext::GetStructScopes()
+    {
+        return m_structureStack;
+    }
+
+    std::vector<std::string> ClangParserContext::GetNamespaces()
+    {
+        return m_namespaceStack;
+    }
+
+    bool ClangParserContext::SetModuleClassName(std::string_view const &headerFilePath, std::string const &moduleClassName)
     {
         for (auto &prj : pSolution->projects)
         {
-            if (FileSystem::IsUnderDirectory(headerFilePath, prj.path))
+            if (FileSystem::IsUnderDirectory(std::string(headerFilePath), prj.path))
             {
-                ENGINE_ASSERT(prj.moduleClassNameFull.IsEmpty());
+                ENGINE_ASSERT(prj.moduleClassNameFull.empty());
                 prj.moduleClassNameFull = moduleClassName;
 
-                List<String> sp;
-				moduleClassName.Split(SE_TEXT("::"), sp);
-                if(sp.Count() > 1)
+                std::vector<std::string> sp;
+				Utils::String::Split(moduleClassName, "::", sp);
+                if(sp.size() > 1)
                 {
-                    prj.moduleClassName = sp[sp.Count() - 1];
+                    prj.moduleClassName = sp[sp.size() - 1];
                 }
                 else
                 {
@@ -265,11 +444,6 @@ namespace SE::ReflectTool
         return false;
     }
 
-    bool ClangParserContext::IsEngineNamespace(String const &namespaceString) const
-    {
-        return namespaceString == Settings::g_engineNamespace;
-    }
-
     //-------------------------------------------------------------------------
 
     void ClangParserContext::AddMarkMacro(MarkMacro const &foundMacro)
@@ -277,8 +451,8 @@ namespace SE::ReflectTool
         ENGINE_ASSERT(foundMacro.headerID != StringID::Invalid);
         ENGINE_ASSERT(foundMacro.type != ReflectionMacroType::Unknown);
 
-        List<MarkMacro> &macrosForHeader = m_MarkMacros[foundMacro.headerID];
-        macrosForHeader.Add(foundMacro);
+        std::vector<MarkMacro> &macrosForHeader = m_MarkMacros[foundMacro.headerID];
+        macrosForHeader.push_back(foundMacro);
     }
 
     bool ClangParserContext::FindMarkMacro(HeaderID headerID, CXCursor const& cr, MarkMacro& macro, ReflectionMacroType macroType)
@@ -291,16 +465,15 @@ namespace SE::ReflectTool
             return false;
         }
 
-        List<MarkMacro> &macrosForHeader = headerIter->Value;
+        std::vector<MarkMacro> &macrosForHeader = headerIter->Value;
         uint32_t line, column;
         ClangUtils::GetLineColumnNumberForCursor(cr, line, column);
 
         // Look for SE_ENUM with hasReflect == true
         //-------------------------------------------------------------------------
         int bestIndex = -1;
-        uint32_t bestDistance = UINT32_MAX;
 
-        for (int index = 0; index < macrosForHeader.Count(); index++)
+        for (int index = 0; index < macrosForHeader.size(); index++)
         {
             auto &item = macrosForHeader[index];
 
@@ -324,7 +497,7 @@ namespace SE::ReflectTool
         if (bestIndex >= 0)
         {
             macro = macrosForHeader[bestIndex];
-            macrosForHeader.RemoveAt(bestIndex);
+            Utils::Vector::RemoveAt(macrosForHeader, (size_t)bestIndex);
             return true;
         }
 
@@ -334,6 +507,88 @@ namespace SE::ReflectTool
     bool ClangParserContext::FindReflectionMacroForMeta(HeaderID headerID, CXCursor const& cr, MarkMacro& reflectionMacro)
     {
         return FindMarkMacro(headerID, cr, reflectionMacro, ReflectionMacroType::ReflectMeta);
+    }
+
+    void ClangParserContext::AddTemplateType(TypeData const& type, std::vector<std::string> const& parameterNames)
+    {
+        TemplateTypeData data;
+        data.type = type;
+        data.parameterNames = parameterNames;
+        m_TemplateTypes.emplace_back(data);
+    }
+
+    void ClangParserContext::AddTypeDef(TypeDefData const& typeDef)
+    {
+        m_TypeDefs.emplace_back(typeDef);
+    }
+
+    bool ClangParserContext::ResolvePendingTypeDefs()
+    {
+        for (auto const& pending : m_TypeDefs)
+        {
+            if (pending.macro.HasContent("Alias"))
+            {
+                continue;
+            }
+
+            TemplateTypeData const* pTemplateType = nullptr;
+            for (auto const& templateType : m_TemplateTypes)
+            {
+                std::string const fullTemplateName = GetFullTypeName(templateType.type.namespaceScopeList, templateType.type.structScopeList, templateType.type.name);
+                if (pending.templateTypeName == fullTemplateName || pending.templateTypeName == templateType.type.name || GetUnqualifiedTypeName(pending.templateTypeName) == templateType.type.name)
+                {
+                    pTemplateType = &templateType;
+                    break;
+                }
+            }
+
+            if (pTemplateType == nullptr)
+            {
+                LogError("SE_TYPEDEF target template type ({0}) was not found for typedef ({1})", pending.templateTypeName, pending.name);
+                return false;
+            }
+
+            if (pending.templateArguments.size() != pTemplateType->parameterNames.size())
+            {
+                LogError("SE_TYPEDEF typedef ({0}) provides {1} template argument(s), but template ({2}) expects {3}",
+                         pending.name,
+                         pending.templateArguments.size(),
+                         pTemplateType->type.name,
+                         pTemplateType->parameterNames.size());
+                return false;
+            }
+
+            TypeData type = pTemplateType->type;
+            std::string const fullAliasName = GetFullTypeName(pending.namespaceScopeList, pending.structScopeList, pending.name);
+            type.typeID = GenerateTypeID(fullAliasName);
+            type.headerID = pTemplateType->type.headerID;
+            type.name = pending.name;
+            type.namespaceScopeList = pending.namespaceScopeList;
+            type.structScopeList = pending.structScopeList;
+            type.flags.SetFlag(TypeData::Flags::IsTemplate);
+            type.isAPI = true;
+            type.isReflect = pending.macro.hasReflect;
+            if (!type.isReflect)
+            {
+                type.properties.clear();
+            }
+            type.bindingInfo.assemblyName.clear();
+            type.bindingInfo.assemblyDir.clear();
+            GetAssemblyInfoForHeader(type.headerID, type.bindingInfo.assemblyName, type.bindingInfo.assemblyDir);
+
+            InflateTypeData(type, pTemplateType->parameterNames, pending.templateArguments);
+
+            if (pDatabase->IsTypeRegistered(type.typeID))
+            {
+                LogError("SE_TYPEDEF typedef ({0}) generated a duplicate type ({1})", pending.name, fullAliasName);
+                return false;
+            }
+
+            pDatabase->RegisterType(&type, false);
+        }
+
+        m_TypeDefs.clear();
+        return true;
     }
 
     bool ClangParserContext::CheckForOrphanedReflectionMacros() const
@@ -348,7 +603,7 @@ namespace SE::ReflectTool
         {
             for (auto &macro : macroHeaderPair.Value)
             {
-                m_errorMessage += StringAnsi::Format(" TypeReflection Orphaned Macro Detected: {0}:{1}\n", macro.headerID.ToString(), macro.fileLine);
+                m_errorMessage += Utils::String::Format(" TypeReflection Orphaned Macro Detected: {0}:{1}\n", macro.headerID.ToString(), macro.fileLine);
                 hasOrphans = true;
             }
         }
@@ -358,7 +613,7 @@ namespace SE::ReflectTool
         return hasOrphans;
     }
 
-    void ClangParserContext::GetAssemblyInfoForHeader(HeaderID headerID, StringAnsi& outAssemblyName, StringAnsi& outAssemblyDir) const
+    void ClangParserContext::GetAssemblyInfoForHeader(HeaderID headerID, std::string& outAssemblyName, std::string& outAssemblyDir) const
     {
         if (!pSolution)
             return;
@@ -368,8 +623,8 @@ namespace SE::ReflectTool
             {
                 if (hdr.headerId == headerID)
                 {
-                    outAssemblyName = prj.name.ToStringAnsi();
-                    outAssemblyDir  = prj.path.ToStringAnsi();
+                    outAssemblyName = prj.name;
+                    outAssemblyDir  = prj.path;
                     return;
                 }
             }

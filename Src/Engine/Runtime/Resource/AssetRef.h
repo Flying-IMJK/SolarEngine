@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Serialization/Serialization.h"
+#include "Runtime/Core/Serialization/Serialization.h"
 
 #include "AssetContent.h"
 #include "Runtime/Resource/Asset.h"

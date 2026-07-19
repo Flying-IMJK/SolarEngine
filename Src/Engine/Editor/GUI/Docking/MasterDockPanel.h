@@ -11,6 +11,7 @@ namespace SE::Editor
     /// <summary>
     /// Master Dock Panel control used as a root control for dockable windows workspace.
     /// </summary>
+    SE_CLASS(Reflect)
     class MasterDockPanel : public DockPanel
     {
         SE_DEFINE_CLASS_DEFAULT(MasterDockPanel, DockPanel)

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Core/TypeSystem/TypeID.h"
-#include "Core/TypeSystem/Types.h"
+#include "Runtime/Core/TypeSystem/TypeID.h"
+#include "Runtime/Core/TypeSystem/Types.h"
 #include "Runtime/API.h"
 
 

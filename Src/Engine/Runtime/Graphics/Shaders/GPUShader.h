@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Runtime/API.h"
-#include "Core/Types/Collections/Dictionary.h"
-#include "Core/Types/Strings/StringView.h"
-#include "Core/Serialization/MemoryReadStream.h"
+#include "Runtime/Core/Types/Collections/Dictionary.h"
+#include "Runtime/Core/Types/Strings/StringView.h"
+#include "Runtime/Core/Serialization/MemoryReadStream.h"
 
 #include "Runtime/Graphics/Base/GPUResource.h"
 
@@ -66,8 +66,11 @@ namespace SE
 	};
 
 
-	class GPUShader : public GPUResource
+	SE_CLASS(API, Sealed, NoSpawn)
+	class SE_API_RUNTIME GPUShader : public GPUResource
 	{
+		SCRIPTING_TYPE_NO_SPAWN(GPUShader);
+
 	protected:
 		GPUShaderProgramsContainer m_Shaders;
 		GPUConstantBuffer* m_ConstantBuffers[MAX_CONSTANT_BUFFER_SLOTS];

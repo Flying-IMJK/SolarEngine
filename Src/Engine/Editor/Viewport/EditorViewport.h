@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Cameras/ViewportCamera.h"
-#include "Core/Input/Input.h"
-#include "Core/Math/Transform.h"
+#include "Runtime/Input/Input.h"
+#include "Runtime/Core/Math/Transform.h"
 
 #include "Editor/GUI/Viewport/RenderOutputViewport.h"
 

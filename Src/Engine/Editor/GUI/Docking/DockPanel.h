@@ -1,5 +1,5 @@
 #pragma once
-#include "Core/Types/Collections/List.h"
+#include "Runtime/Core/Types/Collections/List.h"
 #include "Runtime/UI/GUI/ContainerControl.h"
 
 namespace SE::Editor
@@ -62,6 +62,7 @@ namespace SE::Editor
     /// Dockable panel control.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
+    SE_CLASS(Reflect)
     class DockPanel : public ContainerControl
     {
         SE_DEFINE_CLASS_DEFAULT(DockPanel, ContainerControl)

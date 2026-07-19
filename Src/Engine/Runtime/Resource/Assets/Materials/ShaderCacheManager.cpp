@@ -1,9 +1,9 @@
 
 #include "ShaderCacheManager.h"
 
-#include "Core/Systems.h"
-#include "Core/Platform/File.h"
-#include "Core/Platform/FileSystem.h"
+#include "Runtime/Core/Systems.h"
+#include "Runtime/Core/Platform/File.h"
+#include "Runtime/Core/Platform/FileSystem.h"
 #include "Runtime/Graphics/Shaders/GPUShader.h"
 #include "Runtime/EngineContext.h"
 #include "Runtime/Render/Assets/Material/MaterialShader.h"

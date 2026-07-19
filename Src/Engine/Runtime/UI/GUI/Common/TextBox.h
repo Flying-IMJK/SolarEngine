@@ -4,6 +4,7 @@
 
 namespace SE
 {
+    SE_CLASS(Reflect)
     class SE_API_RUNTIME TextBox : public TextBoxBase
     {
         SE_DEFINE_CLASS(TextBox, TextBoxBase)

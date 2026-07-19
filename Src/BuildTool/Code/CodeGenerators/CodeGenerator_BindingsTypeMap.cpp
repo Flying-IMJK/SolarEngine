@@ -5,9 +5,122 @@
 #include "CodeGenerator_BindingsTypeMap.h"
 #include <cstring>
 #include <cstdlib>
+#include <vector>
 
-namespace SE::ReflectTool
+namespace SE::BuildTool
 {
+    struct ApiTypeNameAlias
+    {
+        std::string nativeName;
+        std::string nativeFullName;
+        std::string publicName;
+        std::string publicFullName;
+    };
+
+    static std::vector<ApiTypeNameAlias> s_apiTypeNameAliases;
+    static std::vector<std::string> s_scriptingObjectTypeNames;
+    static std::vector<std::string> s_nativeObjectTypeNames;
+
+    static std::string StripCppKeywordPrefixes(const std::string& cppType)
+    {
+        std::string result = cppType;
+        Utils::String::TrimStart(result);
+        Utils::String::TrimEnd(result);
+
+        while (Utils::String::StartsWith(result, "::"))
+            result = result.substr(2);
+        if (Utils::String::StartsWith(result, "class "))
+            result = result.substr(6);
+        else if (Utils::String::StartsWith(result, "struct "))
+            result = result.substr(7);
+        else if (Utils::String::StartsWith(result, "enum "))
+            result = result.substr(5);
+        Utils::String::TrimStart(result);
+        Utils::String::TrimEnd(result);
+        return result;
+    }
+
+    static std::string GetUnqualifiedTypeName(const std::string& cppType)
+    {
+        std::string result = StripCppKeywordPrefixes(cppType);
+        int pos = INVALID_INDEX;
+        int searchStart = 0;
+        while (true)
+        {
+            std::string tail = result.substr(searchStart);
+            int found = Utils::String::Find(tail, "::");
+            if (found == INVALID_INDEX)
+                break;
+            pos = searchStart + found;
+            searchStart = pos + 2;
+        }
+        if (pos != INVALID_INDEX)
+            result = result.substr(pos + 2);
+        Utils::String::TrimStart(result);
+        Utils::String::TrimEnd(result);
+        return result;
+    }
+
+    static std::string NormalizeCppNameForAlias(const std::string& cppType)
+    {
+        std::string result = StripCppKeywordPrefixes(cppType);
+        Utils::String::ReplaceAll(result, " :: ", "::");
+        Utils::String::ReplaceAll(result, ":: ", "::");
+        Utils::String::ReplaceAll(result, " ::", "::");
+        while (Utils::String::StartsWith(result, "::"))
+            result = result.substr(2);
+        Utils::String::TrimStart(result);
+        Utils::String::TrimEnd(result);
+        return result;
+    }
+
+    static std::string ToCSharpQualifiedName(const std::string& cppType)
+    {
+        std::string result = NormalizeCppNameForAlias(cppType);
+        int pos;
+        while ((pos = Utils::String::Find(result, "::")) != INVALID_INDEX)
+        {
+            result = result.substr(0, pos) + "." + result.substr(pos + 2);
+        }
+        return result;
+    }
+
+    static std::string GetCSharpSimpleName(const std::string& csType)
+    {
+        int separator = Utils::String::FindLast(csType, '.');
+        return separator == INVALID_INDEX ? csType : csType.substr(separator + 1);
+    }
+
+    static std::string ResolveCSharpTypeNameAlias(const std::string& cppType)
+    {
+        std::string stripped = NormalizeCppNameForAlias(cppType);
+        std::string unqualified = GetUnqualifiedTypeName(stripped);
+        for (auto const& alias : s_apiTypeNameAliases)
+        {
+            if (!alias.nativeFullName.empty() && stripped == alias.nativeFullName)
+                return alias.publicFullName;
+        }
+        for (auto const& alias : s_apiTypeNameAliases)
+        {
+            if (stripped == alias.nativeName || unqualified == alias.nativeName)
+                return alias.publicName;
+        }
+        return ToCSharpQualifiedName(stripped);
+    }
+
+    static const TypeMapping* FindTypeMappingNormalized(const std::string& cppType)
+    {
+        std::string stripped = StripTypeQualifiers(cppType);
+        stripped = StripCppKeywordPrefixes(stripped);
+
+        const TypeMapping* mapping = FindTypeMapping(stripped.c_str());
+        if (mapping)
+            return mapping;
+
+        std::string unqualified = GetUnqualifiedTypeName(stripped);
+        return FindTypeMapping(unqualified.c_str());
+    }
+
     // -------------------------------------------------------------------------
     // Static type mapping table
     // -------------------------------------------------------------------------
@@ -105,29 +218,105 @@ namespace SE::ReflectTool
         return nullptr;
     }
 
-    bool IsScriptingObjectPointer(const StringAnsi& cppType)
+    void ClearApiTypeNameAliases()
     {
-        if (cppType.IsEmpty())
-            return false;
-        const char* raw = cppType.Get();
-        int len = (int)cppType.Length();
-        if (raw[len - 1] != '*')
-            return false;
-        StringAnsi base = cppType.Substring(0, len - 1);
-        base = StripTypeQualifiers(base);
-        return FindTypeMapping(base.Get()) == nullptr;
+        s_apiTypeNameAliases.clear();
+        s_scriptingObjectTypeNames.clear();
+        s_nativeObjectTypeNames.clear();
     }
 
-    StringAnsi StripTypeQualifiers(const StringAnsi& cppType)
+    void RegisterApiTypeNameAlias(const std::string& nativeName,
+                                  const std::string& nativeFullName,
+                                  const std::string& publicName,
+                                  const std::string& publicFullName)
     {
-        StringAnsi result = cppType;
-        if (result.StartsWith("const "))
-            result = result.Substring(6);
-        while (!result.IsEmpty())
+        if (nativeName.empty() || publicName.empty())
         {
-            char last = result.Get()[result.Length() - 1];
+            return;
+        }
+
+        ApiTypeNameAlias alias;
+        alias.nativeName = NormalizeCppNameForAlias(nativeName);
+        alias.nativeFullName = NormalizeCppNameForAlias(nativeFullName.empty() ? nativeName : nativeFullName);
+        alias.publicName = publicName;
+        alias.publicFullName = publicFullName.empty() ? publicName : publicFullName;
+        s_apiTypeNameAliases.push_back(alias);
+    }
+
+    void RegisterApiScriptingObjectType(const std::string& nativeName,
+                                        const std::string& nativeFullName)
+    {
+        if (!nativeName.empty())
+            s_scriptingObjectTypeNames.push_back(NormalizeCppNameForAlias(nativeName));
+        if (!nativeFullName.empty())
+            s_scriptingObjectTypeNames.push_back(NormalizeCppNameForAlias(nativeFullName));
+    }
+
+    void RegisterApiNativeObjectType(const std::string& nativeName,
+                                     const std::string& nativeFullName)
+    {
+        if (!nativeName.empty())
+            s_nativeObjectTypeNames.push_back(NormalizeCppNameForAlias(nativeName));
+        if (!nativeFullName.empty())
+            s_nativeObjectTypeNames.push_back(NormalizeCppNameForAlias(nativeFullName));
+    }
+
+    static bool IsNativePointer(const std::string& cppType)
+    {
+        std::string type = cppType;
+        Utils::String::TrimStart(type);
+        Utils::String::TrimEnd(type);
+        return !type.empty() && type.back() == '*';
+    }
+
+    bool IsScriptingObjectPointer(const std::string& cppType)
+    {
+        if (!IsNativePointer(cppType))
+            return false;
+
+        std::string base = NormalizeCppNameForAlias(StripTypeQualifiers(cppType));
+        std::string unqualified = GetUnqualifiedTypeName(base);
+        static const char* scriptingBaseTypes[] = {
+            "ScriptingObject", "ManagedScriptingObject", "PersistentScriptingObject", nullptr
+        };
+        for (int index = 0; scriptingBaseTypes[index] != nullptr; index++)
+        {
+            if (base == scriptingBaseTypes[index] || unqualified == scriptingBaseTypes[index])
+                return true;
+        }
+        for (auto const& typeName : s_scriptingObjectTypeNames)
+        {
+            if (base == typeName || unqualified == GetUnqualifiedTypeName(typeName))
+                return true;
+        }
+        return false;
+    }
+
+    static bool IsNativeApiObjectPointer(const std::string& cppType)
+    {
+        if (!IsNativePointer(cppType))
+            return false;
+
+        std::string base = NormalizeCppNameForAlias(StripTypeQualifiers(cppType));
+        std::string unqualified = GetUnqualifiedTypeName(base);
+        for (auto const& typeName : s_nativeObjectTypeNames)
+        {
+            if (base == typeName || unqualified == GetUnqualifiedTypeName(typeName))
+                return true;
+        }
+        return false;
+    }
+
+    std::string StripTypeQualifiers(const std::string& cppType)
+    {
+        std::string result = cppType;
+        if (Utils::String::StartsWith(result, "const "))
+            result = result.substr(6);
+        while (!result.empty())
+        {
+            char last = result.c_str()[result.length() - 1];
             if (last == '*' || last == '&' || last == ' ')
-                result = result.Substring(0, (int)result.Length() - 1);
+                result = result.substr(0, (int)result.length() - 1);
             else
                 break;
         }
@@ -138,155 +327,182 @@ namespace SE::ReflectTool
     // C# type resolution
     // -------------------------------------------------------------------------
 
-    StringAnsi GetCSharpInteropType(const StringAnsi& cppType)
+    std::string GetCSharpInteropType(const std::string& cppType)
     {
-        StringAnsi stripped = StripTypeQualifiers(cppType);
+        std::string stripped = StripTypeQualifiers(cppType);
 
         // Check for known type mappings first
-        const TypeMapping* mapping = FindTypeMapping(stripped.Get());
+        const TypeMapping* mapping = FindTypeMappingNormalized(stripped);
         if (mapping)
         {
             if (mapping->isString)
-                return StringAnsi("string");
-            return StringAnsi(mapping->csInterop);
+                return std::string("string");
+            return std::string(mapping->csInterop);
         }
 
         // Object reference types → IntPtr
         if (IsObjectTypeRef(cppType))
-            return StringAnsi("IntPtr");
+            return std::string("IntPtr");
 
         // ScriptingObject-derived pointer
         if (IsScriptingObjectPointer(cppType))
-            return StringAnsi("IntPtr");
+            return std::string("IntPtr");
+
+        // Native API object pointer (not a ScriptingObject) is represented by a generated wrapper.
+        if (IsNativePointer(cppType))
+            return std::string("IntPtr");
 
         // Collection types → use public type with special marshalling
-        if (stripped.StartsWith("Array<") || stripped.StartsWith("Span<")
-            || stripped.StartsWith("List<") || stripped.StartsWith("DataContainer<")
-            || stripped.StartsWith("BytesContainer"))
+        if (Utils::String::StartsWith(stripped, "Array<") || Utils::String::StartsWith(stripped, "Span<")
+            || Utils::String::StartsWith(stripped, "List<") || Utils::String::StartsWith(stripped, "DataContainer<")
+            || Utils::String::StartsWith(stripped, "BytesContainer"))
         {
             // Element type resolution happens in marshal attributes
-            return StringAnsi("IntPtr");
+            return std::string("IntPtr");
         }
 
-        if (stripped.StartsWith("Dictionary<") || stripped.StartsWith("HashSet<"))
-            return StringAnsi("IntPtr");
+        if (Utils::String::StartsWith(stripped, "Dictionary<") || Utils::String::StartsWith(stripped, "HashSet<"))
+            return std::string("IntPtr");
 
         // BitArray → bool[]
         if (stripped == "BitArray")
-            return StringAnsi("IntPtr");
+            return std::string("IntPtr");
 
-        // Unknown type — use IntPtr as fallback
-        return StringAnsi("System.IntPtr");
+        // Unknown value/enum/struct type: keep a stable C# type name so public
+        // wrappers and P/Invoke signatures agree. Pointer/object cases are
+        // handled above and stay IntPtr.
+        return ResolveCSharpTypeNameAlias(stripped);
     }
 
-    StringAnsi GetCSharpPublicType(const StringAnsi& cppType)
+    std::string GetCSharpPublicType(const std::string& cppType)
     {
-        StringAnsi stripped = StripTypeQualifiers(cppType);
-        const TypeMapping* mapping = FindTypeMapping(stripped.Get());
+        std::string stripped = StripTypeQualifiers(cppType);
+        const TypeMapping* mapping = FindTypeMappingNormalized(stripped);
         if (mapping)
-            return StringAnsi(mapping->csType);
+            return std::string(mapping->csType);
+
+        if (stripped == "ScriptingObject" || stripped == "SE::ScriptingObject"
+            || stripped == "ManagedScriptingObject" || stripped == "SE::ManagedScriptingObject"
+            || stripped == "PersistentScriptingObject" || stripped == "SE::PersistentScriptingObject")
+        {
+            return std::string("SE.Scripting.ScriptingObject");
+        }
 
         // ScriptingObject-derived pointer: use the class name
         if (IsScriptingObjectPointer(cppType))
-            return stripped;
+            return ResolveCSharpTypeNameAlias(stripped);
+
+        if (IsNativeApiObjectPointer(cppType))
+            return ResolveCSharpTypeNameAlias(stripped);
+
+        // A pointer to a native type that is not itself API is represented by a
+        // generated, strongly typed opaque handle. This preserves overloads
+        // between unrelated native pointer types.
+        if (IsNativePointer(cppType))
+            return ResolveCSharpTypeNameAlias(stripped);
 
         // Object reference types: resolve generic argument
         if (IsObjectTypeRef(cppType))
         {
-            int ltPos = stripped.Find("<");
-            int gtPos = stripped.Find(">");
+            int ltPos = Utils::String::Find(stripped, "<");
+            int gtPos = Utils::String::Find(stripped, ">");
             if (ltPos != INVALID_INDEX && gtPos != INVALID_INDEX && gtPos > ltPos)
             {
-                StringAnsi innerType = stripped.Substring(ltPos + 1, gtPos - ltPos - 1);
-                return StripTypeQualifiers(innerType);
+                std::string innerType = stripped.substr(ltPos + 1, gtPos - ltPos - 1);
+                return ResolveCSharpTypeNameAlias(StripTypeQualifiers(innerType));
             }
-            return stripped;
+            return ResolveCSharpTypeNameAlias(stripped);
         }
 
         // Collection types
-        if (stripped.StartsWith("Array<") || stripped.StartsWith("Span<") || stripped.StartsWith("List<"))
+        if (Utils::String::StartsWith(stripped, "Array<") || Utils::String::StartsWith(stripped, "Span<") || Utils::String::StartsWith(stripped, "List<"))
         {
-            int ltPos = stripped.Find("<");
-            int gtPos = stripped.Find(">");
+            int ltPos = Utils::String::Find(stripped, "<");
+            int gtPos = Utils::String::Find(stripped, ">");
             if (ltPos != INVALID_INDEX && gtPos != INVALID_INDEX && gtPos > ltPos)
             {
-                StringAnsi elementType = StripTypeQualifiers(stripped.Substring(ltPos + 1, gtPos - ltPos - 1));
+                std::string elementType = StripTypeQualifiers(stripped.substr(ltPos + 1, gtPos - ltPos - 1));
                 return GetCSharpPublicType(elementType) + "[]";
             }
-            return stripped + "[]";
+            return ResolveCSharpTypeNameAlias(stripped) + "[]";
         }
 
-        if (stripped.StartsWith("DataContainer<"))
+        if (Utils::String::StartsWith(stripped, "DataContainer<"))
         {
-            int ltPos = stripped.Find("<");
-            int gtPos = stripped.Find(">");
+            int ltPos = Utils::String::Find(stripped, "<");
+            int gtPos = Utils::String::Find(stripped, ">");
             if (ltPos != INVALID_INDEX && gtPos != INVALID_INDEX && gtPos > ltPos)
             {
-                StringAnsi elementType = StripTypeQualifiers(stripped.Substring(ltPos + 1, gtPos - ltPos - 1));
+                std::string elementType = StripTypeQualifiers(stripped.substr(ltPos + 1, gtPos - ltPos - 1));
                 return GetCSharpPublicType(elementType) + "[]";
             }
-            return stripped + "[]";
+            return ResolveCSharpTypeNameAlias(stripped) + "[]";
         }
 
         if (stripped == "BytesContainer")
-            return StringAnsi("byte[]");
+            return std::string("byte[]");
 
-        if (stripped.StartsWith("Dictionary<"))
+        if (Utils::String::StartsWith(stripped, "Dictionary<"))
         {
-            int ltPos = stripped.Find("<");
-            int gtPos = stripped.Find(">");
+            int ltPos = Utils::String::Find(stripped, "<");
+            int gtPos = Utils::String::Find(stripped, ">");
             if (ltPos != INVALID_INDEX && gtPos != INVALID_INDEX && gtPos > ltPos)
             {
-                StringAnsi inner = stripped.Substring(ltPos + 1, gtPos - ltPos - 1);
+                std::string inner = stripped.substr(ltPos + 1, gtPos - ltPos - 1);
                 // Split by comma for K,V
-                int commaPos = inner.Find(",");
+                int commaPos = Utils::String::Find(inner, ",");
                 if (commaPos != INVALID_INDEX)
                 {
-                    StringAnsi keyType = StripTypeQualifiers(inner.Substring(0, commaPos));
-                    StringAnsi valType = StripTypeQualifiers(inner.Substring(commaPos + 1));
-                    return StringAnsi("System.Collections.Generic.Dictionary<")
+                    std::string keyType = StripTypeQualifiers(inner.substr(0, commaPos));
+                    std::string valType = StripTypeQualifiers(inner.substr(commaPos + 1));
+                    return std::string("System.Collections.Generic.Dictionary<")
                          + GetCSharpPublicType(keyType) + ", " + GetCSharpPublicType(valType) + ">";
                 }
             }
-            return stripped;
+            return ResolveCSharpTypeNameAlias(stripped);
         }
 
-        if (stripped.StartsWith("HashSet<"))
+        if (Utils::String::StartsWith(stripped, "HashSet<"))
         {
-            int ltPos = stripped.Find("<");
-            int gtPos = stripped.Find(">");
+            int ltPos = Utils::String::Find(stripped, "<");
+            int gtPos = Utils::String::Find(stripped, ">");
             if (ltPos != INVALID_INDEX && gtPos != INVALID_INDEX && gtPos > ltPos)
             {
-                StringAnsi elementType = StripTypeQualifiers(stripped.Substring(ltPos + 1, gtPos - ltPos - 1));
-                return StringAnsi("System.Collections.Generic.HashSet<") + GetCSharpPublicType(elementType) + ">";
+                std::string elementType = StripTypeQualifiers(stripped.substr(ltPos + 1, gtPos - ltPos - 1));
+                return std::string("System.Collections.Generic.HashSet<") + GetCSharpPublicType(elementType) + ">";
             }
-            return stripped;
+            return ResolveCSharpTypeNameAlias(stripped);
         }
 
         if (stripped == "BitArray")
-            return StringAnsi("bool[]");
+            return std::string("bool[]");
 
-        // Unknown — return as-is (replace :: with .)
-        StringAnsi result = stripped;
-        int pos;
-        while ((pos = result.Find("::")) != INVALID_INDEX)
-        {
-            result = result.Substring(0, pos) + "." + result.Substring(pos + 2);
-        }
-        return result;
+        return ResolveCSharpTypeNameAlias(stripped);
     }
 
-    StringAnsi GetCSharpFromInterop(const StringAnsi& cppType, const StringAnsi& varName)
+    std::string GetCSharpFromInterop(const std::string& cppType, const std::string& varName)
     {
-        StringAnsi stripped = StripTypeQualifiers(cppType);
-        const TypeMapping* mapping = FindTypeMapping(stripped.Get());
+        std::string stripped = StripTypeQualifiers(cppType);
+        const TypeMapping* mapping = FindTypeMappingNormalized(stripped);
         if (mapping && mapping->isString)
             return varName; // StringMarshalling handles strings automatically
 
         if (IsScriptingObjectPointer(cppType))
         {
-            StringAnsi className = stripped;
-            return StringAnsi::Format("({0})ScriptingObject.ToNative({1})", className.Get(), varName.Get());
+            std::string className = GetCSharpPublicType(cppType);
+            return Utils::String::Format("({0})SE.Interop.ManagedHandleMarshaller.NativeToManaged.ConvertToManaged({1})", className, varName);
+        }
+
+        if (IsNativeApiObjectPointer(cppType))
+        {
+            std::string className = GetCSharpPublicType(cppType);
+            return Utils::String::Format("{0}.{1}Marshaller.ConvertToManaged({2})", className, GetCSharpSimpleName(className), varName);
+        }
+
+        if (IsNativePointer(cppType))
+        {
+            std::string className = GetCSharpPublicType(cppType);
+            return Utils::String::Format("{0}.FromUnmanaged({1})", className, varName);
         }
 
         if (IsObjectTypeRef(cppType))
@@ -295,18 +511,27 @@ namespace SE::ReflectTool
         return varName; // blittable or handled by marshalling
     }
 
-    StringAnsi GetCSharpToInterop(const StringAnsi& cppType, const StringAnsi& varName)
+    std::string GetCSharpToInterop(const std::string& cppType, const std::string& varName)
     {
-        StringAnsi stripped = StripTypeQualifiers(cppType);
-        const TypeMapping* mapping = FindTypeMapping(stripped.Get());
+        std::string stripped = StripTypeQualifiers(cppType);
+        const TypeMapping* mapping = FindTypeMappingNormalized(stripped);
         if (mapping && mapping->isString)
             return varName; // LibraryImport StringMarshalling handles strings
 
         if (IsScriptingObjectPointer(cppType))
-            return StringAnsi::Format("{0} != null ? {0}.__unmanagedPtr : IntPtr.Zero", varName.Get());
+            return Utils::String::Format("{0} != null ? {0}.__unmanagedPtr : IntPtr.Zero", varName);
+
+        if (IsNativeApiObjectPointer(cppType))
+            return Utils::String::Format("{0} != null ? {0}.__unmanagedPtr : IntPtr.Zero", varName);
+
+        if (IsNativePointer(cppType))
+            return Utils::String::Format("{0} != null ? {0}.__unmanagedPtr : IntPtr.Zero", varName);
 
         if (IsObjectTypeRef(cppType))
-            return StringAnsi::Format("{0} != null ? {0}.__unmanagedPtr : IntPtr.Zero", varName.Get());
+            return Utils::String::Format("{0} != null ? {0}.__unmanagedPtr : IntPtr.Zero", varName);
+
+        if (IsCollectionType(cppType))
+            return std::string("IntPtr.Zero");
 
         return varName; // blittable
     }
@@ -315,20 +540,22 @@ namespace SE::ReflectTool
     // Pass-by-reference and type classification
     // -------------------------------------------------------------------------
 
-    bool UsePassByReference(const StringAnsi& cppType)
+    bool UsePassByReference(const std::string& cppType)
     {
-        StringAnsi stripped = StripTypeQualifiers(cppType);
+        std::string stripped = StripTypeQualifiers(cppType);
 
         // Pointers and objects: no
-        if (stripped.IsEmpty())
+        if (stripped.empty())
             return false;
         if (IsScriptingObjectPointer(cppType))
+            return false;
+        if (IsNativePointer(cppType))
             return false;
         if (IsObjectTypeRef(cppType))
             return false;
 
         // Strings and collections: no
-        const TypeMapping* mapping = FindTypeMapping(stripped.Get());
+        const TypeMapping* mapping = FindTypeMappingNormalized(stripped);
         if (mapping && mapping->isString)
             return false;
         if (IsCollectionType(cppType))
@@ -339,7 +566,7 @@ namespace SE::ReflectTool
             return false;
 
         // Explicit ref: yes
-        if (cppType.Get()[cppType.Length() - 1] == '&')
+        if (cppType.c_str()[cppType.length() - 1] == '&')
             return true;
 
         // Known pass-by-ref types (math structs)
@@ -355,19 +582,21 @@ namespace SE::ReflectTool
         return false;
     }
 
-    bool IsPodType(const StringAnsi& cppType)
+    bool IsPodType(const std::string& cppType)
     {
-        StringAnsi stripped = StripTypeQualifiers(cppType);
-        const TypeMapping* mapping = FindTypeMapping(stripped.Get());
+        std::string stripped = StripTypeQualifiers(cppType);
+        const TypeMapping* mapping = FindTypeMappingNormalized(stripped);
         if (mapping)
+        {
             return mapping->isBlittable;
+        }
         // Non-mapped types default to non-POD
         return false;
     }
 
-    bool IsScriptingObjectType(const StringAnsi& cppType)
+    bool IsScriptingObjectType(const std::string& cppType)
     {
-        StringAnsi stripped = StripTypeQualifiers(cppType);
+        std::string stripped = StripTypeQualifiers(cppType);
         // Known scripting object base types
         if (stripped == "ScriptingObject" || stripped == "PersistentScriptingObject"
             || stripped == "ManagedObject" || stripped == "BinaryAsset"
@@ -376,26 +605,26 @@ namespace SE::ReflectTool
         return IsScriptingObjectPointer(cppType);
     }
 
-    bool IsObjectTypeRef(const StringAnsi& cppType)
+    bool IsObjectTypeRef(const std::string& cppType)
     {
-        StringAnsi stripped = StripTypeQualifiers(cppType);
+        std::string stripped = StripTypeQualifiers(cppType);
         for (int i = 0; s_objectRefTypes[i] != nullptr; ++i)
         {
-            if (stripped.StartsWith(s_objectRefTypes[i]))
+            if (Utils::String::StartsWith(stripped, s_objectRefTypes[i]) || Utils::String::StartsWith(GetUnqualifiedTypeName(stripped), s_objectRefTypes[i]))
                 return true;
         }
         return false;
     }
 
-    bool IsCollectionType(const StringAnsi& cppType)
+    bool IsCollectionType(const std::string& cppType)
     {
-        StringAnsi stripped = StripTypeQualifiers(cppType);
-        return stripped.StartsWith("Array<")
-            || stripped.StartsWith("Span<")
-            || stripped.StartsWith("List<")
-            || stripped.StartsWith("Dictionary<")
-            || stripped.StartsWith("HashSet<")
-            || stripped.StartsWith("DataContainer<")
+        std::string stripped = StripTypeQualifiers(cppType);
+        return Utils::String::StartsWith(stripped, "Array<")
+            || Utils::String::StartsWith(stripped, "Span<")
+            || Utils::String::StartsWith(stripped, "List<")
+            || Utils::String::StartsWith(stripped, "Dictionary<")
+            || Utils::String::StartsWith(stripped, "HashSet<")
+            || Utils::String::StartsWith(stripped, "DataContainer<")
             || stripped == "BytesContainer"
             || stripped == "BitArray";
     }
@@ -404,164 +633,164 @@ namespace SE::ReflectTool
     // Marshal attribute generation
     // -------------------------------------------------------------------------
 
-    StringAnsi GetCSharpParamMarshalAttribute(const StringAnsi& cppType, const StringAnsi& paramName)
+    std::string GetCSharpParamMarshalAttribute(const std::string& cppType, const std::string& paramName)
     {
-        StringAnsi stripped = StripTypeQualifiers(cppType);
+        std::string stripped = StripTypeQualifiers(cppType);
 
         // bool → U1
         if (stripped == "bool")
-            return StringAnsi("[MarshalAs(UnmanagedType.U1)]");
+            return std::string("[MarshalAs(UnmanagedType.U1)]");
 
         // char → I2
         if (stripped == "Char")
-            return StringAnsi("[MarshalAs(UnmanagedType.I2)]");
+            return std::string("[MarshalAs(UnmanagedType.I2)]");
 
         // Variant/object → ManagedHandleMarshaller
         if (stripped == "Variant" || stripped == "object")
-            return StringAnsi("[MarshalUsing(typeof(ManagedHandleMarshaller))]");
+            return std::string("[MarshalUsing(typeof(ManagedHandleMarshaller))]");
 
         // System.Type
         if (stripped == "VariantType" || stripped == "ScriptingTypeHandle")
-            return StringAnsi("[MarshalUsing(typeof(SystemTypeMarshaller))]");
+            return std::string("[MarshalUsing(typeof(SystemTypeMarshaller))]");
 
         // Array/Span/List/DataContainer
-        if (stripped.StartsWith("Array<") || stripped.StartsWith("Span<")
-            || stripped.StartsWith("List<") || stripped.StartsWith("DataContainer<"))
+        if (Utils::String::StartsWith(stripped, "Array<") || Utils::String::StartsWith(stripped, "Span<")
+            || Utils::String::StartsWith(stripped, "List<") || Utils::String::StartsWith(stripped, "DataContainer<"))
         {
-            StringAnsi countName = StringAnsi::Format("__{0}Count", paramName.Get());
-            return StringAnsi::Format("[MarshalUsing(typeof(ArrayMarshaller<,>), CountElementName = \"{0}\")]", countName.Get());
+            std::string countName = Utils::String::Format("__{0}Count", paramName);
+            return Utils::String::Format("[MarshalUsing(typeof(ArrayMarshaller<,>), CountElementName = \"{0}\")]", countName);
         }
 
         // BytesContainer
         if (stripped == "BytesContainer")
-            return StringAnsi("[MarshalUsing(typeof(ArrayMarshaller<,>), CountElementName = \"__count\"])]");
+            return std::string("[MarshalUsing(typeof(ArrayMarshaller<,>), CountElementName = \"__count\")]");
 
         // Dictionary
-        if (stripped.StartsWith("Dictionary<"))
-            return StringAnsi("[MarshalUsing(typeof(DictionaryMarshaller<,>), ConstantElementCount = 0)]");
+        if (Utils::String::StartsWith(stripped, "Dictionary<"))
+            return std::string("[MarshalUsing(typeof(DictionaryMarshaller<,>), ConstantElementCount = 0)]");
 
         // HashSet
-        if (stripped.StartsWith("HashSet<"))
-            return StringAnsi("[MarshalUsing(typeof(HashSetMarshaller<,>), ConstantElementCount = 0)]");
+        if (Utils::String::StartsWith(stripped, "HashSet<"))
+            return std::string("[MarshalUsing(typeof(HashSetMarshaller<,>), ConstantElementCount = 0)]");
 
         // Object reference types
         if (IsObjectTypeRef(cppType))
-            return StringAnsi("[MarshalUsing(typeof(ManagedHandleMarshaller))]");
+            return std::string("[MarshalUsing(typeof(ManagedHandleMarshaller))]");
 
         // ScriptingObject pointer
         if (IsScriptingObjectPointer(cppType))
-            return StringAnsi(); // IntPtr, no attribute needed
+            return std::string(); // IntPtr, no attribute needed
 
-        return StringAnsi(); // no attribute for blittable types
+        return std::string(); // no attribute for blittable types
     }
 
-    StringAnsi GetCSharpReturnMarshalAttribute(const StringAnsi& cppType)
+    std::string GetCSharpReturnMarshalAttribute(const std::string& cppType)
     {
-        StringAnsi stripped = StripTypeQualifiers(cppType);
+        std::string stripped = StripTypeQualifiers(cppType);
 
         // bool → U1
         if (stripped == "bool")
-            return StringAnsi("[return: MarshalAs(UnmanagedType.U1)]");
+            return std::string("[return: MarshalAs(UnmanagedType.U1)]");
 
         // Variant/object
         if (stripped == "Variant" || stripped == "object")
-            return StringAnsi("[return: MarshalUsing(typeof(ManagedHandleMarshaller))]");
+            return std::string("[return: MarshalUsing(typeof(ManagedHandleMarshaller))]");
 
         // System.Type
         if (stripped == "VariantType" || stripped == "ScriptingTypeHandle")
-            return StringAnsi("[return: MarshalUsing(typeof(SystemTypeMarshaller))]");
+            return std::string("[return: MarshalUsing(typeof(SystemTypeMarshaller))]");
 
         // Array return
-        if (stripped.StartsWith("Array<") || stripped.StartsWith("Span<")
-            || stripped.StartsWith("List<") || stripped.StartsWith("DataContainer<")
+        if (Utils::String::StartsWith(stripped, "Array<") || Utils::String::StartsWith(stripped, "Span<")
+            || Utils::String::StartsWith(stripped, "List<") || Utils::String::StartsWith(stripped, "DataContainer<")
             || stripped == "BytesContainer")
         {
-            return StringAnsi("[return: MarshalUsing(typeof(ArrayMarshaller<,>), CountElementName = \"__returnCount\")]");
+            return std::string("[return: MarshalUsing(typeof(ArrayMarshaller<,>), CountElementName = \"__returnCount\")]");
         }
 
         // Dictionary return
-        if (stripped.StartsWith("Dictionary<"))
-            return StringAnsi("[return: MarshalUsing(typeof(DictionaryMarshaller<,>), ConstantElementCount = 0)]");
+        if (Utils::String::StartsWith(stripped, "Dictionary<"))
+            return std::string("[return: MarshalUsing(typeof(DictionaryMarshaller<,>), ConstantElementCount = 0)]");
 
         // Object reference types
         if (IsObjectTypeRef(cppType))
-            return StringAnsi("[return: MarshalUsing(typeof(ManagedHandleMarshaller))]");
+            return std::string("[return: MarshalUsing(typeof(ManagedHandleMarshaller))]");
 
-        return StringAnsi(); // no attribute for blittable types
+        return std::string(); // no attribute for blittable types
     }
 
     // -------------------------------------------------------------------------
     // CppTypeInfo implementation
     // -------------------------------------------------------------------------
 
-    void CppTypeInfo::Parse(const StringAnsi& cppType)
+    void CppTypeInfo::Parse(const std::string& cppType)
     {
         *this = CppTypeInfo(); // reset
 
-        if (cppType.IsEmpty())
+        if (cppType.empty())
             return;
 
-        StringAnsi remaining = cppType;
+        std::string remaining = cppType;
 
         // Strip leading "const "
-        if (remaining.StartsWith("const "))
+        if (Utils::String::StartsWith(remaining, "const "))
         {
             isConst = true;
-            remaining = remaining.Substring(6);
+            remaining = remaining.substr(6);
         }
 
         // Strip trailing '&&' (move ref)
-        if (remaining.Length() >= 2
-            && remaining.Get()[remaining.Length() - 1] == '&'
-            && remaining.Get()[remaining.Length() - 2] == '&')
+        if (remaining.length() >= 2
+            && remaining.c_str()[remaining.length() - 1] == '&'
+            && remaining.c_str()[remaining.length() - 2] == '&')
         {
             isMoveRef = true;
-            remaining = remaining.Substring(0, (int)remaining.Length() - 2);
+            remaining = remaining.substr(0, (int)remaining.length() - 2);
         }
         // Strip trailing '&' (ref)
-        else if (remaining.Length() >= 1 && remaining.Get()[remaining.Length() - 1] == '&')
+        else if (remaining.length() >= 1 && remaining.c_str()[remaining.length() - 1] == '&')
         {
             isRef = true;
-            remaining = remaining.Substring(0, (int)remaining.Length() - 1);
+            remaining = remaining.substr(0, (int)remaining.length() - 1);
         }
 
         // Strip trailing '*' (pointer)
-        while (!remaining.IsEmpty() && remaining.Get()[remaining.Length() - 1] == '*')
+        while (!remaining.empty() && remaining.c_str()[remaining.length() - 1] == '*')
         {
             isPointer = true;
-            remaining = remaining.Substring(0, (int)remaining.Length() - 1);
+            remaining = remaining.substr(0, (int)remaining.length() - 1);
             remaining = StripTypeQualifiers(remaining); // strip spaces
         }
 
         // Check for fixed array [N]
-        int lbPos = remaining.Find("[");
-        int rbPos = remaining.Find("]");
+        int lbPos = Utils::String::Find(remaining, "[");
+        int rbPos = Utils::String::Find(remaining, "]");
         if (lbPos != INVALID_INDEX && rbPos != INVALID_INDEX && rbPos > lbPos)
         {
             isArray = true;
-            StringAnsi sizeStr = remaining.Substring(lbPos + 1, rbPos - lbPos - 1);
-            arraySize = atoi(sizeStr.Get());
-            remaining = remaining.Substring(0, lbPos);
+            std::string sizeStr = remaining.substr(lbPos + 1, rbPos - lbPos - 1);
+            arraySize = atoi(sizeStr.c_str());
+            remaining = remaining.substr(0, lbPos);
         }
 
         // Extract base type and generic arguments
-        int ltPos = remaining.Find("<");
+        int ltPos = Utils::String::Find(remaining, "<");
         if (ltPos != INVALID_INDEX)
         {
-            baseType = StripTypeQualifiers(remaining.Substring(0, ltPos));
+            baseType = StripTypeQualifiers(remaining.substr(0, ltPos));
             // Extract generic arguments (simple, non-nested)
             int depth = 0;
             int start = ltPos + 1;
-            const char* s = remaining.Get();
-            int len = (int)remaining.Length();
+            const char* s = remaining.c_str();
+            int len = (int)remaining.length();
             for (int i = ltPos + 1; i < len; ++i)
             {
                 if (s[i] == '<') ++depth;
                 else if (s[i] == '>') --depth;
                 else if (s[i] == ',' && depth == 0)
                 {
-                    StringAnsi arg = StripTypeQualifiers(remaining.Substring(start, i - start));
-                    genericArgs.Add(arg);
+                    std::string arg = StripTypeQualifiers(remaining.substr(start, i - start));
+                    genericArgs.push_back(arg);
                     start = i + 1;
                 }
                 if (depth < 0) break;
@@ -569,9 +798,9 @@ namespace SE::ReflectTool
             // Last argument
             if (start < len - 1)
             {
-                StringAnsi lastArg = StripTypeQualifiers(remaining.Substring(start, len - 1 - start));
-                if (!lastArg.IsEmpty())
-                    genericArgs.Add(lastArg);
+                std::string lastArg = StripTypeQualifiers(remaining.substr(start, len - 1 - start));
+                if (!lastArg.empty())
+                    genericArgs.push_back(lastArg);
             }
         }
         else
@@ -580,16 +809,16 @@ namespace SE::ReflectTool
         }
     }
 
-    StringAnsi CppTypeInfo::ToString() const
+    std::string CppTypeInfo::ToString() const
     {
-        StringAnsi result;
+        std::string result;
         if (isConst)
             result += "const ";
         result += baseType;
-        if (genericArgs.Count() > 0)
+        if (genericArgs.size() > 0)
         {
             result += "<";
-            for (int i = 0; i < genericArgs.Count(); ++i)
+            for (int i = 0; i < genericArgs.size(); ++i)
             {
                 if (i > 0) result += ", ";
                 result += genericArgs[i];
@@ -603,8 +832,8 @@ namespace SE::ReflectTool
         if (isMoveRef)
             result += "&&";
         if (isArray)
-            result += StringAnsi::Format("[{0}]", arraySize);
+            result += Utils::String::Format("[{0}]", arraySize);
         return result;
     }
 
-} // namespace SE::ReflectTool
+} // namespace SE::BuildTool

@@ -3,9 +3,9 @@
 #include "AssetContent.h"
 #include "AssetRef.h"
 
-#include "Core/Thread/Threading.h"
-#include "Core/Thread/Task.h"
-#include "Core/Profiler/Profiler.h"
+#include "Runtime/Core/Thread/Threading.h"
+#include "Runtime/Core/Thread/Task.h"
+#include "Runtime/Core/Profiler/Profiler.h"
 #include "Runtime/Resource/AssetsCache.h"
 #include "Runtime/Resource/Loading/AssetTask.h"
 #include "Runtime/Resource/Loading/Tasks/LoadAssetTask.h"

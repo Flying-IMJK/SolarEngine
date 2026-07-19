@@ -4,6 +4,7 @@
 
 namespace SE::Editor
 {
+	SE_CLASS(Reflect)
 	class ContextMenuButton : public ContextMenuItem
 	{
 		SE_DEFINE_CLASS_DEFAULT(ContextMenuButton, ContextMenuItem)

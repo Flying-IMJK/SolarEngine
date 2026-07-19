@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Core/Types/Collections/Dictionary.h"
-#include "Core/Platform/MemoryStats.h"
-#include "Core/Systems.h"
-#include "Core/Profiler/Profiler.h"
+#include "Runtime/Core/Types/Collections/Dictionary.h"
+#include "Runtime/Core/Platform/MemoryStats.h"
+#include "Runtime/Core/Systems.h"
+#include "Runtime/Core/Profiler/Profiler.h"
 
 #include "Runtime/API.h"
 

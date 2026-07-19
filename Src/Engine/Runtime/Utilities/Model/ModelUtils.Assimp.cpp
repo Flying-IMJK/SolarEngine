@@ -1,7 +1,7 @@
 #include "ModelUtils.h"
 
-#include "Core/Platform/FileSystem.h"
-#include "Core/Platform/File.h"
+#include "Runtime/Core/Platform/FileSystem.h"
+#include "Runtime/Core/Platform/File.h"
 
 #include "BlendShape.h"
 #include "Runtime/Utilities/AnsiPathTempFile.h"

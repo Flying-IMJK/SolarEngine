@@ -4,7 +4,7 @@
 #include "GPUDevice.h"
 #include "Base/GPUBuffer.h"
 #include "Base/GPUBufferDescription.h"
-#include "Core/Math/Rectangle.h"
+#include "Runtime/Core/Math/Rectangle.h"
 #include "Runtime/EngineContext.h"
 #include "Runtime/Graphics//Textures/GPUTexture.h"
 #include "Runtime/Graphics/Base/GPUPipelineState.h"

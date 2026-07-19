@@ -1,9 +1,9 @@
 #pragma once
 
 #include "RenderContext.h"
-#include "Core/Math/BoundingVolumes.h"
-#include "Core/Platform/Win32/Win32CriticalSection.h"
-#include "Core/Types/Delegate.h"
+#include "Runtime/Core/Math/BoundingVolumes.h"
+#include "Runtime/Core/Platform/Win32/Win32CriticalSection.h"
+#include "Runtime/Core/Types/Delegate.h"
 
 namespace SE
 {

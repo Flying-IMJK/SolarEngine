@@ -1,8 +1,8 @@
 
 #include "GPUDevice.h"
 #include "RenderTargetPool.h"
-#include "Core/Profiler/ProfilerGPU.h"
-#include "Core/Platform/Window.h"
+#include "Runtime/Core/Profiler/ProfilerGPU.h"
+#include "Runtime/Core/Platform/Window.h"
 
 #include "Runtime/Graphics/Base/GPUPipelineState.h"
 #include "Runtime/Graphics/Base/GPUResource.h"
@@ -15,7 +15,7 @@
 #include "Runtime/Render/RenderTask.h"
 #include "Runtime/Engine.h"
 #include "GPUResourceProperty.h"
-#include "Core/Profiler/ProfilerCPU.h"
+#include "Runtime/Core/Profiler/ProfilerCPU.h"
 #include "Runtime/Render/2D/Render2D.h"
 
 namespace SE
@@ -271,7 +271,40 @@ namespace SE
 		_resource = resource;
 	}
 
+	// GPUResourceView
+	double GPUResourceView::DummyLastRenderTime = -1.0;
+
+	GPUResourceView::GPUResourceView()
+		: ScriptingObject(SpawnParams(UID::New(), TypeInitializer))
+		, LastRenderTime(&DummyLastRenderTime)
+	{
+	}
+
+	GPUResourceView::GPUResourceView(const SpawnParams& params)
+		: ScriptingObject(params)
+		, LastRenderTime(&DummyLastRenderTime)
+	{
+	}
+
 	// GPUResource
+	GPUResource::GPUResource()
+		: ScriptingObject(SpawnParams(UID::New(), TypeInitializer))
+	{
+	}
+
+	GPUResource::GPUResource(const SpawnParams& params)
+		: ScriptingObject(params)
+	{
+	}
+
+	GPUResource::~GPUResource()
+	{
+#if GPU_ENABLE_RESOURCE_NAMING
+		if (m_NamePtr)
+			Platform::Free(m_NamePtr);
+#endif
+	}
+
 	uint64 GPUResource::GetMemoryUsage() const
 	{
 		return m_MemoryUsage;
@@ -287,10 +320,6 @@ namespace SE
 		}
 	}
 
-	GPUResource::GPUResource()
-	{
-	}
-
 	void GPUResource::OnReleaseGPU()
 	{
 
@@ -298,7 +327,11 @@ namespace SE
 
 	String GPUResource::ToString() const
 	{
-		return String();
+	#if GPU_ENABLE_RESOURCE_NAMING
+		if (m_NamePtr)
+			return String(m_NamePtr, m_NameSize);
+	#endif
+		return ScriptingObject::ToString();
 	}
 
 	StringView GPUResource::GetName() const
@@ -333,16 +366,23 @@ namespace SE
 	{
 		ReleaseGPU();
 
-		Object::OnDeleteObject();
+		ScriptingObject::OnDeleteObject();
 	}
 
 	// GPUPipelineState
+	GPUPipelineState* GPUPipelineState::Spawn(const SpawnParams& params)
+	{
+		return GPUDevice::instance->CreatePipelineState();
+	}
+
 	GPUPipelineState* GPUPipelineState::New()
 	{
 		return GPUDevice::instance->CreatePipelineState();
 	}
 
-	GPUPipelineState::GPUPipelineState(): complexity(0)
+	GPUPipelineState::GPUPipelineState()
+		: GPUResource(SpawnParams(UID::New(), TypeInitializer))
+		, complexity(0)
 	{
 	}
 

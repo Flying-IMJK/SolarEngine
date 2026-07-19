@@ -6,6 +6,7 @@ namespace SE::Editor
 	/// <summary>
 	/// ToolStrip separator control.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class ToolStripSeparator : public Control
 	{
 		SE_DEFINE_CLASS_DEFAULT(ToolStripSeparator, Control)

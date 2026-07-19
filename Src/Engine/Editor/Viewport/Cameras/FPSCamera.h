@@ -1,7 +1,7 @@
 #pragma once
 #include "ViewportCamera.h"
-#include "Core/Math/Transform.h"
-#include "Core/TypeSystem/IType.h"
+#include "Runtime/Core/Math/Transform.h"
+#include "Runtime/Core/TypeSystem/IType.h"
 
 namespace SE::Editor
 {

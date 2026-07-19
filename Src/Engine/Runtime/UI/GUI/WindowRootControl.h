@@ -6,6 +6,7 @@ namespace SE
 {
     class GraphicWindow;
 
+	SE_CLASS(Reflect)
 	class SE_API_RUNTIME WindowRootControl : public RootControl
 	{
 	    SE_DEFINE_CLASS(WindowRootControl, RootControl)

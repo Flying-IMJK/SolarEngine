@@ -1,20 +1,20 @@
 
 #include "TextureUtils.h"
 #include "Packed.h"
-#include "Core/Logging/Logging.h"
-#include "Core/TypeSystem/Types.h"
-#include "Core/Types/DateTime.h"
-#include "Core/Types/TimeSpan.h"
-#include "Core/Math/Color.h"
-#include "Core/Math/Vector2.h"
-#include "Core/Profiler/ProfilerCPU.h"
-#include "Core/Platform/FileSystem.h"
-#include "Core/Serialization/JsonWriter.h"
-#include "Core/Serialization/JsonTools.h"
+#include "Runtime/Core/Logging/Logging.h"
+#include "Runtime/Core/TypeSystem/Types.h"
+#include "Runtime/Core/Types/DateTime.h"
+#include "Runtime/Core/Types/TimeSpan.h"
+#include "Runtime/Core/Math/Color.h"
+#include "Runtime/Core/Math/Vector2.h"
+#include "Runtime/Core/Profiler/ProfilerCPU.h"
+#include "Runtime/Core/Platform/FileSystem.h"
+#include "Runtime/Core/Serialization/JsonWriter.h"
+#include "Runtime/Core/Serialization/JsonTools.h"
 #include "Runtime/Graphics/Base/GPUUtils.h"
 
 #if SE_EDITOR
-#include "Core/Types/Collections/Dictionary.h"
+#include "Runtime/Core/Types/Collections/Dictionary.h"
 #endif
 
 namespace SE

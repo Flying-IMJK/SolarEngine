@@ -4,7 +4,7 @@
 
 #include "TextureTool.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Core/Math/Math.h"
+#include "Runtime/Core/Math/Math.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/RenderTools.h"

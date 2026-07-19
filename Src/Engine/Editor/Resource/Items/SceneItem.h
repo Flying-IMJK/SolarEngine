@@ -6,6 +6,7 @@ namespace SE::Editor
 	/// <summary>
 	/// Content item that contains data.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class SceneItem : public JsonAssetItem
 	{
 		SE_DEFINE_CLASS(SceneItem, JsonAssetItem)

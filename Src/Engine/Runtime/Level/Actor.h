@@ -1,8 +1,8 @@
 #pragma once
 
 #include "SceneObject.h"
-#include "Core/Math/BoundingVolumes.h"
-#include "Core/Math/Transform.h"
+#include "Runtime/Core/Math/BoundingVolumes.h"
+#include "Runtime/Core/Math/Transform.h"
 #include "Runtime/Render/RenderEnum.h"
 #include "Runtime/API.h"
 #include "Runtime/Render/SceneRendering.h"

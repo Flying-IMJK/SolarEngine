@@ -10,6 +10,7 @@ namespace SE::Editor
     /// <summary>
     ///  Base class for all windows in Editor.
     /// </summary>
+    SE_CLASS(Reflect)
     class EditorWindow : public DockWindow
     {
         SE_DEFINE_CLASS_DEFAULT(EditorWindow, DockWindow)

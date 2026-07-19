@@ -2,9 +2,9 @@
 #include "ShaderCompilerVulkan.h"
 #include "../ShaderCompilationContext.h"
 
-#include "Core/Types/Variable.h"
-#include "Core/Platform/CriticalSection.h"
-#include "Core/Thread/Threading.h"
+#include "Runtime/Core/Types/Variable.h"
+#include "Runtime/Core/Platform/CriticalSection.h"
+#include "Runtime/Core/Thread/Threading.h"
 
 #include "Runtime/GraphicsDevice/Vulkan/VulkanTypes.h"
 

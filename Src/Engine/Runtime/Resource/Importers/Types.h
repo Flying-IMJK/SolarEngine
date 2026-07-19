@@ -3,9 +3,9 @@
 #include "Runtime/Resource/AssetConfig.h"
 #include "Runtime/Resource/Storage/FileStorage.h"
 
-#include "Core/Types/Delegate.h"
-#include "Core/Types/Strings/String.h"
-#include "Core/TypeSystem/IType.h"
+#include "Runtime/Core/Types/Delegate.h"
+#include "Runtime/Core/Types/Strings/String.h"
+#include "Runtime/Core/TypeSystem/IType.h"
 
 
 namespace SE

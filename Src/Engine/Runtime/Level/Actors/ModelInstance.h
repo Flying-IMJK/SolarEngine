@@ -8,6 +8,7 @@ namespace SE
 {
 	class IRender;
 
+	SE_CLASS(Reflect)
 	class SE_API_RUNTIME ModelInstance : public RenderActor
 	{
 		SE_DEFINE_CLASS(ModelInstance, RenderActor);

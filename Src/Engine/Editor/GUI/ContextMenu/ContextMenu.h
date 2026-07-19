@@ -13,6 +13,7 @@ namespace SE::Editor
 	class ContextMenuItem;
     class ContextMenuButton;
 
+	SE_CLASS(Reflect)
 	class ContextMenu : public ContextMenuBase
     {
 		SE_DEFINE_CLASS(ContextMenu, ContextMenuBase)

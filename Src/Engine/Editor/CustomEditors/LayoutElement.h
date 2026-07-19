@@ -1,5 +1,5 @@
 #pragma once
-#include "Core/TypeSystem/IType.h"
+#include "Runtime/Core/TypeSystem/IType.h"
 
 namespace SE
 {
@@ -11,6 +11,7 @@ namespace SE::Editor
 	/// <summary>
 	/// Represents single element of the Custom Editor layout.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class LayoutElement : public IType
 	{
 		SE_DEFINE_CLASS_DEFAULT(LayoutElement, IType)

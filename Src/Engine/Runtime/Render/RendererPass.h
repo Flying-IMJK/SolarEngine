@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Core/Types/Object.h"
-#include "Core/Utilities/Singleton.hpp"
+#include "Runtime/Core/Types/Object.h"
+#include "Runtime/Core/Singleton.hpp"
 #include "Runtime/API.h"
 
 namespace SE

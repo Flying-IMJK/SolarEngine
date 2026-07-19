@@ -12,6 +12,7 @@ namespace SE::Editor
     /// Content folder tree node.
     /// </summary>
     /// <seealso cref="TreeNode" />
+    SE_CLASS(Reflect)
     class ContentTreeNode : public TreeNode
     {
         SE_DEFINE_CLASS_DEFAULT(ContentTreeNode, TreeNode)
@@ -131,6 +132,7 @@ namespace SE::Editor
     /// Root tree node for the content workspace.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.ContentTreeNode" />
+    SE_CLASS(Reflect)
     class RootContentTreeNode : public ContentTreeNode
     {
         SE_DEFINE_CLASS(RootContentTreeNode, ContentTreeNode)

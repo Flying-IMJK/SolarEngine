@@ -10,6 +10,7 @@ namespace SE::Editor
     /// <summary>
     /// Tool strip with child items.
     /// </summary>
+    SE_CLASS(Reflect)
     class ToolStrip : public ContainerControl
     {
         SE_DEFINE_CLASS_DEFAULT(ToolStrip, ContainerControl)

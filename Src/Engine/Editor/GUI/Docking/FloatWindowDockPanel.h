@@ -14,6 +14,7 @@ namespace SE::Editor
     /// Floating Window Dock Panel control.
     /// </summary>
     /// <seealso cref="DockPanel" />
+    SE_CLASS(Reflect)
     class FloatWindowDockPanel : public DockPanel
     {
         SE_DEFINE_CLASS_DEFAULT(FloatWindowDockPanel, DockPanel)

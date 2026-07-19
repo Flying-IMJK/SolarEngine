@@ -1,19 +1,30 @@
 
 RUNTIME_ADD(
+    Border.cs
     Button.h
     Button.cpp
+    Button.cs
     Text.h
     Text.cpp
     Label.h
     Label.cpp
+    Label.cs
     Image.h
     Image.cpp
+    Image.cs
     TextBoxBase.h
     TextBoxBase.cpp
+    TextBoxBase.cs
     TextBox.h
     TextBox.cpp
+    TextBox.cs
     CheckBox.h
     CheckBox.cpp
+    CheckBox.cs
     ClickableLabel.h
     ClickableLabel.cpp
+    ClickableLabel.cs
+    ProgressBar.cs
+    Slider.cs
+    Spacer.cs
 )

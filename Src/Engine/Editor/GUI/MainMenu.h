@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Types/Delegate.h"
+#include "Runtime/Core/Types/Delegate.h"
 #include "Runtime/UI/GUI/ContainerControl.h"
 
 
@@ -16,6 +16,7 @@ namespace SE::Editor
 {
     class MainMenuButton;
 
+    SE_CLASS(Reflect)
     class MainMenu : public ContainerControl
     {
 	    SE_DEFINE_CLASS_DEFAULT(MainMenu, ContainerControl)

@@ -4,7 +4,7 @@
 
 #include "TextureTool.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Core/Math/Math.h"
+#include "Runtime/Core/Math/Math.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Platform/ConditionVariable.h"

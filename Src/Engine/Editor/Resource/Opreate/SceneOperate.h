@@ -3,6 +3,7 @@
 
 namespace SE::Editor
 {
+	SE_CLASS(Reflect)
 	class SceneOperate : public AssetOperate
 	{
 		SE_DEFINE_CLASS_DEFAULT(SceneOperate, AssetOperate)

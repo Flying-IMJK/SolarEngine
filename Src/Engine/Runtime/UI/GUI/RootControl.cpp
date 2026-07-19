@@ -1,7 +1,7 @@
 
 #include "RootControl.h"
 
-#include "Core/Types/Delegate.h"
+#include "Runtime/Core/Types/Delegate.h"
 
 namespace SE
 {

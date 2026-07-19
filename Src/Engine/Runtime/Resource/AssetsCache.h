@@ -3,13 +3,13 @@
 
 #include "AssetInfo.h"
 #include "AssetConfig.h"
-#include "Core/Types/UID.h"
+#include "Runtime/Core/Types/UID.h"
 #if ENABLE_ASSETS_DISCOVERY
-#include "Core/Types/DateTime.h"
+#include "Runtime/Core/Types/DateTime.h"
 #endif
-#include "Core/Types/Strings/String.h"
-#include "Core/Types/Collections/Dictionary.h"
-#include "Core/Platform/CriticalSection.h"
+#include "Runtime/Core/Types/Strings/String.h"
+#include "Runtime/Core/Types/Collections/Dictionary.h"
+#include "Runtime/Core/Platform/CriticalSection.h"
 
 namespace SE
 {

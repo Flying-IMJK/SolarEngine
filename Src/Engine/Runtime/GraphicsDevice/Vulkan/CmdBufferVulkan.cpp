@@ -6,7 +6,7 @@
 #include "GPUContextVulkan.h"
 #include "Runtime/Engine.h"
 
-#include "Core/Profiler/Profiler.h"
+#include "Runtime/Core/Profiler/Profiler.h"
 
 namespace SE
 {

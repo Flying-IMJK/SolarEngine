@@ -1,8 +1,8 @@
 
 #include "PreviewsCache.h"
 
-#include "Core/Thread/Threading.h"
-#include "Core/Thread/ThreadPool.h"
+#include "Runtime/Core/Thread/Threading.h"
+#include "Runtime/Core/Thread/ThreadPool.h"
 #include "Runtime/Graphics/GPUContext.h"
 #include "Runtime/Graphics/GPUDevice.h"
 #include "Runtime/Graphics/Base/GPUUtils.h"

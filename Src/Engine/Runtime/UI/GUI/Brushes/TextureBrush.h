@@ -7,6 +7,7 @@ namespace SE
 {
     class Texture;
 
+    SE_CLASS(Reflect)
     class SE_API_RUNTIME TextureBrush final : public IBrush
     {
         SE_DEFINE_CLASS(TextureBrush, IBrush)

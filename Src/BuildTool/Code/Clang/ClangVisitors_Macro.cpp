@@ -1,12 +1,12 @@
 #include "ClangVisitors_Macro.h"
-#include "../ReflectorSettingsAndUtils.h"
+#include "Core/Utils.h"
 #include "clang-c/Documentation.h"
 
 //-------------------------------------------------------------------------
 
-namespace SE::ReflectTool
+namespace SE::BuildTool
 {
-    CXChildVisitResult VisitMacro(ClangParserContext *pContext, HeaderInfo const *pHeaderInfo, CXCursor cr, String const &cursorName)
+    CXChildVisitResult VisitMacro(ClangParserContext *pContext, HeaderInfo const *pHeaderInfo, CXCursor cr, std::string const &cursorName)
     {
         CXSourceRange range = clang_getCursorExtent(cr);
 
@@ -60,6 +60,10 @@ namespace SE::ReflectTool
         else if (cursorName == GetMarkMacroText(ReflectionMacroType::SEEvent))
         {
             pContext->AddMarkMacro(MarkMacro(pHeaderInfo, cr, range, ReflectionMacroType::SEEvent));
+        }
+        else if (cursorName == GetMarkMacroText(ReflectionMacroType::SETypeDef))
+        {
+            pContext->AddMarkMacro(MarkMacro(pHeaderInfo, cr, range, ReflectionMacroType::SETypeDef));
         }
 
         //-------------------------------------------------------------------------

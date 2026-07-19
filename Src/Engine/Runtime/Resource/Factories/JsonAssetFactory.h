@@ -1,6 +1,6 @@
 #pragma once
 #include "IAssetFactory.h"
-#include "Runtime/Scripting/ScriptingType.h"
+#include "Runtime/Core/Scripting/ScriptingType.h"
 
 namespace SE
 {

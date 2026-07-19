@@ -45,6 +45,7 @@ namespace SE::Editor
 		virtual void Select(List<ScenesGraphNode*> nodes) = 0;
 	};
 
+	SE_CLASS(Reflect)
 	class CustomEditorPresenter : public LayoutElementsContainer
 	{
 		SE_DEFINE_CLASS(CustomEditorPresenter, LayoutElementsContainer)

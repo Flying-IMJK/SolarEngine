@@ -6,6 +6,7 @@ namespace SE::Editor
     /// <summary>
     /// A navigation bar button. Allows to change the current location and view the path.
     /// </summary>
+    SE_CLASS(Reflect)
     class NavigationButton : public Button
     {
         SE_DEFINE_CLASS(NavigationButton, Button)

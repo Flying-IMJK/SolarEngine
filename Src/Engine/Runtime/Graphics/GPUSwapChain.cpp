@@ -1,6 +1,6 @@
 
 #include "GPUSwapChain.h"
-#include "Core/Thread/Task.h"
+#include "Runtime/Core/Thread/Task.h"
 #include "Textures/GPUTexture.h"
 #include "GPUDevice.h"
 
@@ -35,6 +35,7 @@ namespace SE
 	};
 
 	GPUSwapChain::GPUSwapChain()
+		: GPUResource()
 	{
 #if GPU_ENABLE_RESOURCE_NAMING
 //		SetName(SE_TEXT("Swap Chain (backbuffers)"));

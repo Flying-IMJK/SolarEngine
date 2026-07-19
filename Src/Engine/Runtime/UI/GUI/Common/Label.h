@@ -29,6 +29,7 @@ namespace SE
 		Lowercase
 	};
 
+	SE_CLASS(Reflect)
 	class SE_API_RUNTIME Label : public ContainerControl
     {
 		SE_DEFINE_CLASS(Label, ContainerControl)

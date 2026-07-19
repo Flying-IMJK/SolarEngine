@@ -1,13 +1,13 @@
 
 #include "ImportTexture.h"
 
-#include "Core/Logging/Logging.h"
-#include "Core/Serialization/Serialization.h"
-#include "Core/Serialization/JsonWriters.hpp"
-#include "Core/Serialization/MemoryWriteStream.h"
-#include "Core/Platform/FileSystem.h"
-#include "Core/Platform/File.h"
-#include "Core/TypeSystem/Types.h"
+#include "Runtime/Core/Logging/Logging.h"
+#include "Runtime/Core/Serialization/Serialization.h"
+#include "Runtime/Core/Serialization/JsonWriters.hpp"
+#include "Runtime/Core/Serialization/MemoryWriteStream.h"
+#include "Runtime/Core/Platform/FileSystem.h"
+#include "Runtime/Core/Platform/File.h"
+#include "Runtime/Core/TypeSystem/Types.h"
 
 #include "Runtime/Render/Assets/Texture/TextureData.h"
 #include "Runtime/Graphics/Base/GPUUtils.h"

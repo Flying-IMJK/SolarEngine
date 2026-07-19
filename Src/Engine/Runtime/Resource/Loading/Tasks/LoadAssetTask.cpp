@@ -1,9 +1,9 @@
 #include "LoadAssetTask.h"
 #include "LoadAssetDataTask.h"
 
-#include "Core/Profiler/ProfilerCPU.h"
-#include "Core/TypeSystem/Types.h"
-#include "Core/Types/Object.h"
+#include "Runtime/Core/Profiler/ProfilerCPU.h"
+#include "Runtime/Core/TypeSystem/Types.h"
+#include "Runtime/Core/Types/Object.h"
 
 #include "Runtime/Resource/AssetRef.h"
 #include "Runtime/Resource/AssetContent.h"

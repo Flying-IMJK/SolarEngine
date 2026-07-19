@@ -1,6 +1,6 @@
 
 #include "API.h"
-#include "Scripting/Binary/NativeBinaryModule.h"
+#include "Runtime/Core/Scripting/Binary/NativeBinaryModule.h"
 
 namespace SE
 {

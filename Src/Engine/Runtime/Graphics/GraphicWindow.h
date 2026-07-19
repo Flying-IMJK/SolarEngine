@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Core/Platform/Window.h"
+#include "Runtime/Core/Platform/Window.h"
+#include "Runtime/Core/Scripting/ManagedCLR/CLRTypes.h"
 #include "Runtime/API.h"
 
 namespace SE
@@ -26,6 +27,11 @@ namespace SE
 			return m_GUI;
 		}
 
+		/// <summary>
+		/// Returns true when this window owns a managed C# GUI tree instead of the native compatibility tree.
+		/// </summary>
+		bool UsesManagedGui() const;
+
 		GraphicWindow(const CreateWindowSettings &setting);
 
 		GraphicWindow(GraphicWindow & window);
@@ -41,6 +47,7 @@ namespace SE
 		/// The window GUI root object.
 		/// </summary>
 		WindowRootControl* m_GUI;
+		bool m_ManagedGuiInitialized = false;
 
 	private:
 		bool InitSwapChain() override;
@@ -49,6 +56,9 @@ namespace SE
 		void FullscreenSwapChain(bool isFullscreen) override;
 
 		void Bind();
+		bool EnsureManagedGui();
+		bool InvokeManagedGui(const char* methodName, int32 paramsCount, void** params, CLRObject** result = nullptr);
+		DragDropEffect InvokeManagedGuiDrag(const char* methodName, IGuiData* data, const Float2& mousePosition);
 
 		void DrawInternal();
 		void UpdateInternal();

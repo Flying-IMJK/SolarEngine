@@ -1,9 +1,9 @@
 
 #include "GraphMeta.h"
 
-#include "Core/Serialization/ReadStream.h"
-#include "Core/Serialization/WriteStream.h"
-#include "Core/Types/DateTime.h"
+#include "Runtime/Core/Serialization/ReadStream.h"
+#include "Runtime/Core/Serialization/WriteStream.h"
+#include "Runtime/Core/Types/DateTime.h"
 
 namespace SE
 {

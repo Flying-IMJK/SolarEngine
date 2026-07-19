@@ -1,6 +1,6 @@
 #pragma once
-#include "Core/Types/Collections/List.h"
-#include "Core/TypeSystem/IType.h"
+#include "Runtime/Core/Types/Collections/List.h"
+#include "Runtime/Core/TypeSystem/IType.h"
 #include "Runtime/Utilities/Variant.h"
 
 namespace SE::Editor
@@ -31,6 +31,7 @@ namespace SE::Editor
 		InlineIntoParent,
 	};
 
+	SE_CLASS(Reflect)
 	class CustomEditor : public IType
 	{
 		SE_DEFINE_CLASS_DEFAULT(CustomEditor, IType)

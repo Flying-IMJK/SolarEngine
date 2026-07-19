@@ -1,11 +1,11 @@
 
 #include "ContentWindow.h"
 
-#include "Core/Types/Collections/Sorting.h"
-#include "Core/Platform/MessageBox.h"
-#include "Core/Platform/FileSystem.h"
-#include "Core/Types/Collections/ListExtensions.h"
-#include "Core/TypeSystem/Info/TypeEnumInfo.h"
+#include "Runtime/Core/Types/Collections/Sorting.h"
+#include "Runtime/Core/Platform/MessageBox.h"
+#include "Runtime/Core/Platform/FileSystem.h"
+#include "Runtime/Core/Types/Collections/ListExtensions.h"
+#include "Runtime/Core/TypeSystem/Info/TypeEnumInfo.h"
 #include "Editor/EditorApp.h"
 #include "Editor/EditorIcons.h"
 #include "Editor/Core/QueryFilterHelper.h"

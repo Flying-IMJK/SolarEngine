@@ -3,6 +3,7 @@
 
 namespace SE::Editor
 {
+	SE_CLASS(Reflect)
 	class CameraGraphNode : public ActorGraphNode
 	{
 		SE_DEFINE_CLASS_DEFAULT(CameraGraphNode, ActorGraphNode)

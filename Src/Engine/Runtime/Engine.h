@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Core/CoreModule.h"
-#include "Core/Types/Delegate.h"
+#include "Runtime/Core/Types/Delegate.h"
 
 #include "App.h"
 //-------------------------------------------------------------------------
@@ -100,10 +99,6 @@ namespace SE
 
     protected:
         Function<bool(String const&)>                   m_fatalErrorHandler;
-
-        // Modules
-        //-------------------------------------------------------------------------
-        CoreModule                                      m_CoreModule;
 
         // Application data
         //-------------------------------------------------------------------------

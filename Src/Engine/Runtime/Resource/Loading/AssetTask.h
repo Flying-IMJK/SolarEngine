@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Core/Thread/Task.h"
-#include "Core/TypeSystem/IType.h"
+#include "Runtime/Core/Thread/Task.h"
+#include "Runtime/Core/TypeSystem/IType.h"
 
 namespace SE
 {

@@ -3,11 +3,11 @@
 #include <slang-com-ptr.h>
 #include <slang.h>
 
-#include "Core/Math/Vector3.h"
-#include "Core/Types/Variable.h"
-#include "Core/Types/Collections/Dictionary.h"
-#include "Core/Types/Collections/List.h"
-#include "Core/Types/Strings/String.h"
+#include "Runtime/Core/Math/Vector3.h"
+#include "Runtime/Core/Types/Variable.h"
+#include "Runtime/Core/Types/Collections/Dictionary.h"
+#include "Runtime/Core/Types/Collections/List.h"
+#include "Runtime/Core/Types/Strings/String.h"
 
 namespace SE
 {

@@ -1,11 +1,11 @@
 
 
 #include "TextureUtils.h"
-#include "Core/Logging/Logging.h"
-#include "Core/Math/Color.h"
-#include "Core/Math/Vector2.h"
-#include "Core//Serialization/FileWriteStream.h"
-#include "Core/Platform/File.h"
+#include "Runtime/Core/Logging/Logging.h"
+#include "Runtime/Core/Math/Color.h"
+#include "Runtime/Core/Math/Vector2.h"
+#include "Runtime/Core/Serialization/FileWriteStream.h"
+#include "Runtime/Core/Platform/File.h"
 
 #include "Runtime/Render/Assets/Texture/TextureData.h"
 #include "Runtime/Graphics/Base/GPUUtils.h"

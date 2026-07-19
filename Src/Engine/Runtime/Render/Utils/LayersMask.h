@@ -1,9 +1,9 @@
 #pragma once
-#include "Core/Compiler.h"
-#include "Core/Serialization/ISerializable.h"
-#include "Core/Serialization/Json.h"
-#include "Core/Serialization/JsonWriters.hpp"
-#include "Core/Types/Variable.h"
+#include "Runtime/Core/Platform/Compiler.h"
+#include "Runtime/Core/Serialization/ISerializable.h"
+#include "Runtime/Core/Serialization/Json.h"
+#include "Runtime/Core/Serialization/JsonWriters.hpp"
+#include "Runtime/Core/Types/Variable.h"
 #include "Runtime/API.h"
 
 namespace SE

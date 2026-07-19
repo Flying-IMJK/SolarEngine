@@ -5,7 +5,7 @@
 #include "VulkanNative.h"
 #include "ResourceOwnerVulkan.h"
 
-#include "Core/Serialization/MemoryReadStream.h"
+#include "Runtime/Core/Serialization/MemoryReadStream.h"
 
 namespace SE
 {

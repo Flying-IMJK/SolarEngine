@@ -4,11 +4,11 @@
 
 #include "SettingModule.h"
 
-#include "Core/Platform/Windows/WindowsFileSystem.h"
+#include "Runtime/Core/Platform/Windows/WindowsFileSystem.h"
 #include "Editor/EditorIcons.h"
 #include "Editor/EditorAssets.h"
 
-#include "Core/Types/Strings/String.h"
+#include "Runtime/Core/Types/Strings/String.h"
 
 #include "Runtime/UI/GUI/Style.h"
 #include "Runtime/EngineContext.h"

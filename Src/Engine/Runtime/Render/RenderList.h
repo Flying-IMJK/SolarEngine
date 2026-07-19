@@ -2,11 +2,11 @@
 #include "PostProcessSettings.h"
 #include "RenderDrawCall.h"
 #include "RenderEnum.h"
-#include "Core/Math/Half.h"
+#include "Runtime/Core/Math/Half.h"
 #include "Utils/RendererAllocation.hpp"
 #include "Utils/RenderListBuffer.hpp"
 
-#include "Core/Types/Object.h"
+#include "Runtime/Core/Types/Object.h"
 #include "Runtime/Graphics/DynamicBuffer.h"
 
 namespace SE

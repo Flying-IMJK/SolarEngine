@@ -1,6 +1,6 @@
 #include "VertexTriangleAdjacency.h"
 
-#include "Core/Math/Math.h"
+#include "Runtime/Core/Math/Math.h"
 
 #if SE_EDITOR
 

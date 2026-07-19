@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Types/BitFlags.h"
+#include "Runtime/Core/Types/BitFlags.h"
 #include "GPUResource.h"
 #include "PixelFormat.h"
 #include "GPUEnums.h"
@@ -77,6 +77,7 @@ namespace SE
 	/// <summary>
 	/// A common description for all GPU buffers.
 	/// </summary>
+	SE_STRUCT(Reflect)
 	struct SE_API_RUNTIME GPUBufferDescription : IType
 	{
 		SE_DEFINE_CLASS_DEFAULT(GPUBufferDescription, IType);

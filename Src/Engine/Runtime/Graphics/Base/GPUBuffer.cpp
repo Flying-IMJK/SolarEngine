@@ -1,8 +1,8 @@
 
 #include "GPUBuffer.h"
-#include "Core/Memory/Memory.h"
-#include "Core/Profiler/ProfilerCPU.h"
-#include "Core/Thread/ThreadPool.h"
+#include "Runtime/Core/Memory/Memory.h"
+#include "Runtime/Core/Profiler/ProfilerCPU.h"
+#include "Runtime/Core/Thread/ThreadPool.h"
 #include "Runtime/Graphics/GPUDevice.h"
 #include "Runtime/Graphics/GPUResourceProperty.h"
 #include "Runtime/Graphics/Async/Tasks/GPUCopyResourceTask.h"
@@ -98,11 +98,28 @@ namespace SE
 
 	// GPUBufferView
 	GPUBufferView::GPUBufferView()
+		: GPUResourceView(SpawnParams(UID::New(), TypeInitializer))
 	{
 
 	}
 
 	// GPUBuffer
+	GPUBuffer* GPUBuffer::Spawn(const SpawnParams& params)
+	{
+		return GPUDevice::instance->CreateBuffer(StringView::Empty);
+	}
+
+	GPUBuffer* GPUBuffer::New()
+	{
+		return GPUDevice::instance->CreateBuffer(StringView::Empty);
+	}
+
+	GPUBuffer::GPUBuffer()
+		: GPUResource(SpawnParams(UID::New(), TypeInitializer))
+	{
+		// A zero-sized buffer is invalid until it has been initialized.
+		m_Desc.Size = 0;
+	}
 
 	class BufferDownloadDataTask : public Threading::ThreadPoolTask
 	{
@@ -341,11 +358,11 @@ namespace SE
 		}
 
 		// Create async resource copy task
-		auto copyTask = New<GPUCopyResourceTask>(this, staging);
+		auto copyTask = ::SE::New<GPUCopyResourceTask>(this, staging);
 		ENGINE_ASSERT(copyTask->HasReference(this) && copyTask->HasReference(staging));
 
 		// Create task to copy downloaded data to BytesContainer
-		const auto getDataTask = New<BufferDownloadDataTask>(this, staging, result);
+		const auto getDataTask = ::SE::New<BufferDownloadDataTask>(this, staging, result);
 		ENGINE_ASSERT(getDataTask->HasReference(this) && getDataTask->HasReference(staging));
 
 		// Set continuation

@@ -2,9 +2,9 @@
 #include "SceneModule.h"
 
 #include "SceneGraphModule.h"
-#include "Core/Platform/Win32/Win32File.h"
-#include "Core/Types/Collections/ListExtensions.h"
-#include "Core/Types/Strings/StringView.h"
+#include "Runtime/Core/Platform/Win32/Win32File.h"
+#include "Runtime/Core/Types/Collections/ListExtensions.h"
+#include "Runtime/Core/Types/Strings/StringView.h"
 #include "Runtime/Level/Level.h"
 #include "Runtime/Level/Scene/Scene.h"
 #include "Runtime/UI/GUI//Rootcontrol.h"

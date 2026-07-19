@@ -1,7 +1,7 @@
 #pragma once
 
 #if SE_EDITOR
-#include "Core/Platform/Platform.h"
+#include "Runtime/Core/Platform/Platform.h"
 
 namespace SE
 {

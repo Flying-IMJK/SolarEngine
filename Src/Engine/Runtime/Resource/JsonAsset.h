@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Core/Serialization/Json.h"
-#include "Core/Serialization/ISerializable.h"
+#include "Runtime/Core/Serialization/Json.h"
+#include "Runtime/Core/Serialization/ISerializable.h"
 #include "Runtime/Resource/Asset.h"
 
 namespace SE

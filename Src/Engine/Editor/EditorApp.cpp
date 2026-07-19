@@ -7,16 +7,6 @@
 #include "Modules/WindowsModule.h"
 #include "Modules/AssetDatabaseModule.h"
 #include "Windows/LogWindow.h"
-
-#include "Runtime/EngineContext.h"
-#include "Runtime/Settings/GlobalSettings_Resource.h"
-#include "Runtime/Graphics/GraphicWindow.h"
-#include "Runtime/Project/ProjectInfo.h"
-
-#include "Editor/GUI/Docking/MasterDockPanel.h"
-#include "Core/Types/Collections/Sorting.h"
-#include "Core/Utilities/IniFile.h"
-#include "Core/Platform/FileSystem.h"
 #include "Modules/AssetImportingModule.h"
 #include "Modules/SceneGraphModule.h"
 #include "Modules/SceneModule.h"
@@ -24,6 +14,21 @@
 #include "Windows/EditSceneWindow.h"
 #include "Windows/PropertiesWindow.h"
 #include "Windows/SceneHierarchyWindow.h"
+
+
+#include "Runtime/EngineContext.h"
+#include "Runtime/Settings/GlobalSettings_Resource.h"
+#include "Runtime/Graphics/GraphicWindow.h"
+#include "Runtime/Project/ProjectInfo.h"
+#include "Runtime/Core/Scripting/ManagedCLR/CLRClass.h"
+#include "Runtime/Core/Scripting/Binary/NativeBinaryModule.h"
+#include "Runtime/Core/Types/Collections/Sorting.h"
+#include "Runtime/Core/IniFile.h"
+#include "Runtime/Core/Platform/FileSystem.h"
+
+#include "Editor/GUI/Docking/MasterDockPanel.h"
+#include "Runtime/Core/Scripting/ManagedCLR/CLRMethod.h"
+#include "Runtime/Core/Scripting/ManagedCLR/CLRUtils.h"
 
 namespace SE::Editor
 {
@@ -206,21 +211,23 @@ namespace SE::Editor
 		return 0;
 	}
 
-	GraphicWindow* EditorApp::CreateMainWindow()
+	Window* EditorApp::CreateMainWindow()
 	{
+		Window* window = managedEditor->GetMainWindow();
+
 		CreateWindowSettings createWindowSettings;
 		createWindowSettings.Title = "SE Editor";
 		createWindowSettings.HasBorder = false;
 		createWindowSettings.AllowDragAndDrop = true;
 
-		m_Window = New<GraphicWindow>(createWindowSettings);
+		// m_Window = New<GraphicWindow>(createWindowSettings);
 
-		return m_Window;
+		return window;
 	}
 
-	GraphicWindow* EditorApp::GetMainWindow()
+	Window* EditorApp::GetMainWindow()
 	{
-		return m_Window;
+		return managedEditor->GetMainWindow();
 	}
 
 	bool EditorApp::Init()
@@ -279,27 +286,38 @@ namespace SE::Editor
 
 	void EditorApp::BeforeExit()
 	{
-		m_Window->Close();
-		Delete(m_Window);
+		if (managedEditor != nullptr)
+		{
+			managedEditor->Exit();
+			Delete(managedEditor);
+			managedEditor = nullptr;
+		}
+		// m_Window->Close();
+		// Delete(m_Window);
 	}
 
 	void EditorApp::OnUpdate()
 	{
-		// Update modules
-		for (int i = 0; i < m_Modules.Count(); i++)
+		if (managedEditor != nullptr)
 		{
-			m_Modules[i]->OnUpdate();
+			managedEditor->Update();
 		}
 	}
 
 	void EditorApp::OnLateUpdate()
 	{
-
+		if (managedEditor != nullptr)
+		{
+			managedEditor->LateUpdate();
+		}
 	}
 
 	void EditorApp::OnRender()
 	{
-
+		if (managedEditor != nullptr)
+		{
+			managedEditor->Render();
+		}
 	}
 
 	void EditorApp::RegisterModule(EditorModule* module)
@@ -318,4 +336,91 @@ namespace SE::Editor
 		if (_areModulesAfterInitEnd)
 			module->OnEndInit();
 	}
+
+
+	UID ManagedEditor::ObjectID(0x91970b4e, 0x99634f61, 0x84723632, 0x54c776af);
+
+
+	ManagedEditor::ManagedEditor(): ScriptingObject(SpawnParams(ObjectID, ManagedEditor::TypeInitializer))
+	{
+		auto editor = static_cast<NativeBinaryModule*>(GetBinaryModuleSEEditor())->Assembly;
+		editor->Loaded.Bind<ManagedEditor, &ManagedEditor::OnEditorAssemblyLoaded>(this);
+
+	}
+
+	ManagedEditor::~ManagedEditor()
+	{
+	}
+
+	void ManagedEditor::Init()
+	{
+		InvokeManagedMethod("Init");
+	}
+
+	void ManagedEditor::Update()
+	{
+		InvokeManagedMethod("Update");
+	}
+
+	void ManagedEditor::LateUpdate()
+	{
+		InvokeManagedMethod("LateUpdate");
+	}
+
+	void ManagedEditor::Render()
+	{
+		InvokeManagedMethod("Render");
+	}
+
+	void ManagedEditor::Exit()
+	{
+		InvokeManagedMethod("Exit");
+	}
+
+
+	Window* ManagedEditor::GetMainWindow()
+	{
+		ASSERT(HasManagedInstance());
+		const auto method = GetClass()->GetMethod("GetMainWindowPtr");
+		ASSERT(method);
+		return (Window*)CLRUtils::Unbox<void*>(method->Invoke(GetManagedInstance(), nullptr, nullptr));
+	}
+
+	void ManagedEditor::InvokeManagedMethod(const char* methodName)
+	{
+		CLRClass* clrClass = GetClass();
+		if (clrClass == nullptr)
+		{
+			LOG_FATAL("Scripts", "Invalid Editor assembly! Missing class");
+			return;
+		}
+
+		const auto method = clrClass->GetMethod(methodName);
+
+		if (method == nullptr)
+		{
+			LOG_FATAL("Scripts", "Invalid Editor assembly! Missing method");
+			return;
+		}
+
+		CLRObject* instance = GetOrCreateManagedInstance();
+		if (instance == nullptr)
+		{
+			LOG_FATAL("Scripts", "Failed to create editor instance");
+			return;
+		}
+
+		CLRObject* exception;
+
+		method->Invoke(instance, nullptr, &exception);
+	}
+
+	void ManagedEditor::OnEditorAssemblyLoaded(CLRAssembly* assembly)
+	{
+		ENGINE_ASSERT(!HasManagedInstance());
+
+		// Editor.CSharp.dll has been loaded, let's create managed object for C# editor
+		CreateManaged();
+	}
+
 }

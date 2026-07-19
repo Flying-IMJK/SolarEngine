@@ -4,7 +4,7 @@
 #include "ModelBase.h"
 #include "ModelLOD.h"
 
-#include "Core/Math/BoundingVolumes.h"
+#include "Runtime/Core/Math/BoundingVolumes.h"
 #include "Runtime/Render/RenderEnum.h"
 
 namespace SE

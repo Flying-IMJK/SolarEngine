@@ -2,8 +2,8 @@
 #include "GPUPipelineStateVulkan.h"
 #include "GPUShaderProgramVulkan.h"
 
-#include "Core/Types/Strings/StringView.h"
-#include "Core/Profiler/Profiler.h"
+#include "Runtime/Core/Types/Strings/StringView.h"
+#include "Runtime/Core/Profiler/Profiler.h"
 
 namespace SE
 {

@@ -6,6 +6,7 @@ namespace SE::Editor
     /// <summary>
     /// Base class for all binary asset proxy objects used to manage <see cref="BinaryAssetItem"/>.
     /// </summary>
+    SE_CLASS(Reflect)
     class BinaryAssetOperate : public AssetOperate
     {
         SE_DEFINE_CLASS_DEFAULT(BinaryAssetOperate, AssetOperate)

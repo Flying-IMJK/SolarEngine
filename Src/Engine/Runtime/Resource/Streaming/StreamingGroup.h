@@ -2,8 +2,8 @@
 #pragma once
 
 #include "IStreamingHandler.h"
-#include "Core/Utilities/Singleton.hpp"
-#include "Core/Types/Collections/List.h"
+#include "Runtime/Core/Singleton.hpp"
+#include "Runtime/Core/Types/Collections/List.h"
 
 namespace SE
 {

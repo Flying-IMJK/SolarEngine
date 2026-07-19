@@ -3,9 +3,10 @@
 #include "GraphNode.h"
 #include "GraphParameter.h"
 #include "ShaderGraphValue.h"
-#include "Core/Math/Curves.h"
-#include "Core/Serialization/TextWriter.h"
-#include "Core/Types/Collections/HashSet.h"
+#include "Runtime/Core/Math/Curves.h"
+#include "Runtime/Core/Math/Vector4.h"
+#include "Runtime/Core/Serialization/TextWriter.h"
+#include "Runtime/Core/Types/Collections/HashSet.h"
 #include "Runtime/Resource/AssetsContainer.h"
 
 namespace SE

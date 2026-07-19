@@ -13,6 +13,7 @@ namespace SE::Editor
 	/// <summary>
 	/// Root tree node for the project workspace.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class ProjectTreeNode : public ContentTreeNode
 	{
 		SE_DEFINE_CLASS_DEFAULT(ProjectTreeNode, ContentTreeNode)

@@ -2,7 +2,7 @@
 
 #include "AssetInfo.h"
 #include "Asset.h"
-#include "Core/TypeSystem/Types.h"
+#include "Runtime/Core/TypeSystem/Types.h"
 
 namespace SE
 {
@@ -11,6 +11,7 @@ namespace SE
 	class IAssetFactory;
 
 	// Content and assets statistics container.
+	SE_CLASS(Reflect)
 	class SE_API_RUNTIME ContentStats : public IType
 	{
 		SE_DEFINE_CLASS_DEFAULT(ContentStats, IType);

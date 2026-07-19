@@ -22,9 +22,9 @@ namespace SE
 		/// Creates the main window of the application.
 		/// </summary>
 		/// <returns>The main window (null if failed).</returns>
-		virtual GraphicWindow* CreateMainWindow() = 0;
+		virtual Window* CreateMainWindow() = 0;
 
-		virtual GraphicWindow* GetMainWindow() = 0;
+		virtual Window* GetMainWindow() = 0;
 
 		/// <summary>
 		/// Initializes the application. Called after initialization of all engine services.

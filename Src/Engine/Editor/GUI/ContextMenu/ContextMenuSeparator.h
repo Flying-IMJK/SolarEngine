@@ -3,6 +3,7 @@
 
 namespace SE::Editor
 {
+	SE_CLASS(Reflect)
 	class ContextMenuSeparator : public ContextMenuItem
 	{
 		SE_DEFINE_CLASS_DEFAULT(ContextMenuSeparator, ContextMenuItem)

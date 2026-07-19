@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Core/Logging/Logging.h"
-#include "Core/Memory/Memory.h"
-#include "Core/Platform/CriticalSection.h"
-#include "Core/Platform/Platform.h"
-#include "Core/Types/Variable.h"
+#include "Runtime/Core/Logging/Logging.h"
+#include "Runtime/Core/Memory/Memory.h"
+#include "Runtime/Core/Platform/CriticalSection.h"
+#include "Runtime/Core/Platform/Platform.h"
+#include "Runtime/Core/Types/Variable.h"
 
 namespace SE
 {

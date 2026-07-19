@@ -1,7 +1,7 @@
 
 #include "MaterialGenerator.h"
-#include "Core/Math/Vector4.h"
-#include "Core/Math/Matrix.h"
+#include "Runtime/Core/Math/Vector4.h"
+#include "Runtime/Core/Math/Matrix.h"
 #include "Runtime/Resource/Assets/Materials/Material.h"
 #include "Runtime/Render/Assets/Texture/Texture.h"
 #include "Runtime/Engine.h"

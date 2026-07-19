@@ -56,15 +56,14 @@ set(RuntimeCSharpFiles
 
 
 add_subdirectory(ThirdParty)
-add_subdirectory(CSharp)
+add_subdirectory(Core)
+add_subdirectory(Input)
 add_subdirectory(Network)
 add_subdirectory(System)
 add_subdirectory(Project)
-add_subdirectory(SGUI)
 add_subdirectory(UI)
 add_subdirectory(Settings)
 add_subdirectory(Level)
-add_subdirectory(Scripting)
 add_subdirectory(Graph)
 add_subdirectory(Graphics)
 add_subdirectory(GraphicsDevice)
@@ -81,19 +80,29 @@ source_group(TREE ${EngineRuntimeDir} FILES ${RuntimeSourceFiles} ${RuntimeHeadF
 add_library(${RUNTIME_TARGET} SHARED "${RuntimeHeadFiles}" "${RuntimeSourceFiles}")
 
 # 引擎C#运行时库
-CSHARP_TARGET(${RUNTIME_TARGET} "${RuntimeCSharpFiles}" "${CMAKE_CURRENT_SOURCE_DIR}/RuntimeCSharp.csproj")
+CSHARP_TARGET(${RUNTIME_TARGET} "${RuntimeCSharpFiles}" "${CMAKE_CURRENT_SOURCE_DIR}/RuntimeCSharp.csproj" Runtime)
 
 target_include_directories(${RUNTIME_TARGET}
     PUBLIC ${EngineDir}
     PUBLIC ${EngineRuntimeDir}/ThirdParty
     PUBLIC ${EngineLibDir}/assimp/include
+    PUBLIC ${EngineLibDir}/fmt/include
+    PUBLIC ${EngineLibDir}/sqlite3
+    PUBLIC ${EngineLibDir}/Freetype/include
 )
 
 
-target_link_libraries(${RUNTIME_TARGET} PUBLIC SECore assimp ShaderCompiler)
+target_link_libraries(${RUNTIME_TARGET} PUBLIC assimp ShaderCompiler sqlite3 fmt ws2_32 freetype)
+if (WIN32)
+    target_link_libraries(${RUNTIME_TARGET} PUBLIC Xinput Dbghelp)
+endif()
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_link_libraries(${RUNTIME_TARGET} PUBLIC delayimp )
 endif()
+
+target_compile_definitions(${RUNTIME_TARGET} PRIVATE TRACY_ENABLE TRACY_EXPORTS)
+
 # 运行时库 第三方链接库
 ADD_DELAYLOAD_FLAGS(${RUNTIME_TARGET} ShaderCompiler)
 #assimp-vc143-mt
@@ -104,7 +113,7 @@ ISPCTextureCompressorLink(${RUNTIME_TARGET})
 SlangLink(${RUNTIME_TARGET})
 NetCoreLink(${RUNTIME_TARGET})
 
-add_dependencies(${RUNTIME_TARGET} ${RUNTIME_TARGET}.CSharp SECore)
+add_dependencies(${RUNTIME_TARGET} ${RUNTIME_TARGET}.CSharp)
 
 target_compile_definitions(${RUNTIME_TARGET} PRIVATE "SE_DLL_RUNTIME" "COMPILE_USE_STB")
 

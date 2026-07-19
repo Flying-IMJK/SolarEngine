@@ -1,9 +1,9 @@
 #pragma once
 
 #include "EditorModule.h"
-#include "Core/Types/Delegate.h"
-#include "Core/Types/Collections/HashSet.h"
-#include "Core/Types/Collections/List.h"
+#include "Runtime/Core/Types/Delegate.h"
+#include "Runtime/Core/Types/Collections/HashSet.h"
+#include "Runtime/Core/Types/Collections/List.h"
 #include "Editor/Resource/Opreate/ContentOperate.h"
 #include "Editor/Resource/Tree/MainContentTreeNode.h"
 

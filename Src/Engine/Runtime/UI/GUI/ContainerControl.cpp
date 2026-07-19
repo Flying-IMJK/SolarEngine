@@ -3,8 +3,8 @@
 #include "ContainerControl.h"
 
 #include "WindowRootControl.h"
-#include "Core/Types/Collections/Sorting.h"
-#include "Core/Types/Delegate.h"
+#include "Runtime/Core/Types/Collections/Sorting.h"
+#include "Runtime/Core/Types/Delegate.h"
 #include "Runtime/Render/2D/Render2D.h"
 
 namespace SE

@@ -1,10 +1,10 @@
 
 #include "ModelLOD.h"
 
-#include <Core/Math/Transform.h>
+#include <Runtime/Core/Math/Transform.h>
 
 #include "MeshDeformation.h"
-#include "Core/Serialization/MemoryReadStream.h"
+#include "Runtime/Core/Serialization/MemoryReadStream.h"
 
 namespace SE
 {

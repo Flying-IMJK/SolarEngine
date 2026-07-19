@@ -1,6 +1,6 @@
 #include "GlobalSettings_Resource.h"
-#include "Core/Utilities/IniFile.h"
-#include "Core/Platform/FileSystem.h"
+#include "Runtime/Core/IniFile.h"
+#include "Runtime/Core/Platform/FileSystem.h"
 
 #include "Runtime/EngineContext.h"
 //-------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 #pragma once
-#include "Core/Types/Property.h"
+#include "Runtime/Core/Types/Property.h"
 #include "Runtime/Render/2D/SpriteAtlas.h"
 #include "Runtime/UI/GUI/Control.h"
 
@@ -140,6 +140,7 @@ namespace SE::Editor
 		virtual void OnItemDispose(ContentItem* item) = 0;
 	};
 
+	SE_CLASS(Reflect)
 	class ContentItem : public Control
 	{
 		SE_DEFINE_CLASS_DEFAULT(ContentItem, Control)

@@ -16,12 +16,6 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <UseCommonOutputDirectory>true</UseCommonOutputDirectory>
-
-    <!-- Rider/Visual Studio 输出路径配置 -->
-    <!-- 当使用 Rider 直接构建时，输出到解决方案级别的 Intermediate 目录 -->
-    <BaseOutputPath>$(SolutionDir)Intermediate\Runtime\bin\</BaseOutputPath>
-    <BaseIntermediateOutputPath>$(SolutionDir)Intermediate\Runtime\obj\</BaseIntermediateOutputPath>
-
   </PropertyGroup>
 
   <!-- Runtime config for nethost loading -->
@@ -37,8 +31,4 @@
 
   <!-- All .cs files in this directory are included automatically by the SDK glob.
        Explicit <Compile> entries are only needed for files outside this directory. -->
-  <!-- Task 2: ScriptingLoadContext.cs — included via SDK glob -->
-  <!-- Task 4: NativeInterop.cs       — included via SDK glob -->
-  <!-- Task 10: ScriptingObject.cs, Script.cs — included via SDK glob when added -->
-
 </Project>

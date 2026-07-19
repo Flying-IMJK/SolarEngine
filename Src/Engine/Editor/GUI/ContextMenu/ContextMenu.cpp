@@ -8,8 +8,8 @@
 #include "ContextMenuChildMenu.h"
 #include "ContextMenuItem.h"
 #include "ContextMenuSeparator.h"
-#include "Core/Types/Collections/ListExtensions.h"
-#include "Core/Types/Collections/Sorting.h"
+#include "Runtime/Core/Types/Collections/ListExtensions.h"
+#include "Runtime/Core/Types/Collections/Sorting.h"
 
 namespace SE::Editor
 {

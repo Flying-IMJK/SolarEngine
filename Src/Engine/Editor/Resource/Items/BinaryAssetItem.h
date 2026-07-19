@@ -13,6 +13,7 @@ namespace SE::Editor
     /// Represents binary asset item.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.AssetItem" />
+    SE_CLASS(Reflect)
     class BinaryAssetItem : public AssetItem
     {
         SE_DEFINE_CLASS_DEFAULT(BinaryAssetItem, AssetItem)
@@ -48,6 +49,7 @@ namespace SE::Editor
     /// Implementation of <see cref="BinaryAssetItem"/> for <see cref="TextureBase"/> assets.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetItem" />
+    SE_CLASS(Reflect)
     class TextureAssetItem : public BinaryAssetItem
     {
         SE_DEFINE_CLASS_DEFAULT(TextureAssetItem, BinaryAssetItem)
@@ -64,6 +66,7 @@ namespace SE::Editor
     /// Implementation of <see cref="BinaryAssetItem"/> for <see cref="Model"/> assets.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.BinaryAssetItem" />
+    SE_CLASS(Reflect)
     class ModelItem : public BinaryAssetItem
     {
         SE_DEFINE_CLASS_DEFAULT(ModelItem, BinaryAssetItem)

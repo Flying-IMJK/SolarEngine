@@ -1,12 +1,12 @@
 #pragma once
 
 #include "SceneObject.h"
-#include "Core/Thread/ThreadLocal.h"
-#include "Core/Types/UID.h"
-#include "Core/Types/Variable.h"
-#include "Core/Platform/CriticalSection.h"
-#include "Core/Serialization/ISerializeModifier.h"
-#include "Core/Types/Collections/CollectionPoolCache.h"
+#include "Runtime/Core/Thread/ThreadLocal.h"
+#include "Runtime/Core/Types/UID.h"
+#include "Runtime/Core/Types/Variable.h"
+#include "Runtime/Core/Platform/CriticalSection.h"
+#include "Runtime/Core/Serialization/ISerializeModifier.h"
+#include "Runtime/Core/Types/Collections/CollectionPoolCache.h"
 #include "Runtime/API.h"
 
 namespace SE

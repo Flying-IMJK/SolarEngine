@@ -1,15 +1,15 @@
 
 #include "PrefabManager.h"
 
-#include <Core/Logging/Exceptions/ArgumentException.h>
+#include <Runtime/Core/Logging/Exceptions/ArgumentException.h>
 
 #include "Prefab.h"
-#include "Core/Systems.h"
-#include "Core/Logging/Exceptions/ArgumentNullException.h"
-#include "Core/Platform/CriticalSection.h"
-#include "Core/Profiler/ProfilerCPU.h"
-#include "Core/Serialization/JsonTools.h"
-#include "Core/Types/Collections/CollectionPoolCache.h"
+#include "Runtime/Core/Systems.h"
+#include "Runtime/Core/Logging/Exceptions/ArgumentNullException.h"
+#include "Runtime/Core/Platform/CriticalSection.h"
+#include "Runtime/Core/Profiler/ProfilerCPU.h"
+#include "Runtime/Core/Serialization/JsonTools.h"
+#include "Runtime/Core/Types/Collections/CollectionPoolCache.h"
 #include "Runtime/Level/ActorsCache.h"
 #include "Runtime/Level/Level.h"
 #include "Runtime/Level/SceneObjectsFactory.h"

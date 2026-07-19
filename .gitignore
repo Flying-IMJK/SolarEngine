@@ -32,5 +32,6 @@
 .idea/
 Debug/
 Release/
+Intermediate/
 FlaxEngine/
 Reflector/Precompile/*

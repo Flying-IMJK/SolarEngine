@@ -19,6 +19,7 @@ namespace SE::Editor
     /// Difference between <see cref="ComboBox"/> and <see cref="Dropdown"/> is that ComboBox uses native window to show the items list while Dropdown uses a custom panel added to parent window.
     /// This means that Dropdown will work on all platforms that don't support multiple native windows (eg. Android, PS4, Xbox One).
     /// </remarks>
+    SE_CLASS(Reflect)
     class ComboBox : public Control
     {
         SE_DEFINE_CLASS(ComboBox, Control)

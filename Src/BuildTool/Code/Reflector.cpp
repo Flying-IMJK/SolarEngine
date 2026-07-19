@@ -1,43 +1,37 @@
-﻿#include "Reflector.h"
-#include "ReflectorSettingsAndUtils.h"
+#include "Reflector.h"
 #include "Clang/ClangParser.h"
 #include "CodeGenerators/CodeGenerator_CPP.h"
-#include "Core/Serialization/Json.h"
+#include "Core/Json.h"
 #include "ThirdParty/cmdParser/cmdParser.h"
+#include "Core/TopologicalSort.h"
+#include "Core/FileSystem.h"
+#include "Core/Time.h"
 
-#include "Core/Platform/File.h"
-#include "Core/Utilities/Timers.h"
-#include "Core/Types/Collections/Sorting.h"
-#include "Core/Types/Strings/StringView.h"
-#include "Core/Types/DateTime.h"
-
-#include "TopologicalSort.h"
 #include <fstream>
 #include <iostream>
 #include <filesystem>
 
-#include "Core/CoreModule.h"
-#include "Core/Logging/LoggingSystem.h"
+
 
 //-------------------------------------------------------------------------
 
-namespace SE::ReflectTool
+namespace SE::BuildTool
 {
     namespace
     {
-        bool SortProjectsByDependencies(List<ProjectInfo> &projects)
+        bool SortProjectsByDependencies(std::vector<ProjectInfo> &projects)
         {
-            int const numProjects = projects.Count();
+            int const numProjects = projects.size();
             if (numProjects <= 1)
             {
                 return true;
             }
 
             // Create list to sort
-			List<TopologicalSorter::Node> list;
+			std::vector<TopologicalSorter::Node> list;
             for (auto p = 0; p < numProjects; p++)
             {
-                list.Add(TopologicalSorter::Node(p));
+                list.push_back(TopologicalSorter::Node(p));
             }
 
             for (auto p = 0; p < numProjects; p++)
@@ -49,7 +43,7 @@ namespace SE::ReflectTool
                     {
                         if (p != pp && projects[pp].id == projects[p].dependencies[d])
                         {
-                            list[p].m_children.Add(&list[pp]);
+                            list[p].m_children.push_back(&list[pp]);
                         }
                     }
                 }
@@ -63,22 +57,22 @@ namespace SE::ReflectTool
 
             // Update type list
             int depValue = 0;
-            List<ProjectInfo> sortedProjects;
-            sortedProjects.SetCapacity(numProjects);
+            std::vector<ProjectInfo> sortedProjects;
+            sortedProjects.reserve(numProjects);
 
             for (auto &node : list)
             {
-                sortedProjects.Add(projects[node.m_ID]);
-                sortedProjects.Last().dependencyCount = depValue++;
+                sortedProjects.push_back(projects[node.m_ID]);
+                sortedProjects.back().dependencyCount = depValue++;
             }
-            projects.Swap(sortedProjects);
+            projects.swap(sortedProjects);
             return true;
         }
     }
 
-    bool Reflector::ParseSolution(String slnRootPath, String &slnPath)
+    bool Reflector::ParseSolution(std::string slnRootPath, std::string &slnPath)
     {
-        if (slnPath.IsEmpty() || !FileSystem::MatchesExtension(slnPath, SE_TEXT("json")))
+        if (slnPath.empty() || !FileSystem::MatchesExtension(slnPath, "json"))
         {
             return LogError("Invalid solution file name: {0}", slnPath);
         }
@@ -90,7 +84,7 @@ namespace SE::ReflectTool
 
         //-------------------------------------------------------------------------
 
-        std::cout << " * Parsing Solution: " << slnPath.ToStringAnsi().Get() << std::endl;
+        std::cout << " * Parsing Solution: " << slnPath << std::endl;
         std::cout << " ----------------------------------------------" << std::endl
                   << std::endl;
 
@@ -99,24 +93,26 @@ namespace SE::ReflectTool
             ScopedTimer<PlatformClock> timer(parsingTime);
 
 
-			StringAnsi jsonText;
-            if (!File::ReadAllText(slnPath, jsonText))
+			std::string jsonText;
+            if (!Utils::ReadAllText(slnPath, jsonText))
             {
                 return LogError("Could not open solution: {0}", slnPath);
             }
 
 			Json::Document jsonReader;
-			jsonReader.ParseInsitu(jsonText.Get());
+			jsonReader.ParseInsitu(jsonText.data());
 
-            std::ifstream slnFile(slnPath.Get());
+            std::ifstream slnFile(slnPath);
             if (!slnFile.is_open())
             {
                 return LogError("Could not open solution: {0}", slnPath);
             }
 
             m_solution.path = slnRootPath;
-			String currentProcessDirectory = FileSystem::GetCurrentProcessDirectory();
+			std::string currentProcessDirectory = FileSystem::GetCurrentProcessDirectory();
             m_reflectionDataPath = currentProcessDirectory + Settings::g_temporaryDirectoryPath;
+            FileSystem::NormalizePath(m_reflectionDataPath);
+            FileSystem::CreateDirectory(m_reflectionDataPath);
 
             auto documentArray = jsonReader.GetArray();
             
@@ -127,13 +123,13 @@ namespace SE::ReflectTool
                 auto &arrayValue = documentArray[i];
                 auto targetName = arrayValue.FindMember("TargetName");
                 auto targetDir = arrayValue.FindMember("TargetDir");
-				String targetInclude(arrayValue.FindMember("TargetInclude")->value.GetString());
+				std::string targetInclude(arrayValue.FindMember("TargetInclude")->value.GetString());
 
-                String projectPathString(targetDir->value.GetString());
-				String projectName(targetName->value.GetString());
+                std::string projectPathString(targetDir->value.GetString());
+				std::string projectName(targetName->value.GetString());
 				FileSystem::NormalizePath(projectPathString);
 
-				String projectPath = projectPathString; //m_solution.m_path + projectPathString;
+				std::string projectPath = projectPathString; //m_solution.m_path + projectPathString;
 
                 ProjectObject projectObject;
                 projectObject.name = projectName;
@@ -142,37 +138,6 @@ namespace SE::ReflectTool
 
                 projectObjects.emplace_back(projectObject);
             }
-
-            /*
-            m_solution.m_path = slnPath.GetParentDirectory();
-            m_reflectionDataPath = FileSystem::Path(FileSystem::GetCurrentProcessPath() + Settings::g_temporaryDirectoryPath);
-
-            Vector<FileSystem::Path> projectFiles;
-
-            std::string stdLine;
-            while (std::getline(slnFile, stdLine))
-            {
-                String line(stdLine.c_str());
-
-                if (line.find("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") != String::npos) // VS Project UID
-                {
-                    auto projectNameStartIdx = line.find(" = \"");
-                    ENGINE_ASSERT(projectNameStartIdx != std::string::npos);
-                    projectNameStartIdx += 4;
-                    auto projectNameEndIdx = line.find("\", \"", projectNameStartIdx);
-                    ENGINE_ASSERT(projectNameEndIdx != std::string::npos);
-
-                    auto projectPathStartIdx = projectNameEndIdx + 4;
-                    ENGINE_ASSERT(projectPathStartIdx < line.length());
-                    auto projectPathEndIdx = line.find("\"", projectPathStartIdx);
-                    ENGINE_ASSERT(projectNameEndIdx != std::string::npos);
-
-                    String const projectPathString = line.substr(projectPathStartIdx, projectPathEndIdx - projectPathStartIdx);
-                    FileSystem::Path const projectPath = m_solution.m_path + projectPathString;
-
-                    projectFiles.push_back(projectPath);
-                }
-            }*/
 
             slnFile.close();
 
@@ -207,11 +172,10 @@ namespace SE::ReflectTool
         return true;
     }
 
-	DateTime Reflector::CalculateHeaderChecksum(String &engineIncludePath, String &filePath)
+	uint64_t Reflector::CalculateHeaderChecksum(std::string &engineIncludePath, std::string &filePath)
     {
         static char const *headerString = "Note: including file: ";
-		DateTime checksum = FileSystem::GetFileLastEditTime(filePath);
-        return checksum;
+        return FileSystem::GetFileLastEditTime(filePath);
     }
 
     bool Reflector::ParseProject(ProjectObject &prjObject)
@@ -221,27 +185,27 @@ namespace SE::ReflectTool
         ProjectInfo prj;
         prj.name = prjObject.name;
         prj.id = ProjectInfo::GetProjectID(prjObject.path);
-		String projectPath = prjObject.path;
+		std::string projectPath = prjObject.path;
 		prj.parentPath = FileSystem::GetParentDirectory(projectPath);
         prj.path = prjObject.path;
         prj.isToolsModule = Utils::IsFileUnderToolsProject(prjObject.path);
 
 
-        List<String> sourceFiles;
-		prjObject.includeFile.Split(SE_TEXT(';'), sourceFiles);
+        std::vector<std::string> sourceFiles;
+		Utils::String::Split(prjObject.includeFile, ';', sourceFiles);
         
-        for (String sourceFile : sourceFiles)
+        for (std::string sourceFile : sourceFiles)
         {
             // Ignore auto-generated files
-            if (sourceFile.Find(Settings::g_autogeneratedDirectory) != INVALID_INDEX)
+            if (Utils::String::Find(sourceFile, Settings::g_autogeneratedDirectory) != INVALID_INDEX)
             {
                 continue;
             }
 
-			String const headerFilePath(prj.parentPath + SE_TEXT("/") + sourceFile);
-            String headerFileFullPath = prj.parentPath + SE_TEXT("/") + sourceFile;
+			std::string const headerFilePath(prj.parentPath + "/" + sourceFile);
+            std::string headerFileFullPath = prj.parentPath + "/" + sourceFile;
 
-            List<StringAnsi> headerFileContents;
+            std::vector<std::string> headerFileContents;
             HeaderProcessResult const result = ProcessHeaderFile(headerFileFullPath, prj.exportMacro, headerFileContents);
             switch (result)
             {
@@ -250,9 +214,9 @@ namespace SE::ReflectTool
                     HeaderInfo &headerInfo = prj.headerFiles.emplace_back();
                     headerInfo.headerId = HeaderInfo::GetHeaderID(headerFileFullPath);
                     headerInfo.projectID = prj.id;
-                    headerInfo.filePath = headerFileFullPath.ToStringAnsi();
-                    headerInfo.timestamp = FileSystem::GetFileLastEditTime(headerFileFullPath).Ticks;
-                    headerInfo.fileContents.Swap(headerFileContents);
+                    headerInfo.filePath = headerFileFullPath;
+                    headerInfo.timestamp = FileSystem::GetFileLastEditTime(headerFileFullPath);
+                    headerInfo.fileContents.swap(headerFileContents);
 
                     // emplace_back to registered timestamp cache, use in up to date checks
                     m_registeredHeaderTimestamps.emplace_back(HeaderTimestamp(headerInfo.headerId, headerInfo.timestamp));
@@ -266,7 +230,7 @@ namespace SE::ReflectTool
 
                 case HeaderProcessResult::ErrorOccured:
 				{
-					std::cout << "Error processing: " << headerFileFullPath.ToStringAnsi().Get() << std::endl;
+					std::cout << "Error processing: " << headerFileFullPath << std::endl;
 					//prjFile.close();
 					return false;
 				}
@@ -275,7 +239,7 @@ namespace SE::ReflectTool
         
         //-------------------------------------------------------------------------
 
-        if (prj.name.IsEmpty())
+        if (prj.name.empty())
         {
             return LogError("Invalid project file detected: {0}", prjObject.path);
         }
@@ -283,7 +247,7 @@ namespace SE::ReflectTool
         // Print parse results
         //-------------------------------------------------------------------------
 
-        std::cout << " * Project: " << prj.name.ToStringAnsi().Get() << " - ";
+        std::cout << " * Project: " << prj.name << " - ";
 
         // Only add projects to the list that have headers to parse
         if (prj.headerFiles.empty())
@@ -295,15 +259,15 @@ namespace SE::ReflectTool
         std::cout << "Done! ( " << prj.headerFiles.size() << " header(s) found! )";
         std::cout << std::endl;
 
-		m_solution.projects.Add(prj);
+		m_solution.projects.push_back(prj);
         return true;
     }
 
-    Reflector::HeaderProcessResult Reflector::ProcessHeaderFile(String &filePath, String &exportMacroName, List<StringAnsi> &headerFileContents)
+    Reflector::HeaderProcessResult Reflector::ProcessHeaderFile(std::string &filePath, std::string &exportMacroName, std::vector<std::string> &headerFileContents)
     {
         // Open header file
-        bool const isModuleAPIHeader = filePath.Contains(SE_TEXT("API.h"));
-        std::ifstream hdrFile(filePath.Get(), std::ios::in | std::ios::binary | std::ios::ate);
+        bool const isModuleAPIHeader = Utils::String::Contains(filePath, "API.h");
+        std::ifstream hdrFile(filePath, std::ios::in | std::ios::binary | std::ios::ate);
         if (!hdrFile.is_open())
         {
             LogError("Could not open header file: {0}", filePath);
@@ -320,11 +284,11 @@ namespace SE::ReflectTool
         hdrFile.seekg(0, std::ios::beg);
 
         // Read file contents
-        headerFileContents.Clear();
+        headerFileContents.clear();
         std::string stdLine;
         while (std::getline(hdrFile, stdLine))
         {
-            headerFileContents.Add(stdLine.c_str());
+            headerFileContents.push_back(stdLine.c_str());
         }
         hdrFile.close();
 
@@ -337,21 +301,21 @@ namespace SE::ReflectTool
         for (auto const &line : headerFileContents)
         {
             // Check for comment blocks
-            if (line.Find("/*") != INVALID_INDEX)
+            if (Utils::String::Find(line, "/*") != INVALID_INDEX)
                 openCommentBlock++;
-            if (line.Find("*/") != INVALID_INDEX)
+            if (Utils::String::Find(line, "*/") != INVALID_INDEX)
                 openCommentBlock--;
 
             if (openCommentBlock == 0)
             {
                 // Check for line comment
-                auto const foundCommentIdx = line.Find("//");
+                auto const foundCommentIdx = Utils::String::Find(line, "//");
 
                 // Check for registration macros
                 for (auto i = 0u; i < (uint32_t)ReflectionMacroType::NumMacros; i++)
                 {
                     ReflectionMacroType const macro = (ReflectionMacroType)i;
-                    auto const foundMacroIdx = line.Find(StringAnsi(GetMarkMacroText(macro)));
+                    auto const foundMacroIdx = Utils::String::Find(line, GetMarkMacroText(macro));
                     bool const macroExists = foundMacroIdx != INVALID_INDEX;
                     bool const uncommentedMacro = foundCommentIdx == INVALID_INDEX || foundCommentIdx > foundMacroIdx;
 
@@ -373,22 +337,22 @@ namespace SE::ReflectTool
                 // Check header for the module export definition
                 if (isModuleAPIHeader)
                 {
-                    auto const foundExportIdx0 = line.Find("__declspec");
-                    auto const foundExportIdx1 = line.Find("dllexport");
+                    auto const foundExportIdx0 = Utils::String::Find(line, "__declspec");
+                    auto const foundExportIdx1 = Utils::String::Find(line, "dllexport");
                     if (foundExportIdx0 != INVALID_INDEX && foundExportIdx1 != INVALID_INDEX)
                     {
-                        if (!exportMacroName.IsEmpty())
+                        if (!exportMacroName.empty())
                         {
                             LogError("Duplicate export macro definitions found!", filePath);
                             return HeaderProcessResult::ErrorOccured;
                         }
                         else
                         {
-                            auto defineIdx = line.Find("#define");
+                            auto defineIdx = Utils::String::Find(line, "#define");
                             if (defineIdx != INVALID_INDEX)
                             {
                                 defineIdx += 8;
-                                exportMacroName = line.Substring(defineIdx, foundExportIdx0 - 1 - defineIdx).ToString();
+                                exportMacroName = line.substr(defineIdx, foundExportIdx0 - 1 - defineIdx);
                             }
 
                             return HeaderProcessResult::IgnoreHeader;
@@ -403,29 +367,21 @@ namespace SE::ReflectTool
 
     bool Reflector::Clean()
     {
-        std::cout << " * Cleaning Solution: " << m_solution.path.ToStringAnsi().Get() << std::endl;
+        std::cout << " * Cleaning Solution: " << m_solution.path << std::endl;
         std::cout << " ----------------------------------------------" << std::endl
                   << std::endl;
 
-        StringBuilder autoGeneratedDirectory;
         // Delete all auto-generated directories for valid projects
         for (auto &prj : m_solution.projects)
         {
-            std::cout << " * Cleaning Project - " << prj.name.ToStringAnsi().Get() << std::endl;
+            std::cout << " * Cleaning Project - " << prj.name << std::endl;
 
-            autoGeneratedDirectory.Clear();
-			autoGeneratedDirectory.Append(prj.path);
-            autoGeneratedDirectory.Append("/");
-			autoGeneratedDirectory.Append(Settings::g_autogeneratedDirectory);
-            FileSystem::DeleteDirectory(autoGeneratedDirectory.ToString());
+            std::string autoGeneratedDirectory = prj.path + "/" + Settings::g_autogeneratedDirectory;
+            FileSystem::DeleteDirectory(autoGeneratedDirectory);
 
-
-            autoGeneratedDirectory.Clear();
-            autoGeneratedDirectory.Append(prj.path);
-            autoGeneratedDirectory.Append("/");
-            autoGeneratedDirectory.Append(Settings::g_autogeneratedModuleFileSuffix);
-            FileSystem::DeleteFile(autoGeneratedDirectory.ToString());
-            File::WriteAllText(autoGeneratedDirectory.ToString(), String::Empty, Encoding::EncodingType::UTF8);
+            autoGeneratedDirectory = prj.path + "/" + Settings::g_autogeneratedModuleFileSuffix;
+            FileSystem::DeleteFile(autoGeneratedDirectory);
+            Utils::WriteAllText(autoGeneratedDirectory, std::string());
         }
 
         std::cout << std::endl;
@@ -433,9 +389,9 @@ namespace SE::ReflectTool
         // Delete all auto-generated directories for excluded projects (just to be safe)
         for (auto &prjPath : m_solution.excludedProjects)
         {
-            String autoGeneratedDirectory = FileSystem::GetParentDirectory(prjPath);
+            std::string autoGeneratedDirectory = FileSystem::GetParentDirectory(prjPath);
 			autoGeneratedDirectory += Settings::g_autogeneratedDirectory;
-            std::cout << " * Cleaning Excluded Project - " << autoGeneratedDirectory.ToStringAnsi().Get() << std::endl;
+            std::cout << " * Cleaning Excluded Project - " << autoGeneratedDirectory << std::endl;
 
             if (!FileSystem::DeleteDirectory(autoGeneratedDirectory))
             {
@@ -445,15 +401,15 @@ namespace SE::ReflectTool
 
         std::cout << std::endl;
 
-		String const databasePath(m_reflectionDataPath + SE_TEXT("TypeDatabase.db"));
+		std::string const databasePath(m_reflectionDataPath + "TypeDatabase.db");
         bool const result = FileSystem::FileExists(databasePath) || FileSystem::DeleteFile(databasePath);
         if (result)
         {
-            std::cout << " * Deleted: " << databasePath.ToStringAnsi().Get() << std::endl;
+            std::cout << " * Deleted: " << databasePath << std::endl;
         }
         else
         {
-            std::cout << " * Error deleting: " << databasePath.ToStringAnsi().Get() << std::endl;
+            std::cout << " * Error deleting: " << databasePath << std::endl;
         }
 
         std::cout << std::endl;
@@ -464,7 +420,7 @@ namespace SE::ReflectTool
 
     bool Reflector::Build()
     {
-        std::cout << " * Reflecting Solution: " << m_solution.path.ToStringAnsi().Get() << std::endl;
+        std::cout << " * Reflecting Solution: " << m_solution.path << std::endl;
         std::cout << " ----------------------------------------------" << std::endl
                   << std::endl;
 
@@ -473,7 +429,7 @@ namespace SE::ReflectTool
             ScopedTimer<PlatformClock> timer(time);
 
             // Open connection to type database and read all previous data
-			StringAnsi databasePath(m_reflectionDataPath + SE_TEXT("TypeDatabase.db"));
+			std::string databasePath(m_reflectionDataPath + "TypeDatabase.db");
             m_database.ReadDatabase(databasePath);
 
             //-------------------------------------------------------------------------
@@ -503,34 +459,34 @@ namespace SE::ReflectTool
         Milliseconds time = 0;
         {
             ScopedTimer<PlatformClock> timer(time);
-            List<HeaderID> registeredHeaders;
+            std::vector<HeaderID> registeredHeaders;
             for (auto &prj : m_solution.projects)
             {
-                String autoGeneratedDirectory = prj.path + Settings::g_autogeneratedDirectory;
-				List<String> existingFiles;
+                std::string autoGeneratedDirectory = prj.path + Settings::g_autogeneratedDirectory;
+				std::vector<std::string> existingFiles;
                 FileSystem::DirectoryGetFiles(existingFiles, autoGeneratedDirectory, nullptr, DirectorySearchOption::All);
 
                 for (auto i = 0u; i < prj.headerFiles.size(); i++)
                 {
                     bool isDirty = false;
                     auto &header = prj.headerFiles[i];
-                    registeredHeaders.Add(header.headerId);
+                    registeredHeaders.push_back(header.headerId);
 
                     // Does the output file exist?
-                    String const autoGeneratedFilePath = header.GetAutogeneratedTypeInfoFileName(autoGeneratedDirectory);
+                    std::string const autoGeneratedFilePath = header.GetAutogeneratedTypeInfoFileName(autoGeneratedDirectory);
                     isDirty = !FileSystem::FileExists(autoGeneratedFilePath);
 
                     // Remove this file from the from existing files list - this is used to clean up the auto-generated directory of old files
-                    for (auto j = 0u; j < existingFiles.Count(); j++)
+                    for (auto j = 0u; j < existingFiles.size(); j++)
                     {
                         if (FileSystem::GetFileNameWithoutExtension(existingFiles[j]) == FileSystem::GetFileNameWithoutExtension(autoGeneratedFilePath))
                         {
-                            if (j != existingFiles.Count() - 1)
+                            if (j != existingFiles.size() - 1)
                             {
-                                existingFiles[j] = existingFiles.Last();
+                                existingFiles[j] = existingFiles.back();
                             }
 
-                            existingFiles.Pop();
+                            existingFiles.pop_back();
                             j--;
                         }
                     }
@@ -550,11 +506,11 @@ namespace SE::ReflectTool
                             }
                             else
                             {
-                                String filePath = header.filePath.ToString();
-                                header.checksum = CalculateHeaderChecksum(m_solution.path, filePath).Ticks;
+                                std::string filePath = header.filePath;
+                                header.checksum = CalculateHeaderChecksum(m_solution.path, filePath);
                                 if (header.checksum == 0)
                                 {
-                                    return LogError("Failed to perform up to date check for: {0}", header.filePath.Get());
+                                    return LogError("Failed to perform up to date check for: {0}", header.filePath);
                                 }
                                 else if (header.checksum != pExistingRecord->checksum)
                                 {
@@ -588,7 +544,7 @@ namespace SE::ReflectTool
     bool Reflector::ReflectRegisteredHeaders()
     {
         // Create list of all headers to parse
-        List<HeaderInfo *> headersToParse;
+        std::vector<HeaderInfo *> headersToParse;
         for (auto &prj : m_solution.projects)
         {
             if (!prj.dirtyHeaders.empty())
@@ -596,7 +552,7 @@ namespace SE::ReflectTool
                 // emplace_back all dirty headers to the list of file to be parsed
                 for (auto &hdr : prj.dirtyHeaders)
                 {
-                    headersToParse.Add(&prj.headerFiles[hdr]);
+                    headersToParse.push_back(&prj.headerFiles[hdr]);
 
                     // Erase all types associated with this header from the database
                     m_database.DeleteTypesForHeader(prj.headerFiles[hdr].headerId);
@@ -605,20 +561,17 @@ namespace SE::ReflectTool
         }
 
         //-------------------------------------------------------------------------
-
-        ClangParser clangParser(&m_solution, &m_database, m_reflectionDataPath);
-
-        if (!headersToParse.IsEmpty())
+        if (!headersToParse.empty())
         {
-            std::cout << " * Reflecting C++ Code -" << std::endl;;
+            ClangParser clangParser(&m_solution, &m_database, m_reflectionDataPath);
+
+            std::cout << " * Parser C++ Code -" << std::endl;;
             if (!clangParser.Parse(headersToParse))
             {
-                std::cout << "Error occurred!\n\n  Error: " << clangParser.GetErrorMessage().Get() << std::endl;
+                std::cout << "Error occurred!\n\n  Error: " << clangParser.GetErrorMessage() << std::endl;
                 return false;
             }
-            Milliseconds clangParsingTime = clangParser.GetParsingTime();
-            Milliseconds clangVisitingTime = clangParser.GetVisitingTime();
-            std::cout << "Complete! ( P:" << clangParsingTime << "ms, V:" << clangVisitingTime << "ms )" << std::endl;
+            std::cout << "Complete! ( P:" << clangParser.GetParsingTime() << "ms, V:" << clangParser.GetVisitingTime() << "ms )" << std::endl;
         }
 
         // Keep project records in sync before generation. UpdateProjectList preserves
@@ -654,10 +607,10 @@ namespace SE::ReflectTool
         {
             ScopedTimer<PlatformClock> timer(time);
             Generator generator;
-            if (!m_database.WriteDatabase(m_reflectionDataPath.ToStringAnsi() + "TypeDatabase.db"))
+            if (!m_database.WriteDatabase(m_reflectionDataPath + "TypeDatabase.db"))
             {
                 std::cout << "Error Occurred: " << generator.GetErrorMessage() << std::endl;
-                return LogError(m_database.GetError().Get());
+                return LogError("{0}", m_database.GetError());
             }
         }
 
@@ -672,7 +625,7 @@ int main(int argc, char *argv[])
 {
     std::cout << std::endl;
     std::cout << "==============================================" << std::endl;
-    std::cout << "|             SE Reflector             |" << std::endl;
+    std::cout << "|             SE Build                        |" << std::endl;
     std::cout << "==============================================" << std::endl
               << std::endl;
 
@@ -701,29 +654,26 @@ int main(int argc, char *argv[])
 
 	std::string r = cmdParser.get<std::string>("r").c_str();
 	std::string s = cmdParser.get<std::string>("s").c_str();
-	SE::String slnRootPath = SE::String(r.c_str());
-	SE::String slnPath = SE::String(s.c_str());
+	std::string slnRootPath = r;
+	std::string slnPath = s;
     bool const shouldClean = cmdParser.get<bool>("clean");
     bool const shouldRebuild = cmdParser.get<bool>("rebuild");
 #else
-    SE::String slnRootPath = SE_TEXT("E:/EngineProject/SolarEngine/Src");
-    SE::String slnPath = SE_TEXT("E:/EngineProject/SolarEngine/Src/BuildTool/Precompile/precompilefile.json");
+    std::string slnRootPath = "E:/EngineProject/SolarEngine/Src";
+    std::string slnPath = "E:/EngineProject/SolarEngine/Src/BuildTool/Precompile/precompilefile.json";
     bool const shouldClean = cmdParser.get<bool>("clean");
     bool const shouldRebuild = cmdParser.get<bool>("rebuild");
 #endif
 
     // Execute reflector
     //-------------------------------------------------------------------------
-    SE::CoreTypeRegistry::Initialize();
-    SE::Log::System::Initialize();
-
 	int exitCode = 1;
 
-	SE::FileSystem::NormalizePath(slnRootPath);
-	SE::FileSystem::NormalizePath(slnPath);
+    SE::BuildTool::FileSystem::NormalizePath(slnRootPath);
+    SE::BuildTool::FileSystem::NormalizePath(slnPath);
 
     // Parse solution
-    SE::ReflectTool::Reflector reflector;
+    SE::BuildTool::Reflector reflector;
     if (reflector.ParseSolution(slnRootPath, slnPath))
     {
         if (shouldRebuild)
@@ -740,9 +690,6 @@ int main(int argc, char *argv[])
 			exitCode = reflector.Build() ? 0 : 1;
         }
     }
-
-    SE::Log::System::Shutdown();
-    SE::CoreTypeRegistry::Shutdown();
 
     return exitCode;
 }

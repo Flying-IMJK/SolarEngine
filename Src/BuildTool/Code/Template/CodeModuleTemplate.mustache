@@ -1,8 +1,8 @@
 //-------------------------------------------------------------------------
 // This is an auto-generated file - DO NOT edit";
 //-------------------------------------------------------------------------
-#include "Core/TypeSystem/Types.h"
-#include "Core/TypeSystem/Info/TypeEnumInfo.h"
+#include "Runtime/Core/TypeSystem/Types.h"
+#include "Runtime/Core/TypeSystem/Info/TypeEnumInfo.h"
 //-------------------------------------------------------------------------
 
 //-------------------------------------------------------------------------
@@ -24,20 +24,20 @@ namespace SE
         {
             // Meta
         {{#metaTypeList}}{{isDevOnlyBegin}}
-            Types::RegisterTypeID(StableID::Generate<::{{registerNamespace}}::{{registerName}}>(), TypeID(SE_TEXT("{{registerNamespace}}::{{registerName}}")));
-            TTypeMetaInfo<::{{registerNamespace}}::{{registerName}}>::RegisterType();
+            Types::RegisterTypeID(StableID::Generate<{{registerNamespace}}::{{registerName}}>(), TypeID(SE_TEXT("{{registerNativeName}}")));
+            TTypeMetaInfo<{{registerNamespace}}::{{registerName}}>::RegisterType();
         {{isDevOnlyEnd}}{{/metaTypeList}}
 
             // Type
         {{#compositeTypeList}}{{isDevOnlyBegin}}
-            Types::RegisterTypeID(StableID::Generate<::{{registerNamespace}}::{{registerName}}>(), TypeID(SE_TEXT("{{registerNamespace}}::{{registerName}}")));
-            TTypeCompositeInfo<::{{registerNamespace}}::{{registerName}}>::RegisterType();
+            Types::RegisterTypeID(StableID::Generate<{{registerNamespace}}::{{registerName}}>(), TypeID(SE_TEXT("{{registerNativeName}}")));
+            TTypeCompositeInfo<{{registerNamespace}}::{{registerName}}>::RegisterType();
         {{isDevOnlyEnd}}{{/compositeTypeList}}
 
             // Enum
         {{#enumTypeList}}{{isDevOnlyBegin}}
-            Types::RegisterTypeID(StableID::Generate<::{{registerNamespace}}::{{registerName}}>(), TypeID(SE_TEXT("{{registerNamespace}}::{{registerName}}")));
-            TTypeEnumInfo<::{{registerNamespace}}::{{registerName}}>::RegisterType();
+            Types::RegisterTypeID(StableID::Generate<{{registerNamespace}}::{{registerName}}>(), TypeID(SE_TEXT("{{registerNativeName}}")));
+            TTypeEnumInfo<{{registerNamespace}}::{{registerName}}>::RegisterType();
         {{isDevOnlyEnd}}{{/enumTypeList}}
         }
 
@@ -45,20 +45,20 @@ namespace SE
         {
             // Meta
         {{#metaTypeList}}{{isDevOnlyBegin}}
-            TTypeMetaInfo<::{{registerNamespace}}::{{registerName}}>::UnregisterType();
-            Types::RegisterTypeID(StableID::Generate<::{{registerNamespace}}::{{registerName}}>(), TypeID(SE_TEXT("{{registerNamespace}}::{{registerName}}")));
+            TTypeMetaInfo<{{registerNamespace}}::{{registerName}}>::UnregisterType();
+            Types::RegisterTypeID(StableID::Generate<{{registerNamespace}}::{{registerName}}>(), TypeID(SE_TEXT("{{registerNativeName}}")));
         {{isDevOnlyEnd}}{{/metaTypeList}}
 
             // Type
         {{#compositeTypeList}}{{isDevOnlyBegin}}
-            TTypeCompositeInfo<::{{registerNamespace}}::{{registerName}}>::UnregisterType();
-            Types::UnRegisterTypeID(StableID::Generate<::{{registerNamespace}}::{{registerName}}>(), TypeID(SE_TEXT("{{registerNamespace}}::{{registerName}}")));
+            TTypeCompositeInfo<{{registerNamespace}}::{{registerName}}>::UnregisterType();
+            Types::UnRegisterTypeID(StableID::Generate<{{registerNamespace}}::{{registerName}}>(), TypeID(SE_TEXT("{{registerNativeName}}")));
         {{isDevOnlyEnd}}{{/compositeTypeList}}
 
             // Enum
         {{#enumTypeList}}{{isDevOnlyBegin}}
-            TTypeEnumInfo<::{{registerNamespace}}::{{registerName}}>::UnregisterType();
-            Types::UnRegisterTypeID(StableID::Generate<::{{registerNamespace}}::{{registerName}}>(), TypeID(SE_TEXT("{{registerNamespace}}::{{registerName}}")));
+            TTypeEnumInfo<{{registerNamespace}}::{{registerName}}>::UnregisterType();
+            Types::UnRegisterTypeID(StableID::Generate<{{registerNamespace}}::{{registerName}}>(), TypeID(SE_TEXT("{{registerNativeName}}")));
         {{isDevOnlyEnd}}{{/enumTypeList}}
         }
     };

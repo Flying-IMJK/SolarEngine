@@ -6,6 +6,7 @@ namespace SE::Editor
     /// <summary>
     /// A <see cref="Model"/> asset proxy object.
     /// </summary>
+    SE_CLASS(Reflect)
     class ModelOperate : public BinaryAssetOperate
     {
         SE_DEFINE_CLASS_DEFAULT(ModelOperate, BinaryAssetOperate)

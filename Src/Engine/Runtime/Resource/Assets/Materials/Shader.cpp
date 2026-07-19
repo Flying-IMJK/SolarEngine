@@ -1,7 +1,7 @@
 
 #include "Shader.h"
 
-#include "Core/Serialization/MemoryReadStream.h"
+#include "Runtime/Core/Serialization/MemoryReadStream.h"
 #include "Runtime/Graphics/GPUDevice.h"
 #include "Runtime/Graphics/Shaders/GPUShader.h"
 #include "Runtime/Resource/Factories/BinaryAssetFactory.h"

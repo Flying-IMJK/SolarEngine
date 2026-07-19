@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Actor.h"
-#include "Core/Types/Collections/CollectionPoolCache.h"
+#include "Runtime/Core/Types/Collections/CollectionPoolCache.h"
 
 namespace SE
 {

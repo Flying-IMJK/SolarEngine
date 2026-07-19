@@ -1,40 +1,40 @@
 #include "ClangUtils.h"
-#include "Core/Types/Collections/Dictionary.h"
-#include "Core/Types/Collections/HashSet.h"
-#include "Core/Platform/FileSystem.h"
-#include "unordered_map"
+#include "Core/Dictionary.h"
+#include "Core/FileSystem.h"
+
+#include <unordered_map>
 //-------------------------------------------------------------------------
 
-namespace SE
+namespace SE::BuildTool
 {
     namespace ClangUtils
     {
         // Custom conversion type
-        Dictionary<String, String> mapType = {};
+        Dictionary<std::string, std::string> mapType = {};
 
-		HashSet<String> templateTypeConvert = { SE_TEXT("SE::Vector2Base"), SE_TEXT("SE::Vector3Base"), SE_TEXT("SE::Vector4Base") };
+		// HashSet<std::string> templateTypeConvert = { "SE::Vector2Base", "SE::Vector3Base", "SE::Vector4Base" };
 
-        void GetDiagnostics( CXTranslationUnit& TU, List<StringView>& diagnostics )
+        void GetDiagnostics( CXTranslationUnit& TU, std::vector<std::string>& diagnostics )
         {
             auto const numDiagnostics = clang_getNumDiagnostics( TU );
             for ( auto i = 0u; i < numDiagnostics; i++ )
             {
                 CXDiagnostic diagnostic = clang_getDiagnostic( TU, i );
-                diagnostics.Add( GetString( clang_formatDiagnostic( diagnostic, clang_defaultDiagnosticDisplayOptions() ) ) );
+                diagnostics.push_back( GetString( clang_formatDiagnostic( diagnostic, clang_defaultDiagnosticDisplayOptions() ) ) );
             }
         }
 
-		String GetHeaderPathForCursor( CXCursor cr )
+		std::string GetHeaderPathForCursor( CXCursor cr )
         {
             CXFile pFile;
             CXSourceRange const cursorRange = clang_getCursorExtent( cr );
             clang_getExpansionLocation( clang_getRangeStart( cursorRange ), &pFile, nullptr, nullptr, nullptr );
 
-			String HeaderFilePath;
+			std::string HeaderFilePath;
             if ( pFile != nullptr )
             {
                 CXString clangFilePath = clang_File_tryGetRealPathName( pFile );
-				HeaderFilePath = String( clang_getCString( clangFilePath ) );
+				HeaderFilePath = std::string( clang_getCString( clangFilePath ) );
 				FileSystem::NormalizePath(HeaderFilePath);
                 clang_disposeString( clangFilePath );
             }
@@ -42,7 +42,7 @@ namespace SE
             return HeaderFilePath;
         }
 
-        bool GetQualifiedNameForType( clang::QualType type, String& qualifiedName )
+        bool GetQualifiedNameForType( clang::QualType type, std::string& qualifiedName )
         {
             clang::Type const* pType = type.getTypePtr();
 
@@ -129,13 +129,13 @@ namespace SE
             {
                 // Do Nothing
             }
-            else if ( pType->isRecordType() )
+            else if (pType->isRecordType())
             {
                 clang::RecordDecl const* pRecordDecl = pType->getAs<clang::RecordType>()->getDecl();
 				ENGINE_ASSERT( pRecordDecl != nullptr );
 
 				qualifiedName = pRecordDecl->getQualifiedNameAsString().c_str();
-				if (templateTypeConvert.Contains(qualifiedName))
+				/*if (templateTypeConvert.Contains(qualifiedName))
 				{
 					auto* spec = (clang::ClassTemplateSpecializationDecl*)pRecordDecl;
 					if (spec != nullptr)
@@ -153,7 +153,7 @@ namespace SE
 						}
 						qualifiedName += ">";
 					}
-				}
+				}*/
             }
             else if ( pType->isEnumeralType() )
             {

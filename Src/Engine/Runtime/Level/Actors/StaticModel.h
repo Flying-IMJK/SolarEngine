@@ -8,6 +8,7 @@ namespace SE
 {
 	class GPUBuffer;
 
+	SE_CLASS(Reflect)
 	class SE_API_RUNTIME StaticModel : public ModelInstance
 	{
 		SE_DEFINE_CLASS(StaticModel, ModelInstance);

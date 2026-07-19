@@ -2,7 +2,7 @@
 #pragma once
 
 #include "Storage.h"
-#include "Core/Types/Collections/Dictionary.h"
+#include "Runtime/Core/Types/Collections/Dictionary.h"
 
 namespace SE
 {

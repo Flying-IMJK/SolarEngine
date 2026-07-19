@@ -11,7 +11,7 @@ namespace SE
     /// Json asset that stores the collection of scene objects including actors and scripts. In general it can serve as any grouping of scene objects (for example a level) or be used as a form of a template instantiated and reused throughout the scene.
     /// </summary>
     /// <seealso cref="JsonAssetBase" />
-    SE_CLASS(API, NoSpawn)
+    SE_CLASS(Reflect, API, NoSpawn)
     class SE_API_RUNTIME Prefab : public JsonAssetBase
     {
         SE_DEFINE_CLASS(Prefab, JsonAssetBase);

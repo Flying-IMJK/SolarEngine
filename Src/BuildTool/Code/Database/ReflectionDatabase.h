@@ -7,7 +7,7 @@
 #include <sqlite3.h>
 //-------------------------------------------------------------------------
 
-namespace SE::ReflectTool
+namespace SE::BuildTool
 {
     class ReflectionDatabase
     {
@@ -21,11 +21,11 @@ namespace SE::ReflectTool
         //-------------------------------------------------------------------------
 
         bool IsConnected() const { return m_pDatabase != nullptr; }
-        inline bool HasErrorOccurred() const { return !m_errorMessage.IsEmpty(); }
-        inline StringAnsi const &GetError() const { return m_errorMessage; }
+        inline bool HasErrorOccurred() const { return !m_errorMessage.empty(); }
+        inline std::string const &GetError() const { return m_errorMessage; }
 
-        bool ReadDatabase(StringAnsi const &databasePath);
-        bool WriteDatabase(StringAnsi const &databasePath);
+        bool ReadDatabase(std::string const &databasePath);
+        bool WriteDatabase(std::string const &databasePath);
 
         // Module functions
         //-------------------------------------------------------------------------
@@ -33,7 +33,7 @@ namespace SE::ReflectTool
 		std::vector<ProjectInfo> const &GetAllRegisteredProjects() const { return m_reflectedProjects; }
         bool IsProjectRegistered(ProjectID projectID) const;
         ProjectInfo const *GetProjectDesc(ProjectID projectID) const;
-        void UpdateProjectList(List<ProjectInfo> const &registeredProjects);
+        void UpdateProjectList(std::vector<ProjectInfo> const &registeredProjects);
 
         bool IsHeaderRegistered(HeaderID headerID) const;
         HeaderInfo const *GetHeaderDesc(HeaderID headerID) const;
@@ -42,26 +42,26 @@ namespace SE::ReflectTool
         // Type functions
         //-------------------------------------------------------------------------
 
-        DataType const *GetType(StringID typeID) const;
-        DataType *GetType(StringID typeID);
-		std::vector<DataType> const &GetAllTypes() const { return m_reflectedTypes; }
+        TypeData const *GetType(StringID typeID) const;
+        TypeData *GetType(StringID typeID);
+		std::vector<TypeData> const &GetAllTypes() const { return m_reflectedTypes; }
         bool IsTypeRegistered(StringID typeID) const;
         bool IsTypeDerivedFrom(StringID typeID, StringID parentTypeID) const;
-        void GetAllTypesForHeader(HeaderID headerID, List<DataType> &types) const;
-        void GetAllTypesForProject(ProjectID projectID, List<DataType> &types) const;
-        void RegisterType(DataType const *pType, bool onlyUpdateDevFlag);
+        void GetAllTypesForHeader(HeaderID headerID, std::vector<TypeData> &types) const;
+        void GetAllTypesForProject(ProjectID projectID, std::vector<TypeData> &types) const;
+        void RegisterType(TypeData const *pType, bool onlyUpdateDevFlag);
 
         // Property functions
         //-------------------------------------------------------------------------
 
-        DataProperty const *GetPropertyTypeDescriptor(StringID typeID, TypePropertyPath const &pathID) const;
+        PropertyData const *GetPropertyTypeDescriptor(StringID typeID, TypePropertyPath const &pathID) const;
 
         // Cleaning
         //-------------------------------------------------------------------------
 
         void DeleteTypesForHeader(HeaderID headerID);
-        void DeleteObseleteHeadersAndTypes(List<HeaderID> const &registeredHeaders);
-        void DeleteObseleteProjects(List<ProjectInfo> const &registeredProjects);
+        void DeleteObseleteHeadersAndTypes(std::vector<HeaderID> const &registeredHeaders);
+        void DeleteObseleteProjects(std::vector<ProjectInfo> const &registeredProjects);
 
     private:
         // Data
@@ -70,18 +70,18 @@ namespace SE::ReflectTool
         bool CreateTables();
         bool DropTables();
 
-        bool ReadAdditionalTypeData(DataType &type);
-        bool ReadAdditionalEnumData(DataType &type);
+        bool ReadAdditionalTypeData(TypeData &type);
+        bool ReadAdditionalEnumData(TypeData &type);
         bool ReadAdditionalResourceTypeData(ReflectedResourceType &type);
 
-        bool WriteAdditionalTypeData(DataType const &type);
-        bool WriteAdditionalEnumData(DataType const &type);
+        bool WriteAdditionalTypeData(TypeData const &type);
+        bool WriteAdditionalEnumData(TypeData const &type);
         bool WriteAdditionalResourceTypeData(ReflectedResourceType const &type);
 
         // SQLite
         //-------------------------------------------------------------------------
 
-        bool Connect(StringAnsi const &databasePath, bool readOnlyAccess = false, bool useMutex = false);
+        bool Connect(std::string const &databasePath, bool readOnlyAccess = false, bool useMutex = false);
         bool Disconnect();
 
         bool IsValidSQLiteResult(int result, char const *pErrorMessage = nullptr) const;
@@ -94,11 +94,11 @@ namespace SE::ReflectTool
 
     private:
         sqlite3 *m_pDatabase = nullptr;
-        mutable StringAnsi m_errorMessage;
+        mutable std::string m_errorMessage;
         mutable char m_statementBuffer[s_defaultStatementBufferSize] = {0};
 
-        DataType m_reflectedTypeBase;
-        std::vector<DataType> m_reflectedTypes;
+        TypeData m_reflectedTypeBase;
+        std::vector<TypeData> m_reflectedTypes;
 		std::vector<HeaderInfo> m_reflectedHeaders;
 		std::vector<ProjectInfo> m_reflectedProjects;
 		std::vector<ReflectedResourceType> m_reflectedResourceTypes;

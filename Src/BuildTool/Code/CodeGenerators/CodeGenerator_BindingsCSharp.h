@@ -5,9 +5,8 @@
 // Uses direct string building instead of Mustache templates for complex generation logic.
 
 #include "CodeGenerator_BindingsDataTypes.h"
-#include "Core/Types/Strings/String.h"
 
-namespace SE::ReflectTool
+namespace SE::BuildTool
 {
     class BindingsCSharpGenerator
     {
@@ -16,52 +15,55 @@ namespace SE::ReflectTool
 
         /// Generate C# bindings for all items in the header.
         bool Generate(const BindingsHeaderInfo& headerInfo,
-                      const String& solutionRoot);
+                      const std::string& solutionRoot);
 
-        bool GenerateAll(const List<BindingsHeaderInfo>& headers,
-                         const String& solutionRoot);
+        bool GenerateAll(const std::vector<BindingsHeaderInfo>& headers,
+                         const std::string& solutionRoot);
+
+        /// Generate minimal C# placeholders for native types referenced by API
+        /// signatures but not generated as first-class binding types yet.
+        bool GenerateNativeTypeStubs(const std::vector<BindingsHeaderInfo>& headers);
 
         /// Generate binary module assembly info (.Gen.cs).
         bool GenerateBinaryModuleAssemblyInfo(const BinaryModuleInfo& module);
 
-        StringAnsiView GetErrorMessage() const { return m_errorMessage.Get(); }
+        std::string_view GetErrorMessage() const { return m_errorMessage.c_str(); }
 
     private:
         // ---- Per-type generation methods ----
 
-        void GenerateCSharpClass(const ApiClass& cls, const StringAnsi& assemblyName,
-                                 StringAnsi& output);
-        void GenerateCSharpStructure(const ApiClass& cls, const StringAnsi& assemblyName,
-                                     StringAnsi& output);
-        void GenerateCSharpEnum(const ApiEnum& en, StringAnsi& output);
-        void GenerateCSharpInterface(const ApiInterface& iface, StringAnsi& output);
+        void GenerateCSharpClass(const ApiClass& cls, const std::string& assemblyName,
+                                 std::string& output);
+        void GenerateCSharpStructure(const ApiClass& cls, const std::string& assemblyName,
+                                     std::string& output);
+        void GenerateCSharpEnum(const ApiEnum& en, std::string& output);
+        void GenerateCSharpInterface(const ApiInterface& iface, std::string& output);
 
         // ---- Sub-generators ----
 
         void GenerateCSharpWrapperFunction(const ApiClass& cls, const ApiFunction& fn,
-                                           const StringAnsi& assemblyName, StringAnsi& output);
+                                           const std::string& assemblyName, std::string& output);
         void GenerateCSharpWrapperFunctionCall(const ApiClass& cls, const ApiFunction& fn,
-                                               StringAnsi& output);
+                                               std::string& output);
         void GenerateCSharpPropertyAccessors(const ApiClass& cls, const ApiProperty& prop,
-                                             const StringAnsi& assemblyName, StringAnsi& output);
+                                             const std::string& assemblyName, std::string& output);
         void GenerateCSharpFieldAccessors(const ApiClass& cls, const ApiField& field,
-                                          const StringAnsi& assemblyName, StringAnsi& output);
+                                          const std::string& assemblyName, std::string& output);
         void GenerateCSharpEventAccessors(const ApiClass& cls, const ApiEvent& evt,
-                                          const StringAnsi& assemblyName, StringAnsi& output);
-        void GenerateCSharpClassMarshaller(const ApiClass& cls, StringAnsi& output);
-        void GenerateCSharpStructMarshaller(const ApiClass& cls, StringAnsi& output);
+                                          const std::string& assemblyName, std::string& output);
+        void GenerateCSharpClassMarshaller(const ApiClass& cls, std::string& output);
+        void GenerateCSharpStructMarshaller(const ApiClass& cls, std::string& output);
 
         // ---- Helpers ----
 
-        StringAnsi GetAccessString(AccessLevel access) const;
-        StringAnsi BuildCSharpParams(const ApiFunction& fn, bool forPublic) const;
-        StringAnsi BuildCSharpInteropParams(const ApiClass& cls, const ApiFunction& fn) const;
-        StringAnsi BuildCSharpCallArgs(const ApiClass& cls, const ApiFunction& fn, bool isInterop) const;
-        StringAnsi GetCSharpNamespace(const StringAnsi& namespaceName) const;
+        std::string GetAccessString(AccessLevel access) const;
+        std::string BuildCSharpParams(const ApiFunction& fn, bool forPublic) const;
+        std::string BuildCSharpInteropParams(const ApiClass& cls, const ApiFunction& fn) const;
+        std::string BuildCSharpCallArgs(const ApiClass& cls, const ApiFunction& fn, bool isInterop) const;
 
-        static bool SaveFile(const String& path, const std::string& content);
+        static bool SaveFile(const std::string& path, const std::string& content);
 
-        mutable StringAnsi m_errorMessage;
+        mutable std::string m_errorMessage;
     };
 
-} // namespace SE::ReflectTool
+} // namespace SE::BuildTool

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Core/Types/Variable.h"
-#include "Core/Math/Vector2.h"
-#include "Core/Math/Quaternion.h"
-#include "Core/Math/Transform.h"
+#include "Runtime/Core/Types/Variable.h"
+#include "Runtime/Core/Math/Vector2.h"
+#include "Runtime/Core/Math/Quaternion.h"
+#include "Runtime/Core/Math/Transform.h"
 
 #include "Runtime/API.h"
 #include "Runtime/Resource/AssetRef.h"

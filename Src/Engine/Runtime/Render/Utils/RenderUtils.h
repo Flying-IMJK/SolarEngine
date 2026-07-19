@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Types/Variable.h"
+#include "Runtime/Core/Types/Variable.h"
 #include "Runtime/API.h"
 #include "Runtime/Graphics/Textures/GPUTexture.h"
 

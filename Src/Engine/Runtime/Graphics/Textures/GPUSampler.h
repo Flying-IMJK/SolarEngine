@@ -10,9 +10,13 @@ namespace SE
 	/// GPU texture sampler object.
 	/// </summary>
 	/// <seealso cref="GPUResource" />
+	SE_CLASS(API, Sealed)
 	class SE_API_RUNTIME GPUSampler : public GPUResource
 	{
+		SCRIPTING_TYPE_NO_SPAWN(GPUSampler);
+
 	public:
+		static GPUSampler* Spawn(const SpawnParams& params);
 		static GPUSampler* New();
 
 	protected:
@@ -38,7 +42,7 @@ namespace SE
 		bool Init(const GPUSamplerDescription& desc);
 
 		// [GPUResource]
-		String ToString() const;
+        String ToString() const override;
 		GPUResourceType GetResType() const final override;
 
 	protected:

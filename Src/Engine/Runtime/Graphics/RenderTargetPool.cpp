@@ -1,9 +1,9 @@
 
 #include "RenderTargetPool.h"
-#include "Core/Types/Collections/List.h"
-#include "Core/Platform/StringUtils.h"
-#include "Core/Types/Strings/String.h"
-#include "Core/Profiler/ProfilerCPU.h"
+#include "Runtime/Core/Types/Collections/List.h"
+#include "Runtime/Core/Platform/StringUtils.h"
+#include "Runtime/Core/Types/Strings/String.h"
+#include "Runtime/Core/Profiler/ProfilerCPU.h"
 
 #include "GPUDevice.h"
 #include "Runtime/EngineContext.h"

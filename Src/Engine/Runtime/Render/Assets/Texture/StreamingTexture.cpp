@@ -1,9 +1,9 @@
 
 #include "StreamingTexture.h"
 #include "TextureBase.h"
-#include "Core/Logging/Logging.h"
-#include "Core/Thread/Threading.h"
-#include "Core/TypeSystem/Types.h"
+#include "Runtime/Core/Logging/Logging.h"
+#include "Runtime/Core/Thread/Threading.h"
+#include "Runtime/Core/TypeSystem/Types.h"
 #include "Runtime/Resource/Streaming/StreamingGroup.h"
 #include "Runtime/Resource/Loading/AssetLoading.h"
 #include "Runtime/Graphics/GPUDevice.h"

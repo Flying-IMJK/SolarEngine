@@ -4,6 +4,7 @@
 
 namespace SE
 {
+	SE_CLASS(Reflect)
 	class SE_API_RUNTIME ScrollableControl : public ContainerControl
 	{
 		SE_DEFINE_CLASS(ScrollableControl, ContainerControl)

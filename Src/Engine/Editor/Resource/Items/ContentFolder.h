@@ -28,6 +28,7 @@ namespace SE::Editor
         Other,
     };
 
+    SE_CLASS(Reflect)
     class ContentFolder : public ContentItem
     {
         SE_DEFINE_CLASS_DEFAULT(ContentFolder, ContentItem)

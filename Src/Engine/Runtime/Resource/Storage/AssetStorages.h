@@ -2,8 +2,8 @@
 #pragma once
 
 #include "StorageReference.h"
-#include "Core/Types/TimeSpan.h"
-#include "Core/Systems.h"
+#include "Runtime/Core/Types/TimeSpan.h"
+#include "Runtime/Core/Systems.h"
 
 namespace SE
 {

@@ -11,7 +11,7 @@
 #include "GPUShaderProgramVulkan.h"
 #include "GPUShaderVulkan.h"
 #include "GPUSamplerVulkan.h"
-#include "Core/Math/Rectangle.h"
+#include "Runtime/Core/Math/Rectangle.h"
 
 namespace SE
 {

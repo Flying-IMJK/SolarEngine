@@ -5,8 +5,8 @@
 #include "FontManager.h"
 #include "IncludeFreeType.h"
 
-#include "Core/Profiler/ProfilerCPU.h"
-#include "Core/Thread/Threading.h"
+#include "Runtime/Core/Profiler/ProfilerCPU.h"
+#include "Runtime/Core/Thread/Threading.h"
 
 #include "Runtime/Resource/Factories/BinaryAssetFactory.h"
 

@@ -2,10 +2,10 @@
 #include "CustomEditor.h"
 #include "Values/ValueContainer.h"
 #include "Editors/GenericEditor.h"
-#include "Core/Logging/Logging.h"
-#include "Core/TypeSystem/Info/TypeCompositeInfo.h"
-#include "Core/TypeSystem/Property/TypeProperty.h"
-#include "Core/TypeSystem/MetaData/CustomEditorAliasAttribute.h"
+#include "Runtime/Core/Logging/Logging.h"
+#include "Runtime/Core/TypeSystem/Info/TypeCompositeInfo.h"
+#include "Runtime/Core/TypeSystem/Property/TypeProperty.h"
+#include "Runtime/Core/TypeSystem/MetaData/CustomEditorAliasAttribute.h"
 
 namespace SE::Editor
 {

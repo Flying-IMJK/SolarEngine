@@ -6,6 +6,7 @@ namespace SE::Editor
 	/// <summary>
 	/// Asset item stored in a Json format file.
 	/// </summary>
+	SE_CLASS(Reflect)
 	class JsonAssetItem : public AssetItem
 	{
 		SE_DEFINE_CLASS(JsonAssetItem, AssetItem)

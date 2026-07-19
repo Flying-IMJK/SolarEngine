@@ -1,8 +1,8 @@
 
 #pragma once
 
-#include "Core/Types/Delegate.h"
-#include "Core/Types/Collections/SamplesBuffer.h"
+#include "Runtime/Core/Types/Delegate.h"
+#include "Runtime/Core/Types/Collections/SamplesBuffer.h"
 
 #include "Runtime/API.h"
 

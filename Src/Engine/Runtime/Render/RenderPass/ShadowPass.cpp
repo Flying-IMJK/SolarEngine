@@ -2,8 +2,8 @@
 #include "ShadowPass.h"
 
 #include "GBufferPass.h"
-#include "Core/Profiler/Profiler.h"
-#include "Core/Profiler/ProfilerCPU.h"
+#include "Runtime/Core/Profiler/Profiler.h"
+#include "Runtime/Core/Profiler/ProfilerCPU.h"
 #include "Runtime/Graphics/GPUContext.h"
 #include "Runtime/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Runtime/Graphics/Textures/GPUTexture.h"
@@ -120,7 +120,7 @@ namespace SE
         auto shader = _shader->GetShader();
 
         // Validate shader constant buffers sizes
-        if (shader->GetCB(0)->GetSize() != sizeof(Data))
+        if (shader->GetCB(0) == nullptr || shader->GetCB(0)->GetSize() != sizeof(Data))
         {
             REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
             return false;

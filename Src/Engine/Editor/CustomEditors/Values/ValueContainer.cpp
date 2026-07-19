@@ -1,5 +1,5 @@
 #include "ValueContainer.h"
-#include "Core/TypeSystem/IType.h"
+#include "Runtime/Core/TypeSystem/IType.h"
 
 namespace SE::Editor
 {

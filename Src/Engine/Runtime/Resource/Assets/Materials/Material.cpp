@@ -2,9 +2,9 @@
 #include "Material.h"
 
 #include "ShaderCacheManager.h"
-#include "Core/Serialization/MemoryReadStream.h"
-#include "Core/Thread/Threading.h"
-#include "Core/Utilities/Encoding.h"
+#include "Runtime/Core/Serialization/MemoryReadStream.h"
+#include "Runtime/Core/Thread/Threading.h"
+#include "Runtime/Core/Encoding.h"
 #include "Runtime/Graphics/GPUDevice.h"
 #include "Runtime/Graphics/Base/GPUUtils.h"
 #include "Runtime/Render/Assets/Material/MaterialShader.h"

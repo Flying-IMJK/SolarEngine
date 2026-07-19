@@ -1,7 +1,7 @@
 #pragma once
 
 #include <any>
-#include "Core/Types/Strings/String.h"
+#include "Runtime/Core/Types/Strings/String.h"
 
 namespace SE::Editor
 {

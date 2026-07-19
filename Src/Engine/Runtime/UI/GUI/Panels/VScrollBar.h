@@ -4,6 +4,7 @@
 namespace SE
 {
 
+	SE_CLASS(Reflect)
 	class SE_API_RUNTIME VScrollBar : public ScrollBar
 	{
 		SE_DEFINE_CLASS(VScrollBar, ScrollBar)

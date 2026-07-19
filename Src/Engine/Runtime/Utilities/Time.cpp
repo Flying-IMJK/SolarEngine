@@ -1,8 +1,8 @@
 
 #include "Time.h"
 
-#include "../../Core/Math/Math.h"
-#include "../../Core/Types/DateTime.h"
+#include "Runtime/Core/Math/Math.h"
+#include "Runtime/Core/Types/DateTime.h"
 
 namespace SE
 {

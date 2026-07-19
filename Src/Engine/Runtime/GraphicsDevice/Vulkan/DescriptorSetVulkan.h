@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Core/Types/Variable.h"
-#include "Core/Types/Collections/List.h"
-#include "Core/Types/Collections/Dictionary.h"
-#include "Core/Thread/Threading.h"
+#include "Runtime/Core/Types/Variable.h"
+#include "Runtime/Core/Types/Collections/List.h"
+#include "Runtime/Core/Types/Collections/Dictionary.h"
+#include "Runtime/Core/Thread/Threading.h"
 
 #include "VulkanTypes.h"
 #include "GPUDeviceVulkan.h"

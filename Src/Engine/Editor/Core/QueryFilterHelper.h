@@ -1,6 +1,6 @@
 #pragma once
-#include "Core/Types/Property.h"
-#include "Core/Types/Strings/String.h"
+#include "Runtime/Core/Types/Property.h"
+#include "Runtime/Core/Types/Strings/String.h"
 
 namespace SE::Editor
 {

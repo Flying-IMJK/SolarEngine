@@ -3,10 +3,10 @@
 #include "SceneObjectsFactory.h"
 
 #include "Level.h"
-#include "Core/Profiler/ProfilerCPU.h"
-#include "Core/Serialization/JsonTools.h"
-#include "Core/Serialization/Serialization.h"
-#include "Core/Thread/Threading.h"
+#include "Runtime/Core/Profiler/ProfilerCPU.h"
+#include "Runtime/Core/Serialization/JsonTools.h"
+#include "Runtime/Core/Serialization/Serialization.h"
+#include "Runtime/Core/Thread/Threading.h"
 #include "Prefabs/Prefab.h"
 #include "Runtime/Resource/AssetContent.h"
 

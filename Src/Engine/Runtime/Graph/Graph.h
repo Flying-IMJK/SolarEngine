@@ -1,11 +1,11 @@
 #pragma once
 
 #include "GraphMeta.h"
-#include "Core/Logging/Logging.h"
-#include "Core/Serialization/ReadStream.h"
-#include "Core/Serialization/WriteStream.h"
-#include "Core/Types/UID.h"
-#include "Core/Types/Collections/List.h"
+#include "Runtime/Core/Logging/Logging.h"
+#include "Runtime/Core/Serialization/ReadStream.h"
+#include "Runtime/Core/Serialization/WriteStream.h"
+#include "Runtime/Core/Types/UID.h"
+#include "Runtime/Core/Types/Collections/List.h"
 #include "Runtime/Utilities/Variant.h"
 
 namespace SE

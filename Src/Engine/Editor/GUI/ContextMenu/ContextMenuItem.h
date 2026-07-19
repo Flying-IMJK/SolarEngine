@@ -5,6 +5,7 @@ namespace SE::Editor
 {
 	class ContextMenu;
 
+	SE_CLASS(Reflect)
 	class ContextMenuItem : public ContainerControl
 	{
 		SE_DEFINE_CLASS(ContextMenuItem, ContainerControl)
