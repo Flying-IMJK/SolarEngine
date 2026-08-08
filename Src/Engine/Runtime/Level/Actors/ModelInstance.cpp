@@ -5,7 +5,10 @@
 
 namespace SE
 {
-	ModelInstance::ModelInstance() = default;
+	ModelInstance::ModelInstance(const SpawnParams& params)
+		: RenderActor(params)
+	{
+	}
 
 	void ModelInstance::OnEnable()
 	{

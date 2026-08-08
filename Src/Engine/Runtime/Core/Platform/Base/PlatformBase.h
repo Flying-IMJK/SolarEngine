@@ -2,6 +2,7 @@
 
 #include "Runtime/API.h"
 #include "Runtime/Core/Platform/Types.h"
+#include "Runtime/Core/Scripting/ScriptingTypeDefine.h"
 #include "Runtime/Core/Types/Variable.h"
 
 namespace SE
@@ -78,11 +79,15 @@ namespace SE
 
 	extern SE_API_RUNTIME const Char* ToString(ThreadPriority value);
 
+	API_INJECT_CODE(cpp, "#include \"Runtime/Core/Platform/Platform.h\"");
+
 	/// <summary>
 	/// Runtime platform service.
 	/// </summary>
+    SE_CLASS(API, Static, Name = "Platform", Tag = "NativeInvokeUseName")
 	class SE_API_RUNTIME PlatformBase
 	{
+		SCRIPTING_TYPE_MIN(PlatformBase);
 	public:
 		/// <summary>
 		/// Initializes the runtime platform service. Called on very beginning pf the engine startup.
@@ -273,60 +278,62 @@ namespace SE
 		/// <summary>
 		/// Returns the current runtime platform type. It's compile-time constant.
 		/// </summary>
-
+		SE_PROPERTY(API)
 		static PlatformType GetPlatformType();
 
 		/// <summary>
 		/// Returns true if is running 64 bit application (otherwise 32 bit). It's compile-time constant.
 		/// </summary>
-
+		SE_PROPERTY(API)
 		static bool Is64BitApp();
 
 		/// <summary>
 		/// Returns true if running on 64-bit computer
 		/// </summary>
 		/// <returns>True if running on 64-bit computer, otherwise false.</returns>
-
+		SE_PROPERTY(API)
 		static bool Is64BitPlatform() = delete;
 
 		/// <summary>
 		/// Gets the CPU information.
 		/// </summary>
 		/// <returns>The CPU info.</returns>
-
+		SE_PROPERTY(API)
 		static CPUInfo GetCPUInfo() = delete;
 
 		/// <summary>
 		/// Gets the CPU cache line size.
 		/// </summary>
 		/// <returns>The cache line size.</returns>
-
+		SE_PROPERTY(API)
 		static int32 GetCacheLineSize() = delete;
 
 		/// <summary>
 		/// Gets the current memory stats.
 		/// </summary>
 		/// <returns>The memory stats.</returns>
+		SE_PROPERTY(API)
 		static MemoryStats GetMemoryStats() = delete;
 
 		/// <summary>
 		/// Gets the process current memory stats.
 		/// </summary>
 		/// <returns>The process memory stats.</returns>
+		SE_PROPERTY(API)
 		static ProcessMemoryStats GetProcessMemoryStats() = delete;
 
 		/// <summary>
 		/// Gets the current process unique identifier.
 		/// </summary>
 		/// <returns>The process id.</returns>
-
+		SE_PROPERTY(API)
 		static uint64 GetCurrentProcessId() = delete;
 
 		/// <summary>
 		/// Gets the current thread unique identifier.
 		/// </summary>
 		/// <returns>The thread id.</returns>
-
+		SE_PROPERTY(API)
 		static uint64 GetCurrentThreadID() = delete;
 
 		/// <summary>
@@ -355,21 +362,21 @@ namespace SE
 		/// Gets the current time in seconds.
 		/// </summary>
 		/// <returns>The current time.</returns>
-
+		SE_PROPERTY(API)
 		static double GetTimeSeconds() = delete;
 
 		/// <summary>
 		/// Gets the current time as CPU cycles counter.
 		/// </summary>
 		/// <returns>The CPU cycles counter value.</returns>
-
+		SE_PROPERTY(API)
 		static uint64 GetTimeCycles() = delete;
 
 		/// <summary>
 		/// Gets the system clock frequency.
 		/// </summary>
 		/// <returns>The clock frequency.</returns>
-
+		SE_PROPERTY(API)
 		static uint64 GetClockFrequency() = delete;
 
 		/// <summary>
@@ -415,46 +422,49 @@ namespace SE
 		/// <summary>
 		/// Gets the primary monitor's DPI setting.
 		/// </summary>
-
+		SE_PROPERTY(API)
 		static int32 GetDpi();
 
 		/// <summary>
 		/// Gets the primary monitor's DPI setting scale factor (1 is default). Includes custom DPI scale.
 		/// </summary>
-
+		SE_PROPERTY(API)
 		static float GetDpiScale();
 
 		/// <summary>
 		/// The custom DPI scale factor to apply globally. Can be used to adjust the User Interface scale (resolution).
 		/// </summary>
-
+		SE_PROPERTY(API)
 		static float CustomDpiScale;
 
 		/// <summary>
 		/// Gets the current screen orientation type.
 		/// </summary>
-
+		SE_PROPERTY(API)
 		static ScreenOrientationType GetScreenOrientationType();
 
 		/// <summary>
 		/// Gets the current locale culture (eg. "pl-PL" or "en-US").
 		/// </summary>
+		SE_PROPERTY(API)
 		static String GetUserLocaleName() = delete;
 
 		/// <summary>
 		/// Gets the computer machine name.
 		/// </summary>
+		SE_PROPERTY(API)
 		static String GetComputerName() = delete;
 
 		/// <summary>
 		/// Gets the user name.
 		/// </summary>
+		SE_PROPERTY(API)
 		static String GetUserName();
 
 		/// <summary>
 		/// Returns true if app has user focus.
 		/// </summary>
-
+		SE_PROPERTY(API)
 		static bool GetHasFocus() = delete;
 
 		/// <summary>
@@ -539,12 +549,14 @@ namespace SE
 		/// Gets the mouse cursor position in screen-space coordinates.
 		/// </summary>
 		/// <returns>Mouse cursor coordinates.</returns>
+		SE_FUNCTION(API)
 		static Float2 GetMousePosition();
 
 		/// <summary>
 		/// Sets the mouse cursor position in screen-space coordinates.
 		/// </summary>
 		/// <param name="position">Cursor position to set.</param>
+		SE_FUNCTION(API)
 		static void SetMousePosition(const Float2& position);
 
 		/// <summary>
@@ -552,23 +564,27 @@ namespace SE
 		/// </summary>
 		/// <param name="screenPos">The screen position (in pixels).</param>
 		/// <returns>The monitor bounds.</returns>
+		SE_FUNCTION(API)
 		static Rectangle GetMonitorBounds(const Float2& screenPos);
 
 		/// <summary>
 		/// Gets size of the primary desktop.
 		/// </summary>
 		/// <returns>Desktop size.</returns>
+		SE_FUNCTION(API)
 		static Float2 GetDesktopSize() = delete;
 
 		/// <summary>
 		/// Gets virtual bounds of the desktop made of all the monitors outputs attached.
 		/// </summary>
 		/// <returns>Whole desktop size.</returns>
+		SE_FUNCTION(API)
 		static Rectangle GetVirtualDesktopBounds();
 
 		/// <summary>
 		/// Gets virtual size of the desktop made of all the monitors outputs attached.
 		/// </summary>
+		SE_FUNCTION(API)
 		static Float2 GetVirtualDesktopSize();
 
 	public:
@@ -576,24 +592,28 @@ namespace SE
 		/// Gets full path of the main engine directory.
 		/// </summary>
 		/// <returns>Main engine directory path</returns>
+		SE_FUNCTION(API)
 		static String GetMainDirectory() = delete;
 
 		/// <summary>
 		/// Gets full path of the main engine executable file.
 		/// </summary>
 		/// <returns>The main engine executable file path.</returns>
+		SE_FUNCTION(API)
 		static String GetExecutableFilePath() = delete;
 
 		/// <summary>
 		/// Gets the (almost) unique ID of the current user device.
 		/// </summary>
 		/// <returns>ID of the current user device</returns>
+		SE_FUNCTION(API)
 		static UID GetUniqueDeviceId() = delete;
 
 		/// <summary>
 		/// Gets the current working directory of the process.
 		/// </summary>
 		/// <returns>The workspace directory path.</returns>
+		SE_FUNCTION(API)
 		static String GetWorkingDirectory() = delete;
 
 		/// <summary>

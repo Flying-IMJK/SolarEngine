@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using SE.Editor;
+using SE.GUI;
 
 namespace SE.Editor.GUI
 {
@@ -8,12 +10,12 @@ namespace SE.Editor.GUI
     {
         public const string DragPrefix = "ASSET!?";
 
-        private readonly Func<string, ContentItem?> _findItem;
+        private readonly Func<string, ContentItem?> m_FindItem;
 
         public DragItemsBase(Func<ContentItem, bool> validateFunction, Func<string, ContentItem?> findItem)
             : base(validateFunction)
         {
-            _findItem = findItem;
+            m_FindItem = findItem;
         }
 
         public DragData ToDragData(string path)
@@ -64,7 +66,7 @@ namespace SE.Editor.GUI
             string[] paths = payload.Split('\n', StringSplitOptions.RemoveEmptyEntries);
             foreach (string path in paths)
             {
-                ContentItem? item = _findItem(path);
+                ContentItem? item = m_FindItem(path);
                 if (item != null)
                     yield return item;
             }

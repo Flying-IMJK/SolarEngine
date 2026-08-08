@@ -12,7 +12,7 @@ namespace SE
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
     public struct Margin : IEquatable<Margin>, IFormattable
     {
-        private static readonly string _formatString = "Left:{0:F2} Right:{1:F2} Top:{2:F2} Bottom:{3:F2}";
+        private static readonly string s_FormatString = "Left:{0:F2} Right:{1:F2} Top:{2:F2} Bottom:{3:F2}";
 
         public static readonly int SizeInBytes = Marshal.SizeOf(typeof(Margin));
         public static readonly Margin Zero;
@@ -91,7 +91,7 @@ namespace SE
         {
             if (format == null)
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, _formatString,
+            return string.Format(CultureInfo.CurrentCulture, s_FormatString,
                 Left.ToString(format, CultureInfo.CurrentCulture),
                 Right.ToString(format, CultureInfo.CurrentCulture),
                 Top.ToString(format, CultureInfo.CurrentCulture),
@@ -100,14 +100,14 @@ namespace SE
 
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, _formatString, Left, Right, Top, Bottom);
+            return string.Format(formatProvider, s_FormatString, Left, Right, Top, Bottom);
         }
 
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
                 return ToString(formatProvider);
-            return string.Format(formatProvider, _formatString,
+            return string.Format(formatProvider, s_FormatString,
                 Left.ToString(format, formatProvider),
                 Right.ToString(format, formatProvider),
                 Top.ToString(format, formatProvider),

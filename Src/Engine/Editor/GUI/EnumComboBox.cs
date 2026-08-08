@@ -22,8 +22,8 @@ namespace SE.Editor.GUI
             public string? Tooltip { get; }
         }
 
-        private readonly List<Entry> _entries = new();
-        private long _value;
+        private readonly List<Entry> m_Entries = new();
+        private long m_Value;
 
         public EnumComboBox(Type enumType, float x = 0.0f, float y = 0.0f, float width = 120.0f)
             : base(x, y, width)
@@ -43,14 +43,14 @@ namespace SE.Editor.GUI
         public event Action<EnumComboBox>? ValueChanged;
         public Type EnumType { get; }
         public bool IsFlags { get; }
-        public IReadOnlyList<Entry> Entries => _entries;
+        public IReadOnlyList<Entry> Entries => m_Entries;
 
         public long Value
         {
-            get => _value;
+            get => m_Value;
             set
             {
-                if (_value == value && HasSelection)
+                if (m_Value == value && HasSelection)
                     return;
                 ApplyValue(value);
             }
@@ -68,19 +68,19 @@ namespace SE.Editor.GUI
             {
                 object raw = Enum.Parse(EnumType, name);
                 long value = Convert.ToInt64(raw);
-                _entries.Add(new Entry(name, value));
+                m_Entries.Add(new Entry(name, value));
                 AddItem(name);
             }
-            if (_entries.Count > 0)
-                ApplyValue(_entries[0].Value);
+            if (m_Entries.Count > 0)
+                ApplyValue(m_Entries[0].Value);
         }
 
         private void ApplyValue(long value)
         {
-            _value = value;
+            m_Value = value;
             if (!IsFlags)
             {
-                int selected = _entries.FindIndex(entry => entry.Value == value);
+                int selected = m_Entries.FindIndex(entry => entry.Value == value);
                 SelectedIndex = selected;
                 if (selected < 0)
                     ValueChanged?.Invoke(this);
@@ -88,9 +88,9 @@ namespace SE.Editor.GUI
             }
 
             var selection = new List<int>();
-            for (int index = 0; index < _entries.Count; index++)
+            for (int index = 0; index < m_Entries.Count; index++)
             {
-                long entry = _entries[index].Value;
+                long entry = m_Entries[index].Value;
                 if (entry != 0 && (entry & value) == entry)
                     selection.Add(index);
                 else if (entry == 0 && value == 0)
@@ -104,10 +104,12 @@ namespace SE.Editor.GUI
         {
             long value = 0;
             foreach (int index in Selection)
-                value |= _entries[index].Value;
-            if (_value == value)
+            {
+                value |= m_Entries[index].Value;
+            }
+            if (m_Value == value)
                 return;
-            _value = value;
+            m_Value = value;
             ValueChanged?.Invoke(this);
         }
     }

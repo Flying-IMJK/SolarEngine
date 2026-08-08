@@ -13,17 +13,17 @@ using Mathr = SE.Mathf;
 // Greetings to Alexandre Mutel. Original code published with the following license:
 // -----------------------------------------------------------------------------
 // Copyright (c) 2010-2014 SharpDX - Alexandre Mutel
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -37,17 +37,17 @@ using Mathr = SE.Mathf;
 // -----------------------------------------------------------------------------
 /*
 * Copyright (c) 2007-2011 SlimDX Group
-* 
+*
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
 * in the Software without restriction, including without limitation the rights
 * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 * copies of the Software, and to permit persons to whom the Software is
 * furnished to do so, subject to the following conditions:
-* 
+*
 * The above copyright notice and this permission notice shall be included in
 * all copies or substantial portions of the Software.
-* 
+*
 * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -74,7 +74,7 @@ namespace SE
 #endif
     public unsafe partial struct Vector2 : IEquatable<Vector2>, IFormattable
     {
-        private static readonly string _formatString = "X:{0:F2} Y:{1:F2}";
+        private static readonly string s_FormatString = "X:{0:F2} Y:{1:F2}";
 
         /// <summary>
         /// The X component.
@@ -1726,7 +1726,7 @@ namespace SE
         {
             if (format == null)
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, _formatString, X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture));
+            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture));
         }
 
         /// <summary>
@@ -1736,7 +1736,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, _formatString, X, Y);
+            return string.Format(formatProvider, s_FormatString, X, Y);
         }
 
         /// <summary>
@@ -1749,7 +1749,7 @@ namespace SE
         {
             if (format == null)
                 return ToString(formatProvider);
-            return string.Format(formatProvider, _formatString, X.ToString(format, formatProvider), Y.ToString(format, formatProvider));
+            return string.Format(formatProvider, s_FormatString, X.ToString(format, formatProvider), Y.ToString(format, formatProvider));
         }
 
         /// <summary>

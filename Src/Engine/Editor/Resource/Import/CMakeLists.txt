@@ -1,6 +1,7 @@
 
 
 EDITOR_ADD(
+    ImportFileEntry.cs
         ImportRequest.h
         ImportFileEntry.h
         ImportFileEntry.cpp

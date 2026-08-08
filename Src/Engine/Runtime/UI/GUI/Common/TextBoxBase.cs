@@ -7,7 +7,7 @@ namespace SE.GUI
     /// </summary>
     public abstract class TextBoxBase : ContainerControl
     {
-        private string _text = string.Empty;
+        private string m_Text = string.Empty;
 
         protected TextBoxBase()
         {
@@ -24,14 +24,14 @@ namespace SE.GUI
         /// </summary>
         public string Text
         {
-            get => _text;
+            get => m_Text;
             set
             {
                 value ??= string.Empty;
-                if (string.Equals(_text, value, StringComparison.Ordinal))
+                if (string.Equals(m_Text, value, StringComparison.Ordinal))
                     return;
 
-                _text = value;
+                m_Text = value;
                 OnTextChanged();
             }
         }
@@ -50,9 +50,9 @@ namespace SE.GUI
             IsEditing = false;
         }
 
-        public override bool OnMouseDown(Float2 location, int button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (button != 1)
+            if (button != MouseButton.Left)
                 return false;
 
             BeginEdit();
@@ -69,15 +69,17 @@ namespace SE.GUI
             return true;
         }
 
-        public override bool OnKeyDown(int key)
+        public override bool OnKeyDown(KeyboardKeys key)
         {
             switch (key)
             {
-            case 8: // Backspace
+            case KeyboardKeys.Backspace: // Backspace
                 if (Text.Length > 0)
+                {
                     Text = Text[..^1];
+                }
                 return true;
-            case 13: // Enter
+            case KeyboardKeys.Return: // Enter
                 if (IsMultiline)
                 {
                     Text += '\n';
@@ -86,7 +88,7 @@ namespace SE.GUI
 
                 EndEdit();
                 return true;
-            case 27: // Escape
+            case KeyboardKeys.Escape: // Escape
                 EndEdit();
                 return true;
             default:

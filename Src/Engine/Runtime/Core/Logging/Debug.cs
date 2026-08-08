@@ -9,13 +9,13 @@ namespace SE
     /// </summary>
     public static class Debug
     {
-        internal static readonly Log.Logger _logger = new Log.Logger(new Log.DebugLogHandler());
+        internal static readonly Log.Logger LoggerInstance = new Log.Logger(new Log.DebugLogHandler());
 
         /// <summary>
         /// Get default debug logger.
         /// </summary>
-        public static Log.ILogger Logger => _logger;
-        
+        public static Log.ILogger Logger => LoggerInstance;
+
 
         /// <summary>
         /// Assert a condition and logs a formatted error message to the Flax console on failure.

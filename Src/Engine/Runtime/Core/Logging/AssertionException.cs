@@ -8,7 +8,7 @@ namespace SE.Log
     /// </summary>
     public class AssertionException : Exception
     {
-        private string _userMessage;
+        private string m_UserMessage;
 
         /// <inheritdoc />
         public override string Message
@@ -16,8 +16,8 @@ namespace SE.Log
             get
             {
                 string message = base.Message;
-                if (_userMessage != null)
-                    message = string.Concat(message, '\n', _userMessage);
+                if (m_UserMessage != null)
+                    message = string.Concat(message, '\n', m_UserMessage);
                 return message;
             }
         }
@@ -47,7 +47,7 @@ namespace SE.Log
         public AssertionException(string message, string userMessage)
         : base(message)
         {
-            _userMessage = userMessage;
+            m_UserMessage = userMessage;
         }
     }
 }

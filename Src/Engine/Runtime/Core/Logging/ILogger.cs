@@ -28,7 +28,7 @@ namespace SE.Log
         /// </summary>
         Fatal = 4,
     }
-    
+
     /// <summary>
     /// Info message delegate.
     /// </summary>

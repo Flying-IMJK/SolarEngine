@@ -211,7 +211,7 @@ namespace SE
         // Prepare asset data
         AssetInitData data;
         data.SerializedVersion = 4;
-        data.CustomData.Copy(_texture.GetHeader());
+        data.CustomData.Copy(m_Texture.GetHeader());
 
         // Write sprites data
         MemoryWriteStream stream(1024);

@@ -12,7 +12,7 @@ namespace SE
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
     public struct FloatR10G10B10A2
     {
-        private uint value;
+        private uint m_RawValue;
 
         /// <summary>
         /// Initializes a new instance of the <see cref = "T:SE.FloatR10G10B10A2" /> structure.
@@ -23,7 +23,7 @@ namespace SE
         /// <param name="w">The floating point value that should be stored in A component (2 bit format).</param>
         public FloatR10G10B10A2(float x, float y, float z, float w)
         {
-            value = Pack(x, y, z, w);
+            m_RawValue = Pack(x, y, z, w);
         }
 
         /// <summary>
@@ -33,7 +33,7 @@ namespace SE
         /// <param name="w">The floating point value that should be stored in alpha component (2 bit format).</param>
         public FloatR10G10B10A2(Float3 value, float w = 0)
         {
-            this.value = Pack(value.X, value.Y, value.Z, w);
+            m_RawValue = Pack(value.X, value.Y, value.Z, w);
         }
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace SE
         /// <param name = "value">The floating point value that should be stored in 10 bit format.</param>
         public FloatR10G10B10A2(Float4 value)
         {
-            this.value = Pack(value.X, value.Y, value.Z, value.W);
+            m_RawValue = Pack(value.X, value.Y, value.Z, value.W);
         }
 
         /// <summary>
@@ -50,29 +50,29 @@ namespace SE
         /// </summary>
         public uint RawValue
         {
-            get => value;
-            set => this.value = value;
+            get => m_RawValue;
+            set => m_RawValue = value;
         }
 
         /// <summary>
         /// Gets the R component.
         /// </summary>
-        public float R => (value & 0x3FF) / 1023.0f;
+        public float R => (m_RawValue & 0x3FF) / 1023.0f;
 
         /// <summary>
         /// Gets the G component.
         /// </summary>
-        public float G => ((value >> 10) & 0x3FF) / 1023.0f;
+        public float G => ((m_RawValue >> 10) & 0x3FF) / 1023.0f;
 
         /// <summary>
         /// Gets the B component.
         /// </summary>
-        public float B => ((value >> 20) & 0x3FF) / 1023.0f;
+        public float B => ((m_RawValue >> 20) & 0x3FF) / 1023.0f;
 
         /// <summary>
         /// Gets the A component.
         /// </summary>
-        public float A => (value >> 30) / 3.0f;
+        public float A => (m_RawValue >> 30) / 3.0f;
 
         /// <summary>
         /// Performs an explicit conversion from <see cref = "T:SE.Float4" /> to <see cref = "T:SE.FloatR10G10B10A2" />.
@@ -102,7 +102,7 @@ namespace SE
         /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
         public static bool operator ==(FloatR10G10B10A2 left, FloatR10G10B10A2 right)
         {
-            return left.value == right.value;
+            return left.m_RawValue == right.m_RawValue;
         }
 
         /// <summary>
@@ -113,7 +113,7 @@ namespace SE
         /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
         public static bool operator !=(FloatR10G10B10A2 left, FloatR10G10B10A2 right)
         {
-            return left.value != right.value;
+            return left.m_RawValue != right.m_RawValue;
         }
 
         /// <summary>
@@ -131,7 +131,7 @@ namespace SE
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
-            return value.GetHashCode();
+            return m_RawValue.GetHashCode();
         }
 
         /// <summary>
@@ -142,7 +142,7 @@ namespace SE
         /// <returns><c>true</c> if <paramref name = "value1" /> is the same instance as <paramref name = "value2" /> or if both are <c>null</c> references or if <c>value1.Equals(value2)</c> returns <c>true</c>; otherwise, <c>false</c>.</returns>
         public static bool Equals(ref FloatR10G10B10A2 value1, ref FloatR10G10B10A2 value2)
         {
-            return value1.value == value2.value;
+            return value1.m_RawValue == value2.m_RawValue;
         }
 
         /// <summary>
@@ -152,7 +152,7 @@ namespace SE
         /// <returns><c>true</c> if the current instance is equal to the specified object; <c>false</c> otherwise.</returns>
         public bool Equals(FloatR10G10B10A2 other)
         {
-            return other.value == value;
+            return other.m_RawValue == m_RawValue;
         }
 
         /// <summary>
@@ -162,7 +162,7 @@ namespace SE
         /// <returns><c>true</c> if the current instance is equal to the specified object; <c>false</c> otherwise.</returns>
         public override bool Equals(object obj)
         {
-            return obj is FloatR10G10B10A2 other && value == other.value;
+            return obj is FloatR10G10B10A2 other && m_RawValue == other.m_RawValue;
         }
 
         private static uint Pack(float x, float y, float z, float w)
@@ -191,11 +191,11 @@ namespace SE
         {
             Float3 vectorOut = default;
 
-            uint tmp = value & 0x3FF;
+            uint tmp = m_RawValue & 0x3FF;
             vectorOut.X = tmp / 1023.0f;
-            tmp = (value >> 10) & 0x3FF;
+            tmp = (m_RawValue >> 10) & 0x3FF;
             vectorOut.Y = tmp / 1023.0f;
-            tmp = (value >> 20) & 0x3FF;
+            tmp = (m_RawValue >> 20) & 0x3FF;
             vectorOut.Z = tmp / 1023.0f;
 
             return vectorOut;
@@ -209,13 +209,13 @@ namespace SE
         {
             Float4 vectorOut = default;
 
-            uint tmp = value & 0x3FF;
+            uint tmp = m_RawValue & 0x3FF;
             vectorOut.X = tmp / 1023.0f;
-            tmp = (value >> 10) & 0x3FF;
+            tmp = (m_RawValue >> 10) & 0x3FF;
             vectorOut.Y = tmp / 1023.0f;
-            tmp = (value >> 20) & 0x3FF;
+            tmp = (m_RawValue >> 20) & 0x3FF;
             vectorOut.Z = tmp / 1023.0f;
-            vectorOut.W = (value >> 30) / 3.0f;
+            vectorOut.W = (m_RawValue >> 30) / 3.0f;
 
             return vectorOut;
         }

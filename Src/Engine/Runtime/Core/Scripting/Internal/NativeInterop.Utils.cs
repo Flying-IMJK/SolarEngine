@@ -28,13 +28,13 @@ namespace SE.Interop
         public static Assembly[] GetAssemblies()
         {
 // #if USE_NETCORE
-            return AssemblyLoadContext.Default.Assemblies.Concat(NativeInterop.scriptingAssemblyLoadContext.Assemblies).ToArray();
+            return AssemblyLoadContext.Default.Assemblies.Concat(NativeInterop.s_ScriptingAssemblyLoadContext.Assemblies).ToArray();
 /*#else
             return AppDomain.CurrentDomain.GetAssemblies();
 #endif*/
         }
-        
-        
+
+
         /// <summary>
         /// Gets the typename full name.
         /// </summary>
@@ -62,8 +62,8 @@ namespace SE.Interop
             }
             return type.FullName;
         }
-        
-        
+
+
         /// <summary>
         /// Gets the array of method parameter types.
         /// </summary>

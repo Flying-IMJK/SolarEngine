@@ -41,6 +41,7 @@ namespace SE
 	/// <summary>
 	/// Types of default cursors.
 	/// </summary>
+	SE_ENUM(API)
 	enum class CursorType
 	{
 		/// <summary>
@@ -114,6 +115,7 @@ namespace SE
 	/// <summary>
 	/// Data drag and drop effects.
 	/// </summary>
+	SE_ENUM(API)
 	enum class DragDropEffect
 	{
 		/// <summary>
@@ -140,6 +142,7 @@ namespace SE
 	/// <summary>
 	/// Window hit test codes. Note: they are 1:1 mapping for Win32 values.
 	/// </summary>
+	SE_ENUM(API)
 	enum class WindowHitCodes
 	{
 		/// <summary>
@@ -937,6 +940,7 @@ namespace SE
 		/// </summary>
 		/// <param name="key">Key ID to check</param>
 		/// <returns>True while the user holds down the key identified by id</returns>
+		SE_FUNCTION(API)
 		bool GetKey(KeyboardKeys key) const;
 
 		/// <summary>
@@ -944,6 +948,7 @@ namespace SE
 		/// </summary>
 		/// <param name="key">Key ID to check</param>
 		/// <returns>True during the frame the user starts pressing down the key</returns>
+		SE_FUNCTION(API)
 		bool GetKeyDown(KeyboardKeys key) const;
 
 		/// <summary>
@@ -951,6 +956,7 @@ namespace SE
 		/// </summary>
 		/// <param name="key">Key ID to check</param>
 		/// <returns>True during the frame the user releases the key</returns>
+		SE_FUNCTION(API)
 		bool GetKeyUp(KeyboardKeys key) const;
 
 	public:

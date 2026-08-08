@@ -103,11 +103,10 @@ namespace SE
 	};
 
 
-	GPUContext::GPUContext(GPUDevice* device) :
-		m_Device(device),
-		m_PrivateData(New<PrivateData>())
+	GPUContext::GPUContext(GPUDevice* device) : ScriptingObject(ScriptingObjectSpawnParams(UID::New(), TypeInitializer)),
+	                                            m_Device(device),
+	                                            m_PrivateData(New<PrivateData>())
 	{
-
 	}
 
 	bool GPUContext::LoadDefaultResources()

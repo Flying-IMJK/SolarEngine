@@ -16,12 +16,12 @@ namespace SE.Editor.GUI
 
         public void SetLimits(int min, int max)
         {
-            _min = Math.Min(min, max);
-            _max = Math.Max(min, max);
-            SetValue(_value);
+            Minimum = Math.Min(min, max);
+            Maximum = Math.Max(min, max);
+            SetValue(CurrentValue);
         }
 
-        protected override void UpdateText() => Text = _value.ToString(CultureInfo.InvariantCulture);
+        protected override void UpdateText() => Text = CurrentValue.ToString(CultureInfo.InvariantCulture);
 
         protected override void TryGetValue()
         {
@@ -31,7 +31,7 @@ namespace SE.Editor.GUI
                 UpdateText();
         }
 
-        protected override void ApplySliding(float delta) => SetValue(SaturatingAdd(_startSlideValue, delta));
+        protected override void ApplySliding(float delta) => SetValue(SaturatingAdd(StartSlideValue, delta));
 
         private static int SaturatingAdd(int value, float delta)
         {
@@ -53,12 +53,12 @@ namespace SE.Editor.GUI
 
         public void SetLimits(double min, double max)
         {
-            _min = Math.Min(min, max);
-            _max = Math.Max(min, max);
-            SetValue(_value);
+            Minimum = Math.Min(min, max);
+            Maximum = Math.Max(min, max);
+            SetValue(CurrentValue);
         }
 
-        protected override void UpdateText() => Text = _value.ToString("G", CultureInfo.InvariantCulture);
+        protected override void UpdateText() => Text = CurrentValue.ToString("G", CultureInfo.InvariantCulture);
 
         protected override void TryGetValue()
         {
@@ -68,7 +68,7 @@ namespace SE.Editor.GUI
                 UpdateText();
         }
 
-        protected override void ApplySliding(float delta) => SetValue(_startSlideValue + delta);
+        protected override void ApplySliding(float delta) => SetValue(StartSlideValue + delta);
     }
 
     /// <summary>
@@ -84,12 +84,12 @@ namespace SE.Editor.GUI
 
         public void SetLimits(long min, long max)
         {
-            _min = Math.Min(min, max);
-            _max = Math.Max(min, max);
-            SetValue(_value);
+            Minimum = Math.Min(min, max);
+            Maximum = Math.Max(min, max);
+            SetValue(CurrentValue);
         }
 
-        protected override void UpdateText() => Text = _value.ToString(CultureInfo.InvariantCulture);
+        protected override void UpdateText() => Text = CurrentValue.ToString(CultureInfo.InvariantCulture);
 
         protected override void TryGetValue()
         {
@@ -101,7 +101,7 @@ namespace SE.Editor.GUI
 
         protected override void ApplySliding(float delta)
         {
-            double result = _startSlideValue + MathF.Round(delta);
+            double result = StartSlideValue + MathF.Round(delta);
             SetValue((long)Math.Clamp(result, long.MinValue, long.MaxValue));
         }
     }
@@ -119,12 +119,12 @@ namespace SE.Editor.GUI
 
         public void SetLimits(uint min, uint max)
         {
-            _min = Math.Min(min, max);
-            _max = Math.Max(min, max);
-            SetValue(_value);
+            Minimum = Math.Min(min, max);
+            Maximum = Math.Max(min, max);
+            SetValue(CurrentValue);
         }
 
-        protected override void UpdateText() => Text = _value.ToString(CultureInfo.InvariantCulture);
+        protected override void UpdateText() => Text = CurrentValue.ToString(CultureInfo.InvariantCulture);
 
         protected override void TryGetValue()
         {
@@ -136,7 +136,7 @@ namespace SE.Editor.GUI
 
         protected override void ApplySliding(float delta)
         {
-            double result = _startSlideValue + MathF.Round(delta);
+            double result = StartSlideValue + MathF.Round(delta);
             SetValue((uint)Math.Clamp(result, uint.MinValue, uint.MaxValue));
         }
     }
@@ -154,12 +154,12 @@ namespace SE.Editor.GUI
 
         public void SetLimits(ulong min, ulong max)
         {
-            _min = Math.Min(min, max);
-            _max = Math.Max(min, max);
-            SetValue(_value);
+            Minimum = Math.Min(min, max);
+            Maximum = Math.Max(min, max);
+            SetValue(CurrentValue);
         }
 
-        protected override void UpdateText() => Text = _value.ToString(CultureInfo.InvariantCulture);
+        protected override void UpdateText() => Text = CurrentValue.ToString(CultureInfo.InvariantCulture);
 
         protected override void TryGetValue()
         {
@@ -171,7 +171,7 @@ namespace SE.Editor.GUI
 
         protected override void ApplySliding(float delta)
         {
-            double result = _startSlideValue + MathF.Round(delta);
+            double result = StartSlideValue + MathF.Round(delta);
             SetValue((ulong)Math.Clamp(result, ulong.MinValue, ulong.MaxValue));
         }
     }

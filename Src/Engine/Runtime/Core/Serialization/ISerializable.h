@@ -2,6 +2,7 @@
 
 #include "JsonFwd.h"
 #include "Runtime/API.h"
+#include <Runtime/Core/TypeSystem/TypeMacro.h>
 
 namespace SE
 {
@@ -80,8 +81,10 @@ namespace SE
 	/// <summary>
 	/// Interface for objects that can be serialized/deserialized to/from JSON format.
 	/// </summary>
+    SE_INTERFACE(API)
 	class SE_API_RUNTIME ISerializable
 	{
+        SCRIPTING_TYPE_MIN(ISerializable);
 	public:
 
 		/// <summary>

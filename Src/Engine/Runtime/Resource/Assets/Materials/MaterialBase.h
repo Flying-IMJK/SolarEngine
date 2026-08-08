@@ -12,7 +12,7 @@ namespace SE
     SE_CLASS(Reflect, API, NoSpawn, Abstract)
     class SE_API_RUNTIME MaterialBase : public BinaryAsset, public IMaterial
     {
-        SE_DEFINE_CLASS_DEFAULT(MaterialBase, BinaryAsset);
+        SE_DEFINE_CLASS(MaterialBase, BinaryAsset);
         ASSET_HEADER(MaterialBase);
     public:
         /// <summary>

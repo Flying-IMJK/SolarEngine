@@ -5,7 +5,6 @@ EDITOR_ADD(
     DragActorType.cs
     DragAssets.cs
     DragControlType.cs
-    DragData.cs
     DragEventArgs.cs
     DragHandlers.cs
     DragHelper.cs

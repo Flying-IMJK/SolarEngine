@@ -83,7 +83,7 @@ namespace SE::Editor
         // Prepare asset data
         AssetInitData data;
         data.SerializedVersion = 4;
-        data.CustomData.Copy(_cache->_texture.GetHeader());
+        data.CustomData.Copy(_cache->m_Texture.GetHeader());
 
         // Save (use silent mode to prevent asset reloading)
         bool saveResult = _cache->SaveAsset(data, true);

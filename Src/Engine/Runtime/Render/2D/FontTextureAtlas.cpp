@@ -18,9 +18,6 @@ namespace SE
     {
     }
 
-    FontTextureAtlas::FontTextureAtlas(PixelFormat format, PaddingStyle paddingStyle, int32 index)
-    {
-    }
     uint32 FontTextureAtlas::GetPaddingAmount() const
     {
         return _paddingStyle == NoPadding ? 0 : 1;
@@ -224,7 +221,7 @@ namespace SE
             // Upload data to the GPU
             BytesContainer data;
             data.Link(_data);
-            auto task = _texture->UploadMipMapAsync(data, 0);
+            auto task = m_Texture->UploadMipMapAsync(data, 0);
             if (task)
             {
                 task->Start();
@@ -237,10 +234,10 @@ namespace SE
 
     void FontTextureAtlas::EnsureTextureCreated() const
     {
-        if (_texture->IsAllocated() == false)
+        if (m_Texture->IsAllocated() == false)
         {
             // Initialize atlas texture
-            if (!_texture->Init(GPUTextureDescription::New2D(_width, _height, 1, _format, GPUTextureFlags::ShaderResource)))
+            if (!m_Texture->Init(GPUTextureDescription::New2D(_width, _height, 1, _format, GPUTextureFlags::ShaderResource)))
             {
                 LOG_WARNING("Resource", "Cannot initialize font atlas texture.");
             }

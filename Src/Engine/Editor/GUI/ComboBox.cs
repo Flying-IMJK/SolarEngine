@@ -9,11 +9,16 @@ namespace SE.Editor.GUI
     {
         public const float DefaultHeight = 18.0f;
 
-        private readonly List<string> _items = new List<string>();
-        private readonly List<string> _tooltips = new List<string>();
-        private readonly List<int> _selectedIndices = new List<int>(4);
-        private ContextMenu? _popupMenu;
-        private bool _isPressed;
+        private readonly List<string> m_Items = new List<string>();
+        private readonly List<string> m_Tooltips = new List<string>();
+        private readonly List<int> m_SelectedIndices = new List<int>(4);
+        private ContextMenu? m_PopupMenu;
+        private bool m_IsPressed;
+
+        public ComboBox()
+            : this(0.0f, 0.0f)
+        {
+        }
 
         public ComboBox(float x, float y, float width = 120.0f)
             : base(new Rectangle(x, y, width, DefaultHeight))
@@ -25,47 +30,47 @@ namespace SE.Editor.GUI
         public event Action<ComboBox>? SelectedIndexChanged;
         public event Action<ComboBox>? PopupShowing;
 
-        public IList<string> Items => _items;
-        public IList<string> Tooltips => _tooltips;
+        public IList<string> Items => m_Items;
+        public IList<string> Tooltips => m_Tooltips;
         public bool Sorted { get; set; }
         public bool SupportMultiSelect { get; set; }
         public int MaximumItemsInViewCount { get; set; }
         public Func<ComboBox, ContextMenu>? PopupCreate { get; set; }
-        public ContextMenu? Popup => _popupMenu;
-        public bool IsPopupOpened => _popupMenu?.IsOpened == true;
-        public bool HasSelection => _selectedIndices.Count != 0;
+        public ContextMenu? Popup => m_PopupMenu;
+        public bool IsPopupOpened => m_PopupMenu?.IsOpened == true;
+        public bool HasSelection => m_SelectedIndices.Count != 0;
         public string Text { get; private set; } = string.Empty;
 
         public string SelectedItem
         {
-            get => _selectedIndices.Count == 1 ? _items[_selectedIndices[0]] : string.Empty;
-            set => SelectedIndex = _items.IndexOf(value);
+            get => m_SelectedIndices.Count == 1 ? m_Items[m_SelectedIndices[0]] : string.Empty;
+            set => SelectedIndex = m_Items.IndexOf(value);
         }
 
         public int SelectedIndex
         {
-            get => _selectedIndices.Count == 1 ? _selectedIndices[0] : -1;
+            get => m_SelectedIndices.Count == 1 ? m_SelectedIndices[0] : -1;
             set
             {
-                int clamped = _items.Count == 0 ? -1 : Math.Min(Math.Max(value, -1), _items.Count - 1);
+                int clamped = m_Items.Count == 0 ? -1 : Math.Min(Math.Max(value, -1), m_Items.Count - 1);
                 if (SelectedIndex == clamped)
                     return;
 
-                _selectedIndices.Clear();
+                m_SelectedIndices.Clear();
                 if (clamped != -1)
-                    _selectedIndices.Add(clamped);
+                    m_SelectedIndices.Add(clamped);
                 OnSelectedIndexChanged();
             }
         }
 
-        public IReadOnlyList<int> Selection => _selectedIndices;
+        public IReadOnlyList<int> Selection => m_SelectedIndices;
 
         public void SetSelection(IEnumerable<int> selection)
         {
             List<int> next = new List<int>();
             foreach (int index in selection)
             {
-                if (index < 0 || index >= _items.Count)
+                if (index < 0 || index >= m_Items.Count)
                     throw new ArgumentOutOfRangeException(nameof(selection), "Selection index is outside the item range.");
                 next.Add(index);
             }
@@ -73,67 +78,67 @@ namespace SE.Editor.GUI
             if (!SupportMultiSelect && next.Count > 1)
                 throw new InvalidOperationException("ComboBox does not support multiple selected items.");
 
-            if (SequenceEqual(_selectedIndices, next))
+            if (SequenceEqual(m_SelectedIndices, next))
                 return;
 
-            _selectedIndices.Clear();
-            _selectedIndices.AddRange(next);
+            m_SelectedIndices.Clear();
+            m_SelectedIndices.AddRange(next);
             OnSelectedIndexChanged();
         }
 
         public void ClearItems()
         {
             SelectedIndex = -1;
-            _items.Clear();
+            m_Items.Clear();
             RefreshText();
         }
 
         public void AddItem(string item)
         {
-            _items.Add(item);
+            m_Items.Add(item);
             RefreshText();
         }
 
         public void AddItems(IEnumerable<string> items)
         {
-            _items.AddRange(items);
+            m_Items.AddRange(items);
             RefreshText();
         }
 
         public void SetItems(IEnumerable<string> items)
         {
             SelectedIndex = -1;
-            _items.Clear();
-            _items.AddRange(items);
+            m_Items.Clear();
+            m_Items.AddRange(items);
             RefreshText();
         }
 
         public bool IsSelected(string item)
         {
-            return IsSelected(_items.IndexOf(item));
+            return IsSelected(m_Items.IndexOf(item));
         }
 
         public bool IsSelected(int index)
         {
-            return index >= 0 && _selectedIndices.Contains(index);
+            return index >= 0 && m_SelectedIndices.Contains(index);
         }
 
-        public override bool OnMouseDown(Float2 location, int button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (button != 1)
+            if (button != MouseButton.Left)
                 return false;
 
-            _isPressed = true;
+            m_IsPressed = true;
             Root?.StartTrackingMouse(this);
             return true;
         }
 
-        public override bool OnMouseUp(Float2 location, int button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (button != 1 || !_isPressed)
+            if (button != MouseButton.Left || !m_IsPressed)
                 return false;
 
-            _isPressed = false;
+            m_IsPressed = false;
             Root?.EndTrackingMouse();
             if (location.X >= 0.0f && location.Y >= 0.0f && location.X <= Width && location.Y <= Height)
                 ShowPopup();
@@ -142,7 +147,7 @@ namespace SE.Editor.GUI
 
         public override void ClearState()
         {
-            _isPressed = false;
+            m_IsPressed = false;
             base.ClearState();
         }
 
@@ -161,27 +166,30 @@ namespace SE.Editor.GUI
 
         public void ShowPopup()
         {
-            _popupMenu ??= OnCreatePopup();
-            _popupMenu.MaximumItemsInViewCount = MaximumItemsInViewCount;
+            m_PopupMenu ??= OnCreatePopup();
+            m_PopupMenu.MaximumItemsInViewCount = MaximumItemsInViewCount;
 
-            if (_popupMenu.IsOpened)
+            if (m_PopupMenu.IsOpened)
             {
                 if (!SupportMultiSelect)
-                    _popupMenu.Hide();
+                    m_PopupMenu.Hide();
                 return;
             }
 
             PopupShowing?.Invoke(this);
-            if (_items.Count == 0)
+            if (m_Items.Count == 0)
                 return;
 
             UpdateButtons();
-            _popupMenu.MinimumWidth = Width;
-            _popupMenu.Show(this, 1.0f, Height);
+            m_PopupMenu.MinimumWidth = Width;
+            m_PopupMenu.Show(this, 1.0f, Height);
         }
 
         protected virtual void OnSelectedIndexChanged()
         {
+            TooltipText = m_Tooltips.Count == m_Items.Count && m_SelectedIndices.Count == 1
+                ? m_Tooltips[m_SelectedIndices[0]]
+                : string.Empty;
             RefreshText();
             SelectedIndexChanged?.Invoke(this);
         }
@@ -190,25 +198,25 @@ namespace SE.Editor.GUI
         {
             if (SupportMultiSelect)
             {
-                if (_selectedIndices.Contains(index))
-                    _selectedIndices.Remove(index);
+                if (m_SelectedIndices.Contains(index))
+                    m_SelectedIndices.Remove(index);
                 else
-                    _selectedIndices.Add(index);
+                    m_SelectedIndices.Add(index);
                 OnSelectedIndexChanged();
                 UpdateButtons();
             }
             else
             {
                 SelectedIndex = index;
-                _popupMenu?.Hide();
+                m_PopupMenu?.Hide();
             }
         }
 
         protected virtual void OnLayoutMenuButton(ContextMenuButton button, int index, bool construct)
         {
-            button.SetChecked(_selectedIndices.Contains(index));
-            if (_tooltips.Count > index)
-                button.Tag = _tooltips[index];
+            button.SetChecked(m_SelectedIndices.Contains(index));
+            if (m_Tooltips.Count > index)
+                button.TooltipText = m_Tooltips[index];
         }
 
         protected virtual ContextMenu OnCreatePopup()
@@ -218,17 +226,17 @@ namespace SE.Editor.GUI
 
         private void UpdateButtons()
         {
-            if (_popupMenu == null)
+            if (m_PopupMenu == null)
                 return;
 
-            _popupMenu.DisposeAllItems();
+            m_PopupMenu.DisposeAllItems();
             if (Sorted)
-                _items.Sort(StringComparer.OrdinalIgnoreCase);
+                m_Items.Sort(StringComparer.OrdinalIgnoreCase);
 
-            for (int i = 0; i < _items.Count; i++)
+            for (int i = 0; i < m_Items.Count; i++)
             {
                 int itemIndex = i;
-                ContextMenuButton button = _popupMenu.AddButton(_items[i], _ => OnItemClicked(itemIndex));
+                ContextMenuButton button = m_PopupMenu.AddButton(m_Items[i], _ => OnItemClicked(itemIndex));
                 button.Tag = itemIndex;
                 OnLayoutMenuButton(button, itemIndex, true);
             }
@@ -236,10 +244,10 @@ namespace SE.Editor.GUI
 
         private void RefreshText()
         {
-            Text = _selectedIndices.Count switch
+            Text = m_SelectedIndices.Count switch
             {
                 0 => string.Empty,
-                1 when _selectedIndices[0] >= 0 && _selectedIndices[0] < _items.Count => _items[_selectedIndices[0]],
+                1 when m_SelectedIndices[0] >= 0 && m_SelectedIndices[0] < m_Items.Count => m_Items[m_SelectedIndices[0]],
                 1 => string.Empty,
                 _ => "Multiple Values",
             };

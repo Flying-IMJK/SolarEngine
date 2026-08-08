@@ -20,8 +20,8 @@ namespace SE.Log
         /// </summary>
         public static readonly FloatComparer ComparerWithDefaultTolerance;
 
-        private readonly float _error;
-        private readonly bool _relative;
+        private readonly float m_Error;
+        private readonly bool m_Relative;
 
         static FloatComparer()
         {
@@ -67,8 +67,8 @@ namespace SE.Log
         /// <param name="error">Allowed comparison error. By default, the FloatComparer.Epsilon is used.</param>
         public FloatComparer(float error, bool relative)
         {
-            _error = error;
-            _relative = relative;
+            m_Error = error;
+            m_Relative = relative;
         }
 
         /// <summary>
@@ -104,7 +104,7 @@ namespace SE.Log
         /// <inheritdoc />
         public bool Equals(float a, float b)
         {
-            return !_relative ? AreEqual(a, b, _error) : AreEqualRelative(a, b, _error);
+            return !m_Relative ? AreEqual(a, b, m_Error) : AreEqualRelative(a, b, m_Error);
         }
 
         /// <inheritdoc />

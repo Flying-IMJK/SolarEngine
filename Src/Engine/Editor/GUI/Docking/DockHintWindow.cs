@@ -25,14 +25,14 @@ namespace SE.Editor.GUI
             return new DockHintWindow(floating);
         }
 
-        public static GuiRect CalculateDockRect(DockState state, GuiRect rect)
+        public static Rectangle CalculateDockRect(DockState state, Rectangle rect)
         {
             return state switch
             {
-                DockState.DockTop => new GuiRect(rect.X, rect.Y, rect.Width, rect.Height * DockPanel.DefaultSplitterValue),
-                DockState.DockBottom => new GuiRect(rect.X, rect.Bottom - rect.Height * DockPanel.DefaultSplitterValue, rect.Width, rect.Height * DockPanel.DefaultSplitterValue),
-                DockState.DockLeft => new GuiRect(rect.X, rect.Y, rect.Width * DockPanel.DefaultSplitterValue, rect.Height),
-                DockState.DockRight => new GuiRect(rect.Right - rect.Width * DockPanel.DefaultSplitterValue, rect.Y, rect.Width * DockPanel.DefaultSplitterValue, rect.Height),
+                DockState.DockTop => new Rectangle(rect.X, rect.Y, rect.Width, rect.Height * DockPanel.DefaultSplitterValue),
+                DockState.DockBottom => new Rectangle(rect.X, rect.Bottom - rect.Height * DockPanel.DefaultSplitterValue, rect.Width, rect.Height * DockPanel.DefaultSplitterValue),
+                DockState.DockLeft => new Rectangle(rect.X, rect.Y, rect.Width * DockPanel.DefaultSplitterValue, rect.Height),
+                DockState.DockRight => new Rectangle(rect.Right - rect.Width * DockPanel.DefaultSplitterValue, rect.Y, rect.Width * DockPanel.DefaultSplitterValue, rect.Height),
                 _ => rect,
             };
         }
@@ -61,7 +61,7 @@ namespace SE.Editor.GUI
                 IsInitialized = true;
             }
 
-            public static void Init(GuiSize initSize)
+            public static void Init(Float2 initSize)
             {
                 IsInitialized = true;
             }

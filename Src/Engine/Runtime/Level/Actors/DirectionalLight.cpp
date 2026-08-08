@@ -6,7 +6,8 @@
 
 namespace SE
 {
-    DirectionalLight::DirectionalLight()
+    DirectionalLight::DirectionalLight(const SpawnParams& params)
+        : LightWithShadow(params)
     {
         m_DrawNoCulling = 1;
         Brightness = 8.0f;

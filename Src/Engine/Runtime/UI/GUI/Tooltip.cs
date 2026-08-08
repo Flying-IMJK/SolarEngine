@@ -12,10 +12,10 @@ namespace SE.GUI
         private const float CharacterWidth = 7.0f;
         private const float LineHeight = 18.0f;
 
-        private readonly Label _textLabel;
-        private float _timeToPopupLeft;
-        private Control? _lastTarget;
-        private Control? _showTarget;
+        private readonly Label m_TextLabel;
+        private float m_TimeToPopupLeft;
+        private Control? m_LastTarget;
+        private Control? m_ShowTarget;
 
         public Tooltip()
         {
@@ -24,14 +24,14 @@ namespace SE.GUI
             IsScrollable = false;
             Visible = false;
             BackgroundColor = Style.Current.BackgroundNormal;
-            _textLabel = new Label
+            m_TextLabel = new Label
             {
                 AutoFocus = false,
                 IsScrollable = false,
                 TextWrapping = TextWrapping.WrapWords,
                 TextColor = Style.Current.Foreground,
             };
-            AddChild(_textLabel);
+            AddChild(m_TextLabel);
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace SE.GUI
         /// <summary>
         /// Gets whether the tooltip is currently attached to a root and visible.
         /// </summary>
-        public bool IsShowing => _showTarget != null && Visible;
+        public bool IsShowing => m_ShowTarget != null && Visible;
 
         /// <summary>
         /// Shows the tooltip for the supplied target using its <see cref="Control.TooltipText"/>.
@@ -63,7 +63,7 @@ namespace SE.GUI
             }
 
             RootControl root = target.Root;
-            _textLabel.Text = target.TooltipText;
+            m_TextLabel.Text = target.TooltipText;
             float availableWidth = MathF.Max(32.0f, MaxWidth);
             float rawWidth = target.TooltipText.Length * CharacterWidth + HorizontalPadding * 2.0f;
             float width = MathF.Min(availableWidth, MathF.Max(32.0f, rawWidth));
@@ -74,11 +74,11 @@ namespace SE.GUI
             float y = Math.Clamp(desiredPosition.Y, 0.0f, MathF.Max(0.0f, root.Height - height));
 
             SetBounds(x, y, width, height);
-            _textLabel.SetBounds(HorizontalPadding, VerticalPadding, width - HorizontalPadding * 2.0f, height - VerticalPadding * 2.0f);
+            m_TextLabel.SetBounds(HorizontalPadding, VerticalPadding, width - HorizontalPadding * 2.0f, height - VerticalPadding * 2.0f);
             if (!ReferenceEquals(Parent, root))
                 root.AddChild(this);
             Visible = true;
-            _showTarget = target;
+            m_ShowTarget = target;
         }
 
         /// <summary>
@@ -86,7 +86,7 @@ namespace SE.GUI
         /// </summary>
         public void Hide()
         {
-            _showTarget = null;
+            m_ShowTarget = null;
             Visible = false;
             Parent?.RemoveChild(this);
         }
@@ -97,12 +97,12 @@ namespace SE.GUI
         public void OnMouseEnterControl(Control target)
         {
             ArgumentNullException.ThrowIfNull(target);
-            if (ReferenceEquals(target, _lastTarget))
+            if (ReferenceEquals(target, m_LastTarget))
                 return;
 
             Hide();
-            _lastTarget = target;
-            _timeToPopupLeft = MathF.Max(0.0f, TimeToShow);
+            m_LastTarget = target;
+            m_TimeToPopupLeft = MathF.Max(0.0f, TimeToShow);
         }
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace SE.GUI
         public void OnMouseOverControl(Control target, float deltaTime)
         {
             ArgumentNullException.ThrowIfNull(target);
-            if (!ReferenceEquals(target, _lastTarget))
+            if (!ReferenceEquals(target, m_LastTarget))
                 OnMouseEnterControl(target);
             UpdateTooltip(deltaTime);
         }
@@ -121,11 +121,11 @@ namespace SE.GUI
         /// </summary>
         public void OnMouseLeaveControl(Control target)
         {
-            if (!ReferenceEquals(target, _lastTarget) && !ReferenceEquals(target, _showTarget))
+            if (!ReferenceEquals(target, m_LastTarget) && !ReferenceEquals(target, m_ShowTarget))
                 return;
 
-            _lastTarget = null;
-            _timeToPopupLeft = 0.0f;
+            m_LastTarget = null;
+            m_TimeToPopupLeft = 0.0f;
             Hide();
         }
 
@@ -137,21 +137,21 @@ namespace SE.GUI
 
         private void UpdateTooltip(float deltaTime)
         {
-            if (_showTarget != null)
+            if (m_ShowTarget != null)
             {
-                if (!_showTarget.IsMouseOver || !_showTarget.VisibleInHierarchy)
+                if (!m_ShowTarget.IsMouseOver || !m_ShowTarget.VisibleInHierarchy)
                     Hide();
                 return;
             }
 
-            if (_lastTarget == null || !_lastTarget.IsMouseOver || string.IsNullOrWhiteSpace(_lastTarget.TooltipText))
+            if (m_LastTarget == null || !m_LastTarget.IsMouseOver || string.IsNullOrWhiteSpace(m_LastTarget.TooltipText))
                 return;
 
-            _timeToPopupLeft -= MathF.Max(0.0f, deltaTime);
-            if (_timeToPopupLeft > 0.0f)
+            m_TimeToPopupLeft -= MathF.Max(0.0f, deltaTime);
+            if (m_TimeToPopupLeft > 0.0f)
                 return;
 
-            Show(_lastTarget, _lastTarget.PointFromRoot(_lastTarget.Root?.MousePosition ?? Float2.Zero), _lastTarget.Bounds);
+            Show(m_LastTarget, m_LastTarget.PointFromRoot(m_LastTarget.Root?.MousePosition ?? Float2.Zero), m_LastTarget.Bounds);
         }
     }
 }

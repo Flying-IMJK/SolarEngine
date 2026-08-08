@@ -17,52 +17,48 @@
 
 namespace SE
 {
-	TextureBase::TextureBase() : BinaryAsset(), _texture(this), _customData(nullptr), _parent(this)
-	{
-	}
-
 	TextureBase::TextureBase(const SpawnParams& params, const AssetInfo* info) : BinaryAsset(params, info),
-			_texture(this, FileSystem::GetFileName(info->path)), _customData(nullptr), _parent(this)
+			m_Texture(this, FileSystem::GetFileName(info->path)), m_CustomData(nullptr), m_Parent(this)
 	{
 
 	}
 
 	Float2 TextureBase::Size() const
 	{
-		return Float2(static_cast<float>(_texture.TotalWidth()), static_cast<float>(_texture.TotalHeight()));
+		return Float2(static_cast<float>(m_Texture.TotalWidth()), static_cast<float>(m_Texture.TotalHeight()));
 	}
 
 	int32 TextureBase::GetArraySize() const
 	{
-		return _texture->ArraySize();
+		return m_Texture->ArraySize();
 	}
 
 	int32 TextureBase::GetMipLevels() const
 	{
-		return _texture->MipLevels();
+		return m_Texture->MipLevels();
 	}
 
 	int32 TextureBase::GetResidentMipLevels() const
 	{
-		return _texture->ResidentMipLevels();
+		return m_Texture->ResidentMipLevels();
 	}
 
 	uint64 TextureBase::GetCurrentMemoryUsage() const
 	{
-		return _texture->GetMemoryUsage();
+		return m_Texture->GetMemoryUsage();
 	}
 
 	int32 TextureBase::GetTextureGroup() const
 	{
-		return _texture._header.TextureGroup;
+		return m_Texture._header.TextureGroup;
 	}
 
 	void TextureBase::SetTextureGroup(int32 textureGroup)
 	{
-		if (_texture._header.TextureGroup != textureGroup)
+		if (m_Texture._header.TextureGroup != textureGroup)
 		{
-			_texture._header.TextureGroup = textureGroup;
-			_texture.RequestStreamingUpdate();
+			m_Texture._header.TextureGroup = textureGroup;
+			m_Texture.RequestStreamingUpdate();
 		}
 	}
 
@@ -72,15 +68,15 @@ namespace SE
 		BytesContainer result;
 		if (IsVirtual())
 		{
-			if (_customData == nullptr)
+			if (m_CustomData == nullptr)
 			{
 				LOG_ERROR("Render", "Missing virtual texture init data.");
 				return result;
 			}
 
 			// Get description
-			rowPitch = _customData->Mips[mipIndex].RowPitch;
-			slicePitch = _customData->Mips[mipIndex].SlicePitch;
+			rowPitch = m_CustomData->Mips[mipIndex].RowPitch;
+			slicePitch = m_CustomData->Mips[mipIndex].SlicePitch;
 		}
 		else
 		{
@@ -116,17 +112,17 @@ namespace SE
 		auto dataLock = LockData();
 
 		// Setup description
-		result.Width = _texture.TotalWidth();
-		result.Height = _texture.TotalHeight();
+		result.Width = m_Texture.TotalWidth();
+		result.Height = m_Texture.TotalHeight();
 		result.Depth = 1;
-		result.Format = _texture.GetHeader()->Format;
-		result.Items.Resize(_texture.TotalArraySize());
+		result.Format = m_Texture.GetHeader()->Format;
+		result.Items.Resize(m_Texture.TotalArraySize());
 
 		// Setup mips data
 		for (int32 arraySlice = 0; arraySlice < result.Items.Count(); arraySlice++)
 		{
 			auto& slice = result.Items[arraySlice];
-			slice.Mips.Resize(_texture.TotalMipLevels());
+			slice.Mips.Resize(m_Texture.TotalMipLevels());
 			for (int32 mipIndex = 0; mipIndex < slice.Mips.Count(); mipIndex++)
 			{
 				auto& mip = slice.Mips[mipIndex];
@@ -137,7 +133,7 @@ namespace SE
 					LOG_ERROR("Render", "Failed to get texture mip data.");
 					return true;
 				}
-				if (mipData.Length() != slicePitch * _texture.TotalArraySize())
+				if (mipData.Length() != slicePitch * m_Texture.TotalArraySize())
 				{
 					LOG_ERROR("Render", "Invalid custom texture data (slice pitch * array size is different than data bytes count).");
 					return true;
@@ -236,7 +232,7 @@ namespace SE
 			return false;
 		}
 		Threading::ScopeLock lock(Locker);
-		if (_customData == nullptr || Width() == 0)
+		if (m_CustomData == nullptr || Width() == 0)
 		{
 			LOG_ERROR("Render", "Texture must be initialized.");
 			return false;
@@ -244,7 +240,7 @@ namespace SE
 		const PixelFormat format = Format();
 		const int32 width = Math::Max(1, Width() >> mipIndex);
 		const int32 height = Math::Max(1, Height() >> mipIndex);
-		auto& mipData = _customData->Mips[mipIndex];
+		auto& mipData = m_CustomData->Mips[mipIndex];
 		const int32 rowPitch = mipData.RowPitch;
 		const int32 sliceSize = mipData.SlicePitch;
 		if (pixels.Length() != width * height)
@@ -297,14 +293,14 @@ namespace SE
 		}
 
 		// Generate mips optionally
-		if (generateMips && mipIndex + 1 < _customData->Mips.Count())
+		if (generateMips && mipIndex + 1 < m_CustomData->Mips.Count())
 		{
-			for (int32 i = mipIndex + 1; i < _customData->Mips.Count(); i++)
-				_customData->GenerateMip(i);
+			for (int32 i = mipIndex + 1; i < m_CustomData->Mips.Count(); i++)
+				m_CustomData->GenerateMip(i);
 		}
 
 		// Request texture data streaming to GPU
-		_texture->SetResidentMipLevels(0);
+		m_Texture->SetResidentMipLevels(0);
 		//	_texture.RequestStreamingUpdate();
 
 		return true;
@@ -319,7 +315,7 @@ namespace SE
 			return false;
 		}
 		Threading::ScopeLock lock(Locker);
-		if (_customData == nullptr || Width() == 0)
+		if (m_CustomData == nullptr || Width() == 0)
 		{
 			LOG_ERROR("Render", "Texture must be initialized.");
 			return false;
@@ -327,7 +323,7 @@ namespace SE
 		const PixelFormat format = Format();
 		const int32 width = Math::Max(1, Width() >> mipIndex);
 		const int32 height = Math::Max(1, Height() >> mipIndex);
-		auto& mipData = _customData->Mips[mipIndex];
+		auto& mipData = m_CustomData->Mips[mipIndex];
 		const int32 rowPitch = mipData.RowPitch;
 		const int32 sliceSize = mipData.SlicePitch;
 		if (pixels.Length() != width * height)
@@ -374,14 +370,14 @@ namespace SE
 		}
 
 		// Generate mips optionally
-		if (generateMips && mipIndex + 1 < _customData->Mips.Count())
+		if (generateMips && mipIndex + 1 < m_CustomData->Mips.Count())
 		{
-			for (int32 i = mipIndex + 1; i < _customData->Mips.Count(); i++)
-				_customData->GenerateMip(i);
+			for (int32 i = mipIndex + 1; i < m_CustomData->Mips.Count(); i++)
+				m_CustomData->GenerateMip(i);
 		}
 
 		// Request texture data streaming to GPU
-		_texture->SetResidentMipLevels(0);
+		m_Texture->SetResidentMipLevels(0);
 		//	_texture.RequestStreamingUpdate();
 
 		return true;
@@ -410,23 +406,23 @@ namespace SE
 		Threading::ScopeLock lock(Locker);
 
 		// Release texture
-		_texture.UnloadTexture();
+		m_Texture.UnloadTexture();
 
 		// Prepare descriptor
-		if (_customData != nullptr)
-			Delete(_customData);
-		_customData = initData;
+		if (m_CustomData != nullptr)
+			Delete(m_CustomData);
+		m_CustomData = initData;
 
 		// Create texture
 		TextureHeader textureHeader;
-		textureHeader.Format = _customData->Format;
-		textureHeader.Width = _customData->Width;
-		textureHeader.Height = _customData->Height;
-		textureHeader.IsCubeMap = _customData->ArraySize == 6;
-		textureHeader.MipLevels = Math::Max(1, _customData->Mips.Count());
+		textureHeader.Format = m_CustomData->Format;
+		textureHeader.Width = m_CustomData->Width;
+		textureHeader.Height = m_CustomData->Height;
+		textureHeader.IsCubeMap = m_CustomData->ArraySize == 6;
+		textureHeader.MipLevels = Math::Max(1, m_CustomData->Mips.Count());
 		textureHeader.Type = TextureFormatType::ColorRGBA;
 		textureHeader.NeverStream = true;
-		if (!_texture.Create(textureHeader))
+		if (!m_Texture.Create(textureHeader))
 		{
 			LOG_WARNING("Renderer", "Cannot initialize texture.");
 			return false;
@@ -486,10 +482,10 @@ namespace SE
 		Locker.Lock();
 		uint64 result = BinaryAsset::GetMemoryUsage();
 		result += sizeof(TextureBase) - sizeof(BinaryAsset);
-		if (_customData)
+		if (m_CustomData)
 		{
 			result += sizeof(TextureInitData);
-			for (auto& mip : _customData->Mips)
+			for (auto& mip : m_CustomData->Mips)
 				result += mip.Data.Length();
 		}
 		Locker.Unlock();
@@ -499,7 +495,7 @@ namespace SE
 	void TextureBase::CancelStreaming()
 	{
 		Asset::CancelStreaming();
-		_texture.CancelStreamingTasks();
+		m_Texture.CancelStreamingTasks();
 	}
 
 	int32 TextureBase::CalculateChunkIndex(int32 mipIndex) const
@@ -510,7 +506,7 @@ namespace SE
 
 	CriticalSection& TextureBase::GetOwnerLocker() const
 	{
-		return _parent->Locker;
+		return m_Parent->Locker;
 	}
 
 	void TextureBase::Unload(bool isReloading)
@@ -518,57 +514,57 @@ namespace SE
 		if (!isReloading)
 		{
 			// Release texture
-			_texture->ReleaseGPU();
-			Delete(_customData);
+			m_Texture->ReleaseGPU();
+			Delete(m_CustomData);
 		}
 	}
 
 	Threading::Task* TextureBase::RequestMipDataAsync(int32 mipIndex)
 	{
-		if (_customData)
+		if (m_CustomData)
 			return nullptr;
 
 		auto chunkIndex = CalculateChunkIndex(mipIndex);
-		return (Threading::Task*)_parent->RequestChunkDataAsync(chunkIndex);
+		return (Threading::Task*)m_Parent->RequestChunkDataAsync(chunkIndex);
 	}
 
 	Storage::LockData TextureBase::LockData()
 	{
-		return _parent->storage ? _parent->storage->Lock() : Storage::LockData::Invalid;
+		return m_Parent->storage ? m_Parent->storage->Lock() : Storage::LockData::Invalid;
 	}
 
 	void TextureBase::GetMipData(int32 mipIndex, BytesContainer& data) const
 	{
-		if (_customData)
+		if (m_CustomData)
 		{
-			data.Link(_customData->Mips[mipIndex].Data);
+			data.Link(m_CustomData->Mips[mipIndex].Data);
 			return;
 		}
 
 		auto chunkIndex = CalculateChunkIndex(mipIndex);
-		_parent->GetChunkData(chunkIndex, data);
+		m_Parent->GetChunkData(chunkIndex, data);
 	}
 
 	void TextureBase::GetMipDataWithLoading(int32 mipIndex, BytesContainer& data) const
 	{
-		if (_customData)
+		if (m_CustomData)
 		{
-			data.Link(_customData->Mips[mipIndex].Data);
+			data.Link(m_CustomData->Mips[mipIndex].Data);
 			return;
 		}
 
 		const auto chunkIndex = CalculateChunkIndex(mipIndex);
-		_parent->LoadChunk(chunkIndex);
-		_parent->GetChunkData(chunkIndex, data);
+		m_Parent->LoadChunk(chunkIndex);
+		m_Parent->GetChunkData(chunkIndex, data);
 	}
 
 	bool TextureBase::GetMipDataCustomPitch(int32 mipIndex, uint32& rowPitch, uint32& slicePitch) const
 	{
-		bool result = _customData != nullptr;
+		bool result = m_CustomData != nullptr;
 		if (result)
 		{
-			rowPitch = _customData->Mips[mipIndex].RowPitch;
-			slicePitch = _customData->Mips[mipIndex].SlicePitch;
+			rowPitch = m_CustomData->Mips[mipIndex].RowPitch;
+			slicePitch = m_CustomData->Mips[mipIndex].SlicePitch;
 		}
 
 		return
@@ -598,7 +594,7 @@ namespace SE
 			return false;
 		}
 
-		return _texture.Create(textureHeader);
+		return m_Texture.Create(textureHeader);
 	}
 
 	Asset::LoadResult TextureBase::load()

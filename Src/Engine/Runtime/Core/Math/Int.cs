@@ -16,7 +16,7 @@ namespace SE
 #endif
     public partial struct Int2 : IEquatable<Int2>, IFormattable
     {
-        private static readonly string _formatString = "X:{0} Y:{1}";
+        private static readonly string s_FormatString = "X:{0} Y:{1}";
 
         /// <summary>
         /// The size of the <see cref="Int2" /> type, in bytes.
@@ -892,7 +892,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, _formatString, X, Y);
+            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X, Y);
         }
 
         /// <summary>
@@ -904,7 +904,7 @@ namespace SE
         {
             if (format == null)
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, _formatString, X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture));
+            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture));
         }
 
         /// <summary>
@@ -914,7 +914,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, _formatString, X, Y);
+            return string.Format(formatProvider, s_FormatString, X, Y);
         }
 
         /// <summary>
@@ -927,7 +927,7 @@ namespace SE
         {
             if (format == null)
                 return ToString(formatProvider);
-            return string.Format(formatProvider, _formatString, X.ToString(format, formatProvider), Y.ToString(format, formatProvider));
+            return string.Format(formatProvider, s_FormatString, X.ToString(format, formatProvider), Y.ToString(format, formatProvider));
         }
 
         /// <summary>
@@ -982,7 +982,7 @@ namespace SE
             return value is Int2 other && Equals(ref other);
         }
     }
-    
+
         /// <summary>
     /// Represents a three dimensional mathematical vector (signed integers).
     /// </summary>
@@ -992,7 +992,7 @@ namespace SE
 #endif
     public partial struct Int3 : IEquatable<Int3>, IFormattable
     {
-        private static readonly string _formatString = "X:{0} Y:{1} Z:{2}";
+        private static readonly string s_FormatString = "X:{0} Y:{1} Z:{2}";
 
         /// <summary>
         /// The size of the <see cref="Int3" /> type, in bytes.
@@ -1948,7 +1948,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, _formatString, X, Y, Z);
+            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X, Y, Z);
         }
 
         /// <summary>
@@ -1960,7 +1960,7 @@ namespace SE
         {
             if (format == null)
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, _formatString, X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture), Z.ToString(format, CultureInfo.CurrentCulture));
+            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture), Z.ToString(format, CultureInfo.CurrentCulture));
         }
 
         /// <summary>
@@ -1970,7 +1970,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, _formatString, X, Y, Z);
+            return string.Format(formatProvider, s_FormatString, X, Y, Z);
         }
 
         /// <summary>
@@ -1983,7 +1983,7 @@ namespace SE
         {
             if (format == null)
                 return ToString(formatProvider);
-            return string.Format(formatProvider, _formatString, X.ToString(format, formatProvider), Y.ToString(format, formatProvider), Z.ToString(format, formatProvider));
+            return string.Format(formatProvider, s_FormatString, X.ToString(format, formatProvider), Y.ToString(format, formatProvider), Z.ToString(format, formatProvider));
         }
 
         /// <summary>
@@ -2033,7 +2033,7 @@ namespace SE
             return value is Int3 other && Equals(ref other);
         }
     }
-        
+
             /// <summary>
     /// Represents a four dimensional mathematical vector (signed integers).
     /// </summary>
@@ -2043,7 +2043,7 @@ namespace SE
 #endif
     public partial struct Int4 : IEquatable<Int4>, IFormattable
     {
-        private static readonly string _formatString = "X:{0} Y:{1} Z:{2} W:{3}";
+        private static readonly string s_FormatString = "X:{0} Y:{1} Z:{2} W:{3}";
 
         /// <summary>
         /// The size of the <see cref="Int4" /> type, in bytes.
@@ -2856,7 +2856,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, _formatString, X, Y, Z, W);
+            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X, Y, Z, W);
         }
 
         /// <summary>
@@ -2868,7 +2868,7 @@ namespace SE
         {
             if (format == null)
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, _formatString, X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture), Z.ToString(format, CultureInfo.CurrentCulture), W.ToString(format, CultureInfo.CurrentCulture));
+            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture), Z.ToString(format, CultureInfo.CurrentCulture), W.ToString(format, CultureInfo.CurrentCulture));
         }
 
         /// <summary>
@@ -2878,7 +2878,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, _formatString, X, Y, Z, W);
+            return string.Format(formatProvider, s_FormatString, X, Y, Z, W);
         }
 
         /// <summary>

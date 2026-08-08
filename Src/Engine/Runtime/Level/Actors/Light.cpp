@@ -7,7 +7,8 @@
 
 namespace SE
 {
-	Light::Light()
+	Light::Light(const SpawnParams& params)
+		: RenderActor(params)
 	{
 		m_DrawCategory = SceneRendering::PreRender;
 	}
@@ -113,7 +114,8 @@ namespace SE
 		DESERIALIZE(ContactShadowsLength);
 	}
 
-	LightWithShadow::LightWithShadow()
+	LightWithShadow::LightWithShadow(const SpawnParams& params)
+		: Light(params)
 	{
 	}
 } // SE

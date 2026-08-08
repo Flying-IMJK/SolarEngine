@@ -9,7 +9,7 @@ namespace SE.Editor.GUI
     /// </summary>
     public sealed class ColorValueBox : TextBox
     {
-        private Color _value;
+        private Color m_Value;
 
         public ColorValueBox(Color value, float x = 0.0f, float y = 0.0f, float width = 120.0f)
             : base(new Rectangle(x, y, width, 18.0f))
@@ -21,12 +21,12 @@ namespace SE.Editor.GUI
 
         public Color Value
         {
-            get => _value;
+            get => m_Value;
             set
             {
-                if (_value == value)
+                if (m_Value == value)
                     return;
-                _value = value;
+                m_Value = value;
                 BackgroundColor = value;
                 Text = Format(value);
                 ValueChanged?.Invoke(this);
@@ -39,7 +39,7 @@ namespace SE.Editor.GUI
             if (TryParse(Text, out Color color))
                 Value = color;
             else
-                Text = Format(_value);
+                Text = Format(m_Value);
         }
 
         private static string Format(Color color)

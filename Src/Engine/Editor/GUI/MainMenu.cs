@@ -1,4 +1,5 @@
 // Managed editor GUI feature implementation.
+using System;
 using System.Collections.Generic;
 using SE.GUI;
 
@@ -8,8 +9,8 @@ namespace SE.Editor.GUI
     {
         public const float DefaultHeight = 28.0f;
 
-        private readonly List<MainMenuButton> _buttons = new List<MainMenuButton>();
-        private MainMenuButton? _selected;
+        private readonly List<MainMenuButton> m_Buttons = new List<MainMenuButton>();
+        private MainMenuButton? m_Selected;
 
         public MainMenu(float width)
             : base(new Rectangle(0, 0, width, DefaultHeight))
@@ -17,29 +18,40 @@ namespace SE.Editor.GUI
             SetBounds(0, 0, width, DefaultHeight);
         }
 
-        public IReadOnlyList<MainMenuButton> Buttons => _buttons;
+        public IReadOnlyList<MainMenuButton> Buttons => m_Buttons;
 
         public MainMenuButton? Selected
         {
-            get => _selected;
+            get => m_Selected;
             set
             {
-                if (ReferenceEquals(_selected, value))
+                if (ReferenceEquals(m_Selected, value))
                     return;
 
-                _selected?.ContextMenu.Hide();
-                _selected = value;
-                if (_selected != null && _selected.ContextMenu.HasItems)
+                if (m_Selected != null)
                 {
-                    _selected.ContextMenu.Show(_selected, 0, _selected.Height);
+                    m_Selected.ContextMenu.VisibleChanged -= OnSelectedContextMenuVisibleChanged;
+                    m_Selected.ContextMenu.Hide();
+                }
+                m_Selected = value;
+                if (m_Selected != null && m_Selected.ContextMenu.HasItems)
+                {
+                    m_Selected.ContextMenu.Show(m_Selected, 0, m_Selected.Height);
+                    m_Selected.ContextMenu.VisibleChanged += OnSelectedContextMenuVisibleChanged;
                 }
             }
+        }
+
+        private void OnSelectedContextMenuVisibleChanged(ContextMenu contextMenu)
+        {
+            if (!contextMenu.IsOpened && ReferenceEquals(m_Selected?.ContextMenu, contextMenu))
+                Selected = null;
         }
 
         public MainMenuButton AddButton(string text)
         {
             MainMenuButton button = new MainMenuButton(text);
-            _buttons.Add(button);
+            m_Buttons.Add(button);
             AddChild(button);
             PerformLayout();
             return button;
@@ -47,9 +59,9 @@ namespace SE.Editor.GUI
 
         public MainMenuButton? GetButton(string text)
         {
-            foreach (MainMenuButton button in _buttons)
+            foreach (MainMenuButton button in m_Buttons)
             {
-                if (button.Text == text)
+                if (string.Equals(button.Text, text, StringComparison.OrdinalIgnoreCase))
                     return button;
             }
 
@@ -59,7 +71,7 @@ namespace SE.Editor.GUI
         protected override void OnLayoutChildren()
         {
             float x = 0;
-            foreach (MainMenuButton button in _buttons)
+            foreach (MainMenuButton button in m_Buttons)
             {
                 if (!button.Visible)
                     continue;
@@ -88,11 +100,8 @@ namespace SE.Editor.GUI
             return 18.0f + Text.Length * 7.0f;
         }
 
-        public override bool OnMouseDown(Float2 location, int button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (button != 1)
-                return false;
-
             if (Parent is MainMenu mainMenu)
                 mainMenu.Selected = this;
             return true;

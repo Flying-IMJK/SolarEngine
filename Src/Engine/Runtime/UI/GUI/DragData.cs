@@ -43,17 +43,17 @@ namespace SE.GUI
     /// </summary>
     public sealed class DragDataFiles : DragData
     {
-        private readonly string[] _files;
+        private readonly string[] m_Files;
 
         public DragDataFiles(IEnumerable<string> files)
         {
             ArgumentNullException.ThrowIfNull(files);
 
-            _files = files is string[] array ? (string[])array.Clone() : new List<string>(files).ToArray();
+            m_Files = files is string[] array ? (string[])array.Clone() : new List<string>(files).ToArray();
         }
 
         public override DragDataType DataType => DragDataType.Files;
 
-        public IReadOnlyList<string> Files => _files;
+        public IReadOnlyList<string> Files => m_Files;
     }
 }

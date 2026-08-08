@@ -31,7 +31,7 @@ namespace SE
         friend Mesh;
         friend StreamModelLODTask;
 
-        SE_DEFINE_CLASS_DEFAULT(Model, ModelBase);
+        SE_DEFINE_CLASS(Model, ModelBase);
         ASSET_HEADER(Model);
 
     private:

@@ -78,15 +78,6 @@ namespace SE
         List<FontTextureAtlasSlot*> _freeSlots;
 
     public:
-        /// <summary>
-        /// Initializes a new instance of the <see cref="FontTextureAtlas"/> class.
-        /// </summary>
-        /// <param name="format">The texture pixels format.</param>
-        /// <param name="paddingStyle">The texture entries padding style.</param>
-        /// <param name="index">The atlas index.</param>
-        FontTextureAtlas(PixelFormat format, PaddingStyle paddingStyle, int32 index);
-
-    public:
 
         /// <summary>
         /// Gets the atlas width.

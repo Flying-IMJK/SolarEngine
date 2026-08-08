@@ -15,7 +15,7 @@ RUNTIME_ADD(
         MessageBox.h
 
         Window.h
-        Window.GUI.cs
+        Window.cs
         CreateProcessSettings.h
         CreateWindowSettings.h
 

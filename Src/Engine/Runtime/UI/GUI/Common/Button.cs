@@ -7,7 +7,7 @@ namespace SE.GUI
     /// </summary>
     public class Button : ContainerControl
     {
-        private bool _isPressed;
+        private bool m_IsPressed;
 
         public Button()
             : this(Rectangle.Empty, string.Empty)
@@ -33,24 +33,24 @@ namespace SE.GUI
         public TextAlignment HorizontalAlignment { get; set; } = TextAlignment.Center;
         public TextAlignment VerticalAlignment { get; set; } = TextAlignment.Center;
         public TextWrapping TextWrapping { get; set; } = TextWrapping.NoWrap;
-        public bool IsPressed => _isPressed;
+        public bool IsPressed => m_IsPressed;
 
-        public override bool OnMouseDown(Float2 location, int button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (button != 1)
+            if (button != MouseButton.Left)
                 return false;
 
-            _isPressed = true;
+            m_IsPressed = true;
             Root?.StartTrackingMouse(this);
             return true;
         }
 
-        public override bool OnMouseUp(Float2 location, int button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (button != 1 || !_isPressed)
+            if (button != MouseButton.Left || !m_IsPressed)
                 return false;
 
-            _isPressed = false;
+            m_IsPressed = false;
             Root?.EndTrackingMouse();
             if (location.X >= 0.0f && location.Y >= 0.0f && location.X <= Width && location.Y <= Height)
                 Clicked?.Invoke(this);
@@ -59,13 +59,13 @@ namespace SE.GUI
 
         public override void ClearState()
         {
-            _isPressed = false;
+            m_IsPressed = false;
             base.ClearState();
         }
 
         protected override void OnDraw()
         {
-            Color background = _isPressed
+            Color background = m_IsPressed
                 ? BackgroundColorPressed
                 : IsMouseOver ? BackgroundColorHighlighted : BackgroundColor;
             if (!EnabledInHierarchy)

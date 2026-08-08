@@ -22,6 +22,21 @@ namespace SE.GUI
         /// </summary>
         public bool IsInitialized { get; private set; }
 
+        public override bool GetKey(KeyboardKeys key)
+        {
+            return Window.GetKey(key);
+        }
+
+        public override bool GetKeyDown(KeyboardKeys key)
+        {
+            return Window.GetKeyDown(key);
+        }
+
+        public override bool GetKeyUp(KeyboardKeys key)
+        {
+            return Window.GetKeyUp(key);
+        }
+
         internal void Initialize(Float2 logicalSize, float dpiScale)
         {
             if (IsDisposed)

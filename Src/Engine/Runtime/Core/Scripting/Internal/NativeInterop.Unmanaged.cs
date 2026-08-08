@@ -1,5 +1,4 @@
 ﻿
-
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,7 +17,7 @@ namespace SE.Interop
         internal IntPtr nativePointer;
         internal IntPtr name;
         internal IntPtr fullname;
-        internal IntPtr @namespace;
+        internal IntPtr Namespace;
         internal uint typeAttributes;
     }
 
@@ -99,22 +98,22 @@ namespace SE.Interop
     [StructLayout(LayoutKind.Sequential)]
     internal struct NativeVersion
     {
-        internal int _Major;
-        internal int _Minor;
-        internal int _Build;
-        internal int _Revision;
+        internal int Major;
+        internal int Minor;
+        internal int Build;
+        internal int Revision;
 
         internal NativeVersion(Version ver)
         {
-            _Major = ver.Major;
-            _Minor = ver.Minor;
-            _Build = ver.Build;
-            _Revision = ver.Revision;
+            Major = ver.Major;
+            Minor = ver.Minor;
+            Build = ver.Build;
+            Revision = ver.Revision;
         }
 
         internal Version GetVersion()
         {
-            return new Version(_Major, _Minor, _Build, _Revision);
+            return new Version(Major, Minor, Build, Revision);
         }
     }
 
@@ -171,7 +170,7 @@ namespace SE.Interop
         {
             string moduleName = Marshal.PtrToStringAnsi(moduleNamePtr);
             string modulePath = Marshal.PtrToStringUni(modulePathPtr);
-            libraryPaths[moduleName] = modulePath;
+            s_LibraryPaths[moduleName] = modulePath;
         }
 
         [UnmanagedCallersOnly]
@@ -227,7 +226,7 @@ namespace SE.Interop
                 typeHandle = RegisterType(type).handle,
                 name = NativeAllocStringAnsi(type.Name),
                 fullname = NativeAllocStringAnsi(type.GetTypeName()),
-                @namespace = NativeAllocStringAnsi(type.Namespace ?? ""),
+                Namespace = NativeAllocStringAnsi(type.Namespace ?? ""),
                 typeAttributes = (uint)type.Attributes,
             };
         }
@@ -241,7 +240,7 @@ namespace SE.Interop
                 typeHandle = typeHandle,
                 name = NativeAllocStringAnsi(type.Name),
                 fullname = NativeAllocStringAnsi(type.GetTypeName()),
-                @namespace = NativeAllocStringAnsi(type.Namespace ?? ""),
+                Namespace = NativeAllocStringAnsi(type.Namespace ?? ""),
                 typeAttributes = (uint)type.Attributes,
             };
         }
@@ -344,11 +343,11 @@ namespace SE.Interop
                 ManagedHandle fieldHandle = ManagedHandle.Alloc(fieldHolder);
 #if SE_EDITOR
                 if (type.IsCollectible)
-                    fieldHandleCacheCollectible.Add(fieldHandle);
+                    s_FieldHandleCacheCollectible.Add(fieldHandle);
                 else
 #endif
                 {
-                    fieldHandleCache.Add(fieldHandle);
+                    s_FieldHandleCache.Add(fieldHandle);
                 }
 
                 NativeFieldDefinitions classField = new NativeFieldDefinitions()
@@ -417,10 +416,10 @@ namespace SE.Interop
             ManagedHandle* arr = (ManagedHandle*)NativeAlloc(attributeValues.Length, Unsafe.SizeOf<ManagedHandle>());
             for (int i = 0; i < attributeValues.Length; i++)
             {
-                if (!classAttributesCacheCollectible.TryGetValue(attributeValues[i], out ManagedHandle attributeHandle))
+                if (!s_ClassAttributesCacheCollectible.TryGetValue(attributeValues[i], out ManagedHandle attributeHandle))
                 {
                     attributeHandle = ManagedHandle.Alloc(attributeValues[i]);
-                    classAttributesCacheCollectible.Add(attributeValues[i], attributeHandle);
+                    s_ClassAttributesCacheCollectible.Add(attributeValues[i], attributeHandle);
                 }
 
                 arr[i] = attributeHandle;
@@ -450,10 +449,10 @@ namespace SE.Interop
 
             if (attrib != null)
             {
-                if (!classAttributesCacheCollectible.TryGetValue(attrib, out var handle))
+                if (!s_ClassAttributesCacheCollectible.TryGetValue(attrib, out var handle))
                 {
                     handle = ManagedHandle.Alloc(attrib);
-                    classAttributesCacheCollectible.Add(attrib, handle);
+                    s_ClassAttributesCacheCollectible.Add(attrib, handle);
                 }
 
                 return handle;
@@ -861,11 +860,11 @@ namespace SE.Interop
             // Keep a reference to the delegate to prevent it from being garbage collected
 #if SE_EDITOR
             if (methodHolder.method.IsCollectible)
-                cachedDelegatesCollectible[functionPtr] = methodDelegate;
+                s_CachedDelegatesCollectible[functionPtr] = methodDelegate;
             else
 #endif
             {
-                cachedDelegates[functionPtr] = methodDelegate;
+                s_CachedDelegates[functionPtr] = methodDelegate;
             }
             return functionPtr;
 #endif
@@ -958,10 +957,10 @@ namespace SE.Interop
         [UnmanagedCallersOnly]
         internal static ManagedHandle LoadAssemblyImage(IntPtr assemblyPathPtr)
         {
-            if (!firstAssemblyLoaded)
+            if (!s_FirstAssemblyLoaded)
             {
                 // This assembly was already loaded when initializing the host context
-                firstAssemblyLoaded = true;
+                s_FirstAssemblyLoaded = true;
 
                 Assembly runtimeAssembly = AssemblyLoadContext.Default.Assemblies.First(x => x.GetName().Name == "SERuntimeCSharp");
                 return GetAssemblyHandle(runtimeAssembly);
@@ -982,15 +981,15 @@ namespace SE.Interop
                     // Load including debug symbols
                     using FileStream pdbStream =
                     new FileStream(Path.ChangeExtension(assemblyPath, "pdb"), FileMode.Open);
-                    assembly = scriptingAssemblyLoadContext.LoadFromStream(stream, pdbStream);
+                    assembly = s_ScriptingAssemblyLoadContext.LoadFromStream(stream, pdbStream);
                 }
                 else
                 {
-                    assembly = scriptingAssemblyLoadContext.LoadFromStream(stream);
+                    assembly = s_ScriptingAssemblyLoadContext.LoadFromStream(stream);
                 }
 #else
                 // Load assembly from file
-                assembly = scriptingAssemblyLoadContext.LoadFromAssemblyPath(assemblyPath);
+                assembly = s_ScriptingAssemblyLoadContext.LoadFromAssemblyPath(assemblyPath);
 #endif
                 if (assembly == null)
                 {
@@ -1032,21 +1031,21 @@ namespace SE.Interop
         {
             Assembly assembly = Unsafe.As<Assembly>(assemblyHandle.Target);
             assemblyHandle.Free();
-            assemblyHandles.Remove(assembly);
+            s_AssemblyHandles.Remove(assembly);
 
             AssemblyLocations.Remove(assembly.FullName);
 
             // Unload native library handles associated for this assembly
-            string nativeLibraryName = assemblyOwnedNativeLibraries.GetValueOrDefault(assembly);
+            string nativeLibraryName = s_AssemblyOwnedNativeLibraries.GetValueOrDefault(assembly);
             if (nativeLibraryName != null &&
-                loadedNativeLibraries.TryGetValue(nativeLibraryName, out IntPtr nativeLibrary))
+                s_LoadedNativeLibraries.TryGetValue(nativeLibraryName, out IntPtr nativeLibrary))
             {
                 NativeLibrary.Free(nativeLibrary);
-                loadedNativeLibraries.Remove(nativeLibraryName);
+                s_LoadedNativeLibraries.Remove(nativeLibraryName);
             }
 
             if (nativeLibraryName != null)
-                libraryPaths.Remove(nativeLibraryName);
+                s_LibraryPaths.Remove(nativeLibraryName);
         }
 
         [UnmanagedCallersOnly]
@@ -1054,35 +1053,41 @@ namespace SE.Interop
         {
 #if SE_EDITOR
             // Clear all caches which might hold references to assemblies in collectible ALC
-            typeCache.Clear();
+            s_TypeCache.Clear();
 
             // Release all references in collectible ALC
-            cachedDelegatesCollectible.Clear();
-            foreach (var pair in managedTypesCollectible)
+            s_CachedDelegatesCollectible.Clear();
+            foreach (var pair in s_ManagedTypesCollectible)
+            {
                 pair.Value.handle.Free();
-            managedTypesCollectible.Clear();
-            foreach (var handle in methodHandlesCollectible)
+            }
+            s_ManagedTypesCollectible.Clear();
+            foreach (var handle in s_MethodHandlesCollectible)
+            {
                 handle.Free();
-            methodHandlesCollectible.Clear();
-            foreach (var handle in fieldHandleCacheCollectible)
+            }
+            s_MethodHandlesCollectible.Clear();
+            foreach (var handle in s_FieldHandleCacheCollectible)
+            {
                 handle.Free();
-            fieldHandleCacheCollectible.Clear();
+            }
+            s_FieldHandleCacheCollectible.Clear();
 
-            _typeSizeCache.Clear();
+            s_TypeSizeCache.Clear();
 
-            foreach (var pair in classAttributesCacheCollectible)
+            foreach (var pair in s_ClassAttributesCacheCollectible)
             {
                 pair.Value.Free();
             }
 
-            classAttributesCacheCollectible.Clear();
+            s_ClassAttributesCacheCollectible.Clear();
 
             // FlaxEngine.Json.JsonSerializer.ResetCache();
 
             // Unload the ALC
             bool unloading = true;
-            scriptingAssemblyLoadContext.Unloading += (alc) => { unloading = false; };
-            scriptingAssemblyLoadContext.Unload();
+            s_ScriptingAssemblyLoadContext.Unloading += (alc) => { unloading = false; };
+            s_ScriptingAssemblyLoadContext.Unload();
 
             while (unloading)
             {

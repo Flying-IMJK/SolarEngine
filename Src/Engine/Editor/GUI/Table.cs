@@ -9,10 +9,10 @@ namespace SE.Editor.GUI
     /// </summary>
     public class Table : ContainerControl
     {
-        private readonly List<ColumnDefinition> _columns = new();
-        private float[] _splits = Array.Empty<float>();
-        private float _headerHeight = 20.0f;
-        private int _movingSplit = -1;
+        private readonly List<ColumnDefinition> m_Columns = new();
+        private float[] m_Splits = Array.Empty<float>();
+        private float m_HeaderHeight = 20.0f;
+        private int m_MovingSplit = -1;
 
         public Table()
             : base(new Rectangle(0.0f, 0.0f, 240.0f, 160.0f))
@@ -20,18 +20,18 @@ namespace SE.Editor.GUI
             AutoFocus = false;
         }
 
-        public IReadOnlyList<ColumnDefinition> Columns => _columns;
-        public IReadOnlyList<float> Splits => _splits;
+        public IReadOnlyList<ColumnDefinition> Columns => m_Columns;
+        public IReadOnlyList<float> Splits => m_Splits;
 
         public float HeaderHeight
         {
-            get => _headerHeight;
+            get => m_HeaderHeight;
             set
             {
                 float clamped = MathF.Max(1.0f, value);
-                if (MathF.Abs(_headerHeight - clamped) <= float.Epsilon)
+                if (MathF.Abs(m_HeaderHeight - clamped) <= float.Epsilon)
                     return;
-                _headerHeight = clamped;
+                m_HeaderHeight = clamped;
                 PerformLayout();
             }
         }
@@ -39,21 +39,21 @@ namespace SE.Editor.GUI
         public void SetColumns(IEnumerable<ColumnDefinition> columns)
         {
             ArgumentNullException.ThrowIfNull(columns);
-            _columns.Clear();
-            _columns.AddRange(columns);
-            _splits = _columns.Count == 0 ? Array.Empty<float>() : CreateEqualSplits(_columns.Count);
+            m_Columns.Clear();
+            m_Columns.AddRange(columns);
+            m_Splits = m_Columns.Count == 0 ? Array.Empty<float>() : CreateEqualSplits(m_Columns.Count);
             PerformLayout();
         }
 
         public void SetSplits(IReadOnlyList<float> splits)
         {
             ArgumentNullException.ThrowIfNull(splits);
-            if (splits.Count != _columns.Count)
+            if (splits.Count != m_Columns.Count)
                 throw new ArgumentException("The number of splits must match the number of columns.", nameof(splits));
 
-            _splits = new float[splits.Count];
-            for (int index = 0; index < _splits.Length; index++)
-                _splits[index] = Math.Clamp(splits[index], 0.0f, 1.0f);
+            m_Splits = new float[splits.Count];
+            for (int index = 0; index < m_Splits.Length; index++)
+                m_Splits[index] = Math.Clamp(splits[index], 0.0f, 1.0f);
             NormalizeSplits();
             PerformLayout();
         }
@@ -65,71 +65,71 @@ namespace SE.Editor.GUI
 
         public float GetColumnWidth(int columnIndex)
         {
-            if ((uint)columnIndex >= (uint)_splits.Length)
+            if ((uint)columnIndex >= (uint)m_Splits.Length)
                 throw new ArgumentOutOfRangeException(nameof(columnIndex));
-            return _splits[columnIndex] * Width;
+            return m_Splits[columnIndex] * Width;
         }
 
-        public override bool OnMouseDown(Float2 location, int button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (button != 1)
+            if (button != MouseButton.Left)
                 return false;
 
             int split = FindSplit(location);
             if (split < 0)
                 return false;
 
-            _movingSplit = split;
+            m_MovingSplit = split;
             Root?.StartTrackingMouse(this);
             return true;
         }
 
         public override void OnMouseMove(Float2 location)
         {
-            if (_movingSplit < 0 || _movingSplit + 1 >= _splits.Length || Width <= 0.0f)
+            if (m_MovingSplit < 0 || m_MovingSplit + 1 >= m_Splits.Length || Width <= 0.0f)
                 return;
 
             float left = 0.0f;
-            for (int index = 0; index < _movingSplit; index++)
-                left += _splits[index];
+            for (int index = 0; index < m_MovingSplit; index++)
+                left += m_Splits[index];
 
-            float total = _splits[_movingSplit] + _splits[_movingSplit + 1];
+            float total = m_Splits[m_MovingSplit] + m_Splits[m_MovingSplit + 1];
             float requested = Math.Clamp(location.X / Width - left, 0.0f, total);
-            float first = _columns[_movingSplit].ClampColumnSize(requested, Width);
-            float second = _columns[_movingSplit + 1].ClampColumnSize(total - first, Width);
+            float first = m_Columns[m_MovingSplit].ClampColumnSize(requested, Width);
+            float second = m_Columns[m_MovingSplit + 1].ClampColumnSize(total - first, Width);
             if (first + second > total && second > 0.0f)
                 first = Math.Max(0.0f, total - second);
 
-            _splits[_movingSplit] = first;
-            _splits[_movingSplit + 1] = Math.Max(0.0f, total - first);
+            m_Splits[m_MovingSplit] = first;
+            m_Splits[m_MovingSplit + 1] = Math.Max(0.0f, total - first);
             PerformLayout();
         }
 
-        public override bool OnMouseUp(Float2 location, int button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (button != 1 || _movingSplit < 0)
+            if (button != MouseButton.Left || m_MovingSplit < 0)
                 return false;
-            _movingSplit = -1;
+            m_MovingSplit = -1;
             Root?.EndTrackingMouse();
             return true;
         }
 
         public override void ClearState()
         {
-            _movingSplit = -1;
+            m_MovingSplit = -1;
             base.ClearState();
         }
 
         public override void Draw()
         {
             base.Draw();
-            if (!VisibleInHierarchy || _columns.Count == 0)
+            if (!VisibleInHierarchy || m_Columns.Count == 0)
                 return;
 
             float x = ScreenPos.X;
-            for (int index = 0; index < _columns.Count; index++)
+            for (int index = 0; index < m_Columns.Count; index++)
             {
-                ColumnDefinition column = _columns[index];
+                ColumnDefinition column = m_Columns[index];
                 Rectangle header = new Rectangle(x, ScreenPos.Y, GetColumnWidth(index), HeaderHeight);
                 Color background = column.TitleBackgroundColor;
                 Render2D.FillRectangle(ref header, ref background);
@@ -163,7 +163,7 @@ namespace SE.Editor.GUI
                 return -1;
 
             float x = 0.0f;
-            for (int index = 0; index < _splits.Length - 1; index++)
+            for (int index = 0; index < m_Splits.Length - 1; index++)
             {
                 x += GetColumnWidth(index);
                 if (MathF.Abs(location.X - x) <= 3.0f)
@@ -184,15 +184,15 @@ namespace SE.Editor.GUI
         private void NormalizeSplits()
         {
             float total = 0.0f;
-            for (int index = 0; index < _splits.Length; index++)
-                total += _splits[index];
+            for (int index = 0; index < m_Splits.Length; index++)
+                total += m_Splits[index];
             if (total <= float.Epsilon)
             {
-                _splits = CreateEqualSplits(_splits.Length);
+                m_Splits = CreateEqualSplits(m_Splits.Length);
                 return;
             }
-            for (int index = 0; index < _splits.Length; index++)
-                _splits[index] /= total;
+            for (int index = 0; index < m_Splits.Length; index++)
+                m_Splits[index] /= total;
         }
     }
 }

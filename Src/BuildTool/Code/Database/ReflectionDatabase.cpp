@@ -345,7 +345,7 @@ namespace SE::BuildTool
         }
     }
 
-    PropertyData const *ReflectionDatabase::GetPropertyTypeDescriptor(StringID typeID, TypePropertyPath const &pathID) const
+    PropertyData const *ReflectionDatabase::GetPropertyTypeDescriptor(StringID typeID, PropertyPath const &pathID) const
     {
         PropertyData const *pResolvedPropertyTypeDesc = nullptr;
 

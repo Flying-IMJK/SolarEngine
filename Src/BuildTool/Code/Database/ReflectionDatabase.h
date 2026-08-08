@@ -1,7 +1,6 @@
 #pragma once
 
 #include "DataTypes.h"
-#include "Core/TypeSystem/Property/TypePropertyPath.h"
 
 #include <vector>
 #include <sqlite3.h>
@@ -54,7 +53,7 @@ namespace SE::BuildTool
         // Property functions
         //-------------------------------------------------------------------------
 
-        PropertyData const *GetPropertyTypeDescriptor(StringID typeID, TypePropertyPath const &pathID) const;
+        PropertyData const *GetPropertyTypeDescriptor(StringID typeID, PropertyPath const &pathID) const;
 
         // Cleaning
         //-------------------------------------------------------------------------

@@ -5,22 +5,22 @@ namespace SE.Editor.GUI
 {
     public abstract class ValueBox<T> : TextBox where T : IComparable<T>
     {
-        protected T _value;
-        protected T _min;
-        protected T _max;
-        protected float _slideSpeed;
-        protected bool _isSliding;
-        protected T _startSlideValue = default!;
-        protected string _startEditText = string.Empty;
-        private float _lastSlideX;
+        protected T CurrentValue;
+        protected T Minimum;
+        protected T Maximum;
+        protected float SliderSpeed;
+        protected bool Sliding;
+        protected T StartSlideValue = default!;
+        protected string StartEditText = string.Empty;
+        private float m_LastSlideX;
 
         protected ValueBox(T value, float x, float y, float width, T min, T max, float sliderSpeed)
             : base(new Rectangle(x, y, width, 18.0f))
         {
-            _value = Clamp(value, min, max);
-            _min = min;
-            _max = max;
-            _slideSpeed = sliderSpeed;
+            CurrentValue = Clamp(value, min, max);
+            Minimum = min;
+            Maximum = max;
+            SliderSpeed = sliderSpeed;
         }
 
         public event Action? ValueChanged;
@@ -36,72 +36,72 @@ namespace SE.Editor.GUI
 
         public T MinValue
         {
-            get => _min;
+            get => Minimum;
             set
             {
-                _min = value;
-                SetValue(_value);
+                Minimum = value;
+                SetValue(CurrentValue);
             }
         }
 
         public T MaxValue
         {
-            get => _max;
+            get => Maximum;
             set
             {
-                _max = value;
-                SetValue(_value);
+                Maximum = value;
+                SetValue(CurrentValue);
             }
         }
 
-        public bool IsSliding => _isSliding;
+        public bool IsSliding => Sliding;
         public float SlideSpeed
         {
-            get => _slideSpeed;
-            set => _slideSpeed = value;
+            get => SliderSpeed;
+            set => SliderSpeed = value;
         }
 
-        public bool CanUseSliding => _slideSpeed > float.Epsilon;
-        public GuiRect SlideRect => new GuiRect(Width - 13.0f, (Height - 12.0f) * 0.5f, 12.0f, 12.0f);
+        public bool CanUseSliding => SliderSpeed > float.Epsilon;
+        public Rectangle SlideRect => new Rectangle(Width - 13.0f, (Height - 12.0f) * 0.5f, 12.0f, 12.0f);
 
         public virtual T GetValue()
         {
-            return _value;
+            return CurrentValue;
         }
 
         public virtual void SetValue(T value)
         {
-            T clamped = Clamp(value, _min, _max);
-            if (_value.CompareTo(clamped) == 0)
+            T clamped = Clamp(value, Minimum, Maximum);
+            if (CurrentValue.CompareTo(clamped) == 0)
                 return;
 
-            _value = clamped;
+            CurrentValue = clamped;
             UpdateText();
             OnValueChanged();
         }
 
         public void BeginSliding()
         {
-            if (!CanUseSliding || _isSliding)
+            if (!CanUseSliding || Sliding)
                 return;
 
-            _isSliding = true;
-            _startSlideValue = _value;
+            Sliding = true;
+            StartSlideValue = CurrentValue;
             SlidingStart?.Invoke();
         }
 
         public void ApplySlidingDelta(float delta)
         {
-            if (_isSliding)
-                ApplySliding(delta * _slideSpeed);
+            if (Sliding)
+                ApplySliding(delta * SliderSpeed);
         }
 
         public void EndSliding()
         {
-            if (!_isSliding)
+            if (!Sliding)
                 return;
 
-            _isSliding = false;
+            Sliding = false;
             SlidingEnd?.Invoke();
         }
 
@@ -111,7 +111,7 @@ namespace SE.Editor.GUI
                 return;
 
             base.BeginEdit();
-            _startEditText = Text;
+            StartEditText = Text;
         }
 
         public override void EndEdit()
@@ -120,9 +120,9 @@ namespace SE.Editor.GUI
                 return;
 
             base.EndEdit();
-            if (_startEditText != Text)
+            if (StartEditText != Text)
                 TryGetValue();
-            _startEditText = string.Empty;
+            StartEditText = string.Empty;
         }
 
         public void CancelEdit()
@@ -130,22 +130,22 @@ namespace SE.Editor.GUI
             if (!IsEditing)
                 return;
 
-            Text = _startEditText;
-            _startEditText = string.Empty;
+            Text = StartEditText;
+            StartEditText = string.Empty;
             base.EndEdit();
         }
 
-        public override bool OnMouseDown(Float2 location, int button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (button == 1 && SlideRect.Contains(new GuiPoint(location.X, location.Y)) && CanUseSliding)
+            if (button == MouseButton.Left && SlideRect.Contains(location) && CanUseSliding)
             {
-                _lastSlideX = location.X;
+                m_LastSlideX = location.X;
                 BeginSliding();
                 Root?.StartTrackingMouse(this);
                 return true;
             }
 
-            if (button == 1)
+            if (button == MouseButton.Left)
             {
                 BeginEdit();
                 return true;
@@ -156,26 +156,26 @@ namespace SE.Editor.GUI
 
         public override void OnMouseMove(Float2 location)
         {
-            if (!_isSliding)
+            if (!Sliding)
             {
                 base.OnMouseMove(location);
                 return;
             }
 
-            ApplySlidingDelta(location.X - _lastSlideX);
-            _lastSlideX = location.X;
+            ApplySlidingDelta(location.X - m_LastSlideX);
+            m_LastSlideX = location.X;
         }
 
-        public override bool OnMouseUp(Float2 location, int button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (button == 1 && _isSliding)
+            if (button == MouseButton.Left && Sliding)
             {
                 EndSliding();
                 Root?.EndTrackingMouse();
                 return true;
             }
 
-            return button == 1;
+            return button == MouseButton.Left;
         }
 
         public override bool OnCharInput(char character)
@@ -187,21 +187,21 @@ namespace SE.Editor.GUI
             return true;
         }
 
-        public override bool OnKeyDown(int key)
+        public override bool OnKeyDown(KeyboardKeys key)
         {
             if (!IsEditing)
                 return base.OnKeyDown(key);
 
             switch (key)
             {
-            case 8: // Backspace
+            case KeyboardKeys.Backspace:
                 if (Text.Length > 0)
                     Text = Text[..^1];
                 return true;
-            case 13: // Enter
+            case KeyboardKeys.Return:
                 EndEdit();
                 return true;
-            case 27: // Escape
+            case KeyboardKeys.Escape:
                 CancelEdit();
                 return true;
             default:

@@ -1,14 +1,17 @@
 #pragma once
 
 #include "../API.h"
+#include "Runtime/Core/Scripting/ScriptingType.h"
 #include "Runtime/Core/Types/TimeSpan.h"
 
 namespace SE
 {
 	class Engine;
 
+	SE_CLASS(API, Static)
 	class SE_API_RUNTIME Time
 	{
+		SCRIPTING_TYPE_NO_SPAWN(Time);
 	public:
 		friend class Engine;
 
@@ -81,11 +84,13 @@ namespace SE
 		/// <summary>
 		/// The time at which the game started (UTC local).
 		/// </summary>
+		SE_PROPERTY(API, Time);
 		static DateTime StartupTime;
 
 		/// <summary>
 		/// The target amount of the game logic updates per second (script updates frequency).
 		/// </summary>
+		SE_PROPERTY(API, Time);
 		static float UpdateFPS;
 
 		/// <summary>
@@ -94,11 +99,13 @@ namespace SE
 		/// <remarks>
 		/// To get the actual game FPS use <see cref="Engine.FramesPerSecond"/>
 		/// </remarks>
+		SE_PROPERTY(API, Time);
 		static float DrawFPS;
 
 		/// <summary>
 		/// The game time scale factor. Default is 1.
 		/// </summary>
+		SE_PROPERTY(API, Time);
 		static float TimeScale;
 
 	public:
@@ -122,37 +129,44 @@ namespace SE
 		/// <summary>
 		/// Gets time in seconds it took to complete the last frame, <see cref="TimeScale"/> dependent.
 		/// </summary>
+		SE_FUNCTION(API);
 		static float GetDeltaTime();
 
 		/// <summary>
 		/// Gets time at the beginning of this frame. This is the time in seconds since the start of the game.
 		/// </summary>
+		SE_FUNCTION(API);
 		static float GetGameTime();
 
 		/// <summary>
 		/// Gets timeScale-independent time in seconds it took to complete the last frame.
 		/// </summary>
+		SE_FUNCTION(API);
 		static float GetUnscaledDeltaTime();
 
 		/// <summary>
 		/// Gets timeScale-independent time at the beginning of this frame. This is the time in seconds since the start of the game.
 		/// </summary>
+		SE_FUNCTION(API);
 		static float GetUnscaledGameTime();
 
 		/// <summary>
 		/// Gets the time since startup in seconds (unscaled).
 		/// </summary>
+		SE_FUNCTION(API);
 		static float GetTimeSinceStartup();
 
 		/// <summary>
 		/// Gets the time of next upcoming tick data of ticking group with defined update frequency.
 		/// </summary>
 		/// <returns>The time of next tick.</returns>
+		SE_FUNCTION(API);
 		static double GetNextTick();
 
 		/// <summary>
 		/// Synchronizes update, fixed update and draw. Resets any pending deltas for fresh ticking in sync.
 		/// </summary>
+		SE_FUNCTION(API);
 		static void Synchronize();
 
 	private:

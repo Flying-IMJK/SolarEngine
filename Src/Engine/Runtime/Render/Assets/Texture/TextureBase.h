@@ -70,19 +70,17 @@ namespace SE
 		SE_DEFINE_CLASS(TextureBase, BinaryAsset)
 		ASSET_HEADER(TextureBase);
 	protected:
-		StreamingTexture _texture;
-		TextureInitData* _customData;
-		BinaryAsset* _parent;
+		StreamingTexture m_Texture;
+		TextureInitData* m_CustomData;
+		BinaryAsset* m_Parent;
 
 	public:
-		TextureBase();
-
 		/// <summary>
 		/// Gets GPU texture object allocated by the asset.
 		/// </summary>
         FORCE_INLINE GPUTexture* GetTexture() const
 		{
-			return _texture.GetTexture();
+			return m_Texture.GetTexture();
 		}
 
 		/// <summary>
@@ -90,7 +88,7 @@ namespace SE
 		/// </summary>
 		FORCE_INLINE PixelFormat Format() const
 		{
-			return _texture._header.Format;
+			return m_Texture._header.Format;
 		}
 
 		/// <summary>
@@ -99,7 +97,7 @@ namespace SE
         SE_FUNCTION(API)
         FORCE_INLINE int32 Width() const
 		{
-			return _texture.TotalWidth();
+			return m_Texture.TotalWidth();
 		}
 
 		/// <summary>
@@ -108,7 +106,7 @@ namespace SE
         SE_FUNCTION(API)
         FORCE_INLINE int32 Height() const
 		{
-			return _texture.TotalHeight();
+			return m_Texture.TotalHeight();
 		}
 
 		/// <summary>
@@ -146,6 +144,8 @@ namespace SE
 		/// Sets the index of the texture group used by this texture.
 		/// </summary>
 		void SetTextureGroup(int32 textureGroup);
+
+		virtual uint32 GetSerializedVersion() const override = 0;
 
 	public:
 		/// <summary>

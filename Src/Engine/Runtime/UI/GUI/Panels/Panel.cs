@@ -7,11 +7,11 @@ namespace SE.GUI
     /// </summary>
     public class Panel : ScrollableControl
     {
-        private readonly VScrollBar _verticalScrollBar;
-        private readonly HScrollBar _horizontalScrollBar;
-        private float _scrollBarsSize = 16.0f;
-        private Float2 _viewportSize;
-        private bool _syncingScrollBars;
+        private readonly VScrollBar m_VerticalScrollBar;
+        private readonly HScrollBar m_HorizontalScrollBar;
+        private float m_ScrollBarsSize = 16.0f;
+        private Float2 m_ViewportSize;
+        private bool m_SyncingScrollBars;
 
         public Panel()
             : this(Rectangle.Empty)
@@ -21,36 +21,36 @@ namespace SE.GUI
         public Panel(Rectangle bounds)
             : base(bounds)
         {
-            _verticalScrollBar = new VScrollBar { IsScrollable = false, Visible = false };
-            _horizontalScrollBar = new HScrollBar { IsScrollable = false, Visible = false };
-            _verticalScrollBar.ValueChanged += OnVerticalScrollBarValueChanged;
-            _horizontalScrollBar.ValueChanged += OnHorizontalScrollBarValueChanged;
-            AddChild(_verticalScrollBar);
-            AddChild(_horizontalScrollBar);
+            m_VerticalScrollBar = new VScrollBar { IsScrollable = false, Visible = false };
+            m_HorizontalScrollBar = new HScrollBar { IsScrollable = false, Visible = false };
+            m_VerticalScrollBar.ValueChanged += OnVerticalScrollBarValueChanged;
+            m_HorizontalScrollBar.ValueChanged += OnHorizontalScrollBarValueChanged;
+            AddChild(m_VerticalScrollBar);
+            AddChild(m_HorizontalScrollBar);
         }
 
         /// <summary>
         /// Gets the vertical scrollbar managed by this panel.
         /// </summary>
-        public VScrollBar VerticalScrollBar => _verticalScrollBar;
+        public VScrollBar VerticalScrollBar => m_VerticalScrollBar;
 
         /// <summary>
         /// Gets the horizontal scrollbar managed by this panel.
         /// </summary>
-        public HScrollBar HorizontalScrollBar => _horizontalScrollBar;
+        public HScrollBar HorizontalScrollBar => m_HorizontalScrollBar;
 
         /// <summary>
         /// Gets or sets the reserved size of a visible scrollbar.
         /// </summary>
         public float ScrollBarsSize
         {
-            get => _scrollBarsSize;
+            get => m_ScrollBarsSize;
             set
             {
                 float result = MathF.Max(1.0f, value);
-                if (MathF.Abs(_scrollBarsSize - result) <= float.Epsilon)
+                if (MathF.Abs(m_ScrollBarsSize - result) <= float.Epsilon)
                     return;
-                _scrollBarsSize = result;
+                m_ScrollBarsSize = result;
                 PerformLayout();
             }
         }
@@ -68,7 +68,7 @@ namespace SE.GUI
         /// <summary>
         /// Gets the visible bottom-right point in unscrolled panel coordinates.
         /// </summary>
-        public Float2 ViewBottom => ScrollOffset + _viewportSize;
+        public Float2 ViewBottom => ScrollOffset + m_ViewportSize;
 
         /// <summary>
         /// Gets the unscrolled bounds occupied by scrollable child controls.
@@ -82,7 +82,7 @@ namespace SE.GUI
             }
         }
 
-        protected override Float2 ScrollViewportSize => _viewportSize;
+        protected override Float2 ScrollViewportSize => m_ViewportSize;
 
         /// <summary>
         /// Moves the view so that the given child control is visible.
@@ -111,13 +111,13 @@ namespace SE.GUI
             Float2 target = ScrollOffset;
             if (bounds.X < target.X)
                 target.X = bounds.X;
-            else if (bounds.Right > target.X + _viewportSize.X)
-                target.X = bounds.Right - _viewportSize.X;
+            else if (bounds.Right > target.X + m_ViewportSize.X)
+                target.X = bounds.Right - m_ViewportSize.X;
 
             if (bounds.Y < target.Y)
                 target.Y = bounds.Y;
-            else if (bounds.Bottom > target.Y + _viewportSize.Y)
-                target.Y = bounds.Bottom - _viewportSize.Y;
+            else if (bounds.Bottom > target.Y + m_ViewportSize.Y)
+                target.Y = bounds.Bottom - m_ViewportSize.Y;
             ScrollOffset = target;
         }
 
@@ -128,18 +128,18 @@ namespace SE.GUI
             if (!VisibleInHierarchy || IsDisposed)
                 return;
 
-            Rectangle clip = new Rectangle(ScreenPos, _viewportSize);
+            Rectangle clip = new Rectangle(ScreenPos, m_ViewportSize);
             Render2D.PushClip(ref clip);
             for (int index = 0; index < Children.Count; index++)
             {
                 Control child = Children[index];
-                if (!ReferenceEquals(child, _verticalScrollBar) && !ReferenceEquals(child, _horizontalScrollBar))
+                if (!ReferenceEquals(child, m_VerticalScrollBar) && !ReferenceEquals(child, m_HorizontalScrollBar))
                     child.Draw();
             }
             Render2D.PopClip();
 
-            _verticalScrollBar.Draw();
-            _horizontalScrollBar.Draw();
+            m_VerticalScrollBar.Draw();
+            m_HorizontalScrollBar.Draw();
         }
 
         protected override void OnLayoutChildren()
@@ -152,42 +152,42 @@ namespace SE.GUI
 
             for (int iteration = 0; iteration < 2; iteration++)
             {
-                float width = MathF.Max(0.0f, Width - (showVertical ? _scrollBarsSize : 0.0f));
-                float height = MathF.Max(0.0f, Height - (showHorizontal ? _scrollBarsSize : 0.0f));
+                float width = MathF.Max(0.0f, Width - (showVertical ? m_ScrollBarsSize : 0.0f));
+                float height = MathF.Max(0.0f, Height - (showHorizontal ? m_ScrollBarsSize : 0.0f));
                 showHorizontal = horizontalEnabled && (AlwaysShowScrollbars || content.X > width);
                 showVertical = verticalEnabled && (AlwaysShowScrollbars || content.Y > height);
             }
 
-            _viewportSize = new Float2(
-                MathF.Max(0.0f, Width - (showVertical ? _scrollBarsSize : 0.0f)),
-                MathF.Max(0.0f, Height - (showHorizontal ? _scrollBarsSize : 0.0f)));
-            _verticalScrollBar.Visible = showVertical;
-            _horizontalScrollBar.Visible = showHorizontal;
-            _verticalScrollBar.SetBounds(_viewportSize.X, 0.0f, showVertical ? _scrollBarsSize : 0.0f, _viewportSize.Y);
-            _horizontalScrollBar.SetBounds(0.0f, _viewportSize.Y, _viewportSize.X, showHorizontal ? _scrollBarsSize : 0.0f);
-            _verticalScrollBar.SetContentSize(_viewportSize.Y, content.Y);
-            _horizontalScrollBar.SetContentSize(_viewportSize.X, content.X);
+            m_ViewportSize = new Float2(
+                MathF.Max(0.0f, Width - (showVertical ? m_ScrollBarsSize : 0.0f)),
+                MathF.Max(0.0f, Height - (showHorizontal ? m_ScrollBarsSize : 0.0f)));
+            m_VerticalScrollBar.Visible = showVertical;
+            m_HorizontalScrollBar.Visible = showHorizontal;
+            m_VerticalScrollBar.SetBounds(m_ViewportSize.X, 0.0f, showVertical ? m_ScrollBarsSize : 0.0f, m_ViewportSize.Y);
+            m_HorizontalScrollBar.SetBounds(0.0f, m_ViewportSize.Y, m_ViewportSize.X, showHorizontal ? m_ScrollBarsSize : 0.0f);
+            m_VerticalScrollBar.SetContentSize(m_ViewportSize.Y, content.Y);
+            m_HorizontalScrollBar.SetContentSize(m_ViewportSize.X, content.X);
         }
 
         protected override void OnScrollOffsetChanged()
         {
-            if (_syncingScrollBars)
+            if (m_SyncingScrollBars)
                 return;
 
-            _syncingScrollBars = true;
-            _verticalScrollBar.Value = ScrollOffset.Y;
-            _horizontalScrollBar.Value = ScrollOffset.X;
-            _syncingScrollBars = false;
+            m_SyncingScrollBars = true;
+            m_VerticalScrollBar.Value = ScrollOffset.Y;
+            m_HorizontalScrollBar.Value = ScrollOffset.X;
+            m_SyncingScrollBars = false;
         }
 
         protected override void OnChildAdded(Control control)
         {
             base.OnChildAdded(control);
-            if (ReferenceEquals(control, _verticalScrollBar) || ReferenceEquals(control, _horizontalScrollBar))
+            if (ReferenceEquals(control, m_VerticalScrollBar) || ReferenceEquals(control, m_HorizontalScrollBar))
                 return;
 
-            SetChildIndex(_verticalScrollBar, Children.Count - 1);
-            SetChildIndex(_horizontalScrollBar, Children.Count - 1);
+            SetChildIndex(m_VerticalScrollBar, Children.Count - 1);
+            SetChildIndex(m_HorizontalScrollBar, Children.Count - 1);
         }
 
         private Float2 GetContentSizeWithMargin()
@@ -200,13 +200,13 @@ namespace SE.GUI
 
         private void OnVerticalScrollBarValueChanged(Slider scrollBar)
         {
-            if (!_syncingScrollBars)
+            if (!m_SyncingScrollBars)
                 ScrollOffset = new Float2(ScrollOffset.X, scrollBar.Value);
         }
 
         private void OnHorizontalScrollBarValueChanged(Slider scrollBar)
         {
-            if (!_syncingScrollBars)
+            if (!m_SyncingScrollBars)
                 ScrollOffset = new Float2(scrollBar.Value, ScrollOffset.Y);
         }
     }

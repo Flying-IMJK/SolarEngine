@@ -19,9 +19,6 @@ namespace SE
 		return a->order < b->order;
 	}
 
-	List<ISystem*> Systems::m_Systems;
-	Dictionary<uint32, Systems::SystemInfo> Systems::m_SystemCache;
-
 	void Systems::ShutDown()
 	{
 		ZoneScoped;
@@ -29,7 +26,7 @@ namespace SE
 		StringBuilder stringBuilder;
 
 		// Dispose system from back to front
-		auto& systemList = m_Systems;
+		auto& systemList = GetSystems();
 		for (int32 i = systemList.Count() - 1; i >= 0; i--)
 		{
 			const auto pSystem = systemList[i]; 
@@ -54,11 +51,11 @@ namespace SE
 	{
 		ZoneScoped;
 
-		auto& systemList = m_Systems;
+		auto& systemList = GetSystems();
 
-		m_Systems.Clear();
-
-		for (auto& item : m_SystemCache)
+		systemList.Clear();
+		Dictionary<uint32, Systems::SystemInfo>& cache = GetSystemCache();
+		for (auto& item : cache)
 		{
 			Systems::SystemInfo& info = item.Value;
 			// 系统没有创建
@@ -72,7 +69,7 @@ namespace SE
 				info.systemInstance = info.systemRegister->Create();
 			}
 
-			m_Systems.Add(info.systemInstance);
+			systemList.Add(info.systemInstance);
 		}
 
 		Sort();
@@ -113,14 +110,14 @@ namespace SE
 
 	void Systems::Sort()
 	{
-		auto& systemList = m_Systems;
+		auto& systemList = GetSystems();
 		Function<bool(ISystem* const&, ISystem* const&)> sortCall = G_CompareSystem;
 		Sorting::QuickSort(systemList.Get(), systemList.Count(), sortCall);
 	}
 
 	void Systems::Update()
 	{
-		auto& systemList = m_Systems;
+		auto& systemList = GetSystems();
 		for (int32 i = 0; i < systemList.Count(); i++)
 		{
 			const auto pSystem = systemList[i];
@@ -130,7 +127,7 @@ namespace SE
 
 	void Systems::LateUpdate()
 	{
-		auto& systemList = m_Systems;
+		auto& systemList = GetSystems();
 		for (int32 i = 0; i < systemList.Count(); i++)
 		{
 			const auto pSystem = systemList[i];
@@ -140,7 +137,7 @@ namespace SE
 
 	void Systems::Render()
 	{
-		auto& systemList = m_Systems;
+		auto& systemList = GetSystems();
 		for (int32 i = 0; i < systemList.Count(); i++)
 		{
 			const auto pSystem = systemList[i];
@@ -148,15 +145,29 @@ namespace SE
 		}
 	}
 
+	List<ISystem*>& Systems::GetSystems()
+	{
+		static List<ISystem*> m_Systems;
+		return m_Systems;
+	}
+
+	Dictionary<uint32, Systems::SystemInfo>& Systems::GetSystemCache()
+	{
+		static Dictionary<uint32, SystemInfo> m_SystemCache;
+		return m_SystemCache;
+	}
+
 	void Systems::Register(StringView name, SystemRegister* pRegister)
 	{
-		ENGINE_ASSERT(pRegister != nullptr && !m_SystemCache.ContainsKey(pRegister->GetID()));
+		Dictionary<uint32, Systems::SystemInfo>& cache = GetSystemCache();
+		ENGINE_ASSERT(pRegister != nullptr && !cache.ContainsKey(pRegister->GetID()));
 
+		auto& systemList = GetSystems();
 		ISystem* system = nullptr;
-		if (m_Systems.Count() > 0 && m_Systems.First()->IsInitialized)
+		if (systemList.Count() > 0 && systemList.First()->IsInitialized)
 		{
 			system = pRegister->Create();
-			m_Systems.Add(system);
+			systemList.Add(system);
 			Sort();
 		}
 
@@ -165,22 +176,26 @@ namespace SE
 		systemInfo.systemInstance = system;
 		systemInfo.name = name;
 
-		m_SystemCache.Add(pRegister->GetID(), systemInfo);
+		cache.Add(pRegister->GetID(), systemInfo);
 	}
 
 	void Systems::Unregister(SystemRegister* pRegister)
 	{
 		ENGINE_ASSERT(pRegister != nullptr);
+
+		Dictionary<uint32, Systems::SystemInfo>& cache = GetSystemCache();
+		auto& systemList = GetSystems();
+
 		Systems::SystemInfo item;
-		if (m_SystemCache.TryGet(pRegister->GetID(), item))
+		if (cache.TryGet(pRegister->GetID(), item))
 		{
 			if (item.systemInstance)
 			{
-				m_Systems.Remove(item.systemInstance);
+				systemList.Remove(item.systemInstance);
 				item.systemInstance->OnDispose();
 			}
 
-			m_SystemCache.Remove(pRegister->GetID());
+			cache.Remove(pRegister->GetID());
 		}
 	}
 

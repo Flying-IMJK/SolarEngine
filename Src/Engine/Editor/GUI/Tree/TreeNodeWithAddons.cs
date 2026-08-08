@@ -9,14 +9,14 @@ namespace SE.Editor.GUI
     /// </summary>
     public class TreeNodeWithAddons : TreeNode
     {
-        private readonly List<Control> _addons = new();
+        private readonly List<Control> m_Addons = new();
 
         public TreeNodeWithAddons(bool canChangeOrder = false)
             : base(canChangeOrder)
         {
         }
 
-        public IReadOnlyList<Control> Addons => _addons;
+        public IReadOnlyList<Control> Addons => m_Addons;
 
         /// <summary>
         /// Adds a header addon. Its bounds are relative to the tree-node header.
@@ -24,9 +24,9 @@ namespace SE.Editor.GUI
         public T AddAddon<T>(T addon) where T : Control
         {
             ArgumentNullException.ThrowIfNull(addon);
-            if (_addons.Contains(addon))
+            if (m_Addons.Contains(addon))
                 return addon;
-            _addons.Add(addon);
+            m_Addons.Add(addon);
             AddChild(addon);
             return addon;
         }
@@ -34,7 +34,7 @@ namespace SE.Editor.GUI
         public bool RemoveAddon(Control addon)
         {
             ArgumentNullException.ThrowIfNull(addon);
-            if (!_addons.Remove(addon))
+            if (!m_Addons.Remove(addon))
                 return false;
             return RemoveChild(addon);
         }

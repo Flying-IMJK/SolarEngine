@@ -574,6 +574,41 @@ namespace SE::BuildTool
         return nullptr;
     }
 
+    static bool IsScriptingObjectBaseType(TypeData const& type)
+    {
+        std::string fullName = CodeGeneratorUtils::GetNativeName(type.namespaceScopeList, type.structScopeList, type.name);
+        fullName = StripCppKeywordPrefixes(fullName);
+        return fullName == "SE::ScriptingObject"
+            || fullName == "SE::ManagedScriptingObject"
+            || fullName == "SE::PersistentScriptingObject"
+            || type.name == "ScriptingObject"
+            || type.name == "ManagedScriptingObject"
+            || type.name == "PersistentScriptingObject";
+    }
+
+    static bool IsScriptingObjectType(ReflectionDatabase const& database, TypeData const& type)
+    {
+        std::vector<TypeID> visited;
+        TypeData const* currentType = &type;
+        while (currentType != nullptr)
+        {
+            if (IsScriptingObjectBaseType(*currentType))
+            {
+                return true;
+            }
+
+            if (currentType->parentTypeID == StringID::Invalid
+                || Utils::Vector::Contains(visited, currentType->parentTypeID))
+            {
+                return false;
+            }
+
+            visited.push_back(currentType->parentTypeID);
+            currentType = database.GetType(currentType->parentTypeID);
+        }
+        return false;
+    }
+
     static bool CalculateStructureIsPod(ReflectionDatabase const& database, TypeData const& type, std::vector<TypeID>& stack);
 
     static bool IsBindingFieldTypePod(ReflectionDatabase const& database, std::string const& cppType, std::vector<TypeID>& stack)
@@ -683,9 +718,13 @@ namespace SE::BuildTool
             std::string publicName = GetApiBindingName(type);
             std::string publicFullName = CodeGeneratorUtils::GetFullCSTypeName(type.namespaceScopeList, publicName);
             RegisterApiTypeNameAlias(type.name, nativeFullName, publicName, publicFullName);
-            if (type.bindingInfo.isScriptingObject)
+            if (IsScriptingObjectType(database, type))
             {
                 RegisterApiScriptingObjectType(type.name, nativeFullName);
+            }
+            else if (type.IsFlag(TypeData::Flags::IsStruct) && !CalculateStructureIsPod(database, type))
+            {
+                RegisterApiInteropStructType(type.name, nativeFullName, publicName, publicFullName);
             }
             else if (!type.IsFlag(TypeData::Flags::IsStruct) && !type.bindingInfo.isStatic)
             {
@@ -705,7 +744,7 @@ namespace SE::BuildTool
         cls.isTemplate        = type.IsFlag(TypeData::Flags::IsTemplate);
         cls.isStruct           = type.IsFlag(TypeData::Flags::IsStruct);
         cls.isPod              = cls.isStruct && CalculateStructureIsPod(database, type);
-        cls.isScriptingObject = type.bindingInfo.isScriptingObject;
+        cls.isScriptingObject = IsScriptingObjectType(database, type);
         cls.functions          = type.bindingInfo.functions;
         cls.properties        = type.bindingInfo.bindingProperties;
         cls.fields             = type.bindingInfo.fields;
@@ -741,6 +780,7 @@ namespace SE::BuildTool
         }
         en.attributes = type.bindingInfo.attributes;
         en.comment = type.bindingInfo.comment;
+        en.isDeprecated = type.bindingInfo.isDeprecated;
         return en;
     }
 
@@ -778,32 +818,7 @@ namespace SE::BuildTool
                 fn.uniqueName = baseName;
             }
 
-            if (cls.namespaceNameList.size() > 0 && cls.structScopeList.size() > 0)
-            {
-                fn.entryPoint = Utils::String::Format("{0}::{1}::{2}::{3}",
-                                CodeGeneratorUtils::GetFullCNameSpaceName(cls.namespaceNameList),
-                                CodeGeneratorUtils::GetFullCNameSpaceName(cls.structScopeList),
-                                Utils::String::Format("{0}Internal", cls.name),
-                                fn.uniqueName);
-            }
-            else if (cls.namespaceNameList.size() > 0)
-            {
-                fn.entryPoint = Utils::String::Format("{0}::{1}::{2}",
-                                CodeGeneratorUtils::GetFullCNameSpaceName(cls.namespaceNameList),
-                                Utils::String::Format("{0}Internal", cls.name),
-                                fn.uniqueName);
-            }
-            else if (cls.structScopeList.size() > 0)
-            {
-                fn.entryPoint = Utils::String::Format("{0}::{1}::{2}",
-                                CodeGeneratorUtils::GetFullCNameSpaceName(cls.structScopeList),
-                                Utils::String::Format("{0}Internal", cls.name),
-                                fn.uniqueName);
-            }
-            else
-            {
-                fn.entryPoint = Utils::String::Format("{0}_{1}", cls.name, fn.uniqueName);
-            }
+            fn.entryPoint = Utils::String::Format("{0}_{1}", cls.name, fn.uniqueName);
         }
     }
 
@@ -839,6 +854,7 @@ namespace SE::BuildTool
                 iface.functions = type.bindingInfo.functions;
                 iface.attributes = type.bindingInfo.attributes;
                 iface.comment = type.bindingInfo.comment;
+                iface.isDeprecated = type.bindingInfo.isDeprecated;
                 outInfo.interfaces.push_back(iface);
             }
             else
@@ -885,6 +901,8 @@ namespace SE::BuildTool
             {
                 expectedFiles.push_back(headerInfo.GetAutogeneratedTypeInfoFileName(autoGeneratedDirectory));
             }
+            const std::string interopHeaderFilename = autoGeneratedDirectory + "/BindingsInterop.h";
+            expectedFiles.push_back(interopHeaderFilename);
 
             // Delete any unknown files from the auto generated directory
             std::vector<std::string> files;
@@ -896,6 +914,45 @@ namespace SE::BuildTool
                 {
 					FileSystem::DeleteFile(file);
                 }
+            }
+
+            // Generate one module-wide ABI bridge before the per-header binding
+            // files. Individual wrappers include this header when they need to
+            // marshal a non-blittable API struct.
+            std::vector<BindingsHeaderInfo> projectBindingHeaders;
+            for (auto const& headerInfo : prj.headerFiles)
+            {
+                std::vector<TypeData> typesInHeader;
+                m_pDatabase->GetAllTypesForHeader(headerInfo.headerId, typesInHeader);
+
+                bool headerHasBinding = HeaderHasInjectedCode(headerInfo, "cpp");
+                for (auto const& type : typesInHeader)
+                {
+                    if (type.isAPI)
+                    {
+                        headerHasBinding = true;
+                        break;
+                    }
+                }
+                if (!headerHasBinding)
+                    continue;
+
+                BindingsHeaderInfo bindingsHeaderInfo;
+                BuildBindingsHeaderInfoFromTypes(database, headerInfo, typesInHeader, bindingsHeaderInfo);
+                projectBindingHeaders.push_back(std::move(bindingsHeaderInfo));
+            }
+
+            BindingsCppGenerator interopGenerator;
+            std::string interopHeader;
+            std::stringstream interopHeaderStream;
+            if (!interopGenerator.GenerateInteropHeader(projectBindingHeaders, interopHeader))
+            {
+                return LogError("Failed to generate bindings interop header for project: {0}", prj.name);
+            }
+            interopHeaderStream << interopHeader;
+            if (!SaveStreamToFile(interopHeaderFilename, interopHeaderStream))
+            {
+                return LogError("Failed to save bindings interop header for project: {0}", prj.name);
             }
 
             // Generate code files for the dirty headers
@@ -987,7 +1044,7 @@ namespace SE::BuildTool
 
                     BindingsCppGenerator cppGen;
                     std::string bindingOutput;
-                    if (!cppGen.GenerateSource(bindingsHeaderInfo, true, bindingOutput))
+                    if (!cppGen.GenerateSource(bindingsHeaderInfo, bindingOutput))
                     {
                         return LogError("C++ bindings generation failed for header: {0}", headerInfo.filePath);
                     }

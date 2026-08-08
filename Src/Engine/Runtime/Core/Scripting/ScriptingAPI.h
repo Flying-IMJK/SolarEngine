@@ -8,16 +8,13 @@
 // The Reflector tool parses the macro parameters to generate reflection info
 // and C# binding code.
 //
-// Parameters:
-//   Reflect  — generate C++ reflection info (TTypeCompositeInfo/TTypeEnumInfo)
-//   API      — generate C# binding code
-//   Name="..." — generated API/C# type name alias (native C++ name is preserved)
-//   Tag="NativeInvokeUseName" — for static API classes, call the aliased native type
+// The authoritative parameter reference is Document/TypeMacro.md and the comments
+// beside the macro definitions in Runtime/Core/TypeSystem/TypeMacro.h.
 //
 // Usage:
 //   // Class with reflection + binding:
 //   DEFINE_CLASS(MyClass, BaseClass)
-//   SE_CLASS(Reflect, API, InBuild)
+//   SE_CLASS(Reflect, API)
 //   class MyClass : public BaseClass { ... };
 //
 //   // Enum with reflection only:

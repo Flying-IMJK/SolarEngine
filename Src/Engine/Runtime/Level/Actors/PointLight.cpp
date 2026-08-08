@@ -7,7 +7,9 @@
 
 namespace SE
 {
-    PointLight::PointLight(): LightWithShadow(), _radius(1000.0f)
+    PointLight::PointLight(const SpawnParams& params)
+        : LightWithShadow(params)
+        , _radius(1000.0f)
     {
         CastVolumetricShadow = false;
         ShadowsDistance = 2000.0f;

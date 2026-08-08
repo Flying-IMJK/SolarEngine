@@ -7,6 +7,7 @@
 namespace SE
 {
 
+	SE_CLASS(API, Static)
 	class SE_API_RUNTIME Level
 	{
 		friend class LevelSystem;
@@ -26,11 +27,13 @@ namespace SE
 		/// <summary>
 		/// Gets the scenes count.
 		/// </summary>
+		SE_FUNCTION(API)
 		static int32 GetScenesCount()
 		{
 			return Scenes.Count();
 		}
 
+		SE_FUNCTION(API)
 		static bool IsAnySceneLoaded()
 		{
 			return Scenes.HasItems();
@@ -41,52 +44,85 @@ namespace SE
 		/// </summary>
 		/// <param name="index">The index.</param>
 		/// <returns>The scene object (loaded).</returns>
+		SE_FUNCTION(API)
 		static Scene* GetScene(int32 index)
 		{
 			return Scenes[index];
 		}
 
+		SE_FUNCTION(API)
 		static Scene* FindScene(const UID& id);
+
+		/// <summary>
+		/// Gets a loaded scene name by its current level index.
+		/// </summary>
+		SE_FUNCTION(API)
+		static String GetSceneName(int32 index)
+		{
+			Scene* scene = index >= 0 && index < Scenes.Count() ? Scenes[index] : nullptr;
+			return scene != nullptr ? scene->GetName() : String();
+		}
+
+		/// <summary>
+		/// Queues saving a loaded scene selected by its current level index.
+		/// </summary>
+		SE_FUNCTION(API)
+		static bool SaveSceneAt(int32 index)
+		{
+			Scene* scene = index >= 0 && index < Scenes.Count() ? Scenes[index] : nullptr;
+			if (scene == nullptr)
+				return false;
+			SaveSceneAsync(scene);
+			return true;
+		}
 
 		////////////////////// Scene Event
 		/// <summary>
 		/// Fired when scene starts saving.
 		/// </summary>
+		SE_EVENT(API)
 		static Delegate<Scene*, const UID&> SceneSaving;
 
 		/// <summary>
 		/// Fired when scene gets saved.
 		/// </summary>
+		SE_EVENT(API)
 		static Delegate<Scene*, const UID&> SceneSaved;
 
 		/// <summary>
 		/// Fired when scene gets saving error.
 		/// </summary>
+		SE_EVENT(API)
 		static Delegate<Scene*, const UID&> SceneSaveError;
 
 		/// <summary>
 		/// Fired when scene starts loading.
 		/// </summary>
+		SE_EVENT(API)
 		static Delegate<Scene*, const UID&> SceneLoading;
 
 		/// <summary>
 		/// Fired when scene gets loaded.
 		/// </summary>
+		SE_EVENT(API)
 		static Delegate<Scene*, const UID&> SceneLoaded;
 
 		/// <summary>
 		/// Fired when scene cannot be loaded (argument is error number).
 		/// </summary>
+		SE_EVENT(API)
 		static Delegate<Scene*, const UID&> SceneLoadError;
 
 		/// <summary>
 		/// Fired when scene gets unloading.
 		/// </summary>
+		SE_EVENT(API)
 		static Delegate<Scene*, const UID&> SceneUnloading;
 
 		/// <summary>
 		/// Fired when scene gets unloaded.
 		/// </summary>
+		SE_EVENT(API)
 		static Delegate<Scene*, const UID&> SceneUnloaded;
 
 
@@ -94,31 +130,37 @@ namespace SE
 		/// <summary>
 		/// Occurs when new actor gets spawned to the game.
 		/// </summary>
+		SE_EVENT(API)
 		static Delegate<Actor*> ActorSpawned;
 
 		/// <summary>
 		/// Occurs when actor is removed from the game.
 		/// </summary>
+		SE_EVENT(API)
 		static Delegate<Actor*> ActorDeleted;
 
 		/// <summary>
 		/// Occurs when actor parent gets changed. Arguments: actor and previous parent actor.
 		/// </summary>
+		SE_EVENT(API)
 		static Delegate<Actor*, Actor*> ActorParentChanged;
 
 		/// <summary>
 		/// Occurs when actor index in parent actor children gets changed.
 		/// </summary>
+		SE_EVENT(API)
 		static Delegate<Actor*> ActorOrderInParentChanged;
 
 		/// <summary>
 		/// Occurs when actor name gets changed.
 		/// </summary>
+		SE_EVENT(API)
 		static Delegate<Actor*> ActorNameChanged;
 
 		/// <summary>
 		/// Occurs when actor active state gets modified.
 		/// </summary>
+		SE_EVENT(API)
 		static Delegate<Actor*> ActorActiveChanged;
 
 
@@ -141,6 +183,7 @@ namespace SE
 		/// <param name="actor">The actor to spawn.</param>
 		/// <param name="parent">The parent actor (will link spawned actor with this parent).</param>
 		/// <returns>True if action cannot be done, otherwise false.</returns>
+		SE_FUNCTION(API)
 		static bool SpawnActor(Actor* actor, Actor* parent);
 
 		/// <summary>
@@ -148,6 +191,7 @@ namespace SE
 		/// </summary>
 		/// <param name="actor">The actor to delete.</param>
 		/// <returns>True if action cannot be done, otherwise false.</returns>
+		SE_FUNCTION(API)
 		static bool DeleteActor(Actor* actor);
 
 
@@ -164,10 +208,13 @@ namespace SE
 		/// </summary>
 		/// <param name="id">Scene ID</param>
 		/// <returns>True if loading cannot be done, otherwise false.</returns>
+		SE_FUNCTION(API)
 		static bool LoadSceneAsync(const UID& id);
 
+		SE_FUNCTION(API)
 		static bool SaveScene(Scene* scene, bool prettyJson = true);
 
+		SE_FUNCTION(API)
 		static void SaveSceneAsync(Scene* scene);
 
 		/// <summary>

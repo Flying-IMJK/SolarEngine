@@ -9,16 +9,16 @@ namespace SE.GUI
     {
         public const int SplitterSize = 4;
 
-        private Orientation _orientation;
-        private float _splitterValue = 0.5f;
-        private Rectangle _splitterBounds;
-        private bool _isTrackingSplitter;
-        private bool _isMouseOverSplitter;
+        private Orientation m_Orientation;
+        private float m_SplitterValue = 0.5f;
+        private Rectangle m_SplitterBounds;
+        private bool m_IsTrackingSplitter;
+        private bool m_IsMouseOverSplitter;
 
         public SplitPanel(Orientation orientation = Orientation.Horizontal)
         {
             AutoFocus = false;
-            _orientation = orientation;
+            m_Orientation = orientation;
             Panel1 = new Panel();
             Panel2 = new Panel();
             AddChild(Panel1);
@@ -31,62 +31,62 @@ namespace SE.GUI
 
         public Orientation Orientation
         {
-            get => _orientation;
+            get => m_Orientation;
             set
             {
-                if (_orientation == value)
+                if (m_Orientation == value)
                     return;
-                _orientation = value;
+                m_Orientation = value;
                 PerformLayout();
             }
         }
 
         public float SplitterValue
         {
-            get => _splitterValue;
+            get => m_SplitterValue;
             set
             {
                 float clamped = Math.Clamp(value, 0.0f, 1.0f);
-                if (MathF.Abs(_splitterValue - clamped) <= float.Epsilon)
+                if (MathF.Abs(m_SplitterValue - clamped) <= float.Epsilon)
                     return;
-                _splitterValue = clamped;
+                m_SplitterValue = clamped;
                 PerformLayout();
             }
         }
 
-        public Rectangle SplitterBounds => _splitterBounds;
+        public Rectangle SplitterBounds => m_SplitterBounds;
 
-        public override bool OnMouseDown(Float2 location, int button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (button != 1 || !_splitterBounds.Contains(location))
+            if (button != MouseButton.Left || !m_SplitterBounds.Contains(location))
                 return false;
 
-            _isTrackingSplitter = true;
+            m_IsTrackingSplitter = true;
             Root?.StartTrackingMouse(this);
             return true;
         }
 
         public override void OnMouseMove(Float2 location)
         {
-            _isMouseOverSplitter = _splitterBounds.Contains(location);
-            if (_isTrackingSplitter)
-                SplitterValue = _orientation == Orientation.Horizontal ? location.X / MathF.Max(1.0f, Width) : location.Y / MathF.Max(1.0f, Height);
+            m_IsMouseOverSplitter = m_SplitterBounds.Contains(location);
+            if (m_IsTrackingSplitter)
+                SplitterValue = m_Orientation == Orientation.Horizontal ? location.X / MathF.Max(1.0f, Width) : location.Y / MathF.Max(1.0f, Height);
         }
 
-        public override bool OnMouseUp(Float2 location, int button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (button != 1 || !_isTrackingSplitter)
+            if (button != MouseButton.Left || !m_IsTrackingSplitter)
                 return false;
 
-            _isTrackingSplitter = false;
+            m_IsTrackingSplitter = false;
             Root?.EndTrackingMouse();
             return true;
         }
 
         public override void ClearState()
         {
-            _isTrackingSplitter = false;
-            _isMouseOverSplitter = false;
+            m_IsTrackingSplitter = false;
+            m_IsMouseOverSplitter = false;
             base.ClearState();
         }
 
@@ -96,8 +96,8 @@ namespace SE.GUI
             if (!VisibleInHierarchy || IsDisposed)
                 return;
 
-            Rectangle splitter = new Rectangle(ScreenPos + _splitterBounds.Location, _splitterBounds.Size);
-            Color color = _isTrackingSplitter ? Style.Current.BackgroundSelected : _isMouseOverSplitter ? Style.Current.BackgroundHighlighted : Style.Current.BackgroundNormal;
+            Rectangle splitter = new Rectangle(ScreenPos + m_SplitterBounds.Location, m_SplitterBounds.Size);
+            Color color = m_IsTrackingSplitter ? Style.Current.BackgroundSelected : m_IsMouseOverSplitter ? Style.Current.BackgroundHighlighted : Style.Current.BackgroundNormal;
             Render2D.FillRectangle(ref splitter, ref color);
         }
 
@@ -105,15 +105,15 @@ namespace SE.GUI
         {
             UpdateSplitterBounds();
             float half = SplitterSize * 0.5f;
-            if (_orientation == Orientation.Horizontal)
+            if (m_Orientation == Orientation.Horizontal)
             {
-                float split = MathF.Round(_splitterValue * Width);
+                float split = MathF.Round(m_SplitterValue * Width);
                 Panel1.SetBounds(0.0f, 0.0f, MathF.Max(0.0f, split - half), Height);
                 Panel2.SetBounds(MathF.Min(Width, split + half), 0.0f, MathF.Max(0.0f, Width - split - half), Height);
             }
             else
             {
-                float split = MathF.Round(_splitterValue * Height);
+                float split = MathF.Round(m_SplitterValue * Height);
                 Panel1.SetBounds(0.0f, 0.0f, Width, MathF.Max(0.0f, split - half));
                 Panel2.SetBounds(0.0f, MathF.Min(Height, split + half), Width, MathF.Max(0.0f, Height - split - half));
             }
@@ -121,15 +121,15 @@ namespace SE.GUI
 
         private void UpdateSplitterBounds()
         {
-            if (_orientation == Orientation.Horizontal)
+            if (m_Orientation == Orientation.Horizontal)
             {
-                float split = MathF.Round(_splitterValue * Width);
-                _splitterBounds = new Rectangle(Math.Clamp(split - SplitterSize * 0.5f, 0.0f, Width), 0.0f, SplitterSize, Height);
+                float split = MathF.Round(m_SplitterValue * Width);
+                m_SplitterBounds = new Rectangle(Math.Clamp(split - SplitterSize * 0.5f, 0.0f, Width), 0.0f, SplitterSize, Height);
             }
             else
             {
-                float split = MathF.Round(_splitterValue * Height);
-                _splitterBounds = new Rectangle(0.0f, Math.Clamp(split - SplitterSize * 0.5f, 0.0f, Height), Width, SplitterSize);
+                float split = MathF.Round(m_SplitterValue * Height);
+                m_SplitterBounds = new Rectangle(0.0f, Math.Clamp(split - SplitterSize * 0.5f, 0.0f, Height), Width, SplitterSize);
             }
         }
     }

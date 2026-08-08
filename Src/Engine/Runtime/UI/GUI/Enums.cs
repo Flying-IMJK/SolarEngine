@@ -71,16 +71,4 @@ namespace SE.GUI
         Next,
         Previous,
     }
-
-    /// <summary>
-    /// The effect accepted by a drag-and-drop target.
-    /// Values intentionally match the platform window drag-and-drop effect values.
-    /// </summary>
-    public enum DragDropEffect
-    {
-        None = 0,
-        Copy = 1,
-        Move = 2,
-        Link = 3,
-    }
 }

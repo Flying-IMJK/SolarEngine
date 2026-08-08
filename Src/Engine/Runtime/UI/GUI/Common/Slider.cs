@@ -18,13 +18,13 @@ namespace SE.GUI
     /// </summary>
     public class Slider : ContainerControl
     {
-        private float _minimum;
-        private float _maximum = 100.0f;
-        private float _value = 100.0f;
-        private Float2 _thumbSize = new Float2(16.0f, 16.0f);
-        private Rectangle _thumbRect;
-        private bool _isSliding;
-        private bool _mouseOverThumb;
+        private float m_Minimum;
+        private float m_Maximum = 100.0f;
+        private float m_Value = 100.0f;
+        private Float2 m_ThumbSize = new Float2(16.0f, 16.0f);
+        private Rectangle m_ThumbRect;
+        private bool m_IsSliding;
+        private bool m_MouseOverThumb;
 
         public Slider()
             : this(120.0f, 30.0f)
@@ -49,53 +49,53 @@ namespace SE.GUI
 
         public SliderDirection Direction
         {
-            get => _direction;
+            get => m_Direction;
             set
             {
-                if (_direction == value)
+                if (m_Direction == value)
                     return;
-                _direction = value;
+                m_Direction = value;
                 UpdateThumb();
             }
         }
-        private SliderDirection _direction = SliderDirection.HorizontalRight;
+        private SliderDirection m_Direction = SliderDirection.HorizontalRight;
 
         public float Minimum
         {
-            get => _minimum;
+            get => m_Minimum;
             set
             {
-                if (value > _maximum)
+                if (value > m_Maximum)
                     throw new ArgumentOutOfRangeException(nameof(value));
-                _minimum = WholeNumbers ? MathF.Round(value) : value;
-                Value = _value;
+                m_Minimum = WholeNumbers ? MathF.Round(value) : value;
+                Value = m_Value;
             }
         }
 
         public float Maximum
         {
-            get => _maximum;
+            get => m_Maximum;
             set
             {
-                if (value < _minimum)
+                if (value < m_Minimum)
                     throw new ArgumentOutOfRangeException(nameof(value));
-                _maximum = WholeNumbers ? MathF.Round(value) : value;
-                Value = _value;
+                m_Maximum = WholeNumbers ? MathF.Round(value) : value;
+                Value = m_Value;
             }
         }
 
         public float Value
         {
-            get => _value;
+            get => m_Value;
             set
             {
                 float result = Math.Clamp(value, Minimum, Maximum);
                 if (WholeNumbers)
                     result = MathF.Round(result);
-                if (MathF.Abs(result - _value) <= float.Epsilon)
+                if (MathF.Abs(result - m_Value) <= float.Epsilon)
                     return;
 
-                _value = result;
+                m_Value = result;
                 UpdateThumb();
                 ValueChanged?.Invoke(this);
             }
@@ -106,10 +106,10 @@ namespace SE.GUI
         public int TrackThickness { get; set; } = 2;
         public Float2 ThumbSize
         {
-            get => _thumbSize;
+            get => m_ThumbSize;
             set
             {
-                _thumbSize = new Float2(MathF.Max(0.0f, value.X), MathF.Max(0.0f, value.Y));
+                m_ThumbSize = new Float2(MathF.Max(0.0f, value.X), MathF.Max(0.0f, value.Y));
                 UpdateThumb();
             }
         }
@@ -122,17 +122,17 @@ namespace SE.GUI
         public IBrush? TrackBrush { get; set; }
         public IBrush? FillTrackBrush { get; set; }
         public IBrush? ThumbBrush { get; set; }
-        public bool IsSliding => _isSliding;
-        public Rectangle ThumbBounds => _thumbRect;
+        public bool IsSliding => m_IsSliding;
+        public Rectangle ThumbBounds => m_ThumbRect;
 
-        public override bool OnMouseDown(Float2 location, int button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (button != 1)
+            if (button != MouseButton.Left)
                 return false;
 
-            if (_thumbRect.Contains(location))
+            if (m_ThumbRect.Contains(location))
             {
-                _isSliding = true;
+                m_IsSliding = true;
                 Root?.StartTrackingMouse(this);
                 SlidingStart?.Invoke(this);
                 return true;
@@ -144,18 +144,18 @@ namespace SE.GUI
 
         public override void OnMouseMove(Float2 location)
         {
-            _mouseOverThumb = _thumbRect.Contains(location);
-            if (_isSliding)
+            m_MouseOverThumb = m_ThumbRect.Contains(location);
+            if (m_IsSliding)
                 SetValueFromLocation(location);
         }
 
-        public override bool OnMouseUp(Float2 location, int button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (button != 1 || !_isSliding)
+            if (button != MouseButton.Left || !m_IsSliding)
                 return false;
 
             SetValueFromLocation(location);
-            _isSliding = false;
+            m_IsSliding = false;
             Root?.EndTrackingMouse();
             SlidingEnd?.Invoke(this);
             return true;
@@ -163,9 +163,9 @@ namespace SE.GUI
 
         public override void ClearState()
         {
-            bool wasSliding = _isSliding;
-            _isSliding = false;
-            _mouseOverThumb = false;
+            bool wasSliding = m_IsSliding;
+            m_IsSliding = false;
+            m_MouseOverThumb = false;
             if (wasSliding)
                 SlidingEnd?.Invoke(this);
             base.ClearState();
@@ -180,8 +180,8 @@ namespace SE.GUI
             if (FillTrack)
                 DrawBrush(FillTrackBrush, GetFillBounds(track), TrackFillLineColor);
 
-            Rectangle thumb = new Rectangle(ScreenPos + _thumbRect.Location, _thumbRect.Size);
-            Color color = _isSliding ? ThumbColorSelected : _mouseOverThumb ? ThumbColorHighlighted : ThumbColor;
+            Rectangle thumb = new Rectangle(ScreenPos + m_ThumbRect.Location, m_ThumbRect.Size);
+            Color color = m_IsSliding ? ThumbColorSelected : m_MouseOverThumb ? ThumbColorHighlighted : ThumbColor;
             DrawBrush(ThumbBrush, thumb, color);
         }
 
@@ -195,9 +195,9 @@ namespace SE.GUI
         private void SetValueFromLocation(Float2 location)
         {
             bool horizontal = Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft;
-            float thumb = horizontal ? _thumbSize.X : _thumbSize.Y;
+            float thumb = horizontal ? m_ThumbSize.X : m_ThumbSize.Y;
             float length = MathF.Max(0.0f, (horizontal ? Width : Height) - thumb);
-            if (length <= 0.0f || _maximum <= _minimum)
+            if (length <= 0.0f || m_Maximum <= m_Minimum)
                 return;
 
             float coordinate = (horizontal ? location.X : location.Y) - thumb * 0.5f;
@@ -213,31 +213,31 @@ namespace SE.GUI
         protected void UpdateThumb()
         {
             bool horizontal = Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft;
-            float range = _maximum - _minimum;
-            float normalized = range <= 0.0f ? 0.0f : Math.Clamp((_value - _minimum) / range, 0.0f, 1.0f);
+            float range = m_Maximum - m_Minimum;
+            float normalized = range <= 0.0f ? 0.0f : Math.Clamp((m_Value - m_Minimum) / range, 0.0f, 1.0f);
             if (Direction is SliderDirection.HorizontalLeft or SliderDirection.VerticalUp)
                 normalized = 1.0f - normalized;
 
-            float thumb = horizontal ? _thumbSize.X : _thumbSize.Y;
+            float thumb = horizontal ? m_ThumbSize.X : m_ThumbSize.Y;
             float position = normalized * MathF.Max(0.0f, (horizontal ? Width : Height) - thumb);
-            _thumbRect = horizontal
-                ? new Rectangle(position, (Height - _thumbSize.Y) * 0.5f, _thumbSize.X, _thumbSize.Y)
-                : new Rectangle((Width - _thumbSize.X) * 0.5f, position, _thumbSize.X, _thumbSize.Y);
+            m_ThumbRect = horizontal
+                ? new Rectangle(position, (Height - m_ThumbSize.Y) * 0.5f, m_ThumbSize.X, m_ThumbSize.Y)
+                : new Rectangle((Width - m_ThumbSize.X) * 0.5f, position, m_ThumbSize.X, m_ThumbSize.Y);
         }
 
         private Rectangle GetTrackBounds()
         {
             bool horizontal = Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft;
             if (horizontal)
-                return new Rectangle(ScreenPos.X + _thumbSize.X * 0.5f, ScreenPos.Y + (Height - TrackThickness) * 0.5f, MathF.Max(0.0f, Width - _thumbSize.X), TrackThickness);
+                return new Rectangle(ScreenPos.X + m_ThumbSize.X * 0.5f, ScreenPos.Y + (Height - TrackThickness) * 0.5f, MathF.Max(0.0f, Width - m_ThumbSize.X), TrackThickness);
 
-            return new Rectangle(ScreenPos.X + (Width - TrackThickness) * 0.5f, ScreenPos.Y + _thumbSize.Y * 0.5f, TrackThickness, MathF.Max(0.0f, Height - _thumbSize.Y));
+            return new Rectangle(ScreenPos.X + (Width - TrackThickness) * 0.5f, ScreenPos.Y + m_ThumbSize.Y * 0.5f, TrackThickness, MathF.Max(0.0f, Height - m_ThumbSize.Y));
         }
 
         private Rectangle GetFillBounds(Rectangle track)
         {
             bool horizontal = Direction is SliderDirection.HorizontalRight or SliderDirection.HorizontalLeft;
-            float center = horizontal ? ScreenPos.X + _thumbRect.X + _thumbRect.Width * 0.5f : ScreenPos.Y + _thumbRect.Y + _thumbRect.Height * 0.5f;
+            float center = horizontal ? ScreenPos.X + m_ThumbRect.X + m_ThumbRect.Width * 0.5f : ScreenPos.Y + m_ThumbRect.Y + m_ThumbRect.Height * 0.5f;
             if (Direction is SliderDirection.HorizontalLeft or SliderDirection.VerticalUp)
             {
                 if (horizontal)

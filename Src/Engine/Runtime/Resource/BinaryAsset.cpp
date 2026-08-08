@@ -26,11 +26,6 @@ namespace SE
 	}
 
 
-	BinaryAsset::BinaryAsset() : Asset(nullptr), m_StorageRef(nullptr) // We link storage container later
-		, m_IsSaving(false), storage(nullptr)
-	{
-	}
-
 	BinaryAsset::~BinaryAsset()
 	{
 #if SE_EDITOR

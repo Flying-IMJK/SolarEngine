@@ -26,6 +26,7 @@ namespace SE
 	/// <summary>
 	/// Represents date and time.
 	/// </summary>
+	SE_STRUCT(API)
 	struct SE_API_RUNTIME DateTime
 	{
 	public:

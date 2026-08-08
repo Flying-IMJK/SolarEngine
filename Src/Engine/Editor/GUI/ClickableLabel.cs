@@ -8,63 +8,50 @@ namespace SE.Editor.GUI
     /// </summary>
     public class ClickableLabel : Label
     {
-        private bool _leftDown;
-        private bool _rightDown;
+        private bool m_LeftDown;
+        private bool m_RightDown;
 
-        public ClickableLabel()
+        public Action? DoubleClick;
+        public Action? LeftClick;
+        public Action? RightClick;
+
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
+            if (button == MouseButton.Left)
+                m_LeftDown = true;
+            else if (button == MouseButton.Right)
+                m_RightDown = true;
+
+            return base.OnMouseDown(location, button);
         }
 
-        public ClickableLabel(Rectangle bounds, string text = "")
-            : base(bounds, text)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-        }
-
-        public event Action<ClickableLabel>? DoubleClicked;
-        public event Action<ClickableLabel>? LeftClicked;
-        public event Action<ClickableLabel>? RightClicked;
-
-        public override bool OnMouseDown(Float2 location, int button)
-        {
-            if (button == 1)
-                _leftDown = true;
-            else if (button == 3)
-                _rightDown = true;
-            return button == 1 || button == 3;
-        }
-
-        public override bool OnMouseUp(Float2 location, int button)
-        {
-            bool inBounds = location.X >= 0.0f && location.Y >= 0.0f && location.X <= Width && location.Y <= Height;
-            if (button == 1 && _leftDown)
+            if (button == MouseButton.Left && m_LeftDown)
             {
-                _leftDown = false;
-                if (inBounds)
-                    LeftClicked?.Invoke(this);
-                return true;
+                m_LeftDown = false;
+                LeftClick?.Invoke();
             }
-            if (button == 3 && _rightDown)
+            else if (button == MouseButton.Right && m_RightDown)
             {
-                _rightDown = false;
-                if (inBounds)
-                    RightClicked?.Invoke(this);
-                return true;
+                m_RightDown = false;
+                RightClick?.Invoke();
             }
-            return false;
+
+            return base.OnMouseUp(location, button);
         }
 
-        public override bool OnMouseDoubleClick(Float2 location, int button)
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
-            if (button != 1)
-                return false;
-            DoubleClicked?.Invoke(this);
-            return true;
+            DoubleClick?.Invoke();
+            return base.OnMouseDoubleClick(location, button);
         }
 
         public override void OnMouseLeave()
         {
-            _leftDown = false;
-            _rightDown = false;
+            m_LeftDown = false;
+            m_RightDown = false;
+            base.OnMouseLeave();
         }
     }
 }

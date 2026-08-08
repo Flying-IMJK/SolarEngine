@@ -5,12 +5,23 @@ namespace SE.Editor.GUI
 {
     public sealed class SearchBox : TextBox
     {
+        public SearchBox()
+            : this(false, 0.0f, 0.0f)
+        {
+        }
+
+        public SearchBox(bool isMultiline, float x, float y, float width = 120.0f)
+            : this(x, y, width, isMultiline)
+        {
+        }
+
         public SearchBox(float x = 0, float y = 0, float width = 120, bool isMultiline = false)
             : base(new Rectangle(x, y, width, 22), isMultiline)
         {
             PlaceholderText = "Search...";
             ClearSearchButton = new Button(new Rectangle(width - 18, 4, 14, 14), "x");
             ClearSearchButton.Visible = false;
+            ClearSearchButton.TooltipText = "Cancel Search.";
             ClearSearchButton.Clicked += _ => Clear();
 
             AddChild(ClearSearchButton);
@@ -33,17 +44,6 @@ namespace SE.Editor.GUI
         public void Clear()
         {
             SetText(string.Empty);
-        }
-
-        public override bool OnKeyDown(int key)
-        {
-            if (key == 46) // Delete
-            {
-                Clear();
-                return true;
-            }
-
-            return base.OnKeyDown(key);
         }
 
         protected override void OnTextChanged()

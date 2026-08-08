@@ -7,17 +7,16 @@ namespace SE
     /// <summary>
     /// Point light emits light from point in all directions.
     /// </summary>
-    SE_CLASS(Reflect)
+    SE_CLASS(Reflect, API)
     class SE_API_RUNTIME PointLight : public LightWithShadow
     {
+        SCRIPTING_TYPE(PointLight);
         SE_DEFINE_CLASS(PointLight, LightWithShadow);
     private:
         Float3 _direction;
         float _radius;
 
     public:
-        PointLight();
-
         /// <summary>
         /// Light source bulb radius
         /// </summary>

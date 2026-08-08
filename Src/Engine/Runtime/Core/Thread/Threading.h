@@ -88,8 +88,7 @@ namespace SE::Threading
 	/// <seealso cref="Task" />
 	class SE_API_RUNTIME MainThreadTask : public Task
 	{
-		friend class Engine;
-	private:
+	public:
 		static void RunAll(float dt);
 
 	public:

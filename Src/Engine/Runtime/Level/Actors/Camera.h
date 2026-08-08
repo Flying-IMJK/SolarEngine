@@ -12,9 +12,10 @@ namespace SE
 /// <summary>
 /// Describes the camera projection and view. Provides information about how to render scene (viewport location and direction, etc.).
 /// </summary>
-SE_CLASS(Reflect)
+SE_CLASS(Reflect, API, Sealed)
 class SE_API_RUNTIME Camera final : public Actor
 {
+    SCRIPTING_TYPE(Camera);
     SE_DEFINE_CLASS(Camera, Actor)
 
     // List with all created cameras actors on the scene
@@ -58,8 +59,6 @@ public:
     }
 
 public:
-
-    Camera();
 
     /// <summary>
     /// Gets the value indicating if camera should use perspective rendering mode, otherwise it will use orthographic projection.

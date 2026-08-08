@@ -51,11 +51,8 @@ namespace SE::Editor
 
 	void WindowsModule::OnInit()
 	{
-		DebugLogWin = New<LogWindow>();
-		ContentWin = New<ContentWindow>();
-		SceneHierarchyWin = New<SceneHierarchyWindow>();
-		EditSceneWin = New<EditSceneWindow>();
-		PropertiesWin = New<PropertiesWindow>();
+		// Managed WindowsModule owns visible editor windows and docking. This
+		// native registry remains available to background asset services only.
 	}
 
 	void WindowsModule::OnEndInit()

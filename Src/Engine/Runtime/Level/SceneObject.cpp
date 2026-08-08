@@ -13,11 +13,12 @@ namespace SE
 
 	}
 
-	SceneObject::SceneObject() :
+	SceneObject::SceneObject(const SpawnParams& params) : ScriptingObject(params),
 		m_Parent(nullptr)
-	    , m_PrefabID(UID::Empty)
-	    , m_PrefabObjectID(UID::Empty), m_IsDuringPlay(false)
+		, m_PrefabID(UID::Empty)
+		, m_PrefabObjectID(UID::Empty), m_IsDuringPlay(false)
 	{
+
 	}
 
 	SceneObject::~SceneObject()

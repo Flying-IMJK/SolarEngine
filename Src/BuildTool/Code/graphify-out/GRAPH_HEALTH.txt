@@ -1,0 +1,40 @@
+[graphify] MultiDiGraph edge-collapse diagnostic
+input: <in-memory>
+input_stage: provided JSON (normal graph.json is post-build)
+effective_directed: <direct-call>
+nodes: 1284
+raw_edges: 3259
+valid_candidate_edges: 3184
+missing_endpoint_edges: 0
+dangling_endpoint_edges: 75
+self_loop_edges: 0
+exact_duplicate_edges: 0
+directed_unique_endpoint_pairs: 3028
+directed_same_endpoint_collapsed_edges: 156
+undirected_unique_endpoint_pairs: 3015
+undirected_same_endpoint_collapsed_edges: 169
+same_endpoint_group_count: 138
+relation_variant_groups: 30
+source_file_variant_groups: 0
+source_location_variant_groups: 25
+context_variant_groups: 120
+post_build_graph_type: Graph
+post_build_edges: 3026
+producer_suppression_sites: 10
+producer_suppression_examples:
+  - L958 seen_ids arity=unknown
+  - L1108 seen_ids arity=unknown
+  - L1110 seen_doc_refs arity=unknown
+  - L1533 seen_ids arity=unknown
+  - L2002 seen_keys arity=unknown
+  - L2925 seen_ids arity=unknown
+  - L3033 seen_ids arity=unknown
+  - L3112 seen_ids arity=unknown
+examples:
+  - clang_clangparsercontext_getfulltypename -> clang_clangparsercontext_cpp_string edges=3 relations=['references'] locations=['L11'] contexts=['generic_arg', 'parameter_type', 'return_type']
+  - codegenerators_codegenerator_bindingsnativestubs_normalizestubbasename -> codegenerators_codegenerator_bindingsnativestubs_cpp_string edges=3 relations=['calls', 'references'] locations=['L126', 'L132'] contexts=['call', 'parameter_type', 'return_type']
+  - codegenerators_codegenerator_bindingsnativestubs_getstubnamespace -> codegenerators_codegenerator_bindingsnativestubs_cpp_string edges=3 relations=['calls', 'references'] locations=['L179', 'L182'] contexts=['call', 'parameter_type', 'return_type']
+  - codegenerators_codegenerator_bindingstypemap_getapiinteropstructcpptype -> codegenerators_codegenerator_bindingstypemap_cpp_string edges=3 relations=['calls', 'references'] locations=['L319', 'L322'] contexts=['call', 'parameter_type', 'return_type']
+  - codegenerators_codegenerator_bindingstypemap_getapiinteropstructmarshallertype -> codegenerators_codegenerator_bindingstypemap_cpp_string edges=3 relations=['calls', 'references'] locations=['L325', 'L328'] contexts=['call', 'parameter_type', 'return_type']
+note: normal graph.json is post-build; raw producer loss must be measured earlier.
+GRAPH HEALTH WARNING: 75 dangling-endpoint edges; 156 collapsed directed edges; 169 collapsed undirected edges

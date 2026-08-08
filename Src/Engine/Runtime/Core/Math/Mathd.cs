@@ -961,7 +961,7 @@ namespace SE
         /// Performs smooth (cubic Hermite) interpolation between 0 and 1.
         /// </summary>
         /// <remarks>
-        /// See: 
+        /// See:
         /// <br><seealso href="https://en.wikipedia.org/wiki/Smoothstep"/></br>
         /// </remarks>
         /// <param name="amount">Value between 0 and 1 indicating interpolation amount.</param>
@@ -974,7 +974,7 @@ namespace SE
         /// Performs a smooth(er) interpolation between 0 and 1 with 1st and 2nd order derivatives of zero at endpoints.
         /// </summary>
         /// <remarks>
-        /// See: 
+        /// See:
         /// <br><seealso href="https://en.wikipedia.org/wiki/Smoothstep"/></br>
         /// </remarks>
         /// <param name="amount">Value between 0 and 1 indicating interpolation amount.</param>

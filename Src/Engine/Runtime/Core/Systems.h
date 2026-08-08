@@ -106,7 +106,7 @@ namespace SE
             static_assert(TIsBaseOf<ISystem, T>::Value, "T is not derived from ISystem");
 
 			SystemInfo item;
-			if (m_SystemCache.TryGet(T::s_systemID, item))
+			if (GetSystemCache().TryGet(T::s_systemID, item))
 			{
 				if (item.systemInstance)
 				{
@@ -126,8 +126,9 @@ namespace SE
 			ISystem* systemInstance;
 		};
 
-        static List<ISystem*> m_Systems;
-		static Dictionary<uint32, SystemInfo> m_SystemCache;
+		static List<ISystem*>& GetSystems();
+		static Dictionary<uint32, SystemInfo>& GetSystemCache();
+
     };
 }
 

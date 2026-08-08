@@ -7,9 +7,10 @@ namespace SE
     /// Directional light emits light from direction in space.
     /// </summary>
     // SE_CLASS(API, Attributes="ActorContextMenu(\"New/Lights/Directional Light\"), ActorToolbox(\"Lights\")")
-    SE_CLASS(Reflect)
+    SE_CLASS(Reflect, API)
     class SE_API_RUNTIME DirectionalLight : public LightWithShadow
     {
+        SCRIPTING_TYPE(DirectionalLight);
         SE_DEFINE_CLASS(DirectionalLight, LightWithShadow);
     public:
         /// <summary>
@@ -49,8 +50,6 @@ namespace SE
         float Cascade4Spacing = 1.0f;
 
     public:
-        DirectionalLight();
-
         // [Light]
         void RenderDraw(RenderContext& renderContext) override;
         void Serialize(SerializeContext& context) override;

@@ -424,8 +424,8 @@ public:
             engineModule->ClassToTypeIndex[engineModule->Assembly->GetClass("SE.Vector3")] = engineModule->TypeNameToTypeIndex["SE.Vector3"];
             engineModule->ClassToTypeIndex[engineModule->Assembly->GetClass("SE.Vector4")] = engineModule->TypeNameToTypeIndex["SE.Vector4"];
         }
-#if SE_EDITOR
 
+#if SE_EDITOR
         const String solarEditorPath = EngineContext::BinariesFolder / SE_TEXT("SEEditorCSharp.dll");
         auto* editorEngineModule = (NativeBinaryModule*)GetBinaryModuleSEEditor();
         if (!editorEngineModule->Assembly->IsLoaded() && !editorEngineModule->Assembly->Load(solarEditorPath))
@@ -435,12 +435,10 @@ public:
         }
 #endif
 
-
         if (needLoadEngine)
         {
             OnEngineLoaded(engineModule->Assembly);
         }
-
 
 #ifdef SE_EDITOR
         // Skip loading game modules in Editor on startup - Editor loads them later during splash screen (eg. after first compilation)
@@ -1032,7 +1030,7 @@ public:
 
     void OnEngineLoaded(CLRAssembly* assembly)
     {
-        if (InitEngine())
+        if (!InitEngine())
         {
             LOG_FATAL("Scripting", "Failed to initialize Solar Engine runtime.");
         }
@@ -1124,9 +1122,9 @@ public:
         GET_CLASS(SERuntime, CLRCore::TypeCache::Rectangle, "SE.Rectangle");
         GET_CLASS(SERuntime, CLRCore::TypeCache::Ray, "SE.Ray");
 
-        GET_CLASS(SERuntime, CLRCore::TypeCache::CollisionClass, "SE.Collision");
+        // GET_CLASS(SERuntime, CLRCore::TypeCache::CollisionClass, "SE.Collision");
 
-        GET_CLASS(SERuntime, CLRCore::TypeCache::JSON, "SE.Json.JsonSerializer");
+        // GET_CLASS(SERuntime, CLRCore::TypeCache::JSON, "SE.Json.JsonSerializer");
 
         // GET_METHOD(Json_Serialize, JSON, "Serialize", 2);
         // GET_METHOD(Json_SerializeDiff, JSON, "SerializeDiff", 3);

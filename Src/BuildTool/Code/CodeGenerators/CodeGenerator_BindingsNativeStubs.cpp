@@ -16,6 +16,7 @@ namespace SE::BuildTool
         std::string fullName;
         bool       isClass = false;
         bool       isEnum = false;
+        uint32_t   genericArity = 0;
         std::vector<std::string> enumMembers;
     };
 
@@ -44,6 +45,95 @@ namespace SE::BuildTool
             || Utils::String::StartsWith(type, "System.");
     }
 
+    static bool TryParseGenericType(const std::string& type, std::string& outBaseName,
+                                    std::vector<std::string>& outArguments)
+    {
+        int32 const openIndex = Utils::String::Find(type, '<');
+        if (openIndex == INVALID_INDEX)
+        {
+            return false;
+        }
+
+        int32 depth = 0;
+        int32 closeIndex = INVALID_INDEX;
+        for (int32 i = openIndex; i < type.length(); ++i)
+        {
+            if (type[(size_t)i] == '<')
+            {
+                ++depth;
+            }
+            else if (type[(size_t)i] == '>')
+            {
+                if (--depth == 0)
+                {
+                    closeIndex = i;
+                    break;
+                }
+            }
+        }
+
+        if (closeIndex == INVALID_INDEX || closeIndex != type.length() - 1)
+        {
+            return false;
+        }
+
+        outBaseName = type.substr(0, (size_t)openIndex);
+        Utils::String::TrimStart(outBaseName);
+        Utils::String::TrimEnd(outBaseName);
+        if (outBaseName.empty() || closeIndex == openIndex + 1)
+        {
+            return false;
+        }
+
+        int32 argumentStart = openIndex + 1;
+        depth = 0;
+        for (int32 i = argumentStart; i < closeIndex; ++i)
+        {
+            Char const c = type[(size_t)i];
+            if (c == '<')
+            {
+                ++depth;
+            }
+            else if (c == '>')
+            {
+                --depth;
+            }
+            else if (c == ',' && depth == 0)
+            {
+                std::string argument = type.substr((size_t)argumentStart, (size_t)(i - argumentStart));
+                Utils::String::TrimStart(argument);
+                Utils::String::TrimEnd(argument);
+                if (argument.empty())
+                {
+                    return false;
+                }
+                outArguments.push_back(std::move(argument));
+                argumentStart = i + 1;
+            }
+        }
+
+        std::string argument = type.substr((size_t)argumentStart, (size_t)(closeIndex - argumentStart));
+        Utils::String::TrimStart(argument);
+        Utils::String::TrimEnd(argument);
+        if (argument.empty())
+        {
+            return false;
+        }
+        outArguments.push_back(std::move(argument));
+        return true;
+    }
+
+    static std::string NormalizeStubBaseName(std::string type)
+    {
+        Utils::String::TrimStart(type);
+        Utils::String::TrimEnd(type);
+        if (!type.empty() && !IsBuiltinCSharpType(type) && Utils::String::Find(type, ".") == INVALID_INDEX)
+        {
+            type = std::string("SE.") + type;
+        }
+        return type;
+    }
+
     static std::string NormalizeStubTypeName(const std::string& rawType)
     {
         std::string type = rawType;
@@ -60,9 +150,14 @@ namespace SE::BuildTool
                 break;
         }
 
-        if (!type.empty() && !IsBuiltinCSharpType(type) && Utils::String::Find(type, ".") == INVALID_INDEX)
-            type = std::string("SE.") + type;
-        return type;
+        std::string baseName;
+        std::vector<std::string> arguments;
+        if (TryParseGenericType(type, baseName, arguments))
+        {
+            int32 const openIndex = Utils::String::Find(type, '<');
+            return NormalizeStubBaseName(baseName) + type.substr((size_t)openIndex);
+        }
+        return NormalizeStubBaseName(type);
     }
 
     static int FindLastDot(const std::string& fullName)
@@ -93,10 +188,10 @@ namespace SE::BuildTool
         return pos == INVALID_INDEX ? fullName : fullName.substr(pos + 1);
     }
 
-    static int FindStub(std::vector<NativeTypeStub>& stubs, const std::string& fullName)
+    static int FindStub(std::vector<NativeTypeStub>& stubs, const std::string& fullName, uint32_t genericArity)
     {
         return Utils::Vector::FindIndexIf(stubs, [&](const NativeTypeStub& stub) {
-            return stub.fullName == fullName;
+            return stub.fullName == fullName && stub.genericArity == genericArity;
         });
     }
 
@@ -108,9 +203,9 @@ namespace SE::BuildTool
     }
 
     static NativeTypeStub& AddStub(std::vector<NativeTypeStub>& stubs, const std::vector<std::string>& availableTypes,
-                                   const std::string& fullName, bool isClass)
+                                   const std::string& fullName, bool isClass, uint32_t genericArity = 0)
     {
-        int existing = FindStub(stubs, fullName);
+        int existing = FindStub(stubs, fullName, genericArity);
         if (existing != INVALID_INDEX)
         {
             if (isClass)
@@ -121,21 +216,44 @@ namespace SE::BuildTool
         NativeTypeStub& stub = Utils::Vector::AddOne(stubs);
         stub.fullName = fullName;
         stub.isClass = isClass;
+        stub.genericArity = genericArity;
         if (Utils::Vector::Contains(availableTypes, fullName))
             stub.fullName = std::string();
         return stub;
     }
 
+    static void AddStubForCSharpType(std::vector<NativeTypeStub>& stubs, const std::vector<std::string>& availableTypes,
+                                     const std::string& rawType, bool isClass)
+    {
+        std::string const publicType = NormalizeStubTypeName(rawType);
+        std::string baseName;
+        std::vector<std::string> arguments;
+        if (TryParseGenericType(publicType, baseName, arguments))
+        {
+            for (auto const& argument : arguments)
+            {
+                AddStubForCSharpType(stubs, availableTypes, argument, false);
+            }
+        }
+        else
+        {
+            baseName = publicType;
+        }
+
+        if (IsBuiltinCSharpType(baseName) || Utils::Vector::Contains(availableTypes, baseName))
+        {
+            return;
+        }
+
+        AddStub(stubs, availableTypes, baseName, isClass, (uint32_t)arguments.size());
+    }
+
     static void AddStubForCppType(std::vector<NativeTypeStub>& stubs, const std::vector<std::string>& availableTypes,
                                   const std::string& cppType)
     {
-        std::string publicType = NormalizeStubTypeName(GetCSharpPublicType(cppType));
-        if (IsBuiltinCSharpType(publicType) || Utils::Vector::Contains(availableTypes, publicType))
-            return;
-
         bool isClass = IsScriptingObjectPointer(cppType) || IsObjectTypeRef(cppType)
             || (!cppType.empty() && cppType.find('*') != std::string::npos);
-        AddStub(stubs, availableTypes, publicType, isClass);
+        AddStubForCSharpType(stubs, availableTypes, GetCSharpPublicType(cppType), isClass);
     }
 
     static std::string NormalizeStubDefaultValue(const ApiParam& param)
@@ -200,6 +318,26 @@ namespace SE::BuildTool
         }
     }
 
+    static std::string GetGenericParameterList(uint32_t genericArity)
+    {
+        if (genericArity == 0)
+        {
+            return std::string();
+        }
+
+        std::string parameters = "<";
+        for (uint32_t i = 0; i < genericArity; ++i)
+        {
+            if (i > 0)
+            {
+                parameters += ", ";
+            }
+            parameters += genericArity == 1 ? "T" : Utils::String::Format("T{0}", i);
+        }
+        parameters += ">";
+        return parameters;
+    }
+
     bool BindingsCSharpGenerator::GenerateNativeTypeStubs(const std::vector<BindingsHeaderInfo>& headers)
     {
         if (headers.empty())
@@ -207,7 +345,7 @@ namespace SE::BuildTool
 
         std::vector<std::string> availableTypes;
         availableTypes.push_back("SE.Object");
-        availableTypes.push_back("SE.Scripting.ScriptingObject");
+        availableTypes.push_back("SE.ScriptingObject");
 
         for (auto& header : headers)
         {
@@ -270,7 +408,7 @@ namespace SE::BuildTool
 
             hasStubs = true;
             std::string nsName = GetStubNamespace(stub.fullName);
-            std::string simpleName = MakeCSharpIdentifier(GetStubSimpleName(stub.fullName));
+            std::string simpleName = CodeGeneratorUtils::MakeCSharpIdentifier(GetStubSimpleName(stub.fullName)) + GetGenericParameterList(stub.genericArity);
             if (!nsName.empty())
                 output += Utils::String::Format("namespace {0}\n{{\n", nsName);
 
@@ -285,7 +423,7 @@ namespace SE::BuildTool
                 {
                     for (int i = 0; i < stub.enumMembers.size(); ++i)
                     {
-                        output += Utils::String::Format("        {0} = {1}", MakeCSharpIdentifier(stub.enumMembers[i]), i);
+                        output += Utils::String::Format("        {0} = {1}", CodeGeneratorUtils::MakeCSharpIdentifier(stub.enumMembers[i]), i);
                         if (i < stub.enumMembers.size() - 1)
                             output += ",";
                         output += "\n";
@@ -322,6 +460,6 @@ namespace SE::BuildTool
         {
             output += "namespace SE { }\n";
         }
-        return SaveFile(outPath, std::string(output.c_str()));
+        return CodeGeneratorUtils::SaveFile(outPath, std::string(output.c_str()));
     }
 }

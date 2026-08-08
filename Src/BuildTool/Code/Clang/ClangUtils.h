@@ -9,6 +9,7 @@
 
 #include "Core/StringID.h"
 #include "Core/Utils.h"
+#include <Database/DataTypes.h>
 
 //-------------------------------------------------------------------------
 
@@ -126,5 +127,14 @@ namespace SE::BuildTool
 
             return true;
         }
+
+
+        AccessLevel GetAccessLevel(CXCursor cr, AccessLevel defaultAccess = AccessLevel::Public);
+
+        std::string GetCursorComment(CXCursor cr);
+
+        std::string GetParameterDefaultValue(CXCursor argCr);
+
+        bool IsStatic(CXCursor cr);
     }
 }

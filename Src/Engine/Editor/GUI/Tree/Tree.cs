@@ -7,9 +7,10 @@ namespace SE.Editor.GUI
     {
         public const float KeyUpdateTimeout = 0.25f;
 
-        private readonly List<TreeNode> _nodes = new List<TreeNode>();
-        private readonly List<TreeNode> _selection = new List<TreeNode>();
-        private GuiMargin _margin;
+        private readonly List<TreeNode> m_Nodes = new List<TreeNode>();
+        private readonly List<TreeNode> m_Selection = new List<TreeNode>();
+        private float m_KeyUpdateTime = KeyUpdateTimeout;
+        private Margin m_Margin;
 
         public Tree(bool supportMultiSelect = false)
             : base(new Rectangle(0, 0, 240, 320))
@@ -20,20 +21,20 @@ namespace SE.Editor.GUI
         }
 
         public event Action<IReadOnlyList<TreeNode>, IReadOnlyList<TreeNode>>? SelectedChanged;
-        public event Action<TreeNode, GuiPoint>? RightClick;
+        public event Action<TreeNode, Float2>? RightClick;
 
-        public IReadOnlyList<TreeNode> Nodes => _nodes;
-        public IReadOnlyList<TreeNode> Selection => _selection;
-        public TreeNode? SelectedNode => _selection.Count > 0 ? _selection[0] : null;
+        public IReadOnlyList<TreeNode> Nodes => m_Nodes;
+        public IReadOnlyList<TreeNode> Selection => m_Selection;
+        public TreeNode? SelectedNode => m_Selection.Count > 0 ? m_Selection[0] : null;
         public TreeNode? DraggedOverNode { get; set; }
         public bool SupportMultiSelect { get; }
 
-        public GuiMargin Margin
+        public Margin Margin
         {
-            get => _margin;
+            get => m_Margin;
             set
             {
-                _margin = value;
+                m_Margin = value;
                 PerformLayout();
             }
         }
@@ -42,30 +43,55 @@ namespace SE.Editor.GUI
 
         public TreeNode AddNode(TreeNode node)
         {
-            _nodes.Add(node);
+            m_Nodes.Add(node);
             AddChild(node);
             PerformLayout();
             return node;
         }
 
-        public void OnRightClickInternal(TreeNode node, GuiPoint location)
+        /// <summary>
+        /// Removes and disposes all root nodes. Dynamic model-backed trees use
+        /// this before rebuilding their presentation nodes.
+        /// </summary>
+        public void ClearNodes()
+        {
+            TreeNode[] nodes = m_Nodes.ToArray();
+            m_Nodes.Clear();
+            foreach (TreeNode node in nodes)
+            {
+                RemoveChild(node);
+                node.Dispose();
+            }
+            DeselectAll();
+            PerformLayout();
+        }
+
+        public void OnRightClickInternal(TreeNode node, Float2 location)
         {
             RightClick?.Invoke(node, location);
         }
 
         public void Select(TreeNode node)
         {
+            ArgumentNullException.ThrowIfNull(node);
+
             Select(new[] { node });
+            node.Focus();
         }
 
         public void Select(IEnumerable<TreeNode> nodes)
         {
-            List<TreeNode> before = new List<TreeNode>(_selection);
-            _selection.Clear();
+            ArgumentNullException.ThrowIfNull(nodes);
+
+            List<TreeNode> before = new List<TreeNode>(m_Selection);
+            m_Selection.Clear();
             foreach (TreeNode node in nodes)
             {
-                if (!_selection.Contains(node))
-                    _selection.Add(node);
+                if (!m_Selection.Contains(node))
+                {
+                    m_Selection.Add(node);
+                    node.ExpandAllParents();
+                }
                 if (!SupportMultiSelect)
                     break;
             }
@@ -86,9 +112,9 @@ namespace SE.Editor.GUI
                 return;
             }
 
-            List<TreeNode> before = new List<TreeNode>(_selection);
-            if (!_selection.Remove(node))
-                _selection.Add(node);
+            List<TreeNode> before = new List<TreeNode>(m_Selection);
+            if (!m_Selection.Remove(node))
+                m_Selection.Add(node);
             RaiseSelectionChanged(before);
         }
 
@@ -122,39 +148,145 @@ namespace SE.Editor.GUI
 
         public void DeselectAll()
         {
-            List<TreeNode> before = new List<TreeNode>(_selection);
-            _selection.Clear();
+            List<TreeNode> before = new List<TreeNode>(m_Selection);
+            m_Selection.Clear();
             RaiseSelectionChanged(before);
+        }
+
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            // Flax uses Editor.Options.Input bindings for SelectAll, SelectInvert, and DeselectAll.
+            // Keep those Editor shortcut bindings disabled until the managed options API is available.
+            return base.OnKeyDown(key);
+        }
+
+        public override void OnGetFocus()
+        {
+            m_KeyUpdateTime = 0.0f;
+            base.OnGetFocus();
+        }
+
+        public override void Update(float deltaTime)
+        {
+            TreeNode? node = SelectedNode;
+            RootControl? root = Root;
+
+            if (root != null && node != null && node.AutoFocus && ContainsFocus)
+            {
+                if (root.GetKeyDown(KeyboardKeys.ArrowUp) || root.GetKeyDown(KeyboardKeys.ArrowDown))
+                    m_KeyUpdateTime = KeyUpdateTimeout;
+
+                if (m_KeyUpdateTime >= KeyUpdateTimeout)
+                {
+                    bool keyUpArrow = root.GetKey(KeyboardKeys.ArrowUp);
+                    bool keyDownArrow = root.GetKey(KeyboardKeys.ArrowDown);
+
+                    if (keyDownArrow != keyUpArrow)
+                    {
+                        TreeNode? toSelect = FindVerticalNavigationTarget(node, keyUpArrow);
+                        if (toSelect != null && toSelect.AutoFocus)
+                        {
+                            Select(toSelect);
+                            toSelect.Focus();
+                        }
+
+                        m_KeyUpdateTime = 0.0f;
+                    }
+                }
+                else
+                {
+                    m_KeyUpdateTime += deltaTime;
+                }
+
+                if (root.GetKeyDown(KeyboardKeys.ArrowRight))
+                {
+                    if (node.IsExpanded)
+                    {
+                        TreeNode? child = GetFirstVisibleChild(node);
+                        if (child != null)
+                        {
+                            Select(child);
+                            child.Focus();
+                        }
+                    }
+                    else
+                    {
+                        node.Expand();
+                    }
+                }
+                else if (root.GetKeyDown(KeyboardKeys.ArrowLeft))
+                {
+                    if (node.IsCollapsed)
+                    {
+                        if (node.Parent is TreeNode parentNode && parentNode.AutoFocus)
+                        {
+                            Select(parentNode);
+                            parentNode.Focus();
+                        }
+                    }
+                    else
+                    {
+                        node.Collapse();
+                    }
+                }
+            }
+
+            base.Update(deltaTime);
         }
 
         protected override void OnLayoutChildren()
         {
-            float y = _margin.Top;
-            float width = Math.Max(0, Width - _margin.Width);
-            foreach (TreeNode node in _nodes)
+            float y = m_Margin.Top;
+            float width = Math.Max(0, Width - m_Margin.Width);
+            foreach (TreeNode node in m_Nodes)
             {
                 if (!node.Visible)
                     continue;
 
-                node.SetBounds(_margin.Left, y, width, node.Height);
+                node.SetBounds(m_Margin.Left, y, width, node.Height);
                 y += node.Height;
             }
 
             if (AutoSize)
             {
-                Height = y + _margin.Bottom;
+                Height = y + m_Margin.Bottom;
             }
         }
 
         private List<TreeNode> GetExpandedNodes()
         {
             List<TreeNode> result = new List<TreeNode>();
-            foreach (TreeNode node in _nodes)
+            foreach (TreeNode node in m_Nodes)
             {
                 WalkExpanded(node, result);
             }
 
             return result;
+        }
+
+        private TreeNode? FindVerticalNavigationTarget(TreeNode node, bool up)
+        {
+            List<TreeNode> expanded = GetExpandedNodes();
+            int index = expanded.IndexOf(node);
+            if (index < 0)
+                return null;
+
+            index += up ? -1 : 1;
+            if ((uint)index >= (uint)expanded.Count)
+                return null;
+
+            return expanded[index];
+        }
+
+        private static TreeNode? GetFirstVisibleChild(TreeNode node)
+        {
+            foreach (TreeNode child in node.Nodes)
+            {
+                if (child.Visible)
+                    return child;
+            }
+
+            return null;
         }
 
         private static void WalkExpanded(TreeNode node, List<TreeNode> result)
@@ -171,8 +303,8 @@ namespace SE.Editor.GUI
 
         private void RaiseSelectionChanged(List<TreeNode> before)
         {
-            if (!SequenceEqual(before, _selection))
-                SelectedChanged?.Invoke(before, _selection);
+            if (!SequenceEqual(before, m_Selection))
+                SelectedChanged?.Invoke(before, m_Selection);
         }
 
         private static bool SequenceEqual(IReadOnlyList<TreeNode> before, IReadOnlyList<TreeNode> after)

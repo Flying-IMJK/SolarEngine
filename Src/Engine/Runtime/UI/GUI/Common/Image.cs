@@ -7,7 +7,7 @@ namespace SE.GUI
     /// </summary>
     public class Image : ContainerControl
     {
-        private bool _isPressed;
+        private bool m_IsPressed;
 
         public Image()
         {
@@ -29,31 +29,31 @@ namespace SE.GUI
         public Color DisabledTint { get; set; } = new Color(128, 128, 128);
         public bool KeepAspectRatio { get; set; } = true;
 
-        public override bool OnMouseDown(Float2 location, int button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (button != 1)
+            if (button != MouseButton.Left)
                 return false;
 
-            _isPressed = true;
+            m_IsPressed = true;
             Root?.StartTrackingMouse(this);
             return true;
         }
 
-        public override bool OnMouseUp(Float2 location, int button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (button != 1 || !_isPressed)
+            if (button != MouseButton.Left || !m_IsPressed)
                 return false;
 
-            _isPressed = false;
+            m_IsPressed = false;
             Root?.EndTrackingMouse();
             if (location.X >= 0.0f && location.Y >= 0.0f && location.X <= Width && location.Y <= Height)
-                Clicked?.Invoke(this, button);
+                Clicked?.Invoke(this, (int)button);
             return true;
         }
 
         public override void ClearState()
         {
-            _isPressed = false;
+            m_IsPressed = false;
             base.ClearState();
         }
 

@@ -8,21 +8,58 @@ namespace SE.GUI
     /// </summary>
     public class ContainerControl : Control
     {
-        private readonly List<Control> _children = new();
+        private readonly List<Control> m_Children = new();
+        private bool m_ContainsFocus;
+
+        /// <summary>
+        /// The layout locking flag.
+        /// </summary>
+        protected bool m_IsLayoutLocked;
 
         public ContainerControl()
         {
+            m_IsLayoutLocked = true;
         }
 
-        public ContainerControl(Rectangle bounds)
-            : base(bounds)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ContainerControl"/> class.
+        /// </summary>
+        public ContainerControl(float x, float y, float width, float height)  : base(x, y, width, height)
+        {
+            m_IsLayoutLocked = true;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ContainerControl"/> class.
+        /// </summary>
+        public ContainerControl(Float2 location, Float2 size) : base(location, size)
+        {
+            m_IsLayoutLocked = true;
+        }
+
+        public ContainerControl(Rectangle bounds) : base(bounds)
         {
         }
 
         /// <summary>
         /// Gets the children in visual order, from back to front.
         /// </summary>
-        public IReadOnlyList<Control> Children => _children;
+        public IReadOnlyList<Control> Children => m_Children;
+
+        /// <summary>
+        /// Gets amount of the children controls.
+        /// </summary>
+        public int ChildrenCount => m_Children.Count;
+
+        /// <summary>
+        /// Checks if container has any child controls.
+        /// </summary>
+        public bool HasChildren => m_Children.Count > 0;
+
+        /// <summary>
+        /// Gets a value indicating whether the control, or one of its child controls, currently has the input focus.
+        /// </summary>
+        public override bool ContainsFocus => m_ContainsFocus;
 
         /// <summary>
         /// Gets the logical offset applied to every immediate child. Scrolling containers override this.
@@ -43,7 +80,7 @@ namespace SE.GUI
                 return control;
 
             control.Parent?.RemoveChild(control);
-            _children.Add(control);
+            m_Children.Add(control);
             control.SetParentCore(this);
             OnChildAdded(control);
             PerformLayout();
@@ -56,7 +93,7 @@ namespace SE.GUI
         public bool RemoveChild(Control control)
         {
             ArgumentNullException.ThrowIfNull(control);
-            if (!_children.Remove(control))
+            if (!m_Children.Remove(control))
                 return false;
 
             control.SetParentCore(null);
@@ -66,12 +103,76 @@ namespace SE.GUI
         }
 
         /// <summary>
+        /// Gets child control at given index.
+        /// </summary>
+        public Control GetChild(int index)
+        {
+            return m_Children[index];
+        }
+
+        /// <summary>
+        /// Searches for a child control of a specific type.
+        /// </summary>
+        public T? GetChild<T>() where T : Control
+        {
+            Type type = typeof(T);
+            for (int i = 0; i < m_Children.Count; i++)
+            {
+                if (type.IsAssignableFrom(m_Children[i].GetType()))
+                    return (T)m_Children[i];
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Gets zero-based index in the list of control children.
+        /// </summary>
+        public int GetChildIndex(Control child)
+        {
+            return m_Children.IndexOf(child);
+        }
+
+        /// <summary>
+        /// Unlocks all the child controls layout and itself.
+        /// </summary>
+        public void UnlockChildrenRecursive()
+        {
+            m_IsLayoutLocked = false;
+            for (int i = 0; i < m_Children.Count; i++)
+            {
+                if (m_Children[i] is ContainerControl child)
+                    child.UnlockChildrenRecursive();
+            }
+        }
+
+        /// <summary>
+        /// Unlinks all the child controls.
+        /// </summary>
+        public virtual void RemoveChildren()
+        {
+            bool wasLayoutLocked = m_IsLayoutLocked;
+            m_IsLayoutLocked = true;
+
+            // Delete children
+            while (m_Children.Count > 0)
+            {
+                m_Children[0].Parent = null;
+            }
+
+            m_IsLayoutLocked = wasLayoutLocked;
+            PerformLayout();
+        }
+
+        /// <summary>
         /// Disposes every child control.
         /// </summary>
         public void DisposeChildren()
         {
-            while (_children.Count > 0)
-                _children[_children.Count - 1].Dispose();
+            while (m_Children.Count > 0)
+            {
+                m_Children[m_Children.Count - 1].Dispose();
+            }
         }
 
         /// <summary>
@@ -82,9 +183,9 @@ namespace SE.GUI
             if (!ContainsPoint(location))
                 return null;
 
-            for (int index = _children.Count - 1; index >= 0; index--)
+            for (int index = m_Children.Count - 1; index >= 0; index--)
             {
-                Control child = _children[index];
+                Control child = m_Children[index];
                 if (!child.VisibleInHierarchy || !child.EnabledInHierarchy)
                     continue;
 
@@ -108,8 +209,8 @@ namespace SE.GUI
             base.PerformLayout(force);
             OnLayoutChildren();
 
-            for (int index = 0; index < _children.Count; index++)
-                _children[index].PerformLayout(force);
+            for (int index = 0; index < m_Children.Count; index++)
+                m_Children[index].PerformLayout(force);
         }
 
         public override void Update(float deltaTime)
@@ -118,7 +219,7 @@ namespace SE.GUI
             if (!VisibleInHierarchy || IsDisposed)
                 return;
 
-            var children = _children.ToArray();
+            var children = m_Children.ToArray();
             for (int index = 0; index < children.Length; index++)
             {
                 if (ReferenceEquals(children[index].Parent, this))
@@ -148,7 +249,7 @@ namespace SE.GUI
         /// </summary>
         protected void DrawChildren()
         {
-            var children = _children.ToArray();
+            var children = m_Children.ToArray();
             for (int index = 0; index < children.Length; index++)
             {
                 if (ReferenceEquals(children[index].Parent, this))
@@ -159,8 +260,8 @@ namespace SE.GUI
         public override void ClearState()
         {
             base.ClearState();
-            for (int index = 0; index < _children.Count; index++)
-                _children[index].ClearState();
+            for (int index = 0; index < m_Children.Count; index++)
+                m_Children[index].ClearState();
         }
 
         protected override void OnDispose()
@@ -188,29 +289,62 @@ namespace SE.GUI
 
         internal int IndexOf(Control control)
         {
-            return _children.IndexOf(control);
+            return GetChildIndex(control);
         }
 
         internal void SetChildIndex(Control control, int index)
         {
-            int currentIndex = _children.IndexOf(control);
+            int currentIndex = m_Children.IndexOf(control);
             if (currentIndex < 0)
                 throw new InvalidOperationException("The control is not a child of this container.");
-            if ((uint)index >= (uint)_children.Count)
+            if ((uint)index >= (uint)m_Children.Count)
                 throw new ArgumentOutOfRangeException(nameof(index));
             if (currentIndex == index)
                 return;
 
-            _children.RemoveAt(currentIndex);
-            _children.Insert(index, control);
+            m_Children.RemoveAt(currentIndex);
+            m_Children.Insert(index, control);
             PerformLayout();
         }
 
         internal override void SetRootCore(RootControl? root)
         {
             base.SetRootCore(root);
-            for (int index = 0; index < _children.Count; index++)
-                _children[index].SetRootCore(root);
+            for (int index = 0; index < m_Children.Count; index++)
+                m_Children[index].SetRootCore(root);
+            UpdateContainsFocus();
+        }
+
+        internal void UpdateContainsFocusUpwards()
+        {
+            ContainerControl? control = this;
+            while (control != null)
+            {
+                control.UpdateContainsFocus();
+                control = control.Parent;
+            }
+        }
+
+        private void UpdateContainsFocus()
+        {
+            bool result = base.ContainsFocus;
+            for (int i = 0; i < m_Children.Count; i++)
+            {
+                if (m_Children[i].ContainsFocus)
+                {
+                    result = true;
+                    break;
+                }
+            }
+
+            if (result == m_ContainsFocus)
+                return;
+
+            m_ContainsFocus = result;
+            if (result)
+                OnStartContainsFocus();
+            else
+                OnEndContainsFocus();
         }
 
         private bool IsDescendantOf(Control control)

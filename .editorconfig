@@ -1,6 +1,93 @@
 # Visual Studio 生成了具有 C++ 设置的 .editorconfig 文件。
 root = true
 
+# C# conventions used by Runtime and Editor managed code. Generated bindings
+# are excluded because their source is owned by the Reflector generator.
+[Src/Engine/{Runtime,Editor}/**/*.cs]
+csharp_prefer_braces = true:warning
+dotnet_diagnostic.IDE0011.severity = warning
+dotnet_diagnostic.IDE1006.severity = warning
+
+[Src/Engine/**/_Generated/**/*.cs]
+generated_code = true
+
+# Types, members, and non-private fields use UpperCamelCase.
+dotnet_naming_rule.types_should_be_upper_camel_case.severity = warning
+dotnet_naming_rule.types_should_be_upper_camel_case.symbols = types
+dotnet_naming_rule.types_should_be_upper_camel_case.style = upper_camel_case
+dotnet_naming_symbols.types.applicable_kinds = class, struct, enum, delegate
+
+dotnet_naming_rule.interfaces_should_be_i_upper_camel_case.severity = warning
+dotnet_naming_rule.interfaces_should_be_i_upper_camel_case.symbols = interfaces
+dotnet_naming_rule.interfaces_should_be_i_upper_camel_case.style = i_upper_camel_case
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+
+dotnet_naming_rule.type_parameters_should_be_t_upper_camel_case.severity = warning
+dotnet_naming_rule.type_parameters_should_be_t_upper_camel_case.symbols = type_parameters
+dotnet_naming_rule.type_parameters_should_be_t_upper_camel_case.style = t_upper_camel_case
+dotnet_naming_symbols.type_parameters.applicable_kinds = type_parameter
+
+dotnet_naming_rule.members_should_be_upper_camel_case.severity = warning
+dotnet_naming_rule.members_should_be_upper_camel_case.symbols = members
+dotnet_naming_rule.members_should_be_upper_camel_case.style = upper_camel_case
+dotnet_naming_symbols.members.applicable_kinds = method, property, event
+
+dotnet_naming_rule.non_private_fields_should_be_upper_camel_case.severity = warning
+dotnet_naming_rule.non_private_fields_should_be_upper_camel_case.symbols = non_private_fields
+dotnet_naming_rule.non_private_fields_should_be_upper_camel_case.style = upper_camel_case
+dotnet_naming_symbols.non_private_fields.applicable_kinds = field
+dotnet_naming_symbols.non_private_fields.applicable_accessibilities = public, internal, protected, protected_internal, private_protected
+
+# Constant and static readonly fields use UpperCamelCase regardless of access.
+dotnet_naming_rule.constant_fields_should_be_upper_camel_case.severity = warning
+dotnet_naming_rule.constant_fields_should_be_upper_camel_case.symbols = constant_fields
+dotnet_naming_rule.constant_fields_should_be_upper_camel_case.style = upper_camel_case
+dotnet_naming_symbols.constant_fields.applicable_kinds = field
+dotnet_naming_symbols.constant_fields.required_modifiers = const
+
+dotnet_naming_rule.static_readonly_fields_should_be_upper_camel_case.severity = warning
+dotnet_naming_rule.static_readonly_fields_should_be_upper_camel_case.symbols = static_readonly_fields
+dotnet_naming_rule.static_readonly_fields_should_be_upper_camel_case.style = upper_camel_case
+dotnet_naming_symbols.static_readonly_fields.applicable_kinds = field
+dotnet_naming_symbols.static_readonly_fields.required_modifiers = static, readonly
+
+# Private static fields use s_UpperCamelCase.
+dotnet_naming_rule.private_static_fields_should_be_s_upper_camel_case.severity = warning
+dotnet_naming_rule.private_static_fields_should_be_s_upper_camel_case.symbols = private_static_fields
+dotnet_naming_rule.private_static_fields_should_be_s_upper_camel_case.style = s_upper_camel_case
+dotnet_naming_symbols.private_static_fields.applicable_kinds = field
+dotnet_naming_symbols.private_static_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_static_fields.required_modifiers = static
+dotnet_naming_style.s_upper_camel_case.required_prefix = s_
+dotnet_naming_style.s_upper_camel_case.capitalization = pascal_case
+
+# Private instance fields use m_UpperCamelCase.
+dotnet_naming_rule.private_instance_fields_should_be_m_upper_camel_case.severity = warning
+dotnet_naming_rule.private_instance_fields_should_be_m_upper_camel_case.symbols = private_instance_fields
+dotnet_naming_rule.private_instance_fields_should_be_m_upper_camel_case.style = m_upper_camel_case
+dotnet_naming_symbols.private_instance_fields.applicable_kinds = field
+dotnet_naming_symbols.private_instance_fields.applicable_accessibilities = private
+dotnet_naming_style.m_upper_camel_case.required_prefix = m_
+dotnet_naming_style.m_upper_camel_case.capitalization = pascal_case
+
+# Parameters and local variables use lowerCamelCase.
+dotnet_naming_rule.parameters_should_be_lower_camel_case.severity = warning
+dotnet_naming_rule.parameters_should_be_lower_camel_case.symbols = parameters
+dotnet_naming_rule.parameters_should_be_lower_camel_case.style = lower_camel_case
+dotnet_naming_symbols.parameters.applicable_kinds = parameter
+
+dotnet_naming_rule.local_variables_should_be_lower_camel_case.severity = warning
+dotnet_naming_rule.local_variables_should_be_lower_camel_case.symbols = local_variables
+dotnet_naming_rule.local_variables_should_be_lower_camel_case.style = lower_camel_case
+dotnet_naming_symbols.local_variables.applicable_kinds = local
+
+dotnet_naming_style.upper_camel_case.capitalization = pascal_case
+dotnet_naming_style.i_upper_camel_case.required_prefix = I
+dotnet_naming_style.i_upper_camel_case.capitalization = pascal_case
+dotnet_naming_style.t_upper_camel_case.required_prefix = T
+dotnet_naming_style.t_upper_camel_case.capitalization = pascal_case
+dotnet_naming_style.lower_camel_case.capitalization = camel_case
+
 [*.{c++,cc,cpp,cppm,cxx,h,h++,hh,hpp,hxx,inl,ipp,ixx,tlh,tli}]
 
 # Visual C++ 代码样式设置

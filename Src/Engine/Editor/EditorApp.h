@@ -41,19 +41,19 @@ namespace SE::Editor
 
 		static EditorApp& Ins();
 
-		ManagedEditor* managedEditor;
+		ManagedEditor* managedEditor = nullptr;
 
 		/// <summary>
 		/// Information about the loaded game project.
 		/// </summary>
-		ProjectInfo* Project;
-		SettingModule* settingModule;
-		UIModule* uiModule;
-		SceneModule* sceneModule;
-		SceneGraphModule* sceneGraphModule;
-		WindowsModule* windowsModule;
-		AssetDatabaseModule* databaseModule;
-		AssetImportingModule* importingModule;
+		ProjectInfo* Project = nullptr;
+		SettingModule* settingModule = nullptr;
+		UIModule* uiModule = nullptr;
+		SceneModule* sceneModule = nullptr;
+		SceneGraphModule* sceneGraphModule = nullptr;
+		WindowsModule* windowsModule = nullptr;
+		AssetDatabaseModule* databaseModule = nullptr;
+		AssetImportingModule* importingModule = nullptr;
 
 	public:
 		int32 LoadProduct() override;

@@ -15,20 +15,20 @@ namespace SE
         /// </summary>
         public const int MaximumOrder = 5;
 
-        private int order;
+        private int m_Order;
 
         /// <summary>
         /// The order of calculation of the spherical harmonic.
         /// </summary>
         public int Order
         {
-            get => order;
+            get => m_Order;
             internal set
             {
-                if (order > 5)
+                if (m_Order > 5)
                     throw new NotSupportedException("Only orders inferior or equal to 5 are supported");
 
-                order = Math.Max(1, value);
+                m_Order = Math.Max(1, value);
             }
         }
 
@@ -50,7 +50,7 @@ namespace SE
         /// <param name="order"></param>
         protected SphericalHarmonics(int order)
         {
-            this.order = order;
+            m_Order = order;
             Coefficients = new TDataType[order * order];
         }
 
@@ -71,12 +71,12 @@ namespace SE
         {
             get
             {
-                CheckIndicesValidity(l, m, order);
+                CheckIndicesValidity(l, m, m_Order);
                 return Coefficients[LmToCoefficientIndex(l, m)];
             }
             set
             {
-                CheckIndicesValidity(l, m, order);
+                CheckIndicesValidity(l, m, m_Order);
                 Coefficients[LmToCoefficientIndex(l, m)] = value;
             }
         }
@@ -103,7 +103,7 @@ namespace SE
     /// </summary>
     public class SphericalHarmonics : SphericalHarmonics<Color>
     {
-        private readonly float[] baseValues;
+        private readonly float[] m_BaseValues;
 
         private const float Pi4 = 4 * Mathf.Pi;
         private const float Pi16 = 16 * Mathf.Pi;
@@ -157,7 +157,7 @@ namespace SE
         public SphericalHarmonics(int order)
         : base(order)
         {
-            baseValues = new float[order * order];
+            m_BaseValues = new float[order * order];
         }
 
         /// <summary>
@@ -182,43 +182,43 @@ namespace SE
             var z4 = (float)Math.Pow(z, 4.0);
 
             //Equations based on data from: http://ppsloan.org/publications/StupidSH36.pdf
-            baseValues[0] = 1 / (2 * SqrtPi);
+            m_BaseValues[0] = 1 / (2 * SqrtPi);
 
             if (Order > 1)
             {
-                baseValues[1] = -(float)Math.Sqrt(3 / Pi4) * y;
-                baseValues[2] = (float)Math.Sqrt(3 / Pi4) * z;
-                baseValues[3] = -(float)Math.Sqrt(3 / Pi4) * x;
+                m_BaseValues[1] = -(float)Math.Sqrt(3 / Pi4) * y;
+                m_BaseValues[2] = (float)Math.Sqrt(3 / Pi4) * z;
+                m_BaseValues[3] = -(float)Math.Sqrt(3 / Pi4) * x;
 
                 if (Order > 2)
                 {
-                    baseValues[4] = (float)Math.Sqrt(15 / Pi4) * y * x;
-                    baseValues[5] = -(float)Math.Sqrt(15 / Pi4) * y * z;
-                    baseValues[6] = (float)Math.Sqrt(5 / Pi16) * (3 * z2 - 1);
-                    baseValues[7] = -(float)Math.Sqrt(15 / Pi4) * x * z;
-                    baseValues[8] = (float)Math.Sqrt(15 / Pi16) * (x2 - y2);
+                    m_BaseValues[4] = (float)Math.Sqrt(15 / Pi4) * y * x;
+                    m_BaseValues[5] = -(float)Math.Sqrt(15 / Pi4) * y * z;
+                    m_BaseValues[6] = (float)Math.Sqrt(5 / Pi16) * (3 * z2 - 1);
+                    m_BaseValues[7] = -(float)Math.Sqrt(15 / Pi4) * x * z;
+                    m_BaseValues[8] = (float)Math.Sqrt(15 / Pi16) * (x2 - y2);
 
                     if (Order > 3)
                     {
-                        baseValues[9] = -(float)Math.Sqrt(70 / Pi64) * y * (3 * x2 - y2);
-                        baseValues[10] = (float)Math.Sqrt(105 / Pi4) * y * x * z;
-                        baseValues[11] = -(float)Math.Sqrt(42 / Pi64) * y * (-1 + 5 * z2);
-                        baseValues[12] = (float)Math.Sqrt(7 / Pi16) * (5 * z3 - 3 * z);
-                        baseValues[13] = -(float)Math.Sqrt(42 / Pi64) * x * (-1 + 5 * z2);
-                        baseValues[14] = (float)Math.Sqrt(105 / Pi16) * (x2 - y2) * z;
-                        baseValues[15] = -(float)Math.Sqrt(70 / Pi64) * x * (x2 - 3 * y2);
+                        m_BaseValues[9] = -(float)Math.Sqrt(70 / Pi64) * y * (3 * x2 - y2);
+                        m_BaseValues[10] = (float)Math.Sqrt(105 / Pi4) * y * x * z;
+                        m_BaseValues[11] = -(float)Math.Sqrt(42 / Pi64) * y * (-1 + 5 * z2);
+                        m_BaseValues[12] = (float)Math.Sqrt(7 / Pi16) * (5 * z3 - 3 * z);
+                        m_BaseValues[13] = -(float)Math.Sqrt(42 / Pi64) * x * (-1 + 5 * z2);
+                        m_BaseValues[14] = (float)Math.Sqrt(105 / Pi16) * (x2 - y2) * z;
+                        m_BaseValues[15] = -(float)Math.Sqrt(70 / Pi64) * x * (x2 - 3 * y2);
 
                         if (Order > 4)
                         {
-                            baseValues[16] = 3 * (float)Math.Sqrt(35 / Pi16) * x * y * (x2 - y2);
-                            baseValues[17] = -3 * (float)Math.Sqrt(70 / Pi64) * y * z * (3 * x2 - y2);
-                            baseValues[18] = 3 * (float)Math.Sqrt(5 / Pi16) * y * x * (-1 + 7 * z2);
-                            baseValues[19] = -3 * (float)Math.Sqrt(10 / Pi64) * y * z * (-3 + 7 * z2);
-                            baseValues[20] = (105 * z4 - 90 * z2 + 9) / (16 * SqrtPi);
-                            baseValues[21] = -3 * (float)Math.Sqrt(10 / Pi64) * x * z * (-3 + 7 * z2);
-                            baseValues[22] = 3 * (float)Math.Sqrt(5 / Pi64) * (x2 - y2) * (-1 + 7 * z2);
-                            baseValues[23] = -3 * (float)Math.Sqrt(70 / Pi64) * x * z * (x2 - 3 * y2);
-                            baseValues[24] = 3 * (float)Math.Sqrt(35 / (4 * Pi64)) * (x4 - 6 * y2 * x2 + y4);
+                            m_BaseValues[16] = 3 * (float)Math.Sqrt(35 / Pi16) * x * y * (x2 - y2);
+                            m_BaseValues[17] = -3 * (float)Math.Sqrt(70 / Pi64) * y * z * (3 * x2 - y2);
+                            m_BaseValues[18] = 3 * (float)Math.Sqrt(5 / Pi16) * y * x * (-1 + 7 * z2);
+                            m_BaseValues[19] = -3 * (float)Math.Sqrt(10 / Pi64) * y * z * (-3 + 7 * z2);
+                            m_BaseValues[20] = (105 * z4 - 90 * z2 + 9) / (16 * SqrtPi);
+                            m_BaseValues[21] = -3 * (float)Math.Sqrt(10 / Pi64) * x * z * (-3 + 7 * z2);
+                            m_BaseValues[22] = 3 * (float)Math.Sqrt(5 / Pi64) * (x2 - y2) * (-1 + 7 * z2);
+                            m_BaseValues[23] = -3 * (float)Math.Sqrt(70 / Pi64) * x * z * (x2 - 3 * y2);
+                            m_BaseValues[24] = 3 * (float)Math.Sqrt(35 / (4 * Pi64)) * (x4 - 6 * y2 * x2 + y4);
                         }
                     }
                 }
@@ -226,8 +226,8 @@ namespace SE
 
             var data = new Color();
 
-            for (int i = 0; i < baseValues.Length; i++)
-                data += Coefficients[i] * baseValues[i];
+            for (int i = 0; i < m_BaseValues.Length; i++)
+                data += Coefficients[i] * m_BaseValues[i];
 
             return data;
         }

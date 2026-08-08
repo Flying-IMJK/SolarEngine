@@ -142,20 +142,8 @@ namespace SE::BuildTool
                         Utils::String::TrimEnd(enumDescriptor.bindingInfo.comment);
                     }
                     clang_disposeString(commentString);
-                    for (auto const& macroValue : macro.macroContents)
-                    {
-                        if (Utils::String::StartsWith(macroValue, "Attributes="))
-                        {
-                            std::string parsed = macroValue.substr(11);
-                            Utils::String::TrimStart(parsed);
-                            Utils::String::TrimEnd(parsed);
-                            if (Utils::String::StartsWith(parsed, "\"") && Utils::String::EndsWith(parsed, "\"") && parsed.length() >= 2)
-                            {
-                                parsed = parsed.substr(1, parsed.length() - 2);
-                            }
-                            enumDescriptor.bindingInfo.attributes = parsed;
-                        }
-                    }
+                    enumDescriptor.bindingInfo.isDeprecated = macro.HasFlag(DEPRECATED_FLAG());
+                    macro.TryGetValue("Attributes", enumDescriptor.bindingInfo.attributes);
                 }
 
                 // Record current parent type, and update it to the new type

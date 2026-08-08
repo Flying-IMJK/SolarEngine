@@ -212,19 +212,20 @@ namespace SE
     /// Represents font object that can be using during text rendering (it uses Font Asset but with pre-cached data for chosen font properties).
     /// </summary>
     SE_CLASS(API, NoSpawn)
-    class SE_API_RUNTIME Font : public Object
+    class SE_API_RUNTIME Font : public ScriptingObject
     {
+        SCRIPTING_TYPE_NO_SPAWN(Font);
         friend FontAsset;
 
     private:
-        FontAsset* _asset;
-        float _size;
+        FontAsset* m_Asset;
+        float m_Size;
         int32 _height;
         int32 _ascender;
         int32 _descender;
         int32 _lineGap;
         bool _hasKerning;
-        Dictionary<Char, FontCharacterEntry> _characters;
+        Dictionary<Char, FontCharacterEntry> m_Characters;
         mutable Dictionary<uint32, int32> _kerningTable;
 
     public:
@@ -238,7 +239,7 @@ namespace SE
         /// <summary>
         /// Finalizes an instance of the <see cref="Font"/> class.
         /// </summary>
-        ~Font();
+        ~Font() override;
 
     public:
         /// <summary>
@@ -252,7 +253,7 @@ namespace SE
         SE_FUNCTION(API)
         FORCE_INLINE FontAsset* GetAsset() const
         {
-            return _asset;
+            return m_Asset;
         }
 
         /// <summary>
@@ -261,7 +262,7 @@ namespace SE
         SE_FUNCTION(API)
         FORCE_INLINE float GetSize() const
         {
-            return _size;
+            return m_Size;
         }
 
         /// <summary>

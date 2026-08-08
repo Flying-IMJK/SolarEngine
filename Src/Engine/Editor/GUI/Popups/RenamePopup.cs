@@ -3,28 +3,28 @@ namespace SE.Editor.GUI
 {
     public sealed class RenamePopup : ContextMenu
     {
-        private readonly SearchBox _inputField;
+        private readonly SearchBox m_InputField;
 
-        public RenamePopup(string value, GuiSize size, bool isMultiline)
+        public RenamePopup(string value, Float2 size, bool isMultiline)
         {
             InitialValue = value;
-            _inputField = new SearchBox(0, 0, size.Width, isMultiline: isMultiline);
-            _inputField.SetText(value);
+            m_InputField = new SearchBox(0, 0, size.X, isMultiline: isMultiline);
+            m_InputField.SetText(value);
         }
 
         public event Action<RenamePopup>? Renamed;
         public event Action<RenamePopup>? Closed;
         public Func<RenamePopup, string, bool>? Validate { get; set; }
         public string InitialValue { get; }
-        public SearchBox InputField => _inputField;
+        public SearchBox InputField => m_InputField;
 
         public string Text
         {
-            get => _inputField.Text;
-            set => _inputField.SetText(value);
+            get => m_InputField.Text;
+            set => m_InputField.SetText(value);
         }
 
-        public static RenamePopup ShowPopup(SE.GUI.Control control, GuiRect area, string value, bool isMultiline)
+        public static RenamePopup ShowPopup(SE.GUI.Control control, Rectangle area, string value, bool isMultiline)
         {
             RenamePopup popup = new RenamePopup(value, area.Size, isMultiline);
             popup.Show(control, area.X, area.Y);

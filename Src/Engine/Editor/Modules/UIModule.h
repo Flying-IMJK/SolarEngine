@@ -22,7 +22,7 @@ namespace SE::Editor
 
 		explicit UIModule(EditorApp* editor);
 
-		Thumbnails* thumbnails;
+		Thumbnails* thumbnails = nullptr;
 
 		/// <summary>
 		/// The main menu control.
@@ -37,23 +37,23 @@ namespace SE::Editor
 
 	private:
 		void InitMainMenu(RootControl* mainWindow);
-		void InitToolstrip(RootControl* mainWindow);
+		void InitToolStrip(RootControl* mainWindow);
 		void InitStatusBar(RootControl* mainWindow);
 		void InitDockPanel(RootControl* mainWindow);
 
 		/// <summary>
 		/// The master dock panel for all Editor windows.
 		/// </summary>
-		MasterDockPanel* m_MasterPanel;
+		MasterDockPanel* m_MasterPanel = nullptr;
 		/// <summary>
 		/// The status strip control.
 		/// </summary>
-		StatusBar* m_StatusBar;
+		StatusBar* m_StatusBar = nullptr;
 
 		/// <summary>
 		/// The tool strip control.
 		/// </summary>
-		ToolStrip* m_ToolStrip;
+		ToolStrip* m_ToolStrip = nullptr;
 	};
 
 } // SE

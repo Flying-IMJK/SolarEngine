@@ -7,23 +7,23 @@ namespace SE.GUI
     /// </summary>
     public class RootControl : ContainerControl
     {
-        private Control? _focusedControl;
-        private Control? _trackingControl;
-        private Control? _mouseOverControl;
-        private DragData? _dragData;
-        private readonly Tooltip _tooltip;
+        private Control? m_FocusedControl;
+        private Control? m_TrackingControl;
+        private Control? m_MouseOverControl;
+        private DragData? m_DragData;
+        private readonly Tooltip m_Tooltip;
 
         public RootControl()
         {
             SetRootCore(this);
-            _tooltip = new Tooltip();
+            m_Tooltip = new Tooltip();
         }
 
         public RootControl(Rectangle bounds)
             : base(bounds)
         {
             SetRootCore(this);
-            _tooltip = new Tooltip();
+            m_Tooltip = new Tooltip();
         }
 
         /// <summary>
@@ -36,14 +36,14 @@ namespace SE.GUI
         /// </summary>
         public Control? FocusedControl
         {
-            get => _focusedControl;
+            get => m_FocusedControl;
             set => Focus(value);
         }
 
         /// <summary>
         /// Gets the currently captured pointer target.
         /// </summary>
-        public Control? TrackingControl => _trackingControl;
+        public Control? TrackingControl => m_TrackingControl;
 
         /// <summary>
         /// Gets the pointer position in root logical coordinates.
@@ -58,7 +58,7 @@ namespace SE.GUI
         /// <summary>
         /// Gets the managed tooltip service for this root.
         /// </summary>
-        public Tooltip Tooltip => _tooltip;
+        public Tooltip Tooltip => m_Tooltip;
 
         /// <summary>
         /// Registers the game GUI root.
@@ -87,7 +87,7 @@ namespace SE.GUI
             if (!ReferenceEquals(control.Root, this))
                 throw new InvalidOperationException("Only controls in this root can capture its pointer.");
 
-            _trackingControl = control;
+            m_TrackingControl = control;
             if (control.AutoFocus)
                 Focus(control);
         }
@@ -97,7 +97,7 @@ namespace SE.GUI
         /// </summary>
         public void EndTrackingMouse()
         {
-            _trackingControl = null;
+            m_TrackingControl = null;
         }
 
         /// <summary>
@@ -105,37 +105,64 @@ namespace SE.GUI
         /// </summary>
         public bool Focus(Control? control)
         {
-            if (ReferenceEquals(_focusedControl, control))
+            if (ReferenceEquals(m_FocusedControl, control))
                 return false;
             if (control != null && (!ReferenceEquals(control.Root, this) || !control.VisibleInHierarchy || !control.EnabledInHierarchy))
                 return false;
 
-            Control? previous = _focusedControl;
-            _focusedControl = control;
+            Control? previous = m_FocusedControl;
+            m_FocusedControl = control;
             previous?.SetFocused(false);
             control?.SetFocused(true);
             return true;
         }
 
+        /// <summary>
+        /// Gets the key state for this root.
+        /// </summary>
+        public virtual bool GetKey(KeyboardKeys key)
+        {
+            _ = key;
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the key down state for this root.
+        /// </summary>
+        public virtual bool GetKeyDown(KeyboardKeys key)
+        {
+            _ = key;
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the key up state for this root.
+        /// </summary>
+        public virtual bool GetKeyUp(KeyboardKeys key)
+        {
+            _ = key;
+            return false;
+        }
+
         public override bool OnCharInput(char character)
         {
-            return _focusedControl?.OnCharInput(character) ?? false;
+            return m_FocusedControl?.OnCharInput(character) ?? false;
         }
 
-        public override bool OnKeyDown(int key)
+        public override bool OnKeyDown(KeyboardKeys key)
         {
-            return _focusedControl?.OnKeyDown(key) ?? false;
+            return m_FocusedControl?.OnKeyDown(key) ?? false;
         }
 
-        public override bool OnKeyUp(int key)
+        public override bool OnKeyUp(KeyboardKeys key)
         {
-            return _focusedControl?.OnKeyUp(key) ?? false;
+            return m_FocusedControl?.OnKeyUp(key) ?? false;
         }
 
-        public override bool OnMouseDown(Float2 location, int button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             MousePosition = location;
-            Control? control = _trackingControl ?? HitTest(location);
+            Control? control = m_TrackingControl ?? HitTest(location);
             UpdateMouseOver(location);
             if (control == null || ReferenceEquals(control, this))
                 return false;
@@ -145,18 +172,18 @@ namespace SE.GUI
             return control.OnMouseDown(control.PointFromRoot(location), button);
         }
 
-        public override bool OnMouseUp(Float2 location, int button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             MousePosition = location;
-            Control? control = _trackingControl ?? HitTest(location);
+            Control? control = m_TrackingControl ?? HitTest(location);
             UpdateMouseOver(location);
             return control == null || ReferenceEquals(control, this) ? false : control.OnMouseUp(control.PointFromRoot(location), button);
         }
 
-        public override bool OnMouseDoubleClick(Float2 location, int button)
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             MousePosition = location;
-            Control? control = _trackingControl ?? HitTest(location);
+            Control? control = m_TrackingControl ?? HitTest(location);
             UpdateMouseOver(location);
             return control == null || ReferenceEquals(control, this) ? false : control.OnMouseDoubleClick(control.PointFromRoot(location), button);
         }
@@ -164,7 +191,7 @@ namespace SE.GUI
         public override bool OnMouseWheel(Float2 location, float delta)
         {
             MousePosition = location;
-            Control? control = _trackingControl ?? HitTest(location);
+            Control? control = m_TrackingControl ?? HitTest(location);
             UpdateMouseOver(location);
             return control == null || ReferenceEquals(control, this) ? false : control.OnMouseWheel(control.PointFromRoot(location), delta);
         }
@@ -172,7 +199,7 @@ namespace SE.GUI
         public override void OnMouseMove(Float2 location)
         {
             MousePosition = location;
-            Control? control = _trackingControl ?? HitTest(location);
+            Control? control = m_TrackingControl ?? HitTest(location);
             UpdateMouseOver(location);
             if (control != null && !ReferenceEquals(control, this))
                 control.OnMouseMove(control.PointFromRoot(location));
@@ -180,10 +207,10 @@ namespace SE.GUI
 
         public override void OnMouseLeave()
         {
-            if (_mouseOverControl != null)
-                _tooltip.OnMouseLeaveControl(_mouseOverControl);
-            _mouseOverControl?.SetMouseOver(false);
-            _mouseOverControl = null;
+            if (m_MouseOverControl != null)
+                m_Tooltip.OnMouseLeaveControl(m_MouseOverControl);
+            m_MouseOverControl?.SetMouseOver(false);
+            m_MouseOverControl = null;
         }
 
         public override bool OnTouchDown(Float2 location, int pointerIndex)
@@ -207,49 +234,69 @@ namespace SE.GUI
             return control == null || ReferenceEquals(control, this) ? false : control.OnTouchUp(control.PointFromRoot(location), pointerIndex);
         }
 
-        public override DragDropEffect OnDragEnter(Float2 location, DragData data)
+        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
         {
             ArgumentNullException.ThrowIfNull(data);
             MousePosition = location;
-            _dragData = data;
-            Control? control = _trackingControl ?? HitTest(location);
+            m_DragData = data;
+            Control? control = m_TrackingControl ?? HitTest(location);
             UpdateMouseOver(location);
-            return control == null || ReferenceEquals(control, this) ? DragDropEffect.None : control.OnDragEnter(control.PointFromRoot(location), data);
+
+            if (control == null || ReferenceEquals(control, this))
+            {
+                return DragDropEffect.None;
+            }
+
+            Float2 pos = control.PointFromRoot(location);
+            return control.OnDragEnter(ref pos, data);
         }
 
-        public override DragDropEffect OnDragMove(Float2 location, DragData data)
+        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
             ArgumentNullException.ThrowIfNull(data);
             MousePosition = location;
-            _dragData = data;
-            Control? control = _trackingControl ?? HitTest(location);
+            m_DragData = data;
+            Control? control = m_TrackingControl ?? HitTest(location);
             UpdateMouseOver(location);
-            return control == null || ReferenceEquals(control, this) ? DragDropEffect.None : control.OnDragMove(control.PointFromRoot(location), data);
+
+            if (control == null || ReferenceEquals(control, this))
+            {
+                return DragDropEffect.None;
+            }
+
+            Float2 pos = control.PointFromRoot(location);
+            return control.OnDragMove(ref pos, data);
         }
 
-        public override DragDropEffect OnDragDrop(Float2 location, DragData data)
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
             ArgumentNullException.ThrowIfNull(data);
             MousePosition = location;
-            Control? control = _trackingControl ?? HitTest(location);
-            DragDropEffect result = control == null || ReferenceEquals(control, this) ? DragDropEffect.None : control.OnDragDrop(control.PointFromRoot(location), data);
-            _dragData = null;
+            Control? control = m_TrackingControl ?? HitTest(location);
+            DragDropEffect result = DragDropEffect.None;
+            if (!(control == null || ReferenceEquals(control, this)))
+            {
+                Float2 pos = control.PointFromRoot(location);
+                result = control.OnDragDrop(ref pos, data);
+            }
+
+            m_DragData = null;
             return result;
         }
 
         public override void OnDragLeave()
         {
-            _dragData = null;
-            _mouseOverControl?.OnDragLeave();
+            m_DragData = null;
+            m_MouseOverControl?.OnDragLeave();
         }
 
         public override void ClearState()
         {
-            _trackingControl = null;
-            _dragData = null;
-            _tooltip.Hide();
-            _mouseOverControl?.SetMouseOver(false);
-            _mouseOverControl = null;
+            m_TrackingControl = null;
+            m_DragData = null;
+            m_Tooltip.Hide();
+            m_MouseOverControl?.SetMouseOver(false);
+            m_MouseOverControl = null;
             Focus(null);
             base.ClearState();
         }
@@ -258,30 +305,30 @@ namespace SE.GUI
         {
             if (ReferenceEquals(GameRoot, this))
                 GameRoot = null;
-            _tooltip.Dispose();
+            m_Tooltip.Dispose();
             base.OnDispose();
         }
 
         public override void Update(float deltaTime)
         {
             base.Update(deltaTime);
-            if (!ReferenceEquals(_tooltip.Parent, this))
-                _tooltip.Update(deltaTime);
+            if (!ReferenceEquals(m_Tooltip.Parent, this))
+                m_Tooltip.Update(deltaTime);
         }
 
         private void UpdateMouseOver(Float2 location)
         {
             Control? next = HitTest(location);
-            if (ReferenceEquals(next, _mouseOverControl))
+            if (ReferenceEquals(next, m_MouseOverControl))
                 return;
 
-            if (_mouseOverControl != null)
-                _tooltip.OnMouseLeaveControl(_mouseOverControl);
-            _mouseOverControl?.SetMouseOver(false);
-            _mouseOverControl = next;
-            _mouseOverControl?.SetMouseOver(true);
-            if (_mouseOverControl != null && !ReferenceEquals(_mouseOverControl, this))
-                _tooltip.OnMouseEnterControl(_mouseOverControl);
+            if (m_MouseOverControl != null)
+                m_Tooltip.OnMouseLeaveControl(m_MouseOverControl);
+            m_MouseOverControl?.SetMouseOver(false);
+            m_MouseOverControl = next;
+            m_MouseOverControl?.SetMouseOver(true);
+            if (m_MouseOverControl != null && !ReferenceEquals(m_MouseOverControl, this))
+                m_Tooltip.OnMouseEnterControl(m_MouseOverControl);
         }
     }
 }

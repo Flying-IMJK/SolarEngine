@@ -25,45 +25,45 @@ namespace SE.Interop
     {
         internal static Dictionary<string, string> AssemblyLocations = new();
 
-        private static bool firstAssemblyLoaded = false;
+        private static bool s_FirstAssemblyLoaded = false;
 
-        private static Dictionary<string, Type> typeCache = new();
+        private static Dictionary<string, Type> s_TypeCache = new();
 
-        private static IntPtr boolTruePtr = ManagedHandle.ToIntPtr(ManagedHandle.Alloc((int)1, GCHandleType.Pinned));
-        private static IntPtr boolFalsePtr = ManagedHandle.ToIntPtr(ManagedHandle.Alloc((int)0, GCHandleType.Pinned));
+        private static IntPtr s_BoolTruePtr = ManagedHandle.ToIntPtr(ManagedHandle.Alloc((int)1, GCHandleType.Pinned));
+        private static IntPtr s_BoolFalsePtr = ManagedHandle.ToIntPtr(ManagedHandle.Alloc((int)0, GCHandleType.Pinned));
 
-        private static List<ManagedHandle> methodHandles = new();
-        private static ConcurrentDictionary<IntPtr, Delegate> cachedDelegates = new();
-        private static Dictionary<Type, (TypeHolder typeHolder, ManagedHandle handle)> managedTypes = new(new TypeComparer());
-        private static List<ManagedHandle> fieldHandleCache = new();
+        private static List<ManagedHandle> s_MethodHandles = new();
+        private static ConcurrentDictionary<IntPtr, Delegate> s_CachedDelegates = new();
+        private static Dictionary<Type, (TypeHolder typeHolder, ManagedHandle handle)> s_ManagedTypes = new(new TypeComparer());
+        private static List<ManagedHandle> s_FieldHandleCache = new();
 #if SE_EDITOR
-        private static List<ManagedHandle> methodHandlesCollectible = new();
-        private static ConcurrentDictionary<IntPtr, Delegate> cachedDelegatesCollectible = new();
-        private static Dictionary<Type, (TypeHolder typeHolder, ManagedHandle handle)> managedTypesCollectible = new(new TypeComparer());
-        private static List<ManagedHandle> fieldHandleCacheCollectible = new();
+        private static List<ManagedHandle> s_MethodHandlesCollectible = new();
+        private static ConcurrentDictionary<IntPtr, Delegate> s_CachedDelegatesCollectible = new();
+        private static Dictionary<Type, (TypeHolder typeHolder, ManagedHandle handle)> s_ManagedTypesCollectible = new(new TypeComparer());
+        private static List<ManagedHandle> s_FieldHandleCacheCollectible = new();
 #endif
-        private static Dictionary<object, ManagedHandle> classAttributesCacheCollectible = new();
-        private static Dictionary<Assembly, ManagedHandle> assemblyHandles = new();
-        private static ConcurrentDictionary<Type, int> _typeSizeCache = new();
+        private static Dictionary<object, ManagedHandle> s_ClassAttributesCacheCollectible = new();
+        private static Dictionary<Assembly, ManagedHandle> s_AssemblyHandles = new();
+        private static ConcurrentDictionary<Type, int> s_TypeSizeCache = new();
 
-        private static Dictionary<string, IntPtr> loadedNativeLibraries = new();
-        internal static Dictionary<string, string> libraryPaths = new();
-        private static Dictionary<Assembly, string> assemblyOwnedNativeLibraries = new();
-        internal static AssemblyLoadContext scriptingAssemblyLoadContext;
+        private static Dictionary<string, IntPtr> s_LoadedNativeLibraries = new();
+        internal static Dictionary<string, string> s_LibraryPaths = new();
+        private static Dictionary<Assembly, string> s_AssemblyOwnedNativeLibraries = new();
+        internal static AssemblyLoadContext s_ScriptingAssemblyLoadContext;
 
 
 
         [System.Diagnostics.DebuggerStepThrough]
         private static IntPtr NativeLibraryImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? dllImportSearchPath)
         {
-            if (!loadedNativeLibraries.TryGetValue(libraryName, out IntPtr nativeLibrary))
+            if (!s_LoadedNativeLibraries.TryGetValue(libraryName, out IntPtr nativeLibrary))
             {
-                if (!libraryPaths.TryGetValue(libraryName, out var nativeLibraryPath))
+                if (!s_LibraryPaths.TryGetValue(libraryName, out var nativeLibraryPath))
                     nativeLibraryPath = libraryName;
 
                 nativeLibrary = NativeLibrary.Load(nativeLibraryPath, assembly, dllImportSearchPath);
-                loadedNativeLibraries.Add(libraryName, nativeLibrary);
-                assemblyOwnedNativeLibraries.Add(assembly, libraryName);
+                s_LoadedNativeLibraries.Add(libraryName, nativeLibrary);
+                s_AssemblyOwnedNativeLibraries.Add(assembly, libraryName);
             }
             return nativeLibrary;
         }
@@ -76,9 +76,9 @@ namespace SE.Interop
 #else
             var isCollectible = false;
 #endif
-            scriptingAssemblyLoadContext = new AssemblyLoadContext("SE", isCollectible);
+            s_ScriptingAssemblyLoadContext = new AssemblyLoadContext("SE", isCollectible);
 #if SE_EDITOR
-            scriptingAssemblyLoadContext.Resolving += OnScriptingAssemblyLoadContextResolving;
+            s_ScriptingAssemblyLoadContext.Resolving += OnScriptingAssemblyLoadContextResolving;
 #endif
         }
 
@@ -95,7 +95,7 @@ namespace SE.Interop
 
             InitScriptingAssemblyLoadContext();
             DelegateHelpers.InitMethods();
-            
+
             Debug.Log("测试");
         }
 
@@ -104,7 +104,7 @@ namespace SE.Interop
         private static Assembly OnScriptingAssemblyLoadContextResolving(AssemblyLoadContext assemblyLoadContext, AssemblyName assemblyName)
         {
             // FIXME: There should be a better way to resolve the path to EditorTargetPath where the dependencies are stored
-            foreach (string libraryPath in libraryPaths.Values)
+            foreach (string libraryPath in s_LibraryPaths.Values)
             {
                 string editorTargetPath = Path.GetDirectoryName(libraryPath);
 
@@ -124,23 +124,22 @@ namespace SE.Interop
 
 
         // Cache offsets to frequently accessed fields of FlaxEngine.Object
-        private static int unmanagedPtrFieldOffset = IntPtr.Size + (Unsafe.Read<int>((typeof(SE.Object).GetField("__unmanagedPtr", BindingFlags.Instance | BindingFlags.NonPublic).FieldHandle.Value + 4 + IntPtr.Size).ToPointer()) & 0xFFFFFF);
-        private static int internalIdFieldOffset = IntPtr.Size + (Unsafe.Read<int>((typeof(SE.Object).GetField("__internalId", BindingFlags.Instance | BindingFlags.NonPublic).FieldHandle.Value + 4 + IntPtr.Size).ToPointer()) & 0xFFFFFF);
+        private static int s_UnmanagedPtrFieldOffset = IntPtr.Size + (Unsafe.Read<int>((typeof(SE.Object).GetField("__unmanagedPtr", BindingFlags.Instance | BindingFlags.NonPublic).FieldHandle.Value + 4 + IntPtr.Size).ToPointer()) & 0xFFFFFF);
+        private static int s_InternalIdFieldOffset = IntPtr.Size + (Unsafe.Read<int>((typeof(SE.Object).GetField("__internalId", BindingFlags.Instance | BindingFlags.NonPublic).FieldHandle.Value + 4 + IntPtr.Size).ToPointer()) & 0xFFFFFF);
 
         [UnmanagedCallersOnly]
         internal static void ScriptingObjectSetInternalValues(ManagedHandle objectHandle, IntPtr unmanagedPtr, IntPtr idPtr)
         {
             object obj = objectHandle.Target;
-            if (obj is not SE.Object)
-                return;
+            if (obj is not SE.Object) return;
             {
-                ref IntPtr fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<IntPtr>(unmanagedPtrFieldOffset, ref obj);
+                ref IntPtr fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<IntPtr>(s_UnmanagedPtrFieldOffset, ref obj);
                 fieldRef = unmanagedPtr;
             }
             if (idPtr != IntPtr.Zero)
             {
                 ref Guid nativeId = ref Unsafe.AsRef<Guid>(idPtr.ToPointer());
-                ref Guid fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<Guid>(internalIdFieldOffset, ref obj);
+                ref Guid fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<Guid>(s_InternalIdFieldOffset, ref obj);
                 fieldRef = nativeId;
             }
         }
@@ -284,7 +283,7 @@ namespace SE.Interop
 
         private static Type FindType(string typeName)
         {
-            if (typeCache.TryGetValue(typeName, out Type type))
+            if (s_TypeCache.TryGetValue(typeName, out Type type))
                 return type;
 
             type = Type.GetType(typeName, ResolveAssembly, null);
@@ -302,13 +301,13 @@ namespace SE.Interop
                 typeName = fullTypeName;
             }
 
-            typeCache.Add(typeName, type);
+            s_TypeCache.Add(typeName, type);
 
             return type;
 
             static Type ResolveSlow(string typeName)
             {
-                foreach (var assembly in scriptingAssemblyLoadContext.Assemblies)
+                foreach (var assembly in s_ScriptingAssemblyLoadContext.Assemblies)
                 {
                     var type = assembly.GetType(typeName);
                     if (type != null)
@@ -326,7 +325,7 @@ namespace SE.Interop
         /// <returns>The resolved assembly, or null if none could be found.</returns>
         internal static Assembly ResolveScriptingAssemblyByName(AssemblyName assemblyName, bool allowPartial = false)
         {
-            var lc = scriptingAssemblyLoadContext;
+            var lc = s_ScriptingAssemblyLoadContext;
 
             if (lc is null)
                 return null;
@@ -537,8 +536,8 @@ namespace SE.Interop
             internal static MarshalFieldTypedDelegate[] toManagedFieldMarshallers;
             internal static MarshalFieldTypedDelegate[] toNativeFieldMarshallers;
 
-            private static MarshalToNativeTypedDelegate toNativeTypedMarshaller;
-            private static MarshalToManagedTypedDelegate toManagedTypedMarshaller;
+            private static MarshalToNativeTypedDelegate s_ToNativeTypedMarshaller;
+            private static MarshalToManagedTypedDelegate s_ToManagedTypedMarshaller;
 
             static MarshalHelper()
             {
@@ -695,7 +694,7 @@ namespace SE.Interop
                         throw new NativeInteropException($"Unsupported type '{type.FullName}'");
                     toManagedMethod = typeof(MarshalHelperReferenceType<>).MakeGenericType(type).GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
                 }
-                toManagedTypedMarshaller = toManagedMethod.CreateDelegate<MarshalToManagedTypedDelegate>();
+                s_ToManagedTypedMarshaller = toManagedMethod.CreateDelegate<MarshalToManagedTypedDelegate>();
 
                 MethodInfo toNativeMethod;
                 if (type.IsValueType)
@@ -722,19 +721,19 @@ namespace SE.Interop
                         methodName = nameof(MarshalHelperReferenceType<ReferenceTypePlaceholder>.ToNative);
                     toNativeMethod = typeof(MarshalHelperReferenceType<>).MakeGenericType(type).GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
                 }
-                toNativeTypedMarshaller = toNativeMethod.CreateDelegate<MarshalToNativeTypedDelegate>();
+                s_ToNativeTypedMarshaller = toNativeMethod.CreateDelegate<MarshalToNativeTypedDelegate>();
             }
 
             internal static object ToManagedWrapper(IntPtr nativePtr, bool byRef)
             {
                 T managed = default;
-                toManagedTypedMarshaller(ref managed, nativePtr, byRef);
+                s_ToManagedTypedMarshaller(ref managed, nativePtr, byRef);
                 return managed;
             }
 
             internal static void ToManaged(ref T managedValue, IntPtr nativePtr, bool byRef)
             {
-                toManagedTypedMarshaller(ref managedValue, nativePtr, byRef);
+                s_ToManagedTypedMarshaller(ref managedValue, nativePtr, byRef);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -754,7 +753,7 @@ namespace SE.Interop
             {
                 T[] arr = new T[ptrSpan.Length];
                 for (int i = 0; i < arr.Length; i++)
-                    toManagedTypedMarshaller(ref arr[i], ptrSpan[i], false);
+                    s_ToManagedTypedMarshaller(ref arr[i], ptrSpan[i], false);
                 return arr;
             }
 
@@ -764,7 +763,7 @@ namespace SE.Interop
                 IntPtr nativePtr = nativeArray.Pointer;
                 for (int i = 0; i < arr.Length; i++)
                 {
-                    toManagedTypedMarshaller(ref arr[i], nativePtr, false);
+                    s_ToManagedTypedMarshaller(ref arr[i], nativePtr, false);
                     nativePtr += nativeArray.ElementSize;
                 }
                 return arr;
@@ -772,7 +771,7 @@ namespace SE.Interop
 
             internal static void ToNative(ref T managedValue, IntPtr nativePtr)
             {
-                toNativeTypedMarshaller(ref managedValue, nativePtr);
+                s_ToNativeTypedMarshaller(ref managedValue, nativePtr);
             }
 
             internal static void ToNativeField(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativePtr, out int fieldSize)
@@ -848,7 +847,7 @@ namespace SE.Interop
 
             private static class ValueTypeField<TField> where TField : struct
             {
-                private static int fieldAlignment;
+                private static int s_FieldAlignment;
 
                 static ValueTypeField()
                 {
@@ -862,18 +861,18 @@ namespace SE.Interop
                     {
                     }
                     else if (fieldType.IsClass || fieldType.IsPointer)
-                        fieldAlignment = IntPtr.Size;
+                        s_FieldAlignment = IntPtr.Size;
                     else
-                        fieldAlignment = GetTypeSize(fieldType);
+                        s_FieldAlignment = GetTypeSize(fieldType);
                 }
 
                 internal static void ToManagedFieldValueType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
                 {
                     fieldSize = Unsafe.SizeOf<TField>();
-                    if (fieldAlignment > 1)
+                    if (s_FieldAlignment > 1)
                     {
                         IntPtr fieldStartPtr = nativeFieldPtr;
-                        nativeFieldPtr = EnsureAlignment(nativeFieldPtr, fieldAlignment);
+                        nativeFieldPtr = EnsureAlignment(nativeFieldPtr, s_FieldAlignment);
                         fieldSize += (nativeFieldPtr - fieldStartPtr).ToInt32();
                     }
 
@@ -891,10 +890,10 @@ namespace SE.Interop
                 internal static void ToManagedFieldReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
                 {
                     fieldSize = Unsafe.SizeOf<TField>();
-                    if (fieldAlignment > 1)
+                    if (s_FieldAlignment > 1)
                     {
                         IntPtr fieldStartPtr = nativeFieldPtr;
-                        nativeFieldPtr = EnsureAlignment(nativeFieldPtr, fieldAlignment);
+                        nativeFieldPtr = EnsureAlignment(nativeFieldPtr, s_FieldAlignment);
                         fieldSize += (nativeFieldPtr - fieldStartPtr).ToInt32();
                     }
 
@@ -950,10 +949,10 @@ namespace SE.Interop
                 internal static void ToNativeFieldValueType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
                 {
                     fieldSize = Unsafe.SizeOf<TField>();
-                    if (fieldAlignment > 1)
+                    if (s_FieldAlignment > 1)
                     {
                         IntPtr startPtr = nativeFieldPtr;
-                        nativeFieldPtr = EnsureAlignment(nativeFieldPtr, fieldAlignment);
+                        nativeFieldPtr = EnsureAlignment(nativeFieldPtr, s_FieldAlignment);
                         fieldSize += (nativeFieldPtr - startPtr).ToInt32();
                     }
 
@@ -968,10 +967,10 @@ namespace SE.Interop
                 internal static void ToNativeFieldReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
                 {
                     fieldSize = Unsafe.SizeOf<TField>();
-                    if (fieldAlignment > 1)
+                    if (s_FieldAlignment > 1)
                     {
                         IntPtr startPtr = nativeFieldPtr;
-                        nativeFieldPtr = EnsureAlignment(nativeFieldPtr, fieldAlignment);
+                        nativeFieldPtr = EnsureAlignment(nativeFieldPtr, s_FieldAlignment);
                         fieldSize += (nativeFieldPtr - startPtr).ToInt32();
                     }
 
@@ -1323,8 +1322,8 @@ namespace SE.Interop
             internal MethodInfo method;
             internal Type returnType;
 #if !USE_AOT
-            private Invoker.MarshalAndInvokeDelegate invokeDelegate;
-            private object delegInvoke;
+            private Invoker.MarshalAndInvokeDelegate m_InvokeDelegate;
+            private object m_DelegInvoke;
 #endif
 
             internal MethodHolder(MethodInfo method)
@@ -1338,19 +1337,19 @@ namespace SE.Interop
             internal bool TryGetDelegate(out Invoker.MarshalAndInvokeDelegate outDeleg, out object outDelegInvoke)
             {
                 // Skip using in-built delegate for value types (eg. Transform) to properly handle instance value passing to method
-                if (invokeDelegate == null && !method.DeclaringType.IsValueType)
+                if (m_InvokeDelegate == null && !method.DeclaringType.IsValueType)
                 {
                     // Thread-safe creation
-                    lock (typeCache)
+                    lock (s_TypeCache)
                     {
-                        if (invokeDelegate == null)
+                        if (m_InvokeDelegate == null)
                         {
                             TryCreateDelegate();
                         }
                     }
                 }
-                outDeleg = invokeDelegate;
-                outDelegInvoke = delegInvoke;
+                outDeleg = m_InvokeDelegate;
+                outDelegInvoke = m_DelegInvoke;
                 return outDeleg != null;
             }
 
@@ -1380,8 +1379,8 @@ namespace SE.Interop
                 {
                     if (genericParamTypes.Count != 0)
                         invokerType = invokerType.MakeGenericType(genericParamTypes.ToArray());
-                    delegInvoke = invokerType.GetMethod(nameof(Invoker.InvokerStaticNoRet0.CreateDelegate), BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { method });
-                    invokeDelegate = invokerType.GetMethod(nameof(Invoker.InvokerStaticNoRet0.MarshalAndInvoke), BindingFlags.Static | BindingFlags.NonPublic).CreateDelegate<Invoker.MarshalAndInvokeDelegate>();
+                    m_DelegInvoke = invokerType.GetMethod(nameof(Invoker.InvokerStaticNoRet0.CreateDelegate), BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { method });
+                    m_InvokeDelegate = invokerType.GetMethod(nameof(Invoker.InvokerStaticNoRet0.MarshalAndInvoke), BindingFlags.Static | BindingFlags.NonPublic).CreateDelegate<Invoker.MarshalAndInvokeDelegate>();
                 }
             }
 #endif
@@ -1393,21 +1392,21 @@ namespace SE.Interop
             ManagedHandle handle = ManagedHandle.Alloc(methodHolder);
 #if SE_EDITOR
             if (methodHolder.parameterTypes.Any(x => x.IsCollectible) || method.IsCollectible)
-                methodHandlesCollectible.Add(handle);
+                s_MethodHandlesCollectible.Add(handle);
             else
 #endif
             {
-                methodHandles.Add(handle);
+                s_MethodHandles.Add(handle);
             }
             return handle;
         }
 
         internal static ManagedHandle GetAssemblyHandle(Assembly assembly)
         {
-            if (!assemblyHandles.TryGetValue(assembly, out ManagedHandle handle))
+            if (!s_AssemblyHandles.TryGetValue(assembly, out ManagedHandle handle))
             {
                 handle = ManagedHandle.Alloc(assembly);
-                assemblyHandles.Add(assembly, handle);
+                s_AssemblyHandles.Add(assembly, handle);
             }
             return handle;
         }
@@ -1468,13 +1467,13 @@ namespace SE.Interop
                 {
                     // TODO: use UnsafeAccessorAttribute on .NET 8 and use this path on all platforms (including non-Desktop, see MCore::ScriptingObject::CreateScriptingObject)
                     {
-                        ref IntPtr fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<IntPtr>(unmanagedPtrFieldOffset, ref obj);
+                        ref IntPtr fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<IntPtr>(s_UnmanagedPtrFieldOffset, ref obj);
                         fieldRef = unmanagedPtr;
                     }
                     if (idPtr != IntPtr.Zero)
                     {
                         ref Guid nativeId = ref Unsafe.AsRef<Guid>(idPtr.ToPointer());
-                        ref Guid fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<Guid>(internalIdFieldOffset, ref obj);
+                        ref Guid fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<Guid>(s_InternalIdFieldOffset, ref obj);
                         fieldRef = nativeId;
                     }
                 }
@@ -1496,9 +1495,9 @@ namespace SE.Interop
         {
             private delegate Array CreateArrayDelegate(long size);
 
-            private static ConcurrentDictionary<Type, Type> marshalledTypes = new ConcurrentDictionary<Type, Type>(1, 3);
-            private static ConcurrentDictionary<Type, Type> arrayTypes = new ConcurrentDictionary<Type, Type>(1, 3);
-            private static ConcurrentDictionary<Type, CreateArrayDelegate> createArrayDelegates = new ConcurrentDictionary<Type, CreateArrayDelegate>(1, 3);
+            private static ConcurrentDictionary<Type, Type> s_MarshalledTypes = new ConcurrentDictionary<Type, Type>(1, 3);
+            private static ConcurrentDictionary<Type, Type> s_ArrayTypes = new ConcurrentDictionary<Type, Type>(1, 3);
+            private static ConcurrentDictionary<Type, CreateArrayDelegate> s_CreateArrayDelegates = new ConcurrentDictionary<Type, CreateArrayDelegate>(1, 3);
 
             internal static Type GetMarshalledType(Type elementType)
             {
@@ -1512,18 +1511,18 @@ namespace SE.Interop
                     return marshalType;
                 }
 
-                if (marshalledTypes.TryGetValue(elementType, out var marshalledType))
+                if (s_MarshalledTypes.TryGetValue(elementType, out var marshalledType))
                     return marshalledType;
-                return marshalledTypes.GetOrAdd(elementType, Factory);
+                return s_MarshalledTypes.GetOrAdd(elementType, Factory);
             }
 
             internal static Type GetArrayType(Type elementType)
             {
                 static Type Factory(Type type) => type.MakeArrayType();
 
-                if (arrayTypes.TryGetValue(elementType, out var arrayType))
+                if (s_ArrayTypes.TryGetValue(elementType, out var arrayType))
                     return arrayType;
-                return arrayTypes.GetOrAdd(elementType, Factory);
+                return s_ArrayTypes.GetOrAdd(elementType, Factory);
             }
 
             internal static Array CreateArray(Type type, long size)
@@ -1535,9 +1534,9 @@ namespace SE.Interop
                     return method.CreateDelegate<CreateArrayDelegate>();
                 }
 
-                if (createArrayDelegates.TryGetValue(type, out var deleg))
+                if (s_CreateArrayDelegates.TryGetValue(type, out var deleg))
                     return deleg(size);
-                return createArrayDelegates.GetOrAdd(type, Factory)(size);
+                return s_CreateArrayDelegates.GetOrAdd(type, Factory)(size);
             }
 
 
@@ -1549,18 +1548,18 @@ namespace SE.Interop
 
         internal static class ValueTypeUnboxer
         {
-            private static GCHandle[] pinnedBoxedValues = new GCHandle[256];
-            private static uint pinnedBoxedValuesPointer = 0;
+            private static GCHandle[] s_PinnedBoxedValues = new GCHandle[256];
+            private static uint s_PinnedBoxedValuesPointer = 0;
             private static (IntPtr ptr, int size)[] pinnedAllocations = new (IntPtr ptr, int size)[256];
-            private static uint pinnedAllocationsPointer = 0;
+            private static uint s_PinnedAllocationsPointer = 0;
 
             private delegate TInternal ToNativeDelegate<T, TInternal>(T value);
 
             private delegate IntPtr UnboxerDelegate(object value, object converter);
 
             private static ConcurrentDictionary<Type, (UnboxerDelegate deleg, object toNativeDeleg)> unboxers = new(1, 3);
-            private static MethodInfo unboxerMethod = typeof(ValueTypeUnboxer).GetMethod(nameof(ValueTypeUnboxer.UnboxPointer), BindingFlags.Static | BindingFlags.NonPublic);
-            private static MethodInfo unboxerToNativeMethod = typeof(ValueTypeUnboxer).GetMethod(nameof(ValueTypeUnboxer.UnboxPointerWithConverter), BindingFlags.Static | BindingFlags.NonPublic);
+            private static MethodInfo s_UnboxerMethod = typeof(ValueTypeUnboxer).GetMethod(nameof(ValueTypeUnboxer.UnboxPointer), BindingFlags.Static | BindingFlags.NonPublic);
+            private static MethodInfo s_UnboxerToNativeMethod = typeof(ValueTypeUnboxer).GetMethod(nameof(ValueTypeUnboxer.UnboxPointerWithConverter), BindingFlags.Static | BindingFlags.NonPublic);
 
             internal static IntPtr GetPointer(object value, Type type)
             {
@@ -1571,12 +1570,12 @@ namespace SE.Interop
                     var toNativeMethod = attr?.NativeType.GetMethod("ToNative", BindingFlags.Static | BindingFlags.NonPublic);
                     if (toNativeMethod != null)
                     {
-                        tuple.deleg = unboxerToNativeMethod.MakeGenericMethod(type, toNativeMethod.ReturnType).CreateDelegate<UnboxerDelegate>();
+                        tuple.deleg = s_UnboxerToNativeMethod.MakeGenericMethod(type, toNativeMethod.ReturnType).CreateDelegate<UnboxerDelegate>();
                         tuple.toNativeDeleg = toNativeMethod.CreateDelegate(typeof(ToNativeDelegate<,>).MakeGenericType(type, toNativeMethod.ReturnType));
                     }
                     else
                     {
-                        tuple.deleg = unboxerMethod.MakeGenericMethod(type).CreateDelegate<UnboxerDelegate>();
+                        tuple.deleg = s_UnboxerMethod.MakeGenericMethod(type).CreateDelegate<UnboxerDelegate>();
                     }
                     tuple = unboxers.GetOrAdd(type, tuple);
                 }
@@ -1587,8 +1586,8 @@ namespace SE.Interop
             {
                 // Prevent garbage collector from relocating the boxed value by pinning it temporarily.
                 // The pointer should remain valid quite long time but will be eventually unpinned.
-                uint index = Interlocked.Increment(ref pinnedBoxedValuesPointer) % (uint)pinnedBoxedValues.Length;
-                ref GCHandle handle = ref pinnedBoxedValues[index];
+                uint index = Interlocked.Increment(ref s_PinnedBoxedValuesPointer) % (uint)s_PinnedBoxedValues.Length;
+                ref GCHandle handle = ref s_PinnedBoxedValues[index];
                 if (handle.IsAllocated)
                     handle.Free();
                 handle = GCHandle.Alloc(value, GCHandleType.Pinned);
@@ -1598,7 +1597,7 @@ namespace SE.Interop
             {
                 // Store the converted value in unmanaged memory so it will not be relocated by the garbage collector.
                 int size = TypeHelpers<T>.MarshalSize;
-                uint index = Interlocked.Increment(ref pinnedAllocationsPointer) % (uint)pinnedAllocations.Length;
+                uint index = Interlocked.Increment(ref s_PinnedAllocationsPointer) % (uint)pinnedAllocations.Length;
                 ref (IntPtr ptr, int size) alloc = ref pinnedAllocations[index];
                 if (alloc.size < size)
                 {
@@ -1657,10 +1656,10 @@ namespace SE.Interop
 
         internal static TypeHolder GetTypeHolder(Type type)
         {
-            if (managedTypes.TryGetValue(type, out (TypeHolder typeHolder, ManagedHandle handle) tuple))
+            if (s_ManagedTypes.TryGetValue(type, out (TypeHolder typeHolder, ManagedHandle handle) tuple))
                 return tuple.typeHolder;
 #if SE_EDITOR
-            if (managedTypesCollectible.TryGetValue(type, out tuple))
+            if (s_ManagedTypesCollectible.TryGetValue(type, out tuple))
                 return tuple.typeHolder;
 #endif
             return RegisterType(type, true).typeHolder;
@@ -1668,10 +1667,10 @@ namespace SE.Interop
 
         internal static (TypeHolder typeHolder, ManagedHandle handle) GetTypeHolderAndManagedHandle(Type type)
         {
-            if (managedTypes.TryGetValue(type, out (TypeHolder typeHolder, ManagedHandle handle) tuple))
+            if (s_ManagedTypes.TryGetValue(type, out (TypeHolder typeHolder, ManagedHandle handle) tuple))
                 return tuple;
 #if SE_EDITOR
-            if (managedTypesCollectible.TryGetValue(type, out tuple))
+            if (s_ManagedTypesCollectible.TryGetValue(type, out tuple))
                 return tuple;
 #endif
             return RegisterType(type, true);
@@ -1684,10 +1683,10 @@ namespace SE.Interop
         {
             if (type.IsInterface && type.IsGenericType)
                 type = type.GetGenericTypeDefinition(); // Generic type to use type definition handle
-            if (managedTypes.TryGetValue(type, out (TypeHolder typeHolder, ManagedHandle handle) tuple))
+            if (s_ManagedTypes.TryGetValue(type, out (TypeHolder typeHolder, ManagedHandle handle) tuple))
                 return tuple.handle;
 #if SE_EDITOR
-            if (managedTypesCollectible.TryGetValue(type, out tuple))
+            if (s_ManagedTypesCollectible.TryGetValue(type, out tuple))
                 return tuple.handle;
 #endif
             return RegisterType(type, true).handle;
@@ -1717,11 +1716,13 @@ namespace SE.Interop
             }
 
             if (isCollectible)
-                managedTypesCollectible.Add(type, tuple);
+            {
+                s_ManagedTypesCollectible.Add(type, tuple);
+            }
             else
 #endif
             {
-                managedTypes.Add(type, tuple);
+                s_ManagedTypes.Add(type, tuple);
             }
 
             if (registerNativeType)
@@ -1755,11 +1756,11 @@ namespace SE.Interop
 
         internal static int GetTypeSize(Type type)
         {
-            if (!_typeSizeCache.TryGetValue(type, out int size))
+            if (!s_TypeSizeCache.TryGetValue(type, out int size))
             {
                 var marshalSizeField = typeof(TypeHelpers<>).MakeGenericType(type).GetField(nameof(TypeHelpers<int>.MarshalSize), BindingFlags.Static | BindingFlags.Public);
                 size = (int)marshalSizeField.GetValue(null);
-                _typeSizeCache.AddOrUpdate(type, size, (t, v) => size);
+                s_TypeSizeCache.AddOrUpdate(type, size, (t, v) => size);
             }
             return size;
         }
@@ -1771,14 +1772,14 @@ namespace SE.Interop
             {
             }
 #else
-            private static Func<Type[], Type> MakeNewCustomDelegateFunc;
+            private static Func<Type[], Type> s_MakeNewCustomDelegateFunc;
 #if SE_EDITOR
-            private static Func<Type[], Type> MakeNewCustomDelegateFuncCollectible;
+            private static Func<Type[], Type> s_MakeNewCustomDelegateFuncCollectible;
 #endif
 
             internal static void InitMethods()
             {
-                MakeNewCustomDelegateFunc =
+                s_MakeNewCustomDelegateFunc =
                 typeof(Expression).Assembly.GetType("System.Linq.Expressions.Compiler.DelegateHelpers")
                                   .GetMethod("MakeNewCustomDelegate", BindingFlags.NonPublic | BindingFlags.Static).CreateDelegate<Func<Type[], Type>>();
 
@@ -1786,17 +1787,17 @@ namespace SE.Interop
                 // Load System.Linq.Expressions assembly to collectible ALC.
                 // The dynamic assembly where delegates are stored is cached in the DelegateHelpers class, so we should
                 // use the DelegateHelpers in collectible ALC to make sure the delegates are also stored in the same ALC.
-                Assembly assembly = scriptingAssemblyLoadContext.LoadFromAssemblyPath(typeof(Expression).Assembly.Location);
-                MakeNewCustomDelegateFuncCollectible =
+                Assembly assembly = s_ScriptingAssemblyLoadContext.LoadFromAssemblyPath(typeof(Expression).Assembly.Location);
+                s_MakeNewCustomDelegateFuncCollectible =
                 assembly.GetType("System.Linq.Expressions.Compiler.DelegateHelpers")
                         .GetMethod("MakeNewCustomDelegate", BindingFlags.NonPublic | BindingFlags.Static).CreateDelegate<Func<Type[], Type>>();
 
                 // Create dummy delegates to force the dynamic Snippets assembly to be loaded in correcet ALCs
-                MakeNewCustomDelegateFunc(new[] { typeof(void) });
+                s_MakeNewCustomDelegateFunc(new[] { typeof(void) });
                 {
                     // Ensure the new delegate is placed in the collectible ALC
-                    using var ctx = scriptingAssemblyLoadContext.EnterContextualReflection();
-                    MakeNewCustomDelegateFuncCollectible(new[] { typeof(void) });
+                    using var ctx = s_ScriptingAssemblyLoadContext.EnterContextualReflection();
+                    s_MakeNewCustomDelegateFuncCollectible(new[] { typeof(void) });
                 }
 #endif
             }
@@ -1805,13 +1806,13 @@ namespace SE.Interop
             {
 #if SE_EDITOR
                 if (parameters.Any(x => x.IsCollectible))
-                    return MakeNewCustomDelegateFuncCollectible(parameters);
+                    return s_MakeNewCustomDelegateFuncCollectible(parameters);
 #endif
-                return MakeNewCustomDelegateFunc(parameters);
+                return s_MakeNewCustomDelegateFunc(parameters);
             }
 #endif
         }
-        
+
         #if !USE_AOT
         /// <summary>
         /// Wrapper class for invoking function pointers from unmanaged code.
@@ -1954,12 +1955,12 @@ namespace SE.Interop
             }
         }
 #endif
-        
-        
+
+
 
     }
-    
-    
+
+
     internal class NativeInteropException : Exception
     {
         public NativeInteropException(string message)

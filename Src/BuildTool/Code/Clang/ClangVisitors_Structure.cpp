@@ -1,4 +1,5 @@
 #include "ClangVisitors_Structure.h"
+#include "CodeGenerators/CodeGenerator_BindingsTypeMap.h"
 #include "CodeGenerators/CodeGenerator_Utils.h"
 #include "Core/Utils.h"
 #include "Database/ReflectionDatabase.h"
@@ -13,6 +14,23 @@ namespace SE::BuildTool
 
     struct FieldTypeInfo
     {
+        std::string ToCppTypeString() const
+        {
+            std::string result = name;
+            if (!templateArgs.empty())
+            {
+                result.append("<");
+                for (int i = 0; i < templateArgs.size(); i++)
+                {
+                    if (i > 0)
+                        result.append(", ");
+                    result.append(templateArgs[i].ToCppTypeString());
+                }
+                result.append(">");
+            }
+            return result;
+        }
+
         void GetFlattenedTemplateArgs(std::string &flattenedArgs) const
         {
             if (!templateArgs.empty())
@@ -55,6 +73,16 @@ namespace SE::BuildTool
         bool isConstantArray;
     };
 
+    struct ReflectedFieldTypeInfo
+    {
+        FieldTypeInfo typeInfo;
+        TypeID typeID;
+        bool isFixedArray = false;
+        bool isDynamicArray = false;
+        int32 arraySize = 0;
+        std::string bindingCppType;
+    };
+
     static void GetFieldTypeInfo(ClangParserContext *pContext, TypeData *pType, CXType type, FieldTypeInfo &info)
     {
         clang::QualType const fieldQualType = ClangUtils::GetQualType(type);
@@ -85,6 +113,71 @@ namespace SE::BuildTool
         }
     }
 
+    static bool ResolveReflectedFieldType(ClangParserContext *pContext, TypeData *pClass, CXCursor cr,
+                                          const std::string& propertyName, ReflectedFieldTypeInfo& outInfo)
+    {
+        CXType type = clang_getCursorType(cr);
+        clang::QualType const fieldQualType = ClangUtils::GetQualType(type);
+
+        if (fieldQualType->isTemplateTypeParmType())
+        {
+            pContext->LogError("Cannot expose template argument member ({0}) in class ({1})!", propertyName, pClass->name);
+            return false;
+        }
+
+        if (fieldQualType->isArrayType())
+        {
+            if (fieldQualType->isVariableArrayType() || fieldQualType->isIncompleteArrayType())
+            {
+                pContext->LogError("Variable size array properties are not supported! Please change to List or fixed size!");
+                return false;
+            }
+
+            auto const pArrayType = (clang::ConstantArrayType*)fieldQualType.getTypePtr();
+            outInfo.isFixedArray = true;
+            outInfo.arraySize = (int32)pArrayType->getSize().getSExtValue();
+            type = clang_getElementType(type);
+        }
+
+        FieldTypeInfo fieldTypeInfo;
+        GetFieldTypeInfo(pContext, pClass, type, fieldTypeInfo);
+        ENGINE_ASSERT(!fieldTypeInfo.name.empty());
+
+        outInfo.bindingCppType = fieldTypeInfo.ToCppTypeString();
+        TypeID fieldTypeID(fieldTypeInfo.name);
+
+        if (Utils::GetCoreTypeID(Utils::TypeIDCore::List) == fieldTypeID)
+        {
+            outInfo.isDynamicArray = true;
+
+            if (fieldTypeInfo.templateArgs.empty())
+            {
+                pContext->LogError("List property ({0}) in class ({1}) is missing an element type", propertyName, pClass->name);
+                return false;
+            }
+
+            FieldTypeInfo const& templateTypeInfo = fieldTypeInfo.templateArgs.front();
+            fieldTypeInfo = FieldTypeInfo(templateTypeInfo);
+            fieldTypeID = TypeID(fieldTypeInfo.name);
+
+            if (fieldTypeInfo.isConstantArray)
+            {
+                pContext->LogError("We dont support arrays of arrays. Property: {0} in class: {1}", propertyName, pClass->name);
+                return false;
+            }
+        }
+        else if (StringID("::SE::String") == fieldTypeID)
+        {
+            // We need to clear the template args since we have a type alias and clang is detected the template args for eastl::basic_string
+            fieldTypeInfo.templateArgs.clear();
+            outInfo.bindingCppType = fieldTypeInfo.ToCppTypeString();
+        }
+
+        outInfo.typeInfo = fieldTypeInfo;
+        outInfo.typeID = fieldTypeID;
+        return true;
+    }
+
     static void GetAllDerivedProperties(ReflectionDatabase const *pDatabase, StringID parentTypeID, std::vector<PropertyData> &results)
     {
         TypeData const *pParentDesc = pDatabase->GetType(parentTypeID);
@@ -98,208 +191,12 @@ namespace SE::BuildTool
         }
     }
 
-    static std::string GetCursorComment(CXCursor cr)
-    {
-        std::string result;
-        CXString const commentString = clang_Cursor_getBriefCommentText(cr);
-        if (commentString.data != nullptr)
-        {
-            result = clang_getCString(commentString);
-            Utils::String::ReplaceAll(result, "\r", " ");
-            Utils::String::TrimStart(result);
-            Utils::String::TrimEnd(result);
-        }
-        clang_disposeString(commentString);
-        return result;
-    }
-
-    static AccessLevel GetAccessLevel(CXCursor cr, AccessLevel defaultAccess = AccessLevel::Public)
-    {
-        switch (clang_getCXXAccessSpecifier(cr))
-        {
-        case CX_CXXPrivate:
-            return AccessLevel::Private;
-        case CX_CXXProtected:
-            return AccessLevel::Protected;
-        case CX_CXXPublic:
-            return AccessLevel::Public;
-        case CX_CXXInvalidAccessSpecifier:
-        default:
-            return defaultAccess;
-        }
-    }
-
-    static bool HasMacroFlag(const MarkMacro& macro, const Char* flag)
-    {
-        for (auto const& value : macro.macroContents)
-        {
-            if (value == flag)
-                return true;
-        }
-        return false;
-    }
-
-    static void SplitMacroContent(std::string const& str, std::vector<std::string>& outParts)
-    {
-        int32 depth = 0;
-        bool inQuote = false;
-        int32 start = 0;
-
-        for (int32 i = 0; i < str.length(); i++)
-        {
-            char const c = str[(size_t)i];
-            if (c == '"')
-            {
-                inQuote = !inQuote;
-            }
-            else if (!inQuote)
-            {
-                if (c == '(' || c == '[' || c == '{')
-                {
-                    depth++;
-                }
-                else if (c == ')' || c == ']' || c == '}')
-                {
-                    depth--;
-                }
-                else if (c == ',' && depth == 0)
-                {
-                    outParts.push_back(str.substr((size_t)start, (size_t)(i - start)));
-                    start = i + 1;
-                }
-            }
-        }
-
-        if (start < str.length())
-        {
-            outParts.push_back(str.substr((size_t)start));
-        }
-    }
-
-    static bool TryParseStructureMacroFromLine(HeaderInfo const* pHeaderInfo,
-                                               uint32 lineNumber,
-                                               ReflectionMacroType macroType,
-                                               MarkMacro& macro)
-    {
-        if (pHeaderInfo == nullptr || lineNumber == 0 || lineNumber > pHeaderInfo->fileContents.size())
-        {
-            return false;
-        }
-
-        std::string const& line = pHeaderInfo->fileContents[(size_t)lineNumber - 1];
-        char const* macroName = GetMarkMacroText(macroType);
-        int32 const macroIdx = Utils::String::Find(line, macroName);
-        if (macroIdx == INVALID_INDEX)
-        {
-            return false;
-        }
-
-        int32 const commentIdx = Utils::String::Find(line, "//");
-        if (commentIdx != INVALID_INDEX && commentIdx < macroIdx)
-        {
-            return false;
-        }
-
-        int32 const openIdx = Utils::String::Find(line, '(', macroIdx);
-        int32 const closeIdx = Utils::String::FindLast(line, ')');
-        if (openIdx == INVALID_INDEX || closeIdx == INVALID_INDEX || closeIdx <= openIdx)
-        {
-            return false;
-        }
-
-        macro = MarkMacro();
-        macro.headerID = pHeaderInfo->headerId;
-        macro.fileLine = lineNumber;
-        macro.fileColumn = (uint32)macroIdx + 1;
-        macro.type = macroType;
-
-        std::string macroContent = line.substr((size_t)openIdx + 1, (size_t)(closeIdx - openIdx - 1));
-        Utils::String::TrimStart(macroContent);
-        Utils::String::TrimEnd(macroContent);
-        if (!macroContent.empty())
-        {
-            std::vector<std::string> parts;
-            SplitMacroContent(macroContent, parts);
-            for (auto& part : parts)
-            {
-                Utils::String::TrimStart(part);
-                Utils::String::TrimEnd(part);
-                if (part == "Reflect")
-                {
-                    macro.hasReflect = true;
-                }
-                else if (part == "API")
-                {
-                    macro.hasAPI = true;
-                }
-                else if (!part.empty())
-                {
-                    macro.macroContents.push_back(part);
-                }
-            }
-        }
-
-        return true;
-    }
-
-    static bool TryGetMacroValue(const MarkMacro& macro, const Char* key, std::string& outValue)
-    {
-        std::string prefix = Utils::String::Format("{0}=", key);
-        for (auto const& value : macro.macroContents)
-        {
-            if (Utils::String::StartsWith(value, prefix))
-            {
-                std::string parsed = value.substr(prefix.length());
-                Utils::String::TrimStart(parsed);
-                Utils::String::TrimEnd(parsed);
-                if (Utils::String::StartsWith(parsed, "\"") && Utils::String::EndsWith(parsed, "\"") && parsed.length() >= 2)
-                {
-                    parsed = parsed.substr(1, parsed.length() - 2);
-                }
-                outValue = parsed;
-                return true;
-            }
-        }
-        return false;
-    }
-
     static void ApplyMemberMacroMetadata(const MarkMacro& macro, std::string& attributes, std::string& tag,
                                          std::string& marshalAs)
     {
-        TryGetMacroValue(macro, "Attributes", attributes);
-        TryGetMacroValue(macro, "Tag", tag);
-        TryGetMacroValue(macro, "MarshalAs", marshalAs);
-    }
-
-    static std::string GetParameterDefaultValue(CXCursor argCr)
-    {
-        CXSourceRange range = clang_getCursorExtent(argCr);
-        CXTranslationUnit translationUnit = clang_Cursor_getTranslationUnit(argCr);
-        CXToken* tokens = nullptr;
-        uint32 numTokens = 0;
-        clang_tokenize(translationUnit, range, &tokens, &numTokens);
-
-        std::string result;
-        bool foundEquals = false;
-        for (uint32 i = 0; i < numTokens; i++)
-        {
-            std::string token = ClangUtils::GetString(clang_getTokenSpelling(translationUnit, tokens[i]));
-            if (token == "=")
-            {
-                foundEquals = true;
-                continue;
-            }
-            if (!foundEquals)
-                continue;
-            if (!result.empty())
-                result += " ";
-            result += token;
-        }
-
-        clang_disposeTokens(translationUnit, tokens, numTokens);
-        Utils::String::TrimStart(result);
-        Utils::String::TrimEnd(result);
-        return result;
+        macro.TryGetValue("Attributes", attributes);
+        macro.TryGetValue("Tag", tag);
+        macro.TryGetValue("MarshalAs", marshalAs);
     }
 
     static void FillApiParam(CXCursor argCr, ApiParam& param)
@@ -319,9 +216,13 @@ namespace SE::BuildTool
         std::string typeSpelling = param.cppType;
         Utils::String::TrimStart(typeSpelling);
         param.isConst = (clang_isConstQualifiedType(canonical) != 0) || Utils::String::StartsWith(typeSpelling, "const ");
-        param.isOut = param.isRef && !param.isConst;
-        param.defaultValue = GetParameterDefaultValue(argCr);
-        param.comment = GetCursorComment(argCr);
+        // C++ T& is an input/output reference by default. Treating every
+        // non-const reference as C# out loses its input value. Explicit out
+        // semantics require a dedicated API annotation; until then ref is the
+        // only lossless representation.
+        param.isOut = false;
+        param.defaultValue = ClangUtils::GetParameterDefaultValue(argCr);
+        param.comment      = ClangUtils::GetCursorComment(argCr);
     }
 
     static void VisitConstructor(CXCursor cr, TypeData *pType)
@@ -392,7 +293,7 @@ namespace SE::BuildTool
             PropertyData &propertyDesc = pClass->properties.back();
 
             // Try read any user comments for this field
-            propertyDesc.description = GetCursorComment(cr);
+            propertyDesc.description = ClangUtils::GetCursorComment(cr);
 
             // If we dont have an explicit comment for the property, try to get it from the macro declaration
             if (propertyDesc.description.empty())
@@ -400,79 +301,34 @@ namespace SE::BuildTool
                 propertyDesc.description = propertyMarkMacro.macroComment;
             }
 
-            auto type = clang_getCursorType(cr);
-            auto const pFieldQualType = ClangUtils::GetQualType(type);
-            auto typeSpelling = ClangUtils::GetString(clang_getTypeSpelling(type));
-
-            // Check if template parameter
-            if (pFieldQualType->isTemplateTypeParmType())
-            {
-                pContext->LogError("Cannot expose template argument member ({0}) in class ({1})!", propertyDesc.name, pClass->name);
+            ReflectedFieldTypeInfo resolvedFieldType;
+            if (!ResolveReflectedFieldType(pContext, pClass, cr, propertyDesc.name, resolvedFieldType))
                 return false;
-            }
 
-            // Check if this field is a c-style array
-            //-------------------------------------------------------------------------
-            if (pFieldQualType->isArrayType())
+            if (resolvedFieldType.isFixedArray)
             {
-                if (pFieldQualType->isVariableArrayType() || pFieldQualType->isIncompleteArrayType())
-                {
-                    pContext->LogError("Variable size array properties are not supported! Please change to List or fixed size!");
-                    return false;
-                }
-
-                auto const pArrayType = (clang::ConstantArrayType *)pFieldQualType.getTypePtr();
-                propertyDesc.flags.SetFlag(TypeProperty::Flags::IsArray);
-                propertyDesc.arraySize = (int32_t)pArrayType->getSize().getSExtValue();
-
-                // Set property type to array type
-                type = clang_getElementType(type);
+                propertyDesc.flags.SetFlag(PropertyFlags::IsArray);
+                propertyDesc.arraySize = resolvedFieldType.arraySize;
             }
-
-            // Get field typename
-            //-------------------------------------------------------------------------
-
-            FieldTypeInfo fieldTypeInfo;
-            GetFieldTypeInfo(pContext, pClass, type, fieldTypeInfo);
-            ENGINE_ASSERT(!fieldTypeInfo.name.empty());
-            TypeID fieldTypeID(fieldTypeInfo.name);
-
-            // Additional processing for special types
-            //-------------------------------------------------------------------------
-
-            if (Utils::GetCoreTypeID(Utils::TypeIDCore::List) == fieldTypeID)
+            if (resolvedFieldType.isDynamicArray)
             {
-                // We need to flag this in advance as we are about to change the field type ID
-                propertyDesc.flags.SetFlag(TypeProperty::Flags::IsDynamicArray);
-
-                // We need to remove the List type from the property info as we allow for templated types to be contained within arrays
-                FieldTypeInfo const &templateTypeInfo = fieldTypeInfo.templateArgs.front();
-                fieldTypeInfo = FieldTypeInfo(templateTypeInfo);
-                fieldTypeID = TypeID(fieldTypeInfo.name);
-
-                if (fieldTypeInfo.isConstantArray)
-                {
-                    pContext->LogError("We dont support arrays of arrays. Property: {0} in class: {1}", propertyDesc.name, pClass->name);
-                    return false;
-                }
-            }
-            else if (StringID("::SE::String") == fieldTypeID)
-            {
-                // We need to clear the template args since we have a type alias and clang is detected the template args for eastl::basic_string
-                fieldTypeInfo.templateArgs.clear();
+                propertyDesc.flags.SetFlag(PropertyFlags::IsDynamicArray);
             }
 
             //-------------------------------------------------------------------------
             // Set property typename and validate
             // If it is a templated type, we only support one level of specialization for exposed properties, so flatten the type
-            propertyDesc.typeName = fieldTypeInfo.name;
-            propertyDesc.typeID = fieldTypeID;
+            propertyDesc.typeName = resolvedFieldType.typeInfo.name;
+            propertyDesc.typeID = resolvedFieldType.typeID;
             propertyDesc.metaData = propertyMarkMacro.macroMetadata;
+            propertyMarkMacro.TryGetValue("Category", propertyDesc.category);
+            propertyDesc.isToolsReadOnly      = propertyMarkMacro.HasFlag(TOOLS_READ_ONLY_FLAG());
+            propertyDesc.showInRestrictedMode = propertyMarkMacro.HasFlag(SHOW_IN_RESTRICTED_MODE_FLAG());
 
-            if (!fieldTypeInfo.templateArgs.empty())
+            if (!resolvedFieldType.typeInfo.templateArgs.empty())
             {
                 std::string flattenedArgs;
-                fieldTypeInfo.GetFlattenedTemplateArgs(flattenedArgs);
+                resolvedFieldType.typeInfo.GetFlattenedTemplateArgs(flattenedArgs);
                 propertyDesc.templateArgTypeName = flattenedArgs;
             }
 
@@ -532,11 +388,11 @@ namespace SE::BuildTool
                 // Check for enum types - bitflags are a special case and are not an enum
                 if (pPropertyTypeDesc->IsFlag(TypeData::Flags::IsEnum))
                 {
-                    propertyDesc.flags.SetFlag(TypeProperty::Flags::IsEnum);
+                    propertyDesc.flags.SetFlag(PropertyFlags::IsEnum);
                 }
                 else
                 {
-                    propertyDesc.flags.SetFlag(TypeProperty::Flags::IsStructure);
+                    propertyDesc.flags.SetFlag(PropertyFlags::IsStructure);
                 }
             }
         }
@@ -547,44 +403,73 @@ namespace SE::BuildTool
             // First check if the already-found reflection macro also carries API
             if (foundPropertyMacro && propertyMarkMacro.hasAPI)
             {
-                CXType fieldType = clang_getCursorType(cr);
                 ApiField field;
-                field.name       = ClangUtils::GetCursorSpellingAnsi(cr);
-                field.cppType    = ClangUtils::GetTypeSpellingAnsi(fieldType);
-                field.isReadOnly = HasMacroFlag(propertyMarkMacro, "ReadOnly");
-                field.isStatic   = (clang_Cursor_getStorageClass(cr) == CX_SC_Static);
-                field.isHidden   = HasMacroFlag(propertyMarkMacro, "Hidden");
-                field.isDeprecated = HasMacroFlag(propertyMarkMacro, "Deprecated");
-                clang::QualType fieldQualType = ClangUtils::GetQualType(fieldType);
-                if (fieldQualType->isConstantArrayType())
+                field.name = ClangUtils::GetCursorSpellingAnsi(cr);
+                ReflectedFieldTypeInfo resolvedFieldType;
+                if (!ResolveReflectedFieldType(pContext, pClass, cr, field.name, resolvedFieldType))
                 {
-                    auto const* pArrayType = (clang::ConstantArrayType*)fieldQualType.getTypePtr();
-                    field.arraySize = (int)pArrayType->getSize().getSExtValue();
+                    return false;
                 }
-                field.lineNumber = (int)lineNumber;
-                field.comment    = GetCursorComment(cr);
+                field.cppType      = resolvedFieldType.bindingCppType;
+                field.isReadOnly   = propertyMarkMacro.HasFlag(READ_ONLY_FLAG());
+                field.isStatic     = ClangUtils::IsStatic(cr);
+                field.isHidden     = propertyMarkMacro.HasFlag(HIDDEN_FLAG());
+                field.isDeprecated = propertyMarkMacro.HasFlag(DEPRECATED_FLAG());
+                field.arraySize    = resolvedFieldType.isFixedArray ? resolvedFieldType.arraySize : 0;
+                field.lineNumber   = (int)lineNumber;
+                field.comment      = ClangUtils::GetCursorComment(cr);
                 if (field.comment.empty())
+                {
                     field.comment = propertyMarkMacro.macroComment;
+                }
                 std::string tag;
                 ApplyMemberMacroMetadata(propertyMarkMacro, field.attributes, tag, field.marshalAs);
                 pClass->bindingInfo.fields.push_back(field);
             }
-        }
 
-        MarkMacro eventMarkMacro;
-        if (pClass->isAPI && pContext->FindMarkMacro(pClass->headerID, cr, eventMarkMacro, ReflectionMacroType::SEEvent))
-        {
-            ApiEvent evt;
-            evt.name = ClangUtils::GetCursorSpellingAnsi(cr);
-            evt.cppType = ClangUtils::GetTypeSpellingAnsi(clang_getCursorType(cr));
-            evt.namespaceNameList = pClass->namespaceScopeList;
-            evt.isStatic = (clang_Cursor_getStorageClass(cr) == CX_SC_Static);
-            evt.access = GetAccessLevel(cr);
-            evt.comment = GetCursorComment(cr);
-            evt.lineNumber = (int)lineNumber;
-            std::string tag, marshalAs;
-            ApplyMemberMacroMetadata(eventMarkMacro, evt.attributes, tag, marshalAs);
-            pClass->bindingInfo.events.push_back(evt);
+            MarkMacro eventMarkMacro;
+            if (pContext->FindMarkMacro(pClass->headerID, cr, eventMarkMacro, ReflectionMacroType::SEEvent) &&
+                eventMarkMacro.hasAPI)
+            {
+                ApiEvent evt;
+                CXType   eventType    = clang_getCursorType(cr);
+                evt.name              = ClangUtils::GetCursorSpellingAnsi(cr);
+                evt.cppType           = ClangUtils::GetTypeSpellingAnsi(eventType);
+                evt.namespaceNameList = pClass->namespaceScopeList;
+                evt.isStatic          = ClangUtils::IsStatic(cr);
+                evt.access            = ClangUtils::GetAccessLevel(cr);
+                evt.comment           = ClangUtils::GetCursorComment(cr);
+                evt.lineNumber        = (int)lineNumber;
+
+                // SE_EVENT marks a Delegate<...> field. Unlike a function cursor,
+                // the Delegate arguments do not have declaration cursors, so unpack
+                // the template argument types and synthesize stable argument names.
+                const int numTemplateArguments = clang_Type_getNumTemplateArguments(eventType);
+                for (int i = 0; i < numTemplateArguments; i++)
+                {
+                    CXType argumentType = clang_Type_getTemplateArgumentAsType(eventType, i);
+                    if (argumentType.kind == CXType_Invalid)
+                        continue;
+
+                    ApiParam param;
+                    param.name    = Utils::String::Format("arg{0}", i);
+                    param.cppType = ClangUtils::GetTypeSpellingAnsi(argumentType);
+
+                    CXType canonical = clang_getCanonicalType(argumentType);
+                    param.isPointer  = canonical.kind == CXType_Pointer;
+                    param.isRef = canonical.kind == CXType_LValueReference || canonical.kind == CXType_RValueReference;
+                    std::string typeSpelling = param.cppType;
+                    Utils::String::TrimStart(typeSpelling);
+                    param.isConst =
+                        clang_isConstQualifiedType(canonical) != 0 || Utils::String::StartsWith(typeSpelling, "const ");
+                    param.isOut = false;
+                    evt.params.push_back(param);
+                }
+
+                std::string tag, marshalAs;
+                ApplyMemberMacroMetadata(eventMarkMacro, evt.attributes, tag, marshalAs);
+                pClass->bindingInfo.events.push_back(evt);
+            }
         }
 
         return true;
@@ -595,30 +480,32 @@ namespace SE::BuildTool
         MarkMacro bindingMacro;
         if (pContext->FindMarkMacro(pClass->headerID, cr, bindingMacro, ReflectionMacroType::SEFunction))
         {
-            if (pClass->isAPI)
+            if (pClass->isAPI && bindingMacro.hasAPI)
             {
                 ApiFunction fn;
-                fn.name       = ClangUtils::GetCursorSpellingAnsi(cr);
-                fn.returnType = ClangUtils::GetTypeSpellingAnsi(clang_getResultType(clang_getCursorType(cr)));
-                fn.isStatic   = (clang_CXXMethod_isStatic(cr) != 0);
-                fn.isVirtual  = (clang_CXXMethod_isVirtual(cr) != 0);
-                fn.isConst    = (clang_CXXMethod_isConst(cr) != 0);
-                fn.noProxy    = HasMacroFlag(bindingMacro, "NoProxy");
-                fn.isHidden   = HasMacroFlag(bindingMacro, "Hidden");
-                fn.isSealed   = HasMacroFlag(bindingMacro, "Sealed");
-                fn.isDeprecated = HasMacroFlag(bindingMacro, "Deprecated");
-                fn.access     = GetAccessLevel(cr);
-                fn.comment    = GetCursorComment(cr);
-                fn.uniqueName = fn.name;
-                fn.lineNumber = (int)lineNumber;
-                fn.entryPoint = Utils::String::Format("{0}::{1}::{2}", CodeGeneratorUtils::GetFullCNameSpaceName(pClass->namespaceScopeList),
-                    CodeGeneratorUtils::GetFullCNameSpaceName(pClass->structScopeList), fn.name);
+                fn.name         = ClangUtils::GetCursorSpellingAnsi(cr);
+                fn.returnType   = ClangUtils::GetTypeSpellingAnsi(clang_getResultType(clang_getCursorType(cr)));
+                fn.isStatic     = (clang_CXXMethod_isStatic(cr) != 0);
+                fn.isVirtual    = (clang_CXXMethod_isVirtual(cr) != 0);
+                fn.isConst      = (clang_CXXMethod_isConst(cr) != 0);
+                fn.noProxy      = bindingMacro.HasFlag(NO_PROXY_FLAG());
+                fn.isHidden     = bindingMacro.HasFlag(HIDDEN_FLAG());
+                fn.isSealed     = bindingMacro.HasFlag(SEALED_FLAG());
+                fn.isDeprecated = bindingMacro.HasFlag(DEPRECATED_FLAG());
+                fn.access       = ClangUtils::GetAccessLevel(cr);
+                fn.comment      = ClangUtils::GetCursorComment(cr);
+                fn.uniqueName   = fn.name;
+                fn.lineNumber   = (int)lineNumber;
+                fn.entryPoint = Utils::String::Format("{0}::{1}::{2}",
+                                          CodeGeneratorUtils::GetFullCNameSpaceName(pClass->namespaceScopeList),
+                                          CodeGeneratorUtils::GetFullCNameSpaceName(pClass->structScopeList),
+                                          fn.name);
                 ApplyMemberMacroMetadata(bindingMacro, fn.attributes, fn.tag, fn.marshalAs);
 
                 int numArgs = clang_Cursor_getNumArguments(cr);
                 for (int i = 0; i < numArgs; ++i)
                 {
-                    CXCursor argCr   = clang_Cursor_getArgument(cr, i);
+                    CXCursor argCr = clang_Cursor_getArgument(cr, i);
 
                     ApiParam param;
                     FillApiParam(argCr, param);
@@ -629,111 +516,167 @@ namespace SE::BuildTool
             }
         }
 
-        if (pContext->FindMarkMacro(pClass->headerID, cr, bindingMacro, ReflectionMacroType::SEProperty))
+        if (pContext->FindMarkMacro(pClass->headerID, cr, bindingMacro, ReflectionMacroType::SEProperty) &&
+            pClass->isAPI && bindingMacro.hasAPI)
         {
-            if (pClass->isAPI)
+            CXType fnType  = clang_getCursorType(cr);
+            CXType retType = clang_getResultType(fnType);
+
+            std::string retTypeName  = ClangUtils::GetTypeSpellingAnsi(retType);
+            std::string fnName       = ClangUtils::GetCursorSpellingAnsi(cr);
+            const bool  isStatic     = clang_CXXMethod_isStatic(cr) != 0;
+            const bool  isHidden     = bindingMacro.HasFlag(HIDDEN_FLAG());
+            const bool  isDeprecated = bindingMacro.HasFlag(DEPRECATED_FLAG());
+
+            bool isGetter = (retTypeName != "void") && (clang_Cursor_getNumArguments(cr) == 0);
+            bool isSetter = (retTypeName == "void") && (clang_Cursor_getNumArguments(cr) == 1);
+
+            if (isGetter)
             {
-                CXType fnType  = clang_getCursorType(cr);
-                CXType retType = clang_getResultType(fnType);
-                std::string retTypeName = ClangUtils::GetTypeSpellingAnsi(retType);
-                std::string fnName = ClangUtils::GetCursorSpellingAnsi(cr);
-
-                bool isGetter = (retTypeName != "void") && (clang_Cursor_getNumArguments(cr) == 0);
-                bool isSetter = (retTypeName == "void") && (clang_Cursor_getNumArguments(cr) == 1);
-
-                if (isGetter)
+                std::string propName = fnName;
+                if (Utils::String::StartsWith(propName, "Get"))
                 {
-                    std::string propName = fnName;
-                    if (Utils::String::StartsWith(propName, "Get"))
-                        propName = propName.substr(3);
+                    propName = propName.substr(3);
+                }
 
-                    ApiProperty* existing = nullptr;
-                    for (int i = 0; i < pClass->bindingInfo.bindingProperties.size(); ++i)
+                ApiProperty* existing = nullptr;
+                for (int i = 0; i < pClass->bindingInfo.bindingProperties.size(); ++i)
+                {
+                    if (pClass->bindingInfo.bindingProperties[i].name == propName)
                     {
-                        if (pClass->bindingInfo.bindingProperties[i].name == propName)
-                        {
-                            existing = &pClass->bindingInfo.bindingProperties[i];
-                            break;
-                        }
-                    }
-
-                    if (existing)
-                    {
-                        existing->hasGetter  = true;
-                        existing->getterName = fnName;
-                        existing->cppType    = retTypeName;
-                        existing->getterUniqueName = fnName;
-                        existing->getterEntryPoint = Utils::String::Format("{0}_{1}", pClass->name, fnName);
-                        existing->getterAccess = GetAccessLevel(cr);
-                        if (existing->comment.empty())
-                            existing->comment = GetCursorComment(cr);
-                    }
-                    else
-                    {
-                        ApiProperty prop;
-                        prop.name             = propName;
-                        prop.cppType          = retTypeName;
-                        prop.getterName       = fnName;
-                        prop.getterUniqueName = fnName;
-                        prop.getterEntryPoint = Utils::String::Format("{0}_{1}", pClass->name, fnName);
-                        prop.hasGetter  = true;
-                        prop.hasSetter  = false;
-                        prop.getterAccess = GetAccessLevel(cr);
-                        prop.setterAccess = AccessLevel::Public;
-                        prop.lineNumber = (int)lineNumber;
-                        prop.comment = GetCursorComment(cr);
-                        std::string tag;
-                        ApplyMemberMacroMetadata(bindingMacro, prop.attributes, tag, prop.marshalAs);
-                        pClass->bindingInfo.bindingProperties.push_back(prop);
+                        existing = &pClass->bindingInfo.bindingProperties[i];
+                        break;
                     }
                 }
-                else if (isSetter)
+
+                if (existing)
                 {
-                    std::string propName = fnName;
-                    if (Utils::String::StartsWith(propName, "Set"))
-                        propName = propName.substr(3);
-
-                    ApiProperty* existing = nullptr;
-                    for (int i = 0; i < pClass->bindingInfo.bindingProperties.size(); ++i)
+                    if (existing->hasGetter)
                     {
-                        if (pClass->bindingInfo.bindingProperties[i].name == propName)
-                        {
-                            existing = &pClass->bindingInfo.bindingProperties[i];
-                            break;
-                        }
+                        pContext->LogError(
+                            "Property {0} in class {1} has multiple getter methods", propName, pClass->name);
+                        return false;
                     }
-
-                    if (existing)
+                    const std::string existingSetterType =
+                        existing->setterCppType.empty() ? existing->cppType : existing->setterCppType;
+                    if (existing->isStatic != isStatic ||
+                        !ArePropertyAccessorTypesCompatible(retTypeName, existingSetterType))
                     {
-                        existing->hasSetter  = true;
-                        existing->setterName = fnName;
-                        existing->setterUniqueName = fnName;
-                        existing->setterEntryPoint = Utils::String::Format("{0}_{1}", pClass->name, fnName);
-                        existing->setterAccess = GetAccessLevel(cr);
-                        if (existing->comment.empty())
-                            existing->comment = GetCursorComment(cr);
+                        pContext->LogError("Property {0} in class {1} has incompatible getter and setter signatures",
+                                           propName,
+                                           pClass->name);
+                        return false;
                     }
-                    else
+                    existing->hasGetter        = true;
+                    existing->getterName       = fnName;
+                    existing->cppType          = retTypeName;
+                    existing->getterCppType    = retTypeName;
+                    existing->getterUniqueName = fnName;
+                    existing->getterEntryPoint = Utils::String::Format("{0}_{1}", pClass->name, fnName);
+                    existing->getterAccess     = ClangUtils::GetAccessLevel(cr);
+                    existing->isHidden |= isHidden;
+                    existing->isDeprecated |= isDeprecated;
+                    if (existing->comment.empty())
                     {
-                        CXCursor argCr   = clang_Cursor_getArgument(cr, 0);
-                        CXType   argType = clang_getCursorType(argCr);
-
-                        ApiProperty prop;
-                        prop.name             = propName;
-                        prop.cppType          = ClangUtils::GetTypeSpellingAnsi(argType);
-                        prop.setterName       = fnName;
-                        prop.setterUniqueName = fnName;
-                        prop.setterEntryPoint = Utils::String::Format("{0}_{1}", pClass->name, fnName);
-                        prop.hasGetter  = false;
-                        prop.hasSetter  = true;
-                        prop.getterAccess = AccessLevel::Public;
-                        prop.setterAccess = GetAccessLevel(cr);
-                        prop.lineNumber = (int)lineNumber;
-                        prop.comment = GetCursorComment(cr);
-                        std::string tag;
-                        ApplyMemberMacroMetadata(bindingMacro, prop.attributes, tag, prop.marshalAs);
-                        pClass->bindingInfo.bindingProperties.push_back(prop);
+                        existing->comment = ClangUtils::GetCursorComment(cr);
                     }
+                }
+                else
+                {
+                    ApiProperty prop;
+                    prop.name             = propName;
+                    prop.cppType          = retTypeName;
+                    prop.getterCppType    = retTypeName;
+                    prop.getterName       = fnName;
+                    prop.getterUniqueName = fnName;
+                    prop.getterEntryPoint = Utils::String::Format("{0}_{1}", pClass->name, fnName);
+                    prop.hasGetter        = true;
+                    prop.hasSetter        = false;
+                    prop.isStatic         = isStatic;
+                    prop.isHidden         = isHidden;
+                    prop.isDeprecated     = isDeprecated;
+                    prop.getterAccess     = ClangUtils::GetAccessLevel(cr);
+                    prop.setterAccess     = AccessLevel::Public;
+                    prop.lineNumber       = (int)lineNumber;
+                    prop.comment          = ClangUtils::GetCursorComment(cr);
+                    std::string tag;
+                    ApplyMemberMacroMetadata(bindingMacro, prop.attributes, tag, prop.marshalAs);
+                    pClass->bindingInfo.bindingProperties.push_back(prop);
+                }
+            }
+            else if (isSetter)
+            {
+                std::string propName = fnName;
+                if (Utils::String::StartsWith(propName, "Set"))
+                {
+                    propName = propName.substr(3);
+                }
+
+                ApiProperty* existing = nullptr;
+                for (int i = 0; i < pClass->bindingInfo.bindingProperties.size(); ++i)
+                {
+                    if (pClass->bindingInfo.bindingProperties[i].name == propName)
+                    {
+                        existing = &pClass->bindingInfo.bindingProperties[i];
+                        break;
+                    }
+                }
+
+                if (existing)
+                {
+                    CXCursor    argCr      = clang_Cursor_getArgument(cr, 0);
+                    std::string setterType = ClangUtils::GetTypeSpellingAnsi(clang_getCursorType(argCr));
+                    if (existing->hasSetter)
+                    {
+                        pContext->LogError(
+                            "Property {0} in class {1} has multiple setter methods", propName, pClass->name);
+                        return false;
+                    }
+                    const std::string existingGetterType =
+                        existing->getterCppType.empty() ? existing->cppType : existing->getterCppType;
+                    if (existing->isStatic != isStatic ||
+                        !ArePropertyAccessorTypesCompatible(existingGetterType, setterType))
+                    {
+                        pContext->LogError("Property {0} in class {1} has incompatible getter and setter signatures",
+                                           propName,
+                                           pClass->name);
+                        return false;
+                    }
+                    existing->hasSetter        = true;
+                    existing->setterName       = fnName;
+                    existing->setterCppType    = setterType;
+                    existing->setterUniqueName = fnName;
+                    existing->setterEntryPoint = Utils::String::Format("{0}_{1}", pClass->name, fnName);
+                    existing->setterAccess     = ClangUtils::GetAccessLevel(cr);
+                    existing->isHidden |= isHidden;
+                    existing->isDeprecated |= isDeprecated;
+                    if (existing->comment.empty())
+                        existing->comment = ClangUtils::GetCursorComment(cr);
+                }
+                else
+                {
+                    CXCursor argCr   = clang_Cursor_getArgument(cr, 0);
+                    CXType   argType = clang_getCursorType(argCr);
+
+                    ApiProperty prop;
+                    prop.name             = propName;
+                    prop.cppType          = ClangUtils::GetTypeSpellingAnsi(argType);
+                    prop.setterCppType    = prop.cppType;
+                    prop.setterName       = fnName;
+                    prop.setterUniqueName = fnName;
+                    prop.setterEntryPoint = Utils::String::Format("{0}_{1}", pClass->name, fnName);
+                    prop.hasGetter        = false;
+                    prop.hasSetter        = true;
+                    prop.isStatic         = isStatic;
+                    prop.isHidden         = isHidden;
+                    prop.isDeprecated     = isDeprecated;
+                    prop.getterAccess     = AccessLevel::Public;
+                    prop.setterAccess     = ClangUtils::GetAccessLevel(cr);
+                    prop.lineNumber       = (int)lineNumber;
+                    prop.comment          = ClangUtils::GetCursorComment(cr);
+                    std::string tag;
+                    ApplyMemberMacroMetadata(bindingMacro, prop.attributes, tag, prop.marshalAs);
+                    pClass->bindingInfo.bindingProperties.push_back(prop);
                 }
             }
         }
@@ -750,7 +693,7 @@ namespace SE::BuildTool
 
         int const lineNumber = ClangUtils::GetLineNumberForCursor(cr);
         uint32 const declStartPosition = ClangUtils::GetStartPositionForCursor(cr);
-        CXCursorKind kind = clang_getCursorKind(cr);
+        CXCursorKind kind              = clang_getCursorKind(cr);
 
         if (kind == CXCursor_CXXBaseSpecifier)
         {
@@ -786,49 +729,55 @@ namespace SE::BuildTool
                 }
             }
 
+
+            // Detect if the base class is a ScriptingObject
+            static const char* ScriptingObjectBases[] = {
+                "SE::ScriptingObject",
+                "SE::ManagedScriptingObject",
+                "SE::BinaryAsset",
+                "SE::SceneObject",
+                "SE::Asset",
+                "SE::Script",
+                "SE::Actor",
+            };
+            std::string baseSimpleName = ClangUtils::GetTypeSpellingAnsi(clang_getCursorType(cr));
+            for (const char* name : ScriptingObjectBases)
+            {
+                if (baseSimpleName == name)
+                {
+                    pClass->SetFlag(TypeData::Flags::IsScriptingObject);
+                    break;
+                }
+            }
+
+            // If base class itself is already known as ScriptingObject, propagate
+            if (!pClass->IsFlag(TypeData::Flags::IsScriptingObject))
+            {
+                TypeData const* pBaseType = pContext->pDatabase->GetType(pClass->parentTypeID);
+                if (pBaseType && pBaseType->isAPI && pBaseType->IsFlag(TypeData::Flags::IsScriptingObject))
+                {
+                    pClass->SetFlag(TypeData::Flags::IsScriptingObject);
+                }
+            }
+
             // Populate binding info fields for base class
             if (pClass->isAPI)
             {
                 pClass->bindingInfo.baseClassName = fullyQualifiedName;
-
-                // Detect if the base class is a ScriptingObject
-                static const char* ScriptingObjectBases[] = {
-                    "SE::ScriptingObject",
-                    "SE::ManagedScriptingObject",
-                    "SE::PersistentScriptingObject",
-                    "SE::BinaryAsset",
-                    "SE::SceneObject",
-                    "SE::Asset",
-                    "SE::Script",
-                    "SE::Actor",
-                };
-
-                std::string baseSimpleName = ClangUtils::GetTypeSpellingAnsi(clang_getCursorType(cr));
-                for (const char* name : ScriptingObjectBases)
-                {
-                    if (baseSimpleName == name)
-                    {
-                        pClass->bindingInfo.isScriptingObject = true;
-                        break;
-                    }
-                }
-
-                // If base class itself is already known as ScriptingObject, propagate
-                if (!pClass->bindingInfo.isScriptingObject)
-                {
-                    TypeData const* pBaseType = pContext->pDatabase->GetType(pClass->parentTypeID);
-                    if (pBaseType && pBaseType->isAPI && pBaseType->bindingInfo.isScriptingObject)
-                    {
-                        pClass->bindingInfo.isScriptingObject = true;
-                    }
-                }
             }
         }
         else if (kind == CXCursor_Constructor)
         {
             // VisitConstructor(cr);
         }
-        else if (kind == CXCursor_FieldDecl)
+        else if (kind == CXCursor_FieldDecl) // 实例字段
+        {
+            if (!VisitField(cr, pContext, pClass, declStartPosition, lineNumber))
+            {
+                return CXChildVisit_Break;
+            }
+        }
+        else if (kind == CXCursor_VarDecl) // 静态变量
         {
             if (!VisitField(cr, pContext, pClass, declStartPosition, lineNumber))
             {
@@ -863,9 +812,12 @@ namespace SE::BuildTool
         return CXChildVisit_Break;
     }
 
-    CXChildVisitResult VisitTemplateStructure(ClangParserContext *pContext, CXCursor &cr, std::string_view const &headerFilePath, HeaderID const headerID)
+    CXChildVisitResult VisitTemplateStructure(ClangParserContext*     pContext,
+                                              CXCursor&               cr,
+                                              std::string_view const& headerFilePath,
+                                              HeaderID const          headerID)
     {
-        MarkMacro macro;
+        MarkMacro           macro;
         ReflectionMacroType macroType = ReflectionMacroType::SEClass;
 
         if (pContext->FindMarkMacro(headerID, cr, macro, ReflectionMacroType::SEClass))
@@ -885,15 +837,15 @@ namespace SE::BuildTool
             return CXChildVisit_Continue;
         }
 
-        if (!HasMacroFlag(macro, "Template"))
+        if (!macro.HasFlag(TEMPLATE_FLAG()))
         {
             // pContext->LogError("Cannot register template type ({0}) without Template flag", cursorName);
             return CXChildVisit_Continue;
         }
 
-        auto cursorName = ClangUtils::GetCursorDisplayName(cr);
-        size_t index = cursorName.find_first_of("<");
-        cursorName = cursorName.substr(0, index);
+        auto   cursorName = ClangUtils::GetCursorDisplayName(cr);
+        size_t index      = cursorName.find_first_of("<");
+        cursorName        = cursorName.substr(0, index);
 
         std::string fullyQualifiedCursorName;
         /*CXType cursorType = clang_getCursorType(cr);
@@ -921,25 +873,29 @@ namespace SE::BuildTool
         }
 
         TypeData classDescriptor(pContext->GenerateTypeID(fullyQualifiedCursorName), cursorName);
-        classDescriptor.headerID = headerID;
+        classDescriptor.headerID           = headerID;
         classDescriptor.namespaceScopeList = pContext->GetNamespaces();
-        classDescriptor.structScopeList = pContext->GetStructScopes();
+        classDescriptor.structScopeList    = pContext->GetStructScopes();
         classDescriptor.flags.Flag(TypeData::Flags::IsAbstract, clang_CXXRecord_isAbstract(cr));
         classDescriptor.flags.Flag(TypeData::Flags::IsStruct, macroType == ReflectionMacroType::SEStruct);
-        classDescriptor.isReflect = false;
-        classDescriptor.isAPI = macro.hasAPI || HasMacroFlag(macro, "Template");
-        classDescriptor.bindingInfo.IsAbstract = HasMacroFlag(macro, "Abstract");
-        classDescriptor.bindingInfo.isSealed = HasMacroFlag(macro, "Sealed");
-        classDescriptor.bindingInfo.isStatic = HasMacroFlag(macro, "Static");
-        classDescriptor.bindingInfo.isInterface = macroType == ReflectionMacroType::SEInterface;
-        classDescriptor.bindingInfo.isDeprecated = HasMacroFlag(macro, "Deprecated");
-        classDescriptor.bindingInfo.comment = GetCursorComment(cr);
-        ApplyMemberMacroMetadata(macro, classDescriptor.bindingInfo.attributes,
+        classDescriptor.isReflect                 = false;
+        classDescriptor.isAPI                     = macro.hasAPI || macro.HasFlag(TEMPLATE_FLAG());
+        classDescriptor.bindingInfo.noSpawn       = macro.HasFlag(NO_SPAWN_FLAG());
+        classDescriptor.bindingInfo.noConstructor = macro.HasFlag(NO_CONSTRUCTOR_FLAG());
+        classDescriptor.bindingInfo.IsAbstract    = macro.HasFlag(ABSTRACT_FLAG());
+        classDescriptor.bindingInfo.isSealed      = macro.HasFlag(SEALED_FLAG());
+        classDescriptor.bindingInfo.isStatic      = macro.HasFlag(STATIC_FLAG());
+        classDescriptor.bindingInfo.isInterface   = macroType == ReflectionMacroType::SEInterface;
+        classDescriptor.bindingInfo.isDeprecated  = macro.HasFlag(DEPRECATED_FLAG());
+        classDescriptor.bindingInfo.comment       = ClangUtils::GetCursorComment(cr);
+        macro.TryGetValue("Name", classDescriptor.bindingInfo.name);
+        ApplyMemberMacroMetadata(macro,
+                                 classDescriptor.bindingInfo.attributes,
                                  classDescriptor.bindingInfo.tag,
                                  classDescriptor.bindingInfo.marshalAs);
 
-        void *pPreviousParentReflectedType = pContext->pParentReflectedType;
-        pContext->pParentReflectedType = &classDescriptor;
+        void* pPreviousParentReflectedType = pContext->pParentReflectedType;
+        pContext->pParentReflectedType     = &classDescriptor;
         {
             clang_visitChildren(cr, VisitStructureContents, pContext);
         }
@@ -1031,15 +987,15 @@ namespace SE::BuildTool
                 classDescriptor.bindingInfo.assemblyName = assemblyName;
                 classDescriptor.bindingInfo.assemblyDir = assemblyDir;
 
-                classDescriptor.bindingInfo.noSpawn = HasMacroFlag(macro, "NoSpawn");
-                classDescriptor.bindingInfo.noConstructor = HasMacroFlag(macro, "NoConstructor");
-                classDescriptor.bindingInfo.IsAbstract = HasMacroFlag(macro, "Abstract");
-                classDescriptor.bindingInfo.isSealed = HasMacroFlag(macro, "Sealed");
-                classDescriptor.bindingInfo.isStatic = HasMacroFlag(macro, "Static");
+                classDescriptor.bindingInfo.noSpawn       = macro.HasFlag(NO_SPAWN_FLAG());
+                classDescriptor.bindingInfo.noConstructor = macro.HasFlag(NO_CONSTRUCTOR_FLAG());
+                classDescriptor.bindingInfo.IsAbstract    = macro.HasFlag(ABSTRACT_FLAG());
+                classDescriptor.bindingInfo.isSealed      = macro.HasFlag(SEALED_FLAG());
+                classDescriptor.bindingInfo.isStatic      = macro.HasFlag(STATIC_FLAG());
                 classDescriptor.bindingInfo.isInterface = structureMacroType == ReflectionMacroType::SEInterface;
-                classDescriptor.bindingInfo.isDeprecated = HasMacroFlag(macro, "Deprecated");
-                classDescriptor.bindingInfo.comment = GetCursorComment(cr);
-                TryGetMacroValue(macro, "Name", classDescriptor.bindingInfo.name);
+                classDescriptor.bindingInfo.isDeprecated  = macro.HasFlag(DEPRECATED_FLAG());
+                classDescriptor.bindingInfo.comment = ClangUtils::GetCursorComment(cr);
+                macro.TryGetValue("Name", classDescriptor.bindingInfo.name);
                 ApplyMemberMacroMetadata(macro, classDescriptor.bindingInfo.attributes,
                                          classDescriptor.bindingInfo.tag,
                                          classDescriptor.bindingInfo.marshalAs);

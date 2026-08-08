@@ -52,7 +52,7 @@ namespace SE
             LOG_WARNING("Resource", "Font asset {0} is unloading but has {1} remaining font objects created", ToString(), m_Fonts.Count());
             for (auto font : m_Fonts)
             {
-                font->_asset = nullptr;
+                font->m_Asset = nullptr;
                 font->DeleteObject();
             }
             m_Fonts.Clear();

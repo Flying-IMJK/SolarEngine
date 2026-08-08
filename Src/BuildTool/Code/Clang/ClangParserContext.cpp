@@ -93,6 +93,8 @@ namespace SE::BuildTool
     static void InflateApiProperty(ApiProperty& prop, std::vector<std::string> const& parameters, std::vector<std::string> const& arguments)
     {
         InflateText(prop.cppType, parameters, arguments);
+        InflateText(prop.getterCppType, parameters, arguments);
+        InflateText(prop.setterCppType, parameters, arguments);
     }
 
     static void InflateApiField(ApiField& field, std::vector<std::string> const& parameters, std::vector<std::string> const& arguments)
@@ -237,7 +239,12 @@ namespace SE::BuildTool
         for (int32 i = 0; i < str.length(); i++)
         {
             Char c = str[i];
-            if (c == '"')
+            bool isEscaped = false;
+            for (int32 slashIndex = i - 1; slashIndex >= 0 && str[slashIndex] == '\\'; --slashIndex)
+            {
+                isEscaped = !isEscaped;
+            }
+            if (c == '"' && !isEscaped)
             {
                 inQuote = !inQuote;
             }
@@ -267,12 +274,61 @@ namespace SE::BuildTool
 
     //-------------------------------------------------------------------------
 
+    static std::string GetMacroValue(std::string value)
+    {
+        Utils::String::TrimStart(value);
+        Utils::String::TrimEnd(value);
+        if (!Utils::String::StartsWith(value, "\"") || !Utils::String::EndsWith(value, "\"") || value.length() < 2)
+        {
+            return value;
+        }
+
+        std::string unescapedValue;
+        unescapedValue.reserve(value.length() - 2);
+        for (size_t i = 1; i + 1 < value.length(); ++i)
+        {
+            if (value[i] == '\\' && i + 2 < value.length())
+            {
+                Char const escaped = value[++i];
+                switch (escaped)
+                {
+                case 'n': unescapedValue += '\n'; break;
+                case 'r': unescapedValue += '\r'; break;
+                case 't': unescapedValue += '\t'; break;
+                default:  unescapedValue += escaped; break;
+                }
+            }
+            else
+            {
+                unescapedValue += value[i];
+            }
+        }
+        return unescapedValue;
+    }
+
+    static void AppendMacroMetadata(std::string& metadata, std::string const& value)
+    {
+        if (value.empty())
+        {
+            return;
+        }
+
+        if (!metadata.empty())
+        {
+            metadata += ", ";
+        }
+        metadata += value;
+    }
+
+    //-------------------------------------------------------------------------
+
     MarkMacro::MarkMacro(HeaderInfo const *pHeaderInfo, CXCursor cursor, CXSourceRange& sourceRange, ReflectionMacroType type)
         : headerID(pHeaderInfo->headerId), type(type)
     {
         ENGINE_ASSERT(type < ReflectionMacroType::NumMacros);
 
         clang_getExpansionLocation(clang_getRangeStart(sourceRange), nullptr, &fileLine, &fileColumn, nullptr);
+        clang_getExpansionLocation(clang_getRangeEnd(sourceRange), nullptr, &fileEndLine, &fileEndColumn, nullptr);
 
         //-------------------------------------------------------------------------
 
@@ -324,20 +380,7 @@ namespace SE::BuildTool
 
                 for (auto &param : params)
                 {
-                    Utils::String::TrimStart(param);
-                    Utils::String::TrimEnd(param);
-
-                    if (param == "Reflect")
-                    {
-                        hasReflect = true;
-                    }else if (param == "API")
-                    {
-                        hasAPI = true;
-                    }
-                    else
-                    {
-                        macroContents.push_back(param);
-                    }
+                    AddParameter(std::move(param));
                 }
             }
         }
@@ -345,16 +388,82 @@ namespace SE::BuildTool
 
     //-------------------------------------------------------------------------
 
-    bool MarkMacro::HasContent(std::string_view value) const
+    void MarkMacro::AddParameter(std::string parameter)
+    {
+        Utils::String::TrimStart(parameter);
+        Utils::String::TrimEnd(parameter);
+        if (parameter.empty())
+        {
+            return;
+        }
+
+        if (parameter == "Reflect")
+        {
+            hasReflect = true;
+            return;
+        }
+        if (parameter == "API")
+        {
+            hasAPI = true;
+            return;
+        }
+
+        int32 const equalsIndex = Utils::String::Find(parameter, '=');
+        if (equalsIndex != INVALID_INDEX)
+        {
+            std::string key = parameter.substr(0, (size_t)equalsIndex);
+            Utils::String::TrimStart(key);
+            Utils::String::TrimEnd(key);
+            if (key == "Meta" || key == "Metadata")
+            {
+                AppendMacroMetadata(macroMetadata, GetMacroValue(parameter.substr((size_t)equalsIndex + 1)));
+            }
+        }
+        else if (Utils::String::Find(parameter, '(') != INVALID_INDEX && Utils::String::FindLast(parameter, ')') != INVALID_INDEX)
+        {
+            // Allow concise reflection metadata such as Range(0, 1).
+            AppendMacroMetadata(macroMetadata, parameter);
+        }
+
+        macroContents.emplace_back(std::move(parameter));
+    }
+
+    bool MarkMacro::HasFlag(std::string_view flag) const
     {
         for (auto const& content : macroContents)
         {
-            if (content == value)
+            if (content == flag)
             {
                 return true;
             }
         }
         return false;
+    }
+
+    bool MarkMacro::TryGetValue(std::string_view key, std::string& outValue) const
+    {
+        std::string const prefix = std::string(key) + "=";
+        for (auto const& content : macroContents)
+        {
+            if (Utils::String::StartsWith(content, prefix))
+            {
+                outValue = GetMacroValue(content.substr(prefix.length()));
+                if (key == "Attributes" && !outValue.empty() && !Utils::String::StartsWith(outValue, "["))
+                {
+                    outValue.insert(0, "[");
+                    outValue += "]";
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    //-------------------------------------------------------------------------
+
+    bool MarkMacro::HasContent(std::string_view value) const
+    {
+        return HasFlag(value);
     }
 
     //-------------------------------------------------------------------------
@@ -482,12 +591,9 @@ namespace SE::BuildTool
                 continue;
             }
 
-            if (item.fileLine == line && item.fileColumn < column)
-            {
-                bestIndex = index;
-                break;
-            }
-            else if (item.fileLine == line - 1)
+            bool const closesBeforeDeclaration = item.fileEndLine == line && item.fileEndColumn < column;
+            bool const closesOnPreviousLine = item.fileEndLine + 1 == line;
+            if (closesBeforeDeclaration || closesOnPreviousLine)
             {
                 bestIndex = index;
                 break;

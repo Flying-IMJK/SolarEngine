@@ -9,7 +9,7 @@ namespace SE
 	SE_CLASS(Reflect, API, NoSpawn)
 	class SE_API_RUNTIME Texture : public TextureBase
 	{
-		SE_DEFINE_CLASS_DEFAULT(Texture, TextureBase);
+		SE_DEFINE_CLASS(Texture, TextureBase);
 		ASSET_HEADER(Texture);
 
 	public:

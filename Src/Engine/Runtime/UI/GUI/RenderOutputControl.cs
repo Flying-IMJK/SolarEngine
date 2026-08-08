@@ -13,8 +13,8 @@ namespace SE.GUI
         /// </summary>
         public const float ResizeCheckTime = 0.9f;
 
-        private Int2? _customResolution;
-        private Int2 _backBufferSize;
+        private Int2? m_CustomResolution;
+        private Int2 m_BackBufferSize;
 
         public RenderOutputControl(object renderTask)
         {
@@ -44,20 +44,20 @@ namespace SE.GUI
         /// <summary>
         /// Gets the desired logical output-buffer size. The graphics layer owns the actual texture.
         /// </summary>
-        public Int2 BackBufferSize => _backBufferSize;
+        public Int2 BackBufferSize => m_BackBufferSize;
 
         /// <summary>
         /// Gets or sets a fixed output-buffer size. A null value follows the control bounds.
         /// </summary>
         public Int2? CustomResolution
         {
-            get => _customResolution;
+            get => m_CustomResolution;
             set
             {
-                if (_customResolution == value)
+                if (m_CustomResolution == value)
                     return;
 
-                _customResolution = value;
+                m_CustomResolution = value;
                 SyncBackbufferSize();
             }
         }
@@ -67,14 +67,14 @@ namespace SE.GUI
         /// </summary>
         public void SyncBackbufferSize()
         {
-            if (_customResolution.HasValue)
+            if (m_CustomResolution.HasValue)
             {
-                _backBufferSize = _customResolution.Value;
+                m_BackBufferSize = m_CustomResolution.Value;
                 return;
             }
 
             float scale = Math.Max(0.01f, ResolutionScale);
-            _backBufferSize = new Int2(
+            m_BackBufferSize = new Int2(
                 Math.Max(1, (int)Math.Ceiling(Width * scale)),
                 Math.Max(1, (int)Math.Ceiling(Height * scale)));
         }

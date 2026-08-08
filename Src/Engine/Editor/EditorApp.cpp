@@ -1,6 +1,5 @@
 #include "EditorApp.h"
 
-#include "ManagedEditor.h"
 #include "Modules/EditorModule.h"
 #include "Modules/SettingModule.h"
 #include "Modules/UIModule.h"
@@ -29,6 +28,7 @@
 #include "Editor/GUI/Docking/MasterDockPanel.h"
 #include "Runtime/Core/Scripting/ManagedCLR/CLRMethod.h"
 #include "Runtime/Core/Scripting/ManagedCLR/CLRUtils.h"
+#include "Runtime/Core/Scripting/ManagedCLR/CLRException.h"
 
 namespace SE::Editor
 {
@@ -213,21 +213,12 @@ namespace SE::Editor
 
 	Window* EditorApp::CreateMainWindow()
 	{
-		Window* window = managedEditor->GetMainWindow();
-
-		CreateWindowSettings createWindowSettings;
-		createWindowSettings.Title = "SE Editor";
-		createWindowSettings.HasBorder = false;
-		createWindowSettings.AllowDragAndDrop = true;
-
-		// m_Window = New<GraphicWindow>(createWindowSettings);
-
-		return window;
+		return managedEditor ? managedEditor->GetMainWindow() : nullptr;
 	}
 
 	Window* EditorApp::GetMainWindow()
 	{
-		return managedEditor->GetMainWindow();
+		return managedEditor ? managedEditor->GetMainWindow() : nullptr;
 	}
 
 	bool EditorApp::Init()
@@ -242,8 +233,6 @@ namespace SE::Editor
 
 	void EditorApp::BeforeRun()
 	{
-		managedEditor->Init();
-
 		RegisterModule(settingModule = New<SettingModule>(this));
 		RegisterModule(uiModule = New<UIModule>(this));
 		RegisterModule(sceneModule = New<SceneModule>(this));
@@ -276,12 +265,11 @@ namespace SE::Editor
 			module->OnEndInit();
 		}
 
-		DockPanel* dockWindow = uiModule->GetMasterPanel();
-		windowsModule->DebugLogWin->Show(DockState::DockFill, dockWindow);
-		windowsModule->ContentWin->Show(DockState::DockFill, dockWindow);
-		windowsModule->SceneHierarchyWin->Show(DockState::DockFill, dockWindow);
-		windowsModule->PropertiesWin->Show(DockState::DockFill, dockWindow);
-		windowsModule->EditSceneWin->Show(DockState::DockFill, dockWindow);
+		_areModulesAfterInitEnd = true;
+
+		// The native modules now provide only background services. Initialize the
+		// managed presentation after those services are ready.
+		managedEditor->Init();
 	}
 
 	void EditorApp::BeforeExit()
@@ -292,12 +280,25 @@ namespace SE::Editor
 			Delete(managedEditor);
 			managedEditor = nullptr;
 		}
+
+		// Native modules remain only as background services while their managed
+		// counterparts own the editor GUI. Preserve their normal reverse cleanup.
+		for (int i = m_Modules.Count() - 1; i >= 0; i--)
+			m_Modules[i]->OnExit();
+		_areModulesAfterInitEnd = false;
+		_areModulesInited = false;
+		_isAfterInit = false;
 		// m_Window->Close();
 		// Delete(m_Window);
 	}
 
 	void EditorApp::OnUpdate()
 	{
+		// Keep unported native services (asset database, import queue and
+		// thumbnails) alive. Their GUI owners were removed from these modules.
+		for (int i = 0; i < m_Modules.Count(); i++)
+			m_Modules[i]->OnUpdate();
+
 		if (managedEditor != nullptr)
 		{
 			managedEditor->Update();
@@ -380,10 +381,35 @@ namespace SE::Editor
 
 	Window* ManagedEditor::GetMainWindow()
 	{
-		ASSERT(HasManagedInstance());
-		const auto method = GetClass()->GetMethod("GetMainWindowPtr");
-		ASSERT(method);
-		return (Window*)CLRUtils::Unbox<void*>(method->Invoke(GetManagedInstance(), nullptr, nullptr));
+		CLRClass* clrClass = GetClass();
+		if (clrClass == nullptr)
+		{
+			LOG_ERROR("Scripts", "Invalid Editor assembly while requesting the main window.");
+			return nullptr;
+		}
+
+		CLRMethod* method = clrClass->GetMethod("GetMainWindowPtr");
+		if (method == nullptr)
+		{
+			LOG_ERROR("Scripts", "Invalid Editor assembly! Missing GetMainWindowPtr.");
+			return nullptr;
+		}
+
+		CLRObject* instance = GetOrCreateManagedInstance();
+		if (instance == nullptr)
+		{
+			LOG_ERROR("Scripts", "Failed to create managed editor instance while requesting the main window.");
+			return nullptr;
+		}
+
+		CLRObject* exception = nullptr;
+		CLRObject* result = method->Invoke(instance, nullptr, &exception);
+		if (exception)
+		{
+			CLRException(exception).Log(Log::Severity::Error, SE_TEXT("Editor"));
+			return nullptr;
+		}
+		return (Window*)CLRUtils::Unbox<void*>(result);
 	}
 
 	void ManagedEditor::InvokeManagedMethod(const char* methodName)
@@ -410,9 +436,12 @@ namespace SE::Editor
 			return;
 		}
 
-		CLRObject* exception;
-
+		CLRObject* exception = nullptr;
 		method->Invoke(instance, nullptr, &exception);
+		if (exception)
+		{
+			CLRException(exception).Log(Log::Severity::Error, SE_TEXT("Editor"));
+		}
 	}
 
 	void ManagedEditor::OnEditorAssemblyLoaded(CLRAssembly* assembly)

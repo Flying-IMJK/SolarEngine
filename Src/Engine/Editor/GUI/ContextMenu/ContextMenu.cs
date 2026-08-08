@@ -15,22 +15,31 @@ namespace SE.Editor.GUI
 
     public class ContextMenu
     {
-        private readonly List<ContextMenuItem> _items = new List<ContextMenuItem>();
-        private readonly Dictionary<ContextMenuItem, Control> _itemViews = new Dictionary<ContextMenuItem, Control>();
-        private bool _autoSort;
-        private Panel? _view;
+        private readonly List<ContextMenuItem> m_Items = new List<ContextMenuItem>();
+        private readonly Dictionary<ContextMenuItem, Control> m_ItemViews = new Dictionary<ContextMenuItem, Control>();
+        private bool m_AutoSort;
+        private ContextMenu? m_OpenedChild;
+        private readonly ContextMenu? m_ParentMenu;
+        private Panel? m_View;
 
         public ContextMenu()
+            : this(null)
         {
+        }
+
+        internal ContextMenu(ContextMenu? parentMenu)
+        {
+            m_ParentMenu = parentMenu;
             MinimumWidth = 10.0f;
             MaximumItemsInViewCount = 20;
             Direction = ContextMenuDirection.RightDown;
         }
 
         public event Action<ContextMenuButton>? ButtonClicked;
+        public event Action<ContextMenu>? VisibleChanged;
 
-        public IReadOnlyList<ContextMenuItem> Items => _items;
-        public bool HasItems => _items.Count > 0;
+        public IReadOnlyList<ContextMenuItem> Items => m_Items;
+        public bool HasItems => m_Items.Count > 0;
         public bool IsOpened { get; private set; }
         public ContextMenuDirection Direction { get; private set; }
         public SE.GUI.Control? PlacementTarget { get; private set; }
@@ -41,10 +50,10 @@ namespace SE.Editor.GUI
 
         public bool AutoSort
         {
-            get => _autoSort;
+            get => m_AutoSort;
             set
             {
-                _autoSort = value;
+                m_AutoSort = value;
                 SortButtons();
             }
         }
@@ -52,7 +61,7 @@ namespace SE.Editor.GUI
         public ContextMenuButton AddButton(string text)
         {
             ContextMenuButton button = new ContextMenuButton(this, text);
-            _items.Add(button);
+            m_Items.Add(button);
             SortButtons();
             RefreshViewIfOpened();
             return button;
@@ -61,10 +70,14 @@ namespace SE.Editor.GUI
         public ContextMenuButton AddButton(string text, string shortKeys)
         {
             ContextMenuButton button = new ContextMenuButton(this, text, shortKeys);
-            _items.Add(button);
+            m_Items.Add(button);
             SortButtons();
+            RefreshViewIfOpened();
             return button;
         }
+
+        // Flax AddButton(string, InputBinding, Action) is intentionally disabled until the
+        // managed Editor input-binding API is available. Do not replace it with a custom binding type.
 
         public ContextMenuButton AddButton(string text, Action clicked)
         {
@@ -82,7 +95,7 @@ namespace SE.Editor.GUI
 
         public ContextMenuChildMenu? GetChildMenu(string text)
         {
-            foreach (ContextMenuItem item in _items)
+            foreach (ContextMenuItem item in m_Items)
             {
                 if (item is ContextMenuChildMenu childMenu && childMenu.Text == text)
                     return childMenu;
@@ -99,7 +112,7 @@ namespace SE.Editor.GUI
         public ContextMenuChildMenu AddChildMenu(string text)
         {
             ContextMenuChildMenu childMenu = new ContextMenuChildMenu(this, text);
-            _items.Add(childMenu);
+            m_Items.Add(childMenu);
             SortButtons();
             RefreshViewIfOpened();
             return childMenu;
@@ -108,23 +121,25 @@ namespace SE.Editor.GUI
         public ContextMenuSeparator AddSeparator()
         {
             ContextMenuSeparator separator = new ContextMenuSeparator(this);
-            _items.Add(separator);
+            m_Items.Add(separator);
             RefreshViewIfOpened();
             return separator;
         }
 
         public void DisposeAllItems()
         {
-            _items.Clear();
+            m_OpenedChild?.Hide();
+            m_OpenedChild = null;
+            m_Items.Clear();
             RefreshViewIfOpened();
         }
 
         public void SortButtons(bool force = false)
         {
-            if (!_autoSort && !force)
+            if (!m_AutoSort && !force)
                 return;
 
-            _items.Sort(static (left, right) =>
+            m_Items.Sort(static (left, right) =>
             {
                 if (left is ContextMenuButton leftButton && right is ContextMenuButton rightButton)
                     return string.Compare(leftButton.Text, rightButton.Text, StringComparison.OrdinalIgnoreCase);
@@ -139,24 +154,30 @@ namespace SE.Editor.GUI
 
         public virtual void Show(SE.GUI.Control? parent, float x, float y)
         {
+            Hide();
+
             PlacementTarget = parent;
             PlacementX = x;
             PlacementY = y;
             Direction = ContextMenuDirection.RightDown;
             BuildView();
-            if (_view != null)
+            if (m_View != null)
             {
                 Float2 position = parent != null ? parent.PointToRoot(new Float2(x, y)) : new Float2(x, y);
-                _view.SetBounds(position.X, position.Y, _view.Width, _view.Height);
-                _view.Visible = true;
-                parent?.Root?.AddChild(_view);
+                m_View.SetBounds(position.X, position.Y, m_View.Width, m_View.Height);
+                m_View.Visible = true;
+                parent?.Root?.AddChild(m_View);
             }
             IsOpened = true;
+            VisibleChanged?.Invoke(this);
         }
 
         public virtual void Hide()
         {
-            foreach (ContextMenuItem item in _items)
+            if (!IsOpened)
+                return;
+
+            foreach (ContextMenuItem item in m_Items)
             {
                 if (item is ContextMenuChildMenu childMenu)
                     childMenu.ContextMenu.Hide();
@@ -164,11 +185,13 @@ namespace SE.Editor.GUI
 
             IsOpened = false;
             PlacementTarget = null;
-            if (_view != null)
+            if (m_View != null)
             {
-                _view.Visible = false;
-                ((SE.GUI.Control)_view).Parent?.RemoveChild(_view);
+                m_View.Visible = false;
+                ((SE.GUI.Control)m_View).Parent?.RemoveChild(m_View);
             }
+            m_ParentMenu?.OnChildHidden(this);
+            VisibleChanged?.Invoke(this);
         }
 
         internal void OnButtonClicked(ContextMenuButton button)
@@ -178,7 +201,22 @@ namespace SE.Editor.GUI
 
         internal SE.GUI.Control? GetItemView(ContextMenuItem item)
         {
-            return _itemViews.TryGetValue(item, out SE.GUI.Control? view) ? view : null;
+            return m_ItemViews.TryGetValue(item, out SE.GUI.Control? view) ? view : null;
+        }
+
+        internal void ShowChild(ContextMenu child, SE.GUI.Control? parent, float x, float y)
+        {
+            if (!ReferenceEquals(m_OpenedChild, child))
+                m_OpenedChild?.Hide();
+
+            child.Show(parent, x, y);
+            m_OpenedChild = child;
+        }
+
+        private void OnChildHidden(ContextMenu child)
+        {
+            if (ReferenceEquals(m_OpenedChild, child))
+                m_OpenedChild = null;
         }
 
         private void RefreshViewIfOpened()
@@ -191,17 +229,18 @@ namespace SE.Editor.GUI
 
         private void BuildView()
         {
-            _view ??= new Panel(new Rectangle(0, 0, MinimumWidth, 0));
-            _view.BackgroundColor = SE.GUI.Style.Current.Background;
-            _view.DisposeChildren();
-            _itemViews.Clear();
+            m_View ??= new Panel(new Rectangle(0, 0, MinimumWidth, 0));
+            m_View.BackgroundColor = SE.GUI.Style.Current.Background;
+            m_View.DisposeChildren();
+            m_ItemViews.Clear();
 
             float width = MinimumWidth;
-            foreach (ContextMenuItem item in _items)
+            foreach (ContextMenuItem item in m_Items)
+            {
                 width = Math.Max(width, item.MinimumWidth);
-
+            }
             float y = 2.0f;
-            foreach (ContextMenuItem item in _items)
+            foreach (ContextMenuItem item in m_Items)
             {
                 SE.GUI.Control itemView;
                 if (item is ContextMenuButton button)
@@ -209,6 +248,7 @@ namespace SE.Editor.GUI
                     Button buttonView = new Button(new Rectangle(2.0f, y, width - 4.0f, item.Height), button.Text)
                     {
                         Enabled = button.Enabled,
+                        TooltipText = button.TooltipText,
                     };
                     buttonView.Visible = button.Visible;
                     buttonView.Clicked += _ => button.Click();
@@ -225,12 +265,12 @@ namespace SE.Editor.GUI
                     itemView = separatorView;
                 }
 
-                _view.AddChild(itemView);
-                _itemViews.Add(item, itemView);
+                m_View.AddChild(itemView);
+                m_ItemViews.Add(item, itemView);
                 y += item.Height;
             }
 
-            _view.SetBounds(_view.X, _view.Y, width, y + 2.0f);
+            m_View.SetBounds(m_View.X, m_View.Y, width, y + 2.0f);
         }
     }
 
@@ -249,6 +289,7 @@ namespace SE.Editor.GUI
         public bool Visible { get; set; }
         public float Height { get; }
         public object? Tag { get; set; }
+        public string TooltipText { get; set; } = string.Empty;
         public virtual float MinimumWidth => 0.0f;
     }
 
@@ -311,7 +352,7 @@ namespace SE.Editor.GUI
         public ContextMenuChildMenu(ContextMenu parentContextMenu, string text)
             : base(parentContextMenu, text)
         {
-            ContextMenu = new ContextMenu();
+            ContextMenu = new ContextMenu(parentContextMenu);
             CloseMenuOnClick = false;
         }
 
@@ -326,7 +367,7 @@ namespace SE.Editor.GUI
         public void ShowChild()
         {
             SE.GUI.Control? view = ParentContextMenu.GetItemView(this);
-            ContextMenu.Show(view, view?.Width ?? 0.0f, 0.0f);
+            ParentContextMenu.ShowChild(ContextMenu, view, view?.Width ?? 0.0f, 0.0f);
         }
     }
 

@@ -11,17 +11,17 @@ using Real = System.Single;
 // Greetings to Alexandre Mutel. Original code published with the following license:
 // -----------------------------------------------------------------------------
 // Copyright (c) 2010-2014 SharpDX - Alexandre Mutel
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -35,17 +35,17 @@ using Real = System.Single;
 // -----------------------------------------------------------------------------
 /*
 * Copyright (c) 2007-2011 SlimDX Group
-* 
+*
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
 * in the Software without restriction, including without limitation the rights
 * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 * copies of the Software, and to permit persons to whom the Software is
 * furnished to do so, subject to the following conditions:
-* 
+*
 * The above copyright notice and this permission notice shall be included in
 * all copies or substantial portions of the Software.
-* 
+*
 * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -67,7 +67,7 @@ namespace SE
 #endif
     public partial struct Double2 : IEquatable<Double2>, IFormattable
     {
-        private static readonly string _formatString = "X:{0:F2} Y:{1:F2}";
+        private static readonly string s_FormatString = "X:{0:F2} Y:{1:F2}";
 
         /// <summary>
         /// The size of the <see cref="Double2" /> type, in bytes.
@@ -1552,7 +1552,7 @@ namespace SE
         {
             if (format == null)
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, _formatString,
+            return string.Format(CultureInfo.CurrentCulture, s_FormatString,
                 X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture));
         }
 
@@ -1563,7 +1563,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, _formatString, X, Y);
+            return string.Format(formatProvider, s_FormatString, X, Y);
         }
 
         /// <summary>
@@ -1576,7 +1576,7 @@ namespace SE
         {
             if (format == null)
                 return ToString(formatProvider);
-            return string.Format(formatProvider, _formatString, X.ToString(format, formatProvider),
+            return string.Format(formatProvider, s_FormatString, X.ToString(format, formatProvider),
                 Y.ToString(format, formatProvider));
         }
 
@@ -1638,7 +1638,7 @@ namespace SE
 #endif
     public partial struct Double3 : IEquatable<Double3>, IFormattable
     {
-        private static readonly string _formatString = "X:{0:F2} Y:{1:F2} Z:{2:F2}";
+        private static readonly string s_FormatString = "X:{0:F2} Y:{1:F2} Z:{2:F2}";
 
         /// <summary>
         /// The size of the <see cref="Double3" /> type, in bytes.
@@ -3417,7 +3417,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, _formatString, X, Y, Z);
+            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X, Y, Z);
         }
 
         /// <summary>
@@ -3429,7 +3429,7 @@ namespace SE
         {
             if (format == null)
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, _formatString,
+            return string.Format(CultureInfo.CurrentCulture, s_FormatString,
                 X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture),
                 Z.ToString(format, CultureInfo.CurrentCulture));
         }
@@ -3441,7 +3441,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, _formatString, X, Y, Z);
+            return string.Format(formatProvider, s_FormatString, X, Y, Z);
         }
 
         /// <summary>
@@ -3512,7 +3512,7 @@ namespace SE
 #endif
     public partial struct Double4 : IEquatable<Double4>, IFormattable
     {
-        private static readonly string _formatString = "X:{0:F2} Y:{1:F2} Z:{2:F2} W:{3:F2}";
+        private static readonly string s_FormatString = "X:{0:F2} Y:{1:F2} Z:{2:F2} W:{3:F2}";
 
         /// <summary>
         /// The size of the <see cref="Double4" /> type, in bytes.
@@ -4791,7 +4791,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, _formatString, X, Y, Z, W);
+            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X, Y, Z, W);
         }
 
         /// <summary>
@@ -4803,7 +4803,7 @@ namespace SE
         {
             if (format == null)
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, _formatString,
+            return string.Format(CultureInfo.CurrentCulture, s_FormatString,
                 X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture),
                 Z.ToString(format, CultureInfo.CurrentCulture), W.ToString(format, CultureInfo.CurrentCulture));
         }
@@ -4815,7 +4815,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, _formatString, X, Y, Z, W);
+            return string.Format(formatProvider, s_FormatString, X, Y, Z, W);
         }
 
         /// <summary>

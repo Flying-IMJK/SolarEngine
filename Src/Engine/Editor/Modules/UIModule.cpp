@@ -31,18 +31,9 @@ namespace SE::Editor
 
 	void UIModule::OnInit()
 	{
-		m_MasterPanel = New<MasterDockPanel>();
-		auto mainWindow = editor->GetMainWindow()->GetGUI();
-
-		// Update window background
-		mainWindow->BackgroundColor = Style::Current->Background;
-
+		// The managed UIModule owns the editor GUI tree. Keep this native module
+		// only for thumbnail/background services used by the remaining C++ assets.
 		thumbnails->OnInit();
-
-		InitMainMenu(mainWindow);
-		InitToolstrip(mainWindow);
-		InitStatusBar(mainWindow);
-		InitDockPanel(mainWindow);
 	}
 
 	void UIModule::OnUpdate()
@@ -96,7 +87,7 @@ namespace SE::Editor
 		cm.AddButton("Restore default layout", Editor.Windows.LoadDefaultLayout);*/
 	}
 
-	void UIModule::InitToolstrip(RootControl* mainWindow)
+	void UIModule::InitToolStrip(RootControl* mainWindow)
 	{
 		m_ToolStrip = New<ToolStrip>(34.0f, MainMenu->Bottom);
 		m_ToolStrip->Parent = mainWindow;

@@ -86,8 +86,7 @@ namespace SE::BuildTool
         }
         else
         {
-            const TypeMapping* mapping = FindTypeMapping(stripped.c_str());
-            if (mapping && mapping->isString)
+            if (IsStringType(cppType))
                 result.kind = BindingTypeKind::String;
             else if (IsKnownPrimitive(stripped))
                 result.kind = BindingTypeKind::Primitive;
@@ -106,36 +105,93 @@ namespace SE::BuildTool
         return result;
     }
 
-    std::string MakeCSharpIdentifier(const std::string& identifier)
+    BindingCallable MakeBindingMethodCallable(const ApiFunction& function)
     {
-        static const char* keywords[] =
-        {
-            "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char",
-            "checked", "class", "const", "continue", "decimal", "default", "delegate",
-            "do", "double", "else", "enum", "event", "explicit", "extern", "false",
-            "finally", "fixed", "float", "for", "foreach", "goto", "if", "implicit",
-            "in", "int", "interface", "internal", "is", "lock", "long", "namespace",
-            "new", "null", "object", "operator", "out", "override", "params", "private",
-            "protected", "public", "readonly", "ref", "return", "sbyte", "sealed",
-            "short", "sizeof", "stackalloc", "static", "string", "struct", "switch",
-            "this", "throw", "true", "try", "typeof", "uint", "ulong", "unchecked",
-            "unsafe", "ushort", "using", "virtual", "void", "volatile", "while", nullptr
-        };
-
-        for (int i = 0; keywords[i] != nullptr; i++)
-        {
-            if (identifier == keywords[i])
-                return Utils::String::Format("@{0}", identifier);
-        }
-        return identifier;
+        BindingCallable result;
+        result.function = function;
+        result.invocation = BindingInvocationKind::Method;
+        return result;
     }
 
-    std::string EscapeCSharpXml(const std::string& text)
+    BindingCallable MakeBindingPropertyGetter(const ApiProperty& property)
     {
-        std::string result = text;
-        Utils::String::ReplaceAll(result, "&", "&amp;");
-        Utils::String::ReplaceAll(result, "<", "&lt;");
-        Utils::String::ReplaceAll(result, ">", "&gt;");
+        BindingCallable result;
+        result.function.name = property.getterName;
+        result.function.returnType = property.getterCppType.empty() ? property.cppType : property.getterCppType;
+        result.function.isStatic = property.isStatic;
+        result.function.uniqueName = property.getterUniqueName;
+        result.function.entryPoint = property.getterEntryPoint;
+        result.function.isHidden = property.isHidden;
+        result.function.isDeprecated = property.isDeprecated;
+        result.function.access = property.getterAccess;
+        result.function.attributes = property.attributes;
+        result.function.comment = property.comment;
+        result.function.marshalAs = property.marshalAs;
+        result.function.lineNumber = property.lineNumber;
+        result.invocation = BindingInvocationKind::Method;
+        return result;
+    }
+
+    BindingCallable MakeBindingPropertySetter(const ApiProperty& property)
+    {
+        BindingCallable result;
+        result.function.name = property.setterName;
+        result.function.returnType = "void";
+        result.function.isStatic = property.isStatic;
+        result.function.uniqueName = property.setterUniqueName;
+        result.function.entryPoint = property.setterEntryPoint;
+        result.function.isHidden = property.isHidden;
+        result.function.isDeprecated = property.isDeprecated;
+        result.function.access = property.setterAccess;
+        result.function.attributes = property.attributes;
+        result.function.comment = property.comment;
+        result.function.marshalAs = property.marshalAs;
+        result.function.lineNumber = property.lineNumber;
+        ApiParam& value = Utils::Vector::AddOne(result.function.params);
+        value.name = "value";
+        value.cppType = property.setterCppType.empty() ? property.cppType : property.setterCppType;
+        result.invocation = BindingInvocationKind::Method;
+        return result;
+    }
+
+    BindingCallable MakeBindingFieldGetter(const ApiClass& cls, const ApiField& field)
+    {
+        BindingCallable result;
+        result.function.name = field.name;
+        result.function.returnType = field.cppType;
+        result.function.returnArraySize = field.arraySize;
+        result.function.isStatic = field.isStatic;
+        result.function.uniqueName = field.name + "_Get";
+        result.function.entryPoint = Utils::String::Format("{0}_{1}_Get", cls.name, field.name);
+        result.function.isHidden = field.isHidden;
+        result.function.isDeprecated = field.isDeprecated;
+        result.function.attributes = field.attributes;
+        result.function.comment = field.comment;
+        result.function.marshalAs = field.marshalAs;
+        result.function.lineNumber = field.lineNumber;
+        result.invocation = BindingInvocationKind::FieldGet;
+        return result;
+    }
+
+    BindingCallable MakeBindingFieldSetter(const ApiClass& cls, const ApiField& field)
+    {
+        BindingCallable result;
+        result.function.name = field.name;
+        result.function.returnType = "void";
+        result.function.isStatic = field.isStatic;
+        result.function.uniqueName = field.name + "_Set";
+        result.function.entryPoint = Utils::String::Format("{0}_{1}_Set", cls.name, field.name);
+        result.function.isHidden = field.isHidden;
+        result.function.isDeprecated = field.isDeprecated;
+        result.function.attributes = field.attributes;
+        result.function.comment = field.comment;
+        result.function.marshalAs = field.marshalAs;
+        result.function.lineNumber = field.lineNumber;
+        ApiParam& value = Utils::Vector::AddOne(result.function.params);
+        value.name = "value";
+        value.cppType = field.cppType;
+        value.arraySize = field.arraySize;
+        result.invocation = BindingInvocationKind::FieldSet;
         return result;
     }
 

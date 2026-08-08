@@ -4,7 +4,7 @@
 // Generates C# binding declarations from parsed API annotations.
 // Uses direct string building instead of Mustache templates for complex generation logic.
 
-#include "CodeGenerator_BindingsDataTypes.h"
+#include "CodeGenerator_BindingsModel.h"
 
 namespace SE::BuildTool
 {
@@ -45,23 +45,27 @@ namespace SE::BuildTool
                                            const std::string& assemblyName, std::string& output);
         void GenerateCSharpWrapperFunctionCall(const ApiClass& cls, const ApiFunction& fn,
                                                std::string& output);
+        void GenerateCSharpAccessorProperty(const ApiClass& cls, const BindingCallable* getter,
+                                            const BindingCallable* setter, const std::string& publicName,
+                                            const std::string& publicCppType, AccessLevel getterAccess,
+                                            AccessLevel setterAccess, bool isStatic, const std::string& attributes,
+                                            const std::string& comment, bool isDeprecated,
+                                            const std::string& assemblyName, std::string& output);
         void GenerateCSharpPropertyAccessors(const ApiClass& cls, const ApiProperty& prop,
                                              const std::string& assemblyName, std::string& output);
         void GenerateCSharpFieldAccessors(const ApiClass& cls, const ApiField& field,
                                           const std::string& assemblyName, std::string& output);
         void GenerateCSharpEventAccessors(const ApiClass& cls, const ApiEvent& evt,
                                           const std::string& assemblyName, std::string& output);
-        void GenerateCSharpClassMarshaller(const ApiClass& cls, std::string& output);
+        void GenerateCSharpClassMarshaller(const ApiClass& cls, std::string& marshallerName, std::string& output);
         void GenerateCSharpStructMarshaller(const ApiClass& cls, std::string& output);
 
         // ---- Helpers ----
 
-        std::string GetAccessString(AccessLevel access) const;
+
         std::string BuildCSharpParams(const ApiFunction& fn, bool forPublic) const;
         std::string BuildCSharpInteropParams(const ApiClass& cls, const ApiFunction& fn) const;
         std::string BuildCSharpCallArgs(const ApiClass& cls, const ApiFunction& fn, bool isInterop) const;
-
-        static bool SaveFile(const std::string& path, const std::string& content);
 
         mutable std::string m_errorMessage;
     };

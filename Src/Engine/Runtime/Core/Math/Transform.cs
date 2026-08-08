@@ -18,7 +18,7 @@ namespace SE
     [Serializable]
     public partial struct Transform : IEquatable<Transform>, IFormattable
     {
-        private static readonly string _formatString = "Translation:{0} Orientation:{1} Scale:{2}";
+        private static readonly string s_FormatString = "Translation:{0} Orientation:{1} Scale:{2}";
 
         /// <summary>
         /// The size of the <see cref="Transform" /> type, in bytes
@@ -530,7 +530,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, _formatString, Translation, Orientation, Scale);
+            return string.Format(CultureInfo.CurrentCulture, s_FormatString, Translation, Orientation, Scale);
         }
 
         /// <summary>
@@ -542,7 +542,7 @@ namespace SE
         {
             if (format == null)
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, _formatString, Translation.ToString(format, CultureInfo.CurrentCulture), Orientation.ToString(format, CultureInfo.CurrentCulture), Scale.ToString(format, CultureInfo.CurrentCulture));
+            return string.Format(CultureInfo.CurrentCulture, s_FormatString, Translation.ToString(format, CultureInfo.CurrentCulture), Orientation.ToString(format, CultureInfo.CurrentCulture), Scale.ToString(format, CultureInfo.CurrentCulture));
         }
 
         /// <summary>
@@ -552,7 +552,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, _formatString, Translation, Orientation, Scale);
+            return string.Format(formatProvider, s_FormatString, Translation, Orientation, Scale);
         }
 
         /// <summary>
@@ -565,7 +565,7 @@ namespace SE
         {
             if (format == null)
                 return ToString(formatProvider);
-            return string.Format(formatProvider, _formatString, Translation.ToString(format, formatProvider), Orientation.ToString(format, formatProvider), Scale.ToString(format, formatProvider));
+            return string.Format(formatProvider, s_FormatString, Translation.ToString(format, formatProvider), Orientation.ToString(format, formatProvider), Scale.ToString(format, formatProvider));
         }
 
         /// <summary>

@@ -10,14 +10,14 @@ using System;
 using System.Reflection;
 using System.Runtime.Loader;
 
-namespace SE.Scripting
+namespace SE
 {
     /// <summary>
     /// AssemblyLoadContext used to isolate and (optionally) unload script assemblies.
     /// </summary>
     internal sealed class ScriptingLoadContext : AssemblyLoadContext
     {
-        private readonly AssemblyDependencyResolver _resolver;
+        private readonly AssemblyDependencyResolver m_Resolver;
 
         /// <summary>
         /// Creates a new ScriptingLoadContext.
@@ -31,13 +31,13 @@ namespace SE.Scripting
             : base(name: System.IO.Path.GetFileNameWithoutExtension(assemblyPath),
                    isCollectible: isCollectible)
         {
-            _resolver = new AssemblyDependencyResolver(assemblyPath);
+            m_Resolver = new AssemblyDependencyResolver(assemblyPath);
         }
 
         /// <inheritdoc/>
         protected override Assembly? Load(AssemblyName assemblyName)
         {
-            string? assemblyPath = _resolver.ResolveAssemblyToPath(assemblyName);
+            string? assemblyPath = m_Resolver.ResolveAssemblyToPath(assemblyName);
             if (assemblyPath != null)
                 return LoadFromAssemblyPath(assemblyPath);
 
@@ -48,7 +48,7 @@ namespace SE.Scripting
         /// <inheritdoc/>
         protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
         {
-            string? libraryPath = _resolver.ResolveUnmanagedDllToPath(unmanagedDllName);
+            string? libraryPath = m_Resolver.ResolveUnmanagedDllToPath(unmanagedDllName);
             if (libraryPath != null)
                 return LoadUnmanagedDllFromPath(libraryPath);
 

@@ -812,6 +812,11 @@ namespace SE
 		return true;
 	}
 
+	bool Level::SaveScene(Scene* scene, bool prettyJson)
+	{
+		return true;
+	}
+
 	void Level::SaveSceneAsync(Scene* scene)
 	{
 		Threading::ScopeLock lock(systemData->sceneActionsLocker);

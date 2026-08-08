@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace SE.GUI
 {
@@ -7,15 +8,16 @@ namespace SE.GUI
     /// </summary>
     public class Control : IDisposable
     {
-        private ContainerControl? _parent;
-        private RootControl? _root;
-        private Rectangle _bounds;
-        private bool _visible = true;
-        private bool _enabled = true;
-        private bool _isDisposing;
-        private bool _isDisposed;
-        private bool _isMouseOver;
-        private bool _isFocused;
+        private ContainerControl? m_Parent;
+        private RootControl? m_Root;
+        private Rectangle m_Bounds;
+        private bool m_Visible = true;
+        private bool m_Enabled = true;
+        private bool m_IsDisposing;
+        private bool m_IsDisposed;
+        private bool m_IsMouseOver;
+        private bool m_IsDragOver;
+        private bool m_IsFocused;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Control"/> class.
@@ -24,12 +26,35 @@ namespace SE.GUI
         {
         }
 
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Control"/> class.
+        /// </summary>
+        /// <param name="x">X coordinate</param>
+        /// <param name="y">Y coordinate</param>
+        /// <param name="width">Width</param>
+        /// <param name="height">Height</param>
+        public Control(float x, float y, float width, float height)
+            : this(new Rectangle(x, y, width, height))
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Control"/> class.
+        /// </summary>
+        /// <param name="location">Upper left corner location.</param>
+        /// <param name="size">Bounds size.</param>
+        public Control(Float2 location, Float2 size)
+            : this(new Rectangle(location, size))
+        {
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Control"/> class.
         /// </summary>
         public Control(Rectangle bounds)
         {
-            _bounds = bounds;
+            m_Bounds = bounds;
         }
 
         /// <summary>
@@ -67,30 +92,35 @@ namespace SE.GUI
         /// </summary>
         public ContainerControl? Parent
         {
-            get => _parent;
+            get => m_Parent;
             set
             {
-                if (ReferenceEquals(_parent, value))
+                if (ReferenceEquals(m_Parent, value))
                     return;
 
                 value?.AddChild(this);
                 if (value == null)
-                    _parent?.RemoveChild(this);
+                    m_Parent?.RemoveChild(this);
             }
         }
 
         /// <summary>
+        /// Checks if control has parent container control.
+        /// </summary>
+        public bool HasParent => m_Parent != null;
+
+        /// <summary>
         /// Gets the root control that owns this control tree.
         /// </summary>
-        public RootControl? Root => _root;
+        public RootControl? Root => m_Root;
 
         /// <summary>
         /// Gets or sets the zero-based position of this control inside its parent.
         /// </summary>
         public int IndexInParent
         {
-            get => _parent?.IndexOf(this) ?? -1;
-            set => _parent?.SetChildIndex(this, value);
+            get => m_Parent?.IndexOf(this) ?? -1;
+            set => m_Parent?.SetChildIndex(this, value);
         }
 
         /// <summary>
@@ -98,50 +128,50 @@ namespace SE.GUI
         /// </summary>
         public Rectangle Bounds
         {
-            get => _bounds;
+            get => m_Bounds;
             set => SetBounds(value);
         }
 
         public float X
         {
-            get => _bounds.X;
-            set => SetBounds(value, _bounds.Y, _bounds.Width, _bounds.Height);
+            get => m_Bounds.X;
+            set => SetBounds(value, m_Bounds.Y, m_Bounds.Width, m_Bounds.Height);
         }
 
         public float Y
         {
-            get => _bounds.Y;
-            set => SetBounds(_bounds.X, value, _bounds.Width, _bounds.Height);
+            get => m_Bounds.Y;
+            set => SetBounds(m_Bounds.X, value, m_Bounds.Width, m_Bounds.Height);
         }
 
         public float Width
         {
-            get => _bounds.Width;
-            set => SetBounds(_bounds.X, _bounds.Y, value, _bounds.Height);
+            get => m_Bounds.Width;
+            set => SetBounds(m_Bounds.X, m_Bounds.Y, value, m_Bounds.Height);
         }
 
         public float Height
         {
-            get => _bounds.Height;
-            set => SetBounds(_bounds.X, _bounds.Y, _bounds.Width, value);
+            get => m_Bounds.Height;
+            set => SetBounds(m_Bounds.X, m_Bounds.Y, m_Bounds.Width, value);
         }
 
         public Float2 Location
         {
-            get => _bounds.Location;
-            set => SetBounds(new Rectangle(value, _bounds.Size));
+            get => m_Bounds.Location;
+            set => SetBounds(new Rectangle(value, m_Bounds.Size));
         }
 
         public Float2 Size
         {
-            get => _bounds.Size;
-            set => SetBounds(new Rectangle(_bounds.Location, value));
+            get => m_Bounds.Size;
+            set => SetBounds(new Rectangle(m_Bounds.Location, value));
         }
 
         /// <summary>
         /// Gets the bounds in root logical coordinates.
         /// </summary>
-        public Rectangle ScreenBounds => new Rectangle(ScreenPos, _bounds.Size);
+        public Rectangle ScreenBounds => new Rectangle(ScreenPos, m_Bounds.Size);
 
         /// <summary>
         /// Gets the position in root logical coordinates.
@@ -150,7 +180,7 @@ namespace SE.GUI
         {
             get
             {
-                var position = _bounds.Location;
+                var position = m_Bounds.Location;
                 for (Control child = this; child.Parent is ContainerControl parent; child = parent)
                 {
                     position += parent.Location;
@@ -196,13 +226,13 @@ namespace SE.GUI
         /// </summary>
         public bool Enabled
         {
-            get => _enabled;
+            get => m_Enabled;
             set
             {
-                if (_enabled == value)
+                if (m_Enabled == value)
                     return;
 
-                _enabled = value;
+                m_Enabled = value;
                 if (!value)
                     ClearState();
             }
@@ -211,20 +241,20 @@ namespace SE.GUI
         /// <summary>
         /// Gets whether this control and all its parents are enabled.
         /// </summary>
-        public bool EnabledInHierarchy => _enabled && (_parent?.EnabledInHierarchy ?? true);
+        public bool EnabledInHierarchy => m_Enabled && (m_Parent?.EnabledInHierarchy ?? true);
 
         /// <summary>
         /// Gets or sets whether the control participates in layout, drawing and hit testing.
         /// </summary>
         public bool Visible
         {
-            get => _visible;
+            get => m_Visible;
             set
             {
-                if (_visible == value)
+                if (m_Visible == value)
                     return;
 
-                _visible = value;
+                m_Visible = value;
                 if (!value)
                     ClearState();
                 VisibleChanged?.Invoke(this);
@@ -234,7 +264,7 @@ namespace SE.GUI
         /// <summary>
         /// Gets whether this control and all its parents are visible.
         /// </summary>
-        public bool VisibleInHierarchy => _visible && (_parent?.VisibleInHierarchy ?? true);
+        public bool VisibleInHierarchy => m_Visible && (m_Parent?.VisibleInHierarchy ?? true);
 
         /// <summary>
         /// Gets or sets whether pointer selection automatically focuses this control.
@@ -257,10 +287,11 @@ namespace SE.GUI
         /// </summary>
         public Color BackgroundColor { get; set; }
 
-        public bool IsMouseOver => _isMouseOver;
-        public bool IsFocused => _isFocused;
-        public bool IsDisposing => _isDisposing;
-        public bool IsDisposed => _isDisposed;
+        public bool IsMouseOver => m_IsMouseOver;
+        public bool IsFocused => m_IsFocused;
+        public virtual bool ContainsFocus => m_IsFocused;
+        public bool IsDisposing => m_IsDisposing;
+        public bool IsDisposed => m_IsDisposed;
 
         /// <summary>
         /// Sets the local bounds.
@@ -275,12 +306,12 @@ namespace SE.GUI
         /// </summary>
         public void SetBounds(Rectangle bounds)
         {
-            if (_bounds.Equals(bounds))
+            if (m_Bounds.Equals(bounds))
                 return;
 
-            bool locationChanged = _bounds.Location != bounds.Location;
-            bool sizeChanged = _bounds.Size != bounds.Size;
-            _bounds = bounds;
+            bool locationChanged = m_Bounds.Location != bounds.Location;
+            bool sizeChanged = m_Bounds.Size != bounds.Size;
+            m_Bounds = bounds;
 
             if (locationChanged)
                 LocationChanged?.Invoke(this);
@@ -307,6 +338,83 @@ namespace SE.GUI
         }
 
         /// <summary>
+        /// Converts a point from local control coordinates to immediate parent coordinates.
+        /// </summary>
+        public Float2 PointToParent(Float2 location)
+        {
+            return PointToParent(ref location);
+        }
+
+        /// <summary>
+        /// Converts a point from local control coordinates to immediate parent coordinates.
+        /// </summary>
+        public virtual Float2 PointToParent(ref Float2 location)
+        {
+            Float2 result = location + Location;
+            if (ApplyParentChildOffset && Parent != null)
+                result += Parent.ChildOffset;
+            return result;
+        }
+
+        /// <summary>
+        /// Converts a point from local control coordinates to one of ancestor parent coordinates.
+        /// </summary>
+        public Float2 PointToParent(ContainerControl parent, Float2 location)
+        {
+            ArgumentNullException.ThrowIfNull(parent);
+
+            Control? control = this;
+            while (control != null && !ReferenceEquals(control, parent))
+            {
+                location = control.PointToParent(location);
+                control = control.Parent;
+            }
+
+            return location;
+        }
+
+        /// <summary>
+        /// Converts a point from immediate parent coordinates to local control coordinates.
+        /// </summary>
+        public Float2 PointFromParent(Float2 locationParent)
+        {
+            return PointFromParent(ref locationParent);
+        }
+
+        /// <summary>
+        /// Converts a point from immediate parent coordinates to local control coordinates.
+        /// </summary>
+        public virtual Float2 PointFromParent(ref Float2 locationParent)
+        {
+            Float2 result = locationParent;
+            if (ApplyParentChildOffset && Parent != null)
+                result -= Parent.ChildOffset;
+            result -= Location;
+            return result;
+        }
+
+        /// <summary>
+        /// Converts a point from one of ancestor parent coordinates to local control coordinates.
+        /// </summary>
+        public Float2 PointFromParent(ContainerControl parent, Float2 location)
+        {
+            ArgumentNullException.ThrowIfNull(parent);
+
+            List<Control> path = new List<Control>();
+            Control? control = this;
+            while (control != null && !ReferenceEquals(control, parent))
+            {
+                path.Add(control);
+                control = control.Parent;
+            }
+
+            for (int i = path.Count - 1; i >= 0; i--)
+                location = path[i].PointFromParent(location);
+
+            return location;
+        }
+
+        /// <summary>
         /// Checks if a root logical-coordinate point is inside this control.
         /// </summary>
         public virtual bool ContainsPoint(Float2 location)
@@ -327,7 +435,7 @@ namespace SE.GUI
         /// </summary>
         public virtual void Update(float deltaTime)
         {
-            if (VisibleInHierarchy && !_isDisposed)
+            if (VisibleInHierarchy && !m_IsDisposed)
                 OnUpdate(deltaTime);
         }
 
@@ -336,8 +444,63 @@ namespace SE.GUI
         /// </summary>
         public virtual void Draw()
         {
-            if (VisibleInHierarchy && !_isDisposed)
+            if (VisibleInHierarchy && !m_IsDisposed)
+            {
                 OnDraw();
+            }
+        }
+
+
+        /// <summary>
+        /// When control gets input focus
+        /// </summary>
+        public virtual void OnGetFocus()
+        {
+            // Cache flag
+            m_IsFocused = true;
+            // _isNavFocused = false;
+        }
+
+        /// <summary>
+        /// When control losts input focus
+        /// </summary>
+        public virtual void OnLostFocus()
+        {
+            // Clear flag
+            m_IsFocused = false;
+            // _isNavFocused = false;
+        }
+
+        /// <summary>
+        /// Sets input focus to the control.
+        /// </summary>
+        public virtual void Focus()
+        {
+            if (!IsFocused)
+                Root?.Focus(this);
+        }
+
+        /// <summary>
+        /// Removes input focus from the control.
+        /// </summary>
+        public virtual void Defocus()
+        {
+            if (ContainsFocus)
+                Root?.Focus(null);
+        }
+
+        /// <summary>
+        /// Called when control starts containing focus.
+        /// </summary>
+        public virtual void OnStartContainsFocus()
+        {
+        }
+
+        /// <summary>
+        /// Called when control stops containing focus.
+        /// </summary>
+        public virtual void OnEndContainsFocus()
+        {
         }
 
         /// <summary>
@@ -346,8 +509,16 @@ namespace SE.GUI
         public virtual void ClearState()
         {
             SetMouseOver(false);
-            if (_isFocused)
-                _root?.Focus(null);
+            Defocus();
+
+            if (m_IsMouseOver)
+                OnMouseLeave();
+            if (m_IsDragOver)
+                OnDragLeave();
+            /*while (_touchOvers != null && _touchOvers.Count != 0)
+            {
+                OnTouchLeave(_touchOvers[0]);
+            }*/
         }
 
         /// <summary>
@@ -355,15 +526,15 @@ namespace SE.GUI
         /// </summary>
         public void Dispose()
         {
-            if (_isDisposed || _isDisposing)
+            if (m_IsDisposed || m_IsDisposing)
                 return;
 
-            _isDisposing = true;
-            _parent?.RemoveChild(this);
+            m_IsDisposing = true;
+            m_Parent?.RemoveChild(this);
             ClearState();
             OnDispose();
-            _isDisposed = true;
-            _isDisposing = false;
+            m_IsDisposed = true;
+            m_IsDisposing = false;
             GC.SuppressFinalize(this);
         }
 
@@ -379,7 +550,7 @@ namespace SE.GUI
         /// <summary>
         /// Handles a key press routed from the root control.
         /// </summary>
-        public virtual bool OnKeyDown(int key)
+        public virtual bool OnKeyDown(KeyboardKeys key)
         {
             _ = key;
             return false;
@@ -388,27 +559,27 @@ namespace SE.GUI
         /// <summary>
         /// Handles a key release routed from the root control.
         /// </summary>
-        public virtual bool OnKeyUp(int key)
+        public virtual bool OnKeyUp(KeyboardKeys key)
         {
             _ = key;
             return false;
         }
 
-        public virtual bool OnMouseDown(Float2 location, int button)
+        public virtual bool OnMouseDown(Float2 location, MouseButton button)
         {
             _ = location;
             _ = button;
             return false;
         }
 
-        public virtual bool OnMouseUp(Float2 location, int button)
+        public virtual bool OnMouseUp(Float2 location, MouseButton button)
         {
             _ = location;
             _ = button;
             return false;
         }
 
-        public virtual bool OnMouseDoubleClick(Float2 location, int button)
+        public virtual bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
             _ = location;
             _ = button;
@@ -463,21 +634,21 @@ namespace SE.GUI
         {
         }
 
-        public virtual DragDropEffect OnDragEnter(Float2 location, DragData data)
+        public virtual DragDropEffect OnDragEnter(ref Float2 location, DragData data)
         {
             _ = location;
             _ = data;
             return DragDropEffect.None;
         }
 
-        public virtual DragDropEffect OnDragMove(Float2 location, DragData data)
+        public virtual DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
             _ = location;
             _ = data;
             return DragDropEffect.None;
         }
 
-        public virtual DragDropEffect OnDragDrop(Float2 location, DragData data)
+        public virtual DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
             _ = location;
             _ = data;
@@ -516,30 +687,33 @@ namespace SE.GUI
 
         internal void SetParentCore(ContainerControl? parent)
         {
-            if (ReferenceEquals(_parent, parent))
+            if (ReferenceEquals(m_Parent, parent))
                 return;
 
-            _parent = parent;
+            ContainerControl? oldParent = m_Parent;
+            m_Parent = parent;
             SetRootCore(parent?.Root);
             ParentChanged?.Invoke(this);
+            oldParent?.UpdateContainsFocusUpwards();
+            parent?.UpdateContainsFocusUpwards();
         }
 
         internal virtual void SetRootCore(RootControl? root)
         {
-            if (ReferenceEquals(_root, root))
+            if (ReferenceEquals(m_Root, root))
                 return;
 
-            if (_isFocused && !ReferenceEquals(root, _root))
-                _root?.Focus(null);
-            _root = root;
+            if (m_IsFocused && !ReferenceEquals(root, m_Root))
+                m_Root?.Focus(null);
+            m_Root = root;
         }
 
         internal void SetMouseOver(bool value)
         {
-            if (_isMouseOver == value)
+            if (m_IsMouseOver == value)
                 return;
 
-            _isMouseOver = value;
+            m_IsMouseOver = value;
             if (value)
                 OnMouseEnter();
             else
@@ -548,14 +722,25 @@ namespace SE.GUI
 
         internal void SetFocused(bool value)
         {
-            if (_isFocused == value)
+            if (m_IsFocused == value)
                 return;
 
-            _isFocused = value;
+            m_IsFocused = value;
             if (value)
+            {
+                OnGetFocus();
                 OnFocusGained();
+            }
             else
+            {
+                OnLostFocus();
                 OnFocusLost();
+            }
+            m_IsFocused = value;
+            if (this is ContainerControl container)
+                container.UpdateContainsFocusUpwards();
+            else
+                m_Parent?.UpdateContainsFocusUpwards();
         }
     }
 }

@@ -49,9 +49,28 @@ namespace SE::BuildTool
         uint64                  inputHash = 1469598103934665603ull;
     };
 
+    // A callable is the common ABI surface shared by methods, properties and
+    // fields. The ApiFunction owns the managed/native signature while the kind
+    // only determines how the native expression is formed.
+    enum class BindingInvocationKind
+    {
+        Method,
+        FieldGet,
+        FieldSet,
+    };
+
+    struct BindingCallable
+    {
+        ApiFunction function;
+        BindingInvocationKind invocation = BindingInvocationKind::Method;
+    };
+
     BindingTypeInfo ResolveBindingType(const std::string& cppType);
-    std::string     MakeCSharpIdentifier(const std::string& identifier);
-    std::string     EscapeCSharpXml(const std::string& text);
+    BindingCallable MakeBindingMethodCallable(const ApiFunction& function);
+    BindingCallable MakeBindingPropertyGetter(const ApiProperty& property);
+    BindingCallable MakeBindingPropertySetter(const ApiProperty& property);
+    BindingCallable MakeBindingFieldGetter(const ApiClass& cls, const ApiField& field);
+    BindingCallable MakeBindingFieldSetter(const ApiClass& cls, const ApiField& field);
     std::string     GetEnumUnderlyingTypeName(Utils::TypeIDCore underlyingType);
     void            HashCombine(BindingGenerationContext& context, const std::string& value);
     void            AddBindingDiagnostic(BindingGenerationContext& context, const std::string& message,

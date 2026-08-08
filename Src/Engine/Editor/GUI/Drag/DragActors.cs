@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SE.GUI;
 
 namespace SE.Editor.GUI
 {
@@ -8,12 +9,12 @@ namespace SE.Editor.GUI
     {
         public const string DragPrefix = "ACTOR!?";
 
-        private readonly Func<string, SceneGraphNode?> _findNode;
+        private readonly Func<string, SceneGraphNode?> m_FindNode;
 
         public DragActorsBase(Func<SceneGraphNode, bool> validateFunction, Func<string, SceneGraphNode?> findNode)
             : base(validateFunction)
         {
-            _findNode = findNode;
+            m_FindNode = findNode;
         }
 
         public override DragData ToDragData(SceneGraphNode item)
@@ -49,7 +50,7 @@ namespace SE.Editor.GUI
 
             foreach (string id in textData.Text.Substring(DragPrefix.Length).Split('\n', StringSplitOptions.RemoveEmptyEntries))
             {
-                SceneGraphNode? node = _findNode(id);
+                SceneGraphNode? node = m_FindNode(id);
                 if (node != null)
                     yield return node;
             }

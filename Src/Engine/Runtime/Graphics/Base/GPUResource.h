@@ -41,7 +41,7 @@ namespace SE
 	};
 
 
-	SE_CLASS(API, Abstract, NoSpawn, Attributes="HideInEditor")
+	SE_CLASS(API, Abstract, NoSpawn)
 	class SE_API_RUNTIME GPUResourceView : public ScriptingObject
 	{
 		SCRIPTING_TYPE_NO_SPAWN(GPUResourceView);

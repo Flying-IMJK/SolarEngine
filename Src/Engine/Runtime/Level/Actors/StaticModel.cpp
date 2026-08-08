@@ -10,8 +10,9 @@
 
 namespace SE
 {
-	StaticModel::StaticModel()
-		: _scaleInLightmap(1.0f)
+	StaticModel::StaticModel(const SpawnParams& params)
+		: ModelInstance(params)
+		, _scaleInLightmap(1.0f)
 		, _boundsScale(1.0f)
 		, _lodBias(0)
 		, _forcedLod(-1)

@@ -15,7 +15,7 @@ namespace SE
 	SE_CLASS(Reflect, API, NoSpawn)
 	class SE_API_RUNTIME Material final : public MaterialBase, public IShaderAsset
 	{
-		SE_DEFINE_CLASS_DEFAULT(Material, MaterialBase);
+		SE_DEFINE_CLASS(Material, MaterialBase);
 		ASSET_HEADER(Material);
 	private:
 		MaterialShader* m_MaterialShader = nullptr;

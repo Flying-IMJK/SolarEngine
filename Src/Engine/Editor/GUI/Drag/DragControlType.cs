@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SE.GUI;
 
 namespace SE.Editor.GUI
 {
@@ -23,7 +24,9 @@ namespace SE.Editor.GUI
             ArgumentNullException.ThrowIfNull(items);
             var names = new List<string>();
             foreach (Type item in items)
+            {
                 names.Add(item.AssemblyQualifiedName ?? item.FullName ?? item.Name);
+            }
             return new DragDataText(DragPrefix + string.Join("\n", names));
         }
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SE.GUI;
 
 namespace SE.Editor.GUI
 {
@@ -16,11 +17,11 @@ namespace SE.Editor.GUI
     public abstract class DragHelper<T, TEventArgs> : DragHelperBase
         where TEventArgs : DragEventArgs
     {
-        private readonly Func<T, bool> _validateFunction;
+        private readonly Func<T, bool> m_ValidateFunction;
 
         protected DragHelper(Func<T, bool> validateFunction)
         {
-            _validateFunction = validateFunction;
+            m_ValidateFunction = validateFunction;
         }
 
         public List<T> Objects { get; } = new List<T>();
@@ -45,7 +46,7 @@ namespace SE.Editor.GUI
             Objects.Clear();
             foreach (T item in FromDragData(data))
             {
-                if (_validateFunction(item))
+                if (m_ValidateFunction(item))
                     Objects.Add(item);
             }
 

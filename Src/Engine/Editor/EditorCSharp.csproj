@@ -9,6 +9,7 @@
     <RootNamespace>SE</RootNamespace>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DisableRuntimeMarshalling>true</DisableRuntimeMarshalling>
     <Optimize>false</Optimize>
     <!-- Suppress default items; sources will be added explicitly or via globbing -->
     <EnableDefaultCompileItems>true</EnableDefaultCompileItems>

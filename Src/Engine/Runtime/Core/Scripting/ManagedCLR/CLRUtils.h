@@ -61,7 +61,8 @@ namespace SE
         {
             if (data)
             {
-                Platform::MemoryCopy(&result, CLRCore::Object::Unbox(data), sizeof(T));
+                const void* src = CLRCore::Object::Unbox(data);
+                Platform::MemoryCopy(&result, src, sizeof(T));
             }
         }
 

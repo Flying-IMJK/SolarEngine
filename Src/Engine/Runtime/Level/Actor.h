@@ -11,7 +11,7 @@ namespace SE
 {
 	class Scene;
 
-	SE_CLASS(Reflect)
+	SE_CLASS(Reflect, API)
 	class SE_API_RUNTIME Actor : public SceneObject
 	{
 		friend class SceneRendering;
@@ -23,6 +23,7 @@ namespace SE
 		friend class Prefab;
 		friend class PrefabInstanceData;
 
+		SCRIPTING_TYPE(Actor);
 		SE_DEFINE_CLASS(Actor, SceneObject);
 	protected:
 		uint16 m_IsActive : 1;
@@ -50,7 +51,6 @@ namespace SE
 		List<Actor*> Children;
 
 	public:
-		Actor();
 		~Actor() override;
 
 		/// <summary>
@@ -111,6 +111,7 @@ namespace SE
 		void SetLayerNameRecursive(const StringView& value);
 
 
+		SE_PROPERTY(API, ReadOnly)
 		FORCE_INLINE const String& GetName() const
 		{
 			return m_Name;
@@ -120,11 +121,13 @@ namespace SE
 		/// Sets the actor name.
 		/// </summary>
 		/// <param name="value">The value to set.</param>
+		SE_PROPERTY(API)
 		void SetName(const StringView& value);
 
 		/// <summary>
 		/// Gets the scene object which contains this actor.
 		/// </summary>
+		SE_PROPERTY(API, ReadOnly)
 		FORCE_INLINE Scene* GetScene() const
 		{
 			return m_Scene;
@@ -147,6 +150,7 @@ namespace SE
 		/// <summary>
 		/// Gets amount of child actors.
 		/// </summary>
+		SE_PROPERTY(API, ReadOnly)
 		FORCE_INLINE int32 GetChildrenCount() const
 		{
 			return Children.Count();
@@ -157,6 +161,7 @@ namespace SE
 		/// </summary>
 		/// <param name="index">The child actor index.</param>
 		/// <returns>The child actor (always valid).</returns>
+		SE_FUNCTION(API)
 		Actor* GetChild(int32 index) const;
 
 		/// <summary>
@@ -231,6 +236,7 @@ namespace SE
 		/// <summary>
 		/// Gets value indicating if actor is active in the scene.
 		/// </summary>
+		SE_PROPERTY(API, ReadOnly)
 		FORCE_INLINE bool GetIsActive() const
 		{
 			return m_IsActive != 0;
@@ -568,12 +574,14 @@ namespace SE
 		void Deserialize(DeserializeContext& context) override;
 	};
 
-	SE_CLASS(Reflect)
+	SE_CLASS(Reflect, API, Abstract)
 	class SE_API_RUNTIME RenderActor : public Actor, public IRender
 	{
+		SCRIPTING_TYPE_NO_SPAWN(RenderActor);
+		static RenderActor* Spawn(const SpawnParams& params) { return nullptr; }
+		explicit RenderActor(const SpawnParams& params);
 		SE_DEFINE_CLASS(RenderActor, Actor);
 	public:
-		RenderActor() {}
 		// [IRender]
 		int RenderGetDrawCategory() override { return m_DrawCategory; }
 		int32 RenderGetLayerMask() override { return 1 << static_cast<int32>(m_Layer); };

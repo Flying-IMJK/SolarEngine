@@ -7,8 +7,8 @@ namespace SE.GUI
     /// </summary>
     public class ScrollableControl : ContainerControl
     {
-        private Float2 _scrollOffset;
-        private Float2 _maximumScrollOffset;
+        private Float2 m_ScrollOffset;
+        private Float2 m_MaximumScrollOffset;
 
         public ScrollableControl()
         {
@@ -19,37 +19,37 @@ namespace SE.GUI
         {
         }
 
-        private ScrollBars _scrollBars = ScrollBars.Both;
+        private ScrollBars m_ScrollBars = ScrollBars.Both;
 
         public virtual ScrollBars ScrollBars
         {
-            get => _scrollBars;
+            get => m_ScrollBars;
             set
             {
-                if (_scrollBars == value)
+                if (m_ScrollBars == value)
                     return;
-                _scrollBars = value;
+                m_ScrollBars = value;
                 PerformLayout();
             }
         }
         public float ScrollSpeed { get; set; } = 40.0f;
         public Float2 ScrollOffset
         {
-            get => _scrollOffset;
+            get => m_ScrollOffset;
             set
             {
                 Float2 clamped = new Float2(
-                    Math.Clamp(value.X, 0.0f, _maximumScrollOffset.X),
-                    Math.Clamp(value.Y, 0.0f, _maximumScrollOffset.Y));
-                if (_scrollOffset == clamped)
+                    Math.Clamp(value.X, 0.0f, m_MaximumScrollOffset.X),
+                    Math.Clamp(value.Y, 0.0f, m_MaximumScrollOffset.Y));
+                if (m_ScrollOffset == clamped)
                     return;
-                _scrollOffset = clamped;
+                m_ScrollOffset = clamped;
                 OnScrollOffsetChanged();
             }
         }
 
-        public Float2 MaximumScrollOffset => _maximumScrollOffset;
-        internal override Float2 ChildOffset => new Float2(-_scrollOffset.X, -_scrollOffset.Y);
+        public Float2 MaximumScrollOffset => m_MaximumScrollOffset;
+        internal override Float2 ChildOffset => new Float2(-m_ScrollOffset.X, -m_ScrollOffset.Y);
 
         /// <summary>
         /// Gets the drawable area reserved for child content. Panels override this when scrollbar overlays are visible.
@@ -68,11 +68,11 @@ namespace SE.GUI
             if (MathF.Abs(delta) <= float.Epsilon)
                 return false;
 
-            Float2 offset = _scrollOffset;
-            if ((ScrollBars & ScrollBars.Vertical) != 0 && _maximumScrollOffset.Y > 0.0f)
-                offset.Y = Math.Clamp(offset.Y - delta * ScrollSpeed, 0.0f, _maximumScrollOffset.Y);
-            else if ((ScrollBars & ScrollBars.Horizontal) != 0 && _maximumScrollOffset.X > 0.0f)
-                offset.X = Math.Clamp(offset.X - delta * ScrollSpeed, 0.0f, _maximumScrollOffset.X);
+            Float2 offset = m_ScrollOffset;
+            if ((ScrollBars & ScrollBars.Vertical) != 0 && m_MaximumScrollOffset.Y > 0.0f)
+                offset.Y = Math.Clamp(offset.Y - delta * ScrollSpeed, 0.0f, m_MaximumScrollOffset.Y);
+            else if ((ScrollBars & ScrollBars.Horizontal) != 0 && m_MaximumScrollOffset.X > 0.0f)
+                offset.X = Math.Clamp(offset.X - delta * ScrollSpeed, 0.0f, m_MaximumScrollOffset.X);
             else
                 return false;
 
@@ -134,10 +134,10 @@ namespace SE.GUI
             Float2 content = GetScrollableContentSize();
             Float2 viewport = ScrollViewportSize;
 
-            _maximumScrollOffset = new Float2(
+            m_MaximumScrollOffset = new Float2(
                 (ScrollBars & ScrollBars.Horizontal) != 0 ? MathF.Max(0.0f, content.X - viewport.X) : 0.0f,
                 (ScrollBars & ScrollBars.Vertical) != 0 ? MathF.Max(0.0f, content.Y - viewport.Y) : 0.0f);
-            ScrollOffset = _scrollOffset;
+            ScrollOffset = m_ScrollOffset;
         }
     }
 }

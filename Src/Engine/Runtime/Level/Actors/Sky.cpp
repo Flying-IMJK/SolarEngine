@@ -20,7 +20,8 @@ namespace SE
     // AtmosphericFogData Fog;
     });
 
-    Sky::Sky() : RenderActor()
+    Sky::Sky(const SpawnParams& params)
+        : RenderActor(params)
         , _shader(nullptr)
         , _psSky(nullptr)
         , _psFog(nullptr)

@@ -8,9 +8,12 @@ namespace SE
 {
 	class IRender;
 
-	SE_CLASS(Reflect)
+	SE_CLASS(Reflect, API, Abstract)
 	class SE_API_RUNTIME ModelInstance : public RenderActor
 	{
+		SCRIPTING_TYPE_NO_SPAWN(ModelInstance);
+		static ModelInstance* Spawn(const SpawnParams& params) { return nullptr; }
+		explicit ModelInstance(const SpawnParams& params);
 		SE_DEFINE_CLASS(ModelInstance, RenderActor);
 
 	public:
@@ -51,8 +54,6 @@ namespace SE
 		/// Updates the model bounds (eg. when mesh has applied significant deformation).
 		/// </summary>
 		virtual void UpdateBounds() = 0;
-
-		ModelInstance();
 
 		// [Actor]
 		void OnLayerChanged() override;

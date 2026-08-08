@@ -23,8 +23,6 @@ namespace SE
 		bool m_IsSaving;
 
 	public:
-		BinaryAsset();
-
 		/// <summary>
 		/// Finalizes an instance of the <see cref="BinaryAsset"/> class.
 		/// </summary>

@@ -8,9 +8,10 @@ namespace SE
 {
 	class GPUBuffer;
 
-	SE_CLASS(Reflect)
+	SE_CLASS(Reflect, API)
 	class SE_API_RUNTIME StaticModel : public ModelInstance
 	{
+		SCRIPTING_TYPE(StaticModel);
 		SE_DEFINE_CLASS(StaticModel, ModelInstance);
 
 	private:
@@ -27,8 +28,6 @@ namespace SE
 		Model* _residencyChangedModel = nullptr;
 		mutable MeshDeformation* _deformation = nullptr;
 	public:
-
-		StaticModel();
 
 		/// <summary>
 		/// Finalizes an instance of the <see cref="StaticModel"/> class.

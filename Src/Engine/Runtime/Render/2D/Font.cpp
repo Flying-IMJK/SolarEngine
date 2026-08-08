@@ -10,12 +10,12 @@ namespace SE
 {
     List<AssetRef<FontAsset>, HeapAllocation> Font::FallbackFonts;
 
-    Font::Font(FontAsset* parentAsset, float size) :
-        _asset(parentAsset)
-        , _size(size)
-        , _characters(512)
+    Font::Font(FontAsset* parentAsset, float size) : ScriptingObject(ScriptingObjectSpawnParams(UID::New(), TypeInitializer))
+                                                     , m_Asset(parentAsset)
+                                                     , m_Size(size)
+                                                     , m_Characters(512)
     {
-        _asset->m_Fonts.Add(this);
+        m_Asset->m_Fonts.Add(this);
 
         // Cache data
         FlushFaceSize();
@@ -30,24 +30,24 @@ namespace SE
 
     Font::~Font()
     {
-        if (_asset)
-            _asset->m_Fonts.Remove(this);
+        if (m_Asset)
+            m_Asset->m_Fonts.Remove(this);
     }
 
     void Font::GetCharacter(Char c, FontCharacterEntry& result, bool enableFallback)
     {
         // Try to get the character or cache it if cannot be found
-        if (!_characters.TryGet(c, result))
+        if (!m_Characters.TryGet(c, result))
         {
             // This thread race condition may happen in editor but in game we usually do all stuff with fonts on main thread (chars caching)
-            Threading::ScopeLock lock(_asset->Locker);
+            Threading::ScopeLock lock(m_Asset->Locker);
 
             // Handle situation when more than one thread wants to get the same character
-            if (_characters.TryGet(c, result))
+            if (m_Characters.TryGet(c, result))
                 return;
 
             // Try to use fallback font if character is missing
-            if (enableFallback && !_asset->ContainsChar(c))
+            if (enableFallback && !m_Asset->ContainsChar(c))
             {
                 for (int32 fallbackIndex = 0; fallbackIndex < FallbackFonts.Count(); fallbackIndex++)
                 {
@@ -65,7 +65,7 @@ namespace SE
             ASSERT(result.Font);
 
             // Add to the dictionary
-            _characters.Add(c, result);
+            m_Characters.Add(c, result);
         }
     }
 
@@ -76,12 +76,12 @@ namespace SE
         if (_hasKerning && !_kerningTable.TryGet(key, kerning))
         {
             // This thread race condition may happen in editor but in game we usually do all stuff with fonts on main thread (chars caching)
-            Threading::ScopeLock lock(_asset->Locker);
+            Threading::ScopeLock lock(m_Asset->Locker);
 
             // Handle situation when more than one thread wants to get the same character
             if (!_kerningTable.TryGet(key, kerning))
             {
-                const FT_Face face = _asset->GetFTFace();
+                const FT_Face face = m_Asset->GetFTFace();
                 ASSERT(face);
 
                 FlushFaceSize();
@@ -110,13 +110,13 @@ namespace SE
 
     void Font::Invalidate()
     {
-        Threading::ScopeLock lock(_asset->Locker);
+        Threading::ScopeLock lock(m_Asset->Locker);
 
-        for (auto i = _characters.begin(); i.IsNotEnd(); ++i)
+        for (auto i = m_Characters.begin(); i.IsNotEnd(); ++i)
         {
             FontManager::Invalidate(i->Value);
         }
-        _characters.Clear();
+        m_Characters.Clear();
     }
 
     void Font::ProcessText(const StringView& text, List<FontLineCache>& outputLines, const TextLayoutOptions& layout)
@@ -455,8 +455,8 @@ namespace SE
     void Font::FlushFaceSize() const
     {
         // Set the character size
-        const FT_Face face = _asset->GetFTFace();
-        const FT_Error error = FT_Set_Char_Size(face, 0, ConvertPixelTo26Dot6<FT_F26Dot6>(_size * FontManager::FontScale), DefaultDPI, DefaultDPI);
+        const FT_Face face = m_Asset->GetFTFace();
+        const FT_Error error = FT_Set_Char_Size(face, 0, ConvertPixelTo26Dot6<FT_F26Dot6>(m_Size * FontManager::FontScale), DefaultDPI, DefaultDPI);
         if (error)
         {
             LOG_FT_ERROR(error);
@@ -468,6 +468,6 @@ namespace SE
 
     String Font::ToString() const
     {
-        return String::Format(SE_TEXT("Font {0} {1}"), _asset ? _asset->GetFamilyName() : String::Empty, _size);
+        return String::Format(SE_TEXT("Font {0} {1}"), m_Asset ? m_Asset->GetFamilyName() : String::Empty, m_Size);
     }
 } // SE

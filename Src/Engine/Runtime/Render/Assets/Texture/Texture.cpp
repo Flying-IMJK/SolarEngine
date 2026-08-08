@@ -14,12 +14,12 @@ namespace SE
 	TextureFormatType Texture::GetFormatType() const
 	{
 
-		return _texture.GetFormatType();
+		return m_Texture.GetFormatType();
 	}
 
 	bool Texture::IsNormalMap() const
 	{
-		return _texture.GetFormatType() == TextureFormatType::NormalMap;
+		return m_Texture.GetFormatType() == TextureFormatType::NormalMap;
 	}
 
 	uint32 Texture::GetSerializedVersion() const

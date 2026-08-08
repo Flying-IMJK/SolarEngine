@@ -1,0 +1,273 @@
+{
+  "communities": {
+    "0": [
+      "actorgraphnode_h_list",
+      "itype",
+      "scenesgraphnode_cpp_rootgraphnode",
+      "scenesgraphnode_cpp_transform",
+      "scenesgraphnode_cpp_uid",
+      "scenesgraphnode_h_list",
+      "scenesgraphnode_h_scenesgraphnode",
+      "scenesgraphnode_h_transform",
+      "scenesgraphnode_h_uid",
+      "scenesgraphnode_object",
+      "scenesgraphnode_rootgraphnode",
+      "scenesgraphnode_scenesgraphnode",
+      "scenesgraphnode_scenesgraphnode_childnodes",
+      "scenesgraphnode_scenesgraphnode_geteditableobject",
+      "scenesgraphnode_scenesgraphnode_getid",
+      "scenesgraphnode_scenesgraphnode_getname",
+      "scenesgraphnode_scenesgraphnode_getorderinparent",
+      "scenesgraphnode_scenesgraphnode_getparentnode",
+      "scenesgraphnode_scenesgraphnode_getparentscene",
+      "scenesgraphnode_scenesgraphnode_getroot",
+      "scenesgraphnode_scenesgraphnode_gettransform",
+      "scenesgraphnode_scenesgraphnode_m_id",
+      "scenesgraphnode_scenesgraphnode_m_orderinparent",
+      "scenesgraphnode_scenesgraphnode_m_transform",
+      "scenesgraphnode_scenesgraphnode_ondispose",
+      "scenesgraphnode_scenesgraphnode_onparentchanged",
+      "scenesgraphnode_scenesgraphnode_parentnode",
+      "scenesgraphnode_scenesgraphnode_scenesgraphnode",
+      "scenesgraphnode_scenesgraphnode_setorderinparent",
+      "scenesgraphnode_scenesgraphnode_setparentnode",
+      "scenesgraphnode_scenesgraphnode_settransform"
+    ],
+    "1": [
+      "actorgraphnode_actor",
+      "actorgraphnode_actorgraphnode",
+      "actorgraphnode_actorgraphnode_actor",
+      "actorgraphnode_actorgraphnode_actorchildnodes",
+      "actorgraphnode_actorgraphnode_actorgraphnode",
+      "actorgraphnode_actorgraphnode_addchildnode",
+      "actorgraphnode_actorgraphnode_disposechildnodes",
+      "actorgraphnode_actorgraphnode_find",
+      "actorgraphnode_actorgraphnode_findchildactor",
+      "actorgraphnode_actorgraphnode_getactor",
+      "actorgraphnode_actorgraphnode_geteditableobject",
+      "actorgraphnode_actorgraphnode_getname",
+      "actorgraphnode_actorgraphnode_getparentscene",
+      "actorgraphnode_actorgraphnode_gettreenode",
+      "actorgraphnode_actorgraphnode_linktreenode",
+      "actorgraphnode_actorgraphnode_onparentchanged",
+      "actorgraphnode_actorgraphnode_treenode",
+      "actorgraphnode_actortreenode",
+      "actorgraphnode_cpp_actorchildnode",
+      "actorgraphnode_cpp_actorgraphnode",
+      "actorgraphnode_cpp_string",
+      "actorgraphnode_cpp_uid"
+    ],
+    "2": [
+      "actorchildnode_actorchildnode",
+      "actorchildnode_actorchildnode_actorchildnode",
+      "actorchildnode_actorchildnode_dispose",
+      "actorchildnode_actorchildnode_getcanbeselecteddirectly",
+      "actorchildnode_actorchildnode_getname",
+      "actorchildnode_actorchildnode_getorderinparent",
+      "actorchildnode_actorchildnode_gettransform",
+      "actorchildnode_actorchildnode_index",
+      "actorchildnode_actorchildnode_setorderinparent",
+      "actorchildnode_actorchildnode_settransform",
+      "actorchildnode_actorgraphnode",
+      "actorchildnode_cpp_actorchildnode",
+      "actorchildnode_cpp_string",
+      "actorchildnode_h_actorchildnode",
+      "actorchildnode_h_uid",
+      "actorchildnode_tactorchildnode",
+      "actorchildnode_tactorchildnode_node",
+      "actorchildnode_tactorchildnode_ondispose",
+      "actorchildnode_tactorchildnode_tactorchildnode",
+      "scenesgraphnode_scenesgraphnode_dispose",
+      "t"
+    ],
+    "3": [
+      "rootgraphnode_cpp_rootgraphnode",
+      "rootgraphnode_cpp_transform",
+      "rootgraphnode_cpp_uid",
+      "rootgraphnode_h_actorgraphnode",
+      "rootgraphnode_h_rootgraphnode",
+      "rootgraphnode_h_string",
+      "rootgraphnode_rootgraphnode",
+      "rootgraphnode_rootgraphnode_getname",
+      "rootgraphnode_rootgraphnode_getparentscene",
+      "rootgraphnode_rootgraphnode_getroot",
+      "rootgraphnode_rootgraphnode_gettransform",
+      "rootgraphnode_rootgraphnode_onactorchildnodesdispose",
+      "rootgraphnode_rootgraphnode_rootgraphnode",
+      "rootgraphnode_rootgraphnode_settransform",
+      "rootgraphnode_rootgraphnode_spawn"
+    ],
+    "4": [
+      "actor_cameragraphnode_cameragraphnode",
+      "actor_cameragraphnode_cameragraphnode_cameragraphnode",
+      "actor_cameragraphnode_cpp_actor_cameragraphnode",
+      "actor_cameragraphnode_h_actor_cameragraphnode",
+      "actor_cameragraphnode_h_actorgraphnode",
+      "actor_skygraphnode_cpp_actor_skygraphnode",
+      "actor_skygraphnode_h_actor_skygraphnode",
+      "actor_skygraphnode_h_actorgraphnode",
+      "actor_skygraphnode_skygraphnode",
+      "actor_skygraphnode_skygraphnode_skygraphnode",
+      "actorgraphnode_actorchildnode",
+      "actorgraphnode_h_actorgraphnode",
+      "actorgraphnode_rootgraphnode"
+    ],
+    "5": [
+      "actor_scenegraphnode_cpp_actor_scenegraphnode",
+      "actor_scenegraphnode_h_actor_scenegraphnode",
+      "actor_scenegraphnode_h_actorgraphnode",
+      "actor_scenegraphnode_scene",
+      "actor_scenegraphnode_scenegraphnode",
+      "actor_scenegraphnode_scenegraphnode_getisedited",
+      "actor_scenegraphnode_scenegraphnode_getscene",
+      "actor_scenegraphnode_scenegraphnode_isedited",
+      "actor_scenegraphnode_scenegraphnode_scenegraphnode",
+      "actor_scenegraphnode_scenegraphnode_setisedited"
+    ],
+    "6": [
+      "actor_directionallightgraphnode_cpp_actor_directionallightgraphnode",
+      "actor_directionallightgraphnode_directionallightgraphnode",
+      "actor_directionallightgraphnode_directionallightgraphnode_directionallightgraphnode",
+      "actor_directionallightgraphnode_h_actor_directionallightgraphnode",
+      "actor_directionallightgraphnode_h_actorgraphnode"
+    ],
+    "7": [
+      "actor_pointlightgraphnode_cpp_actor_pointlightgraphnode",
+      "actor_pointlightgraphnode_h_actor_pointlightgraphnode",
+      "actor_pointlightgraphnode_h_actorgraphnode",
+      "actor_pointlightgraphnode_pointlightgraphnode",
+      "actor_pointlightgraphnode_pointlightgraphnode_pointlightgraphnode"
+    ],
+    "8": [
+      "actor_staticmodelgraphnode_cpp_actor_staticmodelgraphnode",
+      "actor_staticmodelgraphnode_h_actor_staticmodelgraphnode",
+      "actor_staticmodelgraphnode_h_actorgraphnode",
+      "actor_staticmodelgraphnode_staticmodelgraphnode",
+      "actor_staticmodelgraphnode_staticmodelgraphnode_staticmodelgraphnode"
+    ]
+  },
+  "cohesion": {
+    "0": 0.07526881720430108,
+    "1": 0.16017316017316016,
+    "2": 0.11904761904761904,
+    "3": 0.17142857142857143,
+    "4": 0.15384615384615385,
+    "5": 0.3111111111111111,
+    "6": 0.4,
+    "7": 0.4,
+    "8": 0.4
+  },
+  "gods": [
+    {
+      "id": "scenesgraphnode_scenesgraphnode",
+      "label": "ScenesGraphNode",
+      "degree": 33
+    },
+    {
+      "id": "actorgraphnode_actorgraphnode",
+      "label": "ActorGraphNode",
+      "degree": 20
+    },
+    {
+      "id": "actorchildnode_actorchildnode",
+      "label": "ActorChildNode",
+      "degree": 12
+    },
+    {
+      "id": "actorgraphnode_actor",
+      "label": "Actor",
+      "degree": 12
+    },
+    {
+      "id": "rootgraphnode_rootgraphnode",
+      "label": "RootGraphNode",
+      "degree": 9
+    },
+    {
+      "id": "actorgraphnode_actortreenode",
+      "label": "ActorTreeNode",
+      "degree": 7
+    },
+    {
+      "id": "actorchildnode_tactorchildnode",
+      "label": "TActorChildNode",
+      "degree": 6
+    },
+    {
+      "id": "actor_scenegraphnode_scene",
+      "label": "Scene",
+      "degree": 6
+    },
+    {
+      "id": "actor_scenegraphnode_scenegraphnode",
+      "label": "SceneGraphNode",
+      "degree": 6
+    },
+    {
+      "id": "actorgraphnode_actorgraphnode_actorgraphnode",
+      "label": "ActorGraphNode::ActorGraphNode()",
+      "degree": 4
+    }
+  ],
+  "surprises": [
+    {
+      "source": "CameraGraphNode::CameraGraphNode()",
+      "target": "Actor",
+      "source_files": [
+        "Actor/CameraGraphNode.cpp",
+        "ActorGraphNode.h"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `CameraGraphNode::CameraGraphNode()` unexpectedly reaches hub `Actor`"
+    },
+    {
+      "source": "DirectionalLightGraphNode::DirectionalLightGraphNode()",
+      "target": "Actor",
+      "source_files": [
+        "Actor/DirectionalLightGraphNode.cpp",
+        "ActorGraphNode.h"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `DirectionalLightGraphNode::DirectionalLightGraphNode()` unexpectedly reaches hub `Actor`"
+    },
+    {
+      "source": "PointLightGraphNode::PointLightGraphNode()",
+      "target": "Actor",
+      "source_files": [
+        "Actor/PointLightGraphNode.cpp",
+        "ActorGraphNode.h"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `PointLightGraphNode::PointLightGraphNode()` unexpectedly reaches hub `Actor`"
+    },
+    {
+      "source": "SkyGraphNode::SkyGraphNode()",
+      "target": "Actor",
+      "source_files": [
+        "Actor/SkyGraphNode.cpp",
+        "ActorGraphNode.h"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `SkyGraphNode::SkyGraphNode()` unexpectedly reaches hub `Actor`"
+    },
+    {
+      "source": "StaticModelGraphNode::StaticModelGraphNode()",
+      "target": "Actor",
+      "source_files": [
+        "Actor/StaticModelGraphNode.cpp",
+        "ActorGraphNode.h"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `StaticModelGraphNode::StaticModelGraphNode()` unexpectedly reaches hub `Actor`"
+    }
+  ],
+  "tokens": {
+    "input": 0,
+    "output": 0
+  }
+}

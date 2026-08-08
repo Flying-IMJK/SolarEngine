@@ -10,7 +10,7 @@ namespace SE
     SE_CLASS(Reflect, API, NoSpawn)
     class SE_API_RUNTIME MaterialInstance : public MaterialBase
     {
-        SE_DEFINE_CLASS_DEFAULT(MaterialInstance, MaterialBase);
+        SE_DEFINE_CLASS(MaterialInstance, MaterialBase);
         ASSET_HEADER(MaterialInstance);
     private:
         MaterialBase* _baseMaterial = nullptr;

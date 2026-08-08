@@ -3,6 +3,7 @@
 #include "Runtime/Core/Types/Object.h"
 #include "Runtime/Core/Serialization/ISerializable.h"
 #include "Runtime/API.h"
+#include "Runtime/Core/Scripting/ScriptingObject.h"
 
 namespace SE
 {
@@ -25,10 +26,11 @@ namespace SE
 		void OnDone();
 	};
 
-	SE_CLASS(Reflect)
-	class SE_API_RUNTIME SceneObject : public Object, public ISerializable
+	SE_CLASS(Reflect, API, NoSpawn, Abstract)
+	class SE_API_RUNTIME SceneObject : public ScriptingObject, public ISerializable
 	{
-		SE_DEFINE_CLASS(SceneObject, Object);
+		SCRIPTING_TYPE_NO_SPAWN(SceneObject);
+		SE_DEFINE_CLASS(SceneObject, ScriptingObject);
 
 		friend class PrefabInstanceData;
 		friend class PrefabManager;
@@ -40,7 +42,11 @@ namespace SE
 		UID m_PrefabObjectID;
 		bool m_IsDuringPlay;
 	public:
-		SceneObject();
+		/// <summary>
+		/// Initializes a new instance of the <see cref="SceneObject"/> class.
+		/// </summary>
+		/// <param name="params">The object initialization parameters.</param>
+		SceneObject(const SpawnParams& params);
 		~SceneObject() override;
 
 
@@ -63,6 +69,7 @@ namespace SE
 		/// <summary>
 		/// Gets the parent actor (or null if object has no parent).
 		/// </summary>
+		SE_PROPERTY(API, ReadOnly)
 		FORCE_INLINE Actor* GetParent() const
 		{
 			return m_Parent;
@@ -88,6 +95,7 @@ namespace SE
 		/// Gets the scene object ID.
 		/// </summary>
 		/// <returns>The scene object ID.</returns>
+		SE_PROPERTY(API, ReadOnly)
 		virtual const UID& GetSceneObjectId() const = 0;
 
 		/// <summary>

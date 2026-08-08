@@ -15,11 +15,11 @@ namespace SE.Editor.GUI
 
     public abstract class TexturePreviewBase : ContainerControl
     {
-        private GuiRect _textureRect;
-        private GuiPoint _lastMousePos;
-        private GuiPoint _viewPos;
-        private float _viewScale = 1.0f;
-        private bool _isMouseDown;
+        private Rectangle m_TextureRect;
+        private Float2 m_LastMousePos;
+        private Float2 m_ViewPos;
+        private float m_ViewScale = 1.0f;
+        private bool m_IsMouseDown;
 
         protected TexturePreviewBase()
             : base(new Rectangle(0, 0, 256, 256))
@@ -27,71 +27,78 @@ namespace SE.Editor.GUI
             SetBounds(0, 0, 256, 256);
         }
 
-        public GuiRect TextureRect => _textureRect;
-        public GuiPoint ViewPosition => _viewPos;
-        public float ViewScale => _viewScale;
-        public bool IsMouseDown => _isMouseDown;
+        public Rectangle TextureRect => m_TextureRect;
+        public Float2 ViewPosition => m_ViewPos;
+        public float ViewScale => m_ViewScale;
+        public bool IsMouseDown => m_IsMouseDown;
 
         public void CenterView()
         {
-            _viewPos = GuiPoint.Zero;
-            _viewScale = 1.0f;
+            m_ViewPos = Float2.Zero;
+            m_ViewScale = 1.0f;
             UpdateTextureRect();
         }
 
-        public void BeginMove(GuiPoint location)
+        public void BeginMove(Float2 location)
         {
-            _lastMousePos = location;
-            _isMouseDown = true;
+            m_LastMousePos = location;
+            m_IsMouseDown = true;
         }
 
-        public void Move(GuiPoint location)
+        public void Move(Float2 location)
         {
-            if (!_isMouseDown)
+            if (!m_IsMouseDown)
                 return;
 
-            _viewPos = new GuiPoint(_viewPos.X + location.X - _lastMousePos.X, _viewPos.Y + location.Y - _lastMousePos.Y);
-            _lastMousePos = location;
+            m_ViewPos = new Float2(m_ViewPos.X + location.X - m_LastMousePos.X, m_ViewPos.Y + location.Y - m_LastMousePos.Y);
+            m_LastMousePos = location;
             UpdateTextureRect();
         }
 
         public void EndMove()
         {
-            _isMouseDown = false;
+            m_IsMouseDown = false;
         }
 
         public void Zoom(float delta)
         {
-            _viewScale = Math.Clamp(_viewScale + delta * 0.1f, 0.05f, 32.0f);
+            m_ViewScale = Math.Clamp(m_ViewScale + delta * 0.1f, 0.05f, 32.0f);
             UpdateTextureRect();
         }
 
         protected void UpdateTextureRect()
         {
-            _textureRect = CalculateTextureRect();
+            m_TextureRect = CalculateTextureRect();
         }
 
-        protected abstract GuiRect CalculateTextureRect();
+        protected abstract Rectangle CalculateTextureRect();
 
-        protected static GuiRect CalculateTextureRect(GuiSize textureSize, GuiSize viewSize)
+        protected static Rectangle CalculateTextureRect(Float2 textureSize, Float2 viewSize)
         {
-            if (textureSize.Width <= 0 || textureSize.Height <= 0 || viewSize.Width <= 0 || viewSize.Height <= 0)
-                return new GuiRect(0, 0, 0, 0);
-
-            float scale = Math.Min(viewSize.Width / textureSize.Width, viewSize.Height / textureSize.Height);
-            float width = textureSize.Width * scale;
-            float height = textureSize.Height * scale;
-            return new GuiRect((viewSize.Width - width) * 0.5f, (viewSize.Height - height) * 0.5f, width, height);
+            Float2 size = Float2.Max(textureSize, Float2.One);
+            float aspectRatio = size.X / size.Y;
+            float h = viewSize.X / aspectRatio;
+            float w = viewSize.Y * aspectRatio;
+            if (w > h)
+            {
+                float diff = (viewSize.Y - h) * 0.5f;
+                return new Rectangle(0, diff, viewSize.X, h);
+            }
+            else
+            {
+                float diff = (viewSize.X - w) * 0.5f;
+                return new Rectangle(diff, 0, w, viewSize.Y);
+            }
         }
 
-        protected GuiRect GetTextureViewRect()
+        protected Rectangle GetTextureViewRect()
         {
-            GuiRect rect = _textureRect;
-            return new GuiRect(
-                rect.X + _viewPos.X,
-                rect.Y + _viewPos.Y,
-                rect.Width * _viewScale,
-                rect.Height * _viewScale);
+            Rectangle rect = m_TextureRect;
+            return new Rectangle(
+                rect.X + m_ViewPos.X,
+                rect.Y + m_ViewPos.Y,
+                rect.Width * m_ViewScale,
+                rect.Height * m_ViewScale);
         }
 
         protected override void OnBoundsChanged(bool locationChanged, bool sizeChanged)
@@ -104,22 +111,22 @@ namespace SE.Editor.GUI
     public sealed class SimpleTexturePreview : TexturePreviewBase
     {
         public object? Asset { get; set; }
-        public GuiSize TextureSize { get; set; } = new GuiSize(100, 100);
+        public Float2 TextureSize { get; set; } = new Float2(100, 100);
 
-        protected override GuiRect CalculateTextureRect()
+        protected override Rectangle CalculateTextureRect()
         {
-            return CalculateTextureRect(TextureSize, new GuiSize(Width, Height));
+            return CalculateTextureRect(TextureSize, new Float2(Width, Height));
         }
     }
 
     public sealed class SimpleSpriteAtlasPreview : TexturePreviewBase
     {
         public object? Asset { get; set; }
-        public GuiSize AtlasSize { get; set; } = new GuiSize(100, 100);
+        public Float2 AtlasSize { get; set; } = new Float2(100, 100);
 
-        protected override GuiRect CalculateTextureRect()
+        protected override Rectangle CalculateTextureRect()
         {
-            return CalculateTextureRect(AtlasSize, new GuiSize(Width, Height));
+            return CalculateTextureRect(AtlasSize, new Float2(Width, Height));
         }
     }
 }

@@ -2,7 +2,7 @@ namespace SE.Editor.GUI
 {
     public sealed class FloatWindowDockPanel : DockPanel
     {
-        private SE.GUI.WindowRootControl? _hostRoot;
+        private SE.GUI.WindowRootControl? m_HostRoot;
 
         public FloatWindowDockPanel(MasterDockPanel masterPanel)
             : base(null)
@@ -34,8 +34,8 @@ namespace SE.Editor.GUI
         internal void AttachHostWindow(SE.Window window)
         {
             HostWindow = window;
-            _hostRoot = window.GUI;
-            _hostRoot.SizeChanged += OnHostRootSizeChanged;
+            m_HostRoot = window.GUI;
+            m_HostRoot.SizeChanged += OnHostRootSizeChanged;
         }
 
         protected override void OnLastTabRemoved()
@@ -59,10 +59,10 @@ namespace SE.Editor.GUI
 
         protected override void OnDispose()
         {
-            if (_hostRoot != null)
+            if (m_HostRoot != null)
             {
-                _hostRoot.SizeChanged -= OnHostRootSizeChanged;
-                _hostRoot = null;
+                m_HostRoot.SizeChanged -= OnHostRootSizeChanged;
+                m_HostRoot = null;
             }
 
             MasterPanel.FloatingPanels.Remove(this);

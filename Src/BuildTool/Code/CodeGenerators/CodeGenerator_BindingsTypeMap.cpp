@@ -17,9 +17,19 @@ namespace SE::BuildTool
         std::string publicFullName;
     };
 
+    struct ApiInteropStructInfo
+    {
+        std::string nativeName;
+        std::string nativeFullName;
+        std::string publicName;
+        std::string publicFullName;
+        std::string cppInteropName;
+    };
+
     static std::vector<ApiTypeNameAlias> s_apiTypeNameAliases;
     static std::vector<std::string> s_scriptingObjectTypeNames;
     static std::vector<std::string> s_nativeObjectTypeNames;
+    static std::vector<ApiInteropStructInfo> s_apiInteropStructTypes;
 
     static std::string StripCppKeywordPrefixes(const std::string& cppType)
     {
@@ -119,6 +129,12 @@ namespace SE::BuildTool
 
         std::string unqualified = GetUnqualifiedTypeName(stripped);
         return FindTypeMapping(unqualified.c_str());
+    }
+
+    bool IsStringType(const std::string& cppType)
+    {
+        const TypeMapping* mapping = FindTypeMappingNormalized(cppType);
+        return mapping && mapping->isString;
     }
 
     // -------------------------------------------------------------------------
@@ -223,6 +239,7 @@ namespace SE::BuildTool
         s_apiTypeNameAliases.clear();
         s_scriptingObjectTypeNames.clear();
         s_nativeObjectTypeNames.clear();
+        s_apiInteropStructTypes.clear();
     }
 
     void RegisterApiTypeNameAlias(const std::string& nativeName,
@@ -259,6 +276,56 @@ namespace SE::BuildTool
             s_nativeObjectTypeNames.push_back(NormalizeCppNameForAlias(nativeName));
         if (!nativeFullName.empty())
             s_nativeObjectTypeNames.push_back(NormalizeCppNameForAlias(nativeFullName));
+    }
+
+    void RegisterApiInteropStructType(const std::string& nativeName,
+                                      const std::string& nativeFullName,
+                                      const std::string& publicName,
+                                      const std::string& publicFullName)
+    {
+        if (nativeName.empty() || publicName.empty())
+            return;
+
+        ApiInteropStructInfo info;
+        info.nativeName = NormalizeCppNameForAlias(nativeName);
+        info.nativeFullName = NormalizeCppNameForAlias(nativeFullName);
+        info.publicName = publicName;
+        info.publicFullName = publicFullName.empty() ? publicName : publicFullName;
+        info.cppInteropName = info.nativeFullName;
+        Utils::String::ReplaceAll(info.cppInteropName, "::", "_");
+        s_apiInteropStructTypes.push_back(std::move(info));
+    }
+
+    static const ApiInteropStructInfo* FindApiInteropStructType(const std::string& cppType)
+    {
+        std::string stripped = NormalizeCppNameForAlias(StripTypeQualifiers(cppType));
+        std::string unqualified = GetUnqualifiedTypeName(stripped);
+        for (auto const& info : s_apiInteropStructTypes)
+        {
+            if (stripped == info.nativeName || stripped == info.nativeFullName
+                || unqualified == info.nativeName)
+            {
+                return &info;
+            }
+        }
+        return nullptr;
+    }
+
+    bool IsApiInteropStructType(const std::string& cppType)
+    {
+        return FindApiInteropStructType(cppType) != nullptr;
+    }
+
+    std::string GetApiInteropStructCppType(const std::string& cppType)
+    {
+        const ApiInteropStructInfo* info = FindApiInteropStructType(cppType);
+        return info ? Utils::String::Format("::SE::BindingsInterop::{0}", info->cppInteropName) : std::string();
+    }
+
+    std::string GetApiInteropStructMarshallerType(const std::string& cppType)
+    {
+        const ApiInteropStructInfo* info = FindApiInteropStructType(cppType);
+        return info ? Utils::String::Format("{0}Marshaller", info->publicFullName) : std::string();
     }
 
     static bool IsNativePointer(const std::string& cppType)
@@ -323,20 +390,160 @@ namespace SE::BuildTool
         return result;
     }
 
+    static bool AreEquivalentPropertyTemplateArguments(const std::vector<std::string>& left,
+                                                       const std::vector<std::string>& right)
+    {
+        if (left.size() != right.size())
+            return false;
+
+        for (int i = 0; i < left.size(); ++i)
+        {
+            if (StripTypeQualifiers(left[i]) != StripTypeQualifiers(right[i]))
+                return false;
+        }
+        return true;
+    }
+
+    static bool HaveMatchingPropertyTypeShape(const CppTypeInfo& getterType,
+                                              const CppTypeInfo& setterType)
+    {
+        return getterType.isPointer == setterType.isPointer
+            && getterType.isArray == setterType.isArray
+            && getterType.arraySize == setterType.arraySize;
+    }
+
+    static bool IsStringPropertyAccessorType(const CppTypeInfo& type)
+    {
+        if (type.isPointer || type.isArray || !type.genericArgs.empty())
+            return false;
+
+        const std::string baseType = GetUnqualifiedTypeName(type.baseType);
+        return baseType == "String" || baseType == "StringView";
+    }
+
+    bool ArePropertyAccessorTypesCompatible(const std::string& getterType,
+                                            const std::string& setterType)
+    {
+        if (StripTypeQualifiers(getterType) == StripTypeQualifiers(setterType))
+            return true;
+
+        CppTypeInfo getter;
+        CppTypeInfo setter;
+        getter.Parse(getterType);
+        setter.Parse(setterType);
+
+        if (!HaveMatchingPropertyTypeShape(getter, setter))
+            return false;
+
+        // A StringView setter is the non-owning counterpart of a String getter.
+        if (IsStringPropertyAccessorType(getter) && IsStringPropertyAccessorType(setter))
+            return true;
+
+        // Managed arrays can bridge native owning arrays and non-owning spans,
+        // provided that their element type is exactly the same.
+        const std::string getterBase = GetUnqualifiedTypeName(getter.baseType);
+        const std::string setterBase = GetUnqualifiedTypeName(setter.baseType);
+        const bool isArraySpanPair = (getterBase == "Array" && setterBase == "Span")|| (getterBase == "Span" && setterBase == "Array");
+        return isArraySpanPair
+            && getter.genericArgs.size() == 1
+            && AreEquivalentPropertyTemplateArguments(getter.genericArgs, setter.genericArgs);
+    }
+
+    CollectionAbiInfo GetCollectionAbiInfo(const std::string& cppType, int fixedArraySize)
+    {
+        CollectionAbiInfo result;
+        CppTypeInfo type;
+        type.Parse(cppType);
+
+        const int arraySize = fixedArraySize > 0 ? fixedArraySize : type.arraySize;
+        if (arraySize > 0)
+        {
+            result.kind = CollectionAbiKind::Fixed;
+            result.fixedElementCount = arraySize;
+            result.elementCppType = type.baseType;
+            return result;
+        }
+
+        const std::string baseType = GetUnqualifiedTypeName(type.baseType);
+        if (baseType == "BytesContainer")
+        {
+            result.kind = CollectionAbiKind::Variable;
+            result.elementCppType = "uint8";
+            return result;
+        }
+
+        // These native types are contiguous and can share the T[] ABI. Other
+        // collection shapes (Dictionary, HashSet, BitArray) retain their own
+        // marshalling contract.
+        if ((baseType == "Array" || baseType == "Span" || baseType == "List" || baseType == "DataContainer")
+            && type.genericArgs.size() >= 1)
+        {
+            result.kind = CollectionAbiKind::Variable;
+            result.elementCppType = StripTypeQualifiers(type.genericArgs[0]);
+        }
+        return result;
+    }
+
+    std::string GetCSharpFullTypeName(const std::string& cppType)
+    {
+        const TypeMapping* mapping = FindTypeMappingNormalized(cppType);
+        if (mapping)
+        {
+            const std::string publicType = mapping->csType;
+            if (publicType == "bool") return "System.Boolean";
+            if (publicType == "sbyte") return "System.SByte";
+            if (publicType == "byte") return "System.Byte";
+            if (publicType == "short") return "System.Int16";
+            if (publicType == "ushort") return "System.UInt16";
+            if (publicType == "int") return "System.Int32";
+            if (publicType == "uint") return "System.UInt32";
+            if (publicType == "long") return "System.Int64";
+            if (publicType == "ulong") return "System.UInt64";
+            if (publicType == "float") return "System.Single";
+            if (publicType == "double") return "System.Double";
+            if (publicType == "char") return "System.Char";
+            if (publicType == "string") return "System.String";
+            if (publicType == "object") return "System.Object";
+            return publicType;
+        }
+
+        const std::string stripped = NormalizeCppNameForAlias(StripTypeQualifiers(cppType));
+        const std::string unqualified = GetUnqualifiedTypeName(stripped);
+        for (auto const& alias : s_apiTypeNameAliases)
+        {
+            if ((!alias.nativeFullName.empty() && stripped == alias.nativeFullName)
+                || stripped == alias.nativeName || unqualified == alias.nativeName)
+            {
+                return alias.publicFullName;
+            }
+        }
+        return ToCSharpQualifiedName(stripped);
+    }
+
     // -------------------------------------------------------------------------
     // C# type resolution
     // -------------------------------------------------------------------------
 
     std::string GetCSharpInteropType(const std::string& cppType)
     {
+        return GetCSharpInteropType(cppType, 0);
+    }
+
+    std::string GetCSharpInteropType(const std::string& cppType, int fixedArraySize)
+    {
         std::string stripped = StripTypeQualifiers(cppType);
+
+        const CollectionAbiInfo collection = GetCollectionAbiInfo(cppType, fixedArraySize);
+        if (collection.IsCollection())
+        {
+            return GetCSharpPublicType(collection.elementCppType) + "[]";
+        }
 
         // Check for known type mappings first
         const TypeMapping* mapping = FindTypeMappingNormalized(stripped);
         if (mapping)
         {
-            if (mapping->isString)
-                return std::string("string");
+            if (mapping->isString) return std::string("string");
             return std::string(mapping->csInterop);
         }
 
@@ -352,21 +559,16 @@ namespace SE::BuildTool
         if (IsNativePointer(cppType))
             return std::string("IntPtr");
 
-        // Collection types → use public type with special marshalling
-        if (Utils::String::StartsWith(stripped, "Array<") || Utils::String::StartsWith(stripped, "Span<")
-            || Utils::String::StartsWith(stripped, "List<") || Utils::String::StartsWith(stripped, "DataContainer<")
-            || Utils::String::StartsWith(stripped, "BytesContainer"))
+        if (Utils::String::StartsWith(stripped, "Dictionary<") || Utils::String::StartsWith(stripped, "HashSet<"))
         {
-            // Element type resolution happens in marshal attributes
             return std::string("IntPtr");
         }
 
-        if (Utils::String::StartsWith(stripped, "Dictionary<") || Utils::String::StartsWith(stripped, "HashSet<"))
-            return std::string("IntPtr");
-
         // BitArray → bool[]
         if (stripped == "BitArray")
+        {
             return std::string("IntPtr");
+        }
 
         // Unknown value/enum/struct type: keep a stable C# type name so public
         // wrappers and P/Invoke signatures agree. Pointer/object cases are
@@ -376,30 +578,48 @@ namespace SE::BuildTool
 
     std::string GetCSharpPublicType(const std::string& cppType)
     {
+        return GetCSharpPublicType(cppType, 0);
+    }
+
+    std::string GetCSharpPublicType(const std::string& cppType, int fixedArraySize)
+    {
         std::string stripped = StripTypeQualifiers(cppType);
+        const CollectionAbiInfo collection = GetCollectionAbiInfo(cppType, fixedArraySize);
+        if (collection.IsCollection())
+        {
+            return GetCSharpPublicType(collection.elementCppType) + "[]";
+        }
         const TypeMapping* mapping = FindTypeMappingNormalized(stripped);
         if (mapping)
+        {
             return std::string(mapping->csType);
+        }
 
         if (stripped == "ScriptingObject" || stripped == "SE::ScriptingObject"
             || stripped == "ManagedScriptingObject" || stripped == "SE::ManagedScriptingObject"
             || stripped == "PersistentScriptingObject" || stripped == "SE::PersistentScriptingObject")
         {
-            return std::string("SE.Scripting.ScriptingObject");
+            return std::string("SE.Object");
         }
 
         // ScriptingObject-derived pointer: use the class name
         if (IsScriptingObjectPointer(cppType))
+        {
             return ResolveCSharpTypeNameAlias(stripped);
+        }
 
         if (IsNativeApiObjectPointer(cppType))
+        {
             return ResolveCSharpTypeNameAlias(stripped);
+        }
 
         // A pointer to a native type that is not itself API is represented by a
         // generated, strongly typed opaque handle. This preserves overloads
         // between unrelated native pointer types.
         if (IsNativePointer(cppType))
+        {
             return ResolveCSharpTypeNameAlias(stripped);
+        }
 
         // Object reference types: resolve generic argument
         if (IsObjectTypeRef(cppType))
@@ -409,7 +629,9 @@ namespace SE::BuildTool
             if (ltPos != INVALID_INDEX && gtPos != INVALID_INDEX && gtPos > ltPos)
             {
                 std::string innerType = stripped.substr(ltPos + 1, gtPos - ltPos - 1);
-                return ResolveCSharpTypeNameAlias(StripTypeQualifiers(innerType));
+                {
+                    return ResolveCSharpTypeNameAlias(StripTypeQualifiers(innerType));
+                }
             }
             return ResolveCSharpTypeNameAlias(stripped);
         }
@@ -506,7 +728,9 @@ namespace SE::BuildTool
         }
 
         if (IsObjectTypeRef(cppType))
+        {
             return varName; // handled by marshal attributes
+        }
 
         return varName; // blittable or handled by marshalling
     }
@@ -519,7 +743,7 @@ namespace SE::BuildTool
             return varName; // LibraryImport StringMarshalling handles strings
 
         if (IsScriptingObjectPointer(cppType))
-            return Utils::String::Format("{0} != null ? {0}.__unmanagedPtr : IntPtr.Zero", varName);
+            return Utils::String::Format("Object.GetUnmanagedPtr({0})", varName);
 
         if (IsNativeApiObjectPointer(cppType))
             return Utils::String::Format("{0} != null ? {0}.__unmanagedPtr : IntPtr.Zero", varName);
@@ -530,8 +754,8 @@ namespace SE::BuildTool
         if (IsObjectTypeRef(cppType))
             return Utils::String::Format("{0} != null ? {0}.__unmanagedPtr : IntPtr.Zero", varName);
 
-        if (IsCollectionType(cppType))
-            return std::string("IntPtr.Zero");
+        if (GetCollectionAbiInfo(cppType).IsCollection())
+            return varName;
 
         return varName; // blittable
     }
@@ -633,88 +857,131 @@ namespace SE::BuildTool
     // Marshal attribute generation
     // -------------------------------------------------------------------------
 
-    std::string GetCSharpParamMarshalAttribute(const std::string& cppType, const std::string& paramName)
+    std::string GetCSharpParamMarshalAttribute(const std::string& cppType, const std::string& paramName,
+                                               int fixedArraySize)
     {
         std::string stripped = StripTypeQualifiers(cppType);
+        const CollectionAbiInfo collection = GetCollectionAbiInfo(cppType, fixedArraySize);
+
+        if (collection.IsCollection())
+        {
+            if (collection.kind == CollectionAbiKind::Fixed)
+            {
+                return Utils::String::Format("[MarshalUsing(typeof(SE.Interop.ArrayMarshaller<,>), ConstantElementCount = {0}), In]",
+                    collection.fixedElementCount);
+            }
+            const std::string countName = Utils::String::Format("__{0}Count", paramName);
+            return Utils::String::Format("[MarshalUsing(typeof(SE.Interop.ArrayMarshaller<,>), CountElementName = nameof({0})), In]", countName);
+        }
 
         // bool → U1
         if (stripped == "bool")
+        {
             return std::string("[MarshalAs(UnmanagedType.U1)]");
+        }
 
         // char → I2
         if (stripped == "Char")
+        {
             return std::string("[MarshalAs(UnmanagedType.I2)]");
+        }
+
+        std::string structMarshaller = GetApiInteropStructMarshallerType(cppType);
+        if (!structMarshaller.empty())
+        {
+            return Utils::String::Format("[MarshalUsing(typeof({0}))]", structMarshaller);
+        }
 
         // Variant/object → ManagedHandleMarshaller
         if (stripped == "Variant" || stripped == "object")
+        {
             return std::string("[MarshalUsing(typeof(ManagedHandleMarshaller))]");
+        }
 
         // System.Type
         if (stripped == "VariantType" || stripped == "ScriptingTypeHandle")
-            return std::string("[MarshalUsing(typeof(SystemTypeMarshaller))]");
-
-        // Array/Span/List/DataContainer
-        if (Utils::String::StartsWith(stripped, "Array<") || Utils::String::StartsWith(stripped, "Span<")
-            || Utils::String::StartsWith(stripped, "List<") || Utils::String::StartsWith(stripped, "DataContainer<"))
         {
-            std::string countName = Utils::String::Format("__{0}Count", paramName);
-            return Utils::String::Format("[MarshalUsing(typeof(ArrayMarshaller<,>), CountElementName = \"{0}\")]", countName);
+            return std::string("[MarshalUsing(typeof(SystemTypeMarshaller))]");
         }
-
-        // BytesContainer
-        if (stripped == "BytesContainer")
-            return std::string("[MarshalUsing(typeof(ArrayMarshaller<,>), CountElementName = \"__count\")]");
 
         // Dictionary
         if (Utils::String::StartsWith(stripped, "Dictionary<"))
-            return std::string("[MarshalUsing(typeof(DictionaryMarshaller<,>), ConstantElementCount = 0)]");
+        {
+            return std::string("[MarshalUsing(typeof(SE.Interop.DictionaryMarshaller<,>), ConstantElementCount = 0)]");
+        }
 
         // HashSet
         if (Utils::String::StartsWith(stripped, "HashSet<"))
-            return std::string("[MarshalUsing(typeof(HashSetMarshaller<,>), ConstantElementCount = 0)]");
+        {
+            return std::string("[MarshalUsing(typeof(SE.Interop.HashSetMarshaller<,>), ConstantElementCount = 0)]");
+        }
 
         // Object reference types
         if (IsObjectTypeRef(cppType))
+        {
             return std::string("[MarshalUsing(typeof(ManagedHandleMarshaller))]");
+        }
 
         // ScriptingObject pointer
         if (IsScriptingObjectPointer(cppType))
+        {
             return std::string(); // IntPtr, no attribute needed
+        }
 
         return std::string(); // no attribute for blittable types
     }
 
-    std::string GetCSharpReturnMarshalAttribute(const std::string& cppType)
+    std::string GetCSharpReturnMarshalAttribute(const std::string& cppType, int fixedArraySize)
     {
         std::string stripped = StripTypeQualifiers(cppType);
+        const CollectionAbiInfo collection = GetCollectionAbiInfo(cppType, fixedArraySize);
+
+        if (collection.IsCollection())
+        {
+            if (collection.kind == CollectionAbiKind::Fixed)
+            {
+                return Utils::String::Format(
+                    "[return: MarshalUsing(typeof(SE.Interop.ArrayMarshaller<,>), ConstantElementCount = {0})]",
+                    collection.fixedElementCount);
+            }
+            return std::string("[return: MarshalUsing(typeof(SE.Interop.ArrayMarshaller<,>), CountElementName = nameof(__returnCount))]");
+        }
 
         // bool → U1
         if (stripped == "bool")
+        {
             return std::string("[return: MarshalAs(UnmanagedType.U1)]");
+        }
+
+        std::string structMarshaller = GetApiInteropStructMarshallerType(cppType);
+        if (!structMarshaller.empty())
+        {
+            return Utils::String::Format("[return: MarshalUsing(typeof({0}))]", structMarshaller);
+        }
 
         // Variant/object
         if (stripped == "Variant" || stripped == "object")
+        {
             return std::string("[return: MarshalUsing(typeof(ManagedHandleMarshaller))]");
+        }
 
         // System.Type
         if (stripped == "VariantType" || stripped == "ScriptingTypeHandle")
-            return std::string("[return: MarshalUsing(typeof(SystemTypeMarshaller))]");
-
-        // Array return
-        if (Utils::String::StartsWith(stripped, "Array<") || Utils::String::StartsWith(stripped, "Span<")
-            || Utils::String::StartsWith(stripped, "List<") || Utils::String::StartsWith(stripped, "DataContainer<")
-            || stripped == "BytesContainer")
         {
-            return std::string("[return: MarshalUsing(typeof(ArrayMarshaller<,>), CountElementName = \"__returnCount\")]");
+            return std::string("[return: MarshalUsing(typeof(SystemTypeMarshaller))]");
         }
 
         // Dictionary return
         if (Utils::String::StartsWith(stripped, "Dictionary<"))
-            return std::string("[return: MarshalUsing(typeof(DictionaryMarshaller<,>), ConstantElementCount = 0)]");
+        {
+            return std::string("[return: MarshalUsing(typeof(SE.Interop.DictionaryMarshaller<,>), ConstantElementCount = 0)]");
+        }
 
         // Object reference types
         if (IsObjectTypeRef(cppType))
+        {
             return std::string("[return: MarshalUsing(typeof(ManagedHandleMarshaller))]");
+        }
 
         return std::string(); // no attribute for blittable types
     }
@@ -731,6 +998,8 @@ namespace SE::BuildTool
             return;
 
         std::string remaining = cppType;
+        Utils::String::TrimStart(remaining);
+        Utils::String::TrimEnd(remaining);
 
         // Strip leading "const "
         if (Utils::String::StartsWith(remaining, "const "))
@@ -753,6 +1022,11 @@ namespace SE::BuildTool
             isRef = true;
             remaining = remaining.substr(0, (int)remaining.length() - 1);
         }
+
+        // Clang commonly spells a reference as "Type &". Normalize the text
+        // after removing the qualifier so the generic parser never sees a
+        // trailing space beyond the closing '>'.
+        Utils::String::TrimEnd(remaining);
 
         // Strip trailing '*' (pointer)
         while (!remaining.empty() && remaining.c_str()[remaining.length() - 1] == '*')
@@ -778,27 +1052,35 @@ namespace SE::BuildTool
         if (ltPos != INVALID_INDEX)
         {
             baseType = StripTypeQualifiers(remaining.substr(0, ltPos));
-            // Extract generic arguments (simple, non-nested)
+            // Extract generic arguments up to the matching outer '>'.
             int depth = 0;
             int start = ltPos + 1;
             const char* s = remaining.c_str();
             int len = (int)remaining.length();
+            int genericEnd = INVALID_INDEX;
             for (int i = ltPos + 1; i < len; ++i)
             {
                 if (s[i] == '<') ++depth;
-                else if (s[i] == '>') --depth;
+                else if (s[i] == '>')
+                {
+                    if (depth == 0)
+                    {
+                        genericEnd = i;
+                        break;
+                    }
+                    --depth;
+                }
                 else if (s[i] == ',' && depth == 0)
                 {
                     std::string arg = StripTypeQualifiers(remaining.substr(start, i - start));
                     genericArgs.push_back(arg);
                     start = i + 1;
                 }
-                if (depth < 0) break;
             }
             // Last argument
-            if (start < len - 1)
+            if (genericEnd != INVALID_INDEX && start < genericEnd)
             {
-                std::string lastArg = StripTypeQualifiers(remaining.substr(start, len - 1 - start));
+                std::string lastArg = StripTypeQualifiers(remaining.substr(start, genericEnd - start));
                 if (!lastArg.empty())
                     genericArgs.push_back(lastArg);
             }

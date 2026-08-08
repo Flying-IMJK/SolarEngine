@@ -10,11 +10,12 @@ RUNTIME_ADD(
         Scripting.cpp
         ScriptingType.h
         ScriptingType.cpp
+        ScriptingTypeDefine.h
         ScriptingObject.h
         ScriptingObject.cpp
 
 #        CS
+        Scripting.cs
         ScriptingLoadContext.cs
-        ScriptingObject.cs
 )
 

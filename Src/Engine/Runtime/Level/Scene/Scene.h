@@ -10,16 +10,16 @@ namespace SE
     /// <summary>
     /// The scene root object that contains a hierarchy of actors.
     /// </summary>
-    SE_CLASS(Reflect)
+    SE_CLASS(Reflect, API, Sealed)
     class SE_API_RUNTIME Scene final : public Actor
     {
         friend class Level;
         friend class LevelSystem;
 
+        SCRIPTING_TYPE(Scene);
         SE_DEFINE_CLASS(Scene, Actor);
 
     public:
-        Scene();
         ~Scene() override;
 
         /// <summary>
@@ -80,16 +80,19 @@ namespace SE
         /// <summary>
         /// Gets path to the scene file
         /// </summary>
+        SE_PROPERTY(API, ReadOnly)
         String GetPath() const;
 
         /// <summary>
         /// Gets filename of the scene file
         /// </summary>
+        SE_PROPERTY(API, ReadOnly)
         String GetFilename() const;
 
         /// <summary>
         /// Gets path to the scene data folder
         /// </summary>
+        SE_PROPERTY(API, ReadOnly)
         String GetDataFolderPath() const;
 
         /// <summary>

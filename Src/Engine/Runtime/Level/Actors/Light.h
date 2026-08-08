@@ -10,9 +10,12 @@ namespace SE
     /// <summary>
     /// Base class for all light types.
     /// </summary>
-    SE_CLASS(Reflect)
+    SE_CLASS(Reflect, API, Abstract)
     class SE_API_RUNTIME Light : public RenderActor
     {
+        SCRIPTING_TYPE_NO_SPAWN(Light);
+        static Light* Spawn(const SpawnParams& params) { return nullptr; }
+        explicit Light(const SpawnParams& params);
         SE_DEFINE_CLASS(Light, RenderActor);
 
     protected:
@@ -64,8 +67,6 @@ namespace SE
         void OnEnable() override;
         void OnDisable() override;
 
-        Light();
-
 #if SE_EDITOR
         /*BoundingBox GetEditorBox() const override
         {
@@ -83,9 +84,12 @@ namespace SE
     /// <summary>
     /// Base class for all light types that can cast dynamic or static shadow. Contains more shared properties for point/spot/directional lights.
     /// </summary>
-    SE_CLASS(Reflect)
+    SE_CLASS(Reflect, API, Abstract)
     class SE_API_RUNTIME LightWithShadow : public Light
     {
+        SCRIPTING_TYPE_NO_SPAWN(LightWithShadow);
+        static LightWithShadow* Spawn(const SpawnParams& params) { return nullptr; }
+        explicit LightWithShadow(const SpawnParams& params);
         SE_DEFINE_CLASS(LightWithShadow, Light);
     public:
         /// <summary>
@@ -146,7 +150,6 @@ namespace SE
         void Serialize(SerializeContext& context) override;
         void Deserialize(DeserializeContext& context) override;
 
-        LightWithShadow();
     };
 
 } // SE

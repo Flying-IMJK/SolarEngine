@@ -13,7 +13,7 @@ namespace SE::Editor
     SE_CLASS(Reflect, API, NoSpawn)
     class PreviewsCache final : public SpriteAtlas
     {
-        SE_DEFINE_CLASS_DEFAULT(PreviewsCache, SpriteAtlas)
+        SE_DEFINE_CLASS(PreviewsCache, SpriteAtlas)
         ASSET_HEADER(PreviewsCache);
         friend class FlushTask;
     public:

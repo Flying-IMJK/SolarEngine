@@ -6,17 +6,17 @@
 // -----------------------------------------------------------------------------
 //
 // Copyright (c) 2010-2011 SharpDX - Alexandre Mutel
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -38,7 +38,7 @@ namespace SE
     [StructLayout(LayoutKind.Sequential, Pack = 2)]
     public struct Half
     {
-        private ushort value;
+        private ushort m_RawValue;
 
         /// <summary>
         /// Number of decimal digits of precision.
@@ -111,7 +111,7 @@ namespace SE
         /// <param name = "value">The floating point value that should be stored in 16 bit format.</param>
         public Half(float value)
         {
-            this.value = HalfUtils.Pack(value);
+            m_RawValue = HalfUtils.Pack(value);
         }
 
         /// <summary>
@@ -119,8 +119,8 @@ namespace SE
         /// </summary>
         public ushort RawValue
         {
-            get => value;
-            set => this.value = value;
+            get => m_RawValue;
+            set => m_RawValue = value;
         }
 
         /// <summary>
@@ -166,7 +166,7 @@ namespace SE
         /// <returns>The converted value.</returns>
         public static implicit operator float(Half value)
         {
-            return HalfUtils.Unpack(value.value);
+            return HalfUtils.Unpack(value.m_RawValue);
         }
 
         /// <summary>
@@ -177,7 +177,7 @@ namespace SE
         /// <returns><c>true</c> if <paramref name = "left" /> has the same value as <paramref name = "right" />; otherwise, <c>false</c>.</returns>
         public static bool operator ==(Half left, Half right)
         {
-            return left.value == right.value;
+            return left.m_RawValue == right.m_RawValue;
         }
 
         /// <summary>
@@ -188,7 +188,7 @@ namespace SE
         /// <returns><c>true</c> if <paramref name = "left" /> has a different value than <paramref name = "right" />; otherwise, <c>false</c>.</returns>
         public static bool operator !=(Half left, Half right)
         {
-            return left.value != right.value;
+            return left.m_RawValue != right.m_RawValue;
         }
 
         /// <summary>
@@ -207,7 +207,7 @@ namespace SE
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
-            ushort num = value;
+            ushort num = m_RawValue;
             return (((num * 3) / 2) ^ num);
         }
 
@@ -219,7 +219,7 @@ namespace SE
         /// <returns><c>true</c> if <paramref name = "value1" /> is the same instance as <paramref name = "value2" /> or  if both are <c>null</c> references or if <c>value1.Equals(value2)</c> returns <c>true</c>; otherwise, <c>false</c>.</returns>
         public static bool Equals(ref Half value1, ref Half value2)
         {
-            return value1.value == value2.value;
+            return value1.m_RawValue == value2.m_RawValue;
         }
 
         /// <summary>
@@ -229,7 +229,7 @@ namespace SE
         /// <returns><c>true</c> if the current instance is equal to the specified object; <c>false</c> otherwise.</returns>
         public bool Equals(Half other)
         {
-            return other.value == value;
+            return other.m_RawValue == m_RawValue;
         }
 
         /// <summary>
@@ -250,7 +250,7 @@ namespace SE
             }
 
             Half half = (Half)obj;
-            return half.value == value;
+            return half.m_RawValue == m_RawValue;
         }
 
         static Half()
@@ -359,12 +359,12 @@ namespace SE
         }
 
         /// <summary>
-        /// Determines whether the specified object instances are considered equal. 
+        /// Determines whether the specified object instances are considered equal.
         /// </summary>
         /// <param name="value1" />
         /// <param name="value2" />
         /// <returns>
-        /// <c>true</c> if <paramref name="value1" /> is the same instance as <paramref name="value2" /> or 
+        /// <c>true</c> if <paramref name="value1" /> is the same instance as <paramref name="value2" /> or
         /// if both are <c>null</c> references or if <c>value1.Equals(value2)</c> returns <c>true</c>; otherwise, <c>false</c>.</returns>
         public static bool Equals(ref Half2 value1, ref Half2 value2)
         {
@@ -372,7 +372,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Returns a value that indicates whether the current instance is equal to the specified object. 
+        /// Returns a value that indicates whether the current instance is equal to the specified object.
         /// </summary>
         /// <param name="other">Object to make the comparison with.</param>
         /// <returns>
@@ -383,7 +383,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Returns a value that indicates whether the current instance is equal to a specified object. 
+        /// Returns a value that indicates whether the current instance is equal to a specified object.
         /// </summary>
         /// <param name="obj">Object to make the comparison with.</param>
         /// <returns>
@@ -542,12 +542,12 @@ namespace SE
         }
 
         /// <summary>
-        /// Determines whether the specified object instances are considered equal. 
+        /// Determines whether the specified object instances are considered equal.
         /// </summary>
         /// <param name="value1" />
         /// <param name="value2" />
         /// <returns>
-        /// <c>true</c> if <paramref name="value1" /> is the same instance as <paramref name="value2" /> or 
+        /// <c>true</c> if <paramref name="value1" /> is the same instance as <paramref name="value2" /> or
         /// if both are <c>null</c> references or if <c>value1.Equals(value2)</c> returns <c>true</c>; otherwise, <c>false</c>.</returns>
         public static bool Equals(ref Half3 value1, ref Half3 value2)
         {
@@ -555,7 +555,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Returns a value that indicates whether the current instance is equal to the specified object. 
+        /// Returns a value that indicates whether the current instance is equal to the specified object.
         /// </summary>
         /// <param name="other">Object to make the comparison with.</param>
         /// <returns>
@@ -586,7 +586,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Returns a value that indicates whether the current instance is equal to a specified object. 
+        /// Returns a value that indicates whether the current instance is equal to a specified object.
         /// </summary>
         /// <param name="obj">Object to make the comparison with.</param>
         /// <returns>
@@ -710,12 +710,12 @@ namespace SE
         }
 
         /// <summary>
-        /// Determines whether the specified object instances are considered equal. 
+        /// Determines whether the specified object instances are considered equal.
         /// </summary>
         /// <param name="value1" />
         /// <param name="value2" />
         /// <returns>
-        /// <c>true</c> if <paramref name="value1" /> is the same instance as <paramref name="value2" /> or 
+        /// <c>true</c> if <paramref name="value1" /> is the same instance as <paramref name="value2" /> or
         /// if both are <c>null</c> references or if <c>value1.Equals(value2)</c> returns <c>true</c>; otherwise, <c>false</c>.</returns>
         public static bool Equals(ref Half4 value1, ref Half4 value2)
         {
@@ -724,7 +724,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Returns a value that indicates whether the current instance is equal to the specified object. 
+        /// Returns a value that indicates whether the current instance is equal to the specified object.
         /// </summary>
         /// <param name="other">Object to make the comparison with.</param>
         /// <returns>
@@ -755,7 +755,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Returns a value that indicates whether the current instance is equal to a specified object. 
+        /// Returns a value that indicates whether the current instance is equal to a specified object.
         /// </summary>
         /// <param name="obj">Object to make the comparison with.</param>
         /// <returns>

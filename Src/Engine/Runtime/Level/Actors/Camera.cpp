@@ -23,8 +23,9 @@ namespace SE
         return Cameras.HasItems() ? Cameras.First() : nullptr;
     }
 
-    Camera::Camera() :
-        _usePerspective(true)
+    Camera::Camera(const SpawnParams& params) :
+        Actor(params)
+        , _usePerspective(true)
         , _fov(60.0f)
         , _customAspectRatio(0.0f)
         , _near(10.0f)

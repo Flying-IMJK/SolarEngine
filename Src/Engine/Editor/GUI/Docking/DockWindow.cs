@@ -26,8 +26,8 @@ namespace SE.Editor.GUI
 
     public class DockWindow : Panel
     {
-        private string _title = string.Empty;
-        private GuiSize _titleSize = GuiSize.Zero;
+        private string m_Title = string.Empty;
+        private Float2 m_TitleSize = Float2.Zero;
 
         public DockWindow(MasterDockPanel masterPanel, bool hideOnClose = true, ScrollBars scrollBars = ScrollBars.None)
             : base(new Rectangle(0, 0, 300, 200))
@@ -43,6 +43,9 @@ namespace SE.Editor.GUI
                 _ => SE.GUI.ScrollBars.None,
             };
             MasterPanel.LinkWindow(this);
+
+            // Flax registers CloseTab, PreviousTab, and NextTab through Editor InputActions here.
+            // Keep those bindings disabled until the managed Editor input-action API is available.
         }
 
         public bool HideOnClose { get; set; }
@@ -51,7 +54,7 @@ namespace SE.Editor.GUI
         public bool IsDocked => ParentDockPanel != null;
         public bool IsSelected => ParentDockPanel?.SelectedTab == this;
         public bool IsHidden => !Visible || ParentDockPanel == null;
-        public virtual GuiSize DefaultSize => new GuiSize(900, 580);
+        public virtual Float2 DefaultSize => new Float2(900, 580);
         public virtual string SerializationTypename => GetType().Name;
         /// <summary>
         /// Gets the docking-layer scrollbar configuration used to construct this window.
@@ -60,32 +63,32 @@ namespace SE.Editor.GUI
 
         public string Title
         {
-            get => _title;
+            get => m_Title;
             set
             {
-                _title = value;
-                _titleSize = new GuiSize(value.Length * 7.0f, DockPanel.DefaultHeaderHeight);
+                m_Title = value;
+                m_TitleSize = new Float2(value.Length * 7.0f, DockPanel.DefaultHeaderHeight);
             }
         }
 
-        public GuiSize TitleSize => _titleSize;
+        public Float2 TitleSize => m_TitleSize;
 
         public void ShowFloating()
         {
-            ShowFloating(GuiPoint.Zero, DefaultSize, WindowStartPosition.CenterParent);
+            ShowFloating(Float2.Zero, DefaultSize, WindowStartPosition.CenterParent);
         }
 
         public void ShowFloating(WindowStartPosition position)
         {
-            ShowFloating(GuiPoint.Zero, DefaultSize, position);
+            ShowFloating(Float2.Zero, DefaultSize, position);
         }
 
-        public void ShowFloating(GuiSize size, WindowStartPosition position = WindowStartPosition.CenterParent)
+        public void ShowFloating(Float2 size, WindowStartPosition position = WindowStartPosition.CenterParent)
         {
-            ShowFloating(new GuiPoint(200, 200), size, position);
+            ShowFloating(new Float2(200, 200), size, position);
         }
 
-        public void ShowFloating(GuiPoint location, GuiSize size, WindowStartPosition position = WindowStartPosition.CenterParent)
+        public void ShowFloating(Float2 location, Float2 size, WindowStartPosition position = WindowStartPosition.CenterParent)
         {
             Undock();
             FloatWindowDockPanel floatingPanel = MasterPanel.CreateFloatingPanel(location, size, Title);
@@ -121,6 +124,8 @@ namespace SE.Editor.GUI
 
         public void FocusOrShow()
         {
+            // Flax obtains the default dock state from Editor.Options.Interface.NewWindowLocation.
+            // That Editor option is intentionally disabled until it is exposed to managed code.
             if (IsDocked)
                 SelectTab();
             else
@@ -176,8 +181,10 @@ namespace SE.Editor.GUI
             SelectTab(false);
         }
 
-        public override bool OnKeyDown(int key)
+        public override bool OnKeyDown(KeyboardKeys key)
         {
+            // Flax forwards unhandled keys to InputActions.Process(Editor.Instance, this, key).
+            // Keep the Editor shortcut route disabled; no replacement shortcut behavior is introduced.
             return false;
         }
 
@@ -185,9 +192,37 @@ namespace SE.Editor.GUI
         {
         }
 
+        // Flax window-layout serialization is permitted for this migration, but must remain disabled
+        // until its layout coordinator and XML persistence path are migrated as a single unit.
+        // No replacement serialization format or compatibility layer is introduced here.
+        /*
+        public virtual string SerializationTypename => "::" + GetType().FullName;
+
+        public virtual bool UseLayoutData => false;
+
+        public virtual void OnLayoutSerialize(System.Xml.XmlWriter writer)
+        {
+        }
+
+        public virtual void OnLayoutDeserialize(System.Xml.XmlElement node)
+        {
+        }
+
         public virtual void OnLayoutDeserialize()
         {
         }
+
+        protected void LayoutSerializeSplitter(System.Xml.XmlWriter writer, string name, SplitPanel splitter)
+        {
+            writer.WriteAttributeString(name, splitter.SplitterValue.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        protected void LayoutDeserializeSplitter(System.Xml.XmlElement node, string name, SplitPanel splitter)
+        {
+            if (float.TryParse(node.GetAttribute(name), System.Globalization.CultureInfo.InvariantCulture, out float value) && value > 0.01f && value < 0.99f)
+                splitter.SplitterValue = value;
+        }
+        */
 
         protected virtual void OnUnlink()
         {

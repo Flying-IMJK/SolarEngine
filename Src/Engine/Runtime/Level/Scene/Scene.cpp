@@ -23,7 +23,8 @@ namespace SE
 		return true;
 	}
 
-	Scene::Scene()
+	Scene::Scene(const SpawnParams& params)
+		: Actor(params)
 	{
 		m_Name = SE_TEXT("Scene");
 	}

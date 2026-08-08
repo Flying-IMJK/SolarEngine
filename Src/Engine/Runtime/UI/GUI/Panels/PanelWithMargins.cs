@@ -7,10 +7,10 @@ namespace SE.GUI
     /// </summary>
     public class PanelWithMargins : Panel
     {
-        private Margin _margin = new Margin(2.0f);
-        private float _spacing = 2.0f;
-        private Float2 _offset;
-        private bool _autoSize = true;
+        private Margin m_Margin = new Margin(2.0f);
+        private float m_Spacing = 2.0f;
+        private Float2 m_Offset;
+        private bool m_AutoSize = true;
 
         public PanelWithMargins()
             : base(new Rectangle(0.0f, 0.0f, 64.0f, 64.0f))
@@ -26,81 +26,81 @@ namespace SE.GUI
 
         public Margin Margin
         {
-            get => _margin;
+            get => m_Margin;
             set
             {
-                if (_margin == value)
+                if (m_Margin == value)
                     return;
-                _margin = value;
+                m_Margin = value;
                 PerformLayout();
             }
         }
 
         public float LeftMargin
         {
-            get => _margin.Left;
-            set => SetMargin(value, _margin.Right, _margin.Top, _margin.Bottom);
+            get => m_Margin.Left;
+            set => SetMargin(value, m_Margin.Right, m_Margin.Top, m_Margin.Bottom);
         }
 
         public float RightMargin
         {
-            get => _margin.Right;
-            set => SetMargin(_margin.Left, value, _margin.Top, _margin.Bottom);
+            get => m_Margin.Right;
+            set => SetMargin(m_Margin.Left, value, m_Margin.Top, m_Margin.Bottom);
         }
 
         public float TopMargin
         {
-            get => _margin.Top;
-            set => SetMargin(_margin.Left, _margin.Right, value, _margin.Bottom);
+            get => m_Margin.Top;
+            set => SetMargin(m_Margin.Left, m_Margin.Right, value, m_Margin.Bottom);
         }
 
         public float BottomMargin
         {
-            get => _margin.Bottom;
-            set => SetMargin(_margin.Left, _margin.Right, _margin.Top, value);
+            get => m_Margin.Bottom;
+            set => SetMargin(m_Margin.Left, m_Margin.Right, m_Margin.Top, value);
         }
 
         public float Spacing
         {
-            get => _spacing;
+            get => m_Spacing;
             set
             {
-                if (_spacing == value)
+                if (m_Spacing == value)
                     return;
-                _spacing = value;
+                m_Spacing = value;
                 PerformLayout();
             }
         }
 
         public Float2 Offset
         {
-            get => _offset;
+            get => m_Offset;
             set
             {
-                if (_offset == value)
+                if (m_Offset == value)
                     return;
-                _offset = value;
+                m_Offset = value;
                 PerformLayout();
             }
         }
 
         public bool AutoSize
         {
-            get => _autoSize;
+            get => m_AutoSize;
             set
             {
-                if (_autoSize == value)
+                if (m_AutoSize == value)
                     return;
-                _autoSize = value;
+                m_AutoSize = value;
                 PerformLayout();
             }
         }
 
         protected Rectangle ContentBounds => new Rectangle(
-            _margin.Left + _offset.X,
-            _margin.Top + _offset.Y,
-            MathF.Max(0.0f, Width - _margin.Width),
-            MathF.Max(0.0f, Height - _margin.Height));
+            m_Margin.Left + m_Offset.X,
+            m_Margin.Top + m_Offset.Y,
+            MathF.Max(0.0f, Width - m_Margin.Width),
+            MathF.Max(0.0f, Height - m_Margin.Height));
 
         private void SetMargin(float left, float right, float top, float bottom)
         {

@@ -17,11 +17,11 @@ namespace SE.GUI
     /// </summary>
     public class CheckBox : Control
     {
-        private CheckBoxState _state;
-        private bool _isPressed;
-        private bool _isMouseOverBox;
-        private float _boxSize;
-        private Rectangle _box;
+        private CheckBoxState m_State;
+        private bool m_IsPressed;
+        private bool m_IsMouseOverBox;
+        private float m_BoxSize;
+        private Rectangle m_Box;
 
         public CheckBox()
             : this(0.0f, 0.0f)
@@ -31,8 +31,8 @@ namespace SE.GUI
         public CheckBox(float x, float y, bool isChecked = false, float size = 18.0f)
             : base(new Rectangle(x, y, size, size))
         {
-            _state = isChecked ? CheckBoxState.Checked : CheckBoxState.Default;
-            _boxSize = MathF.Min(16.0f, size);
+            m_State = isChecked ? CheckBoxState.Checked : CheckBoxState.Default;
+            m_BoxSize = MathF.Min(16.0f, size);
             BorderColor = Style.Current.Foreground;
             BorderColorHighlighted = Style.Current.BackgroundHighlighted;
             ImageColor = Style.Current.Foreground;
@@ -43,13 +43,13 @@ namespace SE.GUI
 
         public CheckBoxState State
         {
-            get => _state;
+            get => m_State;
             set
             {
-                if (_state == value)
+                if (m_State == value)
                     return;
 
-                _state = value;
+                m_State = value;
                 StateChanged?.Invoke(this);
             }
         }
@@ -68,10 +68,10 @@ namespace SE.GUI
 
         public float BoxSize
         {
-            get => _boxSize;
+            get => m_BoxSize;
             set
             {
-                _boxSize = MathF.Max(0.0f, value);
+                m_BoxSize = MathF.Max(0.0f, value);
                 CacheBox();
             }
         }
@@ -81,7 +81,7 @@ namespace SE.GUI
         public Color BorderColor { get; set; }
         public Color BorderColorHighlighted { get; set; }
         public Color ImageColor { get; set; }
-        public bool IsPressed => _isPressed;
+        public bool IsPressed => m_IsPressed;
 
         /// <summary>
         /// Toggles between the unchecked and checked states.
@@ -93,35 +93,35 @@ namespace SE.GUI
 
         public override void OnMouseMove(Float2 location)
         {
-            _isMouseOverBox = _box.Contains(location);
+            m_IsMouseOverBox = m_Box.Contains(location);
         }
 
-        public override bool OnMouseDown(Float2 location, int button)
+        public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (button != 1 || _isPressed)
+            if (button != MouseButton.Left || m_IsPressed)
                 return false;
 
-            _isPressed = true;
+            m_IsPressed = true;
             Root?.StartTrackingMouse(this);
             return true;
         }
 
-        public override bool OnMouseUp(Float2 location, int button)
+        public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (button != 1 || !_isPressed)
+            if (button != MouseButton.Left || !m_IsPressed)
                 return false;
 
-            _isPressed = false;
+            m_IsPressed = false;
             Root?.EndTrackingMouse();
-            if (_box.Contains(location))
+            if (m_Box.Contains(location))
                 Toggle();
             return true;
         }
 
         public override void ClearState()
         {
-            _isPressed = false;
-            _isMouseOverBox = false;
+            m_IsPressed = false;
+            m_IsMouseOverBox = false;
             base.ClearState();
         }
 
@@ -129,8 +129,8 @@ namespace SE.GUI
         {
             base.OnDraw();
 
-            Rectangle box = new Rectangle(ScreenPos + _box.Location, _box.Size);
-            Color border = _isPressed || _isMouseOverBox || IsFocused ? BorderColorHighlighted : BorderColor;
+            Rectangle box = new Rectangle(ScreenPos + m_Box.Location, m_Box.Size);
+            Color border = m_IsPressed || m_IsMouseOverBox || IsFocused ? BorderColorHighlighted : BorderColor;
             if (!EnabledInHierarchy)
                 border.A *= 0.5f;
 
@@ -168,7 +168,7 @@ namespace SE.GUI
 
         private void CacheBox()
         {
-            _box = new Rectangle(0.0f, (Height - _boxSize) * 0.5f, _boxSize, _boxSize);
+            m_Box = new Rectangle(0.0f, (Height - m_BoxSize) * 0.5f, m_BoxSize, m_BoxSize);
         }
     }
 }

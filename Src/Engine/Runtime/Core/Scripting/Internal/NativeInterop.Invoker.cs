@@ -96,7 +96,7 @@ namespace SE.Interop
 
             internal static IntPtr MarshalReturnValueBool(ref bool returnValue)
             {
-                return returnValue ? boolTruePtr : boolFalsePtr;
+                return returnValue ? s_BoolTruePtr : s_BoolFalsePtr;
             }
 
             internal static IntPtr MarshalReturnValueIntPtr(ref IntPtr returnValue)
@@ -158,7 +158,7 @@ namespace SE.Interop
                 if (returnType == typeof(ManagedHandle))
                     return ManagedHandle.ToIntPtr((ManagedHandle)(object)returnObject);
                 if (returnType == typeof(bool))
-                    return (bool)returnObject ? boolTruePtr : boolFalsePtr;
+                    return (bool)returnObject ? s_BoolTruePtr : s_BoolFalsePtr;
                 if (returnType == typeof(Type) || returnType == typeof(TypeHolder))
                     return ManagedHandle.ToIntPtr(GetTypeManagedHandle(Unsafe.As<Type>(returnObject)));
                 if (returnType.IsArray && ArrayFactory.GetMarshalledType(returnType.GetElementType()) == returnType.GetElementType())

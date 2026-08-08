@@ -27,10 +27,10 @@ namespace SE.GUI
     /// </summary>
     public class ProgressBar : ContainerControl
     {
-        private float _minimum;
-        private float _maximum = 100.0f;
-        private float _value;
-        private float _current;
+        private float m_Minimum;
+        private float m_Maximum = 100.0f;
+        private float m_Value;
+        private float m_Current;
 
         public ProgressBar()
             : this(0.0f, 0.0f, 120.0f)
@@ -56,40 +56,40 @@ namespace SE.GUI
 
         public float Minimum
         {
-            get => _minimum;
+            get => m_Minimum;
             set
             {
-                if (value > _maximum)
+                if (value > m_Maximum)
                     throw new ArgumentOutOfRangeException(nameof(value));
-                _minimum = value;
-                Value = _value;
+                m_Minimum = value;
+                Value = m_Value;
             }
         }
 
         public float Maximum
         {
-            get => _maximum;
+            get => m_Maximum;
             set
             {
-                if (value < _minimum)
+                if (value < m_Minimum)
                     throw new ArgumentOutOfRangeException(nameof(value));
-                _maximum = value;
-                Value = _value;
+                m_Maximum = value;
+                Value = m_Value;
             }
         }
 
         public float Value
         {
-            get => _value;
+            get => m_Value;
             set
             {
-                float clamped = Math.Clamp(value, _minimum, _maximum);
-                if (MathF.Abs(clamped - _value) <= float.Epsilon)
+                float clamped = Math.Clamp(value, m_Minimum, m_Maximum);
+                if (MathF.Abs(clamped - m_Value) <= float.Epsilon)
                     return;
 
-                _value = clamped;
+                m_Value = clamped;
                 if (!UseSmoothing)
-                    _current = clamped;
+                    m_Current = clamped;
             }
         }
 
@@ -97,23 +97,23 @@ namespace SE.GUI
         {
             if (!UseSmoothing || deltaTime >= 1.0f / 20.0f)
             {
-                _current = _value;
+                m_Current = m_Value;
                 return;
             }
 
             float factor = Math.Clamp(deltaTime * 5.0f * SmoothingScale, 0.0f, 1.0f);
-            _current += (_value - _current) * factor;
-            if (MathF.Abs(_value - _current) <= 0.01f)
-                _current = _value;
+            m_Current += (m_Value - m_Current) * factor;
+            if (MathF.Abs(m_Value - m_Current) <= 0.01f)
+                m_Current = m_Value;
         }
 
         protected override void OnDraw()
         {
             base.OnDraw();
-            if (_maximum <= _minimum)
+            if (m_Maximum <= m_Minimum)
                 return;
 
-            float normalized = Math.Clamp((_current - _minimum) / (_maximum - _minimum), 0.0f, 1.0f);
+            float normalized = Math.Clamp((m_Current - m_Minimum) / (m_Maximum - m_Minimum), 0.0f, 1.0f);
             if (normalized <= 0.0f)
                 return;
 

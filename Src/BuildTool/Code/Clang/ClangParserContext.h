@@ -13,29 +13,56 @@ namespace SE::BuildTool
 
     //-------------------------------------------------------------------------
 
+#define ABSTRACT_FLAG() "Abstract"
+#define DEPRECATED_FLAG() "Deprecated"
+#define HIDDEN_FLAG() "Hidden"
+#define NO_CONSTRUCTOR_FLAG() "NoConstructor"
+#define NO_PROXY_FLAG() "NoProxy"
+#define NO_SPAWN_FLAG() "NoSpawn"
+#define READ_ONLY_FLAG() "ReadOnly"
+#define SEALED_FLAG() "Sealed"
+#define SHOW_IN_RESTRICTED_MODE_FLAG() "ShowInRestrictedMode"
+#define STATIC_FLAG() "Static"
+#define TEMPLATE_FLAG() "Template"
+#define TOOLS_READ_ONLY_FLAG() "ToolsReadOnly"
+
+    //-------------------------------------------------------------------------
+
     struct MarkMacro
     {
     public:
         MarkMacro() = default;
-        MarkMacro( HeaderInfo const* pHeaderInfo, CXCursor cursor, CXSourceRange& sourceLocation, ReflectionMacroType type );
+        MarkMacro(HeaderInfo const*   pHeaderInfo,
+                  CXCursor            cursor,
+                  CXSourceRange&      sourceLocation,
+                  ReflectionMacroType type);
 
         bool IsValid() const { return type != ReflectionMacroType::Unknown; }
         bool IsModuleMacro() const { return false; }
         bool IsEnumMacro() const { return type == ReflectionMacroType::SEEnum && hasReflect; }
         bool IsMetaMacro() const { return type == ReflectionMacroType::ReflectMeta; }
-        bool IsTypeMacro() const { return type == ReflectionMacroType::SEClass || type == ReflectionMacroType::SEStruct || type == ReflectionMacroType::SEInterface; }
+        bool IsTypeMacro() const
+        {
+            return type == ReflectionMacroType::SEClass || type == ReflectionMacroType::SEStruct ||
+                   type == ReflectionMacroType::SEInterface;
+        }
+        void AddParameter(std::string parameter);
+        bool HasFlag(std::string_view flag) const;
+        bool TryGetValue(std::string_view key, std::string& outValue) const;
         bool HasContent(std::string_view value) const;
-    public:
 
-        HeaderID            headerID;
-        uint32_t            fileLine = 0;
-        uint32_t            fileColumn = 0;
-        ReflectionMacroType type = ReflectionMacroType::Unknown;
-		std::string	            macroComment;
-        bool                hasReflect = false;
-        bool                hasAPI = false;
+    public:
+        HeaderID                 headerID;
+        uint32_t                 fileLine      = 0;
+        uint32_t                 fileColumn    = 0;
+        uint32_t                 fileEndLine   = 0;
+        uint32_t                 fileEndColumn = 0;
+        ReflectionMacroType      type          = ReflectionMacroType::Unknown;
+        std::string              macroComment;
+        bool                     hasReflect = false;
+        bool                     hasAPI     = false;
         std::string              macroMetadata;
-        std::vector<std::string>        macroContents;
+        std::vector<std::string> macroContents;
     };
 
     //-------------------------------------------------------------------------
@@ -44,78 +71,75 @@ namespace SE::BuildTool
     {
 
     public:
-
         struct HeaderToVisit
         {
-            HeaderToVisit( HeaderID ID, HeaderInfo const* pHeaderInfo ) : m_ID( ID ), m_pHeaderInfo( pHeaderInfo ) {}
-			HeaderToVisit() : m_ID(), m_pHeaderInfo() {}
+            HeaderToVisit(HeaderID ID, HeaderInfo const* pHeaderInfo) : m_ID(ID), m_pHeaderInfo(pHeaderInfo) {}
+            HeaderToVisit() : m_ID(), m_pHeaderInfo() {}
 
-            inline bool operator==( HeaderID const& ID ) const { return m_ID == ID; }
+            inline bool operator==(HeaderID const& ID) const { return m_ID == ID; }
 
         public:
-
-            HeaderID            m_ID;
-            HeaderInfo const*   m_pHeaderInfo;
+            HeaderID          m_ID;
+            HeaderInfo const* m_pHeaderInfo;
         };
 
         struct TemplateTypeData
         {
-            TypeData type;
+            TypeData                 type;
             std::vector<std::string> parameterNames;
         };
 
         struct TypeDefData
         {
-            HeaderID headerID;
-            int32 lineNumber = -1;
-            MarkMacro macro;
-            std::string name;
-            std::string templateTypeName;
+            HeaderID                 headerID;
+            int32                    lineNumber = -1;
+            MarkMacro                macro;
+            std::string              name;
+            std::string              templateTypeName;
             std::vector<std::string> templateArguments;
             std::vector<std::string> namespaceScopeList;
             std::vector<std::string> structScopeList;
         };
 
     public:
-
-        ClangParserContext( SolutionInfo* pSolution, ReflectionDatabase* pDatabase )
-            : pTU( nullptr )
-            , pDatabase( pDatabase )
-            , pParentReflectedType( nullptr )
-            , pSolution( pSolution )
+        ClangParserContext(SolutionInfo* pSolution, ReflectionDatabase* pDatabase) :
+            pTU(nullptr), pDatabase(pDatabase), pParentReflectedType(nullptr), pSolution(pSolution)
         {
-            ENGINE_ASSERT( pSolution != nullptr && pDatabase != nullptr );
+            ENGINE_ASSERT(pSolution != nullptr && pDatabase != nullptr);
         }
 
         template<typename... Params>
-        void LogError(const Char *pErrorFormat, Params... args) const
+        void LogError(const Char* pErrorFormat, Params... args) const
         {
             m_errorMessage = Utils::String::Format(pErrorFormat, args...);
         }
-        
+
         std::string_view const GetErrorMessage() const { return m_errorMessage; }
-        inline bool HasErrorOccured() const { return !m_errorMessage.empty(); }
+        inline bool            HasErrorOccured() const { return !m_errorMessage.empty(); }
 
-        HeaderInfo const* GetHeaderInfo( HeaderID headerID ) const;
+        HeaderInfo const* GetHeaderInfo(HeaderID headerID) const;
 
-        void Reset( CXTranslationUnit* pTU );
-        void PushNamespace( std::string const& name );
-        void PopNamespace();
-        void PushStruct( std::string const& name );
-        void PopStruct();
+        void                     Reset(CXTranslationUnit* pTU);
+        void                     PushNamespace(std::string const& name);
+        void                     PopNamespace();
+        void                     PushStruct(std::string const& name);
+        void                     PopStruct();
         std::vector<std::string> GetStructScopes();
         std::vector<std::string> GetNamespaces();
 
-        bool SetModuleClassName( std::string_view const& headerFilePath, std::string const& moduleClassName );
-        TypeID GenerateTypeID( std::string const& fullyQualifiedTypeName ) const { return TypeID( fullyQualifiedTypeName); }
+        bool   SetModuleClassName(std::string_view const& headerFilePath, std::string const& moduleClassName);
+        TypeID GenerateTypeID(std::string const& fullyQualifiedTypeName) const
+        {
+            return TypeID(fullyQualifiedTypeName);
+        }
 
-		std::string const& GetCurrentNamespace() const { return m_currentNamespace; }
+        std::string const& GetCurrentNamespace() const { return m_currentNamespace; }
         std::string const& GetCurrentStructScope() const { return m_currentStructScope; }
 
-        void AddMarkMacro( MarkMacro const& foundMacro );
+        void AddMarkMacro(MarkMacro const& foundMacro);
         bool FindMarkMacro(HeaderID headerID, CXCursor const& cr, MarkMacro& macro, ReflectionMacroType macroType);
 
-        bool FindReflectionMacroForMeta( HeaderID headerID, CXCursor const& cr, MarkMacro& reflectionMacro );
+        bool FindReflectionMacroForMeta(HeaderID headerID, CXCursor const& cr, MarkMacro& reflectionMacro);
 
         void AddTemplateType(TypeData const& type, std::vector<std::string> const& parameterNames);
         void AddTypeDef(TypeDefData const& typeDef);
@@ -126,28 +150,28 @@ namespace SE::BuildTool
         bool CheckForOrphanedReflectionMacros() const;
 
         // Get assembly name and directory for a given header
-        void GetAssemblyInfoForHeader(HeaderID headerID, std::string& outAssemblyName, std::string& outAssemblyDir) const;
+        void
+        GetAssemblyInfoForHeader(HeaderID headerID, std::string& outAssemblyName, std::string& outAssemblyDir) const;
+
     public:
+        CXTranslationUnit* pTU;
 
-        CXTranslationUnit*                                      pTU;
-
-        SolutionInfo*                                           pSolution;
-        ReflectionDatabase*                                     pDatabase;
-        std::vector<HeaderToVisit>                                     headersToVisit;
+        SolutionInfo*              pSolution;
+        ReflectionDatabase*        pDatabase;
+        std::vector<HeaderToVisit> headersToVisit;
 
         // The current parent/enclosing reflected type
-        void*                                                   pParentReflectedType;
+        void* pParentReflectedType;
 
     private:
+        Dictionary<HeaderID, std::vector<MarkMacro>> m_MarkMacros;
+        std::vector<TemplateTypeData>                m_TemplateTypes;
+        std::vector<TypeDefData>                     m_TypeDefs;
 
-        Dictionary<HeaderID, std::vector<MarkMacro>>             m_MarkMacros;
-        std::vector<TemplateTypeData>                            m_TemplateTypes;
-        std::vector<TypeDefData>                                 m_TypeDefs;
-
-        mutable std::string                                      m_errorMessage;
-		std::vector<std::string>                                 m_namespaceStack;
-		std::vector<std::string>                                 m_structureStack;
-		std::string                                              m_currentNamespace;
-        std::string                                              m_currentStructScope;
+        mutable std::string      m_errorMessage;
+        std::vector<std::string> m_namespaceStack;
+        std::vector<std::string> m_structureStack;
+        std::string              m_currentNamespace;
+        std::string              m_currentStructScope;
     };
-}
+} // namespace SE::BuildTool

@@ -28,10 +28,6 @@ EDITOR_ADD(
     ComboBox.cpp
     ComboBox.cs
     EnumComboBox.cs
-    GuiGeometry.cs
-    HeadlessEditorPresentationHost.cs
-    IEditorPresentationHost.cs
-    NativeGuiPresentationHost.cs
     NavigationBar.h
     NavigationBar.cpp
     NavigationBar.cs

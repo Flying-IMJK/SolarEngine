@@ -26,7 +26,7 @@ namespace SE
     SE_CLASS(Reflect, API, NoSpawn)
     class SE_API_RUNTIME ModelBase : public BinaryAsset, public StreamableResource
     {
-        SE_DEFINE_CLASS_DEFAULT(ModelBase, BinaryAsset);
+        SE_DEFINE_CLASS(ModelBase, BinaryAsset);
         ASSET_HEADER(ModelBase);
     public:
         /// <summary>

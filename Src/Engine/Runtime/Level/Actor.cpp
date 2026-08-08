@@ -11,8 +11,9 @@ namespace SE
 {
 	#define ACTOR_ORIENTATION_EPSILON 0.000000001f
 
-	Actor::Actor()
-		: m_IsActive(true)
+	Actor::Actor(const SpawnParams& params)
+		: SceneObject(params)
+		, m_IsActive(true)
 		, m_IsActiveInHierarchy(true)
 		, m_IsPrefabRoot(false)
 		, m_IsEnabled(false)
@@ -26,6 +27,11 @@ namespace SE
 	{
 		m_DrawNoCulling = 0;
 		m_DrawCategory = 0;
+	}
+
+	RenderActor::RenderActor(const SpawnParams& params)
+		: Actor(params)
+	{
 	}
 
 	Actor::~Actor()

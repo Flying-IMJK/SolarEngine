@@ -13,4 +13,13 @@ EDITOR_ADD(
     EditSceneWindow.cpp
     PropertiesWindow.h
     PropertiesWindow.cpp
+
+#        c#
+    EditorWindow.cs
+    ContentWindow.cs
+    EditSceneWindow.cs
+    LogWindow.cs
+    SceneEditorWindow.cs
+    SceneHierarchyWindow.cs
+    SceneHierarchyView.cs
 )

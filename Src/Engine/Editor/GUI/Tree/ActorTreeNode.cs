@@ -1,10 +1,11 @@
 using System;
+using SE.GUI;
 namespace SE.Editor.GUI
 {
     public class ActorTreeNode : TreeNode
     {
-        private readonly DragHandlers _dragHandlers = new DragHandlers();
-        private bool _hasSearchFilter;
+        private readonly DragHandlers m_DragHandlers = new DragHandlers();
+        private bool m_HasSearchFilter;
 
         public ActorTreeNode()
             : base(canChangeOrder: true)
@@ -35,46 +36,46 @@ namespace SE.Editor.GUI
 
         public void UpdateFilter(string filterText)
         {
-            _hasSearchFilter = !string.IsNullOrWhiteSpace(filterText);
-            Visible = !_hasSearchFilter || Text.Contains(filterText, StringComparison.OrdinalIgnoreCase);
+            m_HasSearchFilter = !string.IsNullOrWhiteSpace(filterText);
+            Visible = !m_HasSearchFilter || Text.Contains(filterText, StringComparison.OrdinalIgnoreCase);
         }
 
         public void AddDragHandler(DragHelperBase helper)
         {
-            _dragHandlers.Add(helper);
+            m_DragHandlers.Add(helper);
         }
 
         public void StartRenaming()
         {
-            RenamePopup popup = new RenamePopup(Text, new GuiSize(160, 22), false);
+            RenamePopup popup = new RenamePopup(Text, new Float2(160, 22), false);
             popup.Renamed += OnRenamed;
             popup.Show(this, 0, HeaderHeight);
         }
 
         protected override DragDropEffect OnDragEnterHeader(DragData data)
         {
-            return _dragHandlers.OnDragEnter(data);
+            return m_DragHandlers.OnDragEnter(data);
         }
 
         protected override DragDropEffect OnDragMoveHeader(DragData data)
         {
-            return _dragHandlers.Effect;
+            return m_DragHandlers.Effect;
         }
 
         protected override DragDropEffect OnDragDropHeader(DragData data)
         {
-            _dragHandlers.OnDragDrop(new DragEventArgs());
+            m_DragHandlers.OnDragDrop(new DragEventArgs());
             return DragDropEffect.Move;
         }
 
         protected override void OnDragLeaveHeader()
         {
-            _dragHandlers.OnDragLeave();
+            m_DragHandlers.OnDragLeave();
         }
 
         protected override void OnExpandedChanged()
         {
-            ActorGraphNode ??= new SceneGraphNode(Text);
+            ActorGraphNode ??= new SceneGraphNode(Guid.NewGuid(), Text);
         }
 
         private void OnRenamed(RenamePopup popup)

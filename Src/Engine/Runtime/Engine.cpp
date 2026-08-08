@@ -98,10 +98,11 @@ namespace SE
 		}
 
 		EngineImpl::InitGraphic();
-		EngineImpl::InitMainWindow(application);
 
 		UpdateGraph = New<Threading::TaskGraph>();
 		Systems::Initialize();
+
+		EngineImpl::InitMainWindow(application);
 
 		Platform::BeforeRun();
 		application->BeforeRun();
