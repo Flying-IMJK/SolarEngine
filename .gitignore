@@ -30,8 +30,9 @@
 *.out
 *.app
 .idea/
+.vs/
+build/
 Debug/
 Release/
 Intermediate/
-FlaxEngine/
-Reflector/Precompile/*
+
