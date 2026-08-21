@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SolarEngine Slang Shader 编译系统设计</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="root.js"></script>
+</head>
+<body class="shell-page">
+<aside class="sidebar" aria-label="文档导航">
+  <a class="brand" href="#top">SolarEngine Slang Shader<small>编译、缓存与运行时绑定</small></a>
+  <nav>
+    <div class="nav-group">范围</div>
+    <a href="#overview">目标与已确认决策</a>
+    <details class="nav-tree">
+      <summary>总体架构与替换边界</summary>
+      <div class="sub-links">
+        <a href="#architecture">章节概览</a>
+        <a href="#architecture-boundary">SolarEngine 替换关系</a>
+      </div>
+    </details>
+    <a href="#terms">核心术语与身份层级</a>
+
+    <div class="nav-group">Shader 接口</div>
+    <details class="nav-tree">
+      <summary>Program 与入口声明</summary>
+      <div class="sub-links">
+        <a href="#program-declaration">章节概览</a>
+        <a href="#program-discovery">Program 发现与校验</a>
+        <a href="#entrypoint-parameters">EntryPoint 参数限制</a>
+        <a href="#program-attributes">宏与 Attribute</a>
+      </div>
+    </details>
+    <details class="nav-tree">
+      <summary>Variant 规则</summary>
+      <div class="sub-links">
+        <a href="#variants">章节概览</a>
+        <a href="#variant-declaration">声明语义</a>
+        <a href="#variant-model">数据模型</a>
+        <a href="#variant-normalization">规范化算法</a>
+      </div>
+    </details>
+    <details class="nav-tree">
+      <summary>编译请求与 Target</summary>
+      <div class="sub-links">
+        <a href="#compile-request">章节概览</a>
+        <a href="#compile-result-transaction">编译结果与原子提交</a>
+        <a href="#target-key">TargetKey 契约</a>
+        <a href="#target-mapping">Target 映射</a>
+      </div>
+    </details>
+
+    <div class="nav-group">编译与运行时</div>
+    <details class="nav-tree">
+      <summary>Slang 编译流程</summary>
+      <div class="sub-links">
+        <a href="#compile-flow">章节概览</a>
+        <a href="#discovery-environment">基线发现环境</a>
+        <a href="#compile-transaction">编译事务步骤</a>
+      </div>
+    </details>
+    <details class="nav-tree">
+      <summary>Layout 与名称绑定</summary>
+      <div class="sub-links">
+        <a href="#layout-binding">章节概览</a>
+        <a href="#layout-summary">当前契约总览</a>
+        <a href="#layout-root-model">单根反射模型</a>
+        <a href="#layout-address-spaces">两种地址空间</a>
+        <a href="#layout-reflection-graph">ID 化反射图</a>
+        <a href="#layout-relative-offsets">ShaderVar 相对偏移</a>
+        <a href="#layout-uniform-storage">Uniform Buffer 存储</a>
+        <a href="#layout-arrays">数组访问契约</a>
+        <a href="#layout-block-arrays">块数组限制</a>
+        <a href="#layout-serialization">Layout 序列化结构</a>
+        <a href="#layout-type-records">Type Record 精确契约</a>
+        <a href="#layout-range-mapping">Range 精确映射</a>
+        <a href="#layout-slang-ir-mapping">Slang → IR 映射表</a>
+        <a href="#layout-binding-path">BindingPath 完整契约</a>
+        <a href="#layout-fingerprint">Pipeline Layout Fingerprint</a>
+        <a href="#layout-specialization">静态 Specialization</a>
+        <a href="#layout-default-resources">资源绑定完整性</a>
+      </div>
+    </details>
+    <details class="nav-tree">
+      <summary>SLC2 Shader Cache</summary>
+      <div class="sub-links">
+        <a href="#cache">章节概览</a>
+        <a href="#cache-structure">运行时数据结构</a>
+        <a href="#cache-keys">缓存键与失效</a>
+        <a href="#cache-example">SLC2 文本示例</a>
+        <a href="#cache-constraints">文本与结构约束</a>
+      </div>
+    </details>
+    <a href="#runtime">运行时读取与匹配</a>
+    <details class="nav-tree">
+      <summary>依赖索引与增量（后续）</summary>
+      <div class="sub-links">
+        <a href="#dependencies">章节概览</a>
+        <a href="#dependency-index">DependencyIndex（后续）</a>
+        <a href="#dependency-update">部分请求与聚合边界</a>
+      </div>
+    </details>
+
+    <div class="nav-group">交付</div>
+    <a href="#milestones">实施里程碑</a>
+    <details class="nav-tree">
+      <summary>验收标准</summary>
+      <div class="sub-links">
+        <a href="#acceptance">章节概览</a>
+        <a href="#acceptance-program">编译与 Program</a>
+        <a href="#acceptance-variant">Variant</a>
+        <a href="#acceptance-runtime">缓存与运行时</a>
+      </div>
+    </details>
+    <a href="#open-items">待确认设计项（当前无）</a>
+    <a href="#non-goals">非目标</a>
+  </nav>
+</aside>
+
+<main>
+<header id="top">
+    <h1>SolarEngine Slang Shader 编译系统设计</h1>
+    <p class="subtitle">Slang-only 源码 · 多 Target 编译 · 声明式 Variant · SLC2 文本缓存 · Falcor 风格名称绑定</p>
+  </header>
+
+  <section>
+    <h2 id="overview">1. 目标与已确认决策</h2>
+    <p>目标是在 SolarEngine 中以 Slang 替换新 Shader 资产的编译路径，并建立从 Shader 声明、Variant 选择、目标代码生成、反射布局、文本缓存到 Vulkan 运行时名称绑定的完整闭环。</p>
+    <div class="decision">
+      <div><strong>源码语言</strong>仅使用 Slang；旧 SolarEngine <code>.shader</code> / HLSL Shader 资产不兼容、不迁移，也不进入新编译系统。</div>
+      <div><strong>Target</strong>编译请求只指定操作系统平台、图形后端和 Shader Model；三者平铺在 <code>ShaderCompileTarget</code> 中并共同形成 <code>TargetKey</code>。</div>
+      <div><strong>编译策略</strong>API/目标二进制版本、capability、优化、调试、矩阵布局、浮点模式及其他 Slang 选项由引擎统一策略固定，不是请求参数或 <code>TargetKey</code> 维度；策略变化通过 <code>CompilerBuildTag</code> 使缓存失效。</div>
+      <div><strong>编译结果</strong><code>ShaderCompileResult</code> 只返回 <code>Success/Failed</code>、包含 Warning/Error 的 <code>CompileMessage</code> 和完整 UTF-8 JSON <code>SLC2Data</code>；编译信息只输出当次日志、不持久化，失败时数据为空。</div>
+      <div><strong>首个实现</strong>优先完成 Vulkan → SPIR-V；接口保留未来 DXIL、WGSL 等 Target。</div>
+      <div><strong>Binding</strong>由 Slang 自动分配 set/binding，Shader 作者不显式指定 Vulkan binding。</div>
+      <div><strong>运行时 API</strong>按资源全名设置 Texture、Buffer、Sampler；后续扩展其他资源类型。</div>
+      <div><strong>资源绑定完整性</strong>所有需要写入 descriptor 的资源槽都必须在运行时显式绑定非空资源；未绑定或被设置为 <code>null</code> 时直接返回绑定错误，不自动补默认资源。Shader、编译器和 SLC2 均不声明 required/optional 策略。</div>
+      <div><strong>Program 身份</strong><code>ProgramId</code> 就是 <code>SHADER_PROGRAM(name, ...)</code> 中声明的 <code>name</code>。</div>
+      <div><strong>Variant</strong><code>SHADER_MACRO</code> 声明互斥组；多个组做笛卡尔积，宏只有“定义/未定义”状态。</div>
+      <div><strong>参考模型</strong>借鉴 Falcor 的反射、ParameterBlock 和 ShaderVar 思想，不导入 Falcor/gfx 运行时。</div>
+      <div><strong>Layout 身份</strong>一份 Layout 归属于 <code>ProgramId × TargetKey × Variant</code>，并由该 Variant 的全部 Stage 共享。</div>
+      <div><strong>反射根模型</strong>每份 Layout 只有一个 <code>rootBlockId</code>。EntryPoint 只允许 varying/system-value 输入输出；不支持 uniform/resource 参数，全部可绑定数据必须位于 Module 全局作用域或显式 ConstantBuffer/ParameterBlock 中。</div>
+      <div><strong>反射产物</strong>编译期从 Slang linked component 生成引擎自有 <code>ShaderReflectionIR</code>；运行时只从 SLC2 重建反射，不二次调用 Slang。</div>
+      <div><strong>Layout Schema</strong><code>schema = 2</code>；逻辑 <code>resourceRanges[]</code> 与 <code>rangeBindings[]</code> 按块内 rangeIndex 完整对应，每条 mapping 再包含 0～N 个物理 descriptor 或一个子块引用。</div>
+      <div><strong>Uniform 存储</strong>Module 全局普通数据进入根块的 <code>defaultUniformBuffer</code>；每个显式 ConstantBuffer/ParameterBlock 的普通数据进入该子块自己的 <code>defaultUniformBuffer</code>。</div>
+      <div><strong>Push Constant</strong>首版完全不支持；Shader 一旦产生 Push Constant 反射布局即编译失败，SLC2 不序列化任何 Push Constant 字段。</div>
+      <div><strong>数组访问</strong>支持 <code>ShaderVar[index]</code> 和名称路径中的 <code>[index]</code>；只允许正整数长度的固定数组，不支持任何无界声明。</div>
+      <div><strong>块数组</strong>ConstantBuffer/ParameterBlock 本身不得形成数组；单个块内部的普通数据数组和资源数组仍按通用数组契约支持。</div>
+      <div><strong>Pipeline Layout 身份</strong><code>pipelineLayoutFingerprint</code> 对版本化规范文本计算完整 SHA-256，仅表示当前 Target 完整物理 Pipeline Layout 的精确相等关系。</div>
+      <div><strong>Specialization</strong>interface/generic 必须在编译期静态完成 specialization；不实现运行时动态 specialization。</div>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="architecture">2. 总体架构与 SolarEngine 替换边界</h2>
+    <div class="flow">
+      <div>Slang Shader<br><small>Program + Variant 声明</small></div>
+      <div class="arrow">→</div>
+      <div>Slang 编译器<br><small>Target + Defines</small></div>
+      <div class="arrow">→</div>
+      <div>代码 + ProgramLayout</div>
+      <div class="arrow">→</div>
+      <div>SLC2<br><small>Target / Variant / Stage</small></div>
+    </div>
+    <div class="flow">
+      <div>SLC2 Program</div>
+      <div class="arrow">→</div>
+      <div>ShaderProgramLayout</div>
+      <div class="arrow">→</div>
+      <div>ShaderParameterBlock</div>
+      <div class="arrow">→</div>
+      <div>Vulkan Descriptor Sets</div>
+    </div>
+
+    <h3 id="architecture-boundary">SolarEngine 现有边界的替换关系</h3>
+    <table>
+      <thead><tr><th>现有 SolarEngine 边界</th><th>Slang 路径职责</th></tr></thead>
+      <tbody>
+        <tr><td><code>SE::ShadersCompilation::Compile</code></td><td>新增 Slang-only 编译入口或新调度分支，接收统一 Slang 编译请求并协调编译事务；不承担旧 Shader 资产自动迁移。</td></tr>
+        <tr><td><code>ShaderCompilationOptions</code></td><td>旧入口继续使用；新路径使用包含多个 Target 和 Program 级 Variant 过滤器的 <code>ShaderCompileRequest</code>。</td></tr>
+        <tr><td><code>ShaderParser::Parser::Process / ShaderMeta</code></td><td>Slang 路径完全绕过旧 <code>.shader</code> / HLSL Parser，使用 marker struct Attribute 与 Slang 反射。</td></tr>
+        <tr><td><code>ShaderCompiler / ShaderCompilationContext</code></td><td>旧 glslang 编译抽象保留给旧入口；新路径由 Slang session、Program 链接、错误文本和完整 SLC2 数据生成流程取代。</td></tr>
+        <tr><td><code>ExtractShaderIncludes / shader watcher</code></td><td>当前阶段不定义替换方案；<code>DependencyIndex</code>、import 反向关联和精确热重载后续设计。</td></tr>
+        <tr><td><code>ShaderCompilerVulkan</code> 的 glslang 反射与 <code>SpirvShaderDescriptorInfo</code></td><td>新路径不从 glslang/SPIR-V 二次反射获取布局；从 Slang <code>ProgramLayout</code> 生成逻辑类型图与当前 Target 物理 <code>descriptorRanges[]</code> 组成的 <code>ShaderProgramLayout</code>。</td></tr>
+        <tr><td><code>DescriptorSetLayoutInfoVulkan::AddBindingsForStage</code></td><td>旧路径按 Stage descriptorInfo 合成布局；新路径以完整 Program 的共享 Layout 重建 DescriptorSetLayout/PipelineLayout。</td></tr>
+      </tbody>
+    </table>
+    <p class="note">新系统只接收 Slang Shader 资产，不提供 Legacy 分流、旧 <code>.shader</code> / HLSL 编译或资产迁移。旧 Shader 资产不会被转换为 Slang，也不会写入 SLC2；资产类型、语言字段和资产版本均不用于选择新编译路径。</p>
+  </section>
+
+  <section>
+    <h2 id="terms">3. 核心术语与身份层级</h2>
+    <table>
+      <thead><tr><th>术语</th><th>定义</th><th>身份</th></tr></thead>
+      <tbody>
+        <tr><td>Shader Resource</td><td>一个 Shader 源文件或 Shader 资产；一个资源对应一个聚合 SLC2 文件。</td><td><code>SLC2FileKey</code></td></tr>
+        <tr><td>Shader Program</td><td>由一个 <code>SHADER_PROGRAM</code> marker struct 声明的完整程序及其全部阶段。</td><td><code>ProgramId = SHADER_PROGRAM(name, ...)</code> 中的 <code>name</code></td></tr>
+        <tr><td>Variant Group</td><td>一次 <code>SHADER_MACRO(...)</code> 声明的互斥选项集合。</td><td>Program 内的声明顺序与成员集合</td></tr>
+        <tr><td>Variant</td><td>每个宏组选择一个状态后形成的无值宏名集合。</td><td>规范化 <code>variant</code> 字符串</td></tr>
+        <tr><td>Target</td><td>操作系统平台、图形后端和 Shader Model 的平铺组合；其他编译选项由统一策略固定。</td><td><code>TargetKey = Platform × Backend × ShaderModel</code></td></tr>
+        <tr><td>完整编译单元</td><td>一个 Program 在一个 Target、一个 Variant 下的全部 Stage。</td><td><code>ProgramId × TargetKey × Variant</code></td></tr>
+        <tr><td>Stage Record</td><td>完整编译单元内部的一条阶段代码记录。</td><td><code>EntryPoint × Stage</code></td></tr>
+        <tr><td>SLC2</td><td>面向运行时的 UTF-8 JSON Shader 缓存；不保存源路径、import 路径或诊断文本。</td><td><code>&lt;SLC2FileKey&gt;.slc.json</code></td></tr>
+      </tbody>
+    </table>
+    <p>缓存身份和原子更新以“完整编译单元”为最小语义单位。Stage Record 只负责定位单个阶段，不能独立参与缓存命名；跨编译调用的增量失效策略后续设计。</p>
+  </section>
+
+  <iframe class="module-frame" src="Shader接口.html?sections=program-declaration,variants" data-anchors="program-declaration,program-discovery,entrypoint-parameters,program-attributes,variants,variant-declaration,variant-model,variant-normalization" title="Shader 接口" loading="eager"></iframe>
+
+  <iframe class="module-frame" src="编译.html?sections=compile-request,compile-flow" data-anchors="compile-request,compile-result-transaction,target-key,target-mapping,compile-flow,discovery-environment,compile-transaction" title="编译请求与编译流程" loading="eager"></iframe>
+
+  <iframe class="module-frame" src="运行时.html?sections=layout-binding" data-anchors="layout-binding,layout-summary,layout-root-model,layout-address-spaces,layout-reflection-graph,layout-relative-offsets,layout-uniform-storage,layout-arrays,layout-block-arrays,layout-serialization,layout-type-records,layout-range-mapping,layout-slang-ir-mapping,layout-binding-path,layout-fingerprint,layout-specialization,layout-default-resources" title="反射 Layout 与运行时名称绑定" loading="eager"></iframe>
+
+  <iframe class="module-frame" src="编译.html?sections=cache" data-anchors="cache,cache-structure,cache-keys,cache-example,cache-constraints" title="SLC2 Shader Cache" loading="eager"></iframe>
+
+  <iframe class="module-frame" src="运行时.html?sections=runtime" data-anchors="runtime" title="运行时读取、Variant 匹配与绑定" loading="eager"></iframe>
+
+  <iframe class="module-frame" src="编译.html?sections=dependencies" data-anchors="dependencies,dependency-index,dependency-update" title="依赖索引与增量编译（后续）" loading="eager"></iframe>
+
+  <section>
+    <h2 id="milestones">12. 实施里程碑</h2>
+    <ol>
+      <li>定义 Slang-only 编译请求、结果与 backend 调度边界，新路径不包含 Legacy Shader 分流。</li>
+      <li>完成 Slang → SPIR-V → Vulkan Compute Pipeline 的最小闭环。</li>
+      <li>实现 Program/Variant Attribute 发现、显式 Variant 过滤和完整排列组合。</li>
+      <li>实现 <code>ShaderProgramLayout</code>、SLC2 v2 和 Texture/Buffer/Sampler 名称绑定。</li>
+      <li>联合链接 VS/PS，创建统一 graphics pipeline layout 和 descriptor sets。</li>
+      <li>补齐固定数组下标访问、固定资源数组绑定、UAV、嵌套 ParameterBlock、加速结构和 uniform 字段；无界数组不进入当前或后续既定里程碑。</li>
+      <li>建立 SolarEngine Slang 标准库并编写新的 Slang Vulkan Shader 资产；不迁移旧 <code>.shader</code> / HLSL Shader 资产。</li>
+      <li>按同一接口扩展 DXIL、WGSL 等未来 Target。</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2 id="acceptance">13. 验收标准</h2>
+    <h3 id="acceptance-program">编译与 Program</h3>
+    <ul>
+      <li>编译请求只需指定操作系统平台、图形后端和 Shader Model，即可按对应统一编译策略生成 artifact；请求中不存在 API/二进制版本、capability、Optimize、Debug、矩阵或浮点模式覆盖项。</li>
+      <li><code>ShaderCompileTarget</code> 平铺 <code>Platform</code>、<code>Backend</code> 和 <code>Model</code>，不包含嵌套 <code>ShaderTargetPlatform</code>。相同三元组生成相同 <code>TargetKey</code>，任一字段变化均生成不同 Key。</li>
+      <li>基线发现以空 Variant 宏集合加载根 Module；依赖 Variant 宏才能出现的 Program、Stage 或宏组声明会产生明确错误。</li>
+      <li>新编译入口只接受 Slang Shader 资产，不按资产类型、语言字段或资产版本回退到 Legacy 编译器。</li>
+      <li><code>SHADER_PROGRAM(ShaderProgramTest, ...)</code> 的根声明通过公共 Slang API <code>DeclReflection::getName()</code> 产生精确的 <code>ProgramId = "ShaderProgramTest"</code>；名称返回 <code>null</code> 或空字符串时编译失败，同一 Shader Resource 中的重名声明被拒绝，重命名后旧身份的 artifact 不再命中。</li>
+      <li>实现新增或 SolarEngine 更新内置 Slang 时，compiler-side API 编译/链接探针必须使用工程当前可用的公共头文件与编译库通过；探针覆盖实现实际调用的 Slang API，反射语义另由最小 Shader fixture 验证，运行时不因此链接 Slang。</li>
+      <li>只发现根 Module 根作用域中的 Program；namespace 和 imported Module 中的 Program 不参与编译。</li>
+      <li>Compute Program 只能包含一个 <code>CS</code>；Graphics Program 必须包含 <code>PS</code>、每种 Stage 最多一个入口，并要求 <code>HS</code>/<code>DS</code> 成对出现。</li>
+      <li>入口函数无需 <code>[shader]</code>，可由 Program 声明的名称和 Stage 正确检查。</li>
+      <li>EntryPoint 只允许 varying/system-value 输入输出；任何 EntryPoint uniform/resource 参数都会产生包含入口和参数名称的编译错误。全部可绑定参数必须来自 Module 全局作用域或显式 ConstantBuffer/ParameterBlock。</li>
+      <li>反射中出现任何 Push Constant、unknown/unbounded 数组或资源 range，或 ConstantBuffer/ParameterBlock 自身形成数组、被数组直接或间接重复实例化时，当前编译单元失败且不产生 SLC2。</li>
+      <li>同一 graphics Program 的全部入口来自同一 linked component 并共享兼容布局。</li>
+    </ul>
+
+    <h3 id="acceptance-variant">Variant</h3>
+    <ul>
+      <li>未设置过滤器时生成所有 Program 的完整笛卡尔积；显式过滤器只生成规范化后的指定组合。</li>
+      <li>必选组省略时选择第一个宏；含 <code>_</code> 的组省略时生成真实空宏 Variant。</li>
+      <li><code>SHADER_MACRO(_, FOG_ON)</code> 全量编译同时产生 <code>""</code> 和 <code>"FOG_ON"</code> 两个缓存 Variant。</li>
+      <li>宏输入顺序不影响匹配；非法组选择、未知宏或带值宏产生明确错误。</li>
+    </ul>
+
+    <h3 id="acceptance-runtime">缓存与运行时</h3>
+    <ul>
+      <li><code>CompilerBuildTag</code>、Target 和 Variant 均参与完整编译单元身份；source/import 的跨调用精确失效、未请求单元复用与孤儿缓存清理由后续 <code>DependencyIndex</code> 设计处理，不列入当前验收。</li>
+      <li>SLC2 可确定性写入、严格校验并原子替换；失败不会破坏此前有效缓存。</li>
+      <li><code>ShaderCompileResult</code> 只包含 <code>Status</code>、<code>CompileMessage</code> 和 <code>SLC2Data</code>。成功时消息可以为空或包含 Warning，且数据是完整 UTF-8 JSON SLC2；失败时消息包含 Error 且数据为空，不返回逐单元或部分 Target 结果。</li>
+      <li><code>CompileMessage</code> 只在本次实际编译结束后输出日志，不进入 SLC2 或其他持久化数据；缓存命中不重放历史 Warning，<code>TreatWarningsAsErrors</code> 也不重新判定历史编译信息。</li>
+      <li>每个 <code>ProgramId × TargetKey × Variant</code> 只保存一份共享 Layout；其全部 Stage Record 均不重复保存 Layout。</li>
+      <li>每份 Layout 只有一个有效 <code>rootBlockId</code>；SLC2 不包含 <code>entryPointBlockId</code>，运行时也不会为任一 Stage 构造独立参数根。</li>
+      <li>SLC2 不包含独立 <code>names</code> 字段或重复的规范全名；运行时可从类型树中的成员局部名称确定性派生完整路径并生成名称索引。</li>
+      <li>运行时能从 <code>types[]</code>、<code>parameterBlocks[]</code> 和 <code>rangeBindings[]</code> 重建 ShaderVar/ParameterBlock 访问链，不依赖 Slang 或 SPIR-V 二次反射。</li>
+      <li><code>types[]</code> 使用连续且确定性分配的 ID；每个 Type Record 均包含 <code>uniformByteSize</code> 与 <code>resourceRanges[]</code>，并严格符合其 <code>basic/struct/array/resource/parameterBlock</code> 分支字段契约。</li>
+      <li>SLC2 Type Record 不包含 Slang/Falcor/Vulkan 原生枚举整数。未解析或未映射的类型、scalar、资源 shape/access 或 image format 必须使编译失败，不能写入 unknown 占位值。</li>
+      <li>每个 ParameterBlock 的逻辑 <code>resourceRanges[]</code> 与 <code>rangeBindings[]</code> 按 <code>(blockId, rangeIndex)</code> 完整一一对应；一条 simple mapping 可以拥有多条 <code>descriptorRanges[]</code>，子对象 mapping 只能拥有一个有效 <code>subBlockId</code>。</li>
+      <li>每个块满足 <code>uniformByteSize = 0 ⇔ defaultUniformBuffer = null</code>；全局普通数据使用根块默认 Uniform Buffer，显式 ConstantBuffer/ParameterBlock 的普通数据使用各自子块默认 Uniform Buffer，按名称写入能定位到正确的 <code>(blockId, uniformByte)</code>。</li>
+      <li>运行时能从全部可达块的非空 <code>defaultUniformBuffer</code> 和 <code>descriptorRanges[]</code> 确定性重建 DescriptorSetLayout/PipelineLayout，不依赖序列化的 <code>descriptorSets[]</code>，且 SLC2 不包含 Push Constant 数据。</li>
+      <li>写入 SLC2 的 linked component 已完成全部 interface/generic specialization；运行时不会因绑定资源或 ParameterBlock 而调用 Slang、改变具体类型或生成新的 Pipeline Layout。</li>
+      <li>同一 struct 类型在根块的多个不同位置复用时，成员相对偏移可逐层累加得到各自正确的最终位置；不得要求序列化器复制类型或保存根绝对偏移。</li>
+      <li>C++ 仅按名称即可绑定 Texture、Buffer、Sampler，并支持 <code>textures[3]</code>、<code>materials[2].baseColorTex</code> 等数组元素路径；类型、语法和越界错误有明确诊断。</li>
+      <li>运行时不提供 required/optional 绑定策略；所有需要写入 descriptor 的资源槽都必须显式绑定类型兼容的非空资源。未绑定或显式设置为 <code>null</code> 的槽位在 descriptor 提交前产生包含完整资源路径与期望类型的确定性错误，并中止对应 Draw/Dispatch；SLC2 不保存任何绑定策略、默认资源标识或 fallback 字段。</li>
+      <li>固定资源数组可逐元素绑定且 descriptor 更新位置正确；所有数组/range/descriptor 数量必须是正的有限整数，无界声明在所有 Target 上均得到确定性编译错误，不能静默生成不完整缓存。</li>
+      <li>单个 ConstantBuffer/ParameterBlock 内的普通数据数组和资源数组可按通用数组路径访问；块数组、以数组为元素根的块和数组元素闭包中的块实例均被确定性拒绝，Schema 中不存在块实例下标或 descriptor stride。</li>
+      <li>Vulkan 资源数组元素只改变 <code>dstArrayElement</code>，不会把数组下标加到 binding；组合资源和内部 counter 能按一条名称绑定更新其全部物理 descriptor。</li>
+      <li><code>pipelineLayoutFingerprint</code> 始终是 64 个小写十六进制字符；物理布局相同但名称或逻辑类型图不同的 Layout 产生相同值，任一纳入规范输入的物理字段变化都会产生不同值。运行时重算验证，并在 hash 命中后深比较规范物理记录再复用 GPU 对象。</li>
+      <li>Vulkan validation layer 下 descriptor layout、pipeline layout 和绑定无错误。</li>
+      <li>运行时不依赖硬编码 set/binding，也不要求 Shader 源码显式声明 Vulkan binding。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2 id="open-items">14. 待确认设计项</h2>
+    <p>当前没有仍需在本设计阶段确认的项目；后续出现新的未决设计项时再补充。</p>
+  </section>
+
+  <section>
+    <h2 id="non-goals">15. 非目标</h2>
+    <ul>
+      <li>不兼容、不编译、不迁移旧 HLSL Shader 资产，也不提供 Legacy 调度或自动转换器。</li>
+      <li>第一阶段不实现 D3D12、WebGPU 或其他平台专用 Target。</li>
+      <li>当前阶段不设计 Cook/发布流程；SLC2 的资产打包位置、Target/Variant 裁剪、发布加载策略和文件大小上限均不属于本设计范围。</li>
+      <li>当前阶段不设计或实现 <code>DependencyIndex</code>；其持久化内容与格式、source/import 反向索引、精确增量编译、SLC2/索引提交顺序、崩溃恢复、并发更新和缓存 GC 均留待后续处理。</li>
+      <li>当前阶段不设计运行时生命周期；descriptor 分配与 dirty tracking、Pipeline 缓存、热重载交换、布局变化后的失效传播以及 GPU 对象延迟销毁均不属于本设计范围。</li>
+      <li>当前阶段不实现默认资源库或任何资源 fallback；运行时不会为未绑定资源自动创建、选择或填充替代资源。</li>
+      <li>不直接移植 Falcor 的 gfx、Device 或 ParameterBlock 实现。</li>
+      <li>当前版本不支持 EntryPoint uniform/resource 参数或 EntryPoint 专属 ParameterBlock；EntryPoint 只承担 varying/system-value Stage 接口。</li>
+      <li>当前版本不支持 Push Constant；不序列化 Push Constant 布局，也不在 Vulkan PipelineLayout 中创建 Push Constant range。</li>
+      <li>不实现运行时 interface specialization、按绑定对象类型即时编译 Shader，或在运行时生成新的 specialized Pipeline/Layout。</li>
+      <li>当前设计不支持任何无界数组或无界资源 range，也不启用 <code>runtimeDescriptorArray</code>、variable descriptor count、partially-bound、update-after-bind 等为无界容量服务的 descriptor indexing 模式。</li>
+      <li>当前 schema 明确不支持 ConstantBuffer/ParameterBlock 自身形成数组，也不规划块实例索引或块 descriptor stride；单个块内部的普通数据数组以及 Texture、Buffer、Sampler 资源数组不受此限制。</li>
+      <li>第一阶段不要求完成 UAV、资源数组整段批量绑定、嵌套 ParameterBlock、加速结构或 uniform 字段写入；固定数组的元素级访问与资源绑定除外。</li>
+    </ul>
+  </section>
+
+<footer>设计状态：已完成 · 后续实施见 <a href="../Shader编译系统实现/index.html">Shader 编译系统实施设计 v2</a></footer>
+</main>
+</body>
+</html>

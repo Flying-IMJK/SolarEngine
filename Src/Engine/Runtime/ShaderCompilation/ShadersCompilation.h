@@ -2,6 +2,7 @@
 
 #include "Runtime/API.h"
 #include "ShaderCompiler.h"
+#include "ShaderCompileTypes.h"
 
 namespace SE
 {
@@ -19,6 +20,22 @@ namespace SE
 		/// <param name="options">Compilation options</param>
 		/// <returns>True if failed, otherwise false</returns>
 		static bool Compile(ShaderCompilationOptions& options);
+
+		/// <summary>
+		/// Compiles a Slang-only shader resource into SLC2 text data. This path is offline-only and does not touch GPU runtime objects.
+		/// </summary>
+		/// <param name="request">Compilation request.</param>
+		/// <returns>Compilation status, diagnostics and SLC2 data.</returns>
+		static ShaderCompileResult CompileSlang(const ShaderCompileRequest& request);
+
+		/// <summary>
+		/// Runs a minimal offline Slang compilation self-test and returns the generated SLC2 data.
+		/// </summary>
+		/// <remarks>
+		/// This helper is intentionally offline-only. It allows editor commands or tests to verify
+		/// the compiler pipeline before runtime shader parameter binding exists.
+		/// </remarks>
+		static ShaderCompileResult CompileSlangOfflineSelfTest();
 
 		/// <summary>
 		/// Registers shader asset for the automated reloads on source includes changes.

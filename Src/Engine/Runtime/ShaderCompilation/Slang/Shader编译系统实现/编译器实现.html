@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shader 编译系统实现 v2 · 编译器实现</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="section-frame.js"></script>
+</head>
+<body class="module-page impl-page" data-module-label="编译器实现">
+<aside class="sidebar module-only" aria-label="文档导航">
+  <a class="brand" href="index.html">Shader 编译系统实现<small>Slang 编译事务 · v2</small></a>
+  <nav class="module-nav"></nav>
+</aside>
+
+<main class="module-content">
+  <header class="module-only" id="compiler-top">
+    <h1>编译器实现 <span class="version-badge">v2</span></h1>
+    <p class="subtitle">从公开请求到 Slang linked component，再到完整、可提交的 SLC2 数据。</p>
+  </header>
+
+  <section>
+    <h2 id="compiler-boundary">1. 替换边界与代码组织</h2>
+    <p>现有 <code>ShaderCompiler</code> 抽象围绕 <code>ShaderMeta</code>、逐 Stage permutation 和二进制 GPU cache 设计，不适合作为新编译器基类。新路径使用独立的 <code>SlangShaderCompiler</code>，公开入口仍由 <code>ShadersCompilation</code> 提供。</p>
+
+    <div class="flow">
+      <div>ShaderCompileRequest</div><div class="arrow">→</div>
+      <div>SlangShaderCompiler</div><div class="arrow">→</div>
+      <div>Reflection IR + Stage Code</div><div class="arrow">→</div>
+      <div>ShaderCompileResult</div>
+    </div>
+
+    <h3 id="compiler-files">新增文件</h3>
+    <table>
+      <thead><tr><th>路径</th><th>类型</th><th>单一职责</th></tr></thead>
+      <tbody>
+        <tr><td class="path">Src/Engine/Runtime/ShaderCompilation/ShaderCompileTypes.h</td><td><span class="tag">公共</span></td><td>请求、Target、Variant selection、状态和结果数据结构。</td></tr>
+        <tr><td class="path">Src/Engine/Runtime/ShaderCompilation/Slang/SlangShaderCompiler.h/.cpp</td><td><span class="tag">协调器</span></td><td>执行单次全有或全无的编译事务，聚合 diagnostics 和 SLC2。</td></tr>
+        <tr><td class="path">Src/Engine/Runtime/ShaderCompilation/Slang/SlangSessionFactory.h/.cpp</td><td><span class="tag">Slang</span></td><td>创建 GlobalSession/Session，应用 Target、宏和 Slang 文件系统挂接策略。</td></tr>
+        <tr><td class="path">Src/Engine/Runtime/ShaderCompilation/Slang/SlangShaderFileSystem.h/.cpp</td><td><span class="tag">IO</span></td><td>编译侧 import/include 路径解析；首版以根 Shader 文件目录为默认查找根，后续扩展引擎虚拟路径；首版不持久化依赖索引。</td></tr>
+        <tr><td class="path">Src/Engine/Runtime/ShaderCompilation/Slang/SlangProgramDiscovery.h/.cpp</td><td><span class="tag">反射</span></td><td>在空 Variant 宏的根 Module 中发现 <code>SolarShaderProgram</code> marker struct、Stage 和宏组；已实现。</td></tr>
+        <tr><td class="path">Src/Engine/Runtime/ShaderCompilation/Slang/ShaderVariantPlanner.h/.cpp</td><td><span class="tag">纯逻辑</span></td><td>校验宏组、全量展开或显式过滤、补默认项、规范化和去重。</td></tr>
+        <tr><td class="path">Src/Engine/Runtime/ShaderCompilation/Slang/SlangTargetPolicy.h/.cpp</td><td><span class="tag">策略</span></td><td>把 Platform/Backend/ShaderModel 映射为不可由请求覆盖的 Slang Target 配置。</td></tr>
+        <tr><td class="path">Src/Engine/Runtime/ShaderCompilation/Slang/SlangDiagnosticSink.h/.cpp</td><td><span class="tag">诊断</span></td><td>按调用顺序合并 Slang blob 与引擎校验错误，输出一个 CompileMessage。</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="compiler-existing-files">修改现有文件</h3>
+    <table>
+      <thead><tr><th>文件</th><th>修改</th><th>不做什么</th></tr></thead>
+      <tbody>
+        <tr><td class="path">ShadersCompilation.h</td><td>增加新 <code>Compile(request, result)</code> 重载。</td><td>不在新入口按语言、资产版本或 profile 回退到旧编译器。</td></tr>
+        <tr><td class="path">ShadersCompilation.cpp</td><td>验证公共请求，调用 <code>SlangShaderCompiler</code>，成功后由上层原子写入。</td><td>新入口不调用 <code>ShaderParser::Parser::Process</code> 或 <code>RequestCompiler(ShaderProfile)</code>。</td></tr>
+        <tr><td class="path">Src/Engine/Runtime/ShaderCompilation/CMakeLists.txt</td><td>维护 ShaderCompilation 模块源码列表；Slang 工程接入已由 SolarEngine 提供。</td><td>不让 runtime module 调用 Slang。</td></tr>
+      </tbody>
+    </table>
+    <p class="danger">实施期间可以保留旧 <code>Compile(ShaderCompilationOptions&amp;)</code> 重载，使仓库尚未迁移的调用点继续构建；它与新入口是两个互不调度的路径。新 Shader 资产只能进入新入口。</p>
+  </section>
+
+  <section>
+    <h2 id="compiler-api">2. 公开编译 API</h2>
+    <h3 id="compiler-api-types">请求与结果</h3>
+    <pre><code>enum class GraphicsBackend : uint8
+{
+    Vulkan,
+    // D3D12 / WebGPU 后续加入稳定枚举和值字符串映射。
+};
+
+struct ShaderCompileTarget
+{
+    PlatformType Platform;
+    GraphicsBackend Backend;
+    ShaderModel Model;
+};
+
+struct ShaderVariantRequest
+{
+    Array&lt;String&gt; Defines; // 只保存宏名；空集合是一条显式 Variant。
+};
+
+struct ShaderProgramVariantSelection
+{
+    String ProgramId;
+    Array&lt;ShaderVariantRequest&gt; Variants; // 必须非空。
+};
+
+struct ShaderCompileRequest
+{
+    String ResourcePath;              // 引擎虚拟资源路径。
+    StringAnsi Source;                // 根 Module 的 UTF-8 Slang 源码。
+    Array&lt;ShaderCompileTarget&gt; Targets;
+    Array&lt;ShaderProgramVariantSelection&gt; VariantSelections;
+    bool TreatWarningsAsErrors;
+};
+
+enum class ShaderCompileStatus : uint8
+{
+    Success,
+    Failed,
+};
+
+struct ShaderCompileResult
+{
+    ShaderCompileStatus Status;
+    String CompileMessage;
+    Array&lt;byte&gt; SLC2Data;
+};</code></pre>
+
+    <h3 id="compiler-api-semantics">公开语义</h3>
+    <ul>
+      <li><code>Targets</code> 至少一项，按规范 TargetKey 去重；首版只接受受支持 Host 上的 Vulkan。</li>
+      <li><code>VariantSelections</code> 为空表示为所有发现 Program 编译完整笛卡尔积；非空时只编译列出的 Program 和组合。</li>
+      <li>Selection 的 <code>Variants</code> 不能为空；显式 <code>Defines = {}</code> 表示一条会经过默认补全的组合。</li>
+      <li>请求不传入 <code>SearchPaths</code>；根 Shader 文件、import 和 include 的解析由编译侧 <code>SlangShaderFileSystem</code> 统一处理，避免调用方搜索路径污染 Shader 编译身份。</li>
+      <li>Slang 的 <code>const char*</code> API 边界使用 <code>StringAnsi</code> 桥接；宏名、入口名、源码路径和源码文本不得默认以 <code>std::string</code> 作为生命周期持有对象。</li>
+      <li>控制流分支必须显式使用 <code>{}</code>，包括单语句 <code>if</code> / <code>else</code> / <code>for</code> / <code>while</code>。</li>
+      <li>请求不暴露优化级别、调试信息、matrix layout、SPIR-V 版本、capability 或 binding shift，这些都属于版本化 Target 策略。</li>
+      <li><code>Success</code> 必须携带一份完整、UTF-8、通过自读校验的 SLC2；<code>Failed</code> 必须清空 <code>SLC2Data</code>。</li>
+      <li>Warning 和 Error 保持原始顺序合入一个 <code>CompileMessage</code>；不返回结构化 diagnostics 或部分结果。</li>
+    </ul>
+
+    <h3 id="compiler-api-entry">最终入口</h3>
+    <pre><code>void ShadersCompilation::Compile(
+    const ShaderCompileRequest&amp; request,
+    ShaderCompileResult&amp; result)
+{
+    result = {};
+    SlangShaderCompiler compiler;
+    compiler.Compile(request, result);
+    // 文件提交不在 compiler 内发生。
+}</code></pre>
+    <p>编译器本身只产生内存结果。资产导入器或缓存服务在 <code>Status == Success</code> 后负责临时文件、flush 和 rename；这保证编译失败不会破坏现有有效缓存。该入口必须能在没有 <code>ShaderProgramInstance</code>、GPU 设备、Vulkan backend 和资源绑定状态的进程中独立执行，编译验收以完整 <code>SLC2Data</code>、self-read、语义 manifest 和确定性为准。</p>
+
+    <h3 id="compiler-pseudocode-orchestrator">公开入口伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>CompileShaderResource</strong>
+        <small>计划实现 · 请求级全有或全无事务</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>一个 Shader Resource、多个 Target、可选 VariantSelections</div>
+        <div><strong>不变量</strong>失败时 SLC2Data 为空；旧缓存不在函数内改写</div>
+        <div><strong>输出</strong>最小 ShaderCompileResult</div>
+      </div>
+      <pre><code>Compile(request, out result):
+    result = {
+        Status = Failed,
+        CompileMessage = "",
+        SLC2Data = {}
+    }
+    diagnostics = DiagnosticSink(request.ResourcePath)
+
+    validated = TRY_OR_FINISH(
+        ValidateAndCanonicalizeRequest(request),
+        diagnostics,
+        result)
+
+    baseline = TRY_OR_FINISH(
+        DiscoverBaselinePrograms(validated, diagnostics),
+        diagnostics,
+        result)
+
+    plan = TRY_OR_FINISH(
+        BuildCompilePlan(validated, baseline),
+        diagnostics,
+        result)
+
+    artifact = NewSLC2Artifact(format = 2.0)
+    FOR sessionGroup IN plan.GroupBy(TargetKey, Variant):
+        session = TRY_OR_FINISH(
+            CreateVariantSession(sessionGroup),
+            diagnostics,
+            result)
+        module = TRY_OR_FINISH(
+            LoadAndVerifyModule(session, baseline),
+            diagnostics,
+            result)
+
+        FOR unit IN sessionGroup.Units:
+            compiled = TRY_OR_FINISH(
+                CompileProgramUnit(session, module, unit),
+                diagnostics,
+                result)
+            artifact.Add(compiled)
+
+    IF diagnostics.HasError OR
+       (request.TreatWarningsAsErrors AND diagnostics.HasWarning):
+        return FinishFailed(diagnostics, result)
+
+    bytes = TRY_OR_FINISH(
+        SLC2Writer.WriteDeterministic(artifact),
+        diagnostics,
+        result)
+    TRY_OR_FINISH(SLC2Reader.ReadAndValidate(bytes), diagnostics, result)
+
+    result.Status = Success
+    result.CompileMessage = diagnostics.Text()
+    result.SLC2Data = Move(bytes)</code></pre>
+      <p class="pseudo-note">伪代码中的 TRY_OR_FINISH 只修改公开 result，不写磁盘；原子文件替换始终由调用者在 Success 后执行。</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="compiler-transaction">3. 编译事务与调用顺序</h2>
+    <ol class="sequence">
+      <li><strong>ValidateRequest：</strong>规范化 ResourcePath，校验 Target 唯一性、请求大小和 UTF-8 源码。</li>
+      <li><strong>DiscoverPrograms：</strong>以空 Variant 宏创建基线 Session，加载根 Module，只读取 Module 根声明。</li>
+      <li><strong>BuildPlan：</strong>校验 Program/Stage/宏组，展开全部 Variant 或规范化显式选择，形成有序 CompileUnit 列表。</li>
+      <li><strong>CompileUnit：</strong>为每个 Target × Program × Variant 创建 Variant Session、重新加载 Module、查找入口并创建 composite component。</li>
+      <li><strong>Link：</strong>一次链接同一 Program 的全部 Stage，得到共享 linked component；失败时收集 diagnostics 并终止事务。</li>
+      <li><strong>Emit：</strong>从 linked component 取得共享 Layout，并为每个 EntryPoint 取得目标代码 blob。</li>
+      <li><strong>BuildIR：</strong>把 Slang Layout 转为引擎 ShaderReflectionIR，执行所有不支持项和映射完整性校验。</li>
+      <li><strong>Aggregate：</strong>按确定性顺序聚合 Program、Target、Variant、Layout 与 Stage code。</li>
+      <li><strong>WriteAndSelfRead：</strong>生成 SLC2 UTF-8 JSON，再立即用共享的无后端 <code>SLC2Reader</code> 严格读取和重算 fingerprint；该 reader 不依赖 Vulkan、GPU 资源或运行时 Program 对象。</li>
+      <li><strong>CommitResult：</strong>仅在全部步骤成功后设置 <code>Success</code>；否则清空数据并返回完整错误文本。</li>
+    </ol>
+    <p class="note">首版每次都实际编译请求中的完整单元。跨调用的 source/import 内容命中、<code>DependencyIndex</code>、import 反向索引和孤儿缓存清理不在本实施范围；不得在这里先引入一个未设计的半成品缓存索引。</p>
+
+    <h3 id="compiler-pseudocode-unit">完整 Program 编译单元伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>CompileProgramUnit</strong>
+        <small>计划实现 · Module + Program 全部 EntryPoint 联合链接</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>Variant Session、已加载 Module、Program 声明</div>
+        <div><strong>不变量</strong>所有 Stage 来自一个 linked component</div>
+        <div><strong>输出</strong>共享 Layout + Stage code records</div>
+      </div>
+      <pre><code>CompileProgramUnit(session, module, unit):
+    components = [module]
+    entryPointOrder = []
+
+    FOR stageDecl IN StableStageOrder(unit.Program.Stages):
+        entryPoint, diag = module.findAndCheckEntryPoint(
+            stageDecl.EntryPoint,
+            ToSlangStage(stageDecl.Stage))
+        diagnostics.Append(diag, Context(unit, stageDecl.Stage))
+        FAIL_IF(entryPoint == null, "EntryPoint check failed")
+        TRY(ValidateEntryPointParameters(entryPoint, stageDecl))
+
+        components.Add(entryPoint)
+        entryPointOrder.Add(stageDecl)
+
+    composite, diag = session.createCompositeComponentType(components)
+    diagnostics.Append(diag, Context(unit))
+    FAIL_IF(composite == null, "Cannot create Program component")
+
+    linked, diag = composite.link()
+    diagnostics.Append(diag, Context(unit))
+    FAIL_IF(linked == null, "Program link failed")
+
+    // ProgramLayout 的生命周期绑定到 linked。
+    slangLayout, diag = linked.getLayout(targetIndex = 0)
+    diagnostics.Append(diag, Context(unit))
+    reflectionIR = TRY(SlangReflectionBuilder.Build(linked, slangLayout, unit))
+
+    stages = []
+    FOR index, stageDecl IN Enumerate(entryPointOrder):
+        code, diag = linked.getEntryPointCode(index, targetIndex = 0)
+        diagnostics.Append(diag, Context(unit, stageDecl.Stage))
+        TRY(ValidateTargetCode(unit.Target, code))
+        stages.Add(StageRecord(stageDecl, CopyBytes(code)))
+
+    TRY(ShaderReflectionValidator.Validate(reflectionIR))
+    return CompiledProgramUnit(unit.Identity, reflectionIR, stages)</code></pre>
+      <p class="pseudo-note">任何 Stage 检查、link、codegen 或反射失败都丢弃整个 ProgramId × TargetKey × Variant 单元。</p>
+    </div>
+
+    <h3 id="compiler-ordering">确定性排序</h3>
+    <table>
+      <thead><tr><th>集合</th><th>写入顺序</th></tr></thead>
+      <tbody>
+        <tr><td>Program</td><td><code>ProgramId</code> UTF-8 字节序。</td></tr>
+        <tr><td>Target</td><td>规范化 <code>platform, backend, shaderModel</code> 三元组顺序。</td></tr>
+        <tr><td>Variant</td><td>规范化 <code>variant</code> 字符串 UTF-8 字节序。</td></tr>
+        <tr><td>Stage</td><td>固定引擎顺序：VS、HS、DS、GS、PS、CS；不存在的 Stage 跳过。</td></tr>
+        <tr><td>Type/Block</td><td>从 rootBlock 深度优先遍历，按 Slang 反射成员和 rangeIndex 顺序分配连续 ID。</td></tr>
+        <tr><td>JSON 字段</td><td>Writer 中固定代码顺序，禁止遍历 Dictionary 决定输出顺序。</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2 id="compiler-discovery">4. Program 发现与入口检查</h2>
+    <h3 id="compiler-discovery-session">基线 Session</h3>
+    <ul>
+      <li><code>SessionDesc.preprocessorMacros</code> 不包含任何 Variant 宏。</li>
+      <li>SolarEngine Shader 接口头中的 <code>SHADER_PROGRAM</code>、<code>SHADER_VS</code> 等声明宏正常可见，但它们不是 Variant。</li>
+      <li>调用 <code>ISession::loadModuleFromSource</code> 加载根 Module；load diagnostics 即使没有使调用失败，也必须进入 CompileMessage。</li>
+      <li>使用 <code>IModule::getModuleReflection()</code>，只遍历其直接 <code>DeclReflection::getChild(i)</code>；不递归 namespace，也不枚举 import 的 Module。</li>
+    </ul>
+
+    <h3 id="compiler-attributes">Attribute 解析</h3>
+    <p><code>SHADER_PROGRAM</code> 首先展开一个零参数 <code>SolarShaderProgram</code> Attribute，它是唯一的 Program marker；marker struct 上可重复出现 <code>SolarShaderStage</code> 与 <code>SolarShaderMacroGroup</code> Attribute。宿主用 <code>DeclReflection</code> 枚举直接声明，通过 SolarEngine 当前 Slang 公共 API <code>decl-&gt;getName()</code> 取得并复制名称，再对 Struct 调用 <code>decl-&gt;getType()</code>，通过 <code>TypeReflection::getUserAttributeCount()</code>、<code>getUserAttributeByIndex()</code> 和 <code>getArgumentValueString()</code> 读取字符串；不把成员函数当入口。</p>
+    <pre><code>SHADER_PROGRAM(MyProgram,
+    SHADER_VS(MyVS)
+    SHADER_PS(MyPS)
+    SHADER_MACRO(MATERIAL_LIT, MATERIAL_UNLIT)
+    SHADER_MACRO(_, FOG_ON)
+);</code></pre>
+    <ul>
+      <li><code>ProgramId</code> 是 <code>DeclReflection::getName()</code> 返回并立即复制的 marker struct 简单声明名 <code>MyProgram</code>，区分大小写；返回 <code>null</code> 或空字符串时失败。即使 marker 没有任何 Stage，也必须被发现后按 Stage 契约报错，不能静默跳过。</li>
+      <li>同一 Shader Resource 中 ProgramId 重复直接失败；namespace 不参与身份。</li>
+      <li>Compute Program 必须且只能有一个 CS，不能混入 graphics Stage。</li>
+      <li>Graphics Program 每种 Stage 最多一个，必须有 PS；HS 和 DS 必须同时存在；不得含 CS。</li>
+      <li>声明结构必须在所有 Variant 下稳定。Variant Session 重新发现后若 Program/Stage/宏组与基线不同，视为 Shader 接口错误。</li>
+    </ul>
+
+    <h3 id="compiler-entrypoints">按名称检查入口</h3>
+    <ul>
+      <li>对每个声明调用 <code>IModule::findAndCheckEntryPoint(entryPointName, SlangStage, ...)</code>，不要求函数带 <code>[shader]</code>。</li>
+      <li>把 Module 与该 Program 的全部 EntryPoint 交给 <code>ISession::createCompositeComponentType</code>，然后调用 <code>link</code>。</li>
+      <li>Graphics 的 Layout 只能从这个联合 linked component 获取，禁止逐 Stage 独立链接后合并 binding。</li>
+      <li>检查 EntryPoint 参数，只允许 varying/system-value 输入输出；发现 uniform/resource 参数时报告 Program、Stage、入口和参数名。</li>
+    </ul>
+
+    <h3 id="compiler-pseudocode-discovery">Program 发现伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>DiscoverPrograms</strong>
+        <small>计划实现 · 只遍历根 Module 的直接声明</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>空 Variant 宏环境中的 IModule</div>
+        <div><strong>不变量</strong>不递归 namespace；不遍历 imported Module</div>
+        <div><strong>输出</strong>已校验、按 ProgramId 排序的 ProgramDecl[]</div>
+      </div>
+      <pre><code>DiscoverPrograms(module):
+    root = module.getModuleReflection()
+    programsById = {}
+
+    FOR childIndex IN [0, root.getChildrenCount()):
+        decl = root.getChild(childIndex)
+        CONTINUE_IF(decl == null)
+        CONTINUE_IF(decl.getKind() != DeclReflection::Kind::Struct)
+
+        programType = decl.getType()
+        FAIL_IF(programType == null, "Struct type reflection unavailable")
+        attributes = ReadAttributes(programType)
+        CONTINUE_IF(NOT attributes.ContainsSolarProgramMarker)
+
+        programName = decl.getName()
+        FAIL_IF(programName == null OR programName[0] == '\0',
+                "Program declaration has no name")
+        programId = CopyUtf8(programName)
+        FAIL_IF(programsById.Contains(programId),
+                "Duplicate ProgramId", programId)
+
+        program = ProgramDecl(programId)
+        FOR attribute IN attributes.InSourceOrder:
+            MATCH attribute:
+                SolarShaderStage(stageText, entryPointText):
+                    program.AddStage(
+                        ParseStableStage(stageText),
+                        ValidateIdentifier(entryPointText))
+                SolarShaderMacroGroup(membersText):
+                    program.AddVariantGroup(
+                        ParseMacroGroupWithoutExpansion(membersText))
+
+        TRY(ValidateStageContract(program))
+        TRY(ValidateVariantGroupDeclarations(program))
+        program.Signature = HashCanonicalDeclaration(program)
+        programsById.Add(programId, program)
+
+    return StableSort(programsById.Values, by = ProgramId)</code></pre>
+      <p class="pseudo-note"><code>DeclReflection::getName()</code> 是 SolarEngine 当前接入 Slang 的真实公共 API；不存在 <code>SimpleName</code>。返回指针只在 Slang 反射对象有效期内借用，因此在继续处理前复制。Variant Session 重新加载 Module 后再次计算 Signature；与基线不同即说明声明被 Variant 宏条件化，编译失败。</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="compiler-variants">5. Variant Planner</h2>
+    <h3 id="compiler-variant-model">内部模型</h3>
+    <pre><code>struct ShaderVariantGroup
+{
+    Array&lt;StringAnsi&gt; Members; // 不含 "_"，保留声明顺序。
+    bool HasUndefinedChoice;
+    StringAnsi DefaultMember;  // 含 "_" 时为空，否则 Members[0]。
+};
+
+struct PlannedVariant
+{
+    Array&lt;StringAnsi&gt; Defines; // 已排序、无重复，不含 "_"。
+    StringAnsi CanonicalText;  // 例如 "FOG_ON;MATERIAL_LIT"。
+};</code></pre>
+
+    <h3 id="compiler-variant-rules">规划算法</h3>
+    <ol>
+      <li>按逗号切分 Attribute 保存的原始 token，trim ASCII 空白，拒绝空项。</li>
+      <li>每组原始选项至少两个；<code>_</code> 每组最多一次，实际宏名符合 <code>[A-Za-z_][A-Za-z0-9_]*</code>。</li>
+      <li>同一 Program 中实际宏名不得跨组重复，避免调用者无法判断归属。</li>
+      <li>全量模式对“原始选择项”做笛卡尔积，所以 <code>SHADER_MACRO(_, FOG_ON)</code> 产生 <code>""</code> 与 <code>"FOG_ON"</code>。</li>
+      <li>显式模式中，缺少必选组补第一个成员；缺少含 <code>_</code> 的组选择不定义。</li>
+      <li>拒绝 <code>NAME=VALUE</code>、未知宏、同组多选和请求中的 <code>_</code>。</li>
+      <li>把实际宏按 UTF-8 字节序排序并以分号连接；排序发生在序列化前，因此调用者输入顺序不影响匹配。</li>
+      <li>按 CanonicalText 去重并排序；Variant 数量乘法必须做溢出检查和项目上限检查。</li>
+    </ol>
+
+    <h3 id="compiler-pseudocode-variants">Variant 规划伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>BuildProgramVariants</strong>
+        <small>计划实现 · 全量笛卡尔积与显式选择共用 Normalize</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>Program 宏组；可选请求 Defines 集合</div>
+        <div><strong>不变量</strong>宏无值；一个组最多选择一个；“_”不进入 Defines</div>
+        <div><strong>输出</strong>按 CanonicalText 排序且去重的 PlannedVariant[]</div>
+      </div>
+      <pre><code>BuildProgramVariants(program, optionalSelection):
+    groups = TRY(ParseAndValidateGroups(program.VariantGroups))
+
+    IF optionalSelection is absent:
+        rawChoices = [[]]
+        FOR group IN groups:
+            next = []
+            FOR prefix IN rawChoices:
+                FOR choice IN group.SourceChoices: // 包含 "_" 状态
+                    next.Add(prefix + choice)
+            FAIL_IF_MUL_OVERFLOW_OR_LIMIT(next.Count)
+            rawChoices = Move(next)
+    ELSE:
+        FAIL_IF(optionalSelection.Variants.IsEmpty)
+        rawChoices = optionalSelection.Variants.Select(v => v.Defines)
+
+    unique = Map&lt;CanonicalText, PlannedVariant&gt;()
+    FOR raw IN rawChoices:
+        selectedByGroup = TRY(ClassifyRequestedMacros(groups, raw))
+        defines = []
+
+        FOR group IN groups:
+            IF selectedByGroup.Has(group):
+                choice = selectedByGroup[group]
+            ELSE IF group.HasUndefinedChoice:
+                choice = Undefined
+            ELSE:
+                choice = group.Members[0]
+
+            IF choice != Undefined:
+                defines.Add(choice)
+
+        StableSort(defines, Utf8ByteOrder)
+        canonical = Join(defines, ";")
+        unique.InsertIfAbsent(canonical, PlannedVariant(defines, canonical))
+
+    return StableSort(unique.Values, by = CanonicalText)</code></pre>
+      <p class="pseudo-note"><code>SHADER_MACRO(_, FOG_ON)</code> 的 SourceChoices 数量是 2，因此全量模式一定产生空字符串和 FOG_ON 两条记录。</p>
+    </div>
+
+    <h3 id="compiler-variant-tests">首批纯单元测试</h3>
+    <table>
+      <thead><tr><th>输入</th><th>预期</th></tr></thead>
+      <tbody>
+        <tr><td><code>SHADER_MACRO(_, FOG_ON)</code>，全量</td><td><code>""</code>、<code>"FOG_ON"</code></td></tr>
+        <tr><td><code>(LIT, UNLIT) × (_, FOG)</code>，全量</td><td><code>LIT</code>、<code>UNLIT</code>、<code>FOG;LIT</code>、<code>FOG;UNLIT</code></td></tr>
+        <tr><td>显式空 Defines</td><td>必选组取第一项，可空组选空。</td></tr>
+        <tr><td><code>{FOG, LIT}</code> 与 <code>{LIT, FOG}</code></td><td>同一 CanonicalText，只编译一次。</td></tr>
+        <tr><td><code>FOG=1</code>、未知宏、同组多选</td><td>整个请求失败，无 SLC2。</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2 id="compiler-target">6. Target 策略与 Slang Session</h2>
+    <h3 id="compiler-target-key">Target 身份</h3>
+    <pre><code>SOLAR-SHADER-TARGET/v1
+platform=windows
+backend=vulkan
+shaderModel=6_7
+
+TargetKey = LowerHex(SHA-256(UTF8(上面的精确文本)))</code></pre>
+    <p>TargetKey 只由 Platform、Backend 和 ShaderModel 组成。Slang 版本与固定编译选项进入 <code>CompilerBuildTag</code>，不扩展 TargetKey。</p>
+
+    <h3 id="compiler-vulkan-policy">Vulkan 首版映射</h3>
+    <ul>
+      <li><code>TargetDesc.format = SLANG_SPIRV</code>；Profile 通过 <code>IGlobalSession::findProfile</code> 从稳定 ShaderModel 字符串映射，未知 profile 直接失败。</li>
+      <li>SPIR-V 版本、Vulkan capability、matrix layout、floating-point、优化和调试配置由 <code>SlangTargetPolicy</code> 的版本化常量设置。</li>
+      <li><code>SessionDesc.skipSPIRVValidation = false</code>；不能为绕过编译错误而关闭 Slang SPIR-V 验证。</li>
+      <li>自动 binding 由同一个 linked component 决定；Shader 源不需要 Vulkan set/binding。</li>
+      <li>Target policy 不调用 glslang 转译；代码 blob 直接来自 linked Slang component 的 <code>getEntryPointCode</code>。</li>
+    </ul>
+
+    <h3 id="compiler-session-cache">Session 创建策略</h3>
+    <p>首版优先正确性：一个 Target × Variant 使用一个 Session，同一 Session 可编译该资源中选中的多个 Program。这样同一宏环境只加载一次 Module，同时不同 Target/Variant 不共享可变状态。</p>
+    <ul>
+      <li>基线发现使用独立空宏 Session。</li>
+      <li>每个 Variant Session 的 preprocessorMacros 只包含 CanonicalText 中的宏，值统一为 <code>1</code>；SLC2 仍只保存宏名。</li>
+      <li>Session cache 仅存在于当前 Compile 调用，key 为 TargetKey × CanonicalText；请求结束即释放。</li>
+      <li>将来如需跨请求缓存 Session，必须先单独定义线程安全、文件内容失效与 Slang 对象生命周期，不在首版实现。</li>
+    </ul>
+
+    <h3 id="compiler-pseudocode-session">Target × Variant Session 分组伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>GroupCompilePlan</strong>
+        <small>计划实现 · 请求内复用，不跨请求缓存</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>CompileUnit[]</div>
+        <div><strong>不变量</strong>一个 Session 只有一组 Target/Macros/FileSystem</div>
+        <div><strong>输出</strong>稳定顺序的 SessionGroup[]</div>
+      </div>
+      <pre><code>GroupCompilePlan(units):
+    groups = Map&lt;(TargetKey, VariantText), SessionGroup&gt;()
+
+    FOR unit IN units:
+        key = (unit.TargetKey, unit.Variant.CanonicalText)
+        groups[key].Units.Add(unit)
+
+    ordered = StableSort(groups.Values,
+                         by = TargetTuple then VariantText)
+    FOR group IN ordered:
+        group.Units = StableSort(group.Units, by = ProgramId)
+    return ordered
+
+CreateVariantSession(group):
+    defines = group.Variant.Defines.Map(name => (name, "1"))
+    return SlangCompilerService.CreateRequestSession(
+        group.Target,
+        defines,
+        SlangShaderFileSystem(request.ResourcePath))</code></pre>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="compiler-diagnostics">7. 错误、警告与事务终止</h2>
+    <h3 id="compiler-diagnostic-order">CompileMessage 规则</h3>
+    <ul>
+      <li>按“请求校验 → Module load → EntryPoint check → link → codegen → IR 构建 → SLC2 自检”的发生顺序追加文本。</li>
+      <li>Slang diagnostics 原文保留文件、行列和 severity；引擎错误使用固定前缀并包含 Resource、Program、Target、Variant 和 Stage 上下文。</li>
+      <li>多个调用产生相同文本时不做模糊去重，避免删除不同阶段的有效上下文。</li>
+      <li><code>TreatWarningsAsErrors</code> 只作用于当次实际编译产生的 warning；若触发则状态为 Failed，但保留 warning 文本。</li>
+      <li>CompileMessage 不写入 SLC2，也不在缓存命中时重放。</li>
+    </ul>
+
+    <h3 id="compiler-failure-policy">全有或全无</h3>
+    <table>
+      <thead><tr><th>失败点</th><th>结果</th><th>已有缓存</th></tr></thead>
+      <tbody>
+        <tr><td>任一 Program/Target/Variant/Stage 编译失败</td><td><code>Failed</code>，SLC2Data 为空</td><td>不变</td></tr>
+        <tr><td>反射出现不支持结构</td><td><code>Failed</code>，指出反射路径</td><td>不变</td></tr>
+        <tr><td>SLC2 写入或 self-read 失败</td><td><code>Failed</code>，指出 JSON 路径</td><td>不变</td></tr>
+        <tr><td>只有 warning 且未提升为 error</td><td><code>Success</code>，数据完整</td><td>允许原子替换</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="compiler-pseudocode-result">诊断聚合与结果封存伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>DiagnosticSink / FinishResult</strong>
+        <small>计划实现 · 内部可结构化，公开仍为一个字符串</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>Slang diagnostic blobs + 引擎校验错误</div>
+        <div><strong>不变量</strong>保持发生顺序；不写入 SLC2</div>
+        <div><strong>输出</strong>CompileMessage 与最终 Status</div>
+      </div>
+      <pre><code>AppendSlang(blob, context):
+    IF blob is null OR blob.Size == 0:
+        return
+    entries.Add({
+        Severity = DetectSeverityWithoutRewritingText(blob),
+        Context = context,
+        Text = CopyUtf8(blob)
+    })
+
+AppendEngineError(context, message):
+    entries.Add({ Error, context, message })
+
+FinishFailed(out result):
+    result.Status = Failed
+    result.CompileMessage = RenderInOccurrenceOrder(entries)
+    result.SLC2Data.Clear()
+
+FinishSuccess(bytes, out result):
+    ASSERT(NOT HasError)
+    result.Status = Success
+    result.CompileMessage = RenderInOccurrenceOrder(entries)
+    result.SLC2Data = Move(bytes)</code></pre>
+      <p class="pseudo-note">内部 entry 仅用于正确聚合；不会扩展公开 ShaderCompileResult，也不会持久化历史 Warning。</p>
+    </div>
+  </section>
+
+  <footer class="module-only">实施文档 v2 · 编译器实现</footer>
+</main>
+</body>
+</html>

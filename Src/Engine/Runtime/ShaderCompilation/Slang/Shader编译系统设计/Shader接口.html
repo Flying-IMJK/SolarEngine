@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SolarEngine Slang Shader 编译系统设计 · Shader 接口</title>
+  <script>if (window.parent !== window) document.documentElement.classList.add("embedded");</script>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="section-frame.js"></script>
+</head>
+<body class="module-page" data-module-label="Shader 接口">
+<aside class="sidebar module-only" aria-label="Shader 接口文档导航">
+  <a class="brand" href="index.html">SolarEngine Slang Shader<small>Shader 接口 · 返回完整设计</small></a>
+  <nav class="module-nav"></nav>
+</aside>
+<main class="module-content">
+  <header class="module-only module-intro">
+    <h1>Shader 接口</h1>
+    <p class="subtitle">SolarEngine Slang Shader 编译系统设计 · <a href="index.html">查看完整文档</a></p>
+  </header>
+  <section>
+    <h2 id="program-declaration">4. Shader Program 与 EntryPoint 声明</h2>
+    <p>一个 Shader 文件可以声明多个 Program。每个 Program 通过 marker struct 集中声明阶段入口和 Variant Group；入口函数本身不需要 <code>[shader("vertex")]</code>、<code>[shader("fragment")]</code> 等 Attribute。</p>
+    <pre><code>SHADER_PROGRAM(
+    ShaderProgramTest,
+
+    SHADER_VS(TestVS)
+    SHADER_PS(TestPS)
+
+    SHADER_MACRO(MATERIAL_LIT, MATERIAL_UNLIT)
+    SHADER_MACRO(_, FOG_ON)
+);</code></pre>
+
+    <p>上例的 <code>ProgramId</code> 是区分大小写的字符串 <code>"ShaderProgramTest"</code>，即 marker struct 的声明名称。编译器不得将它改写为全限定名、hash 或其他派生值。同一个 Shader Resource 中的 <code>ProgramId</code> 必须唯一；即使声明位于不同 namespace，也不能重复使用同一个 <code>name</code>。重命名 <code>name</code> 等同于更改 Program 身份，会使原身份对应的 artifact 失效。</p>
+    <p class="contract"><strong>ProgramId 读取契约：</strong>宿主只从根 Module 直接子声明的公共 Slang 反射对象读取名称，并调用 <code>DeclReflection::getName()</code>。返回的名称必须立即复制为引擎拥有的 UTF-8 字符串；返回 <code>null</code> 或空字符串时编译失败。契约中不存在 <code>SimpleName</code> 属性或别名，也不得改用 Slang 内部 AST API 推导名称。</p>
+
+    <table>
+      <thead><tr><th>声明</th><th>语义</th></tr></thead>
+      <tbody>
+        <tr><td><code>SHADER_PROGRAM(ShaderProgramTest, ...)</code></td><td>声明一个完整 Shader Program，并将 <code>ProgramId</code> 定义为 <code>"ShaderProgramTest"</code>。</td></tr>
+        <tr><td><code>SHADER_VS(TestVS)</code></td><td>vertex 阶段入口函数名为 <code>TestVS</code>。</td></tr>
+        <tr><td><code>SHADER_PS(TestPS)</code></td><td>fragment 阶段入口函数名为 <code>TestPS</code>；其他阶段使用对应的 <code>SHADER_*</code> 宏。</td></tr>
+        <tr><td><code>SHADER_MACRO(A, B)</code></td><td>必选互斥组；省略该组时默认选择声明中的第一个宏 <code>A</code>。</td></tr>
+        <tr><td><code>SHADER_MACRO(_, FOG_ON)</code></td><td>含空选择的互斥组；<code>_</code> 表示该组不定义任何实际宏。</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="program-discovery">Program 发现范围与 Stage 校验</h3>
+    <p>Program 发现只针对当前 Shader Resource 对应根 Module 的直接声明执行：</p>
+    <ul>
+      <li>只读取根 Module 直接声明的 <code>SHADER_PROGRAM</code> marker struct；Program 必须声明在根作用域。</li>
+      <li>不递归进入根 Module 内的 namespace。namespace 内声明的 marker struct 不会被注册为 Program。</li>
+      <li>不发现 imported Module 中的 Program；import 只提供函数、类型和公共代码。</li>
+      <li><code>ProgramId</code> 始终是 <code>DeclReflection::getName()</code> 返回的 <code>SHADER_PROGRAM</code> 简单声明名，namespace 不参与身份。同一个 Shader Resource 内不得出现相同名称，即使符号位于不同 namespace。</li>
+    </ul>
+
+    <table>
+      <thead><tr><th>Program 类型</th><th>Stage 契约</th><th>非法情况</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Compute Program</td>
+          <td>必须且只能声明一个 <code>CS</code>。</td>
+          <td>缺少 <code>CS</code>、重复 <code>CS</code>，或同时包含任意 Graphics Stage。</td>
+        </tr>
+        <tr>
+          <td>Graphics Program</td>
+          <td>每种 Graphics Stage 最多一个入口，且必须声明一个 <code>PS</code>；声明 <code>HS</code> 或 <code>DS</code> 时必须同时声明另一项。</td>
+          <td>缺少 <code>PS</code>、任一 Stage 重复、<code>HS</code>/<code>DS</code> 只出现一个，或同时包含 <code>CS</code>。</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">重复 Stage 和非法 Stage 组合在生成 Variant 笛卡尔积及目标代码之前直接报错，不能通过选择不同 Variant 将同一 Program 拆成不同的 Stage 结构。</p>
+
+    <h3 id="entrypoint-parameters">EntryPoint 参数限制（已确认）</h3>
+    <p>当前版本采用单根反射模型，不支持 EntryPoint 自有的 uniform 或 resource 参数。入口参数只用于描述 Stage 接口：</p>
+    <ul>
+      <li>只允许 Slang 反射为 varying input、varying output 或 system-value 的参数，例如 vertex attribute、fragment output、<code>SV_DispatchThreadID</code> 等阶段输入输出。</li>
+      <li>任何在 EntryPoint 参数中分配 ordinary/uniform 数据、Texture、Buffer、Sampler、ConstantBuffer、ParameterBlock 或其他 descriptor/register-space 资源的声明均为非法；即使 Slang 语言本身接受该声明，SolarEngine Shader 编译也必须失败并报告具体入口与参数名称。</li>
+      <li>所有运行时可设置的 uniform 和资源必须声明在当前 Module 的全局参数作用域，或声明为该根作用域下的显式 ConstantBuffer/ParameterBlock 子对象。</li>
+      <li>SLC2 不创建 EntryPoint 专属 ParameterBlock，也不序列化 <code>entryPointBlockId</code>；所有 Stage 共享 Program 的唯一根 Layout。</li>
+    </ul>
+
+    <h3 id="program-attributes">宏到 Slang Attribute 的展开</h3>
+    <pre><code>[__AttributeUsage(_AttributeTargets.Struct)]
+struct SolarShaderProgramAttribute {}
+
+[__AttributeUsage(_AttributeTargets.Struct)]
+struct SolarShaderStageAttribute
+{
+    string stage;
+    string entryPoint;
+};
+
+[__AttributeUsage(_AttributeTargets.Struct)]
+struct SolarShaderMacroGroupAttribute
+{
+    string members;
+};
+
+#define SHADER_VS(entry) [SolarShaderStage("vertex", #entry)]
+#define SHADER_PS(entry) [SolarShaderStage("fragment", #entry)]
+#define SHADER_MACRO(...) [SolarShaderMacroGroup(#__VA_ARGS__)]
+#define SHADER_PROGRAM(name, context) [SolarShaderProgram] context struct name {}</code></pre>
+
+    <ul>
+      <li><code>SHADER_MACRO</code> 必须直接使用 <code>#__VA_ARGS__</code> 保留原始 token；不能先经二级宏展开。</li>
+      <li><code>SHADER_PROGRAM</code> 展开出的 <code>[SolarShaderProgram]</code> 是唯一 Program marker；因此没有 Stage 的 Program 也会被发现并按 Stage 契约报错，绝不能静默忽略。</li>
+      <li>宿主通过 <code>IModule::getModuleReflection()</code> 遍历根级声明，再通过 <code>getUserAttributeCount()</code> 和 <code>getUserAttributeByIndex()</code> 分类 Program、Stage 与 Macro Group Attribute。</li>
+      <li>宿主使用 <code>IModule::findAndCheckEntryPoint(entryPoint, stage, ...)</code> 查找并检查没有 <code>[shader]</code> 标记的入口函数。</li>
+      <li>找到入口后必须检查其参数布局类别；只接受 varying/system-value 输入输出，拒绝 EntryPoint uniform/resource 参数。</li>
+      <li>Program、Stage 和 Variant Group 声明不得由该 Program 自己的 Variant 宏控制，所有 Variant 必须得到稳定的 Program 结构。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2 id="variants">5. Variant Group、默认项与规范化</h2>
+    <h3 id="variant-declaration">声明语义</h3>
+    <table>
+      <thead><tr><th>声明</th><th>默认选择</th><th>自动全量编译</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>SHADER_MACRO(A, B, ...)</code></td>
+          <td>调用者省略该组时选择第一个宏 <code>A</code>。</td>
+          <td>生成 <code>A</code>、<code>B</code> 等全部实际宏分支。</td>
+        </tr>
+        <tr>
+          <td><code>SHADER_MACRO(_, A, B, ...)</code></td>
+          <td>调用者省略该组时选择空宏状态。</td>
+          <td>生成空宏分支以及 <code>A</code>、<code>B</code> 等全部实际宏分支。</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><code>_</code> 是参与笛卡尔积的真实选择状态，但不是预处理器宏。选择 <code>_</code> 时仍然生成、编译和缓存一个 Variant，只是不向 Slang 传递该组宏，也不把 <code>_</code> 写入 <code>variant</code> 字符串。</p>
+
+    <pre><code>G0 = { MATERIAL_LIT, MATERIAL_UNLIT }
+G1 = { _, FOG_ON }
+
+VariantCount = |G0| × |G1| = 4
+DefaultVariant = MATERIAL_LIT
+
+MATERIAL_LIT
+MATERIAL_UNLIT
+FOG_ON;MATERIAL_LIT
+FOG_ON;MATERIAL_UNLIT
+
+SHADER_MACRO(_, FOG_ON) 单独存在时：
+  Defines = {}          -&gt; variant = ""
+  Defines = { FOG_ON }  -&gt; variant = "FOG_ON"</code></pre>
+
+    <h3 id="variant-model">数据模型</h3>
+    <pre><code>struct ShaderVariant
+{
+    Set&lt;String&gt; Defines;
+};
+
+struct ShaderVariantGroup
+{
+    Array&lt;String&gt; Members;       // 不包含 "_"，保持源码声明顺序
+    bool HasUndefinedChoice;
+    String DefaultMember;        // 必选组为 Members[0]；含 "_" 的组为空
+};</code></pre>
+
+    <h3 id="variant-normalization">统一规范化算法</h3>
+    <pre><code>BuildVariants(Groups):
+  1. 将 "_" 转换为 HasUndefinedChoice，并从 Members 中移除。
+  2. 校验每组原始选项数至少为 2，且实际宏名在 Program 内全局不重复。
+  3. 对所有组做笛卡尔积。
+  4. 实际宏选择加入 Defines。
+  5. 空选择不加入宏名，但仍保留一个物化 ShaderVariant。
+  6. 没有任何组时，生成一个 Defines = {} 的 Variant。
+
+NormalizeVariant(Groups, RequestedDefines):
+  1. 拒绝未声明宏、保留哨兵 "_"、NAME=VALUE 和同组多个成员。
+  2. 缺少必选组时加入该组 Members[0]。
+  3. 缺少含 "_" 的组时保持该组无宏。
+  4. 将补全后的实际宏集合交给 SerializeVariant。
+
+SerializeVariant(Defines):
+  1. 宏名区分大小写并符合 [A-Za-z_][A-Za-z0-9_]*。
+  2. 按宏名 UTF-8 字节序升序排列。
+  3. 使用分号连接。
+  4. 空集合序列化为 ""。</code></pre>
+
+    <ul>
+      <li>必选组的第一个宏是实际定义，补全后必须出现在规范化 <code>variant</code> 字符串中。</li>
+      <li>宏组之间的顺序和调用者传入宏的顺序不影响 <code>variant</code>；必选组内部成员顺序决定默认宏，属于 Shader 接口语义。</li>
+      <li><code>_</code> 在一个组内最多出现一次，可以在不同组重复；实际宏名不得在同一 Program 的不同组重复。</li>
+      <li>Variant 总数是所有组原始选项数的乘积，包含 <code>_</code>；溢出或超过项目上限时，在生成目标代码前失败。</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

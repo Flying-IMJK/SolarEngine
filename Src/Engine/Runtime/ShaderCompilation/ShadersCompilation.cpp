@@ -23,6 +23,7 @@
 #include "Runtime/Resource/Importers/AssetsImportingSystem.h"
 
 #include "Parser/GraphicShaderParser.h"
+#include "Slang/SlangShaderCompiler.h"
 #include "Vulkan/ShaderCompilerVulkan.h"
 
 
@@ -240,6 +241,86 @@ namespace SE
 				ToString(options.Profile));
 		}
 
+		return result;
+	}
+
+	ShaderCompileResult ShadersCompilation::CompileSlang(const ShaderCompileRequest& request)
+	{
+		PROFILE_CPU_NAMED("Shader.CompileSlang");
+
+		SlangShaderCompiler compiler;
+		ShaderCompileResult result = compiler.Compile(request);
+		if (result.Status == ShaderCompileStatus::Success)
+		{
+			LOG_INFO("ShaderCompiler", "Slang shader compilation '{0}' succeed.", request.ShaderName);
+			if (!result.CompileMessage.Text.IsEmpty())
+			{
+				LOG_WARNING("ShaderCompiler", "{0}", result.CompileMessage.Text);
+			}
+		}
+		else
+		{
+			LOG_ERROR("ShaderCompiler", "Slang shader compilation '{0}' failed. {1}", request.ShaderName, result.CompileMessage.Text);
+		}
+		return result;
+	}
+
+	ShaderCompileResult ShadersCompilation::CompileSlangOfflineSelfTest()
+	{
+		PROFILE_CPU_NAMED("Shader.CompileSlangOfflineSelfTest");
+
+		ShaderCompileRequest request;
+		request.ShaderName = SE_TEXT("SolarSlangOfflineSelfTest");
+		request.SourcePath = SE_TEXT("SolarSlangOfflineSelfTest.slang");
+		request.SourceCode = SE_TEXT(R"(
+struct VSInput
+{
+	float3 Position : POSITION;
+};
+
+struct VSOutput
+{
+	float4 Position : SV_POSITION;
+	float4 Color : COLOR0;
+};
+
+VSOutput VSMain(VSInput input)
+{
+	VSOutput output;
+	output.Position = float4(input.Position, 1.0);
+#if defined(USE_TINT)
+	output.Color = float4(1.0, 0.5, 0.25, 1.0);
+#else
+	output.Color = float4(1.0, 1.0, 1.0, 1.0);
+#endif
+	return output;
+}
+
+float4 PSMain(VSOutput input) : SV_Target0
+{
+	return input.Color;
+}
+
+SHADER_PROGRAM(SelfTestProgram, SHADER_VS(VSMain) SHADER_PS(PSMain) SHADER_MACRO(_, USE_TINT))
+)");
+
+		ShaderCompileTarget target;
+		target.Platform = ShaderTargetPlatform::Windows;
+		target.Backend = ShaderGraphicsBackend::Vulkan;
+		target.ShaderModel = ShaderCompileShaderModel::SM_6_0;
+		request.Targets.Add(target);
+
+		// 自测只调用离线编译入口；CompileSlang 内部会完成 SLC2 写出与结构校验。
+		ShaderCompileResult result = CompileSlang(request);
+		if (result.Status == ShaderCompileStatus::Success && result.SLC2Data.Count() == 0)
+		{
+			result.Status = ShaderCompileStatus::Failed;
+			if (!result.CompileMessage.Text.IsEmpty())
+			{
+				result.CompileMessage.Text += SE_TEXT("\n");
+			}
+			result.CompileMessage.Text += SE_TEXT("Slang offline self-test produced empty SLC2 data.");
+		}
 		return result;
 	}
 

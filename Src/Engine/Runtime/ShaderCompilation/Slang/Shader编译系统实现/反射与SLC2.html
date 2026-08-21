@@ -1,0 +1,1160 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shader 编译系统实现 v2 · 反射 IR 与 SLC2</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="section-frame.js"></script>
+</head>
+<body class="module-page impl-page" data-module-label="反射与 SLC2">
+<aside class="sidebar module-only" aria-label="文档导航">
+  <a class="brand" href="index.html">Shader 编译系统实现<small>ShaderReflectionIR 与文本缓存 · v2</small></a>
+  <nav class="module-nav"></nav>
+</aside>
+
+<main class="module-content">
+  <header class="module-only" id="reflection-top">
+    <h1>反射 IR 与 SLC2 <span class="version-badge">v2</span></h1>
+    <p class="subtitle">编译期从 Slang Layout 建立引擎数据，运行时不依赖 Slang，也不从 SPIR-V 二次反射。</p>
+  </header>
+
+  <section>
+    <h2 id="reflection-boundary">1. 组件边界与文件布局</h2>
+    <div class="flow">
+      <div>slang::ProgramLayout</div><div class="arrow">→</div>
+      <div>SlangReflectionBuilder</div><div class="arrow">→</div>
+      <div>ShaderReflectionIR</div><div class="arrow">→</div>
+      <div>SLC2 Writer</div>
+    </div>
+    <div class="flow">
+      <div>SLC2 Text</div><div class="arrow">→</div>
+      <div>SLC2 Reader</div><div class="arrow">→</div>
+      <div>ShaderProgramArtifact</div><div class="arrow">→</div>
+      <div>Runtime Reflection</div>
+    </div>
+
+    <table>
+      <thead><tr><th>路径</th><th>职责</th><th>可链接 Slang</th></tr></thead>
+      <tbody>
+        <tr><td class="path">ShaderCompilation/Slang/SlangReflectionBuilder.h/.cpp</td><td>查询 Slang Type/Variable/Program Layout，构建稳定的引擎 IR。</td><td>是</td></tr>
+        <tr><td class="path">ShaderCompilation/Slang/ShaderReflectionIR.h</td><td>编译期内存模型；字段一一对应 SLC2 schema，但使用强类型稳定枚举。</td><td>否</td></tr>
+        <tr><td class="path">ShaderCompilation/Slang/ShaderReflectionValidator.h/.cpp</td><td>检查可达性、映射完整性、块数组、无界数量、冲突和 fingerprint。</td><td>否</td></tr>
+        <tr><td class="path">ShaderCompilation/SLC2/SLC2Writer.h/.cpp</td><td>固定顺序写 UTF-8 JSON、Base64 代码并执行 self-read。</td><td>否</td></tr>
+        <tr><td class="path">Graphics/Shaders/SLC2/SLC2Reader.h/.cpp</td><td>运行时严格解析、范围检查、结构校验和 fingerprint 重算。</td><td>否</td></tr>
+        <tr><td class="path">Graphics/Shaders/Reflection/ShaderReflectionTypes.h</td><td>编译器和运行时共享的稳定枚举与无 Slang 指针的数据结构。</td><td>否</td></tr>
+      </tbody>
+    </table>
+    <p class="contract"><strong>依赖方向：</strong>共享类型和 SLC2 reader 不得 include <code>slang.h</code>。只有 Builder 适配 Slang 原生枚举与 API；所有未映射的 Slang 类型都在这里失败，不能把 unknown 数字泄露到缓存。</p>
+  </section>
+
+  <section>
+    <h2 id="reflection-ir">2. ShaderReflectionIR 内存模型</h2>
+    <h3 id="reflection-ir-root">根对象</h3>
+    <pre><code>struct ShaderReflectionIR
+{
+    uint32 Schema = 2;
+    StringAnsi PipelineLayoutFingerprint;
+    uint32 RootBlockId;
+    Array&lt;ShaderTypeRecord&gt; Types;
+    Array&lt;ShaderParameterBlockRecord&gt; ParameterBlocks;
+};
+
+struct ShaderParameterBlockRecord
+{
+    uint32 Id;
+    StringAnsi Name; // 根块为空；子块使用父成员局部名称。
+    uint32 ElementTypeId;
+    uint32 UniformByteSize;
+    Optional&lt;ShaderDescriptorRange&gt; DefaultUniformBuffer;
+    Array&lt;ShaderRangeBinding&gt; RangeBindings;
+};</code></pre>
+    <ul>
+      <li>每个完整 <code>ProgramId × TargetKey × Variant</code> 只有一份 IR，全部 Stage 共享。</li>
+      <li>只有一个 <code>RootBlockId</code>，没有 EntryPoint block；入口只允许 varying/system-value 参数。</li>
+      <li><code>Types</code> 是可去重的逻辑类型图；<code>ParameterBlocks</code> 是具体出现位置，不因元素类型相同而合并。</li>
+      <li>所有 ID 都是 Layout 局部、从 0 连续分配的 <code>uint32</code>；运行时直接用数组索引，不构建稀疏 Map。</li>
+    </ul>
+
+    <h3 id="reflection-ir-types">Type Record</h3>
+    <pre><code>ShaderTypeRecord
+  Common:
+    id
+    kind = Basic | Struct | Array | Resource | ParameterBlock
+    uniformByteSize
+    resourceRanges[]
+
+  Basic:
+    scalarType, rows, columns
+    matrixLayout?, matrixByteStride?
+
+  Struct:
+    name?
+    members[] {
+      name, typeId,
+      offset { uniformByte?, resourceRange?, resourceIndex? }
+    }
+
+  Array:
+    elementTypeId, elementCount, elementByteStride
+
+  Resource:
+    resourceKind, shape, access, elementTypeId?
+    imageFormat?, structuredKind?, auxiliaryRanges[]
+
+  ParameterBlock:
+    containerKind = ConstantBuffer | ParameterBlock
+    elementTypeId</code></pre>
+    <p>成员偏移永远相对于直接父类型。运行时沿 ShaderVar 路径累加普通字节偏移、resource range 偏移和 resource index；Builder 不为每个根路径复制同一 Struct。</p>
+
+    <h3 id="reflection-ir-ranges">逻辑 Range 与物理 Mapping</h3>
+    <pre><code>struct ShaderResourceRange
+{
+    ShaderLogicalResourceKind ResourceKind;
+    uint32 Count;
+    uint32 BaseIndex;
+    Optional&lt;ShaderInternalRole&gt; InternalRole;
+    Optional&lt;uint32&gt; OwnerRangeOffset;
+};
+
+struct ShaderRangeBinding
+{
+    uint32 RangeIndex;
+    ShaderRangeFlavor Flavor; // Simple / ConstantBuffer / ParameterBlock
+    Array&lt;ShaderDescriptorRange&gt; DescriptorRanges;
+    Optional&lt;uint32&gt; SubBlockId;
+};
+
+struct ShaderDescriptorRange
+{
+    ShaderDescriptorRole Role;
+    uint32 Set;
+    uint32 Binding;
+    uint32 ArrayElementBase;
+    uint32 LogicalElementStride;
+    ShaderDescriptorType DescriptorType;
+    uint32 DescriptorCount;
+    ShaderStageMask StageMask;
+    ShaderDescriptorFlags Flags;
+};</code></pre>
+    <ul>
+      <li>一个逻辑 range 可映射 1～N 个物理 descriptor range；组合资源、counter 等不得被压成一对一模型。</li>
+      <li><code>Simple</code> 必须有 descriptor mapping、没有 SubBlock；块 flavor 必须有一个 SubBlock、没有 descriptor mapping。</li>
+      <li><code>defaultUniformBuffer</code> 与普通 descriptor 使用相同物理字段，但 Role 固定为 <code>uniformData</code>。</li>
+      <li>set/binding 是当前 Target 下相对 Program 根的绝对坐标，不保存 Slang 子块局部坐标。</li>
+      <li><code>OwnerRangeOffset</code> 保存同一 Type Record 内主 range 的绝对局部索引，不是 counter range 到主 range 的有符号差值；非辅助 range 必须为 null。</li>
+      <li><code>Resource.AuxiliaryRanges[].RangeOffset</code> 是从该 Resource 主 range 到辅助 range 的正向相对 range 偏移；运行时使用 <code>accumulatedMainRange + RangeOffset</code>。它与辅助 range 上的绝对局部 <code>OwnerRangeOffset</code> 语义不同。</li>
+      <li>ConstantBuffer/ParameterBlock Type Record 自身各有一条 count 为 1 的逻辑容器 range；具体子块的 <code>RangeBindings</code> 则对应其 <code>ElementTypeId</code> 的内容 ranges，二者不能混用。</li>
+      <li>Schema 2 的 simple mapping 固定 <code>ArrayElementBase = 0</code>、<code>LogicalElementStride = 1</code>、<code>DescriptorCount = logical range.Count</code>。反射到非恒等映射时 Builder 必须失败。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2 id="reflection-builder">3. SlangReflectionBuilder 算法</h2>
+    <h3 id="reflection-builder-entry">输入与入口</h3>
+    <pre><code>bool SlangReflectionBuilder::Build(
+    slang::IComponentType* linkedProgram,
+    const CompiledProgramContext&amp; context,
+    ShaderReflectionIR&amp; output,
+    String&amp; error);</code></pre>
+    <ul>
+      <li>只接受已经完成 link 和静态 interface/generic specialization 的 component。</li>
+      <li>通过 <code>linkedProgram-&gt;getLayout(targetIndex, diagnostics)</code> 取得 ProgramLayout；Layout diagnostics 进入 CompileMessage。</li>
+      <li>先检查所有 EntryPoint 参数类别，再从 Program 的唯一全局参数根开始遍历。</li>
+      <li>Builder 每次只构建一个 Target/Variant 的 IR，不在多个 Target 之间复用原生 Layout 指针。</li>
+    </ul>
+
+    <h3 id="reflection-slang-ir-mapping">Slang Reflection → IR 实施映射表</h3>
+    <p>本表把系统设计 8.10A 固化为 Builder 函数边界。每个 Slang 查询只能在本次 Build 持有的 linked component 生命周期内使用，查询结果立即复制为稳定枚举、整数、字符串或 ID。</p>
+    <table class="matrix">
+      <thead><tr><th>Slang 公共 API</th><th>Builder 落点</th><th>IR 字段/不变量</th></tr></thead>
+      <tbody>
+        <tr><td><code>ProgramLayout::getGlobalParamsVarLayout()</code></td><td><code>MakeRootBlockContext()</code></td><td>唯一 root occurrence；保留根 offset；禁止用 <code>getParameterByIndex()</code> 拼根。</td></tr>
+        <tr><td><code>TypeLayoutReflection::getKind()</code></td><td><code>MapTypeKind()</code></td><td>Basic/Struct/Array/Resource/ParameterBlock；未列出的 kind 失败。</td></tr>
+        <tr><td><code>getSize(Uniform)</code></td><td><code>ReadFiniteUniformSize()</code></td><td><code>UniformByteSize</code>；unknown/unbounded/uint32 溢出失败。</td></tr>
+        <tr><td><code>getScalarType/getRowCount/getColumnCount/getMatrixLayoutMode/getElementStride(Uniform)</code></td><td><code>BuildBasicFields()</code></td><td>稳定 scalar/shape/layout/stride；不保存原生枚举值。</td></tr>
+        <tr><td><code>getFieldCount/getFieldByIndex/getOffset(Uniform)/getFieldBindingRangeOffset</code></td><td><code>BuildRelativeMember()</code></td><td>声明顺序、局部名称、直接父相对 ordinary/range offset；字段没有对应地址域时写 null。</td></tr>
+        <tr><td><code>getElementCount/getElementTypeLayout/getElementStride(Uniform)</code></td><td><code>BuildArrayFields()</code></td><td>固定正数 count；元素类型 ID；无逐元素节点；块数组闭包失败。</td></tr>
+        <tr><td><code>getResourceShape/getResourceAccess/getResourceResultType/getElementTypeLayout</code></td><td><code>BuildStableResourceFields()</code></td><td>ResourceKind/Shape/Access/ElementTypeId/StructuredKind。StructuredBuffer 使用当前 Target 的 <code>getElementTypeLayout()</code>；Texture/TypedBuffer 的 result type 经 <code>ProgramLayout::getTypeLayout(type, LayoutRules::Default)</code> 转成布局后再 intern。</td></tr>
+        <tr><td><code>getBindingRangeCount/getBindingRangeType/getBindingRangeBindingCount/getBindingRangeLeafTypeLayout/getBindingRangeImageFormat</code></td><td><code>BuildLogicalResourceRanges()</code></td><td>逐 logical range 生成 ResourceKind/Count；BaseIndex 是 count 的 checked 前缀和。</td></tr>
+        <tr><td><code>getExplicitCounterBindingRangeOffset()</code></td><td><code>LinkExplicitCounterRange()</code></td><td>Counter 的 InternalRole、主 range 的绝对局部 OwnerRangeOffset、Resource AuxiliaryRanges。</td></tr>
+        <tr><td><code>getBindingRangeDescriptorSetIndex/getBindingRangeFirstDescriptorRangeIndex/getBindingRangeDescriptorRangeCount</code></td><td><code>EnumerateDescriptorRanges()</code></td><td>显式连接 logical range 与 descriptor ranges；索引域不互换。</td></tr>
+        <tr><td><code>getDescriptorSetSpaceOffset/getDescriptorSetDescriptorRangeIndexOffset/getDescriptorSetDescriptorRangeDescriptorCount/getDescriptorSetDescriptorRangeType/getDescriptorSetDescriptorRangeCategory</code></td><td><code>ResolveDescriptorRange()</code></td><td>绝对 Set/Binding、稳定 DescriptorType/Role、有限 Count、固定 Base=0/Stride=1。</td></tr>
+        <tr><td><code>getSubObjectRangeCount/getSubObjectRangeBindingRangeIndex/getSubObjectRangeOffset/getSubObjectRangeSpaceOffset</code></td><td><code>IndexSubObjectRanges()</code> / <code>MakeChildBlockContext()</code></td><td>块 logical range 恰好一个 sub-object 并创建 SubBlockId；SolarEngine 当前接入 Slang 下的 StructuredBuffer 也恰好一个仅校验的 shader-object sub-object；spaceOffset 只检查有限，不参与 BindingPath 累加。</td></tr>
+        <tr><td><code>getContainerVarLayout/getElementVarLayout</code></td><td><code>EnterSingleElementContainer()</code></td><td>ContainerPath 定位默认 UBO，ElementPath 定位块内容；必须成对存在。</td></tr>
+        <tr><td><code>getEntryPointMetadata/isParameterLocationUsed</code></td><td><code>BuildStageMask()</code></td><td>同物理 binding 的 StageMask 并集；查询失败即 Build 失败。</td></tr>
+      </tbody>
+    </table>
+
+    <h4>SolarEngine 当前接入 Slang 的受检读取原语</h4>
+    <p>Builder 不在业务分支中直接强转 Slang 返回值，统一经过以下原语。错误必须包含 ProgramId、TargetKey、Variant、当前类型/成员路径、API 名和原始值。</p>
+    <table class="matrix">
+      <thead><tr><th>原语</th><th>接受的 Slang 值</th><th>输出</th></tr></thead>
+      <tbody>
+        <tr><td><code>ReadFiniteUInt32(size_t value, api)</code></td><td>不是 <code>SLANG_UNKNOWN_SIZE/SLANG_UNBOUNDED_SIZE</code> 且 ≤ <code>UINT32_MAX</code></td><td><code>uint32</code></td></tr>
+        <tr><td><code>ReadCount(SlangInt value, allowZero, api)</code></td><td>非负、≤ <code>UINT32_MAX</code>；由调用点决定是否允许 0</td><td><code>uint32</code></td></tr>
+        <tr><td><code>ReadRequiredIndex(SlangInt value, upperBound, api)</code></td><td><code>0 ≤ value &lt; upperBound</code></td><td><code>uint32</code></td></tr>
+        <tr><td><code>ReadOptionalMinusOneIndex(...)</code></td><td>只允许 <code>-1</code> 或合法非负索引</td><td><code>ShaderOptionalUInt32</code></td></tr>
+        <tr><td><code>CheckedAdd/CheckedMultiply(uint64, uint64)</code></td><td>结果不溢出 <code>uint64</code></td><td><code>uint64</code> 中间值</td></tr>
+        <tr><td><code>CheckedNarrowUInt32(uint64)</code></td><td>≤ <code>UINT32_MAX</code></td><td>可序列化地址/大小</td></tr>
+        <tr><td><code>RequireReflectionPointer(ptr, api)</code></td><td>当前 kind/分支要求非空</td><td>只在本次 linked component 生命周期内借用的指针</td></tr>
+        <tr><td><code>CopyRequiredUtf8(name, scope)</code></td><td>非空、合法 UTF-8、直接父作用域内唯一</td><td>拥有所有权的 <code>StringAnsi</code></td></tr>
+      </tbody>
+    </table>
+
+    <h4>稳定转换函数清单</h4>
+    <table class="matrix">
+      <thead><tr><th>函数</th><th>Slang 输入</th><th>IR 输出/拒绝边界</th></tr></thead>
+      <tbody>
+        <tr><td><code>MapTypeKind()</code></td><td><code>TypeReflection::Kind</code></td><td>Basic/Struct/Array/Resource/ParameterBlock；未解析 interface/generic、pointer、specialized 等失败。</td></tr>
+        <tr><td><code>MapScalarType()</code></td><td><code>TypeReflection::ScalarType</code></td><td>Bool、8/16/32/64 位整数、Float16/32/64；Void、pointer-sized、bfloat/fp8 当前失败。</td></tr>
+        <tr><td><code>MapMatrixLayout()</code></td><td><code>SlangMatrixLayoutMode</code></td><td>RowMajor/ColumnMajor；Unknown 失败；非 Matrix 写 None/null。</td></tr>
+        <tr><td><code>MapResourceShape()</code></td><td><code>SlangResourceShape</code> 的 base + flags</td><td>Texture 维度/数组/MS、typed/structured/raw buffer、subpass input、acceleration structure；Combined 或未知 flag 失败。</td></tr>
+        <tr><td><code>MapResourceAccess()</code></td><td><code>SlangResourceAccess</code></td><td>None/Read/ReadWrite/RasterOrdered/Append/Consume/Write/Feedback；不合法的 shape/access 组合失败。</td></tr>
+        <tr><td><code>MapImageFormat()</code></td><td><code>SlangImageFormat</code></td><td>只接受系统设计 8.10A 列出的 Schema 2 格式；unknown 写 null；其他失败。</td></tr>
+        <tr><td><code>MapLogicalRange()</code></td><td><code>BindingType + leaf shape/access + internal role</code></td><td><code>ShaderLogicalResourceKind</code>；不得仅从 VkDescriptorType 反推。</td></tr>
+        <tr><td><code>MapDescriptorType()</code></td><td><code>descriptor-range BindingType + ParameterCategory</code></td><td>Vulkan descriptor type；category 必须是 DescriptorTableSlot。</td></tr>
+        <tr><td><code>MapStage()</code></td><td><code>SlangStage</code></td><td>Vertex/Hull/Domain/Geometry/Fragment/Compute；其他 Stage 在当前 Program 模型中失败。</td></tr>
+      </tbody>
+    </table>
+
+    <h4>ParameterCategory 分类</h4>
+    <table class="matrix">
+      <thead><tr><th>分类</th><th>成员</th><th>Builder 行为</th></tr></thead>
+      <tbody>
+        <tr><td>Byte</td><td><code>Uniform</code></td><td>只累计 <code>value</code> 到 deepest ConstantBuffer 之前；<code>space = 0</code>。</td></tr>
+        <tr><td>SpaceAware</td><td><code>ConstantBuffer, ShaderResource, UnorderedAccess, SamplerState, DescriptorTableSlot</code></td><td>累计 value/space 到 deepest ParameterBlock 之前，再累计外层 <code>SubElementRegisterSpace</code>。</td></tr>
+        <tr><td>BoundaryOnly</td><td><code>SubElementRegisterSpace</code></td><td>只能由 SpaceAware 解析器的第二段循环读取，不能直接写 descriptor。</td></tr>
+        <tr><td>Unsupported</td><td>其余 category</td><td>若出现在全局参数 IR 地址解析中立即失败；Varying/Stage IO 不进入本 Builder。</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Type Kind 与 BindingType 分派</h4>
+    <table class="matrix">
+      <thead><tr><th>Slang 值</th><th>Builder 映射</th><th>当前处理</th></tr></thead>
+      <tbody>
+        <tr><td>Scalar / Vector / Matrix</td><td><code>ShaderTypeKind::Basic</code></td><td>支持</td></tr>
+        <tr><td>Struct</td><td><code>ShaderTypeKind::Struct</code></td><td>支持</td></tr>
+        <tr><td>Array</td><td><code>ShaderTypeKind::Array</code></td><td>只支持固定有限数组</td></tr>
+        <tr><td>Resource / SamplerState / TextureBuffer / ShaderStorageBuffer</td><td><code>ShaderTypeKind::Resource</code></td><td>按 shape/access 区分 Texture、Typed/Structured/Raw Buffer、Sampler、Input Attachment、Acceleration Structure</td></tr>
+        <tr><td>ConstantBuffer / ParameterBlock</td><td><code>ShaderTypeKind::ParameterBlock</code></td><td>只允许单实例；容器 Type Record 含一条 count=1 的 logical range</td></tr>
+        <tr><td>其他 Type Kind</td><td>无</td><td>包含类型路径的编译错误</td></tr>
+        <tr><td>Sampler / Texture / MutableTexture / TypedBuffer / MutableTypedBuffer / RawBuffer / MutableRawBuffer / InputRenderTarget / RayTracingAccelerationStructure</td><td><code>ShaderRangeFlavor::Simple</code></td><td>按系统设计 8.10A 的稳定 logical/descriptor 表映射；StructuredBuffer 虽可占 Slang sub-object slot，仍不创建引擎 SubBlock</td></tr>
+        <tr><td>ConstantBuffer / ParameterBlock</td><td>对应块 flavor</td><td>无父 descriptor ranges，必须有唯一 SubBlockId</td></tr>
+        <tr><td>CombinedTextureSampler / InlineUniformData / PushConstant / ExistentialValue / VaryingInput / VaryingOutput / Unknown</td><td>无</td><td>当前版本明确失败</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="reflection-binding-path">BindingPath 数据结构与解析算法</h3>
+    <p><code>BindingPath</code> 是 Slang 官方 access-path 模型的 Builder 内部实现。它保存变量布局链和两个“停止累加”的容器边界，不是已经算好的 binding 整数。</p>
+    <pre><code>struct BindingPathNode
+    {
+    const slang::VariableLayoutReflection* VarLayout = nullptr;
+    const BindingPathNode* Outer = nullptr;
+    };
+
+struct BindingPath
+{
+    const BindingPathNode* Leaf = nullptr;
+    const BindingPathNode* DeepestConstantBuffer = nullptr;
+    const BindingPathNode* DeepestParameterBlock = nullptr;
+};
+
+struct BlockLayoutContext
+{
+    const slang::TypeLayoutReflection* ContainerTypeLayout; // 根无包装时可空
+    const slang::TypeLayoutReflection* ElementTypeLayout;
+    Optional&lt;BindingPath&gt; ContainerPath; // uniformSize=0 且无包装时可空
+    BindingPath ElementPath;
+};
+
+// 节点地址必须在 Builder 完成前保持稳定；普通 Array 扩容会搬移元素，禁止使用。
+using BindingPathNodeArena = ChunkedArray&lt;BindingPathNode, 64&gt;;</code></pre>
+    <table class="matrix">
+      <thead><tr><th>路径对象</th><th>是否序列化</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td><code>BindingPath</code></td><td>否</td><td>编译期 Slang occurrence 地址链，只含 VariableLayout 和容器边界。</td></tr>
+        <tr><td>Type/Member/SubBlock 图</td><td>是</td><td>IR 的结构与相对 offset，是运行时名称寻址的唯一数据源。</td></tr>
+        <tr><td><code>ShaderVarLocation</code></td><td>否；加载时派生</td><td>运行时的 <code>(blockId, uniformByte)</code> 或 <code>(blockId, rangeIndex, resourceIndex)</code>。</td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li>Node 由 Builder 的稳定地址 <code>ChunkedArray</code> 分配；<code>Outer</code> 指向更外层，所有 deepest 指针必须为 null 或当前同一链中的节点。Builder 不复制或移动 arena。</li>
+      <li>两个 deepest 同时存在时，从 leaf 向 root 必须先遇到或同时遇到 <code>DeepestConstantBuffer</code>，然后才可遇到 <code>DeepestParameterBlock</code>。每次 Resolve 前用 <code>IsNullOrNodeInChain()</code> 验证，不依赖 Debug-only assert。</li>
+      <li>只有 VariableLayout 才能形成 Node。数组元素下标、binding range index、descriptor range index 和整数 offset 都不能伪装成 Node。</li>
+      <li>枚举某块元素 TypeLayout 的 descriptor ranges 时，Slang descriptor set/range offset 已汇总该类型内部的 Struct/Array 路径；传入 <code>ResolveDescriptorRange()</code> 的 owner path 只到 <code>ElementPath</code>，不得再追加 <code>getBindingRangeLeafVariable()</code>，否则会重复计算字段 offset。</li>
+      <li>数组元素 Type Record 使用 type-only 递归，不携带 occurrence path；运行时数组下标由 <code>elementByteStride</code> 和 resource range 前缀计算。多维数组保持逐层记录并按行优先逐层乘加。</li>
+      <li>Builder 返回前把所有需要的数据复制到 IR，随后整体销毁 arena；IR 不保存 <code>BindingPath</code> 或 Slang 指针。</li>
+    </ul>
+
+    <h4>BindingPath API 与状态转换</h4>
+    <table class="matrix">
+      <thead><tr><th>API</th><th>前置条件</th><th>结果</th></tr></thead>
+      <tbody>
+        <tr><td><code>Empty()</code></td><td>无</td><td>Leaf/两个边界均为空。</td></tr>
+        <tr><td><code>Append(path, varLayout)</code></td><td>varLayout 非空，属于当前 linked layout</td><td>稳定分配一个 Node；新 Leaf 指向它，Outer 指向旧 Leaf；边界不变。</td></tr>
+        <tr><td><code>MakeRootBlockContext(programLayout)</code></td><td>global params var/type 非空</td><td>根 occurrence 不丢失；若有单元素容器则拆成 ContainerPath/ElementPath。</td></tr>
+        <tr><td><code>EnterSingleElementContainer(path, type)</code></td><td>CB/PB，container/element var 成对存在</td><td>先设置 deepest 边界，再从同一 inner base 分叉两条路径。</td></tr>
+        <tr><td><code>MakeChildBlockContext(parent, subObject)</code></td><td>块 range 与 sub-object 一对一、count=1</td><td>追加 <code>getSubObjectRangeOffset()</code> 返回的合成 VariableLayout，再进入容器。</td></tr>
+        <tr><td><code>ResolveCategory(path, category)</code></td><td>category 属于 Byte 或 SpaceAware；边界属于链</td><td>checked <code>uint64 {Value, Space}</code>；不改变 path。</td></tr>
+      </tbody>
+    </table>
+    <pre><code>// ParameterBlock&lt;Material&gt; material; Material 内含 Texture2D albedo[4]
+root.ElementPath
+    → Append(getSubObjectRangeOffset(materialSubObject))
+      // 上一节点成为 DeepestConstantBuffer/DeepestParameterBlock
+      → Append(materialContainer.getElementVarLayout())
+        = materialContext.ElementPath
+
+// descriptor range 已聚合 Material 内部字段，因此 owner 只传块 ElementPath。
+base = ResolveCategory(materialContext.ElementPath, DescriptorTableSlot)
+absoluteSet = base.Space + localDescriptorSetSpaceOffset
+absoluteBinding = base.Value + localDescriptorRangeIndexOffset
+
+// albedo[0..3] 不产生 Node；IR 保存 count=4，运行时使用 resourceIndex 0..3。</code></pre>
+    <p class="note"><code>getSubObjectRangeOffset()</code> 在 SolarEngine 当前接入 Slang 下返回合成的 <code>VariableLayoutReflection*</code>，已概括 sub-object 在父 TypeLayout 内的 category offsets。<code>getSubObjectRangeSpaceOffset()</code> 仅做有限值和一致性复核，不再参与 Resolve；两者同时相加会重复计算 set/space。</p>
+
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>Append / MakeRootBlockContext / EnterSingleElementContainer</strong>
+        <small>构造路径与 ConstantBuffer/ParameterBlock 截止点</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>ProgramLayout 或块 occurrence path</div>
+        <div><strong>不变量</strong>container/element 成对；deepest 指向本链节点</div>
+        <div><strong>输出</strong>BlockLayoutContext</div>
+      </div>
+      <pre><code>Append(path, varLayout):
+    REQUIRE(varLayout != null)
+    node = arena.New({ VarLayout = varLayout, Outer = path.Leaf })
+    path.Leaf = node
+    return path
+
+MakeRootBlockContext(programLayout):
+    globalVar = REQUIRE(programLayout.getGlobalParamsVarLayout())
+    occurrencePath = Append(EmptyBindingPath(), globalVar)
+    globalType = REQUIRE(globalVar-&gt;getTypeLayout())
+
+    IF globalType-&gt;getKind() IN { ConstantBuffer, ParameterBlock }:
+        return EnterSingleElementContainer(occurrencePath, globalType)
+
+    REQUIRE(globalType-&gt;getContainerVarLayout() == null)
+    REQUIRE(globalType-&gt;getElementVarLayout() == null)
+    REQUIRE(ReadFiniteUniformSize(globalType) == 0,
+            "Vulkan globals with ordinary data require Slang's
+             descriptor-backed container layout")
+    return {
+        ContainerTypeLayout = null,
+        ElementTypeLayout = globalType,
+        ContainerPath = null,
+        ElementPath = occurrencePath
+    }
+
+EnterSingleElementContainer(blockOccurrencePath, containerType):
+    REQUIRE(containerType-&gt;getKind() IN {
+        ConstantBuffer, ParameterBlock })
+    REQUIRE(blockOccurrencePath.Leaf != null)
+
+    containerVar = REQUIRE(containerType-&gt;getContainerVarLayout())
+    elementVar = REQUIRE(containerType-&gt;getElementVarLayout())
+    REQUIRE(containerVar-&gt;getTypeLayout() != null)
+    REQUIRE(elementVar-&gt;getTypeLayout() != null)
+
+    innerBase = blockOccurrencePath
+    innerBase.DeepestConstantBuffer = blockOccurrencePath.Leaf
+
+    subSpaceSize = TRY(ReadFiniteOffset(
+        containerVar-&gt;getTypeLayout(),
+        SubElementRegisterSpace))
+    IF subSpaceSize &gt; 0:
+        innerBase.DeepestParameterBlock = blockOccurrencePath.Leaf
+
+    return {
+        ContainerTypeLayout = containerType,
+        ElementTypeLayout = elementVar-&gt;getTypeLayout(),
+        ContainerPath = Append(innerBase, containerVar),
+        ElementPath = Append(innerBase, elementVar)
+    }</code></pre>
+      <p class="pseudo-note">根 VariableLayout 的 offset 不能丢弃。Vulkan 正常情况下会把含 ordinary data 的全局 scope 反射成自动 ConstantBuffer/ParameterBlock；若 SolarEngine 当前接入 Slang 没有提供 container/element 分解，Builder 不猜测默认 UBO 地址。</p>
+    </div>
+
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>ResolveCategory / ResolveDescriptorRange</strong>
+        <small>类别感知累计；最终写入绝对 Target 地址</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>BindingPath、ParameterCategory、TypeLayout 的 descriptor 局部索引</div>
+        <div><strong>不变量</strong>每个值非负且 finite；checked uint64 累加；写 IR 时 narrow uint32</div>
+        <div><strong>输出</strong>ResolvedCategoryOffset / ShaderDescriptorRange</div>
+      </div>
+      <pre><code>ResolveCategory(path, category):
+    REQUIRE(IsNullOrNodeInChain(
+        path.DeepestConstantBuffer,
+        path.Leaf))
+    REQUIRE(IsNullOrNodeInChain(
+        path.DeepestParameterBlock,
+        path.Leaf))
+    result = { Value = uint64(0), Space = uint64(0) }
+
+    IF category == Uniform:
+        stop = path.DeepestConstantBuffer
+        FOR node = path.Leaf; node != stop; node = node.Outer:
+            REQUIRE(node != null)
+            result.Value = CHECKED_ADD(
+                result.Value,
+                ReadFiniteOffset(node.VarLayout, Uniform))
+        return result
+
+    REQUIRE(category IN {
+        ConstantBuffer, ShaderResource, UnorderedAccess,
+        SamplerState, DescriptorTableSlot })
+
+    stop = path.DeepestParameterBlock
+    FOR node = path.Leaf; node != stop; node = node.Outer:
+        REQUIRE(node != null)
+        result.Value = CHECKED_ADD(
+            result.Value,
+            ReadFiniteOffset(node.VarLayout, category))
+        result.Space = CHECKED_ADD(
+            result.Space,
+            ReadFiniteBindingSpace(node.VarLayout, category))
+
+    FOR node = path.DeepestParameterBlock;
+        node != null;
+        node = node.Outer:
+        result.Space = CHECKED_ADD(
+            result.Space,
+            ReadFiniteOffset(
+                node.VarLayout,
+                SubElementRegisterSpace))
+
+    return result
+
+ResolveDescriptorRange(
+    typeLayout,
+    ownerPath,
+    logicalRange,
+    setIndex,
+    rangeIndex):
+    category =
+        typeLayout-&gt;getDescriptorSetDescriptorRangeCategory(
+            setIndex, rangeIndex)
+    REQUIRE(CurrentBackendAcceptsDescriptorCategory(category))
+    base = TRY(ResolveCategory(ownerPath, category))
+
+    absoluteSet = CHECKED_ADD(
+        base.Space,
+        ReadFinite(typeLayout-&gt;getDescriptorSetSpaceOffset(setIndex)))
+    absoluteBinding = CHECKED_ADD(
+        base.Value,
+        ReadFinite(
+            typeLayout-&gt;getDescriptorSetDescriptorRangeIndexOffset(
+                setIndex, rangeIndex)))
+    descriptorCount = CheckedPositiveUint32(
+        typeLayout-&gt;getDescriptorSetDescriptorRangeDescriptorCount(
+            setIndex, rangeIndex))
+    slangDescriptorType =
+        typeLayout-&gt;getDescriptorSetDescriptorRangeType(
+            setIndex, rangeIndex)
+
+    return ShaderDescriptorRange {
+        Role = TRY(MapDescriptorRole(
+            logicalRange,
+            slangDescriptorType)),
+        Set = CheckedUint32(absoluteSet),
+        Binding = CheckedUint32(absoluteBinding),
+        ArrayElementBase = 0,
+        LogicalElementStride = 1,
+        DescriptorType = TRY(MapDescriptorType(
+            slangDescriptorType)),
+        DescriptorCount = descriptorCount,
+        StageMask = TRY(BuildStageMask(
+            category, absoluteSet, absoluteBinding)),
+        Flags = None
+    }
+
+MapDescriptorRole(logicalRange, slangDescriptorType):
+    IF logicalRange.InternalRole == Counter:
+        return Counter
+    IF slangDescriptorType == Sampler AND
+       logicalRange.ResourceKind != Sampler:
+        return Sampler
+    return Primary
+
+// DefaultUniformBuffer 不调用上式，Role 固定为 UniformData。</code></pre>
+      <p class="pseudo-note">Vulkan adapter 要求 category 为 <code>DescriptorTableSlot</code>，并把 <code>Space/Value</code> 解释为 set/binding。其他 space-aware 类别由同一通用累加器保留给未来 Target；不同类别的 offset 永不互相相加。</p>
+    </div>
+
+    <h3 id="reflection-builder-types">类型构建</h3>
+    <ol class="sequence">
+      <li>从根块 element type 深度优先访问；Struct 成员保持 Slang 声明顺序。</li>
+      <li>把 Slang type kind 映射到五种稳定 TypeKind；interface/generic/pointer/unknown 直接失败。</li>
+      <li>读取 ordinary data size 与成员相对偏移；unknown/unbounded size 直接失败。</li>
+      <li>读取逻辑 binding range 数量和每个 range 的资源类别、数量、base index；数量必须是正的有限 uint32。</li>
+      <li>固定数组记录 element count 和 ordinary byte stride；检查元素类型闭包不含 ParameterBlock。</li>
+      <li>按规范结构生成去重 key；具名 Struct 的名称属于 key，匿名 Struct 使用完整成员结构。</li>
+      <li>分配连续 typeId，并在退出递归后写入完整记录，检测递归环和非法自引用。</li>
+    </ol>
+
+    <h3 id="reflection-pseudocode-types">Type Graph 构建伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>BuildTypeGraph / InternType</strong>
+        <small>计划实现 · Slang 指针只作为本次转换的临时访问句柄</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>根 block 的 TypeLayoutReflection</div>
+        <div><strong>不变量</strong>最终去重键不含指针；ID 连续且 root-first</div>
+        <div><strong>输出</strong>ShaderTypeRecord[]</div>
+      </div>
+      <pre><code>BuildTypeGraph(rootTypeLayout):
+    // Pass 1：复制 Slang 信息并验证，不产生最终 ID。
+    rawRoot = TRY(ExtractRawType(rootTypeLayout, recursionStack = []))
+    TRY(RejectRecursiveOrUnsupportedTypeGraph(rawRoot))
+
+    // Pass 2：先计算完整结构 key，再按 root-first 顺序分配 ID。
+    ComputeCanonicalKeysBottomUp(rawRoot)
+    internedByKey = {}
+    records = []
+    rootTypeId = TRY(InternType(rawRoot, internedByKey, records))
+    return { RootTypeId = rootTypeId, Records = records }
+
+InternType(raw, internedByKey, records):
+    key = raw.CanonicalStructuralKey
+    IF internedByKey.Contains(key):
+        return internedByKey[key]
+
+    id = records.Count
+    internedByKey[key] = id
+    records.Add(ReservedRecord(id)) // 首次遇到即占位，保持 root-first。
+
+    record = CommonFields(
+        id,
+        MapTypeKind(raw.Kind),
+        CheckedUint32(raw.UniformByteSize),
+        BuildLogicalResourceRanges(raw))
+
+    MATCH raw.Kind:
+        Basic:
+            record.Basic = TRY(BuildBasicFields(raw))
+        Struct:
+            FOR member IN raw.MembersInDeclarationOrder:
+                memberTypeId = TRY(InternType(member.Type, internedByKey, records))
+                record.Members.Add(
+                    BuildRelativeMember(member, memberTypeId))
+        Array:
+            FAIL_IF(raw.ElementCount is UnknownOrUnbounded)
+            record.Array = {
+                ElementTypeId = TRY(InternType(raw.ElementType, ...)),
+                ElementCount = CheckedPositiveUint32(raw.ElementCount),
+                ElementByteStride = CheckedUint32(raw.ElementStride)
+            }
+        Resource:
+            record.Resource = TRY(BuildStableResourceFields(raw))
+        ParameterBlock:
+            FAIL_IF(raw.ElementType.Kind == Array)
+            record.ParameterBlock = {
+                ContainerKind = MapContainerKind(raw),
+                ElementTypeId = TRY(InternType(raw.ElementType, ...))
+            }
+
+    records[id] = Move(record)
+    return id</code></pre>
+      <p class="pseudo-note">两阶段算法既满足“不能用 Slang 指针作为序列化去重身份”，又保证最终 ID 按根开始的首次可达顺序稳定分配。</p>
+    </div>
+
+    <h3 id="reflection-pseudocode-ranges">Logical Resource Range 归一化伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>BuildLogicalResourceRanges</strong>
+        <small>先继承子类型语义，再用 Slang 的扁平 range 结果复核</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>RawType + 当前 TypeLayout</div>
+        <div><strong>不变量</strong>OwnerRangeOffset 始终指向当前类型局部主 range</div>
+        <div><strong>输出</strong>ShaderResourceRange[]</div>
+      </div>
+      <pre><code>BuildLogicalResourceRanges(raw):
+    MATCH raw.Kind:
+        Basic:
+            normalized = []
+
+        Resource:
+            normalized = ReadDirectLeafRanges(raw.SlangTypeLayout)
+            IF raw.StructuredKind IN { Counter, Append, Consume }:
+                counterIndex = CheckedRangeIndex(
+                    raw.SlangTypeLayout
+                        .getExplicitCounterBindingRangeOffset())
+                ownerIndex = FindMainStructuredBufferRange(normalized)
+                REQUIRE(counterIndex != ownerIndex)
+                REQUIRE(normalized[counterIndex].Count ==
+                        normalized[ownerIndex].Count)
+                REQUIRE(counterIndex &gt; ownerIndex)
+                normalized[counterIndex].InternalRole = Counter
+                normalized[counterIndex].OwnerRangeOffset = ownerIndex
+                raw.AuxiliaryRanges.Add({
+                    Role = Counter,
+                    RangeOffset = CHECKED_SUB(
+                        counterIndex,
+                        ownerIndex)
+                })
+
+        ParameterBlock:
+            normalized = [
+                ContainerRange(
+                    kind = raw.ContainerKind,
+                    count = 1)
+            ]
+
+        Struct:
+            normalized = []
+            FOR fieldIndex, field IN raw.FieldsInDeclarationOrder:
+                child = field.Type.ResourceRanges
+                IF child.IsEmpty:
+                    REQUIRE(field.ResourceRangeOffset is null)
+                    continue
+
+                start = CheckedRangeIndex(
+                    raw.SlangTypeLayout
+                        .getFieldBindingRangeOffset(fieldIndex))
+                REQUIRE(start == normalized.Count)
+                field.ResourceRangeOffset = start
+                field.ResourceIndex = 0
+
+                FOR childRange IN child:
+                    copy = childRange
+                    IF copy.OwnerRangeOffset != null:
+                        copy.OwnerRangeOffset =
+                            CHECKED_ADD(start, copy.OwnerRangeOffset)
+                    normalized.Add(copy)
+
+        Array:
+            normalized = Copy(raw.ElementType.ResourceRanges)
+            FOR range IN normalized:
+                range.Count = CHECKED_MUL(
+                    range.Count,
+                    raw.ElementCount)
+                // Range 顺序不变，owner 的局部 range index 不变。
+
+    runningBase = 0
+    FOR range IN normalized:
+        range.BaseIndex = CheckedUint32(runningBase)
+        runningBase = CHECKED_ADD(runningBase, range.Count)
+
+    reflectedCount = raw.SlangTypeLayout.getBindingRangeCount()
+    REQUIRE(reflectedCount == normalized.Count)
+    FOR i IN [0, reflectedCount):
+        REQUIRE(normalized[i].Count ==
+                raw.SlangTypeLayout.getBindingRangeBindingCount(i))
+        REQUIRE(IsLogicalKindCompatible(
+            normalized[i],
+            raw.SlangTypeLayout.getBindingRangeType(i),
+            raw.SlangTypeLayout.getBindingRangeLeafTypeLayout(i)))
+
+    return normalized</code></pre>
+      <p class="pseudo-note">Struct 的 <code>start == normalized.Count</code> 同时验证 Slang 字段 range 偏移与声明顺序拼接一致。数组只放大每条 range 的元素数，不复制 range 记录；counter 的 owner 仍是数组 Type Record 内相同的局部 rangeIndex。</p>
+    </div>
+
+    <h3 id="reflection-builder-blocks">ParameterBlock 构建</h3>
+    <ol>
+      <li>为根全局参数创建 block 0；根块名称为空。</li>
+      <li>为每个具体 ConstantBuffer/ParameterBlock 出现位置创建独立 block，即使 elementTypeId 相同。</li>
+      <li>读取块的 ordinary data size；大于 0 时必须生成 defaultUniformBuffer，等于 0 时必须为 null。</li>
+      <li>按 element type 的 logical resource range 索引创建同数量 rangeBindings。</li>
+      <li>使用 Slang binding range 与 descriptor range 查询取得 descriptor count 和 Stage mask；沿 VariableLayout 路径按参数类别累计子布局 offset，最终在叶节点解析为绝对 set/binding。</li>
+      <li>块 flavor 递归创建 subBlockId；同一非根 block 只有一个父出现位置，块图必须无环。</li>
+    </ol>
+    <p class="note">Slang 的 binding range 与 descriptor range 是不同层级。实现必须使用 <code>getFieldBindingRangeOffset</code>、binding-range descriptor-set/first-descriptor-range 查询等 API 建立显式映射，不能把两个索引当成同一个索引。</p>
+
+    <h3 id="reflection-pseudocode-blocks">ParameterBlock 与 Range Mapping 伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>BuildParameterBlock</strong>
+        <small>计划实现 · 逻辑 binding range 显式映射到 0～N 个 descriptor range</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>BlockLayoutContext（container/element 两条 BindingPath）</div>
+        <div><strong>不变量</strong>每个 logical range 恰好一条 RangeBinding</div>
+        <div><strong>输出</strong>具体 block 实例及递归子块</div>
+      </div>
+      <pre><code>BuildParameterBlock(context, blockName):
+    blockId = ReserveNextBlockId()
+    typeLayout = context.ElementTypeLayout
+    elementTypeId = TRY(typeGraph.Intern(typeLayout))
+    uniformSize = TRY(ReadFiniteUniformSize(typeLayout))
+
+    block = ParameterBlockRecord {
+        Id = blockId,
+        Name = blockName,
+        ElementTypeId = elementTypeId,
+        UniformByteSize = uniformSize,
+        DefaultUniformBuffer =
+            TRY(BuildDefaultUniformDescriptorOrNull(context, uniformSize))
+    }
+
+    subObjects = TRY(IndexSubObjectRanges(
+        typeLayout,
+        ownerPath = context.ElementPath))
+    logicalCount = typeLayout.getBindingRangeCount()
+    FOR rangeIndex IN [0, logicalCount):
+        range = TRY(ReadLogicalBindingRange(typeLayout, rangeIndex))
+        FAIL_IF(range.Count is UnknownOrUnbounded)
+
+        IF range.BindingType IN { ConstantBuffer, ParameterBlock }:
+            REQUIRE(range.Count == 1) // 块数组禁止。
+            subObjectIndex = REQUIRE_EXACTLY_ONE(
+                subObjects.ForBindingRange(rangeIndex))
+            offsetVar = REQUIRE(
+                typeLayout.getSubObjectRangeOffset(subObjectIndex))
+            TRY(ReadFinite(
+                typeLayout.getSubObjectRangeSpaceOffset(subObjectIndex)))
+
+            containerType = REQUIRE(
+                typeLayout.getBindingRangeLeafTypeLayout(rangeIndex))
+            REQUIRE(containerType.getKind() ==
+                    KindExpectedBy(range.BindingType))
+            subOccurrencePath = Append(context.ElementPath, offsetVar)
+            subContext = TRY(EnterSingleElementContainer(
+                subOccurrencePath,
+                containerType))
+            subBlockId = TRY(BuildParameterBlock(
+                subContext,
+                LocalNameOf(
+                    typeLayout.getBindingRangeLeafVariable(rangeIndex))))
+            mapping = BlockRangeBinding(
+                rangeIndex,
+                range.ContainerFlavor,
+                subBlockId)
+        ELSE:
+            setIndex = typeLayout.getBindingRangeDescriptorSetIndex(rangeIndex)
+            first = typeLayout.getBindingRangeFirstDescriptorRangeIndex(rangeIndex)
+            count = typeLayout.getBindingRangeDescriptorRangeCount(rangeIndex)
+            descriptors = []
+
+            FOR descriptorOffset IN [0, count):
+                descriptor = TRY(ResolveDescriptorRange(
+                    typeLayout,
+                    context.ElementPath,
+                    range,
+                    setIndex,
+                    first + descriptorOffset))
+                REQUIRE(descriptor.DescriptorCount == range.Count)
+                descriptors.Add(descriptor)
+
+            FAIL_IF(descriptors.IsEmpty)
+            TRY(ValidateSimpleRangeSubObjects(
+                range,
+                subObjects.ForBindingRange(rangeIndex)))
+            mapping = SimpleRangeBinding(rangeIndex, descriptors)
+
+        block.RangeBindings.Add(mapping)
+
+    blocks[blockId] = Move(block)
+    return blockId
+
+ValidateSimpleRangeSubObjects(range, subObjects):
+    leafType = REQUIRE(range.LeafTypeLayout-&gt;getType())
+    isStructuredBuffer =
+        range.BindingType IN { RawBuffer, MutableRawBuffer } AND
+        leafType-&gt;getElementType() != null
+
+    IF isStructuredBuffer:
+        subObject = REQUIRE_EXACTLY_ONE(subObjects)
+        TRY(ReadFinite(subObject.SpaceOffset))
+        REQUIRE(subObject.OffsetVarLayout != null)
+        // 只验证 Slang shader-object 结构；不创建 SubBlockId。
+        return
+
+    REQUIRE(subObjects.IsEmpty)
+
+BuildDefaultUniformDescriptorOrNull(context, uniformSize):
+    IF uniformSize == 0:
+        return null
+
+    containerPath = REQUIRE(context.ContainerPath)
+    address = TRY(ResolveCategory(
+        containerPath,
+        DescriptorTableSlot))
+    return ShaderDescriptorRange {
+        Role = UniformData,
+        Set = CheckedUint32(address.Space),
+        Binding = CheckedUint32(address.Value),
+        ArrayElementBase = 0,
+        LogicalElementStride = 1,
+        DescriptorType = UniformBuffer,
+        DescriptorCount = 1,
+        StageMask = TRY(BuildStageMask(
+            DescriptorTableSlot,
+            address.Space,
+            address.Value)),
+        Flags = None
+    }</code></pre>
+      <p class="pseudo-note">sub-object range 是第三个独立索引域：先用 <code>getSubObjectRangeBindingRangeIndex()</code> 建立反向索引。ConstantBuffer/ParameterBlock 必须精确一对一并使用 offset VariableLayout 进入子块；StructuredBuffer 可有一个供 Slang shader-object 存储使用的 sub-object，但当前引擎仍把它保存为 simple 资源，不生成 SubBlock。<code>getSubObjectRangeSpaceOffset()</code> 只检查为有限值，不能和 offset VariableLayout 重复叠加。当前路径只有 Slang 官方主 access path；不实现 Falcor 为动态 specialization 保留的 deferred/pending path。</p>
+    </div>
+
+    <h3 id="reflection-builder-stages">Stage mask 合并</h3>
+    <p>Builder 从联合 linked component 的逐 EntryPoint metadata 得到每个绝对绑定位置的 Stage 使用信息。同一绝对 <code>(set, binding)</code> 在多 Stage 出现时，descriptor type/count/flags 必须一致，Stage mask 取并集；任何其他冲突都使编译失败。</p>
+
+    <h3 id="reflection-pseudocode-stages">Stage 使用掩码伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>BuildStageMask</strong>
+        <small>计划实现 · 使用 IComponentType::getEntryPointMetadata</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>ParameterCategory + 绝对 set/binding</div>
+        <div><strong>不变量</strong>EntryPoint 顺序与 Stage code 顺序一致</div>
+        <div><strong>输出</strong>稳定 Stage 名称数组</div>
+      </div>
+      <pre><code>PrepareStageUsage(linked, orderedStages):
+    metadataByStage = []
+    FOR entryPointIndex, stage IN Enumerate(orderedStages):
+        metadata, diag = linked.getEntryPointMetadata(
+            entryPointIndex,
+            targetIndex = 0)
+        diagnostics.Append(diag, Context(stage))
+        FAIL_IF(metadata == null, "Missing entry-point metadata")
+        metadataByStage.Add({ stage, metadata })
+
+BuildStageMask(category, absoluteSet, absoluteBinding):
+    mask = []
+    FOR item IN metadataByStage:
+        used = TRY(item.Metadata.isParameterLocationUsed(
+            category,
+            spaceIndex = absoluteSet,
+            registerIndex = absoluteBinding))
+        IF used:
+            mask.Add(item.Stage)
+
+    // Layout 仍保留已声明但被目标代码优化掉的逻辑资源；
+    // 此时用完整 Program Stage 集作为合法、确定性的可见性上界。
+    IF mask.IsEmpty:
+        mask = orderedStages
+
+    return StableSort(mask, StableStageOrder)</code></pre>
+      <p class="pseudo-note"><code>stageMask</code> 表示 Vulkan Layout 允许访问该 binding 的 Stage 集；对实际使用的资源使用精确 metadata 结果，对所有 Stage 均未使用的已声明资源使用完整 Program Stage 集。metadata 查询失败是编译失败，不静默回退。</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="reflection-validation">4. IR 强校验</h2>
+    <p><code>ShaderReflectionValidator</code> 同时被 Writer 和 Reader 调用。编译器不能假设“Slang 返回成功”就自动满足引擎契约，运行时也不能信任磁盘文本。</p>
+    <table class="matrix">
+      <thead><tr><th>类别</th><th>必须满足</th><th>失败信息包含</th></tr></thead>
+      <tbody>
+        <tr><td>ID</td><td>typeId/blockId 连续、唯一、范围内；所有记录从 root 可达。</td><td>JSON/IR 路径与非法 ID。</td></tr>
+        <tr><td>类型</td><td>Tagged Union 字段严格；稳定枚举已知；size/offset/stride 在 uint32 内；块 Type Record 有且仅有一条 count=1 容器 range。</td><td>typeId、kind、字段。</td></tr>
+        <tr><td>数组</td><td>elementCount 有限且 &gt; 0；不存在无界；数组闭包不含块。</td><td>成员路径与类型链。</td></tr>
+        <tr><td>块</td><td>单根、无环、非根单父；块 elementType 不是 array。</td><td>blockId 和父 range。</td></tr>
+        <tr><td>Builder BindingPath</td><td>deepest 指针属于当前链；container/element 成对；块 binding range 与 sub-object range 一对一；所有类别累计有限且无 uint64/uint32 溢出。</td><td>Program、类型/成员路径、category 和 Slang 原值。</td></tr>
+        <tr><td>Uniform</td><td><code>uniformByteSize == 0 ⇔ defaultUniformBuffer == null</code>。</td><td>blockId、size 和 binding。</td></tr>
+        <tr><td>Range</td><td>N 个 logical ranges 对应恰好 N 个 rangeBindings，rangeIndex 完整覆盖；BaseIndex 等于 count 前缀和；counter 的 OwnerRangeOffset 指向同类型主 range，Resource 的正向 RangeOffset 回指同一 counter。</td><td>blockId、缺失/重复 index 或 owner。</td></tr>
+        <tr><td>物理描述符</td><td>count &gt; 0 且等于逻辑 count；Base=0、Stride=1；同 set/binding 只有一个逻辑写入所有者且定义无冲突。</td><td>set、binding、role 与两个 owner。</td></tr>
+        <tr><td>不支持项</td><td>无 Push Constant、EntryPoint uniform/resource 参数、块数组或 unbounded range。</td><td>Program/Stage/参数或类型路径。</td></tr>
+        <tr><td>Fingerprint</td><td>重算结果与 SHA-256 的 64 个小写十六进制字符一致。</td><td>保存值和计算值。</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="reflection-pseudocode-validator">IR Validator 伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>ShaderReflectionValidator.Validate</strong>
+        <small>计划实现 · Writer 与 Reader 共用</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>ShaderReflectionIR</div>
+        <div><strong>不变量</strong>第一处错误包含稳定对象路径</div>
+        <div><strong>输出</strong>ValidatedShaderReflectionIR</div>
+      </div>
+      <pre><code>Validate(ir):
+    REQUIRE(ir.Schema == 2)
+    REQUIRE(IsContinuousIds(ir.Types))
+    REQUIRE(IsContinuousIds(ir.ParameterBlocks))
+    REQUIRE(ir.RootBlockId &lt; ir.ParameterBlocks.Count)
+
+    reachableTypes = WalkTypesFromRoot(ir)
+    reachableBlocks, parentCount = WalkBlocksFromRoot(ir)
+    REQUIRE(reachableTypes.Count == ir.Types.Count)
+    REQUIRE(reachableBlocks.Count == ir.ParameterBlocks.Count)
+    REQUIRE(parentCount[root] == 0)
+    REQUIRE(all non-root parentCount == 1)
+
+    FOR type IN ir.Types:
+        TRY(ValidateTaggedUnion(type))
+        TRY(ValidateUint32SizesAndOffsets(type))
+        TRY(RejectUnboundedAndBlockArrays(type, ir.Types))
+
+    physicalBySetBinding = {}
+    FOR block IN ir.ParameterBlocks:
+        REQUIRE((block.UniformByteSize == 0) ==
+                (block.DefaultUniformBuffer is null))
+        IF block.DefaultUniformBuffer != null:
+            TRY(ValidateDescriptorAddressing(
+                block.DefaultUniformBuffer,
+                logicalCount = 1))
+            TRY(RegisterUniquePhysicalWriteOwner(
+                block.DefaultUniformBuffer,
+                owner = UniformOwner(block.Id),
+                physicalBySetBinding))
+
+        logicalRanges = ir.Types[block.ElementTypeId].ResourceRanges
+        REQUIRE(CoversExactly(
+            block.RangeBindings.RangeIndex,
+            [0, logicalRanges.Count)))
+
+        FOR mapping IN block.RangeBindings:
+            TRY(ValidateFlavorUnion(mapping))
+            TRY(ValidateDescriptorAddressing(mapping, logicalRanges))
+            TRY(RegisterUniquePhysicalWriteOwner(
+                mapping,
+                owner = LogicalRangeOwner(block.Id, mapping.RangeIndex),
+                physicalBySetBinding))
+
+    expected = ComputePipelineLayoutFingerprint(ir)
+    REQUIRE(ir.PipelineLayoutFingerprint == expected)
+    return Validated(ir)</code></pre>
+      <p class="pseudo-note">Builder 在写 IR 前已把同一 owner、同一物理 binding 的多 Stage 可见性合并为一条 descriptor 记录；Reader 因此把重复物理记录视为非规范或多 owner 冲突，不在加载时猜测覆盖顺序。</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="slc2-writer">5. SLC2 Writer</h2>
+    <h3 id="slc2-model">聚合模型</h3>
+    <pre><code>SLC2Artifact
+  format
+  programs[]
+    programId
+    variantGroups[]
+    targets[]
+      meta { platform, backend, shaderModel }
+      variants[]
+        variant
+        layout
+        stages[]
+          { entryPoint, stage, code }</code></pre>
+    <ul>
+      <li>一个 SLC2 对应一个 Shader Resource；顶层不保存 shaderId 或资源路径。</li>
+      <li>ProgramId 位于 <code>programs[]</code> 元素内；Target 在 Program 内聚合多个 Variant。</li>
+      <li>Layout 位于 Variant 层并由全部 Stage 共享；Stage 不复制 Layout。</li>
+      <li>没有独立 <code>names[]</code>；运行时从 Struct member 局部名称构建完整路径。</li>
+      <li>不保存 source/import 路径、DependencyIndex、diagnostics、默认资源或运行时生命周期信息。</li>
+    </ul>
+
+    <h3 id="slc2-json">JSON 写入规则</h3>
+    <ul>
+      <li>使用 SolarEngine 当前 JSON Writer；字段调用顺序就是规范顺序。</li>
+      <li>输出无 BOM UTF-8、LF、最终换行；字符串必须是有效 UTF-8，禁止平台本地编码。</li>
+      <li>代码 blob 使用 JSON Base64 字符串；另存明确的 <code>encoding</code> 和完整 SHA-256，读取时先 Base64 解码再验证 hash。</li>
+      <li>SPIR-V 首先检查长度是 4 的倍数、magic 为 <code>0x07230203</code>，并由 Slang 验证；测试示例必须是完整 Module，不使用只有 4 字节 magic 的伪产物。</li>
+      <li>写入前执行 IR Validator；写入后立即用运行时 <code>SLC2Reader</code> 读取同一字节并深比较关键语义。</li>
+      <li>Writer 不写文件。调用者拿到完整 byte array 后才执行原子文件替换。</li>
+    </ul>
+
+    <h3 id="slc2-pseudocode-write">确定性 Writer 伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>SLC2Writer.WriteDeterministic</strong>
+        <small>计划实现 · 固定字段顺序，不遍历无序 Dictionary</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>完整 SLC2Artifact</div>
+        <div><strong>不变量</strong>相同输入字节完全一致；不写路径/时间/指针</div>
+        <div><strong>输出</strong>UTF-8 JSON byte[]</div>
+      </div>
+      <pre><code>WriteDeterministic(artifact):
+    canonical = TRY(CanonicalizeAndValidateArtifact(artifact))
+    buffer = Utf8StringBuffer()
+    json = PrettyJsonWriter(buffer, indent = Tab, newline = LF)
+
+    json.BeginObject()
+    WriteFormat(json, canonical.Format)
+
+    json.Key("programs")
+    json.BeginArray()
+    FOR program IN StableSort(canonical.Programs, ProgramId):
+        json.BeginObject()
+        json.Field("programId", program.ProgramId)
+        WriteVariantGroups(json, program.VariantGroupsInDeclarationOrder)
+
+        json.Key("targets")
+        json.BeginArray()
+        FOR target IN StableSort(program.Targets, CanonicalTargetTuple):
+            json.BeginObject()
+            WriteTargetMeta(json, target.Meta)
+            json.Key("variants")
+            json.BeginArray()
+
+            FOR variant IN StableSort(target.Variants, VariantText):
+                json.BeginObject()
+                WriteVariantText(json, variant.CanonicalText)
+                WriteLayout(json, variant.ValidatedReflectionIR)
+                WriteStages(
+                    json,
+                    StableSort(variant.Stages, StableStageOrder),
+                    codeEncoder = bytes => {
+                        Encoding = "base64",
+                        Hash = Sha256LowerHex(bytes),
+                        Data = Base64WithoutLineBreaks(bytes)
+                    })
+                json.EndObject()
+
+            json.EndArray()
+            json.EndObject()
+        json.EndArray()
+        json.EndObject()
+    json.EndArray()
+    json.EndObject()
+
+    bytes = NormalizeNewlinesToLf(buffer.Bytes())
+    AppendFinalLfIfMissing(bytes)
+    TRY(SLC2Reader.ReadAndValidate(bytes)) // 同款 Reader 自检。
+    return bytes</code></pre>
+    </div>
+
+    <h3 id="slc2-determinism">确定性要求</h3>
+    <ul>
+      <li>同一输入、CompilerBuildTag 和 SolarEngine 当前 Slang 编译器标识连续编译两次，SLC2 字节必须完全一致。</li>
+      <li>所有数组按编译器实施文档规定排序；JSON Object 字段顺序固定。</li>
+      <li>禁止把内存地址、构建时间、绝对路径、随机 ID 或原生枚举数值写入缓存。</li>
+      <li>Base64 不换行；SHA-256 统一为 64 个小写十六进制字符。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2 id="slc2-reader">6. SLC2 Reader 与错误模型</h2>
+    <h3 id="slc2-reader-phases">读取阶段</h3>
+    <ol class="sequence">
+      <li>Parse JSON；拒绝语法错误、非 UTF-8 和根类型错误。</li>
+      <li>校验 <code>format.magic == "SLC2"</code>、major 精确匹配；未知 major 拒绝，已知 major 的更高 minor 按兼容规则处理。</li>
+      <li>逐字段读取并执行整数范围、必需字段、Tagged Union 和稳定枚举检查。</li>
+      <li>解码 Stage code，验证 code hash 与 Target 代码基本格式。</li>
+      <li>执行完整 IR Validator、可达性、range mapping 和块数组检查。</li>
+      <li>重建规范物理布局并验证 pipelineLayoutFingerprint。</li>
+      <li>构造不可变 <code>ShaderProgramArtifact</code>；仅全部成功后对调用者可见。</li>
+    </ol>
+
+    <h3 id="slc2-pseudocode-read">严格 Reader 伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>SLC2Reader.ReadAndValidate</strong>
+        <small>计划实现 · 不使用允许 trailing comma 的宽松 Parse flags</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>不可信 SLC2 UTF-8 bytes</div>
+        <div><strong>不变量</strong>先完整验证，后发布不可变对象</div>
+        <div><strong>输出</strong>ShaderProgramArtifact</div>
+      </div>
+      <pre><code>ReadAndValidate(bytes):
+    TRY(ValidateUtf8WithoutBom(bytes))
+    document = TRY(ParseRapidJsonWithExplicitStrictFlags(
+        bytes,
+        validateEncoding = true,
+        allowTrailingCommas = false,
+        requireEndOfInput = true))
+    REQUIRE(document.IsObject, path = "/")
+
+    root = StrictObjectReader(document, path = "/")
+    format = TRY(ReadExactFormat(root.RequiredObject("format")))
+    REQUIRE(format.Magic == "SLC2")
+    REQUIRE(format.Major == 2)
+
+    programs = []
+    seenProgramIds = Set()
+    FOR programNode IN root.RequiredArray("programs"):
+        program = TRY(ReadProgram(programNode))
+        REQUIRE(seenProgramIds.Add(program.ProgramId))
+        programs.Add(program)
+    root.RejectUnknownRequiredOrDuplicateFields()
+
+    artifact = ShaderProgramArtifact(format, programs)
+    FOR program IN artifact.Programs:
+        TRY(ValidateVariantGroups(program))
+        FOR target IN program.Targets:
+            TRY(ValidateTargetAndRegenerateTargetKey(target))
+            FOR variant IN target.Variants:
+                TRY(ShaderReflectionValidator.Validate(variant.Layout))
+                FOR stage IN variant.Stages:
+                    bytes = TRY(Base64DecodeStrict(stage.Code.Data))
+                    REQUIRE(Sha256LowerHex(bytes) == stage.Code.Hash)
+                    TRY(ValidateTargetCode(target.Meta, bytes))
+
+    return Freeze(artifact)</code></pre>
+      <p class="pseudo-note">若 SolarEngine 通用 Json 解析配置允许 trailing commas，SLC2 Reader 必须显式选择严格解析 flags，保证格式契约不会因引擎通用 JSON 宽松策略而变化。</p>
+    </div>
+
+    <h3 id="slc2-reader-strictness">严格字段策略</h3>
+    <ul>
+      <li>缺失必需字段、重复 Program/Target/Variant/Stage、未知枚举、非法 null 都是缓存损坏。</li>
+      <li>同一 major 内允许忽略未知的可选字段，但 Writer 当前不产生扩展字段；改变必需语义必须提升 major。</li>
+      <li>Reader 错误包含 JSON Pointer 风格路径，例如 <code>/programs/0/targets/0/variants/1/layout/types/3</code>。</li>
+      <li>加载失败不尝试调用 Slang、SPIR-V reflection 或旧 cache reader 修复；由上层决定重新编译。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2 id="layout-fingerprint-implementation">7. PipelineLayoutFingerprint 实现</h2>
+    <h3 id="layout-fingerprint-canonical">规范物理记录</h3>
+    <ol>
+      <li>从 rootBlock 遍历所有可达 block，收集 defaultUniformBuffer 和 simple range 的全部 descriptorRanges。</li>
+      <li>把 defaultUniformBuffer 归一化为普通 descriptor 记录。</li>
+      <li>按绝对 <code>(set, binding)</code> 合并；descriptorType/count/flags/immutable sampler 状态必须相同，Stage mask 取并集。</li>
+      <li>set、binding 数值升序；空 set 仍参与 setCount 与规范文本。</li>
+      <li>以 <code>SOLAR-PIPELINE-LAYOUT/v1</code> 开头、稳定小写枚举、十进制整数、LF 与最终 LF 生成文本。</li>
+      <li>计算 <code>LowerHex(SHA-256(UTF8(text)))</code>。</li>
+    </ol>
+
+    <h3 id="layout-pseudocode-fingerprint">Fingerprint 伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>ComputePipelineLayoutFingerprint</strong>
+        <small>计划实现 · 物理布局身份，不包含逻辑名称</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>Validated ShaderReflectionIR</div>
+        <div><strong>不变量</strong>同 set/binding 只允许兼容记录合并</div>
+        <div><strong>输出</strong>64 字符小写 SHA-256</div>
+      </div>
+      <pre><code>ComputePipelineLayoutFingerprint(ir):
+    merged = Map&lt;(set, binding), PhysicalBinding&gt;()
+
+    FOR block IN WalkReachableBlocks(ir.RootBlockId):
+        IF block.DefaultUniformBuffer != null:
+            TRY(MergePhysical(
+                merged,
+                NormalizeUniformBuffer(block.DefaultUniformBuffer)))
+
+        FOR mapping IN block.RangeBindings:
+            CONTINUE_IF(mapping.Flavor != Simple)
+            FOR descriptor IN mapping.DescriptorRanges:
+                TRY(MergePhysical(merged, descriptor))
+
+    setCount = merged.IsEmpty ? 0 : Max(merged.Keys.Set) + 1
+    text = "SOLAR-PIPELINE-LAYOUT/v1\n"
+    text += "backend=vulkan\n"
+    text += "pipelineFlags=-\n"
+    text += "setCount=" + Decimal(setCount) + "\n"
+
+    FOR set IN [0, setCount):
+        text += "set=" + Decimal(set) + ";flags=-\n"
+        FOR binding IN StableSort(merged.WhereSet(set), BindingNumber):
+            text += CanonicalBindingLine(
+                binding,
+                StableStageOrder,
+                StableFlagOrder)
+
+    return LowerHex(SHA256(Utf8NoBom(text)))</code></pre>
+      <p class="pseudo-note">MergePhysical 只合并 descriptorType/count/flags/immutable-sampler 状态完全一致的记录，并对 StageMask 求并集；其他差异立即失败。</p>
+    </div>
+
+    <h3 id="layout-fingerprint-exclusions">明确不参与 Hash</h3>
+    <p>ProgramId、Variant、EntryPoint、代码、成员/资源名、type/block/range ID、uniform offset、resourceIndex、role、arrayElementBase、logicalElementStride 和当前绑定对象都不进入 fingerprint。它只表达后端 Pipeline Layout 的精确物理相等。</p>
+
+    <h3 id="layout-fingerprint-cache">运行时复用</h3>
+    <p>fingerprint 只作为缓存第一层 key。hash 命中后必须深比较规范化物理记录，再复用 Vulkan PipelineLayout；这同时防止 hash 碰撞和错误 Writer 产生的假相等。</p>
+  </section>
+
+  <footer class="module-only">实施文档 v2 · 反射 IR 与 SLC2</footer>
+</main>
+</body>
+</html>

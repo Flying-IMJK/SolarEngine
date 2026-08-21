@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shader 编译系统实现 v2 · 运行时与 Vulkan</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="section-frame.js"></script>
+</head>
+<body class="module-page impl-page" data-module-label="运行时与 Vulkan">
+<aside class="sidebar module-only" aria-label="文档导航">
+  <a class="brand" href="index.html">Shader 编译系统实现<small>名称绑定与 Vulkan 后端 · v2</small></a>
+  <nav class="module-nav"></nav>
+</aside>
+
+<main class="module-content">
+  <header class="module-only" id="runtime-top">
+    <h1>运行时与 Vulkan <span class="version-badge">v2</span></h1>
+    <p class="subtitle">从 Program/Target/Variant 选择，到名称解析、资源校验、统一 Pipeline Layout 和 descriptor 写入。</p>
+  </header>
+
+  <section>
+    <h2 id="runtime-boundary">1. 运行时对象与接入边界</h2>
+    <p>系统设计中的“Shader Program”是完整的 graphics/compute 程序，而 SolarEngine 现有 <code>GPUShaderProgram</code> 表示单个 Stage。实施中保留现有 Stage GPU 对象，但新增一个拥有共享 Layout 与参数状态的完整程序对象，避免名称混淆。</p>
+    <p class="contract"><strong>边界：</strong>运行时从一份已经通过编译侧 self-read 的 SLC2 开始工作，只消费 <code>ShaderProgramArtifact</code>、<code>ShaderReflectionIR</code> 和 Stage code。运行时不得调用 Slang、不得从 SPIR-V 二次反射，也不得参与 Program 发现、Variant 规划、Target codegen 或 SLC2 写入。</p>
+
+    <h3 id="runtime-files">新增文件</h3>
+    <table>
+      <thead><tr><th>路径</th><th>核心类型</th><th>职责</th></tr></thead>
+      <tbody>
+        <tr><td class="path">Graphics/Shaders/SLC2/ShaderProgramArtifact.h/.cpp</td><td><code>ShaderProgramArtifact</code></td><td>不可变的 SLC2 Program/Target/Variant/Stage 数据。</td></tr>
+        <tr><td class="path">Graphics/Shaders/Reflection/ShaderProgramReflection.h/.cpp</td><td><code>ShaderProgramReflection</code></td><td>从 IR 建立 type/block 索引和物理 Pipeline 描述。</td></tr>
+        <tr><td class="path">Graphics/Shaders/Reflection/ShaderVar.h/.cpp</td><td><code>ShaderVar</code></td><td>沿成员与固定数组计算相对位置，不持有 Slang 对象。</td></tr>
+        <tr><td class="path">Graphics/Shaders/Reflection/ShaderNameResolver.h/.cpp</td><td><code>ShaderNameResolver</code></td><td>解析 <code>a.b[2].c</code>，并缓存规范全名到 ShaderVarLocation。</td></tr>
+        <tr><td class="path">Graphics/Shaders/ShaderParameterBlockState.h/.cpp</td><td><code>ShaderParameterBlockState</code></td><td>保存 uniform bytes 和按逻辑 range/index 设置的资源对象。</td></tr>
+        <tr><td class="path">Graphics/Shaders/ShaderProgramInstance.h/.cpp</td><td><code>ShaderProgramInstance</code></td><td>拥有完整 Program 的选择结果、Stage GPU 对象、共享 Reflection 和根参数块。</td></tr>
+        <tr><td class="path">GraphicsDevice/Vulkan/ShaderProgramLayoutVulkan.h/.cpp</td><td><code>ShaderProgramLayoutVulkan</code></td><td>把规范物理描述转换为 VkDescriptorSetLayout/VkPipelineLayout。</td></tr>
+        <tr><td class="path">GraphicsDevice/Vulkan/ShaderDescriptorWriterVulkan.h/.cpp</td><td><code>ShaderDescriptorWriterVulkan</code></td><td>按 range mapping 创建 VkWriteDescriptorSet 并验证完整绑定。</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="runtime-transition">与现有 GPUShader 的过渡</h3>
+    <ul>
+      <li>为新 Slang Shader 资产增加明确的 SLC2 加载入口；不通过文件内容嗅探在旧二进制 cache 与 SLC2 之间分流。</li>
+      <li>实施期间现有 <code>GPUShader::Create(MemoryReadStream&amp;)</code> 与固定 permutation API 可继续服务未迁移的旧引擎资产；新资产只创建 <code>ShaderProgramInstance</code>。</li>
+      <li>新对象内部仍可复用后端现有 <code>GPUShaderProgramVS/PS/CS...Vulkan</code> 作为 VkShaderModule 所有者，但不读取其旧 <code>ShaderBindings</code> 或 <code>SpirvShaderDescriptorInfo</code>。</li>
+      <li>新 Program 路径稳定后，再逐调用点替换旧 <code>GetVS(name, permutationIndex)</code> 组合；这属于实施迁移步骤，不在新 API 中增加 Legacy fallback。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2 id="runtime-selection">2. Program、Target 与 Variant 选择</h2>
+    <h3 id="runtime-load">加载</h3>
+    <ol>
+      <li>使用严格 SLC2Reader 解析完整文件；失败时整份 Artifact 不可见。</li>
+      <li>按 ProgramId 建立字典，但保留 programs[] 的原始确定性顺序用于诊断。</li>
+      <li>每个 Program 内按规范 Target 三元组建立索引；同一 Target 不允许重复。</li>
+      <li>每个 Target 内按规范 <code>variant</code> 字符串索引；不计算或保存 variant hash。</li>
+      <li>Stage code 在创建 GPU 对象前完成 Base64、SHA-256 和 SPIR-V 基础校验。</li>
+    </ol>
+
+    <h3 id="runtime-select-api">选择 API</h3>
+    <pre><code>struct ShaderProgramSelection
+{
+    StringAnsi ProgramId;
+    ShaderCompileTarget Target;
+    Array&lt;StringAnsi&gt; Defines; // 无序输入，只含宏名。
+};
+
+ShaderProgramInstance* CreateProgram(
+    const ShaderProgramSelection&amp; selection,
+    String&amp; error);</code></pre>
+    <ul>
+      <li>ProgramId 精确、区分大小写匹配。</li>
+      <li>Target 使用 platform/backend/shaderModel 精确匹配；不选择“最接近”的 ShaderModel。</li>
+      <li>运行时根据 SLC2 的 variantGroups 执行与编译期相同的校验和默认补全，再排序并以分号连接。</li>
+      <li><code>Defines</code> 的调用顺序不影响匹配；未知宏、同组多选、带值宏或不存在的 Variant 返回明确错误。</li>
+      <li>不做运行时 interface specialization；选择结果必须已存在于 SLC2。</li>
+    </ul>
+
+    <h3 id="runtime-pseudocode-select">Program/Target/Variant 选择伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>ShaderProgramArtifact.Select</strong>
+        <small>计划实现 · Variant 使用规范宏名称字符串，不使用 hash</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>ProgramId、精确 Target、无序 Defines</div>
+        <div><strong>不变量</strong>与编译期使用同一个 NormalizeVariant 实现</div>
+        <div><strong>输出</strong>不可变 Program Variant 引用</div>
+      </div>
+      <pre><code>Select(programId, runtimeTarget, requestedDefines):
+    program = programsById.FindExact(programId)
+    FAIL_IF(program == null,
+            "Program not found", programId, AvailableProgramIds())
+
+    canonicalTarget = TRY(CanonicalizeTarget(runtimeTarget))
+    target = program.TargetsByKey.Find(canonicalTarget.Key)
+    FAIL_IF(target == null,
+            "Exact Target not found", canonicalTarget.Tuple)
+
+    variantText = TRY(NormalizeVariant(
+        program.VariantGroups,
+        requestedDefines))
+    variant = target.VariantsByCanonicalText.Find(variantText)
+    FAIL_IF(variant == null,
+            "Variant was not compiled", variantText)
+
+    REQUIRE(variant.Stages satisfy ProgramStageContract)
+    return ProgramSelection(program, target, variant)</code></pre>
+      <p class="pseudo-note">运行时不能向下选择较低 ShaderModel，也不能在 Variant 缺失时即时调用 Slang。</p>
+    </div>
+
+    <h3 id="runtime-instance">完整程序实例</h3>
+    <pre><code>class ShaderProgramInstance
+{
+    const ShaderProgramArtifact* _artifact;
+    const ShaderProgramReflection* _reflection;
+    GPUShaderProgram* _stages[ShaderStageCount];
+    ShaderParameterBlockState _rootParameters;
+    void* _backendLayout; // Vulkan: ShaderProgramLayoutVulkan
+};</code></pre>
+    <p>graphics 的 VS/PS/其他 Stage 与 compute 的 CS 都通过同一类型表示。<code>_reflection</code> 和 <code>_backendLayout</code> 属于完整 Variant，不属于任一 Stage。</p>
+  </section>
+
+  <section>
+    <h2 id="runtime-reflection">3. ShaderVar 与名称解析</h2>
+    <h3 id="runtime-location">位置模型</h3>
+    <pre><code>struct ShaderVarLocation
+{
+    uint32 BlockId;
+    Optional&lt;uint32&gt; UniformByteOffset;
+    Optional&lt;uint32&gt; ResourceRangeIndex;
+    Optional&lt;uint32&gt; ResourceIndex;
+    uint32 TypeId;
+};</code></pre>
+    <ul>
+      <li>Struct 成员的 offset 相对于直接父类型；解析器逐层累加。</li>
+      <li>普通数组：<code>uniform += index × elementByteStride</code>。</li>
+      <li>资源数组：按 <code>nextResourceIndex = currentResourceIndex × elementCount + index</code> 行优先展平，不修改 set/binding。</li>
+      <li>ConstantBuffer/ParameterBlock 成员通过父块的 block-flavor range 切换到 SubBlockId，并将该子块作为新的位置根。</li>
+      <li>块本身不会形成数组，因此 Location 不包含 blockIndex 或 block descriptor stride。</li>
+    </ul>
+
+    <h3 id="runtime-path-parser">路径语法</h3>
+    <pre><code>identifier ("." identifier | "[" unsignedInteger "]")*
+
+允许：
+  inputTexture
+  material.baseColorTexture
+  textures[3]
+  materials[2].baseColorTexture
+
+拒绝：
+  textures[-1]
+  textures[i]
+  textures[]
+  .material
+  material..texture</code></pre>
+    <ul>
+      <li>identifier 与 Shader 成员名区分大小写。</li>
+      <li>数组下标必须是无前导符号的十进制 uint32，且小于 elementCount。</li>
+      <li>对非 Struct 取成员、对非 Array 取下标、资源类型不匹配都返回包含已解析前缀的错误。</li>
+      <li>首次解析成功后可缓存“规范路径字符串 → ShaderVarLocation”；缓存由 Reflection 生命周期拥有，不保存到 SLC2。</li>
+    </ul>
+
+    <h3 id="runtime-pseudocode-resolve">ShaderVar 路径解析伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>ShaderNameResolver.Resolve</strong>
+        <small>计划实现 · 成员偏移相对于直接父类型逐层累加</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong><code>materials[2].baseColorTexture</code></div>
+        <div><strong>不变量</strong>数组必须固定；块数组已在编译期拒绝</div>
+        <div><strong>输出</strong>ShaderVarLocation</div>
+      </div>
+      <pre><code>Resolve(path):
+    canonicalTokens = TRY(ParsePathGrammar(path))
+    IF cache.Contains(canonicalTokens.Text):
+        return cache[canonicalTokens.Text]
+
+    cursor = {
+        BlockId = reflection.RootBlockId,
+        TypeId = RootElementTypeId(),
+        UniformByte = 0,
+        ResourceRange = 0,
+        ResourceIndex = 0
+    }
+
+    FOR token IN canonicalTokens:
+        type = reflection.Types[cursor.TypeId]
+
+        MATCH token:
+            Member(name):
+                REQUIRE(type.Kind == Struct)
+                member = FindMemberExact(type, name)
+                FAIL_IF(member == null, "Unknown member", ParsedPrefix())
+                cursor.UniformByte += member.Offset.UniformByte or 0
+                cursor.ResourceRange += member.Offset.ResourceRange or 0
+                cursor.ResourceIndex += member.Offset.ResourceIndex or 0
+                cursor.TypeId = member.TypeId
+
+                IF reflection.Types[cursor.TypeId].Kind == ParameterBlock:
+                    mapping = CurrentBlock(cursor.BlockId)
+                        .RangeBindings[cursor.ResourceRange]
+                    REQUIRE(mapping.Flavor is ConstantBuffer or ParameterBlock)
+                    cursor.BlockId = mapping.SubBlockId
+                    cursor.TypeId = CurrentBlock(cursor.BlockId).ElementTypeId
+                    cursor.UniformByte = 0
+                    cursor.ResourceRange = 0
+                    cursor.ResourceIndex = 0
+
+            Index(index):
+                REQUIRE(type.Kind == Array)
+                REQUIRE(index &lt; type.ElementCount)
+                cursor.UniformByte = TRY(CheckedAdd(
+                    cursor.UniformByte,
+                    CheckedMultiply(index, type.ElementByteStride)))
+                cursor.ResourceIndex = TRY(CheckedMultiplyAdd(
+                    cursor.ResourceIndex,
+                    type.ElementCount,
+                    index))
+                // 数组各元素共享聚合后的 logical range 顺序。
+                // 下标只展平 ResourceIndex，不改变 ResourceRange。
+                cursor.TypeId = type.ElementTypeId
+
+    location = TRY(FinalizeLeafLocation(cursor))
+    cache.Add(canonicalTokens.Text, location)
+    return location</code></pre>
+      <p class="pseudo-note">多维资源数组逐层执行乘加，因此 <code>a[i][j]</code> 得到行优先下标；所有乘法与加法都必须检查 uint32 溢出。物理 set/binding 只在最终 range mapping 阶段读取。</p>
+    </div>
+
+    <h3 id="runtime-no-names">为何没有 names[]</h3>
+    <p>Type Record 已保存 Struct 成员局部名称，数组位置由下标生成，块出现位置保存局部名称。完整路径由这些信息确定性派生；独立 names[] 会重复身份并可能与类型树产生冲突，因此运行时只维护派生索引。</p>
+  </section>
+
+  <section>
+    <h2 id="runtime-binding">4. 资源与 Uniform 绑定</h2>
+    <h3 id="runtime-binding-api">名称 API</h3>
+    <pre><code>bool SetTexture(StringView path, GPUTextureView* value, String&amp; error);
+bool SetBuffer(StringView path, GPUBuffer* value, String&amp; error);
+bool SetSampler(StringView path, GPUSampler* value, String&amp; error);
+bool SetUniform(StringView path, const void* data, uint32 size, String&amp; error);</code></pre>
+    <ul>
+      <li>API 先解析路径，再按 Type Record 检查资源大类、shape、access 和数组边界。</li>
+      <li>设置 <code>null</code> 等价于未绑定；当前没有 required/optional 策略，也没有默认资源库。</li>
+      <li>一次主资源绑定自动覆盖其 <code>auxiliaryRanges</code> 对应的内部 counter 等物理 mapping；用户不能按内部 role 名直接绑定。</li>
+      <li>固定资源数组支持逐元素绑定；首版不要求“一次传入整段数组”的批量 API。</li>
+      <li>Uniform 写入只复制到对应 BlockId 的 CPU byte array；上传到 GPU buffer 的生命周期和 dirty tracking 不在本设计文档中展开。</li>
+    </ul>
+
+    <h3 id="runtime-pseudocode-set">按名称设置资源伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>ShaderProgramInstance.SetResource</strong>
+        <small>计划实现 · Texture/Buffer/Sampler 公共内部入口</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>完整名称、资源对象、调用 API 期望类型</div>
+        <div><strong>不变量</strong>失败不覆盖旧绑定；null 表示清除绑定</div>
+        <div><strong>输出</strong>更新后的逻辑绑定槽</div>
+      </div>
+      <pre><code>SetResource(path, value, apiExpectedKind):
+    location = TRY(_nameResolver.Resolve(path))
+    type = _reflection.Types[location.TypeId]
+    REQUIRE(type.Kind == Resource)
+    REQUIRE(IsCompatibleApiKind(type.ResourceKind, apiExpectedKind))
+
+    IF value != null:
+        TRY(ValidateResourceObject(
+            value,
+            type.ResourceKind,
+            type.Shape,
+            type.Access,
+            type.ImageFormat))
+
+    blockState = _parameterState.Block(location.BlockId)
+    slot = blockState.ResourceSlot(
+        location.ResourceRangeIndex,
+        location.ResourceIndex)
+
+    // 所有检查完成后才替换。
+    slot.Value = value
+    slot.BoundTypeId = location.TypeId
+    return Success</code></pre>
+      <p class="pseudo-note">内部 auxiliary range 不暴露名称；提交时从主资源对象派生 counter 等内部 view。</p>
+    </div>
+
+    <h3 id="runtime-binding-state">状态存储</h3>
+    <pre><code>ShaderParameterBlockState
+  uniformData[uniformByteSize]
+  resources[logicalRange][logicalElement]
+  subBlocks[]</code></pre>
+    <p>资源状态按逻辑位置保存，不按 Vulkan binding 保存。后端提交时才遍历 rangeBindings，把同一逻辑资源映射到 1～N 个物理 descriptor。</p>
+
+    <h3 id="runtime-binding-validation">提交前完整性</h3>
+    <ol>
+      <li>从 rootBlock 遍历所有可达 block。</li>
+      <li>对每个 simple logical range 的每个元素，检查类型兼容且非空。</li>
+      <li>对 defaultUniformBuffer，确保对应块的 uniform GPU buffer 已可用。</li>
+      <li>发现首个缺失资源即生成包含完整路径、期望类型、Program/Variant 的错误。</li>
+      <li>任何缺失都中止对应 Draw/Dispatch，不提交部分 descriptor writes。</li>
+    </ol>
+    <p class="danger">不在 Shader、SLC2 或运行时对象上声明 optional；也不为缺失槽位自动创建白纹理、空 Buffer 或默认 Sampler。</p>
+
+    <h3 id="runtime-pseudocode-validate">绑定完整性验证伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>ValidateAllBindings</strong>
+        <small>计划实现 · 在构造任何 VkWriteDescriptorSet 前执行</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>根参数状态 + Reflection</div>
+        <div><strong>不变量</strong>只要求用户可绑定主 range；辅助 range 从所有者派生</div>
+        <div><strong>输出</strong>ValidatedBindingSnapshot</div>
+      </div>
+      <pre><code>ValidateAllBindings():
+    snapshot = NewBindingSnapshot()
+
+    // Pass 1：只验证逻辑绑定，不分配 GPU 对象、不写 descriptor。
+    FOR blockId IN reflection.ReachableBlocksRootFirst:
+        block = reflection.ParameterBlocks[blockId]
+        state = parameterState.Block(blockId)
+
+        logicalRanges = reflection.Types[block.ElementTypeId].ResourceRanges
+        FOR rangeIndex, logicalRange IN Enumerate(logicalRanges):
+            mapping = block.RangeBindings[rangeIndex]
+            CONTINUE_IF(mapping.Flavor != Simple)
+            CONTINUE_IF(logicalRange.InternalRole != null)
+
+            FOR resourceIndex IN [0, logicalRange.Count):
+                slot = state.ResourceSlot(rangeIndex, resourceIndex)
+                FAIL_IF(slot.Value == null,
+                    FullResourcePath(blockId, rangeIndex, resourceIndex),
+                    ExpectedResourceType(logicalRange))
+                TRY(ValidateBoundObjectStillAliveAndCompatible(slot))
+                snapshot.AddLogicalResource(
+                    blockId, rangeIndex, resourceIndex, slot.Value)
+
+    // Pass 2：全部资源通过验证后，才物化 Uniform Buffer。
+    FOR blockId IN reflection.ReachableBlocksRootFirst:
+        block = reflection.ParameterBlocks[blockId]
+        CONTINUE_IF(block.DefaultUniformBuffer == null)
+
+        state = parameterState.Block(blockId)
+        uniformGpuBuffer = TRY(MaterializeUniformBuffer(
+            blockId,
+            state.UniformData))
+        snapshot.AddUniform(blockId, uniformGpuBuffer)
+
+    return Freeze(snapshot)</code></pre>
+      <p class="pseudo-note">两阶段顺序保证缺少资源时不会先创建本次提交专用的 GPU 状态。MaterializeUniformBuffer 的池化与 dirty tracking 属于后续生命周期优化；此处只规定提交前必须得到有效 GPU buffer。</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="vulkan-layout">5. Vulkan Pipeline Layout</h2>
+    <h3 id="vulkan-current-problem">现有路径的问题</h3>
+    <p>当前 Vulkan 实现通过 <code>DescriptorSetLayoutInfoVulkan::AddBindingsForStage</code> 按 Stage 索引组织 set，并从每个 Stage 的 <code>SpirvShaderDescriptorInfo</code> 构建 Layout。新契约要求所有 Stage 共享一个由 linked Program 反射得到的绝对 set/binding 布局，因此不能继续调用这条路径。</p>
+
+    <h3 id="vulkan-layout-build">新建 Layout</h3>
+    <ol class="sequence">
+      <li>从 ShaderProgramReflection 收集并合并全部规范物理 descriptor 记录。</li>
+      <li>重算并验证 fingerprint；查找 <code>fingerprint → normalized physical layout</code> 缓存。</li>
+      <li>hash 命中后深比较记录；完全相等才复用 <code>PipelineLayoutVulkan</code>。</li>
+      <li>按 set 分组生成 <code>VkDescriptorSetLayoutBinding</code>，把稳定 descriptorType 和 stageMask 映射为 Vulkan 枚举。</li>
+      <li>为 set 索引间的空洞创建空 DescriptorSetLayout，使数组索引与绝对 set 一致。</li>
+      <li>创建 VkPipelineLayout，<code>pushConstantRangeCount = 0</code>。</li>
+    </ol>
+
+    <h3 id="vulkan-pseudocode-layout">Vulkan Layout 创建伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>ShaderProgramLayoutVulkan.CreateOrReuse</strong>
+        <small>计划实现 · 不调用 AddBindingsForStage</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>Validated Reflection 的规范物理布局</div>
+        <div><strong>不变量</strong>绝对 set/binding；StageMask 已合并</div>
+        <div><strong>输出</strong>VkDescriptorSetLayout[] + VkPipelineLayout</div>
+      </div>
+      <pre><code>CreateOrReuse(reflection):
+    physical = TRY(BuildCanonicalPhysicalLayout(reflection))
+    REQUIRE(physical.Fingerprint ==
+            reflection.PipelineLayoutFingerprint)
+
+    candidates = device.LayoutCache.Find(physical.Fingerprint)
+    FOR candidate IN candidates:
+        IF DeepEqual(candidate.CanonicalPhysicalLayout, physical):
+            return candidate
+
+    setLayouts = []
+    FOR setIndex IN [0, physical.SetCount):
+        bindings = []
+        FOR binding IN physical.BindingsForSet(setIndex):
+            bindings.Add(VkDescriptorSetLayoutBinding {
+                binding = binding.Binding,
+                descriptorType = ToVkDescriptorType(binding.Type),
+                descriptorCount = binding.Count,
+                stageFlags = ToVkStageFlags(binding.StageMask),
+                pImmutableSamplers = null
+            })
+        setLayouts.Add(device.CreateDescriptorSetLayout(bindings))
+
+    pipelineLayout = device.CreatePipelineLayout({
+        setLayouts = setLayouts,
+        pushConstantRanges = {}
+    })
+    result = ShaderProgramLayoutVulkan(
+        physical, setLayouts, pipelineLayout)
+    device.LayoutCache.Insert(physical.Fingerprint, result)
+    return result</code></pre>
+      <p class="pseudo-note">空 set 也创建空 VkDescriptorSetLayout，保证 Vulkan set 数组索引与序列化的绝对 set 一致。</p>
+    </div>
+
+    <h3 id="vulkan-layout-files">现有文件改造</h3>
+    <table>
+      <thead><tr><th>文件</th><th>新路径修改</th></tr></thead>
+      <tbody>
+        <tr><td class="path">GraphicsDevice/Vulkan/DescriptorSetVulkan.h/.cpp</td><td>增加从规范绝对 binding 列表构建 layout info 的入口；保留旧 AddBindingsForStage 仅供旧路径。</td></tr>
+        <tr><td class="path">GraphicsDevice/Vulkan/GPUDeviceVulkan.cpp</td><td>增加按 fingerprint + 深比较获取/创建 Program Layout 的缓存入口。</td></tr>
+        <tr><td class="path">GraphicsDevice/Vulkan/GPUPipelineStateVulkan.cpp</td><td>新 Program 分支直接接收共享 ShaderProgramLayoutVulkan，不再从 DescriptorInfoPerStage 合成。</td></tr>
+        <tr><td class="path">GraphicsDevice/Vulkan/GPUShaderVulkan.cpp</td><td>为 SLC2 Stage code 创建 VkShaderModule；新路径不读取旧 SpirvShaderHeader/DescriptorInfo。</td></tr>
+        <tr><td class="path">GraphicsDevice/Vulkan/Types.h</td><td>旧 <code>SpirvShaderDescriptorInfo</code> 不扩展成新 IR；新类型位于通用 Reflection/Vulkan adapter 中。</td></tr>
+      </tbody>
+    </table>
+    <p class="contract"><strong>禁止的实现捷径：</strong>不能把 <code>binding = descriptorIndex</code>，不能把 Stage 索引当 descriptor set，也不能从 SPIR-V 再反射一套 Layout 覆盖 SLC2。</p>
+  </section>
+
+  <section>
+    <h2 id="vulkan-descriptors">6. Vulkan Descriptor 写入</h2>
+    <h3 id="vulkan-write-formula">逻辑位置到物理位置</h3>
+    <pre><code>for mapping in rangeBinding.descriptorRanges:
+    dstSet          = descriptorSets[mapping.set]
+    dstBinding      = mapping.binding
+    dstArrayElement =
+        mapping.arrayElementBase
+      + logicalResourceIndex * mapping.logicalElementStride</code></pre>
+    <ul>
+      <li>资源数组下标只改变 <code>dstArrayElement</code>，绝不加到 binding。</li>
+      <li>SLC2 Schema 2 的 Validator 已保证 <code>arrayElementBase = 0</code>、<code>logicalElementStride = 1</code>、<code>descriptorCount = logical range.count</code>；运行时仍按显式字段计算并断言这些固定值，避免缓存损坏绕过 Reader。</li>
+      <li>检查最后可寻址元素小于 descriptorCount；越界表示缓存损坏或 Builder 错误。</li>
+      <li>一条逻辑 binding 的全部物理 mapping 在同一提交中更新，防止组合资源只写一半。</li>
+      <li>descriptorType 决定写入 imageInfo、bufferInfo 或 texelBufferView；类型分支只有一个权威映射函数。</li>
+      <li>Stage mask 只用于 Layout 创建，不改变 descriptor write。</li>
+    </ul>
+
+    <h3 id="vulkan-pseudocode-write">Descriptor 写入伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>ShaderDescriptorWriterVulkan.BuildAndCommit</strong>
+        <small>计划实现 · 先构造完整批次，再调用 Vulkan</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>ValidatedBindingSnapshot + RangeBindings</div>
+        <div><strong>不变量</strong>逻辑数组下标只影响 dstArrayElement</div>
+        <div><strong>输出</strong>完整 descriptor set 更新批次</div>
+      </div>
+      <pre><code>BuildAndCommit(snapshot, descriptorSets):
+    writes = []
+    imageInfos = []
+    bufferInfos = []
+    texelViews = []
+
+    capacity = CountPhysicalWritesByPayloadKind(
+        snapshot,
+        reflection)
+    writes.ReserveExact(capacity.Total)
+    imageInfos.ReserveExact(capacity.Images)
+    bufferInfos.ReserveExact(capacity.Buffers)
+    texelViews.ReserveExact(capacity.TexelViews)
+
+    FOR logical IN snapshot.LogicalResources:
+        block = reflection.ParameterBlocks[logical.BlockId]
+        mapping = block.RangeBindings[logical.RangeIndex]
+        REQUIRE(mapping.Flavor == Simple)
+
+        FOR descriptor IN mapping.DescriptorRanges:
+            REQUIRE(descriptor.ArrayElementBase == 0)
+            REQUIRE(descriptor.LogicalElementStride == 1)
+            REQUIRE(descriptor.DescriptorCount ==
+                    reflection.Types[block.ElementTypeId]
+                        .ResourceRanges[logical.RangeIndex].Count)
+            dstArrayElement =
+                descriptor.ArrayElementBase +
+                logical.ResourceIndex * descriptor.LogicalElementStride
+            REQUIRE(dstArrayElement &lt; descriptor.DescriptorCount)
+
+            payload = TRY(BuildDescriptorPayload(
+                logical.Resource,
+                descriptor.Role,
+                descriptor.DescriptorType))
+            writes.Add(VkWriteDescriptorSet {
+                dstSet = descriptorSets[descriptor.Set],
+                dstBinding = descriptor.Binding,
+                dstArrayElement = dstArrayElement,
+                descriptorCount = 1,
+                descriptorType = ToVkDescriptorType(descriptor.DescriptorType),
+                payload = StoreAndReference(payload,
+                    imageInfos, bufferInfos, texelViews)
+            })
+
+    FOR uniform IN snapshot.UniformBuffers:
+        writes.Add(BuildUniformDescriptorWrite(uniform))
+
+    // 之前任何失败都不会产生部分 GPU 更新。
+    vkUpdateDescriptorSets(device, writes)
+    return Success</code></pre>
+      <p class="pseudo-note">组合资源或带 counter 的资源会生成多条 write，但它们共享同一个逻辑绑定所有者。VkWriteDescriptorSet 引用的 payload 存储必须活到 Vulkan 调用返回，且生成指针后不能再扩容；也可先保存 payload 索引，最后统一修补指针。</p>
+    </div>
+
+    <h3 id="vulkan-writer-reuse">复用与隔离</h3>
+    <p>可以复用现有 descriptor pool、DescriptorSetLayoutVulkan、VkWriteDescriptorSet 辅助存储和 Vulkan 延迟销毁基础设施；不复用现有按 Stage 的 <code>DSWriter[stage]</code> 索引模型。新 <code>ShaderDescriptorWriterVulkan</code> 以完整 Program 的物理记录和逻辑绑定状态为输入。</p>
+
+    <h3 id="vulkan-no-unbounded">容量限制</h3>
+    <ul>
+      <li>所有 descriptorCount 在 SLC2 中为正的有限值。</li>
+      <li>不启用 variable descriptor count、partially bound、update-after-bind 或 runtime descriptor array。</li>
+      <li>设备 descriptor 上限在创建 Layout 前检查；超限返回 Target/Program/Variant 和具体 set/binding。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2 id="vulkan-pipeline">7. Pipeline 创建接入</h2>
+    <h3 id="vulkan-compute">Compute</h3>
+    <ol>
+      <li>选择只有 CS 的 Program Variant。</li>
+      <li>ShaderProgramInstance 从 Stage code 创建 VkShaderModule，入口名使用 SLC2 <code>entryPoint</code>。</li>
+      <li>从 Variant 共享 Layout 获取 ShaderProgramLayoutVulkan。</li>
+      <li>Compute PipelineState 在收到完整状态描述后，以 CS module 和该 VkPipelineLayout 创建 compute pipeline。</li>
+      <li>Dispatch 前完成资源完整性检查、descriptor 写入和 set 绑定。</li>
+    </ol>
+
+    <h3 id="vulkan-graphics">Graphics</h3>
+    <ol>
+      <li>选择同一 Program Variant 内的 VS/PS 及可选 HS/DS/GS。</li>
+      <li>为每个 Stage 创建 VkShaderModule；各 VkPipelineShaderStageCreateInfo 只引用 module 与 entryPoint，共享 VkPipelineLayout 设置在 VkGraphicsPipelineCreateInfo 上。</li>
+      <li>HS/DS 成对、PS 必须存在等契约已在编译和 Reader 阶段验证，Pipeline 层只做防御性断言。</li>
+      <li>Graphics PipelineState 在光栅、深度、混合、拓扑和渲染目标格式等完整状态到齐后创建 VkPipeline；ShaderProgramInstance 不拥有这些固定功能状态。</li>
+      <li>descriptor set 只按共享物理 Layout 分配一次，不按 Stage 重复。</li>
+      <li>Draw 前用同一根参数状态提交所有 Stage 可见资源。</li>
+    </ol>
+
+    <h3 id="vulkan-pseudocode-pipeline">Program、PipelineState 与提交伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>CreateBackendProgram / CreatePipelineState / PrepareAndBind</strong>
+        <small>计划实现 · Program 与 PipelineState 分离，共享 Program Layout</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>ProgramSelection + 完整 PipelineStateDesc</div>
+        <div><strong>不变量</strong>Stage modules/Layout 属于 Program；VkPipeline 属于 PipelineState</div>
+        <div><strong>输出</strong>后端 Program、PipelineState 与已绑定参数</div>
+      </div>
+      <pre><code>CreateBackendProgram(selection):
+    reflection = ShaderProgramReflection.Create(selection.Layout)
+    layout = TRY(ShaderProgramLayoutVulkan.CreateOrReuse(reflection))
+
+    modules = {}
+    FOR stageRecord IN selection.Stages:
+        spirv = TRY(DecodeAndValidateStageCode(stageRecord))
+        modules[stageRecord.Stage] = TRY(
+            CreateVkShaderModule(spirv, stageRecord.EntryPoint))
+
+    TRY(ValidateModuleStageContract(selection, modules))
+    return BackendShaderProgram(layout, modules)
+
+CreatePipelineState(desc, backendProgram):
+    IF desc.Kind == Compute:
+        REQUIRE(backendProgram.Modules.Keys == { Compute })
+        pipeline = TRY(CreateComputePipeline(
+            desc.ComputeState,
+            backendProgram.Modules.Compute,
+            backendProgram.Layout))
+    ELSE:
+        REQUIRE(backendProgram.Modules.Contains(Fragment))
+        REQUIRE(HasValidTessellationPair(backendProgram.Modules))
+        pipeline = TRY(CreateGraphicsPipeline(
+            desc.GraphicsFixedFunctionState,
+            backendProgram.Modules,
+            backendProgram.Layout))
+
+    return PipelineState(
+        pipeline,
+        backendProgram.Layout.PipelineLayoutFingerprint)
+
+PrepareAndBind(commandContext, pipelineState):
+    REQUIRE(pipelineState.PipelineLayoutFingerprint ==
+            _backend.Layout.PipelineLayoutFingerprint)
+    snapshot = TRY(_rootParameters.ValidateAllBindings())
+    sets = TRY(commandContext.AllocateDescriptorSets(_backend.Layout))
+    TRY(_backend.DescriptorWriter.BuildAndCommit(snapshot, sets))
+    commandContext.BindPipeline(pipelineState.Pipeline)
+    commandContext.BindDescriptorSets(_backend.Layout, sets)</code></pre>
+      <p class="pseudo-note">Program 可被多个兼容 PipelineState 复用；fingerprint 检查阻止把参数绑定到不兼容的 Pipeline Layout。descriptor 分配复用、跨帧缓存和延迟销毁仍是生命周期非目标；该流程只规定正确性顺序。</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="runtime-error-model">8. 运行时错误与当前非目标</h2>
+    <h3 id="runtime-errors">错误分层</h3>
+    <table>
+      <thead><tr><th>阶段</th><th>示例</th><th>行为</th></tr></thead>
+      <tbody>
+        <tr><td>Artifact 加载</td><td>JSON/schema/hash/fingerprint 无效</td><td>整份加载失败；不尝试旧格式或 Slang 修复。</td></tr>
+        <tr><td>选择</td><td>Program、Target、Variant 不存在</td><td>不创建实例，列出可用的规范身份。</td></tr>
+        <tr><td>名称解析</td><td>成员不存在、数组越界、类型不符</td><td>Set 调用失败，旧绑定值不变。</td></tr>
+        <tr><td>提交</td><td>资源未绑定或为 null</td><td>中止 Draw/Dispatch，指出完整路径。</td></tr>
+        <tr><td>Vulkan 创建</td><td>设备上限或 descriptor 类型不支持</td><td>Program instance 创建失败，保留 Vulkan result。</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="runtime-deferred">本实施不展开</h3>
+    <p>
+      <span class="tag deferred">Cook/发布</span>
+      <span class="tag deferred">DependencyIndex</span>
+      <span class="tag deferred">默认资源库</span>
+      <span class="tag deferred">descriptor 生命周期优化</span>
+      <span class="tag deferred">热重载交换</span>
+      <span class="tag deferred">动态 specialization</span>
+      <span class="tag deferred">Push Constant</span>
+      <span class="tag deferred">无界 descriptor</span>
+    </p>
+    <p>“运行时生命周期为非目标”不取消创建一个可工作的最小 Program/descriptor 状态；它表示首版不承诺跨帧池化、dirty tracking、热重载失效传播和 GPU 延迟销毁策略的最终形态。</p>
+  </section>
+
+  <footer class="module-only">实施文档 v2 · 运行时与 Vulkan</footer>
+</main>
+</body>
+</html>

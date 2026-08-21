@@ -1,0 +1,19 @@
+{
+  "slang.predefinedMacros": [
+    "SHADER_VS(entry)=",
+    "SHADER_HS(entry)=",
+    "SHADER_DS(entry)=",
+    "SHADER_GS(entry)=",
+    "SHADER_PS(entry)=",
+    "SHADER_CS(entry)=",
+    "SHADER_MACRO(...)=",
+    "SHADER_PROGRAM(name, context)=struct name {}"
+  ],
+  "slang.additionalSearchPaths": [
+    "Src/Engine",
+    "Src/Engine/Shaders",
+    "Src/Engine/Shaders/Slang"
+  ],
+  "slang.enableCommitCharactersInAutoCompletion": "membersOnly",
+  "slang.format.clangFormatStyle": "file"
+}

@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SolarEngine Slang Shader 编译系统实施设计 v2</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="root.js"></script>
+</head>
+<body class="shell-page impl-page">
+<aside class="sidebar" aria-label="文档导航">
+  <a class="brand" href="#implementation-top">SolarEngine Slang Shader<small>编译系统实施设计 · v2</small></a>
+  <nav>
+    <div class="nav-group">实施总览</div>
+    <a href="#implementation-v2">第二版改进</a>
+    <a href="#implementation-overview">目标与交付边界</a>
+    <details class="nav-tree">
+      <summary>现状与总体架构</summary>
+      <div class="sub-links">
+        <a href="#implementation-baseline">现有接入点</a>
+        <a href="#implementation-architecture">目标调用链</a>
+        <a href="#implementation-layer-map">模块所有权</a>
+      </div>
+    </details>
+
+    <div class="nav-group">依赖与工程</div>
+    <details class="nav-tree">
+      <summary>Slang 依赖基线</summary>
+      <div class="sub-links">
+        <a href="#dependency-baseline">章节概览</a>
+        <a href="#dependency-version">版本固定</a>
+        <a href="#dependency-artifacts">依赖产物</a>
+      </div>
+    </details>
+    <details class="nav-tree">
+      <summary>构建与模块接入</summary>
+      <div class="sub-links">
+        <a href="#dependency-build">最小构建</a>
+        <a href="#dependency-pseudocode-build">依赖构建伪代码</a>
+        <a href="#dependency-module">SolarEngine 模块</a>
+        <a href="#dependency-pseudocode-session">Session 伪代码</a>
+        <a href="#dependency-validation">接入验收</a>
+      </div>
+    </details>
+
+    <div class="nav-group">编译器</div>
+    <details class="nav-tree">
+      <summary>API 与编译事务</summary>
+      <div class="sub-links">
+        <a href="#compiler-boundary">替换边界</a>
+        <a href="#compiler-api">公开 API</a>
+        <a href="#compiler-pseudocode-orchestrator">入口伪代码</a>
+        <a href="#compiler-transaction">事务步骤</a>
+        <a href="#compiler-pseudocode-unit">编译单元伪代码</a>
+      </div>
+    </details>
+    <details class="nav-tree">
+      <summary>Program 与 Variant</summary>
+      <div class="sub-links">
+        <a href="#compiler-discovery">Program 发现</a>
+        <a href="#compiler-pseudocode-discovery">发现伪代码</a>
+        <a href="#compiler-entrypoints">入口检查</a>
+        <a href="#compiler-variants">Variant Planner</a>
+        <a href="#compiler-pseudocode-variants">Variant 伪代码</a>
+      </div>
+    </details>
+    <details class="nav-tree">
+      <summary>Target 与诊断</summary>
+      <div class="sub-links">
+        <a href="#compiler-target">Target 策略</a>
+        <a href="#compiler-pseudocode-session">Session 分组伪代码</a>
+        <a href="#compiler-diagnostics">错误与警告</a>
+        <a href="#compiler-pseudocode-result">结果封存伪代码</a>
+      </div>
+    </details>
+
+    <div class="nav-group">反射与缓存</div>
+    <details class="nav-tree">
+      <summary>ShaderReflectionIR</summary>
+      <div class="sub-links">
+        <a href="#reflection-boundary">组件边界</a>
+        <a href="#reflection-ir">内存模型</a>
+        <a href="#reflection-builder">Builder 算法</a>
+        <a href="#reflection-slang-ir-mapping">Slang → IR 映射表</a>
+        <a href="#reflection-binding-path">BindingPath 算法</a>
+        <a href="#reflection-pseudocode-types">类型图伪代码</a>
+        <a href="#reflection-pseudocode-ranges">Logical Range 伪代码</a>
+        <a href="#reflection-pseudocode-blocks">Range 映射伪代码</a>
+        <a href="#reflection-pseudocode-stages">Stage mask 伪代码</a>
+        <a href="#reflection-validation">强校验</a>
+        <a href="#reflection-pseudocode-validator">Validator 伪代码</a>
+      </div>
+    </details>
+    <details class="nav-tree">
+      <summary>SLC2 文本产物</summary>
+      <div class="sub-links">
+        <a href="#slc2-writer">Writer</a>
+        <a href="#slc2-pseudocode-write">Writer 伪代码</a>
+        <a href="#slc2-reader">Reader</a>
+        <a href="#slc2-pseudocode-read">Reader 伪代码</a>
+        <a href="#layout-fingerprint-implementation">Fingerprint</a>
+        <a href="#layout-pseudocode-fingerprint">Fingerprint 伪代码</a>
+      </div>
+    </details>
+
+    <div class="nav-group">运行时与 Vulkan</div>
+    <details class="nav-tree">
+      <summary>Program 与名称绑定</summary>
+      <div class="sub-links">
+        <a href="#runtime-boundary">对象边界</a>
+        <a href="#runtime-selection">Program 选择</a>
+        <a href="#runtime-pseudocode-select">选择伪代码</a>
+        <a href="#runtime-reflection">ShaderVar</a>
+        <a href="#runtime-pseudocode-resolve">路径解析伪代码</a>
+        <a href="#runtime-binding">资源绑定</a>
+        <a href="#runtime-pseudocode-set">设置资源伪代码</a>
+        <a href="#runtime-pseudocode-validate">完整性验证伪代码</a>
+      </div>
+    </details>
+    <details class="nav-tree">
+      <summary>Vulkan 后端</summary>
+      <div class="sub-links">
+        <a href="#vulkan-layout">Pipeline Layout</a>
+        <a href="#vulkan-pseudocode-layout">Layout 伪代码</a>
+        <a href="#vulkan-descriptors">Descriptor 写入</a>
+        <a href="#vulkan-pseudocode-write">写入伪代码</a>
+        <a href="#vulkan-pipeline">Pipeline 接入</a>
+        <a href="#vulkan-pseudocode-pipeline">Pipeline 伪代码</a>
+        <a href="#runtime-error-model">错误与非目标</a>
+      </div>
+    </details>
+
+    <div class="nav-group">测试与交付</div>
+    <details class="nav-tree">
+      <summary>实施阶段</summary>
+      <div class="sub-links">
+        <a href="#delivery-strategy">交付策略</a>
+        <a href="#delivery-phases">阶段与退出条件</a>
+        <a href="#test-layout">测试布局</a>
+        <a href="#test-pseudocode-api-probe">API Probe 伪代码</a>
+        <a href="#test-pseudocode-fixture">Fixture 伪代码</a>
+      </div>
+    </details>
+    <details class="nav-tree">
+      <summary>验收与风险</summary>
+      <div class="sub-links">
+        <a href="#test-matrix">测试矩阵</a>
+        <a href="#test-pseudocode-vulkan">Vulkan 测试伪代码</a>
+        <a href="#test-golden">Golden/Mutation</a>
+        <a href="#test-pseudocode-mutation">Mutation 伪代码</a>
+        <a href="#delivery-gates">合入门禁</a>
+        <a href="#delivery-risks">风险</a>
+        <a href="#delivery-done">完成定义</a>
+      </div>
+    </details>
+  </nav>
+</aside>
+
+<main>
+  <header id="implementation-top">
+    <h1>SolarEngine Slang Shader 编译系统实施设计 <span class="version-badge">v2</span></h1>
+    <p class="subtitle">文件级改造 · Slang 调用链 · ShaderReflectionIR · SLC2 · Vulkan 名称绑定 · 测试门禁</p>
+  </header>
+
+  <section>
+    <h2 id="implementation-v2">0. 第二版迭代说明</h2>
+    <p>第二版保持系统设计契约不变，重点把第一版的职责说明转换为可直接指导编码的实现算法。每条主链路补充伪代码、输入/输出、失败边界和不变量；伪代码中的类型与文件名表示计划实现，不代表 SolarEngine 当前已经存在这些 API。</p>
+    <div class="implementation-legend" aria-label="内容状态图例">
+      <span class="observed">现有事实：已在 SolarEngine/Slang 源码中确认</span>
+      <span class="planned">计划实现：本实施方案新增</span>
+      <span class="transition">过渡路径：只为保持实施期间可构建</span>
+      <span class="deferred">后续设计：当前明确不实现</span>
+    </div>
+    <div class="decision">
+      <div><strong>新增算法说明</strong>依赖构建、编译事务、Program 发现、Variant 规划和联合链接。</div>
+      <div><strong>新增数据转换</strong>Slang Layout → ShaderReflectionIR、严格验证、SLC2 确定性读写。</div>
+      <div><strong>新增运行时流程</strong>Program/Variant 选择、ShaderVar 路径解析、资源完整性验证。</div>
+      <div><strong>新增 Vulkan 流程</strong>共享 Pipeline Layout、逻辑资源到物理 descriptor 的映射与提交。</div>
+      <div><strong>新增测试骨架</strong>Slang API 编译/链接 probe、反射 smoke、编译 fixture、SLC2 mutation、Vulkan validation 功能测试。</div>
+      <div><strong>表达优化</strong>明确区分当前代码事实、计划类型、过渡实现和非目标。</div>
+    </div>
+
+    <h3 id="implementation-pseudocode-overall">伪代码约定与总流程</h3>
+    <ul class="invariant-list">
+      <li><code>Result&lt;T&gt;</code> 表示成功值或一个带上下文的错误；<code>TRY(x)</code> 在失败时立即向上返回。</li>
+      <li><code>FAIL(...)</code> 不提交部分状态；公开编译结果最终仍只有 Success/Failed、CompileMessage 和 SLC2Data。</li>
+      <li><code>StableSort</code>、<code>Canonical*</code> 表示系统设计已经确定的稳定排序与规范编码。</li>
+      <li>伪代码省略引用计数、分配器和日志样板，但不省略所有权、失败边界或原子提交位置。</li>
+    </ul>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>编译独立闭环与运行时消费流程</strong>
+        <small>计划实现 · SLC2 是两部分之间唯一持久化边界</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>Slang Shader Resource + Targets + VariantSelections</div>
+        <div><strong>不变量</strong>编译功能不依赖运行时对象、GPU 设备或 Vulkan descriptor writer</div>
+        <div><strong>输出</strong>Compile-only 阶段输出完整 SLC2；运行时阶段只消费 SLC2</div>
+      </div>
+      <pre><code>CompileOnly(request):
+    compileResult = CompileShaderResource(request)
+    if compileResult.Status == Failed:
+        return FAIL(compileResult.CompileMessage)
+
+    // 使用共享、无 Slang、无 Vulkan 依赖的 Reader/Validator 自检。
+    artifact = TRY(SLC2Reader.ReadAndValidate(
+        compileResult.SLC2Data))
+    TRY(CompareSemanticManifest(artifact, request.ExpectedManifest))
+    return compileResult.SLC2Data
+
+LoadAndCreate(slc2Data, selection, bindings):
+    artifact = TRY(SLC2Reader.ReadAndValidate(slc2Data))
+    selection = TRY(artifact.Select(
+        selection.ProgramId,
+        selection.Target,
+        selection.Defines))
+
+    program = TRY(ShaderProgramInstance.Create(selection))
+    TRY(program.BindResourcesByName(bindings))
+    return program</code></pre>
+      <p class="pseudo-note"><code>CompileOnly</code> 是 P0-P3 的独立验收闭环：它可以在没有 <code>ShaderProgramInstance</code>、Vulkan runtime、GPU 设备和资源对象的情况下测试 Program/Variant/Target、IR、SLC2、Reader、fingerprint 与确定性。<code>LoadAndCreate</code> 从已存在的 SLC2 开始，解码 Stage code，并创建或复用共享 Pipeline Layout；完整固定功能状态到齐后由 PipelineState 创建 VkPipeline。Draw/Dispatch 的 <code>PrepareAndBind</code> 再执行绑定验证、descriptor 原子写入与命令绑定。运行时不会保留或重新创建 Slang Session。</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="implementation-overview">1. 目标与交付边界</h2>
+    <p>本文件集把已完成的<a class="toc-link" href="../Shader编译系统设计/index.html" target="_blank">系统设计</a>转换为可实施的模块、类、调用顺序、阶段和验收项。系统契约仍以设计文档为准；这里不重新开放已确认决策。</p>
+    <div class="decision">
+      <div><strong>新编译入口</strong>独立 <code>ShaderCompileRequest/Result</code>；不继承围绕 ShaderMeta 和旧二进制 cache 的 ShaderCompiler。</div>
+      <div><strong>Slang 边界</strong>只存在于离线编译模块；SLC2 Reader、runtime reflection 和 Vulkan 后端不链接 Slang。</div>
+      <div><strong>编译独立闭环</strong>P0-P3 必须能在没有运行时 Program、Vulkan 设备和 descriptor writer 的情况下完成测试；其验收产物是完整 SLC2 和语义 manifest。</div>
+      <div><strong>事务粒度</strong>一个请求只返回完整 SLC2 或失败；任何 Program/Target/Variant/Stage 失败都没有部分数据。</div>
+      <div><strong>Program Layout</strong>同一 Variant 的全部 Stage 联合链接并共享一份 IR 和 Pipeline Layout。</div>
+      <div><strong>运行时绑定</strong>按名称和固定数组下标定位逻辑资源，再经 range mapping 写入 1～N 个 Vulkan descriptor。</div>
+      <div><strong>资源缺失</strong>提交前报错并中止 Draw/Dispatch；不声明 optional、不自动补默认资源。</div>
+      <div><strong>首个纵向切片</strong>Vulkan Compute：Texture/Buffer/Sampler 名称绑定和 validation layer 零错误。</div>
+      <div><strong>明确后置</strong>Cook/发布、DependencyIndex、默认资源、动态 specialization、Push Constant、无界 descriptor 和 runtime lifecycle 优化。</div>
+    </div>
+
+    <h3 id="implementation-principles">实施原则</h3>
+    <ul>
+      <li>新路径显式接入，不通过 cache 内容、资产版本、ShaderProfile 或语言字段自动回退。</li>
+      <li>共享稳定数据结构不含 Slang/Vulkan 原生指针和枚举；适配只在边界模块发生。</li>
+      <li>Compiler Writer 与 runtime Reader 使用同一个 Validator；成功产物必须 self-read。</li>
+      <li>先写纯算法测试和负向 fixture，再接 GPU；不使用硬编码 binding 让演示先跑起来。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2 id="implementation-baseline">2. 现有接入点与必须替换的假设</h2>
+    <table>
+      <thead><tr><th>当前代码</th><th>现有假设</th><th>新路径处理</th></tr></thead>
+      <tbody>
+        <tr><td class="path">ShadersCompilation.cpp · Compile</td><td>运行旧 Parser，生成 ShaderMeta，再按 ShaderProfile 请求后端编译器。</td><td>新增 request/result 重载，直接进入 Slang 编译事务。</td></tr>
+        <tr><td class="path">ShaderCompiler.h/.cpp</td><td>逐 Stage/permutation 写 GPU cache v13 二进制。</td><td>不作为新基类；新协调器聚合 Program/Target/Variant 并写 SLC2 JSON。</td></tr>
+        <tr><td class="path">Vulkan/ShaderCompilerVulkan.cpp</td><td>glslang + SPIR-V 头部中的 descriptor info。</td><td>Slang 直接生成 SPIR-V；编译期生成独立 ShaderReflectionIR。</td></tr>
+        <tr><td class="path">Graphics/Shaders/GPUShader.cpp</td><td>按 Stage name + permutationIndex 读取旧二进制和固定 CB 槽。</td><td>新 Slang 资产显式加载 SLC2，并选择完整 Program/Target/Variant。</td></tr>
+        <tr><td class="path">DescriptorSetVulkan.cpp</td><td>按 Stage 组织 descriptor set，部分位置由 descriptorIndex 推导 binding。</td><td>使用 SLC2 的绝对 set/binding 和合并 Stage mask 构建共享 Layout。</td></tr>
+        <tr><td class="path">GPUPipelineStateVulkan.cpp</td><td>从每 Stage DescriptorInfo 合成 Layout 和 Writer。</td><td>完整 Program instance 直接提供共享 Layout 和 Program 级 descriptor writer。</td></tr>
+      </tbody>
+    </table>
+    <p class="danger">只替换 Shader 编译器调用不足以完成目标。现有 Vulkan runtime 的 Stage-set 模型也必须建立一条新的 Program-shared Layout 路径。</p>
+  </section>
+
+  <section>
+    <h2 id="implementation-architecture">3. 目标调用链</h2>
+    <div class="flow">
+      <div>Slang Source<br><small>Program / Variant 声明</small></div>
+      <div class="arrow">→</div>
+      <div>Compile Plan<br><small>Target × Program × Variant</small></div>
+      <div class="arrow">→</div>
+      <div>Linked Component<br><small>全部 Stage</small></div>
+      <div class="arrow">→</div>
+      <div>IR + Code</div>
+      <div class="arrow">→</div>
+      <div>SLC2 Data<br><small>compile-only 可验收</small></div>
+    </div>
+    <div class="flow">
+      <div>SLC2 Reader</div>
+      <div class="arrow">→</div>
+      <div>ShaderProgramArtifact</div>
+      <div class="arrow">→</div>
+      <div>ShaderProgramInstance</div>
+      <div class="arrow">→</div>
+      <div>Vulkan Pipeline + Bindings</div>
+    </div>
+
+    <h3 id="implementation-layer-map">模块所有权</h3>
+    <table>
+      <thead><tr><th>层</th><th>拥有的数据</th><th>禁止依赖</th></tr></thead>
+      <tbody>
+        <tr><td>ShaderCompilation/Slang</td><td>Slang Session、Module、Component、原生 Layout adapter。</td><td>GPU/Vulkan 运行时状态。</td></tr>
+        <tr><td>ShaderReflectionIR + SLC2</td><td>稳定类型图、块实例、Range mapping、Stage code；支持编译器 self-read 和 compile-only 测试。</td><td>Slang 指针、Vulkan 原生枚举、GPU 设备和资源对象。</td></tr>
+        <tr><td>Graphics/Shaders runtime</td><td>Artifact、Program 选择、ShaderVar、逻辑绑定状态。</td><td>Slang、Shader 源码、SPIR-V 二次反射。</td></tr>
+        <tr><td>GraphicsDevice/Vulkan</td><td>VkShaderModule、DescriptorSetLayout、PipelineLayout、descriptor writes。</td><td>Program 声明宏和 Variant 发现逻辑。</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <iframe class="module-frame" src="依赖与工程.html"
+    data-anchors="dependency-baseline,dependency-version,dependency-artifacts,dependency-build,dependency-cmake,dependency-pseudocode-build,dependency-script,dependency-module,dependency-module-layout,dependency-buildcs,dependency-lifetime,dependency-pseudocode-session,dependency-validation"
+    title="依赖与工程接入" loading="eager"></iframe>
+
+  <iframe class="module-frame" src="编译器实现.html"
+    data-anchors="compiler-boundary,compiler-files,compiler-existing-files,compiler-api,compiler-api-types,compiler-api-semantics,compiler-api-entry,compiler-pseudocode-orchestrator,compiler-transaction,compiler-pseudocode-unit,compiler-ordering,compiler-discovery,compiler-discovery-session,compiler-attributes,compiler-entrypoints,compiler-pseudocode-discovery,compiler-variants,compiler-variant-model,compiler-variant-rules,compiler-pseudocode-variants,compiler-variant-tests,compiler-target,compiler-target-key,compiler-vulkan-policy,compiler-session-cache,compiler-pseudocode-session,compiler-diagnostics,compiler-diagnostic-order,compiler-failure-policy,compiler-pseudocode-result"
+    title="编译器实现" loading="eager"></iframe>
+
+  <iframe class="module-frame" src="反射与SLC2.html"
+    data-anchors="reflection-boundary,reflection-ir,reflection-ir-root,reflection-ir-types,reflection-ir-ranges,reflection-builder,reflection-builder-entry,reflection-slang-ir-mapping,reflection-binding-path,reflection-builder-types,reflection-pseudocode-types,reflection-pseudocode-ranges,reflection-builder-blocks,reflection-pseudocode-blocks,reflection-builder-stages,reflection-pseudocode-stages,reflection-validation,reflection-pseudocode-validator,slc2-writer,slc2-model,slc2-json,slc2-pseudocode-write,slc2-determinism,slc2-reader,slc2-reader-phases,slc2-pseudocode-read,slc2-reader-strictness,layout-fingerprint-implementation,layout-fingerprint-canonical,layout-pseudocode-fingerprint,layout-fingerprint-exclusions,layout-fingerprint-cache"
+    title="反射 IR 与 SLC2" loading="eager"></iframe>
+
+  <iframe class="module-frame" src="运行时与Vulkan.html"
+    data-anchors="runtime-boundary,runtime-files,runtime-transition,runtime-selection,runtime-load,runtime-select-api,runtime-pseudocode-select,runtime-instance,runtime-reflection,runtime-location,runtime-path-parser,runtime-pseudocode-resolve,runtime-no-names,runtime-binding,runtime-binding-api,runtime-pseudocode-set,runtime-binding-state,runtime-binding-validation,runtime-pseudocode-validate,vulkan-layout,vulkan-current-problem,vulkan-layout-build,vulkan-pseudocode-layout,vulkan-layout-files,vulkan-descriptors,vulkan-write-formula,vulkan-pseudocode-write,vulkan-writer-reuse,vulkan-no-unbounded,vulkan-pipeline,vulkan-compute,vulkan-graphics,vulkan-pseudocode-pipeline,runtime-error-model,runtime-errors,runtime-deferred"
+    title="运行时与 Vulkan" loading="eager"></iframe>
+
+  <iframe class="module-frame" src="测试与交付.html"
+    data-anchors="delivery-strategy,delivery-branching,delivery-phases,delivery-dependency-order,test-layout,test-pseudocode-api-probe,test-pseudocode-fixture,test-matrix,test-compiler,test-variants,test-reflection,test-vulkan,test-pseudocode-vulkan,test-golden,test-golden-policy,test-mutations,test-pseudocode-mutation,delivery-gates,delivery-risks,delivery-done"
+    title="测试与交付" loading="eager"></iframe>
+
+  <footer>实施文档状态：第二版 · 已补充主要实现伪代码 · 系统契约已冻结 · 首个实施切片：Slang Compute → SLC2 → Vulkan 名称绑定</footer>
+</main>
+</body>
+</html>

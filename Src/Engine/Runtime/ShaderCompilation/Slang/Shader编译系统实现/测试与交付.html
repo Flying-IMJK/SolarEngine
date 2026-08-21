@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shader 编译系统实现 v2 · 测试与交付</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="section-frame.js"></script>
+</head>
+<body class="module-page impl-page" data-module-label="测试与交付">
+<aside class="sidebar module-only" aria-label="文档导航">
+  <a class="brand" href="index.html">Shader 编译系统实现<small>阶段、测试与退出条件 · v2</small></a>
+  <nav class="module-nav"></nav>
+</aside>
+
+<main class="module-content">
+  <header class="module-only" id="delivery-top">
+    <h1>测试与交付 <span class="version-badge">v2</span></h1>
+    <p class="subtitle">每个阶段都形成可验证的纵向切片，失败时能定位在接口、编译、IR、缓存或 Vulkan 层。</p>
+  </header>
+
+  <section>
+    <h2 id="delivery-strategy">1. 交付策略</h2>
+    <p>实施采用“先建立可独立运行的编译闭环，再接入运行时名称解析，最后打通 Vulkan Compute 和 Graphics”的依赖顺序。依赖图允许的阶段可以并行开发，但下游只能消费已满足退出条件的上游接口；不得在 Vulkan 调试期间同时修改 Variant 规范或 SLC2 schema。</p>
+    <div class="contract">
+      <strong>Compile-only 闭环：</strong>
+      Slang 源码 → Program/Variant 发现 → Target 编译计划 → linked component → SPIR-V + ShaderReflectionIR → SLC2 → 严格 Reader/Validator → 语义 manifest 与字节确定性。
+    </div>
+    <div class="contract">
+      <strong>运行时/GPU 闭环：</strong>
+      已存在 SLC2 → Program/Target/Variant 选择 → runtime reflection → 名称绑定 Texture/Buffer/Sampler → Vulkan shared PipelineLayout → Descriptor 写入 → Dispatch/Draw。
+    </div>
+
+    <h3 id="delivery-branching">提交边界</h3>
+    <ul>
+      <li>第三方 Slang 依赖固定与许可证单独提交。</li>
+      <li>共享数据类型、纯算法与测试先于调用点提交。</li>
+      <li>编译器、SLC2、runtime reflection、Vulkan adapter 分开提交，但每个合入点保持主分支可构建。</li>
+      <li>旧调用点的移除独立于新路径功能提交，便于确认不是 Legacy 行为掩盖测试成功。</li>
+      <li>不在本轮提交 Cook/发布、DependencyIndex、默认资源或 runtime lifecycle 优化。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2 id="delivery-phases">2. 实施阶段与退出条件</h2>
+    <div class="phase-grid">
+      <div class="phase-card">
+        <strong>P0 · 依赖与骨架</strong>
+        Slang 已由 SolarEngine 接入；新增公共请求/结果和稳定枚举；建立 API 编译/链接探针与空编译服务。
+        <div class="exit">退出：Slang API probe 编译并链接；GlobalSession + 最小反射 smoke test 通过；runtime 链接依赖不含 Slang。</div>
+      </div>
+      <div class="phase-card">
+        <strong>P1 · 最小 Compute 编译</strong>
+        无资源、无 Variant 的单 CS Program，联合 component、SPIR-V code 与最小 SLC2。
+        <div class="exit">退出：无需 GPU 即可通过 SLC2 Reader/Validator；两次编译字节一致；SPIR-V 通过基础格式与 hash 校验。</div>
+      </div>
+      <div class="phase-card">
+        <strong>P2 · Program 与 Variant</strong>
+        marker Attribute 发现、Stage 校验、显式过滤、全量笛卡尔积、TargetKey。
+        <div class="exit">退出：正负 fixture 全通过；空宏 Variant 与必选默认项正确。</div>
+      </div>
+      <div class="phase-card">
+        <strong>P3 · Reflection IR 与 SLC2</strong>
+        完整 types/blocks/range mapping、Writer/Reader/self-read、fingerprint。
+        <div class="exit">退出：所有 schema invariant 可由 mutation test 捕获；compile-only fixture 可输出语义 manifest；runtime 无 Slang。</div>
+      </div>
+      <div class="phase-card">
+        <strong>P4 · Runtime Reflection 与名称绑定</strong>
+        从已存在 SLC2 重建 Program/Target/Variant、ShaderVar、名称解析、逻辑资源状态和提交前完整性验证。
+        <div class="exit">退出：不创建 GPU 对象即可按名称解析 Texture/Buffer/Sampler、固定数组和子块路径；缺失资源可确定性阻止提交。</div>
+      </div>
+      <div class="phase-card">
+        <strong>P5 · Vulkan Compute 绑定闭环</strong>
+        共享 Layout、VkShaderModule、descriptor set layout、descriptor write 和 Compute Dispatch。
+        <div class="exit">退出：validation layer 无错；缺失资源在任何 descriptor update/dispatch 前失败。</div>
+      </div>
+      <div class="phase-card">
+        <strong>P6 · Graphics Program</strong>
+        VS/PS 联合链接，可选 HS/DS/GS；单一 Pipeline Layout 与根参数状态。
+        <div class="exit">退出：VS/PS 共享资源只产生一个合并 binding；Draw 正确。</div>
+      </div>
+      <div class="phase-card">
+        <strong>P7 · 完整已设计能力</strong>
+        ordinary uniform 字段、显式 ConstantBuffer/ParameterBlock、UAV、嵌套 struct/数组和辅助 counter。
+        <div class="exit">退出：所有已支持 Type/Range 分支均有 GPU 功能测试和负向边界测试。</div>
+      </div>
+      <div class="phase-card">
+        <strong>P8 · 调用点迁移与清理</strong>
+        新 Slang Shader 资产全面使用新入口；移除新调用链对旧 parser/cache/stage descriptor info 的依赖。
+        <div class="exit">退出：新资产路径不存在 Legacy dispatch；旧资产不被自动迁移或伪装成功。</div>
+      </div>
+    </div>
+
+    <h3 id="delivery-dependency-order">阶段依赖</h3>
+    <pre><code>P0
+ └─ P1
+     ├─ P2
+     └─ P3
+         └─ P4
+             └─ P5
+                 └─ P6
+                     └─ P7
+                         └─ P8</code></pre>
+    <p>P0-P3 构成编译独立闭环，不依赖运行时 Program、Vulkan 设备或资源对象。P2 与 P3 在 P1 后可以部分并行开发，但 P4 只能使用已经通过 Reader/Validator 的 P3 数据；P5 之后才允许接触 Vulkan，且禁止在 Vulkan 层硬编码 set/binding 作为临时数据源。</p>
+  </section>
+
+  <section>
+    <h2 id="test-layout">3. 测试代码与 Fixture 布局</h2>
+    <table>
+      <thead><tr><th>路径</th><th>内容</th></tr></thead>
+      <tbody>
+        <tr><td class="path">Src/Engine/Tests/TestSlangCompilerApi.cpp</td><td>P0 Slang API 编译/链接探针与最小反射 smoke test；直接引用当前编译器和 Reflection adapter 使用的 Slang 公共 API。</td></tr>
+        <tr><td class="path">Src/Engine/Tests/TestShaderVariantPlanner.cpp</td><td>宏组解析、默认补全、笛卡尔积、规范化、排序、去重和非法输入。</td></tr>
+        <tr><td class="path">Src/Engine/Tests/TestSlangReflectionBuilder.cpp</td><td>SolarEngine 当前 Slang fixture 的 Type/Binding/Descriptor/Sub-object 三类 range 映射、BindingPath 累加、默认 UBO 与 counter 归一化。</td></tr>
+        <tr><td class="path">Src/Engine/Tests/TestShaderReflectionValidator.cpp</td><td>纯构造 IR 的 ID、可达性、Range、块数组、无界和冲突测试。</td></tr>
+        <tr><td class="path">Src/Engine/Tests/TestSLC2.cpp</td><td>Writer/Reader round-trip、严格字段、UTF-8、Base64/hash、mutation 与确定性。</td></tr>
+        <tr><td class="path">Src/Engine/Tests/TestShaderNameResolver.cpp</td><td>Struct、固定数组、块切换、类型错误、语法错误和越界。</td></tr>
+        <tr><td class="path">Src/Engine/Tests/TestShaderPipelineFingerprint.cpp</td><td>规范编码、排序、Stage 合并、冲突和 hash 已知向量。</td></tr>
+        <tr><td class="path">Src/Engine/Tests/TestSlangCompileOnly.cpp</td><td>P0-P3 编译独立闭环：请求到 SLC2、self-read、语义 manifest、失败无部分产物和字节确定性；不创建 GPU 对象。</td></tr>
+        <tr><td class="path">Src/Engine/Tests/Shaders/Slang/*.slang</td><td>编译与反射集成 fixture；每个文件只验证一个契约。</td></tr>
+        <tr><td class="path">Src/Engine/Tests/Graphics/Vulkan/TestSlangShaderVulkan.cpp</td><td>Compute/Graphics GPU 功能和 validation layer 测试。</td></tr>
+      </tbody>
+    </table>
+    <p>纯算法和 compile-only fixture 必须放在不依赖 GPU 的测试中。只有 Stage module、PipelineLayout、descriptor write 和实际结果校验进入 Vulkan 测试，避免一个 GPU 失败掩盖 schema 或编译器错误。</p>
+
+    <h3 id="test-pseudocode-api-probe">Slang API Probe 伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>CompileAndRunPinnedSlangApiProbe</strong>
+        <small>P0 门禁 · SolarEngine 当前接入 Slang</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>同一次 Slang 构建的 slang.h、导入库/共享库、最小 Probe.slang</div>
+        <div><strong>不变量</strong>直接引用真实 API；不提供 SimpleName 等兼容别名</div>
+        <div><strong>输出</strong>编译/链接成功与最小反射语义断言</div>
+      </div>
+      <pre><code>CompileTimeSurface():
+    decl: slang::DeclReflection*
+    type: slang::TypeReflection*
+    programLayout: slang::ProgramLayout*
+    layout: slang::TypeLayoutReflection*
+    varLayout: slang::VariableLayoutReflection*
+    metadata: slang::IMetadata*
+    used: bool
+    module: slang::IModule*
+    component: slang::IComponentType*
+
+    REQUIRE_COMPILES(decl-&gt;getName())
+    REQUIRE_COMPILES(decl-&gt;getKind())
+    REQUIRE_COMPILES(decl-&gt;getChildrenCount())
+    REQUIRE_COMPILES(decl-&gt;getChild(0))
+    REQUIRE_COMPILES(decl-&gt;getType())
+    REQUIRE_COMPILES(type-&gt;getUserAttributeCount())
+    REQUIRE_COMPILES(type-&gt;getUserAttributeByIndex(0))
+    REQUIRE_COMPILES(type-&gt;getElementType())
+    REQUIRE_COMPILES(module-&gt;findAndCheckEntryPoint(...))
+    REQUIRE_COMPILES(component-&gt;getLayout())
+    REQUIRE_COMPILES(component-&gt;getEntryPointCode(...))
+    REQUIRE_COMPILES(component-&gt;getEntryPointMetadata(
+        0, 0, &amp;metadata, ...))
+    REQUIRE_COMPILES(metadata-&gt;isParameterLocationUsed(
+        SLANG_PARAMETER_CATEGORY_DESCRIPTOR_TABLE_SLOT,
+        0, 0, used))
+    REQUIRE_COMPILES(programLayout-&gt;getGlobalParamsTypeLayout())
+    REQUIRE_COMPILES(programLayout-&gt;getGlobalParamsVarLayout())
+    REQUIRE_COMPILES(varLayout-&gt;getTypeLayout())
+    REQUIRE_COMPILES(varLayout-&gt;getOffset(
+        slang::ParameterCategory::Uniform))
+    REQUIRE_COMPILES(varLayout-&gt;getBindingSpace(
+        slang::ParameterCategory::DescriptorTableSlot))
+    REQUIRE_COMPILES(varLayout-&gt;getImageFormat())
+    REQUIRE_COMPILES(layout-&gt;getKind())
+    REQUIRE_COMPILES(layout-&gt;getSize(
+        slang::ParameterCategory::Uniform))
+    REQUIRE_COMPILES(layout-&gt;getScalarType())
+    REQUIRE_COMPILES(layout-&gt;getRowCount())
+    REQUIRE_COMPILES(layout-&gt;getColumnCount())
+    REQUIRE_COMPILES(layout-&gt;getMatrixLayoutMode())
+    REQUIRE_COMPILES(layout-&gt;getFieldCount())
+    REQUIRE_COMPILES(layout-&gt;getFieldByIndex(0))
+    REQUIRE_COMPILES(layout-&gt;getFieldBindingRangeOffset(0))
+    REQUIRE_COMPILES(layout-&gt;getElementCount(programLayout))
+    REQUIRE_COMPILES(layout-&gt;getElementStride(
+        SLANG_PARAMETER_CATEGORY_UNIFORM))
+    REQUIRE_COMPILES(layout-&gt;getElementTypeLayout())
+    REQUIRE_COMPILES(layout-&gt;getElementVarLayout())
+    REQUIRE_COMPILES(layout-&gt;getContainerVarLayout())
+    REQUIRE_COMPILES(layout-&gt;getResourceShape())
+    REQUIRE_COMPILES(layout-&gt;getResourceAccess())
+    REQUIRE_COMPILES(layout-&gt;getResourceResultType())
+    REQUIRE_COMPILES(layout-&gt;getBindingRangeCount())
+    REQUIRE_COMPILES(layout-&gt;getBindingRangeType(0))
+    REQUIRE_COMPILES(layout-&gt;getBindingRangeBindingCount(0))
+    REQUIRE_COMPILES(layout-&gt;getBindingRangeLeafTypeLayout(0))
+    REQUIRE_COMPILES(layout-&gt;getBindingRangeLeafVariable(0))
+    REQUIRE_COMPILES(layout-&gt;getBindingRangeImageFormat(0))
+    REQUIRE_COMPILES(layout-&gt;getExplicitCounterBindingRangeOffset())
+    REQUIRE_COMPILES(layout-&gt;getBindingRangeDescriptorSetIndex(0))
+    REQUIRE_COMPILES(layout-&gt;getBindingRangeFirstDescriptorRangeIndex(0))
+    REQUIRE_COMPILES(layout-&gt;getBindingRangeDescriptorRangeCount(0))
+    REQUIRE_COMPILES(layout-&gt;getDescriptorSetSpaceOffset(0))
+    REQUIRE_COMPILES(
+        layout-&gt;getDescriptorSetDescriptorRangeCount(0))
+    REQUIRE_COMPILES(
+        layout-&gt;getDescriptorSetDescriptorRangeIndexOffset(0, 0))
+    REQUIRE_COMPILES(
+        layout-&gt;getDescriptorSetDescriptorRangeDescriptorCount(0, 0))
+    REQUIRE_COMPILES(
+        layout-&gt;getDescriptorSetDescriptorRangeType(0, 0))
+    REQUIRE_COMPILES(
+        layout-&gt;getDescriptorSetDescriptorRangeCategory(0, 0))
+    REQUIRE_COMPILES(layout-&gt;getSubObjectRangeCount())
+    REQUIRE_COMPILES(
+        layout-&gt;getSubObjectRangeBindingRangeIndex(0))
+    REQUIRE_COMPILES(layout-&gt;getSubObjectRangeSpaceOffset(0))
+    REQUIRE_COMPILES(layout-&gt;getSubObjectRangeOffset(0))
+    REQUIRE_LINKS(slang::createGlobalSession(...))
+
+RunSemanticSmoke():
+    globalSession = TRY(slang::createGlobalSession(...))
+    session = TRY(CreateProbeSession(globalSession))
+    module = TRY(LoadProbeModule(session, "Probe.slang"))
+    root = module-&gt;getModuleReflection()
+    programDecl = TRY(FindDirectProgramStruct(root))
+
+    CHECK(programDecl-&gt;getName() == "ProbeProgram")
+    CHECK(programDecl-&gt;getType() != null)
+    CHECK(ReadProbeAttributes(programDecl-&gt;getType()) == ExpectedAttributes)
+
+    entryPoint = TRY(module-&gt;findAndCheckEntryPoint(
+        "ProbeCS", SLANG_STAGE_COMPUTE, ...))
+    linked = TRY(Link(module, entryPoint))
+    CHECK(linked-&gt;getLayout() != null)
+    CHECK(HasExpectedProbeBindingRange(linked-&gt;getLayout()))
+    CHECK(ResolveProbeBindingPath(linked-&gt;getLayout()) ==
+          ExpectedAbsoluteSetBinding)
+    CHECK(ProbeBlockRangesPairOneToOneWithSubObjects())</code></pre>
+      <p class="pseudo-note">CompileTimeSurface 覆盖名称与签名，链接步骤捕获头库不一致；RunSemanticSmoke 才验证 <code>getName()</code>、Attribute、入口、logical/descriptor/sub-object 三类 range 以及 BindingPath 累加的实际语义。以后新增 Slang API 调用时，必须在同一提交中扩展该 probe。</p>
+    </div>
+
+    <h3 id="test-pseudocode-fixture">Slang 编译 Fixture 测试伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>RunShaderCompileFixture</strong>
+        <small>计划实现 · 一个 fixture 只验证一个主要契约</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>.slang fixture + request + expected manifest</div>
+        <div><strong>不变量</strong>失败没有部分 SLC2；成功必须 self-read</div>
+        <div><strong>输出</strong>语义断言结果</div>
+      </div>
+      <pre><code>RunShaderCompileFixture(fixture):
+    request = BuildRequest(
+        resourcePath = fixture.VirtualPath,
+        source = ReadUtf8(fixture.SourceFile),
+        targets = fixture.Targets,
+        selections = fixture.VariantSelections)
+
+    ShadersCompilation.Compile(request, result)
+
+    IF fixture.ExpectedStatus == Failed:
+        CHECK(result.Status == Failed)
+        CHECK(result.SLC2Data.IsEmpty)
+        FOR text IN fixture.RequiredDiagnostics:
+            CHECK(result.CompileMessage.Contains(text))
+        return
+
+    REQUIRE(result.Status == Success)
+    artifact = REQUIRE_SUCCESS(
+        SLC2Reader.ReadAndValidate(result.SLC2Data))
+    CHECK(ExtractSemanticManifest(artifact) ==
+          fixture.ExpectedSemanticManifest)
+
+    // 同一固定工具链下验证确定性。
+    ShadersCompilation.Compile(request, second)
+    REQUIRE(second.Status == Success)
+    CHECK(second.SLC2Data == result.SLC2Data)</code></pre>
+      <p class="pseudo-note">ExpectedSemanticManifest 比较 Program/Target/Variant/Stage、IR 和关键 mapping，不把整段 SPIR-V 文本作为跨 Slang 版本的永久 golden。</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="test-matrix">4. 测试矩阵</h2>
+    <h3 id="test-compiler">编译与 Program</h3>
+    <table class="matrix">
+      <thead><tr><th>用例</th><th>预期</th><th>层级</th></tr></thead>
+      <tbody>
+        <tr><td>Slang API probe</td><td>使用 SolarEngine 当前接入 Slang 的公共头库完成编译和链接；最小反射 smoke 读取精确 ProgramId、Attribute、EntryPoint 与 binding range。</td><td>P0 build/integration</td></tr>
+        <tr><td>根 Module 直接 Program</td><td>调用 <code>DeclReflection::getName()</code>，复制其非空结果并使用精确简单名称作为 ProgramId。</td><td>Slang integration</td></tr>
+        <tr><td>namespace 内 Program</td><td>不发现；若请求该 ID 则失败。</td><td>Discovery</td></tr>
+        <tr><td>imported Module Program</td><td>不发现；其函数/类型仍可被入口使用。</td><td>Discovery</td></tr>
+        <tr><td>重复 ProgramId</td><td>在 codegen 前失败。</td><td>Discovery</td></tr>
+        <tr><td>CS 混合 graphics Stage</td><td>失败并列出冲突 Stage。</td><td>Program validation</td></tr>
+        <tr><td>Graphics 无 PS</td><td>失败。</td><td>Program validation</td></tr>
+        <tr><td>只有 HS 或 DS</td><td>失败。</td><td>Program validation</td></tr>
+        <tr><td>入口无 [shader]</td><td>findAndCheckEntryPoint 成功。</td><td>Slang integration</td></tr>
+        <tr><td>EntryPoint uniform/resource 参数</td><td>失败并指出入口与参数。</td><td>Layout validation</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="test-variants">Variant</h3>
+    <table class="matrix">
+      <thead><tr><th>用例</th><th>预期</th></tr></thead>
+      <tbody>
+        <tr><td><code>SHADER_MACRO(_, FOG_ON)</code></td><td>生成 <code>""</code> 与 <code>"FOG_ON"</code>。</td></tr>
+        <tr><td>两个 2 项组</td><td>4 个物化 Variant。</td></tr>
+        <tr><td>显式空 Defines</td><td>必选组取第一项，含下划线组选空。</td></tr>
+        <tr><td>输入宏顺序不同</td><td>匹配同一个 SLC2 variant。</td></tr>
+        <tr><td>NAME=VALUE、未知宏、同组多选</td><td>整个请求失败。</td></tr>
+        <tr><td>声明依赖 Variant 宏才出现</td><td>基线/Variant 结构比较失败。</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="test-reflection">Reflection 与缓存</h3>
+    <table class="matrix">
+      <thead><tr><th>结构</th><th>必须验证</th></tr></thead>
+      <tbody>
+        <tr><td>Struct 在两个路径复用</td><td>同一 typeId，按父相对 offset 得到两个正确最终位置。</td></tr>
+        <tr><td>嵌套 Struct BindingPath</td><td>Uniform 与 DescriptorTableSlot 分别累加每个 VariableLayout 的直接父相对 offset，得到预期绝对地址。</td></tr>
+        <tr><td>ConstantBuffer 边界</td><td>内部 Uniform 从子块 0 开始，不携带外层字节 offset；descriptor 地址仍累加到外层 set/binding。</td></tr>
+        <tr><td>ParameterBlock 边界</td><td>内部 descriptor binding 从块局部位置开始，通过 SubElementRegisterSpace 迁移到绝对 set；space offset 不重复累加。</td></tr>
+        <tr><td>Texture/Buffer/Sampler</td><td>Resource Type 的 resourceRanges 非空，mapping 完整。</td></tr>
+        <tr><td>资源数组</td><td>固定 count，resourceIndex 正确；数组不产生逐元素 BindingPath，下标不改变 binding；Base=0、Stride=1、descriptorCount=logical count。</td></tr>
+        <tr><td>ConstantBuffer/ParameterBlock</td><td>容器 Type Record 含 count=1 logical range；具体 block 实例独立、元素 type 可共享、SubBlock 映射唯一。</td></tr>
+        <tr><td>Sub-object 精确配对</td><td>每个块 binding range 恰好一个 sub-object range；StructuredBuffer simple range 恰好一个仅校验的 shader-object sub-object，其余 simple range 为零个；缺失、重复或错误 BindingRangeIndex 均失败。</td></tr>
+        <tr><td>BindingPath 非法值</td><td>负数、unknown/unbounded offset、deepest 不在链中、uint64 累加或 uint32 narrow 溢出均在 Builder 失败。</td></tr>
+        <tr><td>显式 UAV counter</td><td>Counter range 的 OwnerRangeOffset 指向同类型主 range 的绝对局部索引，Resource 的正向 RangeOffset 到达同一 counter；count 相等；名称绑定同步更新辅助 range。</td></tr>
+        <tr><td>块数组与含块数组闭包</td><td>编译失败。</td></tr>
+        <tr><td>无界数组/range</td><td>所有 Target 确定性失败。</td></tr>
+        <tr><td>Push Constant</td><td>编译失败，SLC2Data 为空。</td></tr>
+        <tr><td>同输入重复编译</td><td>SLC2 byte-for-byte 相同。</td></tr>
+        <tr><td>JSON 修改 ID/count/hash/fingerprint</td><td>Reader 在精确路径失败。</td></tr>
+        <tr><td>有效最小 SPIR-V</td><td>解码后是完整 Module，可创建 VkShaderModule。</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="test-vulkan">Vulkan</h3>
+    <table class="matrix">
+      <thead><tr><th>场景</th><th>验证</th></tr></thead>
+      <tbody>
+        <tr><td>Compute 单 Texture</td><td>按名称绑定并 Dispatch；结果纹理正确。</td></tr>
+        <tr><td>资源数组第 N 项</td><td><code>dstArrayElement</code> 正确，binding 不变。</td></tr>
+        <tr><td>VS/PS 共享资源</td><td>一个 binding，stageMask 合并为 vertex|fragment。</td></tr>
+        <tr><td>多 set 与空 set</td><td>VkPipelineLayout 的 set 索引与绝对坐标一致。</td></tr>
+        <tr><td>未绑定/null</td><td>Draw/Dispatch 前报错，无 vkUpdateDescriptorSets 的部分提交。</td></tr>
+        <tr><td>物理冲突</td><td>创建 PipelineLayout 前失败。</td></tr>
+        <tr><td>所有成功场景</td><td>Vulkan validation layer 无 error/warning。</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="test-pseudocode-vulkan">Vulkan 功能测试伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>TestSlangComputeBindingVulkan</strong>
+        <small>计划实现 · validation layer 与结果 readback 同时作为断言</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>Compute fixture、输入 Texture/Buffer/Sampler</div>
+        <div><strong>不变量</strong>禁止硬编码 set/binding；只按名称设置</div>
+        <div><strong>输出</strong>GPU 结果 + 零 validation 错误</div>
+      </div>
+      <pre><code>TEST_CASE("Slang Vulkan compute name binding"):
+    validation = VulkanValidationCollector()
+    device = CreateTestDevice(validationEnabled = true)
+
+    artifact = CompileAndLoadFixture("ComputeNameBinding.slang")
+    program = REQUIRE_SUCCESS(artifact.CreateProgram({
+        ProgramId = "ComputeProgram",
+        Target = CurrentVulkanTarget(),
+        Defines = { "FOG_ON" }
+    }))
+    pipelineState = REQUIRE_SUCCESS(
+        CreateComputePipelineState({ Program = program }))
+
+    input = CreateTextureWithKnownPattern()
+    output = CreateWritableBuffer()
+    sampler = CreatePointSampler()
+
+    REQUIRE_SUCCESS(program.SetTexture("inputTexture", input.View))
+    REQUIRE_SUCCESS(program.SetBuffer("outputBuffer", output))
+    REQUIRE_SUCCESS(program.SetSampler("pointSampler", sampler))
+
+    REQUIRE_SUCCESS(program.PrepareAndBind(
+        device.ImmediateContext,
+        pipelineState))
+    device.ImmediateContext.Dispatch(1, 1, 1)
+    device.WaitForGpu()
+
+    CHECK(ReadBack(output) == ExpectedComputeResult())
+    CHECK(validation.Errors.IsEmpty)
+    CHECK(validation.Warnings.IsEmpty)</code></pre>
+      <p class="pseudo-note">另设负向测试：省略 inputTexture 时 PrepareAndBind 必须在任何 descriptor update/dispatch 之前失败。</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="test-golden">5. Golden 与 Mutation 策略</h2>
+    <h3 id="test-golden-policy">不把易漂移的代码 blob 当唯一真值</h3>
+    <ul>
+      <li>SLC2 schema golden 只保存小型、手写且含有效完整 SPIR-V 的文件。</li>
+      <li>Slang codegen 回归主要验证成功、Stage、入口、非空代码、SPIR-V 基础结构和同版本确定性，不要求不同 Slang commit 产生相同二进制。</li>
+      <li>Reflection golden 比较稳定 IR 语义，不比较 Slang 原生枚举或指针。</li>
+      <li>SolarEngine 更新内置 Slang 时，先运行语义 diff；只有确认变化符合 Target 策略才更新 golden 和 CompilerBuildTag。</li>
+    </ul>
+
+    <h3 id="test-mutations">Reader Mutation</h3>
+    <p>对一份有效 SLC2 逐次只修改一个字段：magic/major、重复 ProgramId、Target 枚举、variant、typeId、blockId、elementCount、rangeIndex、descriptorCount、code hash、fingerprint。每个 mutation 必须在 Reader 阶段失败，并验证错误路径。</p>
+
+    <h3 id="test-pseudocode-mutation">SLC2 Mutation 测试伪代码</h3>
+    <div class="pseudo">
+      <div class="pseudo-header">
+        <strong>RunSLC2MutationCases</strong>
+        <small>计划实现 · 每次只破坏一个不变量</small>
+      </div>
+      <div class="pseudo-io">
+        <div><strong>输入</strong>一份已通过 Reader 的最小有效 SLC2</div>
+        <div><strong>不变量</strong>mutation 相互独立；验证精确错误路径</div>
+        <div><strong>输出</strong>Reader 防御覆盖</div>
+      </div>
+      <pre><code>RunMutationCases(validBytes, cases):
+    REQUIRE_SUCCESS(SLC2Reader.ReadAndValidate(validBytes))
+    validJson = ParseTestJson(validBytes)
+
+    FOR case IN cases:
+        mutated = DeepClone(validJson)
+        case.ApplySingleMutation(mutated)
+        mutatedBytes = SerializeTestJson(mutated)
+
+        error = REQUIRE_FAILURE(
+            SLC2Reader.ReadAndValidate(mutatedBytes))
+        CHECK(error.Path == case.ExpectedJsonPath)
+        CHECK(error.Message.Contains(case.ExpectedReason))
+
+cases = [
+    Change("/format/major", 999, reason = "unsupported major"),
+    Duplicate("/programs/0", reason = "duplicate ProgramId"),
+    Change("/.../types/2/elementCount", 0, reason = "positive"),
+    Remove("/.../rangeBindings/0", reason = "complete coverage"),
+    Change("/.../code/hash", WrongHash, reason = "SHA-256"),
+    Change("/.../pipelineLayoutFingerprint", WrongHash,
+           reason = "fingerprint mismatch")
+]</code></pre>
+      <p class="pseudo-note">测试辅助 JSON serializer 可以宽松，产品 Reader 必须使用实施文档规定的严格解析 flags。</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="delivery-gates">6. 合入门禁</h2>
+    <ol>
+      <li><strong>Build：</strong>Windows x64 Editor + Vulkan 编译器模块干净构建；Linux x64 至少编译公共/编译模块；两端 Slang API probe 均使用各自同源头库编译并链接。</li>
+      <li><strong>Unit：</strong>Variant、IR Validator、SLC2、NameResolver、Fingerprint 全通过。</li>
+      <li><strong>Compile-only：</strong>P0-P3 不创建 GPU 设备、不创建 ShaderProgramInstance，也能从请求得到完整 SLC2，通过 self-read、语义 manifest、mutation 和 byte determinism 验收。</li>
+      <li><strong>Integration：</strong>正向/负向 Slang fixture 全通过，失败结果没有部分 SLC2。</li>
+      <li><strong>Determinism：</strong>相同输入连续两次输出 byte-for-byte 相等。</li>
+      <li><strong>GPU：</strong>Compute 主闭环与 Graphics 阶段对应测试通过。</li>
+      <li><strong>Validation：</strong>Vulkan validation layer 无 descriptor/pipeline layout 问题。</li>
+      <li><strong>Dependency audit：</strong>runtime 无 Slang 链接；正式 ThirdParty 与编译进程依赖目录不含 Slang 产品工具、Falcor 或无关产物。</li>
+      <li><strong>Legacy audit：</strong>新资产调用图中没有 Parser::Process、RequestCompiler(profile)、AddBindingsForStage 或 SPIR-V 二次反射。</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2 id="delivery-risks">7. 风险与缓解</h2>
+    <table>
+      <thead><tr><th>风险</th><th>早期信号</th><th>缓解</th></tr></thead>
+      <tbody>
+        <tr><td>Slang reflection API 名称、签名或语义误读</td><td>API probe 编译/链接失败，或最小 fixture 的名称、Attribute、入口、binding range 断言失败。</td><td>SolarEngine 当前接入 Slang 的 API probe、独立 Builder adapter、最小 fixture 和精确 mapping invariant；不提供伪兼容别名，也不在后端猜测。</td></tr>
+        <tr><td>Stage 独立布局残留</td><td>VS/PS 为同一资源生成不同 set。</td><td>只从联合 linked component 构建 IR；Vulkan 新路径禁用 AddBindingsForStage。</td></tr>
+        <tr><td>Variant 爆炸</td><td>笛卡尔积溢出或编译时间不可控。</td><td>生成前 checked multiply 和明确上限；支持显式 VariantSelections。</td></tr>
+        <tr><td>SLC2 不确定</td><td>相同输入出现无语义 diff。</td><td>固定排序/字段顺序，排除路径时间和指针，加入 byte determinism gate。</td></tr>
+        <tr><td>Slang 升级破坏 ABI/布局</td><td>加载失败或 IR golden 变化。</td><td>SolarEngine 内置 Slang 标识、头库同源、升级单独审查并提升 CompilerBuildTag。</td></tr>
+        <tr><td>缺失资源到 Vulkan 才崩溃</td><td>空 image/buffer info。</td><td>逻辑绑定完整性先于任何 descriptor write。</td></tr>
+        <tr><td>过渡期误用旧入口</td><td>新 Shader 仍生成 GPU cache v13。</td><td>显式资产入口、调用图测试和 Legacy audit，不做内容嗅探。</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2 id="delivery-done">8. 系统完成定义</h2>
+    <p>当 P0～P8 的适用退出条件全部满足时，当前范围内的“替换”完成：</p>
+    <ul>
+      <li>新 Slang Shader 资产只调用新请求/结果 API，旧 HLSL parser 和旧二进制 cache 不在其调用链。</li>
+      <li>Vulkan Compute 与 Graphics 都以完整 Program Variant 的共享 Layout 工作。</li>
+      <li>运行时按名称与固定数组下标绑定资源，不依赖显式 set/binding、Slang 或 SPIR-V 二次反射。</li>
+      <li>缺失资源、非法缓存、非法 Variant 和不支持反射结构都产生确定性错误。</li>
+      <li>Cook/发布、DependencyIndex、默认资源、运行时生命周期优化和其他后端仍明确留在后续设计，不以临时实现冒充完成。</li>
+    </ul>
+  </section>
+
+  <footer class="module-only">实施文档 v2 · 测试与交付</footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SolarEngine Slang Shader 编译系统设计 · 编译</title>
+  <script>if (window.parent !== window) document.documentElement.classList.add("embedded");</script>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="section-frame.js"></script>
+</head>
+<body class="module-page" data-module-label="编译">
+<aside class="sidebar module-only" aria-label="编译文档导航">
+  <a class="brand" href="index.html">SolarEngine Slang Shader<small>编译 · 返回完整设计</small></a>
+  <nav class="module-nav"></nav>
+</aside>
+<main class="module-content">
+  <header class="module-only module-intro">
+    <h1>编译</h1>
+    <p class="subtitle">SolarEngine Slang Shader 编译系统设计 · <a href="index.html">查看完整文档</a></p>
+  </header>
+  <section>
+    <h2 id="compile-request">6. 编译请求与 Target</h2>
+    <pre><code>struct ShaderCompileTarget
+{
+    PlatformType Platform;
+    GraphicsBackend Backend;
+    ShaderModel Model;
+};
+
+struct ShaderProgramVariantSelection
+{
+    String ProgramId;                   // SHADER_PROGRAM 中声明的 name
+    Array&lt;ShaderVariant&gt; Variants;      // 非空；每项是一组原始宏名集合
+};
+
+struct ShaderCompileRequest
+{
+    String SourcePath;
+    Array&lt;ShaderCompileTarget&gt; Targets;
+    Array&lt;ShaderProgramVariantSelection&gt; VariantSelections;
+    bool TreatWarningsAsErrors;
+};</code></pre>
+    <p class="contract"><strong>路径解析边界：</strong><code>ShaderCompileRequest</code> 不允许携带 <code>SearchPaths</code>。根 Shader 文件、<code>import</code> 和 <code>#include</code> 的查找由编译侧 <code>SlangShaderFileSystem</code> 统一处理，并通过 Slang <code>SessionDesc.fileSystem</code> 挂接；调用方不能通过请求参数改变搜索路径或污染 Shader 编译身份。</p>
+    <p class="contract"><strong>实现基础设施约束：</strong>Shader 编译系统实现默认使用 SolarEngine 基础设施。路径和文件 IO 使用 <code>FileSystem</code> / <code>File</code>；文本与第三方 <code>const char*</code> 边界使用 <code>StringAnsi</code> 持有桥接生命周期；集合、字节缓冲、Hash、JSON、日志、断言和原子操作优先使用引擎提供的方法。STL 只允许作为第三方 ABI 无法避免的局部桥接或引擎尚无等价能力时使用，不得作为路径语义、文件 IO 或持久化格式的默认实现。控制流分支必须显式使用 <code>{}</code>，包括单语句 <code>if</code> / <code>else</code> / <code>for</code> / <code>while</code>。</p>
+
+    <table>
+      <thead><tr><th>请求状态</th><th>行为</th></tr></thead>
+      <tbody>
+        <tr><td><code>VariantSelections</code> 未设置</td><td>发现 Shader 文件中的全部 Program，并为每个 Program 编译其完整 Variant 笛卡尔积。</td></tr>
+        <tr><td><code>VariantSelections</code> 非空</td><td>只编译列出的 Program 和宏集合；未列出的 Program 不参与本次编译。</td></tr>
+        <tr><td>一个 Selection 的 <code>Variants</code> 为空</td><td>非法。外层空数组已经表示“全部”，禁止用内层空数组制造第二种“全部”语义。</td></tr>
+        <tr><td>显式传入一个 <code>Defines = {}</code></td><td>只产生一个规范化组合：必选组补入第一个宏，含 <code>_</code> 的组选择空宏状态。</td></tr>
+        <tr><td>未知或重复 <code>ProgramId</code>、非法宏名或组合</td><td>整个请求失败，不生成部分结果。</td></tr>
+      </tbody>
+    </table>
+
+    <p>通过校验的显式 Variant 使用 <code>NormalizeVariant</code> 规范化并按结果去重，因此请求中的宏顺序和重复组合不会产生重复编译单元。</p>
+
+    <h3 id="compile-result-transaction">编译结果与原子提交（已确认）</h3>
+    <pre><code>enum class ShaderCompileStatus : uint8
+{
+    Success,
+    Failed,
+};
+
+struct ShaderCompileResult
+{
+    ShaderCompileStatus Status;
+    String CompileMessage;
+    Array&lt;byte&gt; SLC2Data; // 完整的 UTF-8 JSON 文本
+};</code></pre>
+    <ul>
+      <li><code>ShaderCompileResult</code> 只包含编译状态、编译信息文本和编译产物 SLC2 数据，不暴露逐编译单元状态、编译阶段、结构化 diagnostics 或缓存事务状态。</li>
+      <li><code>CompileMessage</code> 保存本次实际编译产生的 Warning、Error 及相关编译信息，保持 Slang 或引擎输出的完整文本。</li>
+      <li><code>Status = Success</code> 时，<code>CompileMessage</code> 可以为空，也可以包含 Warning；<code>SLC2Data</code> 必须包含当前 Shader Resource 的一份完整、已通过自检的 SLC2 文本。</li>
+      <li><code>Status = Failed</code> 时，<code>CompileMessage</code> 必须包含导致失败的错误信息，并可以同时包含 Warning；<code>SLC2Data</code> 必须为空。</li>
+      <li><code>CompileMessage</code> 只在本次实际编译结束后输出日志，当前不写入 SLC2 或其他持久化编译信息。缓存命中时不重放历史 Warning。</li>
+      <li><code>Array&lt;byte&gt;</code> 只用于保存可直接计算 hash 和写入文件的精确 UTF-8 JSON 字节，不改变 SLC2 的文本格式身份。</li>
+      <li>即使请求包含多个 Program、Target 或 Variant，也只返回一份聚合后的完整 <code>SLC2Data</code>；不得返回部分 SLC2 或单独的 Stage/Target 产物。</li>
+      <li>当前状态枚举不包含取消或部分成功。内部仍以 <code>ProgramId × TargetKey × Variant</code> 为完整编译单元执行，但该粒度不属于公开结果契约。</li>
+      <li><code>ShaderCompiler</code> 负责生成上述结果；外层 <code>ShadersCompilation</code> 仅在 <code>Success</code> 后使用完整 <code>SLC2Data</code> 原子替换正式文件。编译失败时不执行写入，既有有效 SLC2 保持不变。</li>
+    </ul>
+
+    <h3 id="target-key">TargetKey 身份与统一编译策略（已确认）</h3>
+    <pre><code>LogicalShaderTargetPlatform =
+  PlatformType × GraphicsBackend
+
+CanonicalTargetText =
+  "SOLAR-SHADER-TARGET/v1\n"
+  "platform=" + CanonicalPlatform + "\n"
+  "backend=" + CanonicalBackend + "\n"
+  "shaderModel=" + CanonicalShaderModel + "\n"
+
+TargetKey =
+  LowerHex(SHA-256(UTF8(CanonicalTargetText)))
+
+CompilerBuildTag =
+  Hash(
+      EngineShaderCompilerRevision
+    + SlangBuildTag
+    + CompilerPolicyVersion
+  )</code></pre>
+    <ul>
+      <li><code>ShaderTargetPlatform</code> 只是“操作系统平台 × 图形后端”的逻辑概念，不定义嵌套结构或额外字段。<code>PlatformType Platform</code>、<code>GraphicsBackend Backend</code> 和 <code>ShaderModel Model</code> 直接平铺在 <code>ShaderCompileTarget</code> 中。</li>
+      <li><code>TargetKey</code> 的唯一身份字段严格为 <code>Platform × Backend × ShaderModel</code>。Windows/Vulkan 与 Windows/D3D12、Windows/Vulkan 与 Linux/Vulkan、以及不同 Shader Model 均产生不同 Key。</li>
+      <li>规范文本使用固定字段顺序、无 BOM UTF-8、LF 换行和最后一个 LF。Platform、Backend 使用引擎定义的稳定小写字符串；Shader Model 使用稳定的 <code>major_minor</code> 形式。禁止保存或 hash SolarEngine、Slang、Vulkan 等原生枚举整数。</li>
+      <li>例如 <code>platform=windows</code>、<code>backend=vulkan</code>、<code>shaderModel=6_7</code> 的规范文本得到 <code>TargetKey = "03af5aaf813f8ed1b1cb766e442163dc56179e2e6ede7904a0ee48457eef058a"</code>。结果必须是完整 SHA-256 的 64 个小写十六进制字符。</li>
+      <li>SLC2 不单独保存可被伪造的 <code>targetKey</code> 字段；<code>targets[].meta</code> 平铺保存相同的 <code>platform</code>、<code>backend</code> 和 <code>shaderModel</code>，读取器按上述规则生成 Key。三个字段完全相同的 Target 在同一 Program 内只能出现一次。</li>
+      <li>Vulkan API、SPIR-V/DXIL/WGSL 等目标格式及版本、capability 基线、优化级别、调试信息、矩阵布局、浮点与 denormal 模式、binding shift 和其他 Slang/backend 选项全部由 <code>CompilerPolicyVersion</code> 对当前 Platform/Backend 固定。它们不进入 <code>ShaderCompileTarget</code>、Target meta 或 <code>TargetKey</code>，也不能由单次编译请求覆盖。</li>
+      <li><code>CompilerBuildTag</code> 聚合引擎 Shader 编译器修订、Slang build tag 和 <code>CompilerPolicyVersion</code>，属于 <code>ArtifactKey</code> 的独立维度。任一固定默认值变化都必须提升对应修订或策略版本，使旧编译单元失效；不通过扩展 <code>TargetKey</code> 表达策略变化。</li>
+      <li><code>TreatWarningsAsErrors</code> 只在本次实际调用 Slang 编译并产生 Warning 时将结果转为 <code>Failed</code>；Warning 文本仍写入 <code>CompileMessage</code>。它不改变目标身份，因此不进入 <code>TargetKey</code>。由于编译信息不持久化，缓存命中时不重放或重新判定历史 Warning。</li>
+    </ul>
+
+    <h3 id="target-mapping">Target 映射</h3>
+    <table>
+      <thead><tr><th>Backend</th><th>Slang 输出</th><th>状态</th></tr></thead>
+      <tbody>
+        <tr><td>Vulkan</td><td>SPIR-V</td><td><span class="status">首期</span>完整实现</td></tr>
+        <tr><td>D3D12</td><td>DXIL</td><td>后续 Target</td></tr>
+        <tr><td>WebGPU</td><td>WGSL</td><td>后续 Target</td></tr>
+      </tbody>
+    </table>
+    <p>Shader Model 只表达语言/功能等级。<code>Platform × Backend</code> 选择后端和统一编译策略，由该策略固定 Vulkan API、SPIR-V 等输出格式/版本及 capability 基线；请求不逐项覆盖这些设置。每个 <code>Platform × Backend × ShaderModel</code> Target 独立保存目标代码和反射布局。</p>
+  </section>
+
+  <section>
+    <h2 id="compile-flow">7. Slang 编译流程</h2>
+    <h3 id="discovery-environment">基线发现环境</h3>
+    <p>第一次加载根 Slang Module 时，编译器尚未获得任何 Variant 选择，因此使用空 Variant 宏环境读取 Program、Stage 和 Variant Group 声明。</p>
+    <ul>
+      <li>宿主传入的 Variant defines 必须为空，即 <code>Defines = {}</code>；不定义任何 <code>SHADER_MACRO</code> 成员。</li>
+      <li><code>SHADER_PROGRAM</code>、<code>SHADER_VS</code>、<code>SHADER_PS</code> 等框架声明宏仍由 SolarEngine Slang 标准头提供，它们不属于 Variant 宏。</li>
+      <li>Program、Stage 和 Variant Group 声明必须在该环境中完整可见；不能依赖某个 Variant 宏才出现。</li>
+      <li>根 Module 在空 Variant 宏环境中无法加载或声明不完整时，Shader 资产直接编译失败；不引入保留的 discovery define 进行补救。</li>
+      <li>基线发现状态只用于生成编译计划，不是可运行 Variant，也不写入 SLC2。</li>
+    </ul>
+
+    <h3 id="compile-transaction">编译事务步骤</h3>
+    <ol>
+      <li><strong>规范化资源身份：</strong>规范化 Shader 虚拟资源路径，计算 <code>SLC2FileKey</code>。</li>
+      <li><strong>基线发现：</strong>以 <code>Defines = {}</code> 加载根 Slang Module，只遍历根作用域的直接声明，不进入 namespace 或 imported Module；对 marker struct 的 <code>DeclReflection</code> 调用 <code>getName()</code> 并复制非空 UTF-8 结果作为 ProgramId，再从 Attribute 中读取 Stage 和 Variant Group，并校验 ProgramId 唯一性与 Stage 契约。</li>
+      <li><strong>选择 Variant：</strong>请求未设置过滤器时生成完整笛卡尔积；设置过滤器时执行默认补全、校验、规范化和去重。</li>
+      <li><strong>创建编译环境：</strong>针对每个 Target × Variant，以目标参数、搜索路径、实际宏 defines 和自定义文件系统创建 Slang session 并重新加载 module。</li>
+      <li><strong>检查并联合链接：</strong>按声明的名称和 Stage 调用 <code>findAndCheckEntryPoint</code>，并拒绝除 varying/system-value 输入输出之外的 EntryPoint uniform/resource 参数；同一 graphics Program 的全部入口必须组合到同一个 linked component。</li>
+      <li><strong>验证 Layout 支持边界：</strong>拒绝任何 Push Constant 布局，以及 ConstantBuffer/ParameterBlock 自身形成数组或被数组直接、间接重复实例化的类型图；该编译单元失败且不产生 SLC2。</li>
+      <li><strong>提取产物：</strong>从 linked component 获取每个 Stage 的目标代码和统一 <code>ProgramLayout</code>；为当前 <code>ProgramId × TargetKey × Variant</code> 生成一份 <code>schema = 2</code> 的 ID 化 <code>ShaderProgramLayout</code>：<code>types[]</code> 保存类型树、成员局部名称和 ShaderVar 相对偏移，<code>parameterBlocks[]</code> 为每个逻辑 resource range 生成一条 <code>rangeBinding</code>，再以 0～N 条 <code>descriptorRanges[]</code> 或一个 <code>subBlockId</code> 表达当前 Target 落点；各 Stage 只保存入口信息与代码。</li>
+      <li><strong>路径解析：</strong>通过编译侧 <code>SlangShaderFileSystem</code> 解析根源码、source/import/include；当前阶段不持久化 DependencyIndex，source/import 路径与内容 hash 不写入 SLC2。</li>
+      <li><strong>返回并写入：</strong>只有全部请求单元成功且聚合 SLC2 自检通过时，<code>ShaderCompiler</code> 才返回 <code>Success</code> 和完整 <code>SLC2Data</code>；<code>CompileMessage</code> 可以携带 Warning，并在编译结束后输出日志。随后由外层 <code>ShadersCompilation</code> 原子替换正式文件。任一单元失败都返回 <code>Failed</code> 和包含错误的 <code>CompileMessage</code>，同时清空 <code>SLC2Data</code> 并保留原缓存。</li>
+    </ol>
+    <p class="note">VS、PS 等 Stage 必须来自同一个 linked component。禁止独立编译各 Stage 后猜测自动 binding 是否兼容。</p>
+    <p class="contract"><strong>Slang API 使用门禁：</strong>Slang 已由 SolarEngine 工程接入，编译实现可直接 include 并调用公共 Slang API。本设计不负责 Slang 的工程接入、构建、部署或版本管理。实现新增或 SolarEngine 更新内置 Slang 时，必须通过 compiler-side API 编译/链接探针；探针覆盖 Program 发现、Attribute、EntryPoint、ComponentType 和 Layout adapter 实际调用的全部公共 API。探针不进入运行时，也不能替代验证反射语义的最小 Shader fixture。</p>
+  </section>
+
+  <section>
+    <h2 id="cache">9. SLC2 Shader Cache</h2>
+    <p class="note"><strong>文件粒度：</strong>一个 <code>.slc.json</code> 文件对应一个 Shader Resource，并聚合其中全部 Program、Target、已编译 Variant 和 Stage。文件名由规范化 Shader 资源路径的 SHA-256 生成；顶层不保存 Shader 路径或 shaderId。</p>
+
+    <h3 id="cache-structure">9.1 运行时数据结构</h3>
+    <pre><code>SLC2 文件名 =
+  LowerHex(SHA-256(UTF8(CanonicalShaderResourcePath))) + ".slc.json"
+
+SLC2
+  format
+  programs[]
+    programId
+    variantGroups[]          // Program 级，只保存一次
+      members[]              // 实际宏，保持声明顺序
+      default                // 第一个宏或 null
+    targets[]
+      meta                    // platform / backend / shaderModel
+      variants[]
+        variant
+        layout                  // 当前 Variant 的全部 Stage 共享
+          schema = 2
+          pipelineLayoutFingerprint
+          rootBlockId
+          types[]               // 类型树、成员局部名称、相对偏移与逻辑 resourceRanges
+          parameterBlocks[]
+            elementTypeId
+            uniformByteSize
+            defaultUniformBuffer
+            rangeBindings[]     // 每个 logical range 恰好一条
+              rangeIndex
+              flavor
+              descriptorRanges[] // 0..N 个当前 Target 物理 descriptor
+              subBlockId
+        stages[]
+          PROG
+            entryPoint
+            stage
+            code</code></pre>
+
+    <table>
+      <thead><tr><th>数据</th><th>写入 SLC2</th><th>职责</th></tr></thead>
+      <tbody>
+        <tr><td><code>format / programs / targets / variants / stages</code></td><td>是</td><td>运行时选择 Program、Target、Variant，使用共享 Layout 创建 Pipeline Layout 和各阶段 Shader。</td></tr>
+        <tr><td><code>variantGroups</code></td><td>是</td><td>运行时执行与编译期相同的默认补全、校验和 Variant 匹配。</td></tr>
+        <tr><td><code>DependencyIndex</code></td><td>否</td><td>当前阶段不设计或持久化；SLC2 不加入依赖索引字段。</td></tr>
+        <tr><td>编译信息（Warning/Error）</td><td>否</td><td>只随当前实际编译调用返回，并在编译结束后输出日志；不写入 SLC2 或外部编译信息，缓存命中时不重放。</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="cache-keys">9.2 缓存键与失效层级</h3>
+    <pre><code>CanonicalShaderResourcePath =
+  NormalizeShaderResourcePath(ShaderResourcePath)
+
+SLC2FileKey =
+  SHA-256(UTF8(CanonicalShaderResourcePath))
+
+ArtifactKey = Hash(
+    SLC2FileKey
+  + source/import content hashes
+  + CompilerBuildTag
+  + ProgramId
+  + TargetKey
+  + normalized variant string
+)
+
+StageRecordKey = EntryPoint × Stage</code></pre>
+
+    <ul>
+      <li><code>ShaderResourcePath</code> 是包含资源命名空间和扩展名的引擎虚拟路径，不是操作系统绝对路径。</li>
+      <li>路径统一为 UTF-8、<code>/</code> 分隔符和资源系统规定的大小写形式；消除重复分隔符和 <code>.</code>，拒绝 <code>..</code>、盘符和 UNC。</li>
+      <li><code>ProgramId</code> 按 UTF-8 编码的原始字符串参与 <code>ArtifactKey</code> 计算，不进行 hash、大小写折叠或全限定名改写。</li>
+      <li><code>CompilerBuildTag</code> 聚合引擎 Shader 编译器修订、Slang build tag 和统一 <code>CompilerPolicyVersion</code>；任何默认编译策略变化都会使依赖它的完整编译单元失效。</li>
+      <li><code>SLC2FileKey</code> 只定位聚合文件；<code>ArtifactKey</code> 标识一个完整 <code>ProgramId × TargetKey × Variant</code> 单元。</li>
+      <li><code>ArtifactKey</code> 永远不包含 EntryPoint 或 Stage。任何 Stage 变化都使整个编译单元失效。</li>
+      <li>资源移动或重命名会产生新文件名；旧文件清理属于后续缓存管理与 GC 设计，当前阶段不处理。</li>
+      <li>路径规范化规则变化时，必须提升格式 Minor 版本或清空该版本缓存命名空间。</li>
+    </ul>
+
+    <h3 id="cache-example">9.3 SLC2 v2.0 文本示例</h3>
+    <p>以下示例使用一个 Compute Program 和 <code>SHADER_MACRO(_, FOG_ON)</code>，完整展示空宏与有宏两个 Variant，并使用已确认的 <code>layout.schema = 2</code>、精确 Type Record 与嵌套 <code>descriptorRanges[]</code>。两段 <code>code.data</code> 都是同一份完整的最小 SPIR-V 1.0 Compute Module，而不是仅含魔数的占位数据：Module 声明 <code>inputTexture</code> 为 <code>set = 0, binding = 0</code> 的 <code>sampledImage</code>，入口为 <code>CSMain</code>，工作组大小为 <code>1 × 1 × 1</code>，函数体只执行 <code>OpReturn</code>。两段目标代码和物理 Pipeline Layout 相同仅用于说明文件结构，因此两个 Variant 使用相同的 <code>pipelineLayoutFingerprint</code>；每个 Variant 仍独立保存其完整 Layout。</p>
+    <pre><code>{
+  "format": {
+    "magic": "SLC2",
+    "major": 2,
+    "minor": 0,
+    "encoding": "utf-8"
+  },
+  "programs": [
+    {
+      "programId": "ComputeProgram",
+      "variantGroups": [
+        {
+          "members": ["FOG_ON"],
+          "default": null
+        }
+      ],
+      "targets": [
+        {
+          "meta": {
+            "platform": "windows",
+            "backend": "vulkan",
+            "shaderModel": "6_7"
+          },
+          "variants": [
+            {
+              "variant": "",
+              "layout": {
+                "schema": 2,
+                "pipelineLayoutFingerprint": "5bb34bc5c853d1ac8ea025d063249a99e90331d055a875fce50642578c04c899",
+                "rootBlockId": 0,
+                "types": [
+                  {
+                    "id": 0,
+                    "kind": "struct",
+                    "name": "$Global",
+                    "uniformByteSize": 0,
+                    "members": [
+                      {
+                        "name": "inputTexture",
+                        "typeId": 1,
+                        "offset": {
+                          "uniformByte": null,
+                          "resourceRange": 0,
+                          "resourceIndex": 0
+                        }
+                      }
+                    ],
+                    "resourceRanges": [
+                      {
+                        "resourceKind": "textureSrv",
+                        "count": 1,
+                        "baseIndex": 0,
+                        "internalRole": null,
+                        "ownerRangeOffset": null
+                      }
+                    ]
+                  },
+                  {
+                    "id": 1,
+                    "kind": "resource",
+                    "uniformByteSize": 0,
+                    "resourceKind": "texture",
+                    "shape": "texture2D",
+                    "access": "read",
+                    "elementTypeId": 2,
+                    "imageFormat": null,
+                    "structuredKind": null,
+                    "resourceRanges": [
+                      {
+                        "resourceKind": "textureSrv",
+                        "count": 1,
+                        "baseIndex": 0,
+                        "internalRole": null,
+                        "ownerRangeOffset": null
+                      }
+                    ],
+                    "auxiliaryRanges": []
+                  },
+                  {
+                    "id": 2,
+                    "kind": "basic",
+                    "uniformByteSize": 16,
+                    "scalarType": "float32",
+                    "rows": 1,
+                    "columns": 4,
+                    "matrixLayout": null,
+                    "matrixByteStride": null,
+                    "resourceRanges": []
+                  }
+                ],
+                "parameterBlocks": [
+                  {
+                    "id": 0,
+                    "name": "$global",
+                    "elementTypeId": 0,
+                    "uniformByteSize": 0,
+                    "defaultUniformBuffer": null,
+                    "rangeBindings": [
+                      {
+                        "rangeIndex": 0,
+                        "flavor": "simple",
+                        "descriptorRanges": [
+                          {
+                            "role": "primary",
+                            "set": 0,
+                            "binding": 0,
+                            "arrayElementBase": 0,
+                            "logicalElementStride": 1,
+                            "descriptorType": "sampledImage",
+                            "descriptorCount": 1,
+                            "stageMask": ["compute"],
+                            "flags": []
+                          }
+                        ],
+                        "subBlockId": null
+                      }
+                    ]
+                  }
+                ]
+              },
+              "stages": [
+                {
+                  "entryPoint": "CSMain",
+                  "stage": "compute",
+                  "code": {
+                    "format": "spirv",
+                    "encoding": "base64",
+                    "byteLength": 292,
+                    "sha256": "89427df36075e1dddbc5d36567aaa29374d7607525c451268d6d199f5a880ee6",
+                    "data": "AwIjBwAAAQAAAAAACQAAAAAAAAARAAIAAQAAAA4AAwAAAAAAAQAAAA8ABQAFAAAABwAAAENTTWFpbgAAEAAGAAcAAAARAAAAAQAAAAEAAAABAAAABQAEAAcAAABDU01haW4AAAUABgAGAAAAaW5wdXRUZXh0dXJlAAAAAEcABAAGAAAAIgAAAAAAAABHAAQABgAAACEAAAAAAAAAEwACAAEAAAAhAAMAAgAAAAEAAAAWAAMAAwAAACAAAAAZAAkABAAAAAMAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAgAAQABQAAAAAAAAAEAAAAOwAEAAUAAAAGAAAAAAAAADYABQABAAAABwAAAAAAAAACAAAA+AACAAgAAAD9AAEAOAABAA=="
+                  }
+                }
+              ]
+            },
+            {
+              "variant": "FOG_ON",
+              "layout": {
+                "schema": 2,
+                "pipelineLayoutFingerprint": "5bb34bc5c853d1ac8ea025d063249a99e90331d055a875fce50642578c04c899",
+                "rootBlockId": 0,
+                "types": [
+                  {
+                    "id": 0,
+                    "kind": "struct",
+                    "name": "$Global",
+                    "uniformByteSize": 0,
+                    "members": [
+                      {
+                        "name": "inputTexture",
+                        "typeId": 1,
+                        "offset": {
+                          "uniformByte": null,
+                          "resourceRange": 0,
+                          "resourceIndex": 0
+                        }
+                      }
+                    ],
+                    "resourceRanges": [
+                      {
+                        "resourceKind": "textureSrv",
+                        "count": 1,
+                        "baseIndex": 0,
+                        "internalRole": null,
+                        "ownerRangeOffset": null
+                      }
+                    ]
+                  },
+                  {
+                    "id": 1,
+                    "kind": "resource",
+                    "uniformByteSize": 0,
+                    "resourceKind": "texture",
+                    "shape": "texture2D",
+                    "access": "read",
+                    "elementTypeId": 2,
+                    "imageFormat": null,
+                    "structuredKind": null,
+                    "resourceRanges": [
+                      {
+                        "resourceKind": "textureSrv",
+                        "count": 1,
+                        "baseIndex": 0,
+                        "internalRole": null,
+                        "ownerRangeOffset": null
+                      }
+                    ],
+                    "auxiliaryRanges": []
+                  },
+                  {
+                    "id": 2,
+                    "kind": "basic",
+                    "uniformByteSize": 16,
+                    "scalarType": "float32",
+                    "rows": 1,
+                    "columns": 4,
+                    "matrixLayout": null,
+                    "matrixByteStride": null,
+                    "resourceRanges": []
+                  }
+                ],
+                "parameterBlocks": [
+                  {
+                    "id": 0,
+                    "name": "$global",
+                    "elementTypeId": 0,
+                    "uniformByteSize": 0,
+                    "defaultUniformBuffer": null,
+                    "rangeBindings": [
+                      {
+                        "rangeIndex": 0,
+                        "flavor": "simple",
+                        "descriptorRanges": [
+                          {
+                            "role": "primary",
+                            "set": 0,
+                            "binding": 0,
+                            "arrayElementBase": 0,
+                            "logicalElementStride": 1,
+                            "descriptorType": "sampledImage",
+                            "descriptorCount": 1,
+                            "stageMask": ["compute"],
+                            "flags": []
+                          }
+                        ],
+                        "subBlockId": null
+                      }
+                    ]
+                  }
+                ]
+              },
+              "stages": [
+                {
+                  "entryPoint": "CSMain",
+                  "stage": "compute",
+                  "code": {
+                    "format": "spirv",
+                    "encoding": "base64",
+                    "byteLength": 292,
+                    "sha256": "89427df36075e1dddbc5d36567aaa29374d7607525c451268d6d199f5a880ee6",
+                    "data": "AwIjBwAAAQAAAAAACQAAAAAAAAARAAIAAQAAAA4AAwAAAAAAAQAAAA8ABQAFAAAABwAAAENTTWFpbgAAEAAGAAcAAAARAAAAAQAAAAEAAAABAAAABQAEAAcAAABDU01haW4AAAUABgAGAAAAaW5wdXRUZXh0dXJlAAAAAEcABAAGAAAAIgAAAAAAAABHAAQABgAAACEAAAAAAAAAEwACAAEAAAAhAAMAAgAAAAEAAAAWAAMAAwAAACAAAAAZAAkABAAAAAMAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAgAAQABQAAAAAAAAAEAAAAOwAEAAUAAAAGAAAAAAAAADYABQABAAAABwAAAAAAAAACAAAA+AACAAgAAAD9AAEAOAABAA=="
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}</code></pre>
+
+    <h3 id="cache-constraints">9.4 文本与结构约束</h3>
+    <ul>
+      <li>文件必须是无 BOM 的 UTF-8、LF 换行和合法 JSON；禁止注释、重复 key 和浮点数。</li>
+      <li>写入器固定字段顺序并使用两个空格缩进；读取器不依赖空白格式。</li>
+      <li>顶层只能包含 <code>format</code> 和 <code>programs</code>；不得写入 <code>shaderId</code>、<code>sourcePath</code> 或 <code>pathHash</code>。</li>
+      <li>每个 Program 必须包含唯一 <code>programId</code>、<code>variantGroups</code> 和非空 <code>targets</code>；没有宏组时使用空数组。</li>
+      <li><code>programId</code> 必须逐字等于对应 <code>SHADER_PROGRAM</code> 的 <code>name</code>，区分大小写，是合法 Slang 标识符，并且在当前 Shader Resource 的 <code>programs[]</code> 中唯一。</li>
+      <li><code>variantGroups.members</code> 只保存实际宏并保持声明顺序；必选组的 <code>default</code> 等于 <code>members[0]</code>，含 <code>_</code> 的组使用 <code>null</code>。</li>
+      <li>每个 Target 包含共享 <code>meta</code> 和非空 <code>variants</code>。<code>meta</code> 必须且只能包含稳定小写字符串 <code>platform</code>、<code>backend</code> 和规范 <code>shaderModel</code>；不得保存 API/二进制版本、capability、optimize/debug 或其他统一编译策略字段。</li>
+      <li>读取器按第 6 节的规范文本从 <code>meta</code> 生成由 64 个小写十六进制字符组成的 <code>TargetKey</code>；同一 Program 内 Key 唯一，重复的 <code>Platform × Backend × ShaderModel</code> Target 为格式错误。</li>
+      <li>同一 Target 内规范化 <code>variant</code> 字符串唯一。每个 Variant 必须包含 <code>variant</code>、一份共享 <code>layout</code> 和非空 <code>stages</code>。</li>
+      <li>每个 Stage 只包含 <code>entryPoint</code>、<code>stage</code> 和 <code>code</code>；不得重复保存 <code>variant</code>、<code>layout</code>、独立 <code>names</code> 或 <code>entryPointBlockId</code> 字段。</li>
+      <li>Layout 必须包含 <code>"schema": 2</code>、唯一且有效的 <code>rootBlockId</code>、非空 <code>types</code>、非空 <code>parameterBlocks</code> 和 <code>pipelineLayoutFingerprint</code>；所有运行时可绑定参数必须从该根块沿成员或 <code>subBlockId</code> 可达。</li>
+      <li>Layout 不得包含 <code>pushConstants</code> 或等价字段。Slang 反射一旦包含 Push Constant，该编译单元必须在写入缓存前失败。</li>
+      <li><code>typeId</code> 与 <code>blockId</code> 是 Layout 局部 ID；所有引用必须存在。写入器使用从 0 开始的连续 ID，读取器不得依赖 JSON 数组下标与 ID 恰好相同。</li>
+      <li><code>members[].offset</code> 的所有有效分量必须相对于直接父类型生成；读取器从块根零偏移逐层累加。写入器不得把相对根 ParameterBlock 的绝对偏移混入成员记录。</li>
+      <li>同一 struct 内成员局部名称必须唯一。SLC2 不保存完整资源路径；运行时从根块沿成员局部名称确定性派生完整路径，并拒绝派生出的重复路径或歧义短名称。</li>
+      <li>可绑定名称路径由成员标识符、<code>.</code> 和十进制 <code>[index]</code> 组成；写入器不保存展开后的数组元素路径，读取器按类型树校验并解析下标，已解析的规范路径可以进入运行时名称索引。</li>
+      <li><code>resourceRanges[]</code> 的数组顺序定义类型内 <code>rangeIndex</code>；<code>baseIndex</code> 是当前类型统一逻辑资源槽空间的偏移，不是 set/binding，也不是按 CBV/SRV/UAV/Sampler 分类的偏移。固定数组按已确认的 count/baseIndex 乘法规则聚合。</li>
+      <li><code>kind = "resource"</code> 的 Type Record 必须包含非空 <code>resourceRanges[]</code>，完整描述该资源直接拥有的主逻辑 range 和内部辅助 range；空数组为格式错误。非数组只读 <code>Texture2D</code> 的直接主 range 为一条 <code>textureSrv</code>、<code>count = 1</code>、<code>baseIndex = 0</code> 的记录，资源数组由外层 <code>array</code> Type Record 聚合。</li>
+      <li><code>kind = "parameterBlock"</code> 的 Type Record 必须包含且只包含一条 <code>count = 1</code> 的逻辑容器 range，其 <code>resourceKind</code> 与 <code>containerKind</code> 一致；块内容 ranges 位于 <code>elementTypeId</code> 指向的类型中，不能混入容器记录。</li>
+      <li>辅助 counter range 的 <code>ownerRangeOffset</code> 是当前 Type Record 内主 range 的绝对局部索引；Resource 的 <code>auxiliaryRanges[].rangeOffset</code> 是从主 range 到辅助 range 的正向相对偏移。Struct 聚合时前者随字段起始 range 重定位，Array 聚合时 range 索引关系不变。</li>
+      <li>只允许固定数组与固定资源 range；<code>elementCount</code>、<code>resourceRanges[].count</code> 和物理 <code>descriptorCount</code> 必须是正的有限 <code>uint32</code>。Schema 不包含 <code>unbounded</code> 字段；Slang 返回 <code>SLANG_UNBOUNDED_SIZE</code>、<code>SLANG_UNKNOWN_SIZE</code> 或等价数量时必须在写入缓存前失败。</li>
+      <li>每个 ParameterBlock 的 <code>rangeBindings[].rangeIndex</code> 必须唯一并完整覆盖其 <code>elementTypeId</code> 根类型的全部 <code>resourceRanges[]</code>，所以二者长度必须相等；完整映射身份是 <code>(blockId, rangeIndex)</code>。</li>
+      <li><code>flavor = "simple"</code> 时必须给出非空 <code>descriptorRanges[]</code> 且 <code>subBlockId = null</code>；每条 descriptor mapping 必须包含 role、绝对 set/binding、descriptorType、正的有限 descriptorCount、stageMask 和 flags。Schema 2 固定 <code>arrayElementBase = 0</code>、<code>logicalElementStride = 1</code> 且 <code>descriptorCount = 对应 logical range.count</code>，不接受其他仿射映射。</li>
+      <li><code>flavor = "constantBuffer"</code> 或 <code>"parameterBlock"</code> 时必须给出有效 <code>subBlockId</code> 且 <code>descriptorRanges = []</code>。块图必须从根完全可达且无环；不同物理出现位置不得仅因 elementType 相同而错误共用 blockId。</li>
+      <li>每个块必须满足 <code>uniformByteSize = 0 ⇔ defaultUniformBuffer = null</code>；字节大小大于 0 时映射必须存在且 <code>role = "uniformData"</code>。普通数据只通过所属块的默认 Uniform Buffer 存储。</li>
+      <li><code>parameterBlock.elementTypeId</code> 不得直接指向数组；任何数组的元素类型闭包都不得包含 ConstantBuffer/ParameterBlock。单块内部的普通数据数组和资源数组仍是合法形态。</li>
+      <li>同一物理 <code>(set, binding)</code> 只能有一个写入所有者；重复记录只有在规范化阶段合并为同一 descriptor 定义与 stage mask 后才可写入。descriptor 类型、有限数量、flags 和 Stage 集合必须与逻辑 range、当前 Target 的统一编译策略及目标代码一致。</li>
+      <li>禁止增加独立顶层 <code>backend</code>、扁平 <code>names</code> 或 <code>descriptorSets[]</code> 数据；它们分别由 Target、类型树和全部可达物理 descriptor 记录确定。</li>
+      <li>禁止在 SLC2 的任意层级增加 <code>bindingRequirement</code>、<code>required</code>、<code>optional</code>、默认资源标识或 fallback 策略字段；统一的资源绑定完整性校验属于运行时行为，不属于 Shader Cache 数据。</li>
+      <li>枚举使用稳定的小写字符串；无效或不存在的偏移/绑定使用 JSON <code>null</code>，不得序列化 Slang、Falcor、SolarEngine 或 Vulkan 的原生枚举整数和哨兵值。</li>
+      <li><code>pipelineLayoutFingerprint</code> 按 8.11 的版本化规范文本计算完整 SHA-256，必须是 64 个小写十六进制字符；读取器必须重算校验。<code>ProgramId</code> 是名称字符串，不是 hash。</li>
+      <li><code>code.data</code> 使用无空白的标准 Base64；解码后同时校验 <code>byteLength</code> 与 SHA-256。</li>
+      <li>空宏 Variant 使用 <code>"variant": ""</code>，仍然包含一份共享 Layout 和完整 Stage 集合，写入器不得省略。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2 id="dependencies">11. 依赖索引与增量编译（当前阶段不设计）</h2>
+    <h3 id="dependency-index">DependencyIndex（后续事项）</h3>
+    <p class="note"><strong>范围决定：</strong>当前阶段不设计或实现 <code>DependencyIndex</code>。其持久化内容与格式、source/import 反向关联、精确增量复用、SLC2 与索引的提交顺序、崩溃恢复、并发更新和缓存 GC 均留待后续处理。</p>
+    <ul>
+      <li>SLC2 继续只保存运行时所需数据，不加入 source/import 路径、内容 hash、<code>CompileMessage</code> 或依赖索引字段。</li>
+      <li>运行时加载 SLC2 不依赖 <code>DependencyIndex</code>。</li>
+      <li>当前设计不承诺跨编译调用复用依赖索引、由 import watcher 精确定位 Shader Resource，或自动清理孤儿缓存。</li>
+    </ul>
+
+    <h3 id="dependency-update">部分请求与聚合文件更新边界</h3>
+    <p>本节只保留请求级原子更新原则。未请求单元的有效性判断与增量合并依赖后续 <code>DependencyIndex</code> 设计，当前不形成实现契约。</p>
+    <ol>
+      <li>显式 <code>VariantSelections</code> 只定义本次需要编译的完整编译单元。</li>
+      <li>未请求单元如何验证、保留或删除，依赖未来的依赖索引与增量编译策略，当前不作规定。</li>
+      <li>所有请求单元成功后，生成并自检完整 <code>SLC2Data</code>；外层 <code>ShadersCompilation</code> 再用其原子替换正式 SLC2。</li>
+      <li>任一请求单元失败时返回 <code>Failed</code> 和包含完整错误的 <code>CompileMessage</code>，同时保证 <code>SLC2Data</code> 为空；不提交部分更新并保留此前有效文件。</li>
+    </ol>
+  </section>
+</main>
+</body>
+</html>
