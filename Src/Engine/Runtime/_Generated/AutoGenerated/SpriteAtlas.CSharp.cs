@@ -300,18 +300,19 @@ namespace SE
         }
 
         [LibraryImport("SERuntime", EntryPoint = "SpriteAtlas_Sprites_Get", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
-        internal static partial int Internal_Sprites_Get(IntPtr __obj);
+        [return: MarshalUsing(typeof(SE.Interop.ArrayMarshaller<,>), CountElementName = nameof(__returnCount))]
+        internal static partial SE.Sprite[] Internal_Sprites_Get(IntPtr __obj, out int __returnCount);
 
         [LibraryImport("SERuntime", EntryPoint = "SpriteAtlas_Sprites_Set", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
-        internal static partial void Internal_Sprites_Set(IntPtr __obj, int value);
+        internal static partial void Internal_Sprites_Set(IntPtr __obj, [MarshalUsing(typeof(SE.Interop.ArrayMarshaller<,>), CountElementName = nameof(__valueCount)), In] SE.Sprite[] value, int __valueCount);
 
         /// <summary>
         /// &lt;summary&gt; List with all tiles in the sprite atlas. &lt;/summary&gt;
         /// </summary>
-        public int Sprites
+        public SE.Sprite[] Sprites
         {
-            get { return Internal_Sprites_Get(__unmanagedPtr); }
-            set { Internal_Sprites_Set(__unmanagedPtr, value); }
+            get { return Internal_Sprites_Get(__unmanagedPtr, out _); }
+            set { Internal_Sprites_Set(__unmanagedPtr, value, value != null ? value.Length : 0); }
         }
 
         [CustomMarshaller(typeof(SpriteAtlas), MarshalMode.ManagedToUnmanagedIn, typeof(SpriteAtlasMarshaller.ManagedToNative))]

@@ -652,8 +652,21 @@ public:
 #endif
         ::SE::Render2D::FillTriangle(*p0, *p1, *p2, *color);
     }
+    static void InitRuntime()
+    {
+    }
 };
 
+ScriptingTypeInitializer Render2D::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.Render2D", ARRAY_SIZE("SE.Render2D") - 1),
+    sizeof(::SE::Render2D),
+    &Render2DInternal::InitRuntime,
+    &ScriptingType::DefaultSpawn, 
+    nullptr,
+    nullptr,
+    nullptr
+);
 
 // Plain-C exports
 #if !defined(_MSC_VER)

@@ -29,8 +29,53 @@ namespace SE
 class MemoryStatsInternal
 {
 public:
+    static void InitRuntime()
+    {
+    }
+
+    static void Ctor(void* ptr)
+    {
+        new(ptr)::SE::MemoryStats();
+    }
+
+    static void Dtor(void* ptr)
+    {
+        ((::SE::MemoryStats*)ptr)->~MemoryStats();
+    }
+
+    static void Copy(void* dst, void* src)
+    {
+        *(::SE::MemoryStats*)dst = *(::SE::MemoryStats*)src;
+    }
+
+    static CLRObject* Box(void* ptr)
+    {
+        return ::SE::CLRUtils::Box(*static_cast<::SE::MemoryStats*>(ptr), ::SE::MemoryStats::TypeInitializer.GetClass());
+    }
+
+    static void Unbox(void* ptr, CLRObject* managed)
+    {
+        *static_cast<::SE::MemoryStats*>(ptr) = ::SE::CLRUtils::Unbox<::SE::MemoryStats>(managed);
+    }
+
+    static void GetField(void* ptr, const String& name, Variant& value)
+    {
+    }
+
+    static void SetField(void* ptr, const String& name, const Variant& value)
+    {
+    }
 };
 
+ScriptingTypeInitializer MemoryStats::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.MemoryStats", ARRAY_SIZE("SE.MemoryStats") - 1),
+    sizeof(::SE::MemoryStats),
+    &MemoryStatsInternal::InitRuntime,
+    &MemoryStatsInternal::Ctor, &MemoryStatsInternal::Dtor, &MemoryStatsInternal::Copy,
+    &MemoryStatsInternal::Box, &MemoryStatsInternal::Unbox, &MemoryStatsInternal::GetField, &MemoryStatsInternal::SetField,
+    nullptr
+);
 }
 
 namespace SE
@@ -38,7 +83,52 @@ namespace SE
 class ProcessMemoryStatsInternal
 {
 public:
+    static void InitRuntime()
+    {
+    }
+
+    static void Ctor(void* ptr)
+    {
+        new(ptr)::SE::ProcessMemoryStats();
+    }
+
+    static void Dtor(void* ptr)
+    {
+        ((::SE::ProcessMemoryStats*)ptr)->~ProcessMemoryStats();
+    }
+
+    static void Copy(void* dst, void* src)
+    {
+        *(::SE::ProcessMemoryStats*)dst = *(::SE::ProcessMemoryStats*)src;
+    }
+
+    static CLRObject* Box(void* ptr)
+    {
+        return ::SE::CLRUtils::Box(*static_cast<::SE::ProcessMemoryStats*>(ptr), ::SE::ProcessMemoryStats::TypeInitializer.GetClass());
+    }
+
+    static void Unbox(void* ptr, CLRObject* managed)
+    {
+        *static_cast<::SE::ProcessMemoryStats*>(ptr) = ::SE::CLRUtils::Unbox<::SE::ProcessMemoryStats>(managed);
+    }
+
+    static void GetField(void* ptr, const String& name, Variant& value)
+    {
+    }
+
+    static void SetField(void* ptr, const String& name, const Variant& value)
+    {
+    }
 };
 
+ScriptingTypeInitializer ProcessMemoryStats::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.ProcessMemoryStats", ARRAY_SIZE("SE.ProcessMemoryStats") - 1),
+    sizeof(::SE::ProcessMemoryStats),
+    &ProcessMemoryStatsInternal::InitRuntime,
+    &ProcessMemoryStatsInternal::Ctor, &ProcessMemoryStatsInternal::Dtor, &ProcessMemoryStatsInternal::Copy,
+    &ProcessMemoryStatsInternal::Box, &ProcessMemoryStatsInternal::Unbox, &ProcessMemoryStatsInternal::GetField, &ProcessMemoryStatsInternal::SetField,
+    nullptr
+);
 }
 

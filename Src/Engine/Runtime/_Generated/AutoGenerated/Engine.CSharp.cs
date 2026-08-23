@@ -16,15 +16,15 @@ namespace SE
     public unsafe static partial class Engine
     {
         [LibraryImport("SERuntime", EntryPoint = "Engine_StartupTime_Get", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
-        internal static partial SE.DateTime Internal_StartupTime_Get();
+        internal static partial System.DateTime Internal_StartupTime_Get();
 
         [LibraryImport("SERuntime", EntryPoint = "Engine_StartupTime_Set", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
-        internal static partial void Internal_StartupTime_Set(SE.DateTime value);
+        internal static partial void Internal_StartupTime_Set(System.DateTime value);
 
         /// <summary>
         /// &lt;summary&gt; The engine start time (local time). &lt;/summary&gt;
         /// </summary>
-        public static SE.DateTime StartupTime
+        public static System.DateTime StartupTime
         {
             get { return Internal_StartupTime_Get(); }
             set { Internal_StartupTime_Set(value); }

@@ -370,8 +370,21 @@ public:
 #endif
         return CLRUtils::ToString(::SE::Platform::GetWorkingDirectory());
     }
+    static void InitRuntime()
+    {
+    }
 };
 
+ScriptingTypeInitializer PlatformBase::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.Platform", ARRAY_SIZE("SE.Platform") - 1),
+    sizeof(::SE::PlatformBase),
+    &PlatformBaseInternal::InitRuntime,
+    &ScriptingType::DefaultSpawn, 
+    nullptr,
+    nullptr,
+    nullptr
+);
 
 // Plain-C exports
 #if !defined(_MSC_VER)

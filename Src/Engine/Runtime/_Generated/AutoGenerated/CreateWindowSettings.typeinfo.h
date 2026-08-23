@@ -53,7 +53,172 @@ namespace SE
 class CreateWindowSettingsInternal
 {
 public:
+    static void InitRuntime()
+    {
+    }
+
+    static void Ctor(void* ptr)
+    {
+        new(ptr)::SE::CreateWindowSettings();
+    }
+
+    static void Dtor(void* ptr)
+    {
+        ((::SE::CreateWindowSettings*)ptr)->~CreateWindowSettings();
+    }
+
+    static void Copy(void* dst, void* src)
+    {
+        *(::SE::CreateWindowSettings*)dst = *(::SE::CreateWindowSettings*)src;
+    }
+
+    static CLRObject* Box(void* ptr)
+    {
+        return ::SE::CLRUtils::Box(*static_cast<::SE::CreateWindowSettings*>(ptr), ::SE::CreateWindowSettings::TypeInitializer.GetClass());
+    }
+
+    static void Unbox(void* ptr, CLRObject* managed)
+    {
+        *static_cast<::SE::CreateWindowSettings*>(ptr) = ::SE::CLRUtils::Unbox<::SE::CreateWindowSettings>(managed);
+    }
+
+    static void GetField(void* ptr, const String& name, Variant& value)
+    {
+        if (name == SE_TEXT("Title"))
+        {
+            value = Variant(((::SE::CreateWindowSettings*)ptr)->Title);
+        }
+        else if (name == SE_TEXT("StartPosition"))
+        {
+            value = Variant((uint64)((::SE::CreateWindowSettings*)ptr)->StartPosition);
+        }
+        else if (name == SE_TEXT("Fullscreen"))
+        {
+            value = Variant(((::SE::CreateWindowSettings*)ptr)->Fullscreen);
+        }
+        else if (name == SE_TEXT("HasBorder"))
+        {
+            value = Variant(((::SE::CreateWindowSettings*)ptr)->HasBorder);
+        }
+        else if (name == SE_TEXT("SupportsTransparency"))
+        {
+            value = Variant(((::SE::CreateWindowSettings*)ptr)->SupportsTransparency);
+        }
+        else if (name == SE_TEXT("ShowInTaskbar"))
+        {
+            value = Variant(((::SE::CreateWindowSettings*)ptr)->ShowInTaskbar);
+        }
+        else if (name == SE_TEXT("ActivateWhenFirstShown"))
+        {
+            value = Variant(((::SE::CreateWindowSettings*)ptr)->ActivateWhenFirstShown);
+        }
+        else if (name == SE_TEXT("AllowInput"))
+        {
+            value = Variant(((::SE::CreateWindowSettings*)ptr)->AllowInput);
+        }
+        else if (name == SE_TEXT("AllowMinimize"))
+        {
+            value = Variant(((::SE::CreateWindowSettings*)ptr)->AllowMinimize);
+        }
+        else if (name == SE_TEXT("AllowMaximize"))
+        {
+            value = Variant(((::SE::CreateWindowSettings*)ptr)->AllowMaximize);
+        }
+        else if (name == SE_TEXT("AllowDragAndDrop"))
+        {
+            value = Variant(((::SE::CreateWindowSettings*)ptr)->AllowDragAndDrop);
+        }
+        else if (name == SE_TEXT("IsTopmost"))
+        {
+            value = Variant(((::SE::CreateWindowSettings*)ptr)->IsTopmost);
+        }
+        else if (name == SE_TEXT("IsRegularWindow"))
+        {
+            value = Variant(((::SE::CreateWindowSettings*)ptr)->IsRegularWindow);
+        }
+        else if (name == SE_TEXT("HasSizingFrame"))
+        {
+            value = Variant(((::SE::CreateWindowSettings*)ptr)->HasSizingFrame);
+        }
+        else if (name == SE_TEXT("ShowAfterFirstPaint"))
+        {
+            value = Variant(((::SE::CreateWindowSettings*)ptr)->ShowAfterFirstPaint);
+        }
+    }
+
+    static void SetField(void* ptr, const String& name, const Variant& value)
+    {
+        if (name == SE_TEXT("Title"))
+        {
+            ((::SE::CreateWindowSettings*)ptr)->Title = (StringView)value;
+        }
+        else if (name == SE_TEXT("StartPosition"))
+        {
+            ((::SE::CreateWindowSettings*)ptr)->StartPosition = (::SE::WindowStartPosition)(uint64)value;
+        }
+        else if (name == SE_TEXT("Fullscreen"))
+        {
+            ((::SE::CreateWindowSettings*)ptr)->Fullscreen = (bool)value;
+        }
+        else if (name == SE_TEXT("HasBorder"))
+        {
+            ((::SE::CreateWindowSettings*)ptr)->HasBorder = (bool)value;
+        }
+        else if (name == SE_TEXT("SupportsTransparency"))
+        {
+            ((::SE::CreateWindowSettings*)ptr)->SupportsTransparency = (bool)value;
+        }
+        else if (name == SE_TEXT("ShowInTaskbar"))
+        {
+            ((::SE::CreateWindowSettings*)ptr)->ShowInTaskbar = (bool)value;
+        }
+        else if (name == SE_TEXT("ActivateWhenFirstShown"))
+        {
+            ((::SE::CreateWindowSettings*)ptr)->ActivateWhenFirstShown = (bool)value;
+        }
+        else if (name == SE_TEXT("AllowInput"))
+        {
+            ((::SE::CreateWindowSettings*)ptr)->AllowInput = (bool)value;
+        }
+        else if (name == SE_TEXT("AllowMinimize"))
+        {
+            ((::SE::CreateWindowSettings*)ptr)->AllowMinimize = (bool)value;
+        }
+        else if (name == SE_TEXT("AllowMaximize"))
+        {
+            ((::SE::CreateWindowSettings*)ptr)->AllowMaximize = (bool)value;
+        }
+        else if (name == SE_TEXT("AllowDragAndDrop"))
+        {
+            ((::SE::CreateWindowSettings*)ptr)->AllowDragAndDrop = (bool)value;
+        }
+        else if (name == SE_TEXT("IsTopmost"))
+        {
+            ((::SE::CreateWindowSettings*)ptr)->IsTopmost = (bool)value;
+        }
+        else if (name == SE_TEXT("IsRegularWindow"))
+        {
+            ((::SE::CreateWindowSettings*)ptr)->IsRegularWindow = (bool)value;
+        }
+        else if (name == SE_TEXT("HasSizingFrame"))
+        {
+            ((::SE::CreateWindowSettings*)ptr)->HasSizingFrame = (bool)value;
+        }
+        else if (name == SE_TEXT("ShowAfterFirstPaint"))
+        {
+            ((::SE::CreateWindowSettings*)ptr)->ShowAfterFirstPaint = (bool)value;
+        }
+    }
 };
 
+ScriptingTypeInitializer CreateWindowSettings::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.CreateWindowSettings", ARRAY_SIZE("SE.CreateWindowSettings") - 1),
+    sizeof(::SE::CreateWindowSettings),
+    &CreateWindowSettingsInternal::InitRuntime,
+    &CreateWindowSettingsInternal::Ctor, &CreateWindowSettingsInternal::Dtor, &CreateWindowSettingsInternal::Copy,
+    &CreateWindowSettingsInternal::Box, &CreateWindowSettingsInternal::Unbox, &CreateWindowSettingsInternal::GetField, &CreateWindowSettingsInternal::SetField,
+    nullptr
+);
 }
 

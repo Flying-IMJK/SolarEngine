@@ -117,8 +117,21 @@ public:
 #endif
         ::SE::Engine::FrameCount = value;
     }
+    static void InitRuntime()
+    {
+    }
 };
 
+ScriptingTypeInitializer Engine::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.Engine", ARRAY_SIZE("SE.Engine") - 1),
+    sizeof(::SE::Engine),
+    &EngineInternal::InitRuntime,
+    &ScriptingType::DefaultSpawn, 
+    nullptr,
+    nullptr,
+    nullptr
+);
 
 // Plain-C exports
 #if !defined(_MSC_VER)

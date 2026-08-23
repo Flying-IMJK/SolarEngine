@@ -29,8 +29,70 @@ namespace SE
 class Float2Internal
 {
 public:
+    static void InitRuntime()
+    {
+    }
+
+    static void Ctor(void* ptr)
+    {
+        new(ptr)::SE::Float2();
+    }
+
+    static void Dtor(void* ptr)
+    {
+        ((::SE::Float2*)ptr)->~Float2();
+    }
+
+    static void Copy(void* dst, void* src)
+    {
+        *(::SE::Float2*)dst = *(::SE::Float2*)src;
+    }
+
+    static CLRObject* Box(void* ptr)
+    {
+        return ::SE::CLRUtils::Box(*static_cast<::SE::Float2*>(ptr), ::SE::Float2::TypeInitializer.GetClass());
+    }
+
+    static void Unbox(void* ptr, CLRObject* managed)
+    {
+        *static_cast<::SE::Float2*>(ptr) = ::SE::CLRUtils::Unbox<::SE::Float2>(managed);
+    }
+
+    static void GetField(void* ptr, const String& name, Variant& value)
+    {
+        if (name == SE_TEXT("x"))
+        {
+            value = Variant(((::SE::Float2*)ptr)->x);
+        }
+        else if (name == SE_TEXT("y"))
+        {
+            value = Variant(((::SE::Float2*)ptr)->y);
+        }
+    }
+
+    static void SetField(void* ptr, const String& name, const Variant& value)
+    {
+        if (name == SE_TEXT("x"))
+        {
+            ((::SE::Float2*)ptr)->x = (float)value;
+        }
+        else if (name == SE_TEXT("y"))
+        {
+            ((::SE::Float2*)ptr)->y = (float)value;
+        }
+    }
 };
 
+template<>
+ScriptingTypeInitializer Float2::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.Float2", ARRAY_SIZE("SE.Float2") - 1),
+    sizeof(::SE::Float2),
+    &Float2Internal::InitRuntime,
+    &Float2Internal::Ctor, &Float2Internal::Dtor, &Float2Internal::Copy,
+    &Float2Internal::Box, &Float2Internal::Unbox, &Float2Internal::GetField, &Float2Internal::SetField,
+    nullptr
+);
 }
 
 namespace SE
@@ -38,8 +100,70 @@ namespace SE
 class Double2Internal
 {
 public:
+    static void InitRuntime()
+    {
+    }
+
+    static void Ctor(void* ptr)
+    {
+        new(ptr)::SE::Double2();
+    }
+
+    static void Dtor(void* ptr)
+    {
+        ((::SE::Double2*)ptr)->~Double2();
+    }
+
+    static void Copy(void* dst, void* src)
+    {
+        *(::SE::Double2*)dst = *(::SE::Double2*)src;
+    }
+
+    static CLRObject* Box(void* ptr)
+    {
+        return ::SE::CLRUtils::Box(*static_cast<::SE::Double2*>(ptr), ::SE::Double2::TypeInitializer.GetClass());
+    }
+
+    static void Unbox(void* ptr, CLRObject* managed)
+    {
+        *static_cast<::SE::Double2*>(ptr) = ::SE::CLRUtils::Unbox<::SE::Double2>(managed);
+    }
+
+    static void GetField(void* ptr, const String& name, Variant& value)
+    {
+        if (name == SE_TEXT("x"))
+        {
+            value = Variant(((::SE::Double2*)ptr)->x);
+        }
+        else if (name == SE_TEXT("y"))
+        {
+            value = Variant(((::SE::Double2*)ptr)->y);
+        }
+    }
+
+    static void SetField(void* ptr, const String& name, const Variant& value)
+    {
+        if (name == SE_TEXT("x"))
+        {
+            ((::SE::Double2*)ptr)->x = (double)value;
+        }
+        else if (name == SE_TEXT("y"))
+        {
+            ((::SE::Double2*)ptr)->y = (double)value;
+        }
+    }
 };
 
+template<>
+ScriptingTypeInitializer Double2::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.Double2", ARRAY_SIZE("SE.Double2") - 1),
+    sizeof(::SE::Double2),
+    &Double2Internal::InitRuntime,
+    &Double2Internal::Ctor, &Double2Internal::Dtor, &Double2Internal::Copy,
+    &Double2Internal::Box, &Double2Internal::Unbox, &Double2Internal::GetField, &Double2Internal::SetField,
+    nullptr
+);
 }
 
 namespace SE
@@ -47,7 +171,69 @@ namespace SE
 class Int2Internal
 {
 public:
+    static void InitRuntime()
+    {
+    }
+
+    static void Ctor(void* ptr)
+    {
+        new(ptr)::SE::Int2();
+    }
+
+    static void Dtor(void* ptr)
+    {
+        ((::SE::Int2*)ptr)->~Int2();
+    }
+
+    static void Copy(void* dst, void* src)
+    {
+        *(::SE::Int2*)dst = *(::SE::Int2*)src;
+    }
+
+    static CLRObject* Box(void* ptr)
+    {
+        return ::SE::CLRUtils::Box(*static_cast<::SE::Int2*>(ptr), ::SE::Int2::TypeInitializer.GetClass());
+    }
+
+    static void Unbox(void* ptr, CLRObject* managed)
+    {
+        *static_cast<::SE::Int2*>(ptr) = ::SE::CLRUtils::Unbox<::SE::Int2>(managed);
+    }
+
+    static void GetField(void* ptr, const String& name, Variant& value)
+    {
+        if (name == SE_TEXT("x"))
+        {
+            value = Variant(((::SE::Int2*)ptr)->x);
+        }
+        else if (name == SE_TEXT("y"))
+        {
+            value = Variant(((::SE::Int2*)ptr)->y);
+        }
+    }
+
+    static void SetField(void* ptr, const String& name, const Variant& value)
+    {
+        if (name == SE_TEXT("x"))
+        {
+            ((::SE::Int2*)ptr)->x = (int32)value;
+        }
+        else if (name == SE_TEXT("y"))
+        {
+            ((::SE::Int2*)ptr)->y = (int32)value;
+        }
+    }
 };
 
+template<>
+ScriptingTypeInitializer Int2::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.Int2", ARRAY_SIZE("SE.Int2") - 1),
+    sizeof(::SE::Int2),
+    &Int2Internal::InitRuntime,
+    &Int2Internal::Ctor, &Int2Internal::Dtor, &Int2Internal::Copy,
+    &Int2Internal::Box, &Int2Internal::Unbox, &Int2Internal::GetField, &Int2Internal::SetField,
+    nullptr
+);
 }
 

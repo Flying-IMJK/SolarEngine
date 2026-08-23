@@ -34,10 +34,10 @@ public:
     }
 };
 
-ScriptingTypeInitializer Editor::Editor::TypeInitializer(
+ScriptingTypeInitializer Editor::ManagedEditor::TypeInitializer(
     (BinaryModule*)GetBinaryModuleSEEditor(),
-    StringAnsiView("SE.Editor.ManagedEditor", ARRAY_SIZE("SE.Editor.ManagedEditor") - 1),
-    sizeof(::SE::Editor::Editor),
+    StringAnsiView("SE.Editor.Editor", ARRAY_SIZE("SE.Editor.Editor") - 1),
+    sizeof(::SE::Editor::ManagedEditor),
     &ManagedEditorInternal::InitRuntime,
     &ScriptingType::DefaultSpawn, 
     &::SE::ScriptingObject::TypeInitializer,

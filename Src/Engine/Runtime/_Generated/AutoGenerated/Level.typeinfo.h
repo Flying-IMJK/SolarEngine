@@ -470,8 +470,35 @@ public:
 #endif
         ::SE::Level::SaveSceneAsync((::SE::Scene*)scene);
     }
+    static void InitRuntime()
+    {
+        ScriptingEvents::EventsTable[Pair<ScriptingTypeHandle, StringView>(Level::TypeInitializer, StringView(SE_TEXT("SceneSaving")))] = (void(*)(ScriptingObject*, void*, bool))LevelInternal::SceneSaving_ManagedWrapper;
+        ScriptingEvents::EventsTable[Pair<ScriptingTypeHandle, StringView>(Level::TypeInitializer, StringView(SE_TEXT("SceneSaved")))] = (void(*)(ScriptingObject*, void*, bool))LevelInternal::SceneSaved_ManagedWrapper;
+        ScriptingEvents::EventsTable[Pair<ScriptingTypeHandle, StringView>(Level::TypeInitializer, StringView(SE_TEXT("SceneSaveError")))] = (void(*)(ScriptingObject*, void*, bool))LevelInternal::SceneSaveError_ManagedWrapper;
+        ScriptingEvents::EventsTable[Pair<ScriptingTypeHandle, StringView>(Level::TypeInitializer, StringView(SE_TEXT("SceneLoading")))] = (void(*)(ScriptingObject*, void*, bool))LevelInternal::SceneLoading_ManagedWrapper;
+        ScriptingEvents::EventsTable[Pair<ScriptingTypeHandle, StringView>(Level::TypeInitializer, StringView(SE_TEXT("SceneLoaded")))] = (void(*)(ScriptingObject*, void*, bool))LevelInternal::SceneLoaded_ManagedWrapper;
+        ScriptingEvents::EventsTable[Pair<ScriptingTypeHandle, StringView>(Level::TypeInitializer, StringView(SE_TEXT("SceneLoadError")))] = (void(*)(ScriptingObject*, void*, bool))LevelInternal::SceneLoadError_ManagedWrapper;
+        ScriptingEvents::EventsTable[Pair<ScriptingTypeHandle, StringView>(Level::TypeInitializer, StringView(SE_TEXT("SceneUnloading")))] = (void(*)(ScriptingObject*, void*, bool))LevelInternal::SceneUnloading_ManagedWrapper;
+        ScriptingEvents::EventsTable[Pair<ScriptingTypeHandle, StringView>(Level::TypeInitializer, StringView(SE_TEXT("SceneUnloaded")))] = (void(*)(ScriptingObject*, void*, bool))LevelInternal::SceneUnloaded_ManagedWrapper;
+        ScriptingEvents::EventsTable[Pair<ScriptingTypeHandle, StringView>(Level::TypeInitializer, StringView(SE_TEXT("ActorSpawned")))] = (void(*)(ScriptingObject*, void*, bool))LevelInternal::ActorSpawned_ManagedWrapper;
+        ScriptingEvents::EventsTable[Pair<ScriptingTypeHandle, StringView>(Level::TypeInitializer, StringView(SE_TEXT("ActorDeleted")))] = (void(*)(ScriptingObject*, void*, bool))LevelInternal::ActorDeleted_ManagedWrapper;
+        ScriptingEvents::EventsTable[Pair<ScriptingTypeHandle, StringView>(Level::TypeInitializer, StringView(SE_TEXT("ActorParentChanged")))] = (void(*)(ScriptingObject*, void*, bool))LevelInternal::ActorParentChanged_ManagedWrapper;
+        ScriptingEvents::EventsTable[Pair<ScriptingTypeHandle, StringView>(Level::TypeInitializer, StringView(SE_TEXT("ActorOrderInParentChanged")))] = (void(*)(ScriptingObject*, void*, bool))LevelInternal::ActorOrderInParentChanged_ManagedWrapper;
+        ScriptingEvents::EventsTable[Pair<ScriptingTypeHandle, StringView>(Level::TypeInitializer, StringView(SE_TEXT("ActorNameChanged")))] = (void(*)(ScriptingObject*, void*, bool))LevelInternal::ActorNameChanged_ManagedWrapper;
+        ScriptingEvents::EventsTable[Pair<ScriptingTypeHandle, StringView>(Level::TypeInitializer, StringView(SE_TEXT("ActorActiveChanged")))] = (void(*)(ScriptingObject*, void*, bool))LevelInternal::ActorActiveChanged_ManagedWrapper;
+    }
 };
 
+ScriptingTypeInitializer Level::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.Level", ARRAY_SIZE("SE.Level") - 1),
+    sizeof(::SE::Level),
+    &LevelInternal::InitRuntime,
+    &ScriptingType::DefaultSpawn, 
+    nullptr,
+    nullptr,
+    nullptr
+);
 
 // Plain-C exports
 DEFINE_INTERNAL_CALL(void) Level_SceneSaving_ManagedBind(bool bind)

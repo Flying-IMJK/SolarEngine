@@ -1,0 +1,1532 @@
+{
+  "API.cpp": {
+    "mtime": 1784463224.5024128,
+    "ast_hash": "7b3298369eba80da80b1cadd897575c9",
+    "semantic_hash": "7b3298369eba80da80b1cadd897575c9"
+  },
+  "API.h": {
+    "mtime": 1783219535.7752912,
+    "ast_hash": "d4eb0ef2ee68a6320c8365d6a8110a59",
+    "semantic_hash": "d4eb0ef2ee68a6320c8365d6a8110a59"
+  },
+  "Core/CategoryTree.h": {
+    "mtime": 1779515377.785959,
+    "ast_hash": "2ced50ecace99e3d6bc99db2e0d7d841",
+    "semantic_hash": "2ced50ecace99e3d6bc99db2e0d7d841"
+  },
+  "Core/CommonDialogs.cpp": {
+    "mtime": 1783219535.3749595,
+    "ast_hash": "5ab6880ac8ebbc6f8289ca95fed3b9f5",
+    "semantic_hash": "5ab6880ac8ebbc6f8289ca95fed3b9f5"
+  },
+  "Core/CommonDialogs.h": {
+    "mtime": 1783219535.376959,
+    "ast_hash": "c8e01a316fb79d023b6826b729dc7140",
+    "semantic_hash": "c8e01a316fb79d023b6826b729dc7140"
+  },
+  "Core/QueryFilterHelper.cpp": {
+    "mtime": 1759896112.6764865,
+    "ast_hash": "fa813adffdecd6e8f87501b4a8df215e",
+    "semantic_hash": "fa813adffdecd6e8f87501b4a8df215e"
+  },
+  "Core/QueryFilterHelper.h": {
+    "mtime": 1783219535.3844388,
+    "ast_hash": "a2956623042c13f8c3516d8dc6374732",
+    "semantic_hash": "a2956623042c13f8c3516d8dc6374732"
+  },
+  "Core/UndoStack.cpp": {
+    "mtime": 1760540833.8147688,
+    "ast_hash": "7c27ba263ec3969b4bc27616d4763cfe",
+    "semantic_hash": "7c27ba263ec3969b4bc27616d4763cfe"
+  },
+  "Core/UndoStack.h": {
+    "mtime": 1783219535.388867,
+    "ast_hash": "4faa5202b39bf1123d60bb61117eaaf5",
+    "semantic_hash": "4faa5202b39bf1123d60bb61117eaaf5"
+  },
+  "CustomEditors/CustomEditor.cpp": {
+    "mtime": 1774351431.468011,
+    "ast_hash": "210b57763bdb0f47540b18f7ac8739be",
+    "semantic_hash": "210b57763bdb0f47540b18f7ac8739be"
+  },
+  "CustomEditors/CustomEditor.h": {
+    "mtime": 1783219535.42857,
+    "ast_hash": "b60d35e9dc49d81011e3738f04495b46",
+    "semantic_hash": "b60d35e9dc49d81011e3738f04495b46"
+  },
+  "CustomEditors/CustomEditorFactory.cpp": {
+    "mtime": 1783219535.432574,
+    "ast_hash": "6237ed5c1a011b56b82f805e328ca58b",
+    "semantic_hash": "6237ed5c1a011b56b82f805e328ca58b"
+  },
+  "CustomEditors/CustomEditorFactory.h": {
+    "mtime": 1783219535.4370768,
+    "ast_hash": "655c96e6e88d82926c13d29e75598f55",
+    "semantic_hash": "655c96e6e88d82926c13d29e75598f55"
+  },
+  "CustomEditors/CustomEditorPresenter.cpp": {
+    "mtime": 1783219535.4400814,
+    "ast_hash": "3dc4e499047fc72c19b83b46651e51e8",
+    "semantic_hash": "3dc4e499047fc72c19b83b46651e51e8"
+  },
+  "CustomEditors/CustomEditorPresenter.h": {
+    "mtime": 1782657470.4337096,
+    "ast_hash": "8d27ad582a8a8740f390dc2e18a65bd2",
+    "semantic_hash": "8d27ad582a8a8740f390dc2e18a65bd2"
+  },
+  "CustomEditors/Editors/FloatEditor.cpp": {
+    "mtime": 1774351666.6907897,
+    "ast_hash": "8be62b15d34898b3277c75f692df635b",
+    "semantic_hash": "8be62b15d34898b3277c75f692df635b"
+  },
+  "CustomEditors/Editors/FloatEditor.h": {
+    "mtime": 1779515377.2805674,
+    "ast_hash": "3e3f086d5babe877148d291ac6f7a584",
+    "semantic_hash": "3e3f086d5babe877148d291ac6f7a584"
+  },
+  "CustomEditors/Editors/GenericEditor.cpp": {
+    "mtime": 1783219535.3944886,
+    "ast_hash": "a1d9dc7088a4aa72367565285df2fa9a",
+    "semantic_hash": "a1d9dc7088a4aa72367565285df2fa9a"
+  },
+  "CustomEditors/Editors/GenericEditor.h": {
+    "mtime": 1783219535.397996,
+    "ast_hash": "8a745c9550265d8af9dca0f1bd4646fc",
+    "semantic_hash": "8a745c9550265d8af9dca0f1bd4646fc"
+  },
+  "CustomEditors/Element/Container/PropertiesListElement.cpp": {
+    "mtime": 1773150062.2887206,
+    "ast_hash": "68366bb99ec2d997b4f4401c259f41a0",
+    "semantic_hash": "68366bb99ec2d997b4f4401c259f41a0"
+  },
+  "CustomEditors/Element/Container/PropertiesListElement.h": {
+    "mtime": 1782657470.5140631,
+    "ast_hash": "7b502bafe29aa3d4d341763d3b72b727",
+    "semantic_hash": "7b502bafe29aa3d4d341763d3b72b727"
+  },
+  "CustomEditors/Element/FloatValueElement.cpp": {
+    "mtime": 1773588943.3797562,
+    "ast_hash": "eeb5a0024a42b7d887613b2022b0a9ed",
+    "semantic_hash": "eeb5a0024a42b7d887613b2022b0a9ed"
+  },
+  "CustomEditors/Element/FloatValueElement.h": {
+    "mtime": 1782657470.4980376,
+    "ast_hash": "5181bbff062982ea05e54eb48d3429f6",
+    "semantic_hash": "5181bbff062982ea05e54eb48d3429f6"
+  },
+  "CustomEditors/Element/IFloatValueElement.h": {
+    "mtime": 1779515377.786963,
+    "ast_hash": "e5a573cf99b322792da6065640a41a92",
+    "semantic_hash": "e5a573cf99b322792da6065640a41a92"
+  },
+  "CustomEditors/Element/LabelElement.cpp": {
+    "mtime": 1783219535.4055028,
+    "ast_hash": "f796f8502cdd1006cde5d3d68468d855",
+    "semantic_hash": "f796f8502cdd1006cde5d3d68468d855"
+  },
+  "CustomEditors/Element/LabelElement.h": {
+    "mtime": 1783219535.408006,
+    "ast_hash": "520e30e3fcb0443d5c3030c800f5b8c8",
+    "semantic_hash": "520e30e3fcb0443d5c3030c800f5b8c8"
+  },
+  "CustomEditors/Element/LayoutElements.cpp": {
+    "mtime": 1774351949.0066402,
+    "ast_hash": "1c313d42b03def883a645907646ee009",
+    "semantic_hash": "1c313d42b03def883a645907646ee009"
+  },
+  "CustomEditors/Element/LayoutElements.h": {
+    "mtime": 1783219535.4120088,
+    "ast_hash": "c6765763fbc4cf43223178ec45d64f17",
+    "semantic_hash": "c6765763fbc4cf43223178ec45d64f17"
+  },
+  "CustomEditors/Element/PropertyNameLabel.cpp": {
+    "mtime": 1772203160.9959607,
+    "ast_hash": "e274a58fb7a1aab812e130c1c3c72c7c",
+    "semantic_hash": "e274a58fb7a1aab812e130c1c3c72c7c"
+  },
+  "CustomEditors/Element/PropertyNameLabel.h": {
+    "mtime": 1783219535.4165106,
+    "ast_hash": "02fd1c40a9d4a8d062db3b928dd61188",
+    "semantic_hash": "02fd1c40a9d4a8d062db3b928dd61188"
+  },
+  "CustomEditors/LayoutElement.h": {
+    "mtime": 1783219535.4455903,
+    "ast_hash": "ed138ac1b68a291161070e4f0b6b180b",
+    "semantic_hash": "ed138ac1b68a291161070e4f0b6b180b"
+  },
+  "CustomEditors/LayoutElementsContainer.cpp": {
+    "mtime": 1774352062.2125275,
+    "ast_hash": "8c0122a12e102a0b603afb12f1c436c5",
+    "semantic_hash": "8c0122a12e102a0b603afb12f1c436c5"
+  },
+  "CustomEditors/LayoutElementsContainer.h": {
+    "mtime": 1783219535.4498854,
+    "ast_hash": "1a5e33964396b9a383bb1692509866ea",
+    "semantic_hash": "1a5e33964396b9a383bb1692509866ea"
+  },
+  "CustomEditors/SyncPointEditor.cpp": {
+    "mtime": 1767424714.3524344,
+    "ast_hash": "fde77832c8997f3e1a8b4ba81902c5c6",
+    "semantic_hash": "fde77832c8997f3e1a8b4ba81902c5c6"
+  },
+  "CustomEditors/SyncPointEditor.h": {
+    "mtime": 1779515377.44349,
+    "ast_hash": "ca226f78256bda009b31c5219047ccc2",
+    "semantic_hash": "ca226f78256bda009b31c5219047ccc2"
+  },
+  "CustomEditors/Values/ValueContainer.cpp": {
+    "mtime": 1783219535.4195166,
+    "ast_hash": "7d4ed11f7992bf5f10fa15bead981e49",
+    "semantic_hash": "7d4ed11f7992bf5f10fa15bead981e49"
+  },
+  "CustomEditors/Values/ValueContainer.h": {
+    "mtime": 1783219535.4235158,
+    "ast_hash": "eb8a6bd4fcfd7d42c949bca9d9a200e1",
+    "semantic_hash": "eb8a6bd4fcfd7d42c949bca9d9a200e1"
+  },
+  "EditorApp.cpp": {
+    "mtime": 1784987358.8562582,
+    "ast_hash": "bebef7f1bb5065da51fba28d61aa6ead",
+    "semantic_hash": "bebef7f1bb5065da51fba28d61aa6ead"
+  },
+  "EditorApp.h": {
+    "mtime": 1784983310.547429,
+    "ast_hash": "16ba5ec0eca462bf07e1b83fba2858c5",
+    "semantic_hash": "16ba5ec0eca462bf07e1b83fba2858c5"
+  },
+  "EditorAssets.cpp": {
+    "mtime": 1759765653.9551456,
+    "ast_hash": "5aac624430353497b15a4ab0c757aed3",
+    "semantic_hash": "5aac624430353497b15a4ab0c757aed3"
+  },
+  "EditorAssets.h": {
+    "mtime": 1783219535.7860966,
+    "ast_hash": "ebd90452eacc268490249112b38e05a3",
+    "semantic_hash": "ebd90452eacc268490249112b38e05a3"
+  },
+  "EditorCSharp.csproj": {
+    "mtime": 1785056992.5667934,
+    "ast_hash": "d29b797d92058b1fb9daddc46aaed58e",
+    "semantic_hash": "d29b797d92058b1fb9daddc46aaed58e"
+  },
+  "EditorContext.cpp": {
+    "mtime": 1759765207.9874916,
+    "ast_hash": "6bdbff91d327e51df60af261add49a95",
+    "semantic_hash": "6bdbff91d327e51df60af261add49a95"
+  },
+  "EditorContext.h": {
+    "mtime": 1783219535.7886178,
+    "ast_hash": "73357967644bfcdd767c7c66274f80c7",
+    "semantic_hash": "73357967644bfcdd767c7c66274f80c7"
+  },
+  "EditorIcons.h": {
+    "mtime": 1779515377.786963,
+    "ast_hash": "d5c326e6b0e3bcc8d91b030c7fc29cc9",
+    "semantic_hash": "d5c326e6b0e3bcc8d91b030c7fc29cc9"
+  },
+  "GUI/ClickableLabel.cs": {
+    "mtime": 1785652341.7828987,
+    "ast_hash": "8547e68191e57073593515a28d9855d5",
+    "semantic_hash": "8547e68191e57073593515a28d9855d5"
+  },
+  "GUI/ColumnDefinition.cs": {
+    "mtime": 1785652402.1163213,
+    "ast_hash": "70051f4986740a942e2f5589856a0149",
+    "semantic_hash": "70051f4986740a942e2f5589856a0149"
+  },
+  "GUI/ComboBox.cpp": {
+    "mtime": 1783219535.5185897,
+    "ast_hash": "32c4e2b30c4680a356ee16a0d27fbbfc",
+    "semantic_hash": "32c4e2b30c4680a356ee16a0d27fbbfc"
+  },
+  "GUI/ComboBox.cs": {
+    "mtime": 1785567775.855143,
+    "ast_hash": "f3a6dbeae05bd039054114c78d4f1ad2",
+    "semantic_hash": "f3a6dbeae05bd039054114c78d4f1ad2"
+  },
+  "GUI/ComboBox.h": {
+    "mtime": 1782657470.5216396,
+    "ast_hash": "4d0dbddc1f6419fd669c7f7a48ff1f34",
+    "semantic_hash": "4d0dbddc1f6419fd669c7f7a48ff1f34"
+  },
+  "GUI/ContextMenu/ContextMenu.cpp": {
+    "mtime": 1783219535.4567628,
+    "ast_hash": "c67a37198b942935cf63e201b0f21e39",
+    "semantic_hash": "c67a37198b942935cf63e201b0f21e39"
+  },
+  "GUI/ContextMenu/ContextMenu.cs": {
+    "mtime": 1785653278.082172,
+    "ast_hash": "07ae782ee5466df78e3818090aee35ee",
+    "semantic_hash": "07ae782ee5466df78e3818090aee35ee"
+  },
+  "GUI/ContextMenu/ContextMenu.h": {
+    "mtime": 1782657470.612468,
+    "ast_hash": "ba0fb7931316753948c981508d0f3e3b",
+    "semantic_hash": "ba0fb7931316753948c981508d0f3e3b"
+  },
+  "GUI/ContextMenu/ContextMenuBase.cpp": {
+    "mtime": 1765984239.5770252,
+    "ast_hash": "b4521dab4361d0ebb4b3ac21354af1c3",
+    "semantic_hash": "b4521dab4361d0ebb4b3ac21354af1c3"
+  },
+  "GUI/ContextMenu/ContextMenuBase.h": {
+    "mtime": 1782657470.6204796,
+    "ast_hash": "80c3cdfc50ee9e51535ff5507fcb8991",
+    "semantic_hash": "80c3cdfc50ee9e51535ff5507fcb8991"
+  },
+  "GUI/ContextMenu/ContextMenuButton.cpp": {
+    "mtime": 1770739213.4906871,
+    "ast_hash": "caa75831dd005bc8d004c75961b52023",
+    "semantic_hash": "caa75831dd005bc8d004c75961b52023"
+  },
+  "GUI/ContextMenu/ContextMenuButton.h": {
+    "mtime": 1782657470.6448648,
+    "ast_hash": "39dc23fe563d0ea447e24d500ad945df",
+    "semantic_hash": "39dc23fe563d0ea447e24d500ad945df"
+  },
+  "GUI/ContextMenu/ContextMenuChildMenu.cpp": {
+    "mtime": 1770731208.6436791,
+    "ast_hash": "daa737572f88919821cf8c75173bead6",
+    "semantic_hash": "daa737572f88919821cf8c75173bead6"
+  },
+  "GUI/ContextMenu/ContextMenuChildMenu.h": {
+    "mtime": 1782657470.6258295,
+    "ast_hash": "75b57ed09969c5a360751530a8137896",
+    "semantic_hash": "75b57ed09969c5a360751530a8137896"
+  },
+  "GUI/ContextMenu/ContextMenuItem.cpp": {
+    "mtime": 1765984233.264974,
+    "ast_hash": "bf002b4a06aca883dc2a28b31060fd62",
+    "semantic_hash": "bf002b4a06aca883dc2a28b31060fd62"
+  },
+  "GUI/ContextMenu/ContextMenuItem.h": {
+    "mtime": 1782657470.6408477,
+    "ast_hash": "1339f7dc66dd38b169a02173ccebcbce",
+    "semantic_hash": "1339f7dc66dd38b169a02173ccebcbce"
+  },
+  "GUI/ContextMenu/ContextMenuSeparator.cpp": {
+    "mtime": 1770731313.7228644,
+    "ast_hash": "1ba64ed54a774af6cc8d6771607353b6",
+    "semantic_hash": "1ba64ed54a774af6cc8d6771607353b6"
+  },
+  "GUI/ContextMenu/ContextMenuSeparator.h": {
+    "mtime": 1782657470.636342,
+    "ast_hash": "b106d62db243968e89f39481e6a4bd17",
+    "semantic_hash": "b106d62db243968e89f39481e6a4bd17"
+  },
+  "GUI/ContextMenu/ContextMenuSingleSelectGroup.cs": {
+    "mtime": 1785567774.2803829,
+    "ast_hash": "bb8adb0d7c73c0280434ba1803f43adb",
+    "semantic_hash": "bb8adb0d7c73c0280434ba1803f43adb"
+  },
+  "GUI/Docking/DockHintWindow.cpp": {
+    "mtime": 1760540950.1485407,
+    "ast_hash": "48def96b8043b280aa1794fc7f1e4415",
+    "semantic_hash": "48def96b8043b280aa1794fc7f1e4415"
+  },
+  "GUI/Docking/DockHintWindow.cs": {
+    "mtime": 1785653389.7681139,
+    "ast_hash": "c310b704e6d47885fea55bf53d531072",
+    "semantic_hash": "c310b704e6d47885fea55bf53d531072"
+  },
+  "GUI/Docking/DockHintWindow.h": {
+    "mtime": 1783219535.4732897,
+    "ast_hash": "f580a111347099a84ae492ca1db114b2",
+    "semantic_hash": "f580a111347099a84ae492ca1db114b2"
+  },
+  "GUI/Docking/DockPanel.cpp": {
+    "mtime": 1770731493.5291123,
+    "ast_hash": "6b244191d19ac29407f62bd7d18e2b46",
+    "semantic_hash": "6b244191d19ac29407f62bd7d18e2b46"
+  },
+  "GUI/Docking/DockPanel.cs": {
+    "mtime": 1785653423.1947265,
+    "ast_hash": "402b0499af7f55bf993bba5c251cdee6",
+    "semantic_hash": "402b0499af7f55bf993bba5c251cdee6"
+  },
+  "GUI/Docking/DockPanel.h": {
+    "mtime": 1783219535.4789047,
+    "ast_hash": "55935fea48940f799934b1a19b873a1b",
+    "semantic_hash": "55935fea48940f799934b1a19b873a1b"
+  },
+  "GUI/Docking/DockPanelProxy.cpp": {
+    "mtime": 1770739703.710769,
+    "ast_hash": "261e4b39d6499dbf677d7582613c8bbd",
+    "semantic_hash": "261e4b39d6499dbf677d7582613c8bbd"
+  },
+  "GUI/Docking/DockPanelProxy.cs": {
+    "mtime": 1785653774.4531672,
+    "ast_hash": "8cc9a7b43670294079ac6aec0d3b5724",
+    "semantic_hash": "8cc9a7b43670294079ac6aec0d3b5724"
+  },
+  "GUI/Docking/DockPanelProxy.h": {
+    "mtime": 1782657470.6488614,
+    "ast_hash": "4077a871119f6d859955efe23495c2ed",
+    "semantic_hash": "4077a871119f6d859955efe23495c2ed"
+  },
+  "GUI/Docking/DockState.cs": {
+    "mtime": 1784343902.3891652,
+    "ast_hash": "6194189b4ced17a8c115e09cf1b165c3",
+    "semantic_hash": "6194189b4ced17a8c115e09cf1b165c3"
+  },
+  "GUI/Docking/DockWindow.cpp": {
+    "mtime": 1770731348.232325,
+    "ast_hash": "f4b00816c10c32c0e0408f820427d840",
+    "semantic_hash": "f4b00816c10c32c0e0408f820427d840"
+  },
+  "GUI/Docking/DockWindow.cs": {
+    "mtime": 1785653984.4066799,
+    "ast_hash": "c0ca2a20c890de4788c2f439f38ee938",
+    "semantic_hash": "c0ca2a20c890de4788c2f439f38ee938"
+  },
+  "GUI/Docking/DockWindow.h": {
+    "mtime": 1782657470.6563869,
+    "ast_hash": "b56900bf5ed357647021b796dac2fa47",
+    "semantic_hash": "b56900bf5ed357647021b796dac2fa47"
+  },
+  "GUI/Docking/FloatWindowDockPanel.cpp": {
+    "mtime": 1770731566.8370795,
+    "ast_hash": "7d4f7c22749a63c3ff5e7f41a1e9bb0c",
+    "semantic_hash": "7d4f7c22749a63c3ff5e7f41a1e9bb0c"
+  },
+  "GUI/Docking/FloatWindowDockPanel.cs": {
+    "mtime": 1785075744.6717937,
+    "ast_hash": "af814a744703a0c4f77cc5ee45012b94",
+    "semantic_hash": "af814a744703a0c4f77cc5ee45012b94"
+  },
+  "GUI/Docking/FloatWindowDockPanel.h": {
+    "mtime": 1782657470.653386,
+    "ast_hash": "503058573015c9dc24b2f72008eb188c",
+    "semantic_hash": "503058573015c9dc24b2f72008eb188c"
+  },
+  "GUI/Docking/MasterDockPanel.cpp": {
+    "mtime": 1770731389.8857408,
+    "ast_hash": "fb061f1cf11d881bfe21389dd4eef814",
+    "semantic_hash": "fb061f1cf11d881bfe21389dd4eef814"
+  },
+  "GUI/Docking/MasterDockPanel.cs": {
+    "mtime": 1785653775.4962761,
+    "ast_hash": "d9b965c87069eb907406e1b85ef1f535",
+    "semantic_hash": "d9b965c87069eb907406e1b85ef1f535"
+  },
+  "GUI/Docking/MasterDockPanel.h": {
+    "mtime": 1782657470.6468623,
+    "ast_hash": "f4abb0b5461ff90b0063f3ee832501ba",
+    "semantic_hash": "f4abb0b5461ff90b0063f3ee832501ba"
+  },
+  "GUI/Drag/DragActorType.cs": {
+    "mtime": 1785653662.4002564,
+    "ast_hash": "1fcd6f28f5946ae61929ee1959a82e6d",
+    "semantic_hash": "1fcd6f28f5946ae61929ee1959a82e6d"
+  },
+  "GUI/Drag/DragActorType.hpp": {
+    "mtime": 1761972677.880981,
+    "ast_hash": "58f0ec7bdb41de66a9e36aaf47d64d06",
+    "semantic_hash": "58f0ec7bdb41de66a9e36aaf47d64d06"
+  },
+  "GUI/Drag/DragActors.cs": {
+    "mtime": 1785653660.7426553,
+    "ast_hash": "ba96dc91b7c4f2e3e6f81d6156fca968",
+    "semantic_hash": "ba96dc91b7c4f2e3e6f81d6156fca968"
+  },
+  "GUI/Drag/DragActors.hpp": {
+    "mtime": 1771947857.795351,
+    "ast_hash": "fb68e0f7509ad26d46fa481955be10f2",
+    "semantic_hash": "fb68e0f7509ad26d46fa481955be10f2"
+  },
+  "GUI/Drag/DragAssets.cs": {
+    "mtime": 1785653664.1521826,
+    "ast_hash": "c0e8b77dbe05143aeade0fc38d741868",
+    "semantic_hash": "c0e8b77dbe05143aeade0fc38d741868"
+  },
+  "GUI/Drag/DragAssets.hpp": {
+    "mtime": 1765810700.2746918,
+    "ast_hash": "2f3e55b04d40e0594818362670deb091",
+    "semantic_hash": "2f3e55b04d40e0594818362670deb091"
+  },
+  "GUI/Drag/DragControlType.cs": {
+    "mtime": 1785653665.6760411,
+    "ast_hash": "338ce47a152fcf9d8ae4025df0eee721",
+    "semantic_hash": "338ce47a152fcf9d8ae4025df0eee721"
+  },
+  "GUI/Drag/DragEventArgs.cs": {
+    "mtime": 1784343929.3157134,
+    "ast_hash": "3bd4bbd915ac39a79771ad088396d41a",
+    "semantic_hash": "3bd4bbd915ac39a79771ad088396d41a"
+  },
+  "GUI/Drag/DragEventArgs.h": {
+    "mtime": 1783219535.4914236,
+    "ast_hash": "80b5636206ef492ad936e060e48f0cc4",
+    "semantic_hash": "80b5636206ef492ad936e060e48f0cc4"
+  },
+  "GUI/Drag/DragHandlers.cpp": {
+    "mtime": 1761973380.128402,
+    "ast_hash": "acbdefb4531ff202018e044f6fd948cf",
+    "semantic_hash": "acbdefb4531ff202018e044f6fd948cf"
+  },
+  "GUI/Drag/DragHandlers.cs": {
+    "mtime": 1785639306.3663495,
+    "ast_hash": "3e408d21d7ceb8c73f6c1ac6b63713af",
+    "semantic_hash": "3e408d21d7ceb8c73f6c1ac6b63713af"
+  },
+  "GUI/Drag/DragHandlers.h": {
+    "mtime": 1779515377.2855673,
+    "ast_hash": "c94385c6f0869264611bc2944c9573a8",
+    "semantic_hash": "c94385c6f0869264611bc2944c9573a8"
+  },
+  "GUI/Drag/DragHelper.cs": {
+    "mtime": 1785639302.6379335,
+    "ast_hash": "b6893f142086931d71203a19494a4ff3",
+    "semantic_hash": "b6893f142086931d71203a19494a4ff3"
+  },
+  "GUI/Drag/DragHelper.hpp": {
+    "mtime": 1783219535.4934206,
+    "ast_hash": "44aa7d6bfbd21480bc115532ebe5ef87",
+    "semantic_hash": "44aa7d6bfbd21480bc115532ebe5ef87"
+  },
+  "GUI/Drag/DragItems.cs": {
+    "mtime": 1785653667.0243134,
+    "ast_hash": "78ad171b3044545158c12f33e1117b1d",
+    "semantic_hash": "78ad171b3044545158c12f33e1117b1d"
+  },
+  "GUI/Drag/DragItems.hpp": {
+    "mtime": 1765810700.2716918,
+    "ast_hash": "bc1a844911e31f31a4bf13e93d8e51e0",
+    "semantic_hash": "bc1a844911e31f31a4bf13e93d8e51e0"
+  },
+  "GUI/Drag/DragNames.cs": {
+    "mtime": 1785653668.3499174,
+    "ast_hash": "7129beb1a93f262a3bb44aeb914a6d13",
+    "semantic_hash": "7129beb1a93f262a3bb44aeb914a6d13"
+  },
+  "GUI/EnumComboBox.cs": {
+    "mtime": 1785075865.0437033,
+    "ast_hash": "d4960ea2acb0e14ba6747780388a43a1",
+    "semantic_hash": "d4960ea2acb0e14ba6747780388a43a1"
+  },
+  "GUI/Input/ColorValueBox.cs": {
+    "mtime": 1785075744.6031961,
+    "ast_hash": "46d2bcf246c72dc0c0d160ee404251d5",
+    "semantic_hash": "46d2bcf246c72dc0c0d160ee404251d5"
+  },
+  "GUI/Input/FloatValueBox.cpp": {
+    "mtime": 1761487922.7278488,
+    "ast_hash": "13acaf210ef1cfd059e0c5b40aa7c213",
+    "semantic_hash": "13acaf210ef1cfd059e0c5b40aa7c213"
+  },
+  "GUI/Input/FloatValueBox.cs": {
+    "mtime": 1785075965.9816408,
+    "ast_hash": "33d19fc5760d2bda41ec0d8c9c7e4003",
+    "semantic_hash": "33d19fc5760d2bda41ec0d8c9c7e4003"
+  },
+  "GUI/Input/FloatValueBox.h": {
+    "mtime": 1779515377.4459977,
+    "ast_hash": "6a93db23ade618a7837333eb7f988d82",
+    "semantic_hash": "6a93db23ade618a7837333eb7f988d82"
+  },
+  "GUI/Input/NumericValueBoxes.cs": {
+    "mtime": 1785075967.2656558,
+    "ast_hash": "e34ad7c0b6765f53415e26006f0940d8",
+    "semantic_hash": "e34ad7c0b6765f53415e26006f0940d8"
+  },
+  "GUI/Input/SearchBox.cpp": {
+    "mtime": 1761492745.6861317,
+    "ast_hash": "ec3961a87f9bc94c6007e4ca6b7a6eb6",
+    "semantic_hash": "ec3961a87f9bc94c6007e4ca6b7a6eb6"
+  },
+  "GUI/Input/SearchBox.cs": {
+    "mtime": 1785567782.5594091,
+    "ast_hash": "d338d54279ac01b3e3425f106121eff7",
+    "semantic_hash": "d338d54279ac01b3e3425f106121eff7"
+  },
+  "GUI/Input/SearchBox.h": {
+    "mtime": 1782657470.5551708,
+    "ast_hash": "e4d4836f24807676682aaafffc339059",
+    "semantic_hash": "e4d4836f24807676682aaafffc339059"
+  },
+  "GUI/Input/SliderControl.cs": {
+    "mtime": 1785075744.5967855,
+    "ast_hash": "7e69585c9843b654980a7cc40ef81316",
+    "semantic_hash": "7e69585c9843b654980a7cc40ef81316"
+  },
+  "GUI/Input/ValueBox.cpp": {
+    "mtime": 1759896737.8699682,
+    "ast_hash": "27260bb66221555d2973b8ba3a9cb5a4",
+    "semantic_hash": "27260bb66221555d2973b8ba3a9cb5a4"
+  },
+  "GUI/Input/ValueBox.cs": {
+    "mtime": 1785653776.7477343,
+    "ast_hash": "5b8615783d40167d4666d70a546e32f3",
+    "semantic_hash": "5b8615783d40167d4666d70a546e32f3"
+  },
+  "GUI/Input/ValueBox.h": {
+    "mtime": 1779515377.2865674,
+    "ast_hash": "6160681c815eace2a83260ee7b460531",
+    "semantic_hash": "6160681c815eace2a83260ee7b460531"
+  },
+  "GUI/MainMenu.cpp": {
+    "mtime": 1770739298.861733,
+    "ast_hash": "ea5353a2fbcd52bd5f966f36d5cc6205",
+    "semantic_hash": "ea5353a2fbcd52bd5f966f36d5cc6205"
+  },
+  "GUI/MainMenu.cs": {
+    "mtime": 1785567853.410888,
+    "ast_hash": "0b8a488aa34c069e32ca3e3aa77baaec",
+    "semantic_hash": "0b8a488aa34c069e32ca3e3aa77baaec"
+  },
+  "GUI/MainMenu.h": {
+    "mtime": 1783219535.5225942,
+    "ast_hash": "350896c2ca73a6a26297e72ff29aef57",
+    "semantic_hash": "350896c2ca73a6a26297e72ff29aef57"
+  },
+  "GUI/MainMenuButton.cpp": {
+    "mtime": 1770739669.7671175,
+    "ast_hash": "16964e1030f7bccc40b01a6055afb846",
+    "semantic_hash": "16964e1030f7bccc40b01a6055afb846"
+  },
+  "GUI/MainMenuButton.h": {
+    "mtime": 1782657470.4689417,
+    "ast_hash": "61cdfd6c552ca507af92d1f7035844a6",
+    "semantic_hash": "61cdfd6c552ca507af92d1f7035844a6"
+  },
+  "GUI/NavigationBar.cpp": {
+    "mtime": 1765984251.9850562,
+    "ast_hash": "c6585c3343940a2f0d44144b81e616a8",
+    "semantic_hash": "c6585c3343940a2f0d44144b81e616a8"
+  },
+  "GUI/NavigationBar.cs": {
+    "mtime": 1785567864.7857857,
+    "ast_hash": "563c43a9cdaf7ebe1cc1e7afc5705d47",
+    "semantic_hash": "563c43a9cdaf7ebe1cc1e7afc5705d47"
+  },
+  "GUI/NavigationBar.h": {
+    "mtime": 1782657470.4659421,
+    "ast_hash": "c490ab887e17dc95895f14dab0f74678",
+    "semantic_hash": "c490ab887e17dc95895f14dab0f74678"
+  },
+  "GUI/NavigationButton.cpp": {
+    "mtime": 1769689412.7274156,
+    "ast_hash": "25c0c8bcea5ccf168e8a14f17e4d6dc9",
+    "semantic_hash": "25c0c8bcea5ccf168e8a14f17e4d6dc9"
+  },
+  "GUI/NavigationButton.h": {
+    "mtime": 1782657470.6639152,
+    "ast_hash": "ac5c9389b4c180cbb280f8131557954c",
+    "semantic_hash": "ac5c9389b4c180cbb280f8131557954c"
+  },
+  "GUI/Popups/RenamePopup.cpp": {
+    "mtime": 1783219535.5020075,
+    "ast_hash": "144111edbbb0f7cee46c8ccc255edd5d",
+    "semantic_hash": "144111edbbb0f7cee46c8ccc255edd5d"
+  },
+  "GUI/Popups/RenamePopup.cs": {
+    "mtime": 1785653424.2021124,
+    "ast_hash": "486cf7150dfa7792f33aa111962004bd",
+    "semantic_hash": "486cf7150dfa7792f33aa111962004bd"
+  },
+  "GUI/Popups/RenamePopup.h": {
+    "mtime": 1779515377.4470022,
+    "ast_hash": "4834fdc514e8618a36c04b73ebc6cd3c",
+    "semantic_hash": "4834fdc514e8618a36c04b73ebc6cd3c"
+  },
+  "GUI/Row.cs": {
+    "mtime": 1785567959.5314116,
+    "ast_hash": "48b4dd438049ea934f14137f0348e30d",
+    "semantic_hash": "48b4dd438049ea934f14137f0348e30d"
+  },
+  "GUI/StatusBar.cpp": {
+    "mtime": 1760541163.6044762,
+    "ast_hash": "bd59ed855459fee27871ca89317dae17",
+    "semantic_hash": "bd59ed855459fee27871ca89317dae17"
+  },
+  "GUI/StatusBar.cs": {
+    "mtime": 1785567854.886893,
+    "ast_hash": "8a74dcf44127db678453e4afe4d3e0d9",
+    "semantic_hash": "8a74dcf44127db678453e4afe4d3e0d9"
+  },
+  "GUI/StatusBar.h": {
+    "mtime": 1779515377.2865674,
+    "ast_hash": "dc00340f63751248a29805293cbc1900",
+    "semantic_hash": "dc00340f63751248a29805293cbc1900"
+  },
+  "GUI/Table.cs": {
+    "mtime": 1785566013.47768,
+    "ast_hash": "c24412f244f228ed5486c984353eaab3",
+    "semantic_hash": "c24412f244f228ed5486c984353eaab3"
+  },
+  "GUI/ToolStrip.cpp": {
+    "mtime": 1770731604.4555354,
+    "ast_hash": "517981ee312db91ce669475ba3132a61",
+    "semantic_hash": "517981ee312db91ce669475ba3132a61"
+  },
+  "GUI/ToolStrip.cs": {
+    "mtime": 1785653281.3482087,
+    "ast_hash": "72f90f023905962a9b8ca0fe04a9b405",
+    "semantic_hash": "72f90f023905962a9b8ca0fe04a9b405"
+  },
+  "GUI/ToolStrip.h": {
+    "mtime": 1782657470.5636802,
+    "ast_hash": "b9eb63b0f978830494e0c35c3669d3bf",
+    "semantic_hash": "b9eb63b0f978830494e0c35c3669d3bf"
+  },
+  "GUI/ToolStripButton.cpp": {
+    "mtime": 1770739435.2026298,
+    "ast_hash": "6344fda4ade5fbbbb989a86cc1d5dc33",
+    "semantic_hash": "6344fda4ade5fbbbb989a86cc1d5dc33"
+  },
+  "GUI/ToolStripButton.h": {
+    "mtime": 1782657470.5914428,
+    "ast_hash": "82a1fd8c705b2ebbc752a15e00f42ec5",
+    "semantic_hash": "82a1fd8c705b2ebbc752a15e00f42ec5"
+  },
+  "GUI/ToolStripSeparator.cpp": {
+    "mtime": 1770731586.817756,
+    "ast_hash": "c4b1822e0711a0efbe1bf5898c208df2",
+    "semantic_hash": "c4b1822e0711a0efbe1bf5898c208df2"
+  },
+  "GUI/ToolStripSeparator.h": {
+    "mtime": 1782657470.6089585,
+    "ast_hash": "b47957cb76d0535b6a5819a776e5eecb",
+    "semantic_hash": "b47957cb76d0535b6a5819a776e5eecb"
+  },
+  "GUI/Tree/ActorTreeNode.cpp": {
+    "mtime": 1770561787.8218677,
+    "ast_hash": "5bc335fa25e86d20719600b89d2cffdf",
+    "semantic_hash": "5bc335fa25e86d20719600b89d2cffdf"
+  },
+  "GUI/Tree/ActorTreeNode.cs": {
+    "mtime": 1785653669.5810719,
+    "ast_hash": "6fb9756d1f10a3181c0025cd94e0433f",
+    "semantic_hash": "6fb9756d1f10a3181c0025cd94e0433f"
+  },
+  "GUI/Tree/ActorTreeNode.h": {
+    "mtime": 1782657470.6049595,
+    "ast_hash": "e63dfec0fc032b75b9d5881d34f8df07",
+    "semantic_hash": "e63dfec0fc032b75b9d5881d34f8df07"
+  },
+  "GUI/Tree/Tree.cpp": {
+    "mtime": 1783219535.507665,
+    "ast_hash": "70e91bf2a2f606190feffefb103645b4",
+    "semantic_hash": "70e91bf2a2f606190feffefb103645b4"
+  },
+  "GUI/Tree/Tree.cs": {
+    "mtime": 1785855529.3086765,
+    "ast_hash": "a5f858b1facc7062f0b8e0191b954902",
+    "semantic_hash": "a5f858b1facc7062f0b8e0191b954902"
+  },
+  "GUI/Tree/Tree.h": {
+    "mtime": 1782657470.578193,
+    "ast_hash": "c7391ec02b3bc95b6b20994a9468988f",
+    "semantic_hash": "c7391ec02b3bc95b6b20994a9468988f"
+  },
+  "GUI/Tree/TreeNode.cpp": {
+    "mtime": 1766073155.1777513,
+    "ast_hash": "d4b24fcca45b5cb3ea0b07300b963426",
+    "semantic_hash": "d4b24fcca45b5cb3ea0b07300b963426"
+  },
+  "GUI/Tree/TreeNode.cs": {
+    "mtime": 1785854317.3599691,
+    "ast_hash": "68a2b194719edaaf0b110d29d96ad632",
+    "semantic_hash": "68a2b194719edaaf0b110d29d96ad632"
+  },
+  "GUI/Tree/TreeNode.h": {
+    "mtime": 1782657470.5466611,
+    "ast_hash": "ff88bd5902b8e9bb03cb1c2fbc7d6d7f",
+    "semantic_hash": "ff88bd5902b8e9bb03cb1c2fbc7d6d7f"
+  },
+  "GUI/Tree/TreeNodeWithAddons.cs": {
+    "mtime": 1785075744.4623084,
+    "ast_hash": "5413e9a69a11428c98cf71d12b0108da",
+    "semantic_hash": "5413e9a69a11428c98cf71d12b0108da"
+  },
+  "GUI/Viewport/Previews/TexturePreview.cpp": {
+    "mtime": 1761448988.0309675,
+    "ast_hash": "dd6edab4de5e1507cdd058dcfef065ad",
+    "semantic_hash": "dd6edab4de5e1507cdd058dcfef065ad"
+  },
+  "GUI/Viewport/Previews/TexturePreview.cs": {
+    "mtime": 1785639314.4721408,
+    "ast_hash": "106c442980e34177e689de92a76cf6f5",
+    "semantic_hash": "106c442980e34177e689de92a76cf6f5"
+  },
+  "GUI/Viewport/Previews/TexturePreview.h": {
+    "mtime": 1779515377.7899613,
+    "ast_hash": "610de2451cf6c569ce0debd7d4a5417b",
+    "semantic_hash": "610de2451cf6c569ce0debd7d4a5417b"
+  },
+  "GUI/Viewport/RenderOutputViewport.cpp": {
+    "mtime": 1766809329.3763661,
+    "ast_hash": "e2c5e7be21693da3bf76d08a1e621e76",
+    "semantic_hash": "e2c5e7be21693da3bf76d08a1e621e76"
+  },
+  "GUI/Viewport/RenderOutputViewport.cs": {
+    "mtime": 1784430090.6420238,
+    "ast_hash": "1d856a840696697e087d39cedb2f2bba",
+    "semantic_hash": "1d856a840696697e087d39cedb2f2bba"
+  },
+  "GUI/Viewport/RenderOutputViewport.h": {
+    "mtime": 1779515377.2885673,
+    "ast_hash": "a86451346a46c0bf5682c7f7145d0e30",
+    "semantic_hash": "a86451346a46c0bf5682c7f7145d0e30"
+  },
+  "ManagedEditor.cs": {
+    "mtime": 1786152438.7009804,
+    "ast_hash": "de13b6923827a2776ca5514549a1ec6a",
+    "semantic_hash": "de13b6923827a2776ca5514549a1ec6a"
+  },
+  "Modules/AssetDatabaseModule.cpp": {
+    "mtime": 1783219535.538704,
+    "ast_hash": "0a755f2964224fd2865a8a3879a9e7a2",
+    "semantic_hash": "0a755f2964224fd2865a8a3879a9e7a2"
+  },
+  "Modules/AssetDatabaseModule.h": {
+    "mtime": 1783219535.5417037,
+    "ast_hash": "a403f4931dd7a54873a816505359b2cc",
+    "semantic_hash": "a403f4931dd7a54873a816505359b2cc"
+  },
+  "Modules/AssetImportingModule.cpp": {
+    "mtime": 1783219535.5458727,
+    "ast_hash": "6e3f1d76ecf7f72c437c8ff00d81973c",
+    "semantic_hash": "6e3f1d76ecf7f72c437c8ff00d81973c"
+  },
+  "Modules/AssetImportingModule.h": {
+    "mtime": 1783219535.5493836,
+    "ast_hash": "e5001bdbba7016de835b9739fd60f153",
+    "semantic_hash": "e5001bdbba7016de835b9739fd60f153"
+  },
+  "Modules/EditorModule.cpp": {
+    "mtime": 1759764976.0234303,
+    "ast_hash": "1d204784eddb37a5ce62b4d12e289720",
+    "semantic_hash": "1d204784eddb37a5ce62b4d12e289720"
+  },
+  "Modules/EditorModule.cs": {
+    "mtime": 1785562518.5439515,
+    "ast_hash": "e968d66221f1a388e725a6f5376d85ce",
+    "semantic_hash": "e968d66221f1a388e725a6f5376d85ce"
+  },
+  "Modules/EditorModule.h": {
+    "mtime": 1779515377.2885673,
+    "ast_hash": "51e68d0bd7466c5a3029830550c5d13e",
+    "semantic_hash": "51e68d0bd7466c5a3029830550c5d13e"
+  },
+  "Modules/SceneGraphModule.cpp": {
+    "mtime": 1769092000.1056843,
+    "ast_hash": "858e3dc582a07ac3104852b0ddb59bf1",
+    "semantic_hash": "858e3dc582a07ac3104852b0ddb59bf1"
+  },
+  "Modules/SceneGraphModule.h": {
+    "mtime": 1783219535.5567644,
+    "ast_hash": "11b2c8e735e123352724f726034409da",
+    "semantic_hash": "11b2c8e735e123352724f726034409da"
+  },
+  "Modules/SceneModule.cpp": {
+    "mtime": 1784638517.6826298,
+    "ast_hash": "a25edd4a450ed97486fe60da90355a74",
+    "semantic_hash": "a25edd4a450ed97486fe60da90355a74"
+  },
+  "Modules/SceneModule.cs": {
+    "mtime": 1785562603.3652446,
+    "ast_hash": "e7d3a8aac73063ef0238701749e7c733",
+    "semantic_hash": "e7d3a8aac73063ef0238701749e7c733"
+  },
+  "Modules/SceneModule.h": {
+    "mtime": 1783219535.5633976,
+    "ast_hash": "d790150c32b4f9f42f50b9376cb9a17a",
+    "semantic_hash": "d790150c32b4f9f42f50b9376cb9a17a"
+  },
+  "Modules/SettingModule.cpp": {
+    "mtime": 1783219535.5666993,
+    "ast_hash": "e926d8d342d48e127df0d3e901943504",
+    "semantic_hash": "e926d8d342d48e127df0d3e901943504"
+  },
+  "Modules/SettingModule.h": {
+    "mtime": 1783219535.5716126,
+    "ast_hash": "aeceb5479c3294633e5bf9aa61b6ea37",
+    "semantic_hash": "aeceb5479c3294633e5bf9aa61b6ea37"
+  },
+  "Modules/ToolbarBarModule.cpp": {
+    "mtime": 1759764977.9106896,
+    "ast_hash": "8e60948bce7d04d1c9b9f2e0364a472d",
+    "semantic_hash": "8e60948bce7d04d1c9b9f2e0364a472d"
+  },
+  "Modules/ToolbarBarModule.h": {
+    "mtime": 1779515377.4490018,
+    "ast_hash": "7da83e6e5621093723335d08ba087c17",
+    "semantic_hash": "7da83e6e5621093723335d08ba087c17"
+  },
+  "Modules/UIModule.cpp": {
+    "mtime": 1785563516.9526372,
+    "ast_hash": "0fb77513af9fa9e039c80758eac6440f",
+    "semantic_hash": "0fb77513af9fa9e039c80758eac6440f"
+  },
+  "Modules/UIModule.cs": {
+    "mtime": 1785562580.9897044,
+    "ast_hash": "e32869bff99ac79a5f43772189b503b9",
+    "semantic_hash": "e32869bff99ac79a5f43772189b503b9"
+  },
+  "Modules/UIModule.h": {
+    "mtime": 1785563512.4680257,
+    "ast_hash": "64d913245aa2d3a8c0272972ed3b2a52",
+    "semantic_hash": "64d913245aa2d3a8c0272972ed3b2a52"
+  },
+  "Modules/WindowsModule.cpp": {
+    "mtime": 1784983043.5697675,
+    "ast_hash": "855763be56251d25e0cf2c32bc431997",
+    "semantic_hash": "855763be56251d25e0cf2c32bc431997"
+  },
+  "Modules/WindowsModule.cs": {
+    "mtime": 1785562591.707585,
+    "ast_hash": "701a3e16447c854a2a550f131bd8aeb5",
+    "semantic_hash": "701a3e16447c854a2a550f131bd8aeb5"
+  },
+  "Modules/WindowsModule.h": {
+    "mtime": 1783219535.5791252,
+    "ast_hash": "a5890b79da4c44d17973a902c1d954cd",
+    "semantic_hash": "a5890b79da4c44d17973a902c1d954cd"
+  },
+  "Resource/ContentBrowser.cs": {
+    "mtime": 1785075865.048704,
+    "ast_hash": "dfc124c2a8d304fefd01b3a460a2fd77",
+    "semantic_hash": "dfc124c2a8d304fefd01b3a460a2fd77"
+  },
+  "Resource/ContentNavigationButton.cpp": {
+    "mtime": 1770739967.5330985,
+    "ast_hash": "da350f99c04432de7388cc1d347f2160",
+    "semantic_hash": "da350f99c04432de7388cc1d347f2160"
+  },
+  "Resource/ContentNavigationButton.cs": {
+    "mtime": 1784640648.7525294,
+    "ast_hash": "9f43fc3070e2667c3ddc3879234118b8",
+    "semantic_hash": "9f43fc3070e2667c3ddc3879234118b8"
+  },
+  "Resource/ContentNavigationButton.h": {
+    "mtime": 1782657470.4267554,
+    "ast_hash": "89dd123a235db8b73f6159c22266896b",
+    "semantic_hash": "89dd123a235db8b73f6159c22266896b"
+  },
+  "Resource/ContentView.cpp": {
+    "mtime": 1783219535.6645648,
+    "ast_hash": "23ddfa7e425480a9c70ef6a82c728607",
+    "semantic_hash": "23ddfa7e425480a9c70ef6a82c728607"
+  },
+  "Resource/ContentView.cs": {
+    "mtime": 1786152456.5512562,
+    "ast_hash": "ffb1ff9a05d32285ded0218b929b31c7",
+    "semantic_hash": "ffb1ff9a05d32285ded0218b929b31c7"
+  },
+  "Resource/ContentView.h": {
+    "mtime": 1783219535.668072,
+    "ast_hash": "e41e675e83b1e20d1b49e8403dd83a9f",
+    "semantic_hash": "e41e675e83b1e20d1b49e8403dd83a9f"
+  },
+  "Resource/Import/FolderImportEntry.cpp": {
+    "mtime": 1783219535.5831225,
+    "ast_hash": "bd450c19890a698d4d9b3c2dd9fc26ee",
+    "semantic_hash": "bd450c19890a698d4d9b3c2dd9fc26ee"
+  },
+  "Resource/Import/FolderImportEntry.h": {
+    "mtime": 1779515377.2895672,
+    "ast_hash": "681328977ad7a6fd432345c345c54409",
+    "semantic_hash": "681328977ad7a6fd432345c345c54409"
+  },
+  "Resource/Import/ImportFileEntry.cpp": {
+    "mtime": 1783219535.5887823,
+    "ast_hash": "a1164eefd5354e80a33524d7beed5878",
+    "semantic_hash": "a1164eefd5354e80a33524d7beed5878"
+  },
+  "Resource/Import/ImportFileEntry.cs": {
+    "mtime": 1785076250.3111377,
+    "ast_hash": "5f43fe3934445309abec3201bd283cea",
+    "semantic_hash": "5f43fe3934445309abec3201bd283cea"
+  },
+  "Resource/Import/ImportFileEntry.h": {
+    "mtime": 1783219535.5917864,
+    "ast_hash": "bbb4551faa738fbd24a22d04829d382f",
+    "semantic_hash": "bbb4551faa738fbd24a22d04829d382f"
+  },
+  "Resource/Import/ImportRequest.h": {
+    "mtime": 1783219535.594786,
+    "ast_hash": "c971f36bf210405af239e0b9628e9a03",
+    "semantic_hash": "c971f36bf210405af239e0b9628e9a03"
+  },
+  "Resource/Import/ModelImportEntry.cpp": {
+    "mtime": 1766327720.766331,
+    "ast_hash": "80af6df9f9e292ba23618dc2a6e841b7",
+    "semantic_hash": "80af6df9f9e292ba23618dc2a6e841b7"
+  },
+  "Resource/Import/ModelImportEntry.h": {
+    "mtime": 1779515377.451002,
+    "ast_hash": "2626cd9d681b474465c4368e8b850a59",
+    "semantic_hash": "2626cd9d681b474465c4368e8b850a59"
+  },
+  "Resource/Import/TextureImportEntry.cpp": {
+    "mtime": 1783219535.599867,
+    "ast_hash": "0f490a2559e3866f8fe8ae1d800a8a08",
+    "semantic_hash": "0f490a2559e3866f8fe8ae1d800a8a08"
+  },
+  "Resource/Import/TextureImportEntry.h": {
+    "mtime": 1779515377.6198335,
+    "ast_hash": "9af379598d931b9668f0b1cbe67262a7",
+    "semantic_hash": "9af379598d931b9668f0b1cbe67262a7"
+  },
+  "Resource/Items/AssetItem.cpp": {
+    "mtime": 1770739642.490074,
+    "ast_hash": "7ede5aff96db73a57f383ac20e6a8a4b",
+    "semantic_hash": "7ede5aff96db73a57f383ac20e6a8a4b"
+  },
+  "Resource/Items/AssetItem.h": {
+    "mtime": 1782657470.5351515,
+    "ast_hash": "afa24a00804e186caf612959c0947a62",
+    "semantic_hash": "afa24a00804e186caf612959c0947a62"
+  },
+  "Resource/Items/BinaryAssetItem.cpp": {
+    "mtime": 1762870280.236874,
+    "ast_hash": "f0f4798b4d00d8f0c2f7bf1b3ed8f2b9",
+    "semantic_hash": "f0f4798b4d00d8f0c2f7bf1b3ed8f2b9"
+  },
+  "Resource/Items/BinaryAssetItem.h": {
+    "mtime": 1782657470.526651,
+    "ast_hash": "41fd2ac18f06a57264b8b99bf57b32f2",
+    "semantic_hash": "41fd2ac18f06a57264b8b99bf57b32f2"
+  },
+  "Resource/Items/ContentFolder.cpp": {
+    "mtime": 1783219535.6086504,
+    "ast_hash": "80e6ef28a4077275379718792e003ee4",
+    "semantic_hash": "80e6ef28a4077275379718792e003ee4"
+  },
+  "Resource/Items/ContentFolder.h": {
+    "mtime": 1782657470.541654,
+    "ast_hash": "7ac8c71ca316c93fe05a6e64262b208f",
+    "semantic_hash": "7ac8c71ca316c93fe05a6e64262b208f"
+  },
+  "Resource/Items/ContentItem.cpp": {
+    "mtime": 1783219535.6123748,
+    "ast_hash": "9db55f35c74574c2372f1acea63c4fd9",
+    "semantic_hash": "9db55f35c74574c2372f1acea63c4fd9"
+  },
+  "Resource/Items/ContentItem.cs": {
+    "mtime": 1785566016.071656,
+    "ast_hash": "1d43fcfaf01dd8c59302522a5d47ff76",
+    "semantic_hash": "1d43fcfaf01dd8c59302522a5d47ff76"
+  },
+  "Resource/Items/ContentItem.h": {
+    "mtime": 1783219535.6155703,
+    "ast_hash": "7c6af8e923367604c68328d2f3171bde",
+    "semantic_hash": "7c6af8e923367604c68328d2f3171bde"
+  },
+  "Resource/Items/FileItem.cpp": {
+    "mtime": 1770739598.7899957,
+    "ast_hash": "1bb0af6717a950e0727e4edb8a83df37",
+    "semantic_hash": "1bb0af6717a950e0727e4edb8a83df37"
+  },
+  "Resource/Items/FileItem.h": {
+    "mtime": 1782657470.5591733,
+    "ast_hash": "69355e58a771fedd3e06d5dfc328e2ec",
+    "semantic_hash": "69355e58a771fedd3e06d5dfc328e2ec"
+  },
+  "Resource/Items/JsonAssetItem.cpp": {
+    "mtime": 1765893980.093802,
+    "ast_hash": "ac6d15a26955ae537c413d8fc67436dd",
+    "semantic_hash": "ac6d15a26955ae537c413d8fc67436dd"
+  },
+  "Resource/Items/JsonAssetItem.h": {
+    "mtime": 1782657470.5711873,
+    "ast_hash": "46d9d0d0ec7ee5f350baa38f5dc9b9be",
+    "semantic_hash": "46d9d0d0ec7ee5f350baa38f5dc9b9be"
+  },
+  "Resource/Items/NewItem.cpp": {
+    "mtime": 1770739562.9556863,
+    "ast_hash": "79efac9225c778d45fef7fa2dde9a755",
+    "semantic_hash": "79efac9225c778d45fef7fa2dde9a755"
+  },
+  "Resource/Items/NewItem.h": {
+    "mtime": 1782657470.582703,
+    "ast_hash": "794d96820a27cf4fc135c31f6f2be284",
+    "semantic_hash": "794d96820a27cf4fc135c31f6f2be284"
+  },
+  "Resource/Items/SceneItem.cpp": {
+    "mtime": 1764600553.3103983,
+    "ast_hash": "c20281d758d8c4a983a5fb9f0e6c78ac",
+    "semantic_hash": "c20281d758d8c4a983a5fb9f0e6c78ac"
+  },
+  "Resource/Items/SceneItem.h": {
+    "mtime": 1782657470.5872056,
+    "ast_hash": "61ab0941c65a10130c599fc14dcf4a84",
+    "semantic_hash": "61ab0941c65a10130c599fc14dcf4a84"
+  },
+  "Resource/Opreate/AssetOperate.cpp": {
+    "mtime": 1770739369.3960884,
+    "ast_hash": "bc9ac3d04c11cda3fb2d1f12659b38f3",
+    "semantic_hash": "bc9ac3d04c11cda3fb2d1f12659b38f3"
+  },
+  "Resource/Opreate/AssetOperate.h": {
+    "mtime": 1782657470.6313362,
+    "ast_hash": "f2fb0f0f560e52e497d77eb82a049479",
+    "semantic_hash": "f2fb0f0f560e52e497d77eb82a049479"
+  },
+  "Resource/Opreate/BinaryAssetOperate.cpp": {
+    "mtime": 1770739377.0482574,
+    "ast_hash": "dd68b0df8b7b419ff933f888f6565240",
+    "semantic_hash": "dd68b0df8b7b419ff933f888f6565240"
+  },
+  "Resource/Opreate/BinaryAssetOperate.h": {
+    "mtime": 1782657470.6733408,
+    "ast_hash": "eeb86274c68e806331c811630bab5e73",
+    "semantic_hash": "eeb86274c68e806331c811630bab5e73"
+  },
+  "Resource/Opreate/ContentOperate.cpp": {
+    "mtime": 1770739510.64722,
+    "ast_hash": "b2ae0124357c359cc4aa90f8ebc4f45a",
+    "semantic_hash": "b2ae0124357c359cc4aa90f8ebc4f45a"
+  },
+  "Resource/Opreate/ContentOperate.cs": {
+    "mtime": 1784640653.689232,
+    "ast_hash": "beecfbd79e17ccbc72880b4a22f0e0e1",
+    "semantic_hash": "beecfbd79e17ccbc72880b4a22f0e0e1"
+  },
+  "Resource/Opreate/ContentOperate.h": {
+    "mtime": 1783219535.6305664,
+    "ast_hash": "b987d2efda1e496c623b2e38b3fe5a54",
+    "semantic_hash": "b987d2efda1e496c623b2e38b3fe5a54"
+  },
+  "Resource/Opreate/ModelOperate.cpp": {
+    "mtime": 1770739417.9755008,
+    "ast_hash": "3591f18899fb3c45fdffaec224322bcd",
+    "semantic_hash": "3591f18899fb3c45fdffaec224322bcd"
+  },
+  "Resource/Opreate/ModelOperate.h": {
+    "mtime": 1782657470.679342,
+    "ast_hash": "ebaaaa9bf418fa525b32b921da97c873",
+    "semantic_hash": "ebaaaa9bf418fa525b32b921da97c873"
+  },
+  "Resource/Opreate/SceneOperate.cpp": {
+    "mtime": 1770739824.9625916,
+    "ast_hash": "e9c7bb0f65a437e07b3681c3b914ce14",
+    "semantic_hash": "e9c7bb0f65a437e07b3681c3b914ce14"
+  },
+  "Resource/Opreate/SceneOperate.h": {
+    "mtime": 1782657470.666913,
+    "ast_hash": "95c7ab79f50e62141cd71a30d0a32247",
+    "semantic_hash": "95c7ab79f50e62141cd71a30d0a32247"
+  },
+  "Resource/Opreate/TextureOperate.cpp": {
+    "mtime": 1770739598.7847729,
+    "ast_hash": "7cf8bef8e71b1a893a7b1d71762e3e39",
+    "semantic_hash": "7cf8bef8e71b1a893a7b1d71762e3e39"
+  },
+  "Resource/Opreate/TextureOperate.h": {
+    "mtime": 1782657470.6828718,
+    "ast_hash": "1cd3e227c1810afb46fecc423d4b462b",
+    "semantic_hash": "1cd3e227c1810afb46fecc423d4b462b"
+  },
+  "Resource/ResourceInterop.cpp": {
+    "mtime": 1784640128.1664405,
+    "ast_hash": "d9d07d702811384936657fa61b1160f4",
+    "semantic_hash": "d9d07d702811384936657fa61b1160f4"
+  },
+  "Resource/ResourceInterop.cs": {
+    "mtime": 1785075744.5777917,
+    "ast_hash": "f515ab3161477e432d9f71dca04da281",
+    "semantic_hash": "f515ab3161477e432d9f71dca04da281"
+  },
+  "Resource/ResourceInterop.h": {
+    "mtime": 1784640126.423589,
+    "ast_hash": "6e4e70f37703c90c25ed02772ecab67a",
+    "semantic_hash": "6e4e70f37703c90c25ed02772ecab67a"
+  },
+  "Resource/Thumbnails/PreviewsCache.cpp": {
+    "mtime": 1786155460.016488,
+    "ast_hash": "d6d9335f16e906fa1f1af786831ea741",
+    "semantic_hash": "d6d9335f16e906fa1f1af786831ea741"
+  },
+  "Resource/Thumbnails/PreviewsCache.h": {
+    "mtime": 1785768231.3645072,
+    "ast_hash": "ebf4ca55439e8295a1dc7f30cbd344ef",
+    "semantic_hash": "ebf4ca55439e8295a1dc7f30cbd344ef"
+  },
+  "Resource/Thumbnails/ThumbnailRequest.cpp": {
+    "mtime": 1761318088.7936108,
+    "ast_hash": "2c877ef4157b4b188da92f218ad1c726",
+    "semantic_hash": "2c877ef4157b4b188da92f218ad1c726"
+  },
+  "Resource/Thumbnails/ThumbnailRequest.h": {
+    "mtime": 1783219535.6434572,
+    "ast_hash": "13474c57e8159ab18dc65ff3e5c36c54",
+    "semantic_hash": "13474c57e8159ab18dc65ff3e5c36c54"
+  },
+  "Resource/Thumbnails/Thumbnails.cpp": {
+    "mtime": 1783219535.6483712,
+    "ast_hash": "0fc307beca20adb89d4d3634f668db1e",
+    "semantic_hash": "0fc307beca20adb89d4d3634f668db1e"
+  },
+  "Resource/Thumbnails/Thumbnails.cs": {
+    "mtime": 1785075744.574515,
+    "ast_hash": "b0f212344b7f34d53f1eee4f7203d765",
+    "semantic_hash": "b0f212344b7f34d53f1eee4f7203d765"
+  },
+  "Resource/Thumbnails/Thumbnails.h": {
+    "mtime": 1779515377.9681885,
+    "ast_hash": "499add35c096be709925216c0fd63428",
+    "semantic_hash": "499add35c096be709925216c0fd63428"
+  },
+  "Resource/Tree/ContentTreeNode.cpp": {
+    "mtime": 1770739942.4215865,
+    "ast_hash": "d0e502f5722525871a02468e25851278",
+    "semantic_hash": "d0e502f5722525871a02468e25851278"
+  },
+  "Resource/Tree/ContentTreeNode.cs": {
+    "mtime": 1785075744.5724232,
+    "ast_hash": "8c74d69a16f61df6f91da6b37a2ac2be",
+    "semantic_hash": "8c74d69a16f61df6f91da6b37a2ac2be"
+  },
+  "Resource/Tree/ContentTreeNode.h": {
+    "mtime": 1782657470.4875236,
+    "ast_hash": "73c7fd0361fc6d9950e57c70eb22b434",
+    "semantic_hash": "73c7fd0361fc6d9950e57c70eb22b434"
+  },
+  "Resource/Tree/MainContentTreeNode.cpp": {
+    "mtime": 1783219535.655049,
+    "ast_hash": "c3f6c496a9791af7cb786fbce66a1274",
+    "semantic_hash": "c3f6c496a9791af7cb786fbce66a1274"
+  },
+  "Resource/Tree/MainContentTreeNode.h": {
+    "mtime": 1782657470.4774537,
+    "ast_hash": "8b9ce364d3817211eb8fae6b7cd7cda5",
+    "semantic_hash": "8b9ce364d3817211eb8fae6b7cd7cda5"
+  },
+  "Resource/Tree/ProjectTreeNode.cpp": {
+    "mtime": 1770739916.1544046,
+    "ast_hash": "a92b84938df2b1041ec39a3638ba79d9",
+    "semantic_hash": "a92b84938df2b1041ec39a3638ba79d9"
+  },
+  "Resource/Tree/ProjectTreeNode.h": {
+    "mtime": 1782657470.4744537,
+    "ast_hash": "d47481cab61f4109420149ee903f86ff",
+    "semantic_hash": "d47481cab61f4109420149ee903f86ff"
+  },
+  "SceneGraph/ActorChildNode.cpp": {
+    "mtime": 1783219535.6830235,
+    "ast_hash": "8572f101b3b225ee4af380b63df4d462",
+    "semantic_hash": "8572f101b3b225ee4af380b63df4d462"
+  },
+  "SceneGraph/ActorChildNode.h": {
+    "mtime": 1783219535.6865356,
+    "ast_hash": "6c4c3b53bee6df26adc593e7b0c682bf",
+    "semantic_hash": "6c4c3b53bee6df26adc593e7b0c682bf"
+  },
+  "SceneGraph/ActorGraphNode.cpp": {
+    "mtime": 1772812239.0581417,
+    "ast_hash": "02484aa162408127f776a17e722ede19",
+    "semantic_hash": "02484aa162408127f776a17e722ede19"
+  },
+  "SceneGraph/ActorGraphNode.cs": {
+    "mtime": 1784983308.1821158,
+    "ast_hash": "b99e983c542db28db54ff25263491703",
+    "semantic_hash": "b99e983c542db28db54ff25263491703"
+  },
+  "SceneGraph/ActorGraphNode.h": {
+    "mtime": 1782657470.4454079,
+    "ast_hash": "4a657bacfc14b3def7a91d44cb6bd9df",
+    "semantic_hash": "4a657bacfc14b3def7a91d44cb6bd9df"
+  },
+  "SceneGraph/Actor/CameraGraphNode.cpp": {
+    "mtime": 1770731145.1219459,
+    "ast_hash": "813c083fa5bc7d33f9c88aff41385873",
+    "semantic_hash": "813c083fa5bc7d33f9c88aff41385873"
+  },
+  "SceneGraph/Actor/CameraGraphNode.h": {
+    "mtime": 1782657470.5301464,
+    "ast_hash": "a98df4beeaedc1f2c1a6dcc6f7206452",
+    "semantic_hash": "a98df4beeaedc1f2c1a6dcc6f7206452"
+  },
+  "SceneGraph/Actor/DirectionalLightGraphNode.cpp": {
+    "mtime": 1770731022.3325431,
+    "ast_hash": "20c5932305da2754f846b26b39b49873",
+    "semantic_hash": "20c5932305da2754f846b26b39b49873"
+  },
+  "SceneGraph/Actor/DirectionalLightGraphNode.h": {
+    "mtime": 1782657470.5175717,
+    "ast_hash": "eaf5f887ac46224a284e4f4886947a89",
+    "semantic_hash": "eaf5f887ac46224a284e4f4886947a89"
+  },
+  "SceneGraph/Actor/PointLightGraphNode.cpp": {
+    "mtime": 1770731045.6531925,
+    "ast_hash": "8a58d3529cb0455487c0cbb9c496f739",
+    "semantic_hash": "8a58d3529cb0455487c0cbb9c496f739"
+  },
+  "SceneGraph/Actor/PointLightGraphNode.h": {
+    "mtime": 1782657470.5095527,
+    "ast_hash": "a2b84261859ea1b570fd9ad07e7a220c",
+    "semantic_hash": "a2b84261859ea1b570fd9ad07e7a220c"
+  },
+  "SceneGraph/Actor/SceneGraphNode.cpp": {
+    "mtime": 1770731516.4390569,
+    "ast_hash": "bf40b1e672e729ef9dcb2e0498cf3cc0",
+    "semantic_hash": "bf40b1e672e729ef9dcb2e0498cf3cc0"
+  },
+  "SceneGraph/Actor/SceneGraphNode.h": {
+    "mtime": 1782657470.50455,
+    "ast_hash": "ce5ffbe7825c6afe4e78cec80983f926",
+    "semantic_hash": "ce5ffbe7825c6afe4e78cec80983f926"
+  },
+  "SceneGraph/Actor/SkyGraphNode.cpp": {
+    "mtime": 1770731097.165005,
+    "ast_hash": "b21c34635c83fb9a0a0612445629102e",
+    "semantic_hash": "b21c34635c83fb9a0a0612445629102e"
+  },
+  "SceneGraph/Actor/SkyGraphNode.h": {
+    "mtime": 1782657470.5015576,
+    "ast_hash": "f2ce2774c5ae1673adbac5b026a486fa",
+    "semantic_hash": "f2ce2774c5ae1673adbac5b026a486fa"
+  },
+  "SceneGraph/Actor/StaticModelGraphNode.cpp": {
+    "mtime": 1770731097.1600044,
+    "ast_hash": "9af2c69543593b25bef18ddd9d3ef09b",
+    "semantic_hash": "9af2c69543593b25bef18ddd9d3ef09b"
+  },
+  "SceneGraph/Actor/StaticModelGraphNode.h": {
+    "mtime": 1782657470.490514,
+    "ast_hash": "d619e889a1c4073f3a2745c4bed2d7c6",
+    "semantic_hash": "d619e889a1c4073f3a2745c4bed2d7c6"
+  },
+  "SceneGraph/RootGraphNode.cpp": {
+    "mtime": 1762959661.8722813,
+    "ast_hash": "11ac2e3be8b70cec9423d3962b9b1ee5",
+    "semantic_hash": "11ac2e3be8b70cec9423d3962b9b1ee5"
+  },
+  "SceneGraph/RootGraphNode.h": {
+    "mtime": 1779515377.7949636,
+    "ast_hash": "468cfcff22d7db7940fa69973190843c",
+    "semantic_hash": "468cfcff22d7db7940fa69973190843c"
+  },
+  "SceneGraph/SceneGraphFactory.cs": {
+    "mtime": 1785075744.569359,
+    "ast_hash": "0f0ea3e25c1b86b99de1e149d307bad2",
+    "semantic_hash": "0f0ea3e25c1b86b99de1e149d307bad2"
+  },
+  "SceneGraph/SceneGraphNode.cs": {
+    "mtime": 1785075744.5671232,
+    "ast_hash": "48c9601a9f5ca1e71674c8921230e113",
+    "semantic_hash": "48c9601a9f5ca1e71674c8921230e113"
+  },
+  "SceneGraph/ScenesGraphNode.cpp": {
+    "mtime": 1772812239.0643694,
+    "ast_hash": "35b02e50470b85604b27354c3039f5a2",
+    "semantic_hash": "35b02e50470b85604b27354c3039f5a2"
+  },
+  "SceneGraph/ScenesGraphNode.h": {
+    "mtime": 1783219535.6945398,
+    "ast_hash": "6fcfd7ab31be5b6d2bdc808acecfc3e8",
+    "semantic_hash": "6fcfd7ab31be5b6d2bdc808acecfc3e8"
+  },
+  "ScriptsBuilder/ScriptsBuilder.h": {
+    "mtime": 1779515377.6258328,
+    "ast_hash": "d6d69770a0cfdb22ac1789e43e8dc17d",
+    "semantic_hash": "d6d69770a0cfdb22ac1789e43e8dc17d"
+  },
+  "Test.cpp": {
+    "mtime": 1783737640.7900293,
+    "ast_hash": "63f2d540586c65f394602138d070b104",
+    "semantic_hash": "63f2d540586c65f394602138d070b104"
+  },
+  "Test.h": {
+    "mtime": 1779515377.7949636,
+    "ast_hash": "933d17ffbddda5701febbaf129be5eb8",
+    "semantic_hash": "933d17ffbddda5701febbaf129be5eb8"
+  },
+  "ThirdParty/cgltf/cgltf.h": {
+    "mtime": 1778426128.4680896,
+    "ast_hash": "ccc7fa00ae489d838fdc75ac56028c1b",
+    "semantic_hash": "ccc7fa00ae489d838fdc75ac56028c1b"
+  },
+  "ThirdParty/cgltf/cgltf_write.h": {
+    "mtime": 1778426128.4702115,
+    "ast_hash": "d304543223f2ad98eb9e148c21eed69e",
+    "semantic_hash": "d304543223f2ad98eb9e148c21eed69e"
+  },
+  "ThirdParty/delabella/delabella.cpp": {
+    "mtime": 1699930855.0,
+    "ast_hash": "c9d5a3638d7ebbcbeff03c1353301358",
+    "semantic_hash": "c9d5a3638d7ebbcbeff03c1353301358"
+  },
+  "ThirdParty/delabella/delabella.h": {
+    "mtime": 1778426128.4717903,
+    "ast_hash": "28f87071c544a1ef07681f21a0347c96",
+    "semantic_hash": "28f87071c544a1ef07681f21a0347c96"
+  },
+  "ThirdParty/delabella/predicates.h": {
+    "mtime": 1778426128.4728618,
+    "ast_hash": "f41c40e39f811dd423e8c27fff3d98fd",
+    "semantic_hash": "f41c40e39f811dd423e8c27fff3d98fd"
+  },
+  "ThirdParty/pfd/portable-file-dialogs.h": {
+    "mtime": 1778426128.4757116,
+    "ast_hash": "364d4d97e6b5a4e435ff9a3cf40a7a7c",
+    "semantic_hash": "364d4d97e6b5a4e435ff9a3cf40a7a7c"
+  },
+  "Viewport/Cameras/FPSCamera.cpp": {
+    "mtime": 1767419677.7651033,
+    "ast_hash": "29699efe9b36b08db7b110a2c5f168fa",
+    "semantic_hash": "29699efe9b36b08db7b110a2c5f168fa"
+  },
+  "Viewport/Cameras/FPSCamera.h": {
+    "mtime": 1783219535.7128985,
+    "ast_hash": "f6d1b58ef6187c38c522a667809f949b",
+    "semantic_hash": "f6d1b58ef6187c38c522a667809f949b"
+  },
+  "Viewport/Cameras/ViewportCamera.cpp": {
+    "mtime": 1783219535.7183914,
+    "ast_hash": "91f2f07bc48bc2b85121430383879eb2",
+    "semantic_hash": "91f2f07bc48bc2b85121430383879eb2"
+  },
+  "Viewport/Cameras/ViewportCamera.h": {
+    "mtime": 1783219535.7241857,
+    "ast_hash": "e45beb24fd6f07205cfb3caca85627b8",
+    "semantic_hash": "e45beb24fd6f07205cfb3caca85627b8"
+  },
+  "Viewport/EditorGizmoViewport.cpp": {
+    "mtime": 1766589721.7881987,
+    "ast_hash": "77634906f2c842449b07467d7826e7d4",
+    "semantic_hash": "77634906f2c842449b07467d7826e7d4"
+  },
+  "Viewport/EditorGizmoViewport.h": {
+    "mtime": 1779515377.7960799,
+    "ast_hash": "6aa83e283d1e30ed3b819740fd58fe7e",
+    "semantic_hash": "6aa83e283d1e30ed3b819740fd58fe7e"
+  },
+  "Viewport/EditorViewport.cpp": {
+    "mtime": 1773066228.5841856,
+    "ast_hash": "287e6ad53e691bbe37f70949fdaa1541",
+    "semantic_hash": "287e6ad53e691bbe37f70949fdaa1541"
+  },
+  "Viewport/EditorViewport.h": {
+    "mtime": 1783219535.7457595,
+    "ast_hash": "f2b7d3c2adef0e6a16a61bdd653b3b51",
+    "semantic_hash": "f2b7d3c2adef0e6a16a61bdd653b3b51"
+  },
+  "Viewport/MainEditorGizmoViewport.cpp": {
+    "mtime": 1766586056.54087,
+    "ast_hash": "11b284571efbf4c1fb56f8c33736f372",
+    "semantic_hash": "11b284571efbf4c1fb56f8c33736f372"
+  },
+  "Viewport/MainEditorGizmoViewport.h": {
+    "mtime": 1779515377.797089,
+    "ast_hash": "ad9f2c8989b1fa106e46003b382321d3",
+    "semantic_hash": "ad9f2c8989b1fa106e46003b382321d3"
+  },
+  "Viewport/Widgets/ViewportWidgetButton.cpp": {
+    "mtime": 1766758316.6176283,
+    "ast_hash": "8d4c2e1c2dc5d99e012753c04d6bd190",
+    "semantic_hash": "8d4c2e1c2dc5d99e012753c04d6bd190"
+  },
+  "Viewport/Widgets/ViewportWidgetButton.h": {
+    "mtime": 1779515377.2935674,
+    "ast_hash": "b7198ac8541f11c66e93f99d2854f22c",
+    "semantic_hash": "b7198ac8541f11c66e93f99d2854f22c"
+  },
+  "Viewport/Widgets/ViewportWidgetsContainer.cpp": {
+    "mtime": 1766757745.7260206,
+    "ast_hash": "485ac1f68e0a0aa0dc2daab2fb4d6432",
+    "semantic_hash": "485ac1f68e0a0aa0dc2daab2fb4d6432"
+  },
+  "Viewport/Widgets/ViewportWidgetsContainer.h": {
+    "mtime": 1779515377.797089,
+    "ast_hash": "9d4a0f4a31debfd5febfae04dc2377ca",
+    "semantic_hash": "9d4a0f4a31debfd5febfae04dc2377ca"
+  },
+  "Windows/ContentWindow.cpp": {
+    "mtime": 1783219535.754273,
+    "ast_hash": "7b268dfeb1943cf8c7c573abf3866cd7",
+    "semantic_hash": "7b268dfeb1943cf8c7c573abf3866cd7"
+  },
+  "Windows/ContentWindow.cs": {
+    "mtime": 1785075020.8484154,
+    "ast_hash": "2f96b678cdd8a12f3edc9f3e50eabdcd",
+    "semantic_hash": "2f96b678cdd8a12f3edc9f3e50eabdcd"
+  },
+  "Windows/ContentWindow.h": {
+    "mtime": 1782657470.67634,
+    "ast_hash": "922e7f797588985c5cd0aa6cd4777078",
+    "semantic_hash": "922e7f797588985c5cd0aa6cd4777078"
+  },
+  "Windows/EditSceneWindow.cpp": {
+    "mtime": 1767419936.84178,
+    "ast_hash": "b3d193296ed5fdb6eb15013cb0217ddb",
+    "semantic_hash": "b3d193296ed5fdb6eb15013cb0217ddb"
+  },
+  "Windows/EditSceneWindow.cs": {
+    "mtime": 1785075026.3733761,
+    "ast_hash": "92c0b50f2a56a77d49f74fcd2190a415",
+    "semantic_hash": "92c0b50f2a56a77d49f74fcd2190a415"
+  },
+  "Windows/EditSceneWindow.h": {
+    "mtime": 1783219535.7627888,
+    "ast_hash": "0b47812b95df95019b38cadf76ae3edd",
+    "semantic_hash": "0b47812b95df95019b38cadf76ae3edd"
+  },
+  "Windows/EditorWindow.cpp": {
+    "mtime": 1770739916.1673243,
+    "ast_hash": "d802c54581c5d143d5c58da990c0195d",
+    "semantic_hash": "d802c54581c5d143d5c58da990c0195d"
+  },
+  "Windows/EditorWindow.cs": {
+    "mtime": 1785075163.8208134,
+    "ast_hash": "512abdda40d04cddf06c5ff1fb7c7a89",
+    "semantic_hash": "512abdda40d04cddf06c5ff1fb7c7a89"
+  },
+  "Windows/EditorWindow.h": {
+    "mtime": 1782657470.685872,
+    "ast_hash": "e390fe032f2ae36a4c790da48df80da3",
+    "semantic_hash": "e390fe032f2ae36a4c790da48df80da3"
+  },
+  "Windows/LogWindow.cpp": {
+    "mtime": 1783219535.7667916,
+    "ast_hash": "d9a90c103dd6a314797386805a11f837",
+    "semantic_hash": "d9a90c103dd6a314797386805a11f837"
+  },
+  "Windows/LogWindow.cs": {
+    "mtime": 1785075470.3253608,
+    "ast_hash": "7ed5d671912210e70d62acbbf0752973",
+    "semantic_hash": "7ed5d671912210e70d62acbbf0752973"
+  },
+  "Windows/LogWindow.h": {
+    "mtime": 1779515377.2935674,
+    "ast_hash": "38fb8ec0c8f1d9532e62961867bd0c20",
+    "semantic_hash": "38fb8ec0c8f1d9532e62961867bd0c20"
+  },
+  "Windows/PropertiesWindow.cpp": {
+    "mtime": 1772866332.8931558,
+    "ast_hash": "1b2a4cda04b2b7b2658bff65ce4bdba2",
+    "semantic_hash": "1b2a4cda04b2b7b2658bff65ce4bdba2"
+  },
+  "Windows/PropertiesWindow.h": {
+    "mtime": 1779515377.9691877,
+    "ast_hash": "b7393b301079d3c09588f3c5ac07fbca",
+    "semantic_hash": "b7393b301079d3c09588f3c5ac07fbca"
+  },
+  "Windows/SceneEditorWindow.cs": {
+    "mtime": 1785075023.665818,
+    "ast_hash": "3160a307f08c813155c90c31c752878b",
+    "semantic_hash": "3160a307f08c813155c90c31c752878b"
+  },
+  "Windows/SceneHierarchyView.cs": {
+    "mtime": 1785075865.0547109,
+    "ast_hash": "f39a4b711007afcfb22123d2b161e9f3",
+    "semantic_hash": "f39a4b711007afcfb22123d2b161e9f3"
+  },
+  "Windows/SceneHierarchyWindow.cpp": {
+    "mtime": 1766205751.2813733,
+    "ast_hash": "2158062556bfcea08effab519417b2d9",
+    "semantic_hash": "2158062556bfcea08effab519417b2d9"
+  },
+  "Windows/SceneHierarchyWindow.cs": {
+    "mtime": 1785075025.0218246,
+    "ast_hash": "5d3dff5bc3ab56d721d4dfb942f16e41",
+    "semantic_hash": "5d3dff5bc3ab56d721d4dfb942f16e41"
+  },
+  "Windows/SceneHierarchyWindow.h": {
+    "mtime": 1779515377.4544244,
+    "ast_hash": "b4540f56bbcdf1d92063b8b32a0053d0",
+    "semantic_hash": "b4540f56bbcdf1d92063b8b32a0053d0"
+  }
+}

@@ -470,10 +470,10 @@ public:
     }
 };
 
-ScriptingTypeInitializer Window::TypeInitializer(
+ScriptingTypeInitializer WindowBase::TypeInitializer(
     (BinaryModule*)GetBinaryModuleSERuntime(),
-    StringAnsiView("SE.WindowBase", ARRAY_SIZE("SE.WindowBase") - 1),
-    sizeof(::SE::Window),
+    StringAnsiView("SE.Window", ARRAY_SIZE("SE.Window") - 1),
+    sizeof(::SE::WindowBase),
     &WindowBaseInternal::InitRuntime,
     &ScriptingType::DefaultSpawn, 
     &::SE::ScriptingObject::TypeInitializer,

@@ -29,8 +29,69 @@ namespace SE
 class TextRangeInternal
 {
 public:
+    static void InitRuntime()
+    {
+    }
+
+    static void Ctor(void* ptr)
+    {
+        new(ptr)::SE::TextRange();
+    }
+
+    static void Dtor(void* ptr)
+    {
+        ((::SE::TextRange*)ptr)->~TextRange();
+    }
+
+    static void Copy(void* dst, void* src)
+    {
+        *(::SE::TextRange*)dst = *(::SE::TextRange*)src;
+    }
+
+    static CLRObject* Box(void* ptr)
+    {
+        return ::SE::CLRUtils::Box(*static_cast<::SE::TextRange*>(ptr), ::SE::TextRange::TypeInitializer.GetClass());
+    }
+
+    static void Unbox(void* ptr, CLRObject* managed)
+    {
+        *static_cast<::SE::TextRange*>(ptr) = ::SE::CLRUtils::Unbox<::SE::TextRange>(managed);
+    }
+
+    static void GetField(void* ptr, const String& name, Variant& value)
+    {
+        if (name == SE_TEXT("StartIndex"))
+        {
+            value = Variant(((::SE::TextRange*)ptr)->StartIndex);
+        }
+        else if (name == SE_TEXT("EndIndex"))
+        {
+            value = Variant(((::SE::TextRange*)ptr)->EndIndex);
+        }
+    }
+
+    static void SetField(void* ptr, const String& name, const Variant& value)
+    {
+        if (name == SE_TEXT("StartIndex"))
+        {
+            ((::SE::TextRange*)ptr)->StartIndex = (int32)value;
+        }
+        else if (name == SE_TEXT("EndIndex"))
+        {
+            ((::SE::TextRange*)ptr)->EndIndex = (int32)value;
+        }
+    }
 };
 
+ScriptingTypeInitializer TextRange::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.TextRange", ARRAY_SIZE("SE.TextRange") - 1),
+    sizeof(::SE::TextRange),
+    &TextRangeInternal::InitRuntime,
+    &TextRangeInternal::Ctor, &TextRangeInternal::Dtor, &TextRangeInternal::Copy,
+    &TextRangeInternal::Box, &TextRangeInternal::Unbox, &TextRangeInternal::GetField, &TextRangeInternal::SetField,
+    nullptr
+);
 }
 
 namespace SE

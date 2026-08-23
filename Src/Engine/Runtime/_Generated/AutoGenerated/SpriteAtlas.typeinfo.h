@@ -234,8 +234,61 @@ namespace SE
 class SpriteInternal
 {
 public:
+    static void InitRuntime()
+    {
+    }
+
+    static void Ctor(void* ptr)
+    {
+        new(ptr)::SE::Sprite();
+    }
+
+    static void Dtor(void* ptr)
+    {
+        ((::SE::Sprite*)ptr)->~Sprite();
+    }
+
+    static void Copy(void* dst, void* src)
+    {
+        *(::SE::Sprite*)dst = *(::SE::Sprite*)src;
+    }
+
+    static CLRObject* Box(void* ptr)
+    {
+        return ::SE::CLRUtils::Box(*static_cast<::SE::Sprite*>(ptr), ::SE::Sprite::TypeInitializer.GetClass());
+    }
+
+    static void Unbox(void* ptr, CLRObject* managed)
+    {
+        *static_cast<::SE::Sprite*>(ptr) = ::SE::CLRUtils::Unbox<::SE::Sprite>(managed);
+    }
+
+    static void GetField(void* ptr, const String& name, Variant& value)
+    {
+        if (name == SE_TEXT("Name"))
+        {
+            value = Variant(((::SE::Sprite*)ptr)->Name);
+        }
+    }
+
+    static void SetField(void* ptr, const String& name, const Variant& value)
+    {
+        if (name == SE_TEXT("Name"))
+        {
+            ((::SE::Sprite*)ptr)->Name = (StringView)value;
+        }
+    }
 };
 
+ScriptingTypeInitializer Sprite::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.Sprite", ARRAY_SIZE("SE.Sprite") - 1),
+    sizeof(::SE::Sprite),
+    &SpriteInternal::InitRuntime,
+    &SpriteInternal::Ctor, &SpriteInternal::Dtor, &SpriteInternal::Copy,
+    &SpriteInternal::Box, &SpriteInternal::Unbox, &SpriteInternal::GetField, &SpriteInternal::SetField,
+    nullptr
+);
 }
 
 namespace SE
@@ -243,8 +296,61 @@ namespace SE
 class SpriteHandleInternal
 {
 public:
+    static void InitRuntime()
+    {
+    }
+
+    static void Ctor(void* ptr)
+    {
+        new(ptr)::SE::SpriteHandle();
+    }
+
+    static void Dtor(void* ptr)
+    {
+        ((::SE::SpriteHandle*)ptr)->~SpriteHandle();
+    }
+
+    static void Copy(void* dst, void* src)
+    {
+        *(::SE::SpriteHandle*)dst = *(::SE::SpriteHandle*)src;
+    }
+
+    static CLRObject* Box(void* ptr)
+    {
+        return ::SE::CLRUtils::Box(*static_cast<::SE::SpriteHandle*>(ptr), ::SE::SpriteHandle::TypeInitializer.GetClass());
+    }
+
+    static void Unbox(void* ptr, CLRObject* managed)
+    {
+        *static_cast<::SE::SpriteHandle*>(ptr) = ::SE::CLRUtils::Unbox<::SE::SpriteHandle>(managed);
+    }
+
+    static void GetField(void* ptr, const String& name, Variant& value)
+    {
+        if (name == SE_TEXT("Index"))
+        {
+            value = Variant(((::SE::SpriteHandle*)ptr)->Index);
+        }
+    }
+
+    static void SetField(void* ptr, const String& name, const Variant& value)
+    {
+        if (name == SE_TEXT("Index"))
+        {
+            ((::SE::SpriteHandle*)ptr)->Index = (int32)value;
+        }
+    }
 };
 
+ScriptingTypeInitializer SpriteHandle::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.SpriteHandle", ARRAY_SIZE("SE.SpriteHandle") - 1),
+    sizeof(::SE::SpriteHandle),
+    &SpriteHandleInternal::InitRuntime,
+    &SpriteHandleInternal::Ctor, &SpriteHandleInternal::Dtor, &SpriteHandleInternal::Copy,
+    &SpriteHandleInternal::Box, &SpriteHandleInternal::Unbox, &SpriteHandleInternal::GetField, &SpriteHandleInternal::SetField,
+    &::SE::ISerializable::TypeInitializer
+);
 }
 
 namespace SE
@@ -253,9 +359,9 @@ class SpriteAtlasInternal
 {
 public:
 #if defined(_MSC_VER)
-    DLLEXPORT static int32 Sprites_Get(::SE::SpriteAtlas* __obj)
+    DLLEXPORT static CLRArray* Sprites_Get(::SE::SpriteAtlas* __obj, int32* __returnCount)
 #else
-    static int32 Sprites_Get(::SE::SpriteAtlas* __obj)
+    static CLRArray* Sprites_Get(::SE::SpriteAtlas* __obj, int32* __returnCount)
 #endif
     {
 #if defined(_MSC_VER)
@@ -263,14 +369,24 @@ public:
 #endif
         if (__obj == nullptr)
         {
+            if (__returnCount != nullptr) *__returnCount = 0;
             return {};
         }
-        return __obj->Sprites;
+        const auto& __collectionValue = __obj->Sprites;
+        const int32 __collectionCount = __collectionValue.Count();
+        if (__returnCount != nullptr) *__returnCount = __collectionCount;
+        CLRClass* __elementClass = Scripting::FindClass(StringAnsiView("SE.Sprite"));
+        if (__elementClass == nullptr) return nullptr;
+        CLRArray* __result = CLRCore::Array::New(__elementClass, __collectionCount);
+        if (__result == nullptr || __collectionCount == 0) return __result;
+        auto* __resultItems = CLRCore::Array::GetAddress<::SE::BindingsInterop::SE_Sprite>(__result);
+        for (int32 i = 0; i < __collectionCount; ++i) __resultItems[i] = BindingsInterop::ToManaged(__collectionValue[i]);
+        return __result;
     }
 #if defined(_MSC_VER)
-    DLLEXPORT static void Sprites_Set(::SE::SpriteAtlas* __obj, int32 value)
+    DLLEXPORT static void Sprites_Set(::SE::SpriteAtlas* __obj, CLRArray* value, int32 __valueCount)
 #else
-    static void Sprites_Set(::SE::SpriteAtlas* __obj, int32 value)
+    static void Sprites_Set(::SE::SpriteAtlas* __obj, CLRArray* value, int32 __valueCount)
 #endif
     {
 #if defined(_MSC_VER)
@@ -280,7 +396,15 @@ public:
         {
             return;
         }
-        __obj->Sprites = value;
+        ::SE::List<::SE::Sprite> __valueNative;
+        const int32 __valueNativeCount = value ? (__valueCount < CLRCore::Array::GetLength(value) ? __valueCount : CLRCore::Array::GetLength(value)) : 0;
+        __valueNative.Resize(__valueNativeCount);
+        if (__valueNativeCount > 0)
+        {
+            auto* __valueItems = CLRCore::Array::GetAddress<::SE::BindingsInterop::SE_Sprite>(value);
+            for (int32 i = 0; i < __valueNativeCount; ++i) __valueNative[i] = BindingsInterop::ToNative(__valueItems[i]);
+        }
+        __obj->Sprites = __valueNative;
     }
 #if defined(_MSC_VER)
     DLLEXPORT static int32 GetSpritesCount(::SE::SpriteAtlas* __obj)
@@ -408,15 +532,15 @@ ScriptingTypeInitializer SpriteAtlas::TypeInitializer(
 
 // Plain-C exports
 #if !defined(_MSC_VER)
-DEFINE_INTERNAL_CALL(int32) SpriteAtlas_Sprites_Get(void* __obj)
+DEFINE_INTERNAL_CALL(CLRArray*) SpriteAtlas_Sprites_Get(void* __obj, int32* __returnCount)
 {
-    return SpriteAtlasInternal::Sprites_Get((::SE::SpriteAtlas*)__obj);
+    return SpriteAtlasInternal::Sprites_Get((::SE::SpriteAtlas*)__obj, __returnCount);
 }
 #endif
 #if !defined(_MSC_VER)
-DEFINE_INTERNAL_CALL(void) SpriteAtlas_Sprites_Set(void* __obj, int32 value)
+DEFINE_INTERNAL_CALL(void) SpriteAtlas_Sprites_Set(void* __obj, CLRArray* value, int32 __valueCount)
 {
-    SpriteAtlasInternal::Sprites_Set((::SE::SpriteAtlas*)__obj, value);
+    SpriteAtlasInternal::Sprites_Set((::SE::SpriteAtlas*)__obj, value, __valueCount);
 }
 #endif
 #if !defined(_MSC_VER)

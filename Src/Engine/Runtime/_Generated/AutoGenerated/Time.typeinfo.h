@@ -194,8 +194,21 @@ public:
 #endif
         ::SE::Time::Synchronize();
     }
+    static void InitRuntime()
+    {
+    }
 };
 
+ScriptingTypeInitializer Time::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.Time", ARRAY_SIZE("SE.Time") - 1),
+    sizeof(::SE::Time),
+    &TimeInternal::InitRuntime,
+    &ScriptingType::DefaultSpawn, 
+    nullptr,
+    nullptr,
+    nullptr
+);
 
 // Plain-C exports
 #if !defined(_MSC_VER)

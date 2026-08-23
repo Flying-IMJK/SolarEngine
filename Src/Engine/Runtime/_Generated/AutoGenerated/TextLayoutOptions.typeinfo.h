@@ -77,7 +77,92 @@ namespace SE
 class TextLayoutOptionsInternal
 {
 public:
+    static void InitRuntime()
+    {
+    }
+
+    static void Ctor(void* ptr)
+    {
+        new(ptr)::SE::TextLayoutOptions();
+    }
+
+    static void Dtor(void* ptr)
+    {
+        ((::SE::TextLayoutOptions*)ptr)->~TextLayoutOptions();
+    }
+
+    static void Copy(void* dst, void* src)
+    {
+        *(::SE::TextLayoutOptions*)dst = *(::SE::TextLayoutOptions*)src;
+    }
+
+    static CLRObject* Box(void* ptr)
+    {
+        return ::SE::CLRUtils::Box(*static_cast<::SE::TextLayoutOptions*>(ptr), ::SE::TextLayoutOptions::TypeInitializer.GetClass());
+    }
+
+    static void Unbox(void* ptr, CLRObject* managed)
+    {
+        *static_cast<::SE::TextLayoutOptions*>(ptr) = ::SE::CLRUtils::Unbox<::SE::TextLayoutOptions>(managed);
+    }
+
+    static void GetField(void* ptr, const String& name, Variant& value)
+    {
+        if (name == SE_TEXT("HorizontalAlignment"))
+        {
+            value = Variant((uint64)((::SE::TextLayoutOptions*)ptr)->HorizontalAlignment);
+        }
+        else if (name == SE_TEXT("VerticalAlignment"))
+        {
+            value = Variant((uint64)((::SE::TextLayoutOptions*)ptr)->VerticalAlignment);
+        }
+        else if (name == SE_TEXT("TextWrapping"))
+        {
+            value = Variant((uint64)((::SE::TextLayoutOptions*)ptr)->TextWrapping);
+        }
+        else if (name == SE_TEXT("Scale"))
+        {
+            value = Variant(((::SE::TextLayoutOptions*)ptr)->Scale);
+        }
+        else if (name == SE_TEXT("BaseLinesGapScale"))
+        {
+            value = Variant(((::SE::TextLayoutOptions*)ptr)->BaseLinesGapScale);
+        }
+    }
+
+    static void SetField(void* ptr, const String& name, const Variant& value)
+    {
+        if (name == SE_TEXT("HorizontalAlignment"))
+        {
+            ((::SE::TextLayoutOptions*)ptr)->HorizontalAlignment = (::SE::TextAlignment)(uint64)value;
+        }
+        else if (name == SE_TEXT("VerticalAlignment"))
+        {
+            ((::SE::TextLayoutOptions*)ptr)->VerticalAlignment = (::SE::TextAlignment)(uint64)value;
+        }
+        else if (name == SE_TEXT("TextWrapping"))
+        {
+            ((::SE::TextLayoutOptions*)ptr)->TextWrapping = (::SE::TextWrapping)(uint64)value;
+        }
+        else if (name == SE_TEXT("Scale"))
+        {
+            ((::SE::TextLayoutOptions*)ptr)->Scale = (float)value;
+        }
+        else if (name == SE_TEXT("BaseLinesGapScale"))
+        {
+            ((::SE::TextLayoutOptions*)ptr)->BaseLinesGapScale = (float)value;
+        }
+    }
 };
 
+ScriptingTypeInitializer TextLayoutOptions::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.TextLayoutOptions", ARRAY_SIZE("SE.TextLayoutOptions") - 1),
+    sizeof(::SE::TextLayoutOptions),
+    &TextLayoutOptionsInternal::InitRuntime,
+    &TextLayoutOptionsInternal::Ctor, &TextLayoutOptionsInternal::Dtor, &TextLayoutOptionsInternal::Copy,
+    &TextLayoutOptionsInternal::Box, &TextLayoutOptionsInternal::Unbox, &TextLayoutOptionsInternal::GetField, &TextLayoutOptionsInternal::SetField,
+    nullptr
+);
 }
 

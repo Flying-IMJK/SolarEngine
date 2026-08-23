@@ -1,0 +1,40 @@
+[graphify] MultiDiGraph edge-collapse diagnostic
+input: <in-memory>
+input_stage: provided JSON (normal graph.json is post-build)
+effective_directed: <direct-call>
+nodes: 5185
+raw_edges: 10532
+valid_candidate_edges: 10049
+missing_endpoint_edges: 0
+dangling_endpoint_edges: 483
+self_loop_edges: 0
+exact_duplicate_edges: 0
+directed_unique_endpoint_pairs: 9900
+directed_same_endpoint_collapsed_edges: 149
+undirected_unique_endpoint_pairs: 9855
+undirected_same_endpoint_collapsed_edges: 194
+same_endpoint_group_count: 138
+relation_variant_groups: 50
+source_file_variant_groups: 0
+source_location_variant_groups: 48
+context_variant_groups: 97
+post_build_graph_type: Graph
+post_build_edges: 9765
+producer_suppression_sites: 10
+producer_suppression_examples:
+  - L958 seen_ids arity=unknown
+  - L1108 seen_ids arity=unknown
+  - L1110 seen_doc_refs arity=unknown
+  - L1533 seen_ids arity=unknown
+  - L2002 seen_keys arity=unknown
+  - L2925 seen_ids arity=unknown
+  - L3033 seen_ids arity=unknown
+  - L3112 seen_ids arity=unknown
+examples:
+  - thirdparty_delabella_predicates_expansionbase_dekkersproduct -> thirdparty_delabella_predicates_h_t edges=4 relations=['calls', 'references'] locations=['L414', 'L415'] contexts=['call', 'generic_arg', 'parameter_type', 'return_type']
+  - thirdparty_delabella_predicates_expansionbase_makeexpansion -> thirdparty_delabella_predicates_h_t edges=3 relations=['calls', 'references'] locations=['L329', 'L331'] contexts=['call', 'generic_arg', 'parameter_type']
+  - thirdparty_delabella_predicates_multtailpresplit -> thirdparty_delabella_predicates_h_t edges=3 relations=['references'] locations=['L426', 'L430'] contexts=['generic_arg', 'parameter_type', 'return_type']
+  - thirdparty_delabella_predicates_expansionbase_twotwodiff -> thirdparty_delabella_predicates_h_t edges=3 relations=['calls', 'references'] locations=['L448', 'L462'] contexts=['call', 'generic_arg', 'parameter_type']
+  - thirdparty_delabella_predicates_expansionbase_twotwodiffzerocheck -> thirdparty_delabella_predicates_h_t edges=3 relations=['calls', 'references'] locations=['L470', 'L472'] contexts=['call', 'generic_arg', 'parameter_type']
+note: normal graph.json is post-build; raw producer loss must be measured earlier.
+GRAPH HEALTH WARNING: 483 dangling-endpoint edges; 149 collapsed directed edges; 194 collapsed undirected edges

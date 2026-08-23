@@ -24,7 +24,7 @@ namespace SE
     public:
         static void RegisterType()
         {
-            s_pDefaultInstance_13415732108369126659 = New<::SE::Editor::AssetItem>(nullptr);
+            
 
             ::SE::Editor::AssetItem::s_pTypeInfo = New<TTypeCompositeInfo<::SE::Editor::AssetItem>>(s_pDefaultInstance_13415732108369126659);
             Types::RegisterType(::SE::Editor::AssetItem::s_pTypeInfo);
@@ -33,8 +33,7 @@ namespace SE
         static void UnregisterType()
         {
             Types::UnregisterType(::SE::Editor::AssetItem::s_pTypeInfo);
-            // Destroy default type instance
-            Delete(const_cast<::SE::Editor::AssetItem*>(s_pDefaultInstance_13415732108369126659));
+            
             Delete(const_cast<TypeCompositeInfo*>(::SE::Editor::AssetItem::s_pTypeInfo));
         }
 
@@ -53,7 +52,7 @@ namespace SE
             fullName = SE_TEXT("SE::Editor::AssetItem");
 
             // Add type metadata
-            isAbstract = false;
+            isAbstract = true;
 
 
             // Create dev tools info
@@ -75,14 +74,13 @@ namespace SE
 
         virtual IType* CreateType() const override final
         {
-            auto pMemory = PlatformAllocator::Allocate(sizeof(::SE::Editor::AssetItem), alignof(::SE::Editor::AssetItem));
-            return new (pMemory) ::SE::Editor::AssetItem(nullptr);
+            ENGINE_UNREACHABLE_CODE();
+            return nullptr;
         }
 
         virtual void CreateTypeInPlace( IType* pAllocatedMemory ) const override final
         {
-            ENGINE_ASSERT( pAllocatedMemory != nullptr );
-            new (pAllocatedMemory) ::SE::Editor::AssetItem(nullptr);
+            ENGINE_UNREACHABLE_CODE(); // Error! Trying to instantiate an abstract type!
          }
 
         virtual IType const *GetDefaultInstance() const override

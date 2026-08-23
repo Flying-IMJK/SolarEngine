@@ -29,8 +29,78 @@ namespace SE
 class Float3Internal
 {
 public:
+    static void InitRuntime()
+    {
+    }
+
+    static void Ctor(void* ptr)
+    {
+        new(ptr)::SE::Float3();
+    }
+
+    static void Dtor(void* ptr)
+    {
+        ((::SE::Float3*)ptr)->~Float3();
+    }
+
+    static void Copy(void* dst, void* src)
+    {
+        *(::SE::Float3*)dst = *(::SE::Float3*)src;
+    }
+
+    static CLRObject* Box(void* ptr)
+    {
+        return ::SE::CLRUtils::Box(*static_cast<::SE::Float3*>(ptr), ::SE::Float3::TypeInitializer.GetClass());
+    }
+
+    static void Unbox(void* ptr, CLRObject* managed)
+    {
+        *static_cast<::SE::Float3*>(ptr) = ::SE::CLRUtils::Unbox<::SE::Float3>(managed);
+    }
+
+    static void GetField(void* ptr, const String& name, Variant& value)
+    {
+        if (name == SE_TEXT("x"))
+        {
+            value = Variant(((::SE::Float3*)ptr)->x);
+        }
+        else if (name == SE_TEXT("y"))
+        {
+            value = Variant(((::SE::Float3*)ptr)->y);
+        }
+        else if (name == SE_TEXT("z"))
+        {
+            value = Variant(((::SE::Float3*)ptr)->z);
+        }
+    }
+
+    static void SetField(void* ptr, const String& name, const Variant& value)
+    {
+        if (name == SE_TEXT("x"))
+        {
+            ((::SE::Float3*)ptr)->x = (float)value;
+        }
+        else if (name == SE_TEXT("y"))
+        {
+            ((::SE::Float3*)ptr)->y = (float)value;
+        }
+        else if (name == SE_TEXT("z"))
+        {
+            ((::SE::Float3*)ptr)->z = (float)value;
+        }
+    }
 };
 
+template<>
+ScriptingTypeInitializer Float3::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.Float3", ARRAY_SIZE("SE.Float3") - 1),
+    sizeof(::SE::Float3),
+    &Float3Internal::InitRuntime,
+    &Float3Internal::Ctor, &Float3Internal::Dtor, &Float3Internal::Copy,
+    &Float3Internal::Box, &Float3Internal::Unbox, &Float3Internal::GetField, &Float3Internal::SetField,
+    nullptr
+);
 }
 
 namespace SE
@@ -38,8 +108,78 @@ namespace SE
 class Double3Internal
 {
 public:
+    static void InitRuntime()
+    {
+    }
+
+    static void Ctor(void* ptr)
+    {
+        new(ptr)::SE::Double3();
+    }
+
+    static void Dtor(void* ptr)
+    {
+        ((::SE::Double3*)ptr)->~Double3();
+    }
+
+    static void Copy(void* dst, void* src)
+    {
+        *(::SE::Double3*)dst = *(::SE::Double3*)src;
+    }
+
+    static CLRObject* Box(void* ptr)
+    {
+        return ::SE::CLRUtils::Box(*static_cast<::SE::Double3*>(ptr), ::SE::Double3::TypeInitializer.GetClass());
+    }
+
+    static void Unbox(void* ptr, CLRObject* managed)
+    {
+        *static_cast<::SE::Double3*>(ptr) = ::SE::CLRUtils::Unbox<::SE::Double3>(managed);
+    }
+
+    static void GetField(void* ptr, const String& name, Variant& value)
+    {
+        if (name == SE_TEXT("x"))
+        {
+            value = Variant(((::SE::Double3*)ptr)->x);
+        }
+        else if (name == SE_TEXT("y"))
+        {
+            value = Variant(((::SE::Double3*)ptr)->y);
+        }
+        else if (name == SE_TEXT("z"))
+        {
+            value = Variant(((::SE::Double3*)ptr)->z);
+        }
+    }
+
+    static void SetField(void* ptr, const String& name, const Variant& value)
+    {
+        if (name == SE_TEXT("x"))
+        {
+            ((::SE::Double3*)ptr)->x = (double)value;
+        }
+        else if (name == SE_TEXT("y"))
+        {
+            ((::SE::Double3*)ptr)->y = (double)value;
+        }
+        else if (name == SE_TEXT("z"))
+        {
+            ((::SE::Double3*)ptr)->z = (double)value;
+        }
+    }
 };
 
+template<>
+ScriptingTypeInitializer Double3::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.Double3", ARRAY_SIZE("SE.Double3") - 1),
+    sizeof(::SE::Double3),
+    &Double3Internal::InitRuntime,
+    &Double3Internal::Ctor, &Double3Internal::Dtor, &Double3Internal::Copy,
+    &Double3Internal::Box, &Double3Internal::Unbox, &Double3Internal::GetField, &Double3Internal::SetField,
+    nullptr
+);
 }
 
 namespace SE
@@ -47,7 +187,77 @@ namespace SE
 class Int3Internal
 {
 public:
+    static void InitRuntime()
+    {
+    }
+
+    static void Ctor(void* ptr)
+    {
+        new(ptr)::SE::Int3();
+    }
+
+    static void Dtor(void* ptr)
+    {
+        ((::SE::Int3*)ptr)->~Int3();
+    }
+
+    static void Copy(void* dst, void* src)
+    {
+        *(::SE::Int3*)dst = *(::SE::Int3*)src;
+    }
+
+    static CLRObject* Box(void* ptr)
+    {
+        return ::SE::CLRUtils::Box(*static_cast<::SE::Int3*>(ptr), ::SE::Int3::TypeInitializer.GetClass());
+    }
+
+    static void Unbox(void* ptr, CLRObject* managed)
+    {
+        *static_cast<::SE::Int3*>(ptr) = ::SE::CLRUtils::Unbox<::SE::Int3>(managed);
+    }
+
+    static void GetField(void* ptr, const String& name, Variant& value)
+    {
+        if (name == SE_TEXT("x"))
+        {
+            value = Variant(((::SE::Int3*)ptr)->x);
+        }
+        else if (name == SE_TEXT("y"))
+        {
+            value = Variant(((::SE::Int3*)ptr)->y);
+        }
+        else if (name == SE_TEXT("z"))
+        {
+            value = Variant(((::SE::Int3*)ptr)->z);
+        }
+    }
+
+    static void SetField(void* ptr, const String& name, const Variant& value)
+    {
+        if (name == SE_TEXT("x"))
+        {
+            ((::SE::Int3*)ptr)->x = (int32)value;
+        }
+        else if (name == SE_TEXT("y"))
+        {
+            ((::SE::Int3*)ptr)->y = (int32)value;
+        }
+        else if (name == SE_TEXT("z"))
+        {
+            ((::SE::Int3*)ptr)->z = (int32)value;
+        }
+    }
 };
 
+template<>
+ScriptingTypeInitializer Int3::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.Int3", ARRAY_SIZE("SE.Int3") - 1),
+    sizeof(::SE::Int3),
+    &Int3Internal::InitRuntime,
+    &Int3Internal::Ctor, &Int3Internal::Dtor, &Int3Internal::Copy,
+    &Int3Internal::Box, &Int3Internal::Unbox, &Int3Internal::GetField, &Int3Internal::SetField,
+    nullptr
+);
 }
 

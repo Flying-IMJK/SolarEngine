@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(npm search claude-code-analyzer)",
+      "WebFetch(domain:claudate.com)",
+      "Bash(curl:*)",
+      "Bash(claude-code:*)",
+      "Bash(gh search repos:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(python3 *)",
+      "Bash(python _edit_cxxmethod.py)",
+      "Bash(python -c ' *)",
+      "Bash(python _edit_utils.py)",
+      "Bash(python _edit_loop.py)",
+      "Read(//mnt/e/EngineProject/**)",
+      "Bash(cmake --build --preset Debug --target SE.Reflector)",
+      "mcp__ide__getDiagnostics",
+      "Bash(xargs grep *)",
+      "Bash(xargs sed *)",
+      "Bash(sed -i 's/bool IsEnumMacro\\(\\) const { return type == ReflectionMacroType::ReflectEnum; }/bool IsEnumMacro\\(\\) const { return type == ReflectionMacroType::SEEnum \\\\&\\\\& hasReflect; }/' Src/Reflector/Code/Clang/ClangParserContext.h)",
+      "Bash(sed -i 's/bool IsReflectedTypeMacro\\(\\) const { return type == ReflectionMacroType::ReflectType; }/bool IsReflectedTypeMacro\\(\\) const { return type == ReflectionMacroType::DefineClass || type == ReflectionMacroType::DefineClassDefault; }/' Src/Reflector/Code/Clang/ClangParserContext.h)"
+    ]
+  }
+}

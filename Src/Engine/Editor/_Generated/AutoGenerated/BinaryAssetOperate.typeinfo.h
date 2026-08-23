@@ -24,7 +24,7 @@ namespace SE
     public:
         static void RegisterType()
         {
-            s_pDefaultInstance_1191932827461373973 = New<::SE::Editor::BinaryAssetOperate>(nullptr);
+            
 
             ::SE::Editor::BinaryAssetOperate::s_pTypeInfo = New<TTypeCompositeInfo<::SE::Editor::BinaryAssetOperate>>(s_pDefaultInstance_1191932827461373973);
             Types::RegisterType(::SE::Editor::BinaryAssetOperate::s_pTypeInfo);
@@ -33,8 +33,7 @@ namespace SE
         static void UnregisterType()
         {
             Types::UnregisterType(::SE::Editor::BinaryAssetOperate::s_pTypeInfo);
-            // Destroy default type instance
-            Delete(const_cast<::SE::Editor::BinaryAssetOperate*>(s_pDefaultInstance_1191932827461373973));
+            
             Delete(const_cast<TypeCompositeInfo*>(::SE::Editor::BinaryAssetOperate::s_pTypeInfo));
         }
 
@@ -53,7 +52,7 @@ namespace SE
             fullName = SE_TEXT("SE::Editor::BinaryAssetOperate");
 
             // Add type metadata
-            isAbstract = false;
+            isAbstract = true;
 
 
             // Create dev tools info
@@ -75,14 +74,13 @@ namespace SE
 
         virtual IType* CreateType() const override final
         {
-            auto pMemory = PlatformAllocator::Allocate(sizeof(::SE::Editor::BinaryAssetOperate), alignof(::SE::Editor::BinaryAssetOperate));
-            return new (pMemory) ::SE::Editor::BinaryAssetOperate(nullptr);
+            ENGINE_UNREACHABLE_CODE();
+            return nullptr;
         }
 
         virtual void CreateTypeInPlace( IType* pAllocatedMemory ) const override final
         {
-            ENGINE_ASSERT( pAllocatedMemory != nullptr );
-            new (pAllocatedMemory) ::SE::Editor::BinaryAssetOperate(nullptr);
+            ENGINE_UNREACHABLE_CODE(); // Error! Trying to instantiate an abstract type!
          }
 
         virtual IType const *GetDefaultInstance() const override

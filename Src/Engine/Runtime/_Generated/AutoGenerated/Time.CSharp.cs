@@ -72,12 +72,12 @@ namespace SE
         }
 
         [LibraryImport("SERuntime", EntryPoint = "Time_StartupTime_Get", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
-        internal static partial SE.DateTime Internal_StartupTime_Get();
+        internal static partial System.DateTime Internal_StartupTime_Get();
 
         [LibraryImport("SERuntime", EntryPoint = "Time_StartupTime_Set", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
-        internal static partial void Internal_StartupTime_Set(SE.DateTime value);
+        internal static partial void Internal_StartupTime_Set(System.DateTime value);
 
-        public static SE.DateTime StartupTime
+        public static System.DateTime StartupTime
         {
             get { return Internal_StartupTime_Get(); }
             set { Internal_StartupTime_Set(value); }

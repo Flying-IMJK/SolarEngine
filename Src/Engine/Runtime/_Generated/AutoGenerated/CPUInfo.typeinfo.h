@@ -29,7 +29,52 @@ namespace SE
 class CPUInfoInternal
 {
 public:
+    static void InitRuntime()
+    {
+    }
+
+    static void Ctor(void* ptr)
+    {
+        new(ptr)::SE::CPUInfo();
+    }
+
+    static void Dtor(void* ptr)
+    {
+        ((::SE::CPUInfo*)ptr)->~CPUInfo();
+    }
+
+    static void Copy(void* dst, void* src)
+    {
+        *(::SE::CPUInfo*)dst = *(::SE::CPUInfo*)src;
+    }
+
+    static CLRObject* Box(void* ptr)
+    {
+        return ::SE::CLRUtils::Box(*static_cast<::SE::CPUInfo*>(ptr), ::SE::CPUInfo::TypeInitializer.GetClass());
+    }
+
+    static void Unbox(void* ptr, CLRObject* managed)
+    {
+        *static_cast<::SE::CPUInfo*>(ptr) = ::SE::CLRUtils::Unbox<::SE::CPUInfo>(managed);
+    }
+
+    static void GetField(void* ptr, const String& name, Variant& value)
+    {
+    }
+
+    static void SetField(void* ptr, const String& name, const Variant& value)
+    {
+    }
 };
 
+ScriptingTypeInitializer CPUInfo::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.CPUInfo", ARRAY_SIZE("SE.CPUInfo") - 1),
+    sizeof(::SE::CPUInfo),
+    &CPUInfoInternal::InitRuntime,
+    &CPUInfoInternal::Ctor, &CPUInfoInternal::Dtor, &CPUInfoInternal::Copy,
+    &CPUInfoInternal::Box, &CPUInfoInternal::Unbox, &CPUInfoInternal::GetField, &CPUInfoInternal::SetField,
+    nullptr
+);
 }
 

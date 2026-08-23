@@ -24,12 +24,3 @@
 #include "Runtime/Core/Scripting/Internal/InternalCalls.h"
 #include "Runtime/Core/Scripting/ScriptingType.h"
 
-namespace SE
-{
-class DateTimeInternal
-{
-public:
-};
-
-}
-

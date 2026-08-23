@@ -29,8 +29,86 @@ namespace SE
 class Float4Internal
 {
 public:
+    static void InitRuntime()
+    {
+    }
+
+    static void Ctor(void* ptr)
+    {
+        new(ptr)::SE::Float4();
+    }
+
+    static void Dtor(void* ptr)
+    {
+        ((::SE::Float4*)ptr)->~Float4();
+    }
+
+    static void Copy(void* dst, void* src)
+    {
+        *(::SE::Float4*)dst = *(::SE::Float4*)src;
+    }
+
+    static CLRObject* Box(void* ptr)
+    {
+        return ::SE::CLRUtils::Box(*static_cast<::SE::Float4*>(ptr), ::SE::Float4::TypeInitializer.GetClass());
+    }
+
+    static void Unbox(void* ptr, CLRObject* managed)
+    {
+        *static_cast<::SE::Float4*>(ptr) = ::SE::CLRUtils::Unbox<::SE::Float4>(managed);
+    }
+
+    static void GetField(void* ptr, const String& name, Variant& value)
+    {
+        if (name == SE_TEXT("x"))
+        {
+            value = Variant(((::SE::Float4*)ptr)->x);
+        }
+        else if (name == SE_TEXT("y"))
+        {
+            value = Variant(((::SE::Float4*)ptr)->y);
+        }
+        else if (name == SE_TEXT("z"))
+        {
+            value = Variant(((::SE::Float4*)ptr)->z);
+        }
+        else if (name == SE_TEXT("w"))
+        {
+            value = Variant(((::SE::Float4*)ptr)->w);
+        }
+    }
+
+    static void SetField(void* ptr, const String& name, const Variant& value)
+    {
+        if (name == SE_TEXT("x"))
+        {
+            ((::SE::Float4*)ptr)->x = (float)value;
+        }
+        else if (name == SE_TEXT("y"))
+        {
+            ((::SE::Float4*)ptr)->y = (float)value;
+        }
+        else if (name == SE_TEXT("z"))
+        {
+            ((::SE::Float4*)ptr)->z = (float)value;
+        }
+        else if (name == SE_TEXT("w"))
+        {
+            ((::SE::Float4*)ptr)->w = (float)value;
+        }
+    }
 };
 
+template<>
+ScriptingTypeInitializer Float4::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.Float4", ARRAY_SIZE("SE.Float4") - 1),
+    sizeof(::SE::Float4),
+    &Float4Internal::InitRuntime,
+    &Float4Internal::Ctor, &Float4Internal::Dtor, &Float4Internal::Copy,
+    &Float4Internal::Box, &Float4Internal::Unbox, &Float4Internal::GetField, &Float4Internal::SetField,
+    nullptr
+);
 }
 
 namespace SE
@@ -38,8 +116,86 @@ namespace SE
 class Double4Internal
 {
 public:
+    static void InitRuntime()
+    {
+    }
+
+    static void Ctor(void* ptr)
+    {
+        new(ptr)::SE::Double4();
+    }
+
+    static void Dtor(void* ptr)
+    {
+        ((::SE::Double4*)ptr)->~Double4();
+    }
+
+    static void Copy(void* dst, void* src)
+    {
+        *(::SE::Double4*)dst = *(::SE::Double4*)src;
+    }
+
+    static CLRObject* Box(void* ptr)
+    {
+        return ::SE::CLRUtils::Box(*static_cast<::SE::Double4*>(ptr), ::SE::Double4::TypeInitializer.GetClass());
+    }
+
+    static void Unbox(void* ptr, CLRObject* managed)
+    {
+        *static_cast<::SE::Double4*>(ptr) = ::SE::CLRUtils::Unbox<::SE::Double4>(managed);
+    }
+
+    static void GetField(void* ptr, const String& name, Variant& value)
+    {
+        if (name == SE_TEXT("x"))
+        {
+            value = Variant(((::SE::Double4*)ptr)->x);
+        }
+        else if (name == SE_TEXT("y"))
+        {
+            value = Variant(((::SE::Double4*)ptr)->y);
+        }
+        else if (name == SE_TEXT("z"))
+        {
+            value = Variant(((::SE::Double4*)ptr)->z);
+        }
+        else if (name == SE_TEXT("w"))
+        {
+            value = Variant(((::SE::Double4*)ptr)->w);
+        }
+    }
+
+    static void SetField(void* ptr, const String& name, const Variant& value)
+    {
+        if (name == SE_TEXT("x"))
+        {
+            ((::SE::Double4*)ptr)->x = (double)value;
+        }
+        else if (name == SE_TEXT("y"))
+        {
+            ((::SE::Double4*)ptr)->y = (double)value;
+        }
+        else if (name == SE_TEXT("z"))
+        {
+            ((::SE::Double4*)ptr)->z = (double)value;
+        }
+        else if (name == SE_TEXT("w"))
+        {
+            ((::SE::Double4*)ptr)->w = (double)value;
+        }
+    }
 };
 
+template<>
+ScriptingTypeInitializer Double4::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.Double4", ARRAY_SIZE("SE.Double4") - 1),
+    sizeof(::SE::Double4),
+    &Double4Internal::InitRuntime,
+    &Double4Internal::Ctor, &Double4Internal::Dtor, &Double4Internal::Copy,
+    &Double4Internal::Box, &Double4Internal::Unbox, &Double4Internal::GetField, &Double4Internal::SetField,
+    nullptr
+);
 }
 
 namespace SE
@@ -47,7 +203,85 @@ namespace SE
 class Int4Internal
 {
 public:
+    static void InitRuntime()
+    {
+    }
+
+    static void Ctor(void* ptr)
+    {
+        new(ptr)::SE::Int4();
+    }
+
+    static void Dtor(void* ptr)
+    {
+        ((::SE::Int4*)ptr)->~Int4();
+    }
+
+    static void Copy(void* dst, void* src)
+    {
+        *(::SE::Int4*)dst = *(::SE::Int4*)src;
+    }
+
+    static CLRObject* Box(void* ptr)
+    {
+        return ::SE::CLRUtils::Box(*static_cast<::SE::Int4*>(ptr), ::SE::Int4::TypeInitializer.GetClass());
+    }
+
+    static void Unbox(void* ptr, CLRObject* managed)
+    {
+        *static_cast<::SE::Int4*>(ptr) = ::SE::CLRUtils::Unbox<::SE::Int4>(managed);
+    }
+
+    static void GetField(void* ptr, const String& name, Variant& value)
+    {
+        if (name == SE_TEXT("x"))
+        {
+            value = Variant(((::SE::Int4*)ptr)->x);
+        }
+        else if (name == SE_TEXT("y"))
+        {
+            value = Variant(((::SE::Int4*)ptr)->y);
+        }
+        else if (name == SE_TEXT("z"))
+        {
+            value = Variant(((::SE::Int4*)ptr)->z);
+        }
+        else if (name == SE_TEXT("w"))
+        {
+            value = Variant(((::SE::Int4*)ptr)->w);
+        }
+    }
+
+    static void SetField(void* ptr, const String& name, const Variant& value)
+    {
+        if (name == SE_TEXT("x"))
+        {
+            ((::SE::Int4*)ptr)->x = (int32)value;
+        }
+        else if (name == SE_TEXT("y"))
+        {
+            ((::SE::Int4*)ptr)->y = (int32)value;
+        }
+        else if (name == SE_TEXT("z"))
+        {
+            ((::SE::Int4*)ptr)->z = (int32)value;
+        }
+        else if (name == SE_TEXT("w"))
+        {
+            ((::SE::Int4*)ptr)->w = (int32)value;
+        }
+    }
 };
 
+template<>
+ScriptingTypeInitializer Int4::TypeInitializer(
+    (BinaryModule*)GetBinaryModuleSERuntime(),
+    StringAnsiView("SE.Int4", ARRAY_SIZE("SE.Int4") - 1),
+    sizeof(::SE::Int4),
+    &Int4Internal::InitRuntime,
+    &Int4Internal::Ctor, &Int4Internal::Dtor, &Int4Internal::Copy,
+    &Int4Internal::Box, &Int4Internal::Unbox, &Int4Internal::GetField, &Int4Internal::SetField,
+    nullptr
+);
 }
 
