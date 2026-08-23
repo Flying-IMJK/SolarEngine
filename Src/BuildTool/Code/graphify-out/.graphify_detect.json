@@ -5,6 +5,8 @@
       "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Clang\\ClangParser.h",
       "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Clang\\ClangParserContext.cpp",
       "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Clang\\ClangParserContext.h",
+      "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Clang\\ClangTemplateTypes.cpp",
+      "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Clang\\ClangTemplateTypes.h",
       "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Clang\\ClangUtils.cpp",
       "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Clang\\ClangUtils.h",
       "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Clang\\ClangVisitors_Enum.cpp",
@@ -48,24 +50,27 @@
       "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Core\\Utils.h",
       "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Database\\DataTypes.cpp",
       "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Database\\DataTypes.h",
-      "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Database\\ReflectionDatabase.cpp",
-      "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Database\\ReflectionDatabase.h",
+      "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Database\\DataTypes_Template.h",
       "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Database\\ReflectionProjectTypes.h",
+      "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Database\\TypeDatabase.cpp",
+      "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Database\\TypeDatabase.h",
       "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Reflector.cpp",
       "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Reflector.h",
       "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Resources\\resource.h",
       "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\ThirdParty\\cmdParser\\cmdParser.h",
       "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\mustache.hpp"
     ],
-    "document": [],
+    "document": [
+      "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\CMakeLists.txt"
+    ],
     "paper": [],
     "image": [],
     "video": []
   },
-  "total_files": 55,
-  "total_words": 0,
+  "total_files": 59,
+  "total_words": 47790,
   "needs_graph": false,
-  "warning": "Corpus is ~44,286 words - fits in a single context window. You may not need a graph.",
+  "warning": "Corpus is ~47,790 words - fits in a single context window. You may not need a graph.",
   "skipped_sensitive": [],
   "unclassified": [
     "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code\\Resources\\Esoterica.Applications.Reflector.rc",
@@ -80,6 +85,6 @@
   ],
   "walk_errors": [],
   "ignored": [],
-  "graphifyignore_patterns": 26,
+  "graphifyignore_patterns": 27,
   "scan_root": "E:\\EngineProject\\SolarEngine\\Src\\BuildTool\\Code"
 }

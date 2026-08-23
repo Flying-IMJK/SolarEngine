@@ -4,7 +4,7 @@
 
 namespace SE::BuildTool
 {
-	static mustache::data GenerateFile(TypeData const &type)
+	static mustache::data GenerateFile(TypeInfoBase const &type)
 	{
 		mustache::data generatorData;
 
@@ -23,9 +23,13 @@ namespace SE::BuildTool
 		return generatorData;
 	}
 
-	void CppGenerateMeta(Generator* generator, ReflectionDatabase const& database, std::stringstream& codeFile, TypeData const& type, std::string templateStr)
+	void CppGenerateMeta(Generator*          generator,
+                         TypeDatabase const& database,
+                         std::stringstream&  codeFile,
+                         TypeInfoBase const& type,
+                         std::string         templateStr)
 	{
-		ENGINE_ASSERT(type.IsFlag(TypeData::Flags::IsMeta));
+		ENGINE_ASSERT(type.IsFlag(TypeInfoBase::Flag::IsMeta));
 
 		mustache::data data = GenerateFile(type);
 		mustache::mustache tmpl(templateStr);

@@ -26,7 +26,7 @@ namespace SE
 	// Gets the GPU texture view. Checks if pointer is not null and texture has one or more mip levels loaded.
 	#define GET_TEXTURE_VIEW_SAFE(t) (t && t->ResidentMipLevels() > 0 ? t->View() : nullptr)
 
-	SE_CLASS(API, Sealed, NoSpawn)
+	SE_CLASS(API(Sealed, NoSpawn))
 	class SE_API_RUNTIME GPUContext : public ScriptingObject
 	{
 		SCRIPTING_TYPE_NO_SPAWN(GPUContext);

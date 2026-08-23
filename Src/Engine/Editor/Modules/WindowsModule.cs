@@ -114,7 +114,7 @@ namespace SE.Editor
                 WindowRemoved?.Invoke(window);
         }
 
-        private void OnSceneSaving(SE.Scene scene, Guid sceneId)
+        private void OnSceneSaving(SE.Scene scene, ref Guid sceneId)
         {
             foreach (EditorWindow window in new List<EditorWindow>(m_Windows.Values))
             {
@@ -122,7 +122,7 @@ namespace SE.Editor
             }
         }
 
-        private void OnSceneSaved(SE.Scene scene, Guid sceneId)
+        private void OnSceneSaved(SE.Scene scene, ref Guid sceneId)
         {
             foreach (EditorWindow window in new List<EditorWindow>(m_Windows.Values))
             {
@@ -130,7 +130,7 @@ namespace SE.Editor
             }
         }
 
-        private void OnSceneSaveError(SE.Scene scene, Guid sceneId)
+        private void OnSceneSaveError(SE.Scene scene, ref Guid sceneId)
         {
             foreach (EditorWindow window in new List<EditorWindow>(m_Windows.Values))
             {
@@ -138,7 +138,7 @@ namespace SE.Editor
             }
         }
 
-        private void OnSceneLoading(SE.Scene scene, Guid sceneId)
+        private void OnSceneLoading(SE.Scene scene, ref Guid sceneId)
         {
             foreach (EditorWindow window in new List<EditorWindow>(m_Windows.Values))
             {
@@ -146,7 +146,7 @@ namespace SE.Editor
             }
         }
 
-        private void OnSceneLoaded(SE.Scene scene, Guid sceneId)
+        private void OnSceneLoaded(SE.Scene scene, ref Guid sceneId)
         {
             foreach (EditorWindow window in new List<EditorWindow>(m_Windows.Values))
             {
@@ -154,7 +154,7 @@ namespace SE.Editor
             }
         }
 
-        private void OnSceneLoadError(SE.Scene scene, Guid sceneId)
+        private void OnSceneLoadError(SE.Scene scene, ref Guid sceneId)
         {
             foreach (EditorWindow window in new List<EditorWindow>(m_Windows.Values))
             {
@@ -162,7 +162,7 @@ namespace SE.Editor
             }
         }
 
-        private void OnSceneUnloading(SE.Scene scene, Guid sceneId)
+        private void OnSceneUnloading(SE.Scene scene, ref Guid sceneId)
         {
             foreach (EditorWindow window in new List<EditorWindow>(m_Windows.Values))
             {
@@ -170,7 +170,7 @@ namespace SE.Editor
             }
         }
 
-        private void OnSceneUnloaded(SE.Scene scene, Guid sceneId)
+        private void OnSceneUnloaded(SE.Scene scene, ref Guid sceneId)
         {
             foreach (EditorWindow window in new List<EditorWindow>(m_Windows.Values))
             {

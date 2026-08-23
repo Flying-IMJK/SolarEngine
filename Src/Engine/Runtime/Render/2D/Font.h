@@ -21,19 +21,20 @@ namespace SE
     /// <summary>
     /// The text range.
     /// </summary>
-    SE_STRUCT(API)
+    SE_STRUCT(API())
     struct SE_API_RUNTIME TextRange
     {
+        SCRIPTING_TYPE_MIN(TextRange);
         /// <summary>
         /// The start index (inclusive).
         /// </summary>
-        SE_PROPERTY(API)
+        SE_FIELD(API())
         int32 StartIndex;
 
         /// <summary>
         /// The end index (exclusive).
         /// </summary>
-        SE_PROPERTY(API)
+        SE_FIELD(API())
         int32 EndIndex;
 
         /// <summary>
@@ -211,7 +212,7 @@ namespace SE
     /// <summary>
     /// Represents font object that can be using during text rendering (it uses Font Asset but with pre-cached data for chosen font properties).
     /// </summary>
-    SE_CLASS(API, NoSpawn)
+    SE_CLASS(API(NoSpawn))
     class SE_API_RUNTIME Font : public ScriptingObject
     {
         SCRIPTING_TYPE_NO_SPAWN(Font);
@@ -250,7 +251,7 @@ namespace SE
         /// <summary>
         /// Gets parent font asset that contains font family used by this font.
         /// </summary>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         FORCE_INLINE FontAsset* GetAsset() const
         {
             return m_Asset;
@@ -259,7 +260,7 @@ namespace SE
         /// <summary>
         /// Gets font size.
         /// </summary>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         FORCE_INLINE float GetSize() const
         {
             return m_Size;
@@ -268,7 +269,7 @@ namespace SE
         /// <summary>
         /// Gets characters height.
         /// </summary>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         FORCE_INLINE int32 GetHeight() const
         {
             return _height;
@@ -277,7 +278,7 @@ namespace SE
         /// <summary>
         /// Gets the largest vertical distance above the baseline for any character in the font.
         /// </summary>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         FORCE_INLINE int32 GetAscender() const
         {
             return _ascender;
@@ -286,7 +287,7 @@ namespace SE
         /// <summary>
         /// Gets the largest vertical distance below the baseline for any character in the font.
         /// </summary>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         FORCE_INLINE int32 GetDescender() const
         {
             return _descender;
@@ -295,7 +296,7 @@ namespace SE
         /// <summary>
         /// Gets the line gap property.
         /// </summary>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         FORCE_INLINE int32 GetLineGap() const
         {
             return _lineGap;
@@ -322,13 +323,13 @@ namespace SE
         /// Caches the given text to prepared for the rendering.
         /// </summary>
         /// <param name="text">The text witch characters to cache.</param>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         void CacheText(const StringView& text);
 
         /// <summary>
         /// Invalidates all cached dynamic font atlases using this font. Can be used to reload font characters after changing font asset options.
         /// </summary>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         void Invalidate();
 
     public:
@@ -394,7 +395,7 @@ namespace SE
         /// <param name="text">The input text to test.</param>
         /// <param name="layout">The layout properties.</param>
         /// <returns>The minimum size for that text and fot to render properly.</returns>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         Float2 MeasureText(const StringView& text, const TextLayoutOptions& layout);
 
         /// <summary>
@@ -450,7 +451,7 @@ namespace SE
         /// <param name="location">The input location to test.</param>
         /// <param name="layout">The text layout properties.</param>
         /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         int32 HitTestText(const StringView& text, const Float2& location, const TextLayoutOptions& layout);
 
         /// <summary>
@@ -483,7 +484,7 @@ namespace SE
         /// <param name="index">The text position to get coordinates of.</param>
         /// <param name="layout">The text layout properties.</param>
         /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         Float2 GetCharPosition(const StringView& text, int32 index, const TextLayoutOptions& layout);
 
         /// <summary>

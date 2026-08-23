@@ -6,10 +6,12 @@
 
 namespace SE::BuildTool
 {
-	struct TypeData;
-	class ReflectionDatabase;
+	struct TypeInfoBase;
+	class TypeDatabase;
 	class Generator;
 
-	void CppGenerateType(Generator* generator,  ReflectionDatabase const& database, std::stringstream& codeFile, std::string const& exportMacro,
-            TypeData const& type, TypeData const& parentType, std::string templateStr);
+	void CppGenerateType(Generator* generator,  TypeDatabase const& database, std::stringstream& codeFile, std::string const& exportMacro,
+                         TypeInfoStruct const&    type,
+                         TypeInfoStruct const&     parentType,
+                         std::string               templateStr);
 }

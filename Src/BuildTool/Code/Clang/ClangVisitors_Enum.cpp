@@ -1,5 +1,7 @@
 #include "ClangVisitors_Enum.h"
-#include "../Database/ReflectionDatabase.h"
+#include "../Database/TypeDatabase.h"
+
+#include <memory>
 
 //-------------------------------------------------------------------------
 
@@ -12,7 +14,7 @@ namespace SE::BuildTool
         CXCursorKind kind = clang_getCursorKind( cr );
         if ( kind == CXCursor_EnumConstantDecl )
         {
-            auto pEnum = reinterpret_cast<TypeData*>( pContext->pParentReflectedType );
+            auto pEnum = reinterpret_cast<TypeInfoEnum*>( pContext->pParentReflectedType );
             clang::EnumConstantDecl* pEnumConstantDecl = ( clang::EnumConstantDecl* ) cr.data[0];
 
             EnumDataConstant constant;
@@ -112,50 +114,54 @@ namespace SE::BuildTool
         auto enumTypeID = pContext->GenerateTypeID( fullyQualifiedCursorName );
 
         MarkMacro macro;
-        if (pContext->FindMarkMacro(headerID, cr, macro, ReflectionMacroType::SEEnum) )
+        if (pContext->FindMarkMacro(headerID, cr, macro, MacroTypeEnum::SEEnum) )
         {
             if (!pContext->pDatabase->IsTypeRegistered(enumTypeID) )
             {
-                TypeData enumDescriptor( enumTypeID, cursorName);
-                enumDescriptor.headerID = headerID;
-                enumDescriptor.namespaceScopeList = pContext->GetNamespaces();
-                enumDescriptor.structScopeList = pContext->GetStructScopes();
-                enumDescriptor.flags.SetFlag(TypeData::Flags::IsEnum);
-                enumDescriptor.underlyingType = underlyingCoreType;
-                enumDescriptor.isReflect = macro.hasReflect;
+                auto enumDescriptor = std::make_unique<TypeInfoEnum>(enumTypeID, cursorName);
+                enumDescriptor->headerID = headerID;
+                enumDescriptor->namespaceScopeList = pContext->GetNamespaces();
+                enumDescriptor->structScopeList = pContext->GetStructScopes();
+                enumDescriptor->underlyingType = underlyingCoreType;
+                enumDescriptor->isReflect = macro.hasReflect;
 
-                // Check for SE_ENUM binding (hasAPI flag)
-                if (macro.hasAPI)
+                // Check for SE_ENUM binding (API(...) group)
+                if (macro.HasApi())
                 {
+                    if (!macro.GetApi().inBuildMapType.empty())
+                    {
+                        pContext->LogError("API(InBuild(\"{0}\")) is not supported on enum ({1})", macro.GetApi().inBuildMapType, cursorName);
+                        return CXChildVisit_Break;
+                    }
+
                     // Same macro carries both Reflect and API
-                    enumDescriptor.isAPI = true;
+                    enumDescriptor->isAPI = true;
                     std::string assemblyName, assemblyDir;
                     pContext->GetAssemblyInfoForHeader(headerID, assemblyName, assemblyDir);
-                    enumDescriptor.bindingInfo.assemblyName = assemblyName;
-                    enumDescriptor.bindingInfo.assemblyDir = assemblyDir;
+                    enumDescriptor->assemblyName = assemblyName;
+                    enumDescriptor->assemblyDir = assemblyDir;
                     CXString const commentString = clang_Cursor_getBriefCommentText(cr);
                     if (commentString.data != nullptr)
                     {
-                        enumDescriptor.bindingInfo.comment = clang_getCString(commentString);
-                        Utils::String::ReplaceAll(enumDescriptor.bindingInfo.comment, "\r", " ");
-                        Utils::String::TrimStart(enumDescriptor.bindingInfo.comment);
-                        Utils::String::TrimEnd(enumDescriptor.bindingInfo.comment);
+                        enumDescriptor->comment = clang_getCString(commentString);
+                        Utils::String::ReplaceAll(enumDescriptor->comment, "\r", " ");
+                        Utils::String::TrimStart(enumDescriptor->comment);
+                        Utils::String::TrimEnd(enumDescriptor->comment);
                     }
                     clang_disposeString(commentString);
-                    enumDescriptor.bindingInfo.isDeprecated = macro.HasFlag(DEPRECATED_FLAG());
-                    macro.TryGetValue("Attributes", enumDescriptor.bindingInfo.attributes);
+                    enumDescriptor->APIAttributes = macro.GetApi().attributes;
                 }
 
                 // Record current parent type, and update it to the new type
                 void* pPreviousParentReflectedType = pContext->pParentReflectedType;
-                pContext->pParentReflectedType = &enumDescriptor;
+                pContext->pParentReflectedType = enumDescriptor.get();
                 {
                     clang_visitChildren( cr, VisitEnumContents, pContext );
                 }
                 // Reset parent type back to original parent
                 pContext->pParentReflectedType = pPreviousParentReflectedType;
 
-                pContext->pDatabase->RegisterType( &enumDescriptor, false);
+                pContext->pDatabase->RegisterType(std::move(enumDescriptor), false);
             }
         }
 

@@ -22,6 +22,7 @@ namespace SE::BuildTool
                 CXDiagnostic diagnostic = clang_getDiagnostic(TU, i);
                 diagnostics.push_back(
                     GetString(clang_formatDiagnostic(diagnostic, clang_defaultDiagnosticDisplayOptions())));
+                clang_disposeDiagnostic(diagnostic);
             }
         }
 

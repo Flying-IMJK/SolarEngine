@@ -8,7 +8,7 @@ namespace SE
 {
 	class GPUBuffer;
 
-	SE_CLASS(Reflect, API)
+	SE_CLASS(Reflect, API())
 	class SE_API_RUNTIME StaticModel : public ModelInstance
 	{
 		SCRIPTING_TYPE(StaticModel);
@@ -88,4 +88,3 @@ namespace SE
 	};
 
 } // SE
-

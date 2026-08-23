@@ -36,7 +36,7 @@ namespace SE
 	/// <summary>
 	/// Describes full graphics pipeline state within single object.
 	/// </summary>
-	SE_CLASS(API, Sealed)
+	SE_CLASS(API(Sealed))
 	class SE_API_RUNTIME GPUPipelineState : public GPUResource
 	{
 		SCRIPTING_TYPE_NO_SPAWN(GPUPipelineState);

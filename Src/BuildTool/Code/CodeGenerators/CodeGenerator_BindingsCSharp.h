@@ -17,9 +17,6 @@ namespace SE::BuildTool
         bool Generate(const BindingsHeaderInfo& headerInfo,
                       const std::string& solutionRoot);
 
-        bool GenerateAll(const std::vector<BindingsHeaderInfo>& headers,
-                         const std::string& solutionRoot);
-
         /// Generate minimal C# placeholders for native types referenced by API
         /// signatures but not generated as first-class binding types yet.
         bool GenerateNativeTypeStubs(const std::vector<BindingsHeaderInfo>& headers);
@@ -32,40 +29,42 @@ namespace SE::BuildTool
     private:
         // ---- Per-type generation methods ----
 
-        void GenerateCSharpClass(const ApiClass& cls, const std::string& assemblyName,
+        void GenerateCSharpClass(const TypeInfoStruct& cls, const std::string& assemblyName,
                                  std::string& output);
-        void GenerateCSharpStructure(const ApiClass& cls, const std::string& assemblyName,
+        void GenerateCSharpStructure(const TypeInfoStruct& cls, const std::string& assemblyName,
                                      std::string& output);
-        void GenerateCSharpEnum(const ApiEnum& en, std::string& output);
-        void GenerateCSharpInterface(const ApiInterface& iface, std::string& output);
+        void GenerateCSharpEnum(const TypeInfoEnum& en, std::string& output);
+        void GenerateCSharpInterface(const TypeInfoStruct& iface, std::string& output);
 
         // ---- Sub-generators ----
 
-        void GenerateCSharpWrapperFunction(const ApiClass& cls, const ApiFunction& fn,
+        void GenerateCSharpWrapperFunction(const TypeInfoStruct& cls, const TypeInfoFunc& fn,
                                            const std::string& assemblyName, std::string& output);
-        void GenerateCSharpWrapperFunctionCall(const ApiClass& cls, const ApiFunction& fn,
+        void GenerateCSharpWrapperFunctionCall(const TypeInfoStruct& cls, const TypeInfoFunc& fn,
                                                std::string& output);
-        void GenerateCSharpAccessorProperty(const ApiClass& cls, const BindingCallable* getter,
+        void GenerateCSharpAccessorProperty(const TypeInfoStruct& cls, const BindingCallable* getter,
                                             const BindingCallable* setter, const std::string& publicName,
                                             const std::string& publicCppType, AccessLevel getterAccess,
                                             AccessLevel setterAccess, bool isStatic, const std::string& attributes,
-                                            const std::string& comment, bool isDeprecated,
+                                            const std::string& comment,
                                             const std::string& assemblyName, std::string& output);
-        void GenerateCSharpPropertyAccessors(const ApiClass& cls, const ApiProperty& prop,
-                                             const std::string& assemblyName, std::string& output);
-        void GenerateCSharpFieldAccessors(const ApiClass& cls, const ApiField& field,
+        void GenerateCSharpPropertyAccessors(const TypeInfoStruct& cls, const TypeInfoFunc& prop,
+                                             std::vector<bool>& consumedFunctions,
+                                             int functionIndex, const std::string& assemblyName,
+                                             std::string& output);
+        void GenerateCSharpFieldAccessors(const TypeInfoStruct& cls, const TypeInfoField& field,
                                           const std::string& assemblyName, std::string& output);
-        void GenerateCSharpEventAccessors(const ApiClass& cls, const ApiEvent& evt,
+        void GenerateCSharpEventAccessors(const TypeInfoStruct& cls, const TypeInfoEvent& evt,
                                           const std::string& assemblyName, std::string& output);
-        void GenerateCSharpClassMarshaller(const ApiClass& cls, std::string& marshallerName, std::string& output);
-        void GenerateCSharpStructMarshaller(const ApiClass& cls, std::string& output);
+        void GenerateCSharpClassMarshaller(std::string& name, std::string& marshallerName, std::string& output);
+        void GenerateCSharpStructMarshaller(const TypeInfoStruct& cls, std::string& output);
 
         // ---- Helpers ----
 
 
-        std::string BuildCSharpParams(const ApiFunction& fn, bool forPublic) const;
-        std::string BuildCSharpInteropParams(const ApiClass& cls, const ApiFunction& fn) const;
-        std::string BuildCSharpCallArgs(const ApiClass& cls, const ApiFunction& fn, bool isInterop) const;
+        std::string BuildCSharpParams(const TypeInfoFunc& fn, bool forPublic) const;
+        std::string BuildCSharpInteropParams(const TypeInfoStruct& cls, const TypeInfoFunc& fn) const;
+        std::string BuildCSharpCallArgs(const TypeInfoStruct& cls, const TypeInfoFunc& fn, bool isInterop) const;
 
         mutable std::string m_errorMessage;
     };

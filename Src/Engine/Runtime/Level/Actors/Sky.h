@@ -21,7 +21,7 @@ namespace SE
     /// <summary>
     /// Sky actor renders atmosphere around the scene with fog and sky.
     /// </summary>
-    SE_CLASS(Reflect, API)
+    SE_CLASS(Reflect, API())
     class SE_API_RUNTIME Sky : public RenderActor, public ISkyRenderer/*, public IAtmosphericFogRenderer,*/
     {
         SCRIPTING_TYPE(Sky);
@@ -41,38 +41,38 @@ namespace SE
         /// <summary>
         /// The cube texture to draw.
         /// </summary>
-        // SE_PROPERTY(API, Attributes="EditorOrder(10), DefaultValue(null), EditorDisplay(\"Skybox\")")
+        // SE_PROPERTY(API(Attributes="EditorOrder(10), DefaultValue(null), EditorDisplay(\"Skybox\")"))
         AssetRef<CubeTexture> CubeTexture;
 
         /// <summary>
         /// The skybox texture tint color.
         /// </summary>
-        // SE_PROPERTY(API, Attributes="EditorOrder(40), DefaultValue(typeof(Color), \"1,1,1,1\"), EditorDisplay(\"Skybox\")")
+        // SE_PROPERTY(API(Attributes="EditorOrder(40), DefaultValue(typeof(Color), \"1,1,1,1\"), EditorDisplay(\"Skybox\")"))
         Color Color = Colors::White;
 
         /// <summary>
         /// The skybox texture exposure value. Can be used to make skybox brighter or dimmer.
         /// </summary>
-        // SE_PROPERTY(API, Attributes="EditorOrder(50), DefaultValue(0.0f), Limit(-100, 100, 0.01f), EditorDisplay(\"Skybox\")")
+        // SE_PROPERTY(API(Attributes="EditorOrder(50), DefaultValue(0.0f), Limit(-100, 100, 0.01f), EditorDisplay(\"Skybox\")"))
         float Exposure = 0.0f;
 
     public:
         /// <summary>
         /// Directional light that is used to simulate the sun.
         /// </summary>
-        // SE_PROPERTY(API, Attributes="EditorOrder(10), DefaultValue(null), EditorDisplay(\"Sky\")")
+        // SE_PROPERTY(API(Attributes="EditorOrder(10), DefaultValue(null), EditorDisplay(\"Sky\")"))
         // ScriptingObjectReference<DirectionalLight> SunLight;
 
         /// <summary>
         /// The sun disc scale.
         /// </summary>
-        // SE_PROPERTY(API, Attributes="EditorOrder(20), DefaultValue(2.0f), EditorDisplay(\"Sky\"), Limit(0, 100, 0.01f)")
+        // SE_PROPERTY(API(Attributes="EditorOrder(20), DefaultValue(2.0f), EditorDisplay(\"Sky\"), Limit(0, 100, 0.01f)"))
         float SunDiscScale = 2.0f;
 
         /// <summary>
         /// The sun power.
         /// </summary>
-        // SE_PROPERTY(API, Attributes="EditorOrder(30), DefaultValue(8.0f), EditorDisplay(\"Sky\"), Limit(0, 1000, 0.01f)")
+        // SE_PROPERTY(API(Attributes="EditorOrder(30), DefaultValue(8.0f), EditorDisplay(\"Sky\"), Limit(0, 1000, 0.01f)"))
         float SunPower = 8.0f;
 
     private:

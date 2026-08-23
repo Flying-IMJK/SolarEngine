@@ -31,6 +31,12 @@ namespace SE
 		lastStream = nullptr;
 	}
 
+	
+	void ISerializable::Serialize(SerializeContext &context) {}
+
+	void ISerializable::Deserialize(DeserializeContext &context) {}
+
+
 	void ISerializable::DeserializeIfExists(DeserializeContext& context, const char* memberName)
 	{
 		auto member = context.stream->FindMember(memberName);

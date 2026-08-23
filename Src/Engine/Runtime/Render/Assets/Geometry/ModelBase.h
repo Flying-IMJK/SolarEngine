@@ -23,7 +23,7 @@ namespace SE
     /// <summary>
     /// Base class for asset types that can contain a model resource.
     /// </summary>
-    SE_CLASS(Reflect, API, NoSpawn)
+    SE_CLASS(Reflect, API(NoSpawn))
     class SE_API_RUNTIME ModelBase : public BinaryAsset, public StreamableResource
     {
         SE_DEFINE_CLASS(ModelBase, BinaryAsset);

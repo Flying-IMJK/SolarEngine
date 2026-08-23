@@ -24,15 +24,39 @@ namespace SE::BuildTool
         return std::string();
     }
 
+    static std::vector<PropertyData> GetReflectedProperties(TypeInfoStruct const& type)
+    {
+        std::vector<PropertyData> properties;
+        for (auto const& field : type.fields)
+        {
+            if (!field.isReflect || field.isStatic)
+            {
+                continue;
+            }
+
+            PropertyData property(field.name, field.type.ToString(), field.lineNumber);
+            property.typeID = field.type;
+            property.description = field.comment;
+            property.arraySize = field.arraySize;
+            property.isDevOnly = field.isReflect;
+            if (field.arraySize > 0)
+            {
+                property.flags.SetFlag(PropertyFlags::IsArray);
+            }
+            properties.push_back(property);
+        }
+        return properties;
+    }
+
     //-------------------------------------------------------------------------
     // Factory/Serialization Methods
     //-------------------------------------------------------------------------
     
-    static mustache::data GenerateCreationMethod(TypeData const& type )
+    static mustache::data GenerateCreationMethod(TypeInfoStruct const& type)
     {
         mustache::data generateData;
 
-        if (!type.IsFlag(TypeData::Flags::IsAbstract))
+        if (!type.isAbstract)
         {
             mustache::data notAbstractData;
             std::string namespaceName = GetNativeTypeNameSpace(type.namespaceScopeList, type.structScopeList);
@@ -50,9 +74,10 @@ namespace SE::BuildTool
     // Array Methods
     //-------------------------------------------------------------------------
 
-    static bool GenerateArrayAccessorMethod(TypeData const& type, mustache::data &generateData)
+    static bool GenerateArrayAccessorMethod(TypeInfoStruct const& type, mustache::data& generateData)
     {
-        if ( type.HasArrayProperties() && type.properties.size() > 0)
+        std::vector<PropertyData> properties = GetReflectedProperties(type);
+        if ( type.HasArrayProperties() && properties.size() > 0)
         {
             std::string namespaceName = GetNativeTypeNameSpace(type.namespaceScopeList, type.structScopeList);;
 
@@ -61,7 +86,7 @@ namespace SE::BuildTool
 
             mustache::data propertyDescDataList = mustache::data::type::list;
 
-            for ( auto& propertyDesc : type.properties )
+            for ( auto& propertyDesc : properties )
             {
                 mustache::data propertyDescData;
 
@@ -100,10 +125,11 @@ namespace SE::BuildTool
         return false;
     }
 
-    static mustache::data GenerateArrayElementSizeMethod(TypeData const& type )
+    static mustache::data GenerateArrayElementSizeMethod(TypeInfoStruct const& type)
     {
         mustache::data propertyDescDataList = mustache::data::type::list;
-        for ( auto& propertyDesc : type.properties )
+        std::vector<PropertyData> properties = GetReflectedProperties(type);
+        for ( auto& propertyDesc : properties )
         {
 			std::string const templateSpecializationString = propertyDesc.templateArgTypeName.empty() ? std::string() : "<" + propertyDesc.templateArgTypeName + ">";
 
@@ -129,9 +155,10 @@ namespace SE::BuildTool
         return propertyDescDataList;
     }
 
-    static bool GenerateArrayElementOperateMethod(TypeData const& type, mustache::data &generateData)
+    static bool GenerateArrayElementOperateMethod(TypeInfoStruct const& type, mustache::data& generateData)
     {
-        if (type.HasDynamicArrayProperties() && type.properties.size() > 0)
+        std::vector<PropertyData> properties = GetReflectedProperties(type);
+        if (type.HasDynamicArrayProperties() && properties.size() > 0)
         {
             std::string namespaceName = GetNativeTypeNameSpace(type.namespaceScopeList, type.structScopeList);;
 
@@ -139,7 +166,7 @@ namespace SE::BuildTool
             generateData.set("typeName", type.name.c_str());
 
             mustache::data propertyDescDataList = mustache::data::type::list;
-            for ( auto& propertyDesc : type.properties )
+            for ( auto& propertyDesc : properties )
             {
                 if ( propertyDesc.IsDynamicArrayProperty() )
                 {
@@ -173,9 +200,10 @@ namespace SE::BuildTool
     // Default Value Methods
     //-------------------------------------------------------------------------
 
-    static bool GenerateAreAllPropertiesEqualMethod(TypeData const& type, mustache::data generateData)
+    static bool GenerateAreAllPropertiesEqualMethod(TypeInfoStruct const& type, mustache::data generateData)
     {
-        if (type.HasProperties() && type.properties.size() > 0)
+        std::vector<PropertyData> properties = GetReflectedProperties(type);
+        if (type.HasProperties() && properties.size() > 0)
         {
             std::string namespaceName = GetNativeTypeNameSpace(type.namespaceScopeList, type.structScopeList);;
 
@@ -183,7 +211,7 @@ namespace SE::BuildTool
             generateData.set("typeName", type.name.c_str());
 
             mustache::data propertyDescDataList = mustache::data::type::list;
-            for ( auto& propertyDesc : type.properties )
+            for ( auto& propertyDesc : properties )
             {
                 mustache::data propertyDescData;
                 if ( propertyDesc.isDevOnly )
@@ -206,10 +234,11 @@ namespace SE::BuildTool
         return false;
     }
 
-    static bool GenerateIsPropertyEqualMethod(TypeData const& type, mustache::data &generateData)
+    static bool GenerateIsPropertyEqualMethod(TypeInfoStruct const& type, mustache::data& generateData)
     {
 
-        if ( type.HasProperties() && type.properties.size() > 0)
+        std::vector<PropertyData> properties = GetReflectedProperties(type);
+        if ( type.HasProperties() && properties.size() > 0)
         {
             std::string namespaceName = GetNativeTypeNameSpace(type.namespaceScopeList, type.structScopeList);;
 
@@ -217,7 +246,7 @@ namespace SE::BuildTool
             generateData.set("typeName", type.name.c_str());
 
             mustache::data propertyDescDataList = mustache::data::type::list;
-            for ( auto& propertyDesc : type.properties )
+            for ( auto& propertyDesc : properties )
             {
 				std::string propertyTypeName = propertyDesc.typeName.c_str();
                 if ( !propertyDesc.templateArgTypeName.empty() )
@@ -291,9 +320,10 @@ namespace SE::BuildTool
         return false;
     }
     
-    static bool GenerateSetToDefaultValueMethod(TypeData const& type, mustache::data &generateData)
+    static bool GenerateSetToDefaultValueMethod(TypeInfoStruct const& type, mustache::data& generateData)
     {
-        if ( type.HasProperties() && type.properties.size() > 0)
+        std::vector<PropertyData> properties = GetReflectedProperties(type);
+        if ( type.HasProperties() && properties.size() > 0)
         {
             std::string namespaceName = GetNativeTypeNameSpace(type.namespaceScopeList, type.structScopeList);;
 
@@ -301,7 +331,7 @@ namespace SE::BuildTool
             generateData.set("typeName", type.name.c_str());
 
             mustache::data propertyDescDataList = mustache::data::type::list;
-            for ( auto& propertyDesc : type.properties )
+            for ( auto& propertyDesc : properties )
             {
                 mustache::data propertyDescData;
                 if ( propertyDesc.isDevOnly )
@@ -347,9 +377,10 @@ namespace SE::BuildTool
     //-------------------------------------------------------------------------
     // Resource Methods
     //-------------------------------------------------------------------------
-    static bool GenerateResourcesMethod(TypeData const& type, mustache::data &generateData)
+    static bool GenerateResourcesMethod(TypeInfoStruct const& type, mustache::data& generateData)
     {
-        if (type.HasResourcePtrOrStructProperties() && type.properties.size() > 0)
+        std::vector<PropertyData> properties = GetReflectedProperties(type);
+        if (type.HasResourcePtrOrStructProperties() && properties.size() > 0)
         {
             std::string namespaceName = GetNativeTypeNameSpace(type.namespaceScopeList, type.structScopeList);;
 
@@ -449,7 +480,7 @@ namespace SE::BuildTool
         return false;
     }
 
-    static mustache::data GenerateExpectedResourceTypeMethod(TypeData const& type )
+    static mustache::data GenerateExpectedResourceTypeMethod(TypeInfoStruct const& type)
     {
         mustache::data generateData;
 
@@ -500,7 +531,7 @@ namespace SE::BuildTool
     //-------------------------------------------------------------------------
     // Type Registration Methods
     //-------------------------------------------------------------------------
-    static mustache::data GenerateTypeInfoConstructor(TypeData const& type, TypeData const& parentType )
+    static mustache::data GenerateTypeInfoConstructor(TypeInfoStruct const& type, TypeInfoStruct const& parentType)
     {
         mustache::data generateData;
 
@@ -577,7 +608,7 @@ namespace SE::BuildTool
 
 
             // Abstract types cannot have default values since they cannot be instantiated
-            if (!type.IsFlag(TypeData::Flags::IsAbstract))
+            if (!type.isAbstract)
             {
                 mustache::data isNotAbstractData;
 
@@ -633,15 +664,16 @@ namespace SE::BuildTool
 
         generateData.set("namespace", std::string(namespaceName.c_str()));
         generateData.set("typeName", type.name.c_str());
-        generateData.set("isAbstract", type.IsFlag(TypeData::Flags::IsAbstract) ? "true":"false");
+        generateData.set("isAbstract", type.isAbstract ? "true":"false");
         generateData.set("category", type.GetCategory().c_str());
         generateData.set("isDevOnly", type.isDevOnly ? "true":"false");
         generateData.set("parentTypeNamespace", std::string(parentTypeNamespace.c_str()));
         generateData.set("parentTypeName", parentType.name.c_str());
-        generateData.set("hasProperties", type.HasProperties());
-        if (type.HasProperties())
+        std::vector<PropertyData> properties = GetReflectedProperties(type);
+        generateData.set("hasProperties", !properties.empty());
+        if (!properties.empty())
         {
-            if (!type.IsFlag(TypeData::Flags::IsAbstract))
+            if (!type.isAbstract)
             {
                 mustache::data propertiesisAbstractData;
                 propertiesisAbstractData.set("namespace", std::string(namespaceName.c_str()));
@@ -650,7 +682,7 @@ namespace SE::BuildTool
             }
             
             mustache::data propertieDataList = mustache::data::type::list;
-            for ( auto& prop : type.properties )
+            for ( auto& prop : properties )
             {
                 mustache::data propertieData;
                 GeneratePropertyRegistrationCode(prop, propertieData);
@@ -668,7 +700,10 @@ namespace SE::BuildTool
     // File generation
     //-------------------------------------------------------------------------
 
-    static mustache::data GenerateTypeInfoFile(ReflectionDatabase const& database, std::string const& exportMacro, TypeData const& type, TypeData const& parentType )
+    static mustache::data GenerateTypeInfoFile(TypeDatabase const&   database,
+                                               std::string const&        exportMacro,
+                                               TypeInfoStruct const&     type,
+                                               TypeInfoStruct const&     parentType)
     {
         mustache::data generateTypeData;
         // Dev Flag
@@ -685,7 +720,7 @@ namespace SE::BuildTool
         generateTypeData.set("typeName", type.name.c_str());
         generateTypeData.set("exportMacro", exportMacro.c_str());
         generateTypeData.set("typeIDUint", std::to_string(type.typeID));
-        if (!type.IsFlag(TypeData::Flags::IsAbstract))
+        if (!type.isAbstract)
         {
             generateTypeData.set("IsNotAbstract", true);
         }
@@ -759,8 +794,13 @@ namespace SE::BuildTool
 
     //-------------------------------------------------------------------------
 
-    void CppGenerateType(Generator* generator,  ReflectionDatabase const& database, std::stringstream& codeFile, std::string const& exportMacro,
-            TypeData const& type, TypeData const& parentType, std::string templateStr)
+    void CppGenerateType(Generator*            generator,
+                         TypeDatabase const&   database,
+                         std::stringstream&    codeFile,
+                         std::string const&    exportMacro,
+                         TypeInfoStruct const&     type,
+                         TypeInfoStruct const&     parentType,
+                         std::string               templateStr)
     {
         //GenerateTypeInfoFile( codeFile, database, exportMacro, type, parentType );
         mustache::data data = GenerateTypeInfoFile(database, exportMacro, type, parentType);

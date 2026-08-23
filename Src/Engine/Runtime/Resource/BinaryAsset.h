@@ -11,7 +11,7 @@ namespace SE
 	/// Base class for all binary assets.
 	/// </summary>
 	/// <seealso cref="Asset" />
-	SE_CLASS(Reflect, API, NoSpawn, Abstract)
+	SE_CLASS(Reflect, API(NoSpawn, Abstract))
 	class SE_API_RUNTIME BinaryAsset : public Asset
 	{
 		SE_DEFINE_CLASS(BinaryAsset, Asset);

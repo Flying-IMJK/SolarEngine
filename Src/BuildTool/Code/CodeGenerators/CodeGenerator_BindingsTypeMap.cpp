@@ -843,8 +843,7 @@ namespace SE::BuildTool
     bool IsCollectionType(const std::string& cppType)
     {
         std::string stripped = StripTypeQualifiers(cppType);
-        return Utils::String::StartsWith(stripped, "Array<")
-            || Utils::String::StartsWith(stripped, "Span<")
+        return Utils::String::StartsWith(stripped, "Span<")
             || Utils::String::StartsWith(stripped, "List<")
             || Utils::String::StartsWith(stripped, "Dictionary<")
             || Utils::String::StartsWith(stripped, "HashSet<")

@@ -14,7 +14,7 @@
 // Usage:
 //   // Class with reflection + binding:
 //   DEFINE_CLASS(MyClass, BaseClass)
-//   SE_CLASS(Reflect, API)
+//   SE_CLASS(Reflect, API())
 //   class MyClass : public BaseClass { ... };
 //
 //   // Enum with reflection only:
@@ -22,15 +22,15 @@
 //   enum class MyEnum : uint8 { A = 0, B = 1 };
 //
 //   // Property with reflection + binding:
-//   SE_PROPERTY(Reflect, API, Category="MyCategory")
+//   SE_PROPERTY(Reflect, Category="MyCategory", API())
 //   int32 myProp;
 //
 //   // Function with binding only:
-//   SE_FUNCTION(API)
+//   SE_FUNCTION(API())
 //   void DoSomething(int32 value);
 //
 //   // Native WindowBase exposed to C# as Window:
-//   SE_CLASS(API, NoSpawn, NoConstructor, Sealed, Name="Window")
+//   SE_CLASS(API(NoSpawn, NoConstructor, Sealed, Name="Window"))
 //   class WindowBase : public ScriptingObject { ... };
 //
 //   // Inject helper code into generated binding files:

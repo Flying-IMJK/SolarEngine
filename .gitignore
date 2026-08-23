@@ -35,4 +35,6 @@ build/
 Debug/
 Release/
 Intermediate/
-
+.vs/
+build/
+/graphify-out

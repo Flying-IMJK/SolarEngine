@@ -83,7 +83,7 @@ namespace SE::Editor
 		EditorContext m_Context;
 	};
 
-	SE_CLASS(API, NoSpawn, Name="Editor")
+	SE_CLASS(API(NoSpawn, Name="Editor"))
 	class ManagedEditor : ScriptingObject
 	{
 		SCRIPTING_TYPE_NO_SPAWN(ManagedEditor);

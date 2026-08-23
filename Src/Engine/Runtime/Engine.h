@@ -12,7 +12,7 @@ namespace SE
 		class TaskGraph;
 	}
 
-	SE_CLASS(API, Static)
+	SE_CLASS(API(Static))
 	class SE_API_RUNTIME Engine
     {
 		SCRIPTING_TYPE_NO_SPAWN(Engine);
@@ -20,25 +20,25 @@ namespace SE
 		/// <summary>
 		/// The engine start time (local time).
 		/// </summary>
-		SE_PROPERTY(API)
+        SE_FIELD(API())
 		static DateTime StartupTime;
 
 		/// <summary>
 		/// True if app has focus (one of the windows is being focused).
 		/// </summary>
-		SE_PROPERTY(API)
+        SE_FIELD(API())
 		static bool HasFocus;
 
 		/// <summary>
 		/// Gets the current update counter since the start of the game.
 		/// </summary>
-		SE_PROPERTY(API)
+        SE_FIELD(API())
 		static uint64 UpdateCount;
 
 		/// <summary>
 		/// Gets the current frame (drawing) count since the start of the game.
 		/// </summary>
-		SE_PROPERTY(API)
+        SE_FIELD(API())
 		static uint64 FrameCount;
 
 	public:

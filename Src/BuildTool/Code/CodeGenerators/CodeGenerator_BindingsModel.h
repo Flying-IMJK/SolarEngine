@@ -49,9 +49,9 @@ namespace SE::BuildTool
         uint64                  inputHash = 1469598103934665603ull;
     };
 
-    // A callable is the common ABI surface shared by methods, properties and
-    // fields. The ApiFunction owns the managed/native signature while the kind
-    // only determines how the native expression is formed.
+    // A callable is the common ABI surface shared by methods and fields. The
+    // TypeInfoFunc owns the managed/native signature while the kind only
+    // determines how the native expression is formed.
     enum class BindingInvocationKind
     {
         Method,
@@ -61,16 +61,16 @@ namespace SE::BuildTool
 
     struct BindingCallable
     {
-        ApiFunction function;
+        TypeInfoFunc function;
         BindingInvocationKind invocation = BindingInvocationKind::Method;
     };
 
     BindingTypeInfo ResolveBindingType(const std::string& cppType);
-    BindingCallable MakeBindingMethodCallable(const ApiFunction& function);
-    BindingCallable MakeBindingPropertyGetter(const ApiProperty& property);
-    BindingCallable MakeBindingPropertySetter(const ApiProperty& property);
-    BindingCallable MakeBindingFieldGetter(const ApiClass& cls, const ApiField& field);
-    BindingCallable MakeBindingFieldSetter(const ApiClass& cls, const ApiField& field);
+    BindingCallable MakeBindingMethodCallable(const TypeInfoFunc& function);
+    BindingCallable MakeBindingPropertyGetter(const TypeInfoStruct& cls, const TypeInfoFunc& function);
+    BindingCallable MakeBindingPropertySetter(const TypeInfoStruct& cls, const TypeInfoFunc& function);
+    BindingCallable MakeBindingFieldGetter(const TypeInfoStruct& cls, const TypeInfoField& field);
+    BindingCallable MakeBindingFieldSetter(const TypeInfoStruct& cls, const TypeInfoField& field);
     std::string     GetEnumUnderlyingTypeName(Utils::TypeIDCore underlyingType);
     void            HashCombine(BindingGenerationContext& context, const std::string& value);
     void            AddBindingDiagnostic(BindingGenerationContext& context, const std::string& message,

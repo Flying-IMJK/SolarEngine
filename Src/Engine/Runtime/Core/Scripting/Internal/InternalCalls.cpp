@@ -46,14 +46,7 @@ namespace SE
 		// Get info
 		StringView msg;
 		CLRUtils::ToString(msgObj, msg);
-		//const String objName = obj ? obj->ToString() : String::Empty;
 
-		/*StringView category;
-		CLRUtils::ToString(categoryObj, msg);*/
-
-		// Send event
-		// TODO: maybe option for build to threat warnings and errors as fatal errors?
-		//const String logMessage = String::Format(TEXT("Debug:{1} {2}"), objName, *
 		Log::AddEntry(level, SE_TEXT("Scripting"),  __FILE__, __LINE__, msg.Get());
 	}
 

@@ -66,7 +66,7 @@ namespace SE
 	};
 
 
-	SE_CLASS(API, Sealed, NoSpawn)
+	SE_CLASS(API(Sealed, NoSpawn))
 	class SE_API_RUNTIME GPUShader : public GPUResource
 	{
 		SCRIPTING_TYPE_NO_SPAWN(GPUShader);

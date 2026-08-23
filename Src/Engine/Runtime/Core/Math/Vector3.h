@@ -12,7 +12,7 @@ namespace SE
 	/// <summary>
 	/// Represents a three dimensional mathematical vector.
 	/// </summary>
-	SE_STRUCT(Template)
+    SE_STRUCT(Template)
 	template<typename T>
 	struct Vector3Base
 	{
@@ -24,19 +24,19 @@ namespace SE
 				/// <summary>
 				/// The X component.
 				/// </summary>
-				SE_PROPERTY(API)
+				SE_FIELD(API())
 				T x;
 
 				/// <summary>
 				/// The Y component.
 				/// </summary>
-				SE_PROPERTY(API)
+                SE_FIELD(API())
 				T y;
 
 				/// <summary>
 				/// The Z component.
 				/// </summary>
-				SE_PROPERTY(API)
+                SE_FIELD(API())
 				T z;
 			};
 

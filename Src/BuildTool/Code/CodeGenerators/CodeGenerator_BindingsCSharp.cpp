@@ -27,18 +27,52 @@ namespace SE::BuildTool
     using CodeGeneratorUtils::NormalizeCSharpDefaultValue;
     using CodeGeneratorUtils::UsesCSharpOutResult;
 
-    std::string BindingsCSharpGenerator::BuildCSharpParams(const ApiFunction& fn, bool forPublic) const
+    namespace
+    {
+        std::string GetCppType(TypeInfoParam const& param)
+        {
+            return param.type.ToString();
+        }
+
+        std::string GetCppType(TypeInfoField const& field)
+        {
+            return field.type.ToString();
+        }
+
+        std::string GetCppType(TypeInfoFunc const& fn)
+        {
+            return fn.returnType.ToString();
+        }
+
+        bool IsVoid(TypeInfoFunc const& fn)
+        {
+            return fn.returnType == TypeID("void");
+        }
+
+        std::string GetPropertyName(TypeInfoFunc const& fn)
+        {
+            if ((Utils::String::StartsWith(fn.name, "Get") || Utils::String::StartsWith(fn.name, "Set"))
+                && fn.name.length() > 3)
+            {
+                return fn.name.substr(3);
+            }
+            return fn.name;
+        }
+    }
+
+    std::string BindingsCSharpGenerator::BuildCSharpParams(const TypeInfoFunc& fn, bool forPublic) const
     {
         std::string params;
         for (int i = 0; i < fn.params.size(); ++i)
         {
             if (i > 0) params += ", ";
 
-            std::string type = forPublic ? GetCSharpPublicType(fn.params[i].cppType, fn.params[i].arraySize)
-                                         : GetCSharpInteropType(fn.params[i].cppType, fn.params[i].arraySize);
+            std::string const cppType = GetCppType(fn.params[i]);
+            std::string type = forPublic ? GetCSharpPublicType(cppType, fn.params[i].arraySize)
+                                         : GetCSharpInteropType(cppType, fn.params[i].arraySize);
 
             // Pass by ref for non-interop
-            if (forPublic && UsePassByReference(fn.params[i].cppType) && !fn.params[i].isOut)
+            if (forPublic && UsePassByReference(cppType) && !fn.params[i].isOut)
             {
                 params += Utils::String::Format("ref {0} {1}", type, MakeCSharpIdentifier(fn.params[i].name));
             }
@@ -51,13 +85,13 @@ namespace SE::BuildTool
                 // Add marshal attribute for interop params
                 if (!forPublic)
                 {
-                    std::string marshalAttr = GetCSharpParamMarshalAttribute(fn.params[i].cppType, fn.params[i].name,
+                    std::string marshalAttr = GetCSharpParamMarshalAttribute(cppType, fn.params[i].name,
                         fn.params[i].arraySize);
                     if (!marshalAttr.empty())
                         params += Utils::String::Format("{0} ", marshalAttr);
                 }
                 std::string defaultValue;
-                if (forPublic && !fn.params[i].defaultValue.empty() && !fn.params[i].isOut && !UsePassByReference(fn.params[i].cppType))
+                if (forPublic && !fn.params[i].defaultValue.empty() && !fn.params[i].isOut && !UsePassByReference(cppType))
                     defaultValue = Utils::String::Format(" = {0}", NormalizeCSharpDefaultValue(fn.params[i]));
                 params += Utils::String::Format("{0} {1}{2}", type, MakeCSharpIdentifier(fn.params[i].name), defaultValue);
             }
@@ -65,7 +99,7 @@ namespace SE::BuildTool
         return params;
     }
 
-    std::string BindingsCSharpGenerator::BuildCSharpInteropParams(const ApiClass& cls, const ApiFunction& fn) const
+    std::string BindingsCSharpGenerator::BuildCSharpInteropParams(const TypeInfoStruct& cls, const TypeInfoFunc& fn) const
     {
         std::string params;
         if (!fn.isStatic)
@@ -76,8 +110,9 @@ namespace SE::BuildTool
         for (int i = 0; i < fn.params.size(); ++i)
         {
             if (params.length() > 0) params += ", ";
-            std::string interopType = GetCSharpInteropType(fn.params[i].cppType, fn.params[i].arraySize);
-            std::string marshalAttr = GetCSharpParamMarshalAttribute(fn.params[i].cppType, fn.params[i].name,fn.params[i].arraySize);
+            std::string const cppType = GetCppType(fn.params[i]);
+            std::string interopType = GetCSharpInteropType(cppType, fn.params[i].arraySize);
+            std::string marshalAttr = GetCSharpParamMarshalAttribute(cppType, fn.params[i].name,fn.params[i].arraySize);
 
             if (!marshalAttr.empty())
             {
@@ -87,12 +122,12 @@ namespace SE::BuildTool
             {
                 params += "out ";
             }
-            else if (UsePassByReference(fn.params[i].cppType))
+            else if (UsePassByReference(cppType))
             {
                 params += "ref ";
             }
             params += Utils::String::Format("{0} {1}", interopType, MakeCSharpIdentifier(fn.params[i].name));
-            const CollectionAbiInfo collection = GetCollectionAbiInfo(fn.params[i].cppType, fn.params[i].arraySize);
+            const CollectionAbiInfo collection = GetCollectionAbiInfo(cppType, fn.params[i].arraySize);
             if (collection.HasRuntimeCount())
             {
                 params += Utils::String::Format(", int __{0}Count", MakeCSharpIdentifier(fn.params[i].name));
@@ -101,7 +136,7 @@ namespace SE::BuildTool
         return params;
     }
 
-    std::string BindingsCSharpGenerator::BuildCSharpCallArgs(const ApiClass& cls, const ApiFunction& fn, bool isInterop) const
+    std::string BindingsCSharpGenerator::BuildCSharpCallArgs(const TypeInfoStruct& cls, const TypeInfoFunc& fn, bool isInterop) const
     {
         std::string args;
         if (!fn.isStatic && isInterop)
@@ -115,18 +150,19 @@ namespace SE::BuildTool
             {
                 // Convert to interop representation
                 std::string paramName = MakeCSharpIdentifier(fn.params[i].name);
-                const CollectionAbiInfo collection = GetCollectionAbiInfo(fn.params[i].cppType, fn.params[i].arraySize);
+                std::string const cppType = GetCppType(fn.params[i]);
+                const CollectionAbiInfo collection = GetCollectionAbiInfo(cppType, fn.params[i].arraySize);
                 std::string toInterop = collection.IsCollection() ? paramName
-                    : GetCSharpToInterop(fn.params[i].cppType, paramName);
+                    : GetCSharpToInterop(cppType, paramName);
                 if (fn.params[i].isOut)
                     args += Utils::String::Format("out {0}", paramName);
-                else if (UsePassByReference(fn.params[i].cppType))
+                else if (UsePassByReference(cppType))
                     args += Utils::String::Format("ref {0}", toInterop);
                 else
                     args += toInterop;
                 if (collection.HasRuntimeCount())
                 {
-                    args += Utils::String::Format(", {0}", GetCSharpCollectionCountExpression(fn.params[i].cppType, paramName));
+                    args += Utils::String::Format(", {0}", GetCSharpCollectionCountExpression(cppType, paramName));
                 }
             }
             else
@@ -134,7 +170,7 @@ namespace SE::BuildTool
                 // Public call - forward as-is with ref/out keywords
                 if (fn.params[i].isOut)
                     args += Utils::String::Format("out {0}", MakeCSharpIdentifier(fn.params[i].name));
-                else if (UsePassByReference(fn.params[i].cppType))
+                else if (UsePassByReference(GetCppType(fn.params[i])))
                     args += Utils::String::Format("ref {0}", MakeCSharpIdentifier(fn.params[i].name));
                 else
                     args += MakeCSharpIdentifier(fn.params[i].name);
@@ -147,20 +183,21 @@ namespace SE::BuildTool
     // [DllImport] declaration for a single function
     // -------------------------------------------------------------------------
 
-    void BindingsCSharpGenerator::GenerateCSharpWrapperFunction(const ApiClass& cls, const ApiFunction& fn,
+    void BindingsCSharpGenerator::GenerateCSharpWrapperFunction(const TypeInfoStruct& cls, const TypeInfoFunc& fn,
                                                                 const std::string& assemblyName, std::string& output)
     {
-        const CollectionAbiInfo returnCollection = GetCollectionAbiInfo(fn.returnType, fn.returnArraySize);
-        std::string interopRetType = GetCSharpInteropType(fn.returnType, fn.returnArraySize);
+        std::string const returnType = GetCppType(fn);
+        const CollectionAbiInfo returnCollection = GetCollectionAbiInfo(returnType, fn.returnArraySize);
+        std::string interopRetType = GetCSharpInteropType(returnType, fn.returnArraySize);
         std::string interopParams = BuildCSharpInteropParams(cls, fn);
-        std::string returnMarshalAttr = GetCSharpReturnMarshalAttribute(fn.returnType, fn.returnArraySize);
+        std::string returnMarshalAttr = GetCSharpReturnMarshalAttribute(returnType, fn.returnArraySize);
         std::string internalName = Utils::String::Format("Internal_{0}", fn.uniqueName);
-        const bool useOutResult = UsesCSharpOutResult(fn.returnType);
+        const bool useOutResult = UsesCSharpOutResult(returnType);
         if (useOutResult)
         {
             if (!interopParams.empty())
                 interopParams += ", ";
-            std::string marshal = GetCSharpParamMarshalAttribute(fn.returnType, "__resultAsRef");
+            std::string marshal = GetCSharpParamMarshalAttribute(returnType, "__resultAsRef");
             if (!marshal.empty())
                 interopParams += marshal + " ";
             interopParams += Utils::String::Format("out {0} __resultAsRef", interopRetType);
@@ -184,19 +221,18 @@ namespace SE::BuildTool
     // Public wrapper function call (calls the InternalCall)
     // -------------------------------------------------------------------------
 
-    void BindingsCSharpGenerator::GenerateCSharpWrapperFunctionCall(const ApiClass& cls, const ApiFunction& fn,
+    void BindingsCSharpGenerator::GenerateCSharpWrapperFunctionCall(const TypeInfoStruct& cls, const TypeInfoFunc& fn,
                                                                      std::string& output)
     {
-        const CollectionAbiInfo returnCollection = GetCollectionAbiInfo(fn.returnType, fn.returnArraySize);
-        std::string publicRetType = GetCSharpPublicType(fn.returnType, fn.returnArraySize);
+        std::string const returnType = GetCppType(fn);
+        const CollectionAbiInfo returnCollection = GetCollectionAbiInfo(returnType, fn.returnArraySize);
+        std::string publicRetType = GetCSharpPublicType(returnType, fn.returnArraySize);
         std::string publicParams = BuildCSharpParams(fn, true);
-        bool retIsVoid = (fn.returnType == "void");
-        std::string access = CodeGeneratorUtils::GetAccessString(fn.isHidden ? AccessLevel::Private : AccessLevel::Public);
+        bool retIsVoid = IsVoid(fn);
+        std::string access = CodeGeneratorUtils::GetAccessString(AccessLevel::Public);
         std::string staticKeyword = fn.isStatic ? "static " : "";
 
         AppendCSharpComment(output, "        ", fn.comment);
-        if (fn.isDeprecated)
-            output += "        [Obsolete]\n";
         if (IsValidCSharpAttributeList(fn.attributes))
             output += Utils::String::Format("        {0}\n", fn.attributes);
         output += Utils::String::Format("        {0} {1}{2}{3} {4}({5})\n",
@@ -214,15 +250,15 @@ namespace SE::BuildTool
         }
         std::string interopCall = Utils::String::Format("Internal_{0}({1})", fn.uniqueName, interopCallArgs);
 
-        const bool useOutResult = UsesCSharpOutResult(fn.returnType);
+        const bool useOutResult = UsesCSharpOutResult(returnType);
         if (useOutResult)
         {
             std::string callArgs = BuildCSharpCallArgs(cls, fn, true);
             if (!callArgs.empty()) callArgs += ", ";
             callArgs += "out __resultAsRef";
-            output += Utils::String::Format("            {0} __resultAsRef;\n", GetCSharpInteropType(fn.returnType));
+            output += Utils::String::Format("            {0} __resultAsRef;\n", GetCSharpInteropType(returnType));
             output += Utils::String::Format("            Internal_{0}({1});\n", fn.uniqueName, callArgs);
-            std::string fromInterop = GetCSharpFromInterop(fn.returnType, "__resultAsRef");
+            std::string fromInterop = GetCSharpFromInterop(returnType, "__resultAsRef");
             output += Utils::String::Format("            return {0};\n", fromInterop);
             output += "        }\n\n";
             return;
@@ -234,7 +270,7 @@ namespace SE::BuildTool
         }
         else
         {
-            std::string fromInterop = GetCSharpFromInterop(fn.returnType, interopCall);
+            std::string fromInterop = GetCSharpFromInterop(returnType, interopCall);
             output += Utils::String::Format("            return {0};\n", fromInterop);
         }
         output += "        }\n\n";
@@ -244,12 +280,12 @@ namespace SE::BuildTool
     // Shared accessor property generation
     // -------------------------------------------------------------------------
 
-    void BindingsCSharpGenerator::GenerateCSharpAccessorProperty(const ApiClass& cls, const BindingCallable* getter,
+    void BindingsCSharpGenerator::GenerateCSharpAccessorProperty(const TypeInfoStruct& cls, const BindingCallable* getter,
                                                                    const BindingCallable* setter, const std::string& publicName,
                                                                    const std::string& publicCppType, AccessLevel getterAccess,
                                                                    AccessLevel setterAccess, bool isStatic,
                                                                    const std::string& attributes, const std::string& comment,
-                                                                   bool isDeprecated, const std::string& assemblyName,
+                                                                   const std::string& assemblyName,
                                                                    std::string& output)
     {
         if (getter)
@@ -258,13 +294,11 @@ namespace SE::BuildTool
             GenerateCSharpWrapperFunction(cls, setter->function, assemblyName, output);
 
         const std::string publicType = getter
-            ? GetCSharpPublicType(getter->function.returnType, getter->function.returnArraySize)
-            : GetCSharpPublicType(setter->function.params[0].cppType, setter->function.params[0].arraySize);
+            ? GetCSharpPublicType(GetCppType(getter->function), getter->function.returnArraySize)
+            : GetCSharpPublicType(GetCppType(setter->function.params[0]), setter->function.params[0].arraySize);
         const AccessLevel propertyAccess = getter ? getterAccess : setterAccess;
         const std::string propertyAccessText = CodeGeneratorUtils::GetAccessString(propertyAccess);
         AppendCSharpComment(output, "        ", comment);
-        if (isDeprecated)
-            output += "        [Obsolete]\n";
         if (IsValidCSharpAttributeList(attributes))
             output += Utils::String::Format("        {0}\n", attributes);
         output += Utils::String::Format("        {0} {1}{2} {3}\n        {{\n", propertyAccessText,
@@ -272,8 +306,8 @@ namespace SE::BuildTool
 
         if (getter)
         {
-            const ApiFunction& getterFunction = getter->function;
-            const std::string& getterCppType = getterFunction.returnType;
+            const TypeInfoFunc& getterFunction = getter->function;
+            const std::string getterCppType = GetCppType(getterFunction);
             const CollectionAbiInfo getterCollection = GetCollectionAbiInfo(getterCppType, getterFunction.returnArraySize);
             const bool usesOutResult = UsesCSharpOutResult(getterCppType);
             std::string callArgs = BuildCSharpCallArgs(cls, getterFunction, true);
@@ -301,9 +335,9 @@ namespace SE::BuildTool
 
         if (setter)
         {
-            const ApiFunction& setterFunction = setter->function;
-            const std::string& setterCppType = setterFunction.params.empty()
-                ? publicCppType : setterFunction.params[0].cppType;
+            const TypeInfoFunc& setterFunction = setter->function;
+            const std::string setterCppType = setterFunction.params.empty()
+                ? publicCppType : GetCppType(setterFunction.params[0]);
             const bool usesPointer = UsePassByReference(setterCppType);
             const std::string setterModifier = getter && setterAccess != propertyAccess
                 ? CodeGeneratorUtils::GetAccessString(setterAccess) + " " : "";
@@ -346,70 +380,119 @@ namespace SE::BuildTool
     // Property and field adapters
     // -------------------------------------------------------------------------
 
-    void BindingsCSharpGenerator::GenerateCSharpPropertyAccessors(const ApiClass& cls, const ApiProperty& prop,
-                                                                   const std::string& assemblyName, std::string& output)
+    void BindingsCSharpGenerator::GenerateCSharpPropertyAccessors(const TypeInfoStruct& cls, const TypeInfoFunc& prop,
+                                                                   std::vector<bool>& consumedFunctions,
+                                                                   int functionIndex, const std::string& assemblyName,
+                                                                   std::string& output)
     {
         BindingCallable getter;
         BindingCallable setter;
         const BindingCallable* getterPtr = nullptr;
         const BindingCallable* setterPtr = nullptr;
-        if (prop.hasGetter)
+
+        for (int i = functionIndex; i < cls.functions.size(); ++i)
         {
-            getter = MakeBindingPropertyGetter(prop);
-            getterPtr = &getter;
+            TypeInfoFunc const& fn = cls.functions[i];
+            if (consumedFunctions[i] || !fn.APIIsPropertie || GetPropertyName(fn) != GetPropertyName(prop))
+            {
+                continue;
+            }
+
+            consumedFunctions[i] = true;
+            if (IsVoid(fn) && fn.params.size() == 1)
+            {
+                setter = MakeBindingPropertySetter(cls, fn);
+                setterPtr = &setter;
+            }
+            else
+            {
+                getter = MakeBindingPropertyGetter(cls, fn);
+                getterPtr = &getter;
+            }
         }
-        if (prop.hasSetter)
+
+        if (getterPtr == nullptr && setterPtr == nullptr)
         {
-            setter = MakeBindingPropertySetter(prop);
-            setterPtr = &setter;
+            return;
         }
-        GenerateCSharpAccessorProperty(cls, getterPtr, setterPtr, prop.name, prop.cppType, prop.getterAccess,
-            prop.setterAccess, prop.isStatic, prop.attributes, prop.comment, prop.isDeprecated, assemblyName, output);
+
+        TypeInfoFunc const& accessSource = getterPtr != nullptr ? getterPtr->function : setterPtr->function;
+        std::string const publicCppType = getterPtr != nullptr
+            ? GetCppType(getterPtr->function)
+            : GetCppType(setterPtr->function.params[0]);
+        GenerateCSharpAccessorProperty(cls, getterPtr, setterPtr, GetPropertyName(prop), publicCppType, accessSource.access,
+            accessSource.access, accessSource.isStatic, accessSource.attributes, accessSource.comment, assemblyName, output);
     }
 
-    void BindingsCSharpGenerator::GenerateCSharpFieldAccessors(const ApiClass& cls, const ApiField& field,
-                                                                const std::string& assemblyName, std::string& output)
+    void BindingsCSharpGenerator::GenerateCSharpFieldAccessors(const TypeInfoStruct& cls,
+                                                               const TypeInfoField&  field,
+                                                               const std::string&    assemblyName,
+                                                               std::string&          output)
     {
-        const std::string publicType = GetCSharpPublicType(field.cppType, field.arraySize);
-        const std::string stripped = StripTypeQualifiers(field.cppType);
+        std::string const fieldCppType = GetCppType(field);
+        const std::string publicType   = GetCSharpPublicType(fieldCppType, field.arraySize);
+        const std::string stripped     = StripTypeQualifiers(fieldCppType);
 
         // Classes own native state, so every exposed field is a native accessor
         // property. Struct instance fields remain direct layout members.
         if (field.isStatic || !cls.isStruct)
         {
-            BindingCallable getter = MakeBindingFieldGetter(cls, field);
-            BindingCallable setter;
+            BindingCallable        getter = MakeBindingFieldGetter(cls, field);
+            BindingCallable        setter;
             const BindingCallable* setterPtr = nullptr;
-            if (!field.isReadOnly)
+            if (!field.APIIsReadOnly)
             {
-                setter = MakeBindingFieldSetter(cls, field);
+                setter    = MakeBindingFieldSetter(cls, field);
                 setterPtr = &setter;
             }
-            const AccessLevel fieldAccess = field.isHidden ? AccessLevel::Private : AccessLevel::Public;
-            GenerateCSharpAccessorProperty(cls, &getter, setterPtr, field.name, field.cppType, fieldAccess,
-                fieldAccess, field.isStatic, field.attributes, field.comment, field.isDeprecated, assemblyName, output);
+            const AccessLevel fieldAccess = AccessLevel::Public;
+            GenerateCSharpAccessorProperty(cls,
+                                           &getter,
+                                           setterPtr,
+                                           field.name,
+                                           fieldCppType,
+                                           fieldAccess,
+                                           fieldAccess,
+                                           field.isStatic,
+                                           field.attributes,
+                                           field.comment,
+                                           assemblyName,
+                                           output);
             return;
         }
 
         if (field.arraySize > 0)
         {
             AppendCSharpComment(output, "        ", field.comment);
-            output += Utils::String::Format("        public {0}[] {1};\n\n",
-                publicType, MakeCSharpIdentifier(field.name), field.arraySize);
+            output += Utils::String::Format(
+                "        public {0}[] {1};\n\n", publicType, MakeCSharpIdentifier(field.name), field.arraySize);
             return;
         }
 
-        const std::string fieldAccess = CodeGeneratorUtils::GetAccessString(field.isHidden ? AccessLevel::Private : AccessLevel::Public);
+        const std::string fieldAccess = CodeGeneratorUtils::GetAccessString(AccessLevel::Public);
         AppendCSharpComment(output, "        ", field.comment);
-        if (field.isDeprecated)
-            output += "        [Obsolete]\n";
         if (IsValidCSharpAttributeList(field.attributes))
+        {
             output += Utils::String::Format("        {0}\n", field.attributes);
-        std::string fieldDecl = Utils::String::Format("        {0} {1} {2}", fieldAccess, publicType, MakeCSharpIdentifier(field.name));
+        }
+
+        std::string fieldDecl =
+            Utils::String::Format("        {0} {1} {2}", fieldAccess, publicType, MakeCSharpIdentifier(field.name));
         if (stripped == "bool")
-            fieldDecl = Utils::String::Format("        [MarshalAs(UnmanagedType.U1)]\n        {0} {1} {2}", fieldAccess, publicType, MakeCSharpIdentifier(field.name));
-        else if (IsStringType(field.cppType))
-            fieldDecl = Utils::String::Format("        [MarshalAs(UnmanagedType.LPUTF8Str)]\n        {0} {1} {2}", fieldAccess, publicType, MakeCSharpIdentifier(field.name));
+        {
+            fieldDecl = Utils::String::Format("        [MarshalAs(UnmanagedType.U1)]\n        {0} {1} {2}",
+                                              fieldAccess,
+                                              publicType,
+                                              MakeCSharpIdentifier(field.name));
+        }
+        else if (IsStringType(fieldCppType))
+        {
+            fieldDecl = Utils::String::Format("        [MarshalAs(UnmanagedType.LPUTF8Str)]\n        {0} {1} {2}",
+                                              fieldAccess,
+                                              publicType,
+                                              MakeCSharpIdentifier(field.name));
+        }
+
         fieldDecl += ";\n\n";
         output += fieldDecl;
     }
@@ -418,7 +501,7 @@ namespace SE::BuildTool
     // Event accessor generation
     // -------------------------------------------------------------------------
 
-    void BindingsCSharpGenerator::GenerateCSharpEventAccessors(const ApiClass& cls, const ApiEvent& evt,
+    void BindingsCSharpGenerator::GenerateCSharpEventAccessors(const TypeInfoStruct& cls, const TypeInfoEvent& evt,
                                                                 const std::string& assemblyName, std::string& output)
     {
         // Build the C# delegate type for the event
@@ -428,7 +511,8 @@ namespace SE::BuildTool
         {
             if (i > 0) delegateParams += ", ";
             if (i > 0) delegateTypes += ", ";
-            std::string publicType = GetCSharpPublicType(evt.params[i].cppType);
+            std::string const cppType = GetCppType(evt.params[i]);
+            std::string publicType = GetCSharpPublicType(cppType);
             std::string parameterName = MakeCSharpIdentifier(evt.params[i].name);
             delegateTypes += publicType;
             if (evt.params[i].isRef && !evt.params[i].isConst)
@@ -444,7 +528,7 @@ namespace SE::BuildTool
         // Native bool occupies one byte. Keep this signature consistent with
         // normal generated API calls instead of P/Invoke's default BOOL.
         AppendCSharpLibraryImport(output, assemblyName, Utils::String::Format("{0}_{1}_ManagedBind", cls.name, evt.name));
-        if (cls.isStatic)
+        if (cls.APIIsStatic)
         {
             output += Utils::String::Format("        internal static partial void Internal_{0}_Bind([MarshalAs(UnmanagedType.U1)] bool bind);\n\n", evt.name);
         }
@@ -474,7 +558,7 @@ namespace SE::BuildTool
             if (!delegateTypes.empty())
                 actionType += Utils::String::Format("<{0}>", delegateTypes);
         }
-        std::string eventModifier = cls.isStatic ? " static" : "";
+        std::string eventModifier = cls.APIIsStatic ? " static" : "";
         std::string managedArguments;
         std::string invokeParams;
         std::string invokePreparation;
@@ -489,8 +573,9 @@ namespace SE::BuildTool
             std::string parameterName = MakeCSharpIdentifier(evt.params[i].name);
             if (evt.params[i].isRef && !evt.params[i].isConst)
                 invokeParams += "ref ";
-            std::string interopType = GetCSharpInteropType(evt.params[i].cppType);
-            std::string publicType = GetCSharpPublicType(evt.params[i].cppType);
+            std::string const cppType = GetCppType(evt.params[i]);
+            std::string interopType = GetCSharpInteropType(cppType);
+            std::string publicType = GetCSharpPublicType(cppType);
             invokeParams += Utils::String::Format("{0} {1}", interopType, parameterName);
             if (evt.params[i].isRef && !evt.params[i].isConst)
             {
@@ -502,15 +587,15 @@ namespace SE::BuildTool
                 {
                     std::string managedParameterName = Utils::String::Format("__managed_{0}", parameterName);
                     invokePreparation += Utils::String::Format("                {0} {1} = {2};\n", publicType, managedParameterName,
-                        GetCSharpFromInterop(evt.params[i].cppType, parameterName));
+                        GetCSharpFromInterop(cppType, parameterName));
                     invokeWriteBack += Utils::String::Format("                {0} = {1};\n", parameterName,
-                        GetCSharpToInterop(evt.params[i].cppType, managedParameterName));
+                        GetCSharpToInterop(cppType, managedParameterName));
                     managedArguments += Utils::String::Format("ref {0}", managedParameterName);
                 }
             }
             else
             {
-                managedArguments += GetCSharpFromInterop(evt.params[i].cppType, parameterName);
+                managedArguments += GetCSharpFromInterop(cppType, parameterName);
             }
         }
 
@@ -541,7 +626,7 @@ namespace SE::BuildTool
         output += Utils::String::Format("                lock (_{0}Sync)\n                {{\n", evt.name);
         output += Utils::String::Format("                    _{0} += value;\n", evt.name);
         output += Utils::String::Format("                    if (_{0}BindCount++ != 0) return;\n", evt.name);
-        if (cls.isStatic)
+        if (cls.APIIsStatic)
         {
             output += Utils::String::Format("                    Internal_{0}_Bind(true);\n", evt.name);
         }
@@ -558,7 +643,7 @@ namespace SE::BuildTool
         output += Utils::String::Format("                    if (updated == _{0}) return;\n", evt.name);
         output += Utils::String::Format("                    _{0} = updated;\n", evt.name);
         output += Utils::String::Format("                    if (--_{0}BindCount != 0) return;\n", evt.name);
-        if (cls.isStatic)
+        if (cls.APIIsStatic)
         {
             output += Utils::String::Format("                    Internal_{0}_Bind(false);\n", evt.name);
         }
@@ -586,50 +671,52 @@ namespace SE::BuildTool
     // Class marshaller (ManagedHandleMarshaller for ScriptingObject types)
     // -------------------------------------------------------------------------
 
-    void BindingsCSharpGenerator::GenerateCSharpClassMarshaller(const ApiClass& cls, std::string& marshallerName, std::string& output)
+    void BindingsCSharpGenerator::GenerateCSharpClassMarshaller(std::string& name,
+                                                                std::string& marshallerName,
+                                                                std::string& output)
     {
-        output += Utils::String::Format("        [CustomMarshaller(typeof({0}), MarshalMode.ManagedToUnmanagedIn, typeof({1}.ManagedToNative))]\n", cls.name, marshallerName);
-        output += Utils::String::Format("        [CustomMarshaller(typeof({0}), MarshalMode.ElementIn, typeof({1}.ManagedToNative))]\n", cls.name, marshallerName);
-        output += Utils::String::Format("        [CustomMarshaller(typeof({0}), MarshalMode.ManagedToUnmanagedOut, typeof({1}.ManagedToNative))]\n", cls.name, marshallerName);
-        output += Utils::String::Format("        [CustomMarshaller(typeof({0}), MarshalMode.UnmanagedToManagedIn, typeof({1}.ManagedToNative))]\n", cls.name, marshallerName);
-        output += Utils::String::Format("        [CustomMarshaller(typeof({0}), MarshalMode.ElementOut, typeof({1}.ManagedToNative))]\n", cls.name, marshallerName);
-        output += Utils::String::Format("        [CustomMarshaller(typeof({0}), MarshalMode.ManagedToUnmanagedRef, typeof({1}.Bidirectional))]\n", cls.name, marshallerName);
-        output += Utils::String::Format("        [CustomMarshaller(typeof({0}), MarshalMode.UnmanagedToManagedRef, typeof({1}.Bidirectional))]\n", cls.name, marshallerName);
-        output += Utils::String::Format("        [CustomMarshaller(typeof({0}), MarshalMode.ElementRef, typeof({1}))]\n", cls.name, marshallerName);
+        output += Utils::String::Format("        [CustomMarshaller(typeof({0}), MarshalMode.ManagedToUnmanagedIn, typeof({1}.ManagedToNative))]\n", name, marshallerName);
+        output += Utils::String::Format("        [CustomMarshaller(typeof({0}), MarshalMode.ElementIn, typeof({1}.ManagedToNative))]\n", name, marshallerName);
+        output += Utils::String::Format("        [CustomMarshaller(typeof({0}), MarshalMode.ManagedToUnmanagedOut, typeof({1}.ManagedToNative))]\n", name, marshallerName);
+        output += Utils::String::Format("        [CustomMarshaller(typeof({0}), MarshalMode.UnmanagedToManagedIn, typeof({1}.ManagedToNative))]\n", name, marshallerName);
+        output += Utils::String::Format("        [CustomMarshaller(typeof({0}), MarshalMode.ElementOut, typeof({1}.ManagedToNative))]\n", name, marshallerName);
+        output += Utils::String::Format("        [CustomMarshaller(typeof({0}), MarshalMode.ManagedToUnmanagedRef, typeof({1}.Bidirectional))]\n", name, marshallerName);
+        output += Utils::String::Format("        [CustomMarshaller(typeof({0}), MarshalMode.UnmanagedToManagedRef, typeof({1}.Bidirectional))]\n", name, marshallerName);
+        output += Utils::String::Format("        [CustomMarshaller(typeof({0}), MarshalMode.ElementRef, typeof({1}))]\n", name, marshallerName);
 
-        output += Utils::String::Format("        internal struct {0}Marshaller\n        {{\n", cls.name);
+        output += Utils::String::Format("        internal struct {0}Marshaller\n        {{\n", name);
 
         output += "            #pragma warning disable 1591\n";
         output += "            public static class NativeToManaged\n";
         output += "            {\n";
-        output += Utils::String::Format("                public static {0} ConvertToManaged(IntPtr unmanaged) => Unsafe.As<{0}>(ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged));\n", cls.name);
-        output += Utils::String::Format("                public static IntPtr ConvertToUnmanaged({0} managed) => ManagedHandleMarshaller.ManagedToNative.ConvertToUnmanaged(managed);\n", cls.name);
-        output += Utils::String::Format("                public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.NativeToManaged.Free(unmanaged);\n", cls.name);
+        output += Utils::String::Format("                public static {0} ConvertToManaged(IntPtr unmanaged) => Unsafe.As<{0}>(ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged));\n", name);
+        output += Utils::String::Format("                public static IntPtr ConvertToUnmanaged({0} managed) => ManagedHandleMarshaller.ManagedToNative.ConvertToUnmanaged(managed);\n", name);
+        output += Utils::String::Format("                public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.NativeToManaged.Free(unmanaged);\n", name);
         output += "            }\n";
 
 
         output += "            public static class ManagedToNative\n";
         output += "            {\n";
-        output += Utils::String::Format("                public static {0} ConvertToManaged(IntPtr unmanaged) => Unsafe.As<{0}>(ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged));\n", cls.name);
-        output += Utils::String::Format("                public static IntPtr ConvertToUnmanaged({0} managed) => ManagedHandleMarshaller.ManagedToNative.ConvertToUnmanaged(managed);\n", cls.name);
-        output += Utils::String::Format("                public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.NativeToManaged.Free(unmanaged);\n", cls.name);
+        output += Utils::String::Format("                public static {0} ConvertToManaged(IntPtr unmanaged) => Unsafe.As<{0}>(ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged));\n", name);
+        output += Utils::String::Format("                public static IntPtr ConvertToUnmanaged({0} managed) => ManagedHandleMarshaller.ManagedToNative.ConvertToUnmanaged(managed);\n", name);
+        output += Utils::String::Format("                public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.NativeToManaged.Free(unmanaged);\n", name);
         output += "            }\n";
 
         output += "            public struct Bidirectional\n";
         output += "            {\n";
         output += "                ManagedHandleMarshaller.Bidirectional marsh;\n";
-        output += Utils::String::Format("                public void FromManaged({0} managed) => marsh.FromManaged(managed);\n", cls.name);
+        output += Utils::String::Format("                public void FromManaged({0} managed) => marsh.FromManaged(managed);\n", name);
         output += "                public IntPtr ToUnmanaged() => marsh.ToUnmanaged();\n";
         output += "                public void FromUnmanaged(IntPtr unmanaged) => marsh.FromUnmanaged(unmanaged);\n";
-        output += Utils::String::Format("                public {0} ToManaged() => Unsafe.As<{0}>(marsh.ToManaged());\n", cls.name);
+        output += Utils::String::Format("                public {0} ToManaged() => Unsafe.As<{0}>(marsh.ToManaged());\n", name);
         output += "                public void Free() => marsh.Free();\n";
         output += "            }\n";
 
-        output += Utils::String::Format("            internal static {0} ConvertToManaged(IntPtr unmanaged) => Unsafe.As<{0}>(ManagedHandleMarshaller.ConvertToManaged(unmanaged));\n", cls.name);
+        output += Utils::String::Format("            internal static {0} ConvertToManaged(IntPtr unmanaged) => Unsafe.As<{0}>(ManagedHandleMarshaller.ConvertToManaged(unmanaged));\n", name);
         output += "            internal static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.Free(unmanaged);\n";
 
-        output += Utils::String::Format("            internal static {0} ToManaged(IntPtr managed) => Unsafe.As<{0}>(ManagedHandleMarshaller.ToManaged(managed));\n", cls.name);
-        output += Utils::String::Format("            internal static IntPtr ToNative({0} managed) => ManagedHandleMarshaller.ToNative(managed);\n", cls.name);
+        output += Utils::String::Format("            internal static {0} ToManaged(IntPtr managed) => Unsafe.As<{0}>(ManagedHandleMarshaller.ToManaged(managed));\n", name);
+        output += Utils::String::Format("            internal static IntPtr ToNative({0} managed) => ManagedHandleMarshaller.ToNative(managed);\n", name);
         output += "        #pragma warning restore 1591\n";
         output += "        }\n\n";
     }
@@ -638,7 +725,7 @@ namespace SE::BuildTool
     // Struct marshaller (CustomMarshaller with blittable internal)
     // -------------------------------------------------------------------------
 
-    void BindingsCSharpGenerator::GenerateCSharpStructMarshaller(const ApiClass& cls, std::string& output)
+    void BindingsCSharpGenerator::GenerateCSharpStructMarshaller(const TypeInfoStruct& cls, std::string& output)
     {
         // Match the .NET source-generated P/Invoke marshalling modes used by
         // Flax. MarshalMode.Default alone requires runtime marshalling and is
@@ -661,7 +748,8 @@ namespace SE::BuildTool
         for (auto& field : cls.fields)
         {
             if (field.isStatic) continue;
-            std::string fieldType = GetCSharpStructAbiFieldType(field.cppType);
+            std::string const fieldCppType = GetCppType(field);
+            std::string fieldType = GetCSharpStructAbiFieldType(fieldCppType);
             if (field.arraySize > 0)
                 output += Utils::String::Format("                public fixed {0} {1}[{2}];\n", fieldType, field.name, field.arraySize);
             else
@@ -678,14 +766,14 @@ namespace SE::BuildTool
             if (field.arraySize > 0)
             {
                 output += Utils::String::Format("                result.{0} = new {1}[{2}];\n", field.name,
-                    GetCSharpPublicType(field.cppType), field.arraySize);
+                    GetCSharpPublicType(GetCppType(field)), field.arraySize);
                 output += Utils::String::Format("                for (int i = 0; i < {0}; i++) result.{1}[i] = {2};\n",
-                    field.arraySize, field.name, GetCSharpStructFieldFromAbi(field.cppType,
+                    field.arraySize, field.name, GetCSharpStructFieldFromAbi(GetCppType(field),
                         Utils::String::Format("unmanaged.{0}[i]", field.name)));
             }
             else
             {
-                std::string fromInterop = GetCSharpStructFieldFromAbi(field.cppType, Utils::String::Format("unmanaged.{0}", field.name));
+                std::string fromInterop = GetCSharpStructFieldFromAbi(GetCppType(field), Utils::String::Format("unmanaged.{0}", field.name));
                 output += Utils::String::Format("                result.{0} = {1};\n", field.name, fromInterop);
             }
         }
@@ -703,13 +791,13 @@ namespace SE::BuildTool
                 output += Utils::String::Format("                if (managed.{0} != null)\n                {{\n", field.name);
                 output += Utils::String::Format("                    int __{0}Count = Math.Min(managed.{0}.Length, {1});\n", field.name, field.arraySize);
                 output += Utils::String::Format("                    for (int i = 0; i < __{0}Count; i++) result.{0}[i] = {1};\n",
-                    field.name, GetCSharpStructFieldToAbi(field.cppType,
+                    field.name, GetCSharpStructFieldToAbi(GetCppType(field),
                         Utils::String::Format("managed.{0}[i]", field.name)));
                 output += "                }\n";
             }
             else
             {
-                std::string toInterop = GetCSharpStructFieldToAbi(field.cppType, Utils::String::Format("managed.{0}", field.name));
+                std::string toInterop = GetCSharpStructFieldToAbi(GetCppType(field), Utils::String::Format("managed.{0}", field.name));
                 output += Utils::String::Format("                result.{0} = {1};\n", field.name, toInterop);
             }
         }
@@ -747,39 +835,40 @@ namespace SE::BuildTool
     // Class generation
     // -------------------------------------------------------------------------
 
-    void BindingsCSharpGenerator::GenerateCSharpClass(const ApiClass& cls, const std::string& assemblyName, std::string& output)
+    void BindingsCSharpGenerator::GenerateCSharpClass(const TypeInfoStruct& cls, const std::string& assemblyName, std::string& output)
     {
-        std::string nsName = CodeGeneratorUtils::GetFullCSNameSpaceName(cls.namespaceNameList);
+        std::string nsName = CodeGeneratorUtils::GetFullCSNameSpaceName(cls.namespaceScopeList);
         if (!nsName.empty())
         {
             output += Utils::String::Format("namespace {0}\n{{\n", nsName);
         }
 
         // Class declaration
-        std::string classKeyword = cls.isStatic ? "static " : "";
-        std::string sealedKeyword = cls.isSealed ? "sealed " : "";
-        std::string abstractKeyword = cls.isAbstract ? "abstract " : "";
+        std::string className       = cls.APIName.empty() ? cls.name : cls.APIName;
+        std::string classKeyword = cls.APIIsStatic ? "static " : "";
+        std::string sealedKeyword = cls.APIIsSealed ? "sealed " : "";
+        std::string abstractKeyword = cls.APIIsAbstract ? "abstract " : "";
 
         AppendCSharpComment(output, "    ", cls.comment);
-        if (cls.isDeprecated)
-        {
-            output += "    [Obsolete]\n";
-        }
         // User attributes
-        if (IsValidCSharpAttributeList(cls.attributes))
+        if (IsValidCSharpAttributeList(cls.APIAttributes))
         {
-            output += Utils::String::Format("    {0}\n", cls.attributes);
+            output += Utils::String::Format("    {0}\n", cls.APIAttributes);
         }
 
         std::string marshallerName = "";
-        if (!cls.isStatic)
+        if (!cls.APIIsStatic)
         {
-            marshallerName = cls.name + "Marshaller";
+            marshallerName = className + "Marshaller";
             output += Utils::String::Format("    [NativeMarshalling(typeof({0}))]\n", marshallerName);
         }
 
         output += Utils::String::Format("    public unsafe {0}{1}{2}{3}partial class {4}",
-            abstractKeyword, classKeyword, sealedKeyword, cls.isStruct ? "" : "", MakeCSharpIdentifier(cls.name));
+                                        abstractKeyword,
+                                        classKeyword,
+                                        sealedKeyword,
+                                        cls.isStruct ? "" : "",
+                                        MakeCSharpIdentifier(className));
 
         // Base class
         if (!cls.baseClassName.empty())
@@ -797,19 +886,22 @@ namespace SE::BuildTool
             for (int i = 0; i < cls.interfaces.size(); ++i)
             {
                 if (i > 0) output += ", ";
-                output += cls.interfaces[i].name;
+                output += cls.interfaces[i]->name;
             }
         }
 
         output += "\n    {\n";
 
         // Constructor (if not abstract, not static, not noConstructor)
-        if (!cls.isStatic && !cls.noConstructor)
+        if (!cls.APIIsStatic && !cls.APINoConstructor)
         {
             output += "        /// <summary>\n";
-            output += Utils::String::Format("        /// Initializes a new instance of the <see cref=\"{0}\"/>.\n", cls.name);
+            output += Utils::String::Format("        /// Initializes a new instance of the <see cref=\"{0}\"/>.\n",
+                                            className);
             output += "        /// </summary>\n";
-            output += Utils::String::Format("        {0} {1}() : base()\n", cls.isAbstract ? "protected" : "public", MakeCSharpIdentifier(cls.name));
+            output += Utils::String::Format("        {0} {1}() : base()\n",
+                                            cls.APIIsAbstract ? "protected" : "public",
+                                            MakeCSharpIdentifier(className));
             output += "        {\n";
             output += "        }\n\n\n";
         }
@@ -820,25 +912,30 @@ namespace SE::BuildTool
             GenerateCSharpEventAccessors(cls, evt, assemblyName, output);
         }
 
-        // Properties
-        for (auto& prop : cls.properties)
+        std::vector<bool> consumedFunctions(cls.functions.size(), false);
+        for (int i = 0; i < cls.functions.size(); ++i)
         {
-            if (prop.isHidden)
+            TypeInfoFunc const& fn = cls.functions[i];
+            if (!fn.APIIsPropertie || consumedFunctions[i])
+            {
                 continue;
-            GenerateCSharpPropertyAccessors(cls, prop, assemblyName, output);
+            }
+            GenerateCSharpPropertyAccessors(cls, fn, consumedFunctions, i, assemblyName, output);
         }
 
         // Functions - first generate all [LibraryImport] declarations, then public wrappers
-        for (auto& fn : cls.functions)
+        for (int i = 0; i < cls.functions.size(); ++i)
         {
-            if (fn.noProxy)
+            TypeInfoFunc const& fn = cls.functions[i];
+            if (fn.APINoProxy || fn.APIIsPropertie)
                 continue;
             GenerateCSharpWrapperFunction(cls, fn, assemblyName, output);
         }
 
-        for (auto& fn : cls.functions)
+        for (int i = 0; i < cls.functions.size(); ++i)
         {
-            if (fn.noProxy)
+            TypeInfoFunc const& fn = cls.functions[i];
+            if (fn.APINoProxy || fn.APIIsPropertie)
                 continue;
             GenerateCSharpWrapperFunctionCall(cls, fn, output);
         }
@@ -846,15 +943,13 @@ namespace SE::BuildTool
         // Fields
         for (auto& field : cls.fields)
         {
-            if (field.isHidden)
-                continue;
             GenerateCSharpFieldAccessors(cls, field, assemblyName, output);
         }
 
         // Marshaller
         if (!marshallerName.empty())
         {
-            GenerateCSharpClassMarshaller(cls, marshallerName, output);
+            GenerateCSharpClassMarshaller(className, marshallerName, output);
         }
 
         output += "    }\n";
@@ -870,10 +965,10 @@ namespace SE::BuildTool
     // Structure generation
     // -------------------------------------------------------------------------
 
-    void BindingsCSharpGenerator::GenerateCSharpStructure(const ApiClass& cls, const std::string& assemblyName,
+    void BindingsCSharpGenerator::GenerateCSharpStructure(const TypeInfoStruct& cls, const std::string& assemblyName,
                                                             std::string& output)
     {
-        std::string nsName = CodeGeneratorUtils::GetFullCSNameSpaceName(cls.namespaceNameList);
+        std::string nsName = CodeGeneratorUtils::GetFullCSNameSpaceName(cls.namespaceScopeList);
         if (!nsName.empty())
         {
             output += Utils::String::Format("namespace {0}\n{{\n", nsName);
@@ -884,14 +979,10 @@ namespace SE::BuildTool
 
         // Struct declaration
         AppendCSharpComment(output, "    ", cls.comment);
-        if (cls.isDeprecated)
-        {
-            output += "    [Obsolete]\n";
-        }
         output += Utils::String::Format("    [StructLayout(LayoutKind.Sequential)]\n");
         output += Utils::String::Format("    [NativeMarshalling(typeof({0}Marshaller))]\n", MakeCSharpIdentifier(cls.name));
-        if (IsValidCSharpAttributeList(cls.attributes))
-            output += Utils::String::Format("    {0}\n", cls.attributes);
+        if (IsValidCSharpAttributeList(cls.APIAttributes))
+            output += Utils::String::Format("    {0}\n", cls.APIAttributes);
 
         output += Utils::String::Format("    public unsafe partial struct {0}", MakeCSharpIdentifier(cls.name));
 
@@ -904,25 +995,31 @@ namespace SE::BuildTool
 
         // Fields
         for (auto& field : cls.fields)
-            GenerateCSharpFieldAccessors(cls, field, assemblyName, output);
-
-        // Properties (for struct)
-        for (auto& prop : cls.properties)
         {
-            if (!prop.isHidden)
-                GenerateCSharpPropertyAccessors(cls, prop, assemblyName, output);
+            GenerateCSharpFieldAccessors(cls, field, assemblyName, output);
+        }
+
+        std::vector<bool> consumedFunctions(cls.functions.size(), false);
+        for (int i = 0; i < cls.functions.size(); ++i)
+        {
+            TypeInfoFunc const& fn = cls.functions[i];
+            if (!fn.APIIsPropertie || consumedFunctions[i])
+            {
+                continue;
+            }
+            GenerateCSharpPropertyAccessors(cls, fn, consumedFunctions, i, assemblyName, output);
         }
 
         // Functions - LibraryImport + public wrappers
         for (auto& fn : cls.functions)
         {
-            if (!fn.noProxy)
+            if (!fn.APINoProxy && !fn.APIIsPropertie)
                 GenerateCSharpWrapperFunction(cls, fn, assemblyName, output);
         }
 
         for (auto& fn : cls.functions)
         {
-            if (!fn.noProxy)
+            if (!fn.APINoProxy && !fn.APIIsPropertie)
                 GenerateCSharpWrapperFunctionCall(cls, fn, output);
         }
 
@@ -932,7 +1029,9 @@ namespace SE::BuildTool
         output += "    }\n";
 
         if (!nsName.empty())
+        {
             output += "}\n";
+        }
         output += "\n";
     }
 
@@ -940,7 +1039,7 @@ namespace SE::BuildTool
     // Enum generation
     // -------------------------------------------------------------------------
 
-    void BindingsCSharpGenerator::GenerateCSharpEnum(const ApiEnum& en, std::string& output)
+    void BindingsCSharpGenerator::GenerateCSharpEnum(const TypeInfoEnum& en, std::string& output)
     {
         std::string nsName = CodeGeneratorUtils::GetFullCSNameSpaceName(en.namespaceScopeList);
         if (!nsName.empty())
@@ -950,18 +1049,14 @@ namespace SE::BuildTool
 
         // Enum declaration
         AppendCSharpComment(output, "    ", en.comment);
-        if (en.isDeprecated)
+        if (IsValidCSharpAttributeList(en.APIAttributes))
         {
-            output += "    [Obsolete]\n";
-        }
-        if (IsValidCSharpAttributeList(en.attributes))
-        {
-            output += Utils::String::Format("    {0}\n", en.attributes);
+            output += Utils::String::Format("    {0}\n", en.APIAttributes);
         }
 
         // Map underlying type
         std::string csUnderlyingType;
-        std::string stripped = StripTypeQualifiers(en.underlyingType);
+        std::string stripped = GetEnumUnderlyingTypeName(en.underlyingType);
         if (stripped == "uint8")   csUnderlyingType = "byte";
         else if (stripped == "int8")    csUnderlyingType = "sbyte";
         else if (stripped == "uint16")  csUnderlyingType = "ushort";
@@ -974,12 +1069,12 @@ namespace SE::BuildTool
 
         output += Utils::String::Format("    public enum {0} : {1}\n    {{\n", MakeCSharpIdentifier(en.name), csUnderlyingType);
 
-        for (int i = 0; i < en.valueNames.size(); ++i)
+        for (int i = 0; i < en.enumConstants.size(); ++i)
         {
-            if (i < en.valueComments.size())
-                AppendCSharpComment(output, "        ", en.valueComments[i]);
-            output += Utils::String::Format("        {0} = {1}", MakeCSharpIdentifier(en.valueNames[i]), en.values[i]);
-            if (i < en.valueNames.size() - 1)
+            if (!en.enumConstants[i].description.empty())
+                AppendCSharpComment(output, "        ", en.enumConstants[i].description);
+            output += Utils::String::Format("        {0} = {1}", MakeCSharpIdentifier(en.enumConstants[i].label), en.enumConstants[i].value);
+            if (i < en.enumConstants.size() - 1)
                 output += ",";
             output += "\n";
         }
@@ -995,22 +1090,18 @@ namespace SE::BuildTool
     // Interface generation
     // -------------------------------------------------------------------------
 
-    void BindingsCSharpGenerator::GenerateCSharpInterface(const ApiInterface& iface, std::string& output)
+    void BindingsCSharpGenerator::GenerateCSharpInterface(const TypeInfoStruct& iface, std::string& output)
     {
-        std::string nsName = CodeGeneratorUtils::GetFullCSNameSpaceName(iface.namespaceNameList);
+        std::string nsName = CodeGeneratorUtils::GetFullCSNameSpaceName(iface.namespaceScopeList);
         if (!nsName.empty())
         {
             output += Utils::String::Format("namespace {0}\n{{\n", nsName);
         }
 
         AppendCSharpComment(output, "    ", iface.comment);
-        if (iface.isDeprecated)
+        if (IsValidCSharpAttributeList(iface.APIAttributes))
         {
-            output += "    [Obsolete]\n";
-        }
-        if (IsValidCSharpAttributeList(iface.attributes))
-        {
-            output += Utils::String::Format("    {0}\n", iface.attributes);
+            output += Utils::String::Format("    {0}\n", iface.APIAttributes);
         }
 
         output += Utils::String::Format("    public unsafe partial interface {0}\n    {{\n", MakeCSharpIdentifier(iface.name));
@@ -1018,11 +1109,12 @@ namespace SE::BuildTool
         // Function signatures
         for (auto& fn : iface.functions)
         {
-            std::string publicRetType = GetCSharpPublicType(fn.returnType, fn.returnArraySize);
+            std::string const returnType = GetCppType(fn);
+            std::string publicRetType = GetCSharpPublicType(returnType, fn.returnArraySize);
             std::string publicParams = BuildCSharpParams(fn, true);
             AppendCSharpComment(output, "        ", fn.comment);
             output += Utils::String::Format("        {0} {1}({2});\n",
-                fn.returnType == "void" ? "void" : publicRetType,
+                IsVoid(fn) ? "void" : publicRetType,
                 MakeCSharpIdentifier(fn.name), publicParams);
         }
 
@@ -1049,19 +1141,21 @@ namespace SE::BuildTool
                                             const std::string& solutionRoot)
     {
         m_errorMessage.clear();
-        bool hasCSharpInjectedCode = false;
+
+        std::vector<TypeInfoInjectedCode*> injectCodes;
         for (auto const& code : headerInfo.injectedCode)
         {
             if (IsCSharpCode(code))
             {
-                hasCSharpInjectedCode = true;
-                break;
+                injectCodes.emplace_back(code);
             }
         }
-        if (headerInfo.classes.empty() && headerInfo.enums.empty()
-            && headerInfo.interfaces.empty() && headerInfo.events.empty()
-            && !hasCSharpInjectedCode)
+
+        if (headerInfo.classes.empty() && headerInfo.enums.empty() && headerInfo.interfaces.empty() &&
+            headerInfo.events.empty())
+        {
             return true;
+        }
 
         std::string output;
         output += "//-------------------------------------------------------------------------\n";
@@ -1077,15 +1171,12 @@ namespace SE::BuildTool
         output += "using System.Runtime.InteropServices.Marshalling;\n";
         output += "using SE.Interop;\n";
 
-        for (auto const& code : headerInfo.injectedCode)
+        for (auto const& code : injectCodes)
         {
-            if (IsCSharpCode(code))
+            output += code->code;
+            if (!Utils::String::EndsWith(output, '\n'))
             {
-                output += code.code;
-                if (!Utils::String::EndsWith(output, '\n'))
-                {
-                    output += "\n";
-                }
+                output += "\n";
             }
         }
         output += "\n";
@@ -1093,30 +1184,40 @@ namespace SE::BuildTool
         // Generate enums first
         for (auto& en : headerInfo.enums)
         {
-            GenerateCSharpEnum(en, output);
+            GenerateCSharpEnum(*en, output);
         }
 
         // Generate interfaces
         for (auto& iface : headerInfo.interfaces)
         {
-            GenerateCSharpInterface(iface, output);
+            if (!iface->APIInBuildMapType.empty())
+            {
+                continue;
+            }
+            GenerateCSharpInterface(*iface, output);
         }
 
         // Generate classes/structs
         for (auto& cls : headerInfo.classes)
         {
-            if (cls.isStruct)
+            if (!cls->APIInBuildMapType.empty())
             {
-                GenerateCSharpStructure(cls, headerInfo.assemblyName, output);
+                continue;
+            }
+            if (cls->isStruct)
+            {
+                GenerateCSharpStructure(*cls, headerInfo.assemblyName, output);
             }
             else
             {
-                GenerateCSharpClass(cls, headerInfo.assemblyName, output);
+                GenerateCSharpClass(*cls, headerInfo.assemblyName, output);
             }
         }
 
         if (!m_errorMessage.empty())
+        {
             return false;
+        }
 
         std::string baseName = FileSystem::GetFileNameWithoutExtension(headerInfo.filePath);
         std::string assemblyDir = headerInfo.assemblyDir;
@@ -1131,16 +1232,6 @@ namespace SE::BuildTool
         return CodeGeneratorUtils::SaveFile(outPath, std::string(output.c_str()));
     }
 
-    bool BindingsCSharpGenerator::GenerateAll(const std::vector<BindingsHeaderInfo>& headers,
-                                               const std::string& solutionRoot)
-    {
-        for (auto& h : headers)
-        {
-            if (!Generate(h, solutionRoot))
-                return false;
-        }
-        return true;
-    }
 
     // -------------------------------------------------------------------------
     // Binary module assembly info generation

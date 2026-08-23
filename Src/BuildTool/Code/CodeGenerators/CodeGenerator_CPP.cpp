@@ -3,7 +3,6 @@
 #include "CodeGenerator_CPP_Enum.h"
 #include "CodeGenerator_BindingsCpp.h"
 #include "CodeGenerator_BindingsCSharp.h"
-#include "CodeGenerator_BindingsTypeMap.h"
 
 #include "Core/TopologicalSort.h"
 #include "Core/String.h"
@@ -44,7 +43,7 @@ namespace SE::BuildTool
 
         // Read file contents
         code.clear();
-  
+
         std::string stdLine;
         while (getline(hdrFile, stdLine))
         {
@@ -55,50 +54,6 @@ namespace SE::BuildTool
         return true;
     }
 
-    static bool SortTypesByDependencies( std::vector<TypeData>& structureTypes )
-    {
-        int32 const numTypes = (int32_t) structureTypes.size();
-        if ( numTypes <= 1 )
-        {
-            return true;
-        }
-
-        // Create list to sort
-        std::vector<TopologicalSorter::Node > list;
-        for ( auto i = 0; i < numTypes; i++ )
-        {
-            list.push_back( TopologicalSorter::Node( i ) );
-        }
-
-        for ( auto i = 0; i < numTypes; i++ )
-        {
-            for ( auto j = 0; j < numTypes; j++ )
-            {
-                if ( i != j && structureTypes[j].typeID == structureTypes[i].parentTypeID )
-                {
-                    list[i].m_children.push_back( &list[j] );
-                }
-            }
-        }
-
-        // Try to sort
-        if ( !TopologicalSorter::Sort( list ) )
-        {
-            return false;
-        }
-
-        // Update type list
-        std::vector<TypeData> sortedTypes;
-        sortedTypes.reserve( numTypes );
-
-        for ( auto& node : list )
-        {
-            sortedTypes.push_back( structureTypes[node.m_ID] );
-        }
-        structureTypes.swap( sortedTypes );
-
-        return true;
-    }
 
     static bool IsEscaped(std::string const& text, size_t index)
     {
@@ -246,116 +201,6 @@ namespace SE::BuildTool
         return result;
     }
 
-    static bool TryParseApiInjectedCode(std::string const& invocation, int lineNumber, ApiInjectedCode& outCode)
-    {
-        char const* macroName = GetMarkMacroText(ReflectionMacroType::APIInjectCode);
-        int32 const macroIdx = Utils::String::Find(invocation, macroName);
-        if (macroIdx == INVALID_INDEX)
-        {
-            return false;
-        }
-
-        int32 const openIdx = Utils::String::Find(invocation, '(', macroIdx);
-        if (openIdx == INVALID_INDEX)
-        {
-            return false;
-        }
-
-        size_t closeIdx = 0;
-        if (!FindMatchingParen(invocation, (size_t)openIdx, closeIdx))
-        {
-            return false;
-        }
-
-        std::string argsText = invocation.substr((size_t)openIdx + 1, closeIdx - (size_t)openIdx - 1);
-        std::vector<std::string> args;
-        SplitInjectCodeArguments(argsText, args);
-        if (args.size() < 2)
-        {
-            return false;
-        }
-
-        outCode.lang = DecodeInjectCodeString(args[0]);
-        Utils::String::TrimStart(outCode.lang);
-        Utils::String::TrimEnd(outCode.lang);
-        outCode.code = DecodeInjectCodeString(args[1]);
-        Utils::String::TrimStart(outCode.code);
-        Utils::String::TrimEnd(outCode.code);
-        outCode.lineNumber = lineNumber;
-        return !outCode.lang.empty() && !outCode.code.empty();
-    }
-
-    static void CollectApiInjectedCode(HeaderInfo const& headerInfo, std::vector<ApiInjectedCode>& outCodes)
-    {
-        uint32 openCommentBlock = 0;
-        char const* macroName = GetMarkMacroText(ReflectionMacroType::APIInjectCode);
-
-        for (int32 lineIdx = 0; lineIdx < (int32)headerInfo.fileContents.size(); lineIdx++)
-        {
-            std::string const& line = headerInfo.fileContents[(size_t)lineIdx];
-            int32 const blockStartIdx = Utils::String::Find(line, "/*");
-            int32 const blockEndIdx = Utils::String::Find(line, "*/");
-            int32 const macroIdx = Utils::String::Find(line, macroName);
-
-            if (macroIdx != INVALID_INDEX && openCommentBlock == 0)
-            {
-                int32 const lineCommentIdx = Utils::String::Find(line, "//");
-                bool const macroIsLineCommented = lineCommentIdx != INVALID_INDEX && lineCommentIdx < macroIdx;
-                bool const macroIsBlockCommented = blockStartIdx != INVALID_INDEX && blockStartIdx < macroIdx &&
-                                                   (blockEndIdx == INVALID_INDEX || blockEndIdx > macroIdx);
-                if (!macroIsLineCommented && !macroIsBlockCommented)
-                {
-                    std::string invocation = line.substr((size_t)macroIdx);
-                    size_t openIdx = invocation.find('(');
-                    size_t closeIdx = 0;
-                    int32 endLineIdx = lineIdx;
-                    while (openIdx != std::string::npos && !FindMatchingParen(invocation, openIdx, closeIdx) &&
-                           endLineIdx + 1 < (int32)headerInfo.fileContents.size())
-                    {
-                        endLineIdx++;
-                        invocation += "\n";
-                        invocation += headerInfo.fileContents[(size_t)endLineIdx];
-                    }
-
-                    ApiInjectedCode code;
-                    if (TryParseApiInjectedCode(invocation, lineIdx + 1, code))
-                    {
-                        outCodes.push_back(code);
-                    }
-                    lineIdx = endLineIdx;
-                }
-            }
-
-            if (blockStartIdx != INVALID_INDEX)
-            {
-                openCommentBlock++;
-            }
-            if (blockEndIdx != INVALID_INDEX && openCommentBlock > 0)
-            {
-                openCommentBlock--;
-            }
-        }
-    }
-
-    static bool IsInjectedCodeForLang(ApiInjectedCode const& code, char const* lang)
-    {
-        return Utils::String::ToLowerCopy(code.lang) == Utils::String::ToLowerCopy(lang);
-    }
-
-    static bool HeaderHasInjectedCode(HeaderInfo const& headerInfo, char const* lang)
-    {
-        std::vector<ApiInjectedCode> injectedCode;
-        CollectApiInjectedCode(headerInfo, injectedCode);
-        for (auto const& code : injectedCode)
-        {
-            if (IsInjectedCodeForLang(code, lang))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
     static HeaderInfo const* FindHeaderInProject(ProjectInfo const& projectInfo, HeaderID headerID)
     {
         for (auto const& header : projectInfo.headerFiles)
@@ -421,7 +266,7 @@ namespace SE::BuildTool
         std::string codeCppMetaTemplateFilePath(Utils::String::Format("{0}/BuildTool/Code/Template/CodeCppMetaTemplate.mustache", rootPath));
 		std::string codeCppEnumTemplateFilePath(Utils::String::Format("{0}/BuildTool/Code/Template/CodeCppEnumTemplate.mustache", rootPath));
 		std::string codeCppClassTemplateFilePath(Utils::String::Format("{0}/BuildTool/Code/Template/CodeCppClassTemplate.mustache", rootPath));
-            
+
 
         if (m_CodeModuleTemplate.empty())
         {
@@ -453,7 +298,7 @@ namespace SE::BuildTool
         m_typeInfoFileHasBinding = false;
     }
 
-    void Generator::AppendBindingIncludesIfNeeded()
+    void Generator::AppendAPIIncludesIfNeeded()
     {
         if (!m_typeInfoFileHasBinding)
         {
@@ -465,345 +310,26 @@ namespace SE::BuildTool
         m_typeInfoFile << "#include \"Runtime/Core/Scripting/ScriptingType.h\"\n";
     }
 
-    // -------------------------------------------------------------------------
-    // Helper: Create ApiClass from ReflectedType::bindingInfo
-    // -------------------------------------------------------------------------
-
-    static std::string StripCppKeywordPrefixes(std::string type)
+    static void EnsureUniqueAPIFunctionNames(TypeInfoStruct* cls)
     {
-        Utils::String::TrimStart(type);
-        Utils::String::TrimEnd(type);
-
-        while (Utils::String::StartsWith(type, "::"))
+        for (int i = 0; i < cls->functions.size(); ++i)
         {
-            type = type.substr(2);
-        }
-        if (Utils::String::StartsWith(type, "class "))
-        {
-            type = type.substr(6);
-        }
-        else if (Utils::String::StartsWith(type, "struct "))
-        {
-            type = type.substr(7);
-        }
-        else if (Utils::String::StartsWith(type, "enum "))
-        {
-            type = type.substr(5);
-        }
-
-        Utils::String::TrimStart(type);
-        Utils::String::TrimEnd(type);
-        return type;
-    }
-
-    static std::string GetUnqualifiedCppTypeName(std::string const& cppType)
-    {
-        std::string result = StripCppKeywordPrefixes(cppType);
-        int pos = INVALID_INDEX;
-        int searchStart = 0;
-        while (true)
-        {
-            std::string tail = result.substr(searchStart);
-            int found = Utils::String::Find(tail, "::");
-            if (found == INVALID_INDEX)
-            {
-                break;
-            }
-            pos = searchStart + found;
-            searchStart = pos + 2;
-        }
-        if (pos != INVALID_INDEX)
-        {
-            result = result.substr(pos + 2);
-        }
-        Utils::String::TrimStart(result);
-        Utils::String::TrimEnd(result);
-        return result;
-    }
-
-    static TypeMapping const* FindTypeMappingForPod(std::string const& cppType)
-    {
-        std::string stripped = StripCppKeywordPrefixes(StripTypeQualifiers(cppType));
-        TypeMapping const* mapping = FindTypeMapping(stripped.c_str());
-        if (mapping != nullptr)
-        {
-            return mapping;
-        }
-
-        std::string unqualified = GetUnqualifiedCppTypeName(stripped);
-        return FindTypeMapping(unqualified.c_str());
-    }
-
-    static bool IsKnownNonPodValueType(std::string const& cppType)
-    {
-        std::string type = GetUnqualifiedCppTypeName(StripTypeQualifiers(cppType));
-        return type == "Array"
-            || type == "String"
-            || type == "StringView"
-            || type == "StringAnsi"
-            || type == "StringAnsiView";
-    }
-
-    static TypeData const* FindApiTypeByCppType(ReflectionDatabase const& database, std::string const& cppType)
-    {
-        std::string stripped = StripCppKeywordPrefixes(StripTypeQualifiers(cppType));
-        std::string unqualified = GetUnqualifiedCppTypeName(stripped);
-
-        for (auto const& type : database.GetAllTypes())
-        {
-            if (!type.isAPI)
-            {
-                continue;
-            }
-
-            std::string fullName = CodeGeneratorUtils::GetNativeName(type.namespaceScopeList, type.structScopeList, type.name);
-            if (stripped == StripCppKeywordPrefixes(fullName))
-            {
-                return &type;
-            }
-        }
-
-        for (auto const& type : database.GetAllTypes())
-        {
-            if (type.isAPI && (stripped == type.name || unqualified == type.name))
-            {
-                return &type;
-            }
-        }
-
-        return nullptr;
-    }
-
-    static bool IsScriptingObjectBaseType(TypeData const& type)
-    {
-        std::string fullName = CodeGeneratorUtils::GetNativeName(type.namespaceScopeList, type.structScopeList, type.name);
-        fullName = StripCppKeywordPrefixes(fullName);
-        return fullName == "SE::ScriptingObject"
-            || fullName == "SE::ManagedScriptingObject"
-            || fullName == "SE::PersistentScriptingObject"
-            || type.name == "ScriptingObject"
-            || type.name == "ManagedScriptingObject"
-            || type.name == "PersistentScriptingObject";
-    }
-
-    static bool IsScriptingObjectType(ReflectionDatabase const& database, TypeData const& type)
-    {
-        std::vector<TypeID> visited;
-        TypeData const* currentType = &type;
-        while (currentType != nullptr)
-        {
-            if (IsScriptingObjectBaseType(*currentType))
-            {
-                return true;
-            }
-
-            if (currentType->parentTypeID == StringID::Invalid
-                || Utils::Vector::Contains(visited, currentType->parentTypeID))
-            {
-                return false;
-            }
-
-            visited.push_back(currentType->parentTypeID);
-            currentType = database.GetType(currentType->parentTypeID);
-        }
-        return false;
-    }
-
-    static bool CalculateStructureIsPod(ReflectionDatabase const& database, TypeData const& type, std::vector<TypeID>& stack);
-
-    static bool IsBindingFieldTypePod(ReflectionDatabase const& database, std::string const& cppType, std::vector<TypeID>& stack)
-    {
-        CppTypeInfo typeInfo;
-        typeInfo.Parse(cppType);
-
-        if (typeInfo.isPointer || typeInfo.isRef || typeInfo.isMoveRef)
-        {
-            return true;
-        }
-        if (IsCollectionType(cppType))
-        {
-            return false;
-        }
-
-        std::string valueType = typeInfo.baseType.empty() ? cppType : typeInfo.baseType;
-        TypeMapping const* mapping = FindTypeMappingForPod(valueType);
-        if (mapping != nullptr)
-        {
-            return mapping->isBlittable;
-        }
-        if (IsKnownNonPodValueType(valueType))
-        {
-            return false;
-        }
-
-        TypeData const* apiType = FindApiTypeByCppType(database, valueType);
-        if (apiType != nullptr)
-        {
-            if (apiType->IsFlag(TypeData::Flags::IsEnum))
-            {
-                return true;
-            }
-            if (!apiType->IsFlag(TypeData::Flags::IsStruct))
-            {
-                return false;
-            }
-            return CalculateStructureIsPod(database, *apiType, stack);
-        }
-
-        return true;
-    }
-
-    static bool CalculateStructureIsPod(ReflectionDatabase const& database, TypeData const& type, std::vector<TypeID>& stack)
-    {
-        if (!type.IsFlag(TypeData::Flags::IsStruct))
-        {
-            return false;
-        }
-        if (type.bindingInfo.isInterface || !type.bindingInfo.interfaces.empty())
-        {
-            return false;
-        }
-        // IsTemplate also marks SE_TYPEDEF instantiations here, which can still be POD.
-        if (Utils::Vector::Contains(stack, type.typeID))
-        {
-            return true;
-        }
-
-        stack.push_back(type.typeID);
-        bool isPod = true;
-
-        if (!type.bindingInfo.baseClassName.empty())
-        {
-            TypeData const* baseType = FindApiTypeByCppType(database, type.bindingInfo.baseClassName);
-            isPod = baseType != nullptr
-                && baseType->IsFlag(TypeData::Flags::IsStruct)
-                && CalculateStructureIsPod(database, *baseType, stack);
-        }
-
-        for (int i = 0; isPod && i < type.bindingInfo.fields.size(); ++i)
-        {
-            ApiField const& field = type.bindingInfo.fields[i];
-            if (!field.isStatic && !IsBindingFieldTypePod(database, field.cppType, stack))
-            {
-                isPod = false;
-            }
-        }
-
-        stack.pop_back();
-        return isPod;
-    }
-
-    static bool CalculateStructureIsPod(ReflectionDatabase const& database, TypeData const& type)
-    {
-        std::vector<TypeID> stack;
-        return CalculateStructureIsPod(database, type, stack);
-    }
-
-    static std::string GetApiBindingName(TypeData const& type)
-    {
-        return type.bindingInfo.name.empty() ? type.name : type.bindingInfo.name;
-    }
-
-    static void RegisterApiTypeNameAliases(ReflectionDatabase const& database)
-    {
-        ClearApiTypeNameAliases();
-        for (auto const& type : database.GetAllTypes())
-        {
-            if (!type.isAPI || type.IsFlag(TypeData::Flags::IsEnum))
-            {
-                continue;
-            }
-
-            std::string nativeFullName = CodeGeneratorUtils::GetNativeName(type.namespaceScopeList, type.structScopeList, type.name);
-            std::string publicName = GetApiBindingName(type);
-            std::string publicFullName = CodeGeneratorUtils::GetFullCSTypeName(type.namespaceScopeList, publicName);
-            RegisterApiTypeNameAlias(type.name, nativeFullName, publicName, publicFullName);
-            if (IsScriptingObjectType(database, type))
-            {
-                RegisterApiScriptingObjectType(type.name, nativeFullName);
-            }
-            else if (type.IsFlag(TypeData::Flags::IsStruct) && !CalculateStructureIsPod(database, type))
-            {
-                RegisterApiInteropStructType(type.name, nativeFullName, publicName, publicFullName);
-            }
-            else if (!type.IsFlag(TypeData::Flags::IsStruct) && !type.bindingInfo.isStatic)
-            {
-                RegisterApiNativeObjectType(type.name, nativeFullName);
-            }
-        }
-    }
-
-    static ApiClass MakeApiClassFromReflectedType(ReflectionDatabase const& database, TypeData const& type)
-    {
-        ApiClass cls;
-        cls.name              = GetApiBindingName(type);
-        cls.nativeName        = type.name;
-        cls.namespaceNameList     = type.namespaceScopeList;
-        cls.structScopeList     = type.structScopeList;
-        cls.baseClassName     = type.bindingInfo.baseClassName;
-        cls.isTemplate        = type.IsFlag(TypeData::Flags::IsTemplate);
-        cls.isStruct           = type.IsFlag(TypeData::Flags::IsStruct);
-        cls.isPod              = cls.isStruct && CalculateStructureIsPod(database, type);
-        cls.isScriptingObject = IsScriptingObjectType(database, type);
-        cls.functions          = type.bindingInfo.functions;
-        cls.properties        = type.bindingInfo.bindingProperties;
-        cls.fields             = type.bindingInfo.fields;
-        cls.interfaces         = type.bindingInfo.interfaces;
-        cls.events             = type.bindingInfo.events;
-        cls.isSealed           = type.bindingInfo.isSealed;
-        cls.isStatic           = type.bindingInfo.isStatic;
-        cls.noSpawn            = type.bindingInfo.noSpawn;
-        cls.isAbstract         = type.bindingInfo.IsAbstract;
-        cls.noConstructor      = type.bindingInfo.noConstructor;
-        cls.attributes         = type.bindingInfo.attributes;
-        cls.tag                = type.bindingInfo.tag;
-        cls.comment            = type.bindingInfo.comment;
-        cls.marshalAs          = type.bindingInfo.marshalAs;
-        cls.isInterface        = type.bindingInfo.isInterface;
-        cls.isDeprecated       = type.bindingInfo.isDeprecated;
-        return cls;
-    }
-
-    static ApiEnum MakeApiEnumFromTypeData(TypeData const& type)
-    {
-        ApiEnum en;
-        en.name          = type.name;
-        en.namespaceScopeList = type.namespaceScopeList;
-        en.structScopeList = type.structScopeList;
-        en.underlyingType = GetEnumUnderlyingTypeName(static_cast<Utils::TypeIDCore>(type.underlyingType));
-        // Enum constants
-        for (auto& constant : type.enumConstants)
-        {
-            en.valueNames.push_back(constant.label);
-            en.values.push_back(constant.value);
-            en.valueComments.push_back(constant.description);
-        }
-        en.attributes = type.bindingInfo.attributes;
-        en.comment = type.bindingInfo.comment;
-        en.isDeprecated = type.bindingInfo.isDeprecated;
-        return en;
-    }
-
-    static void EnsureUniqueBindingFunctionNames(ApiClass& cls)
-    {
-        for (int i = 0; i < cls.functions.size(); ++i)
-        {
-            ApiFunction& fn = cls.functions[i];
-            std::string baseName = fn.uniqueName.empty() ? fn.name : fn.uniqueName;
-            int duplicateIndex = 0;
+            TypeInfoFunc& fn             = cls->functions[i];
+            std::string   baseName       = fn.uniqueName.empty() ? fn.name : fn.uniqueName;
+            int           duplicateIndex = 0;
             for (int j = 0; j < i; ++j)
             {
-                std::string previousBaseName = cls.functions[j].name;
-                if (Utils::String::StartsWith(cls.functions[j].uniqueName, baseName + "_"))
+                std::string previousBaseName = cls->functions[j].name;
+                if (Utils::String::StartsWith(cls->functions[j].uniqueName, baseName + "_"))
                 {
                     previousBaseName = baseName;
                 }
-                else if (!cls.functions[j].uniqueName.empty())
+                else if (!cls->functions[j].uniqueName.empty())
                 {
-                    previousBaseName = cls.functions[j].uniqueName;
+                    previousBaseName = cls->functions[j].uniqueName;
                 }
 
-                if (previousBaseName == baseName || cls.functions[j].name == fn.name)
+                if (previousBaseName == baseName || cls->functions[j].name == fn.name)
                 {
                     duplicateIndex++;
                 }
@@ -818,50 +344,48 @@ namespace SE::BuildTool
                 fn.uniqueName = baseName;
             }
 
-            fn.entryPoint = Utils::String::Format("{0}_{1}", cls.name, fn.uniqueName);
+            fn.entryPoint = Utils::String::Format("{0}_{1}", cls->name, fn.uniqueName);
         }
     }
 
-    static void BuildBindingsHeaderInfoFromTypes(ReflectionDatabase const& database, HeaderInfo const& headerInfo, std::vector<TypeData> const& typesInHeader, BindingsHeaderInfo& outInfo)
+    static void BuildBindingsHeaderInfoFromTypes(TypeDatabase const& database, HeaderInfo const& headerInfo, std::vector<TypeInfoBase*> & typesInHeader, BindingsHeaderInfo& outInfo)
     {
         outInfo.filePath = headerInfo.filePath;
         outInfo.contentHash = headerInfo.checksum;
-        CollectApiInjectedCode(headerInfo, outInfo.injectedCode);
 
-        for (auto const& type : typesInHeader)
+        std::vector<TypeInfoInjectedCode*> injectedCode;
+        database.GetInjectCodeFormHead(headerInfo.headerId, injectedCode);
+
+        for (auto type : typesInHeader)
         {
-            if (!type.isAPI)
+            if (!type->isAPI)
             {
                 continue;
             }
 
             if (outInfo.assemblyName.empty())
             {
-                outInfo.assemblyName = type.bindingInfo.assemblyName;
-                outInfo.assemblyDir = type.bindingInfo.assemblyDir;
+                outInfo.assemblyName = type->assemblyName;
+                outInfo.assemblyDir  = type->assemblyDir;
             }
 
-            if (type.IsFlag(TypeData::Flags::IsEnum))
+            if (type->IsFlag(TypeInfoBase::Flag::IsEnum))
             {
-                outInfo.enums.push_back(MakeApiEnumFromTypeData(type));
+                outInfo.enums.push_back(static_cast<TypeInfoEnum*>(type));
             }
-            else if (type.bindingInfo.isInterface)
+            else if (type->IsFlag(TypeInfoBase::Flag::IsStruct))
             {
-                ApiInterface iface;
-                iface.name = GetApiBindingName(type);
-                iface.nativeName = type.name;
-                iface.namespaceNameList = type.namespaceScopeList;
-                iface.functions = type.bindingInfo.functions;
-                iface.attributes = type.bindingInfo.attributes;
-                iface.comment = type.bindingInfo.comment;
-                iface.isDeprecated = type.bindingInfo.isDeprecated;
-                outInfo.interfaces.push_back(iface);
-            }
-            else
-            {
-                ApiClass cls = MakeApiClassFromReflectedType(database, type);
-                EnsureUniqueBindingFunctionNames(cls);
-                outInfo.classes.push_back(cls);
+                TypeInfoStruct* structType = static_cast<TypeInfoStruct*>(type);
+
+                if (structType->APIIsInterface)
+                {
+                    outInfo.interfaces.push_back(structType);
+                }
+                else
+                {
+                    EnsureUniqueAPIFunctionNames(structType);
+                    outInfo.classes.push_back(structType);
+                }
             }
         }
 
@@ -876,12 +400,14 @@ namespace SE::BuildTool
         }
     }
 
-    bool Generator::Generate(ReflectionDatabase const& database, SolutionInfo const& solution)
+
+    bool Generator::Generate(TypeDatabase const& database, SolutionInfo const& solution)
     {
         LoadTemplateFile(solution);
 
         m_pDatabase = &database;
-        RegisterApiTypeNameAliases(database);
+
+
         for ( auto& prj : solution.projects)
         {
             // Ensure the auto generated directory exists
@@ -922,18 +448,19 @@ namespace SE::BuildTool
             std::vector<BindingsHeaderInfo> projectBindingHeaders;
             for (auto const& headerInfo : prj.headerFiles)
             {
-                std::vector<TypeData> typesInHeader;
+                std::vector<TypeInfoBase*> typesInHeader;
                 m_pDatabase->GetAllTypesForHeader(headerInfo.headerId, typesInHeader);
 
-                bool headerHasBinding = HeaderHasInjectedCode(headerInfo, "cpp");
+                bool headerHasBinding = false;
                 for (auto const& type : typesInHeader)
                 {
-                    if (type.isAPI)
+                    if (type->isAPI)
                     {
                         headerHasBinding = true;
                         break;
                     }
                 }
+
                 if (!headerHasBinding)
                     continue;
 
@@ -942,7 +469,7 @@ namespace SE::BuildTool
                 projectBindingHeaders.push_back(std::move(bindingsHeaderInfo));
             }
 
-            BindingsCppGenerator interopGenerator;
+            BindingsCppGenerator interopGenerator(database);
             std::string interopHeader;
             std::stringstream interopHeaderStream;
             if (!interopGenerator.GenerateInteropHeader(projectBindingHeaders, interopHeader))
@@ -966,88 +493,106 @@ namespace SE::BuildTool
                 GenerateTypeInfoFileHeader(headerInfo, solution.path);
 
                 // Get all types for the header
-                std::vector<TypeData> typesInHeader;
+                std::vector<TypeInfoBase*> typesInHeader;
                 m_pDatabase->GetAllTypesForHeader( headerInfo.headerId, typesInHeader );
 
                 // Check if any type in this header has binding info
-                bool headerHasBinding = HeaderHasInjectedCode(headerInfo, "cpp");
+                bool headerHasAPI = false;
                 for ( auto& type : typesInHeader )
                 {
-                    if (type.isAPI)
+                    if (type->isAPI)
                     {
-                        headerHasBinding = true;
+                        headerHasAPI = true;
                         break;
                     }
                 }
 
                 // Derive assembly type for binding code
-                if (headerHasBinding)
+                if (headerHasAPI)
                 {
                     m_typeInfoFileHasBinding = true;
-                    AppendBindingIncludesIfNeeded();
+                    AppendAPIIncludesIfNeeded();
                 }
 
                 for ( auto& type : typesInHeader )
                 {
                     // Generate enum info
-                    if (type.IsFlag(TypeData::Flags::IsEnum))
+                    if (type->IsFlag(TypeInfoBase::Flag::IsEnum))
                     {
-                        if (type.isReflect)
+                        if (type->isReflect)
                         {
-                            CppGenerateEnum(this, m_typeInfoFile, prj.exportMacro, type, m_CodeCppEnumTemplate.c_str());
+                            TypeInfoEnum* enumType = static_cast<TypeInfoEnum*>(type);
+
+                            CppGenerateEnum(this, m_typeInfoFile, prj.exportMacro, *enumType, m_CodeCppEnumTemplate.c_str());
                         }
 
                     }
                     // Generate meta info
-                    else if (type.IsFlag(TypeData::Flags::IsMeta))
+                    else if (type->IsFlag(TypeInfoBase::Flag::IsMeta))
                     {
-                        CppGenerateMeta(this, database, m_typeInfoFile, type, m_CodeCppMetaTemplate.c_str());
+                        CppGenerateMeta(this, database, m_typeInfoFile, *type, m_CodeCppMetaTemplate.c_str());
                     }
                     // Generate type info
                     else
                     {
+                        TypeInfoStruct* structType = static_cast<TypeInfoStruct*>(type);
+
                         // API-only types are emitted below as bindings code and do not need reflection type info.
-                        if (type.isAPI && !type.isReflect && type.parentTypeID == StringID::Invalid)
+                        if (structType->isAPI && !structType->isReflect &&
+                            structType->parentTypeID == StringID::Invalid)
                         {
                             continue;
                         }
 
-                        if (type.parentTypeID == StringID::Invalid )
+                        if (type->isReflect)
                         {
-                            return LogError( "Invalid parent hierarchy for type {0}::{1}, all registered types must derived from a registered type.", CodeGeneratorUtils::GetFullCNameSpaceName(type.namespaceScopeList), type.name);
-                        }
+                            if (structType->parentTypeID == StringID::Invalid)
+                            {
+                                return LogError("Invalid parent hierarchy for type {0}::{1}, all registered types must "
+                                                "derived from a registered type.",
+                                                CodeGeneratorUtils::GetFullCNameSpaceName(type->namespaceScopeList),
+                                                type->name);
+                            }
 
-                        if (type.isReflect)
-                        {
-                            auto pTypeDesc = m_pDatabase->GetType( type.parentTypeID );
+                            TypeInfoBase const* pTypeDesc = m_pDatabase->GetType(structType->parentTypeID);
                             if (pTypeDesc == nullptr)
                             {
                                 return LogError(
                                     "Unable to resolve reflected parent type for {0}::{1} while generating project {2}, header {3}. Parent TypeID: {4}. Ensure the parent type is reflected and present in the global reflection database.",
-                                    CodeGeneratorUtils::GetFullCSNameSpaceName(type.namespaceScopeList),
-                                    type.name,
+                                                CodeGeneratorUtils::GetFullCSNameSpaceName(type->namespaceScopeList),
+                                    type->name,
                                     prj.name,
                                     headerInfo.filePath,
-                                    (uint32)type.parentTypeID);
+                                                (uint32)structType->parentTypeID);
                             }
 
-                            CppGenerateType(this, database, m_typeInfoFile, prj.exportMacro, type, *pTypeDesc, m_CodeCppClassTemplate.c_str());
+                            ENGINE_ASSERT(pTypeDesc->IsFlag(TypeInfoBase::Flag::IsStruct));
+
+                            TypeInfoStruct const* structParentType = static_cast<TypeInfoStruct const*>(pTypeDesc);
+                            CppGenerateType(this,
+                                            database,
+                                            m_typeInfoFile,
+                                            prj.exportMacro,
+                                            *structType,
+                                            *structParentType,
+                                            m_CodeCppClassTemplate.c_str());
                         }
 
                     }
                 }
 
-                if (headerHasBinding)
+                if (headerHasAPI)
                 {
                     BindingsHeaderInfo bindingsHeaderInfo;
                     BuildBindingsHeaderInfoFromTypes(database, headerInfo, typesInHeader, bindingsHeaderInfo);
 
-                    BindingsCppGenerator cppGen;
+                    BindingsCppGenerator cppGen(database);
                     std::string bindingOutput;
                     if (!cppGen.GenerateSource(bindingsHeaderInfo, bindingOutput))
                     {
                         return LogError("C++ bindings generation failed for header: {0}", headerInfo.filePath);
                     }
+
                     if (!bindingOutput.empty())
                     {
                         m_typeInfoFile << "\n//-------------------------------------------------------------------------\n";
@@ -1070,12 +615,8 @@ namespace SE::BuildTool
             ENGINE_ASSERT( prj.id == pProjectDesc->id );
 
             // Get all types in project
-			std::vector<TypeData> typesInProject;
+			std::vector<TypeInfoBase*> typesInProject;
             m_pDatabase->GetAllTypesForProject(pProjectDesc->id, typesInProject);
-            if (!SortTypesByDependencies( typesInProject))
-            {
-                return LogError("Cyclic header dependency detected in project: {0}", pProjectDesc->name);
-            }
 
             // Generate and save the module file
             GenerateModuleCodeFile(database, *pProjectDesc, typesInProject);
@@ -1102,33 +643,27 @@ namespace SE::BuildTool
                         continue;
                     }
 
-                    std::vector<TypeData> typesInProject;
+                    std::vector<TypeInfoBase*> typesInProject;
                     m_pDatabase->GetAllTypesForProject(pProjectDesc->id, typesInProject);
 
                     std::vector<HeaderID> apiHeaderIDs;
                     for (auto const& type : typesInProject)
                     {
-                        if (!type.isAPI)
+                        if (!type->isAPI)
                         {
                             continue;
                         }
 
-                        if (!Utils::Vector::Contains(apiHeaderIDs, type.headerID))
+                        if (!Utils::Vector::Contains(apiHeaderIDs, type->headerID))
                         {
-                            apiHeaderIDs.push_back(type.headerID);
+                            apiHeaderIDs.push_back(type->headerID);
                         }
                     }
-                    for (auto const& headerInfo : prj.headerFiles)
-                    {
-                        if (HeaderHasInjectedCode(headerInfo, "csharp") && !Utils::Vector::Contains(apiHeaderIDs, headerInfo.headerId))
-                        {
-                            apiHeaderIDs.push_back(headerInfo.headerId);
-                        }
-                    }
-
-                    std::vector<BindingsHeaderInfo> projectBindingHeaders;
 
                     // Generate C# files per header
+                    std::vector<TypeInfoBase*> typesInHeader;
+                    std::vector<BindingsHeaderInfo> projectBindingHeaders;
+
                     for (auto const& headerID : apiHeaderIDs)
                     {
                         HeaderInfo const* pHdr = FindHeaderInProject(prj, headerID);
@@ -1141,7 +676,7 @@ namespace SE::BuildTool
                             continue;
                         }
 
-                        std::vector<TypeData> typesInHeader;
+                        typesInHeader.clear();
                         m_pDatabase->GetAllTypesForHeader(headerID, typesInHeader);
 
                         BindingsHeaderInfo hdrInfo;
@@ -1167,7 +702,7 @@ namespace SE::BuildTool
         return true;
     }
 
-    void Generator::GenerateModuleCodeFile(ReflectionDatabase const& database, ProjectInfo const& prj, std::vector<TypeData> const& typesInModule)
+    void Generator::GenerateModuleCodeFile(TypeDatabase const& database, ProjectInfo const& prj, std::vector<TypeInfoBase*> const& typesInModule)
     {
         mustache::data generateData;
 
@@ -1200,42 +735,42 @@ namespace SE::BuildTool
         bool hasBinding = false;
         for ( auto& type : typesInModule )
         {
-            if (!type.isReflect)
+            if (!type->isReflect)
             {
                 continue;
             }
 
             mustache::data registrationTypeData;
-            if (type.isDevOnly)
+            if (type->isDevOnly)
             {
                 registrationTypeData.set("isDevOnlyBegin", "#ifdef SGE_DEVELOPMENT");
                 registrationTypeData.set("isDevOnlyEnd", "#endif");
             }
 
             std::string nameSpace;
-            if (!type.namespaceScopeList.empty() && !type.structScopeList.empty())
+            if (!type->namespaceScopeList.empty() && !type->structScopeList.empty())
             {
                 nameSpace = Utils::String::Format("::{0}::{1}",
-                    CodeGeneratorUtils::GetFullCNameSpaceName(type.namespaceScopeList), CodeGeneratorUtils::GetFullCNameSpaceName(type.structScopeList));
-            }else if (!type.namespaceScopeList.empty())
+                    CodeGeneratorUtils::GetFullCNameSpaceName(type->namespaceScopeList), CodeGeneratorUtils::GetFullCNameSpaceName(type->structScopeList));
+            }else if (!type->namespaceScopeList.empty())
             {
-                nameSpace = Utils::String::Format("::{0}", CodeGeneratorUtils::GetFullCNameSpaceName(type.namespaceScopeList));
-            }else if (!type.structScopeList.empty())
+                nameSpace = Utils::String::Format("::{0}", CodeGeneratorUtils::GetFullCNameSpaceName(type->namespaceScopeList));
+            }else if (!type->structScopeList.empty())
             {
-                nameSpace = Utils::String::Format("{0}", CodeGeneratorUtils::GetFullCNameSpaceName(type.structScopeList));
+                nameSpace = Utils::String::Format("{0}", CodeGeneratorUtils::GetFullCNameSpaceName(type->structScopeList));
             }
 
-            std::string nativeName = CodeGeneratorUtils::GetNativeName(type.namespaceScopeList, type.structScopeList, type.name);
+            std::string nativeName = CodeGeneratorUtils::GetNativeName(type->namespaceScopeList, type->structScopeList, type->name);
 
             registrationTypeData.set("registerNamespace", std::string(nameSpace.c_str()));
-            registrationTypeData.set("registerName", std::string(type.name.c_str()));
+            registrationTypeData.set("registerName", std::string(type->name.c_str()));
             registrationTypeData.set("registerNativeName", std::string(nativeName.c_str()));
 
-            if (type.IsFlag(TypeData::Flags::IsEnum))
+            if (type->IsFlag(TypeInfoBase::Flag::IsEnum))
             {
                 registrationEnumListData.push_back(registrationTypeData);
             }
-            else if (type.IsFlag(TypeData::Flags::IsMeta))
+            else if (type->IsFlag(TypeInfoBase::Flag::IsMeta))
             {
                 registrationMetaListData.push_back(registrationTypeData);
             }
@@ -1244,7 +779,7 @@ namespace SE::BuildTool
                 registrationTypeListData.push_back(registrationTypeData);
             }
 
-            if (type.isAPI)
+            if (type->isAPI)
             {
                 hasBinding = true;
             }

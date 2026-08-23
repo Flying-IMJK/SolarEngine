@@ -1,0 +1,191 @@
+{
+  "node_count": 1391,
+  "raw_edge_count": 3642,
+  "non_object_edges": 0,
+  "missing_endpoint_edges": 0,
+  "dangling_endpoint_edges": 94,
+  "self_loop_edges": 0,
+  "valid_candidate_edges": 3548,
+  "exact_duplicate_edges": 0,
+  "directed_unique_endpoint_pairs": 3377,
+  "directed_same_endpoint_collapsed_edges": 171,
+  "undirected_unique_endpoint_pairs": 3363,
+  "undirected_same_endpoint_collapsed_edges": 185,
+  "same_endpoint_group_count": 151,
+  "relation_variant_groups": 31,
+  "source_file_variant_groups": 1,
+  "source_location_variant_groups": 22,
+  "context_variant_groups": 131,
+  "post_build_graph_type": "Graph",
+  "post_build_node_count": 1391,
+  "post_build_edge_count": 3376,
+  "post_build_error": "",
+  "producer_suppression": {
+    "path": "C:\\Users\\10303\\AppData\\Roaming\\Python\\Python311\\site-packages\\graphify\\extract.py",
+    "total_sites": 10,
+    "sites": [
+      {
+        "line": 958,
+        "name": "seen_ids",
+        "tuple_arity": 0,
+        "sample": "seen_ids = {n[\"id\"] for n in nodes}"
+      },
+      {
+        "line": 1108,
+        "name": "seen_ids",
+        "tuple_arity": 0,
+        "sample": "seen_ids = {n[\"id\"] for n in nodes}"
+      },
+      {
+        "line": 1110,
+        "name": "seen_doc_refs",
+        "tuple_arity": 0,
+        "sample": "seen_doc_refs: set[str] = set()"
+      },
+      {
+        "line": 1533,
+        "name": "seen_ids",
+        "tuple_arity": 0,
+        "sample": "seen_ids: set[str] = {n[\"id\"] for n in nodes}"
+      },
+      {
+        "line": 2002,
+        "name": "seen_keys",
+        "tuple_arity": 0,
+        "sample": "seen_keys: set[tuple] = set()"
+      },
+      {
+        "line": 2925,
+        "name": "seen_ids",
+        "tuple_arity": 0,
+        "sample": "seen_ids: set[str] = set()"
+      },
+      {
+        "line": 3033,
+        "name": "seen_ids",
+        "tuple_arity": 0,
+        "sample": "seen_ids: set[str] = set()"
+      },
+      {
+        "line": 3112,
+        "name": "seen_ids",
+        "tuple_arity": 0,
+        "sample": "seen_ids: set[str] = set()"
+      },
+      {
+        "line": 3607,
+        "name": "seen_ids",
+        "tuple_arity": 0,
+        "sample": "seen_ids: set[str] = set()"
+      },
+      {
+        "line": 3608,
+        "name": "seen_edges",
+        "tuple_arity": 4,
+        "sample": "seen_edges: set[tuple[str, str, str, str | None]] = set()"
+      }
+    ],
+    "error": ""
+  },
+  "examples": [
+    {
+      "source": "clang_clangparsercontext_getfulltypename",
+      "target": "clang_clangparsercontext_cpp_string",
+      "edge_count": 3,
+      "relations": [
+        "references"
+      ],
+      "source_files": [
+        "Clang/ClangParserContext.cpp"
+      ],
+      "source_locations": [
+        "L11"
+      ],
+      "contexts": [
+        "generic_arg",
+        "parameter_type",
+        "return_type"
+      ]
+    },
+    {
+      "source": "clang_clangtemplatetypes_substitutetemplatetype",
+      "target": "database_datatypes_template_typereftemplate",
+      "edge_count": 3,
+      "relations": [
+        "references"
+      ],
+      "source_files": [
+        "Clang/ClangTemplateTypes.cpp"
+      ],
+      "source_locations": [
+        "L285"
+      ],
+      "contexts": [
+        "generic_arg",
+        "parameter_type",
+        "return_type"
+      ]
+    },
+    {
+      "source": "clang_clangtemplatetypes_getfulltypename",
+      "target": "clang_clangtemplatetypes_cpp_string",
+      "edge_count": 3,
+      "relations": [
+        "references"
+      ],
+      "source_files": [
+        "Clang/ClangTemplateTypes.cpp"
+      ],
+      "source_locations": [
+        "L412"
+      ],
+      "contexts": [
+        "generic_arg",
+        "parameter_type",
+        "return_type"
+      ]
+    },
+    {
+      "source": "codegenerators_codegenerator_bindingsnativestubs_normalizestubbasename",
+      "target": "codegenerators_codegenerator_bindingsnativestubs_cpp_string",
+      "edge_count": 3,
+      "relations": [
+        "calls",
+        "references"
+      ],
+      "source_files": [
+        "CodeGenerators/CodeGenerator_BindingsNativeStubs.cpp"
+      ],
+      "source_locations": [
+        "L126",
+        "L132"
+      ],
+      "contexts": [
+        "call",
+        "parameter_type",
+        "return_type"
+      ]
+    },
+    {
+      "source": "codegenerators_codegenerator_bindingsnativestubs_getstubnamespace",
+      "target": "codegenerators_codegenerator_bindingsnativestubs_cpp_string",
+      "edge_count": 3,
+      "relations": [
+        "calls",
+        "references"
+      ],
+      "source_files": [
+        "CodeGenerators/CodeGenerator_BindingsNativeStubs.cpp"
+      ],
+      "source_locations": [
+        "L179",
+        "L182"
+      ],
+      "contexts": [
+        "call",
+        "parameter_type",
+        "return_type"
+      ]
+    }
+  ]
+}

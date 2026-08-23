@@ -10,7 +10,7 @@ namespace SE
     /// Base class for all Json-format assets.
     /// </summary>
     /// <seealso cref="Asset" />
-	SE_CLASS(Reflect, API, NoSpawn, Abstract)
+	SE_CLASS(Reflect, API(NoSpawn, Abstract))
     class SE_API_RUNTIME JsonAssetBase : public Asset
     {
         SE_DEFINE_CLASS(JsonAssetBase, Asset);
@@ -108,7 +108,7 @@ namespace SE
 	/// Generic type of Json-format asset. It provides the managed representation of this resource data so it can be accessed via C# API.
 	/// </summary>
 	/// <seealso cref="JsonAssetBase" />
-	SE_CLASS(Reflect, API, NoSpawn)
+	SE_CLASS(Reflect, API(NoSpawn))
 	class SE_API_RUNTIME JsonAsset : public JsonAssetBase
 	{
 		SE_DEFINE_CLASS(JsonAsset, JsonAssetBase);

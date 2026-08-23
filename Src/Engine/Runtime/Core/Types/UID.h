@@ -10,6 +10,7 @@ namespace SE
 	/// <summary>
 	/// Globally Unique Identifier
 	/// </summary>
+	SE_STRUCT(API(InBuild("System.Guid"))) 
 	struct SE_API_RUNTIME UID
 	{
 	public:

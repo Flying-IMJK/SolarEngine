@@ -202,6 +202,12 @@ namespace SE::BuildTool
             availableTypes.push_back(fullName);
     }
 
+    static void AddAvailableFullType(std::vector<std::string>& availableTypes, const std::string& fullName)
+    {
+        if (!fullName.empty() && !Utils::Vector::Contains(availableTypes, fullName))
+            availableTypes.push_back(fullName);
+    }
+
     static NativeTypeStub& AddStub(std::vector<NativeTypeStub>& stubs, const std::vector<std::string>& availableTypes,
                                    const std::string& fullName, bool isClass, uint32_t genericArity = 0)
     {
@@ -256,7 +262,22 @@ namespace SE::BuildTool
         AddStubForCSharpType(stubs, availableTypes, GetCSharpPublicType(cppType), isClass);
     }
 
-    static std::string NormalizeStubDefaultValue(const ApiParam& param)
+    static std::string GetCppType(TypeInfoParam const& param)
+    {
+        return param.type.ToString();
+    }
+
+    static std::string GetCppType(TypeInfoField const& field)
+    {
+        return field.type.ToString();
+    }
+
+    static std::string GetCppType(TypeInfoFunc const& fn)
+    {
+        return fn.returnType.ToString();
+    }
+
+    static std::string NormalizeStubDefaultValue(const TypeInfoParam& param)
     {
         std::string value = param.defaultValue;
         Utils::String::TrimStart(value);
@@ -279,14 +300,14 @@ namespace SE::BuildTool
     }
 
     static void AddEnumMemberFromDefault(std::vector<NativeTypeStub>& stubs, const std::vector<std::string>& availableTypes,
-                                         const ApiParam& param)
+                                         const TypeInfoParam& param)
     {
         std::string defaultValue = NormalizeStubDefaultValue(param);
         int dotPos = Utils::String::Find(defaultValue, ".");
         if (dotPos == INVALID_INDEX)
             return;
 
-        std::string enumType = NormalizeStubTypeName(GetCSharpPublicType(param.cppType));
+        std::string enumType = NormalizeStubTypeName(GetCSharpPublicType(GetCppType(param)));
         if (IsBuiltinCSharpType(enumType) || Utils::Vector::Contains(availableTypes, enumType))
             return;
 
@@ -308,12 +329,12 @@ namespace SE::BuildTool
     }
 
     static void CollectFunctionStubs(std::vector<NativeTypeStub>& stubs, const std::vector<std::string>& availableTypes,
-                                     const ApiFunction& fn)
+                                     const TypeInfoFunc& fn)
     {
-        AddStubForCppType(stubs, availableTypes, fn.returnType);
+        AddStubForCppType(stubs, availableTypes, GetCppType(fn));
         for (auto& param : fn.params)
         {
-            AddStubForCppType(stubs, availableTypes, param.cppType);
+            AddStubForCppType(stubs, availableTypes, GetCppType(param));
             AddEnumMemberFromDefault(stubs, availableTypes, param);
         }
     }
@@ -351,15 +372,21 @@ namespace SE::BuildTool
         {
             for (auto& cls : header.classes)
             {
-                AddAvailableType(availableTypes, CodeGeneratorUtils::GetFullCSNameSpaceName(cls.namespaceNameList), cls.name);
+                if (!cls->APIInBuildMapType.empty())
+                    AddAvailableFullType(availableTypes, cls->APIInBuildMapType);
+                else
+                    AddAvailableType(availableTypes, CodeGeneratorUtils::GetFullCSNameSpaceName(cls->namespaceScopeList), cls->name);
             }
             for (auto& en : header.enums)
             {
-                AddAvailableType(availableTypes, CodeGeneratorUtils::GetFullCSNameSpaceName(en.namespaceScopeList), en.name);
+                AddAvailableType(availableTypes, CodeGeneratorUtils::GetFullCSNameSpaceName(en->namespaceScopeList), en->name);
             }
             for (auto& iface : header.interfaces)
             {
-                AddAvailableType(availableTypes, CodeGeneratorUtils::GetFullCSNameSpaceName(iface.namespaceNameList), iface.name);
+                if (!iface->APIInBuildMapType.empty())
+                    AddAvailableFullType(availableTypes, iface->APIInBuildMapType);
+                else
+                    AddAvailableType(availableTypes, CodeGeneratorUtils::GetFullCSNameSpaceName(iface->namespaceScopeList), iface->name);
             }
         }
 
@@ -368,27 +395,31 @@ namespace SE::BuildTool
         {
             for (auto& cls : header.classes)
             {
-                for (auto& field : cls.fields)
+                if (!cls->APIInBuildMapType.empty())
                 {
-                    AddStubForCppType(stubs, availableTypes, field.cppType);
+                    continue;
                 }
-                for (auto& prop : cls.properties)
+                for (auto& field : cls->fields)
                 {
-                    AddStubForCppType(stubs, availableTypes, prop.cppType);
+                    AddStubForCppType(stubs, availableTypes, GetCppType(field));
                 }
-                for (auto& fn : cls.functions)
+                for (auto& fn : cls->functions)
                 {
                     CollectFunctionStubs(stubs, availableTypes, fn);
                 }
-                for (auto& evt : cls.events)
+                for (auto& evt : cls->events)
                 {
                     for (auto& param : evt.params)
-                        AddStubForCppType(stubs, availableTypes, param.cppType);
+                        AddStubForCppType(stubs, availableTypes, GetCppType(param));
                 }
             }
             for (auto& iface : header.interfaces)
             {
-                for (auto& fn : iface.functions)
+                if (!iface->APIInBuildMapType.empty())
+                {
+                    continue;
+                }
+                for (auto& fn : iface->functions)
                     CollectFunctionStubs(stubs, availableTypes, fn);
             }
         }

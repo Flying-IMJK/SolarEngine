@@ -14,7 +14,7 @@ namespace SE
 	/// <summary>
 	/// Window closing reasons.
 	/// </summary>
-	SE_ENUM(API)
+	SE_ENUM(API())
 	enum class ClosingReason
 	{
 		/// <summary>
@@ -41,7 +41,7 @@ namespace SE
 	/// <summary>
 	/// Types of default cursors.
 	/// </summary>
-	SE_ENUM(API)
+	SE_ENUM(API())
 	enum class CursorType
 	{
 		/// <summary>
@@ -115,7 +115,7 @@ namespace SE
 	/// <summary>
 	/// Data drag and drop effects.
 	/// </summary>
-	SE_ENUM(API)
+	SE_ENUM(API())
 	enum class DragDropEffect
 	{
 		/// <summary>
@@ -142,7 +142,7 @@ namespace SE
 	/// <summary>
 	/// Window hit test codes. Note: they are 1:1 mapping for Win32 values.
 	/// </summary>
-	SE_ENUM(API)
+	SE_ENUM(API())
 	enum class WindowHitCodes
 	{
 		/// <summary>
@@ -262,12 +262,12 @@ namespace SE
 	};
 
 
-	API_INJECT_CODE(cpp, "#include \"Runtime/Core/Platform/Window.h\"");
+	SE_INJECT_CODE(cpp, "#include \"Runtime/Core/Platform/Window.h\"");
 
 	/// <summary>
 	/// Native platform window object.
 	/// </summary>
-	SE_CLASS(API, NoSpawn, NoConstructor, Sealed, Name="Window")
+	SE_CLASS(API(NoSpawn, NoConstructor, Sealed, Name="Window"))
 	class SE_API_RUNTIME WindowBase : public ScriptingObject
 	{
 		SCRIPTING_TYPE_NO_SPAWN(WindowBase);
@@ -348,13 +348,13 @@ namespace SE
 		/// <summary>
 		/// Creates a graphics window that uses the managed GUI backend.
 		/// </summary>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		static WindowBase* Create(CreateWindowSettings settings);
 
 		/// <summary>
 		/// Creates the default settings for a managed GUI window.
 		/// </summary>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		static CreateWindowSettings CreateDefaultSettings()
 		{
 			return DefaultWindowSettings();
@@ -401,14 +401,14 @@ namespace SE
 		/// <summary>
 		/// Gets a value that indicates whether a window is visible (hidden or shown).
 		/// </summary>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		bool IsVisible() const;
 
 		/// <summary>
 		/// Sets a value that indicates whether a window is visible (hidden or shown).
 		/// </summary>
 		/// <param name="isVisible">True if show window, otherwise false if hide it.</param>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		void SetIsVisible(bool isVisible);
 
 		/// <summary>
@@ -449,20 +449,20 @@ namespace SE
 		/// <summary>
 		/// Shows the window.
 		/// </summary>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		virtual void Show();
 
 		/// <summary>
 		/// Hides the window.
 		/// </summary>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		virtual void Hide();
 
 
 		/// <summary>
 		/// Minimizes the window.
 		/// </summary>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		virtual void Minimize()
 		{
 		}
@@ -470,7 +470,7 @@ namespace SE
 		/// <summary>
 		/// Maximizes the window.
 		/// </summary>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		virtual void Maximize()
 		{
 		}
@@ -487,7 +487,7 @@ namespace SE
 		/// <summary>
 		/// Restores the window state before minimizing or maximizing.
 		/// </summary>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		virtual void Restore()
 		{
 		}
@@ -496,7 +496,7 @@ namespace SE
 		/// Closes the window.
 		/// </summary>
 		/// <param name="reason">The closing reason.</param>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		virtual void Close(ClosingReason reason = ClosingReason::CloseEvent);
 
 		/// <summary>
@@ -532,7 +532,7 @@ namespace SE
 		/// <summary>
 		/// Gets the window position (in screen coordinates).
 		/// </summary>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		virtual Float2 GetPosition() const
 		{
 			return Float2::Zero;
@@ -542,7 +542,7 @@ namespace SE
 		/// Sets the window position (in screen coordinates).
 		/// </summary>
 		/// <param name="position">The position.</param>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		virtual void SetPosition(const Float2& position)
 		{
 		}
@@ -575,7 +575,7 @@ namespace SE
 		/// <summary>
 		/// Gets the size of the client area of the window (not including border).
 		/// </summary>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		virtual Float2 GetClientSize() const
 		{
 			return m_ClientSize;
@@ -585,7 +585,7 @@ namespace SE
 		/// Sets the size of the client area of the window (not including border).
 		/// </summary>
 		/// <param name="size">The window client area size.</param>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		void SetClientSize(const Float2& size)
 		{
 			SetClientBounds(Rectangle(GetClientPosition(), size));
@@ -622,7 +622,7 @@ namespace SE
 		/// <summary>
 		/// Gets the window DPI scale factor (1 is default). Includes custom DPI scale
 		/// </summary>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		float GetDpiScale() const
 		{
 			return Platform::CustomDpiScale * m_DpiScale;
@@ -633,7 +633,7 @@ namespace SE
 		/// Gets the window title.
 		/// </summary>
 		/// <returns>The window title.</returns>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		virtual String GetTitle() const
 		{
 			return m_Title;
@@ -643,7 +643,7 @@ namespace SE
 		/// Sets the window title.
 		/// </summary>
 		/// <param name="title">The title.</param>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		virtual void SetTitle(const StringView& title)
 		{
 			m_Title = title;
@@ -676,7 +676,7 @@ namespace SE
 		/// <summary>
 		/// Focuses this window.
 		/// </summary>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		virtual void Focus()
 		{
 		}
@@ -940,7 +940,7 @@ namespace SE
 		/// </summary>
 		/// <param name="key">Key ID to check</param>
 		/// <returns>True while the user holds down the key identified by id</returns>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		bool GetKey(KeyboardKeys key) const;
 
 		/// <summary>
@@ -948,7 +948,7 @@ namespace SE
 		/// </summary>
 		/// <param name="key">Key ID to check</param>
 		/// <returns>True during the frame the user starts pressing down the key</returns>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		bool GetKeyDown(KeyboardKeys key) const;
 
 		/// <summary>
@@ -956,7 +956,7 @@ namespace SE
 		/// </summary>
 		/// <param name="key">Key ID to check</param>
 		/// <returns>True during the frame the user releases the key</returns>
-		SE_FUNCTION(API)
+		SE_FUNCTION(API())
 		bool GetKeyUp(KeyboardKeys key) const;
 
 	public:

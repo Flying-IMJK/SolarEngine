@@ -7,7 +7,7 @@ namespace SE
     /// <summary>
     /// Point light emits light from point in all directions.
     /// </summary>
-    SE_CLASS(Reflect, API)
+    SE_CLASS(Reflect, API())
     class SE_API_RUNTIME PointLight : public LightWithShadow
     {
         SCRIPTING_TYPE(PointLight);
@@ -20,47 +20,47 @@ namespace SE
         /// <summary>
         /// Light source bulb radius
         /// </summary>
-        // SE_PROPERTY(API, Attributes="EditorOrder(2), DefaultValue(0.0f), EditorDisplay(\"Light\"), Limit(0, 1000, 0.01f)")
-        SE_PROPERTY(Reflect)
+        // SE_PROPERTY(API(Attributes="EditorOrder(2), DefaultValue(0.0f), EditorDisplay(\"Light\"), Limit(0, 1000, 0.01f)"))
+        SE_FIELD(Reflect)
         float SourceRadius = 0.0f;
 
         /// <summary>
         /// Light source bulb length
         /// </summary>
-        // SE_PROPERTY(API, Attributes="EditorOrder(3), DefaultValue(0.0f), EditorDisplay(\"Light\"), Limit(0, 1000, 0.01f)")
-        SE_PROPERTY(Reflect)
+        // SE_PROPERTY(API(Attributes="EditorOrder(3), DefaultValue(0.0f), EditorDisplay(\"Light\"), Limit(0, 1000, 0.01f)"))
+        SE_FIELD(Reflect)
         float SourceLength = 0.0f;
 
         /// <summary>
         /// Whether to use physically based inverse squared distance falloff, where Radius is only clamping the light's contribution.
         /// </summary>
-        // SE_PROPERTY(API, Attributes = "EditorOrder(13), DefaultValue(false), EditorDisplay(\"Light\")")
-        SE_PROPERTY(Reflect)
+        // SE_PROPERTY(API(Attributes = "EditorOrder(13), DefaultValue(false), EditorDisplay(\"Light\")"))
+        SE_FIELD(Reflect)
         bool UseInverseSquaredFalloff = false;
 
         /// <summary>
         /// Controls the radial falloff of light when UseInverseSquaredFalloff is disabled.
         /// </summary>
-        // SE_PROPERTY(API, Attributes="EditorOrder(14), DefaultValue(8.0f), EditorDisplay(\"Light\"), Limit(2, 16, 0.01f), VisibleIf(nameof(UseInverseSquaredFalloff), true)")
-        SE_PROPERTY(Reflect)
+        // SE_PROPERTY(API(Attributes="EditorOrder(14), DefaultValue(8.0f), EditorDisplay(\"Light\"), Limit(2, 16, 0.01f), VisibleIf(nameof(UseInverseSquaredFalloff), true)"))
+        SE_FIELD(Reflect)
         float FallOffExponent = 8.0f;
 
         /// <summary>
         /// IES texture (light profiles from real world measured data)
         /// </summary>
-        // SE_PROPERTY(API, Attributes="EditorOrder(211), DefaultValue(null), EditorDisplay(\"IES Profile\", \"IES Texture\")")
+        // SE_PROPERTY(API(Attributes="EditorOrder(211), DefaultValue(null), EditorDisplay(\"IES Profile\", \"IES Texture\")"))
         // AssetReference<IESProfile> IESTexture;
 
         /// <summary>
         /// Enable/disable using light brightness from IES profile
         /// </summary>
-        // SE_PROPERTY(API, Attributes="EditorOrder(212), DefaultValue(false), EditorDisplay(\"IES Profile\", \"Use IES Brightness\")")
+        // SE_PROPERTY(API(Attributes="EditorOrder(212), DefaultValue(false), EditorDisplay(\"IES Profile\", \"Use IES Brightness\")"))
         // bool UseIESBrightness = false;
 
         /// <summary>
         /// Global scale for IES brightness contribution
         /// </summary>
-        // SE_PROPERTY(API, Attributes="EditorOrder(213), DefaultValue(1.0f), Limit(0, 10000, 0.01f), EditorDisplay(\"IES Profile\", \"Brightness Scale\")")
+        // SE_PROPERTY(API(Attributes="EditorOrder(213), DefaultValue(1.0f), Limit(0, 10000, 0.01f), EditorDisplay(\"IES Profile\", \"Brightness Scale\")"))
         // float IESBrightnessScale = 1.0f;
 
     public:
@@ -77,7 +77,7 @@ namespace SE
         /// <summary>
         /// Gets light radius
         /// </summary>
-        // SE_PROPERTY(API, Attributes="EditorOrder(1), DefaultValue(1000.0f), EditorDisplay(\"Light\"), Limit(0, 100000, 0.1f)")
+        // SE_PROPERTY(API(Attributes="EditorOrder(1), DefaultValue(1000.0f), EditorDisplay(\"Light\"), Limit(0, 100000, 0.1f)"))
         FORCE_INLINE float GetRadius() const
         {
             return _radius;
@@ -110,4 +110,3 @@ namespace SE
     };
 
 } // SE
-

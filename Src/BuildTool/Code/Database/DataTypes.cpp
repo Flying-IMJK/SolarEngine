@@ -36,16 +36,9 @@ namespace SE::BuildTool
 
     //-------------------------------------------------------------------------
 
-    PropertyData const* TypeData::GetPropertyDescriptor( StringID propertyID ) const
+    PropertyData const* TypeInfoStruct::GetPropertyDescriptor(StringID propertyID) const
     {
-        ENGINE_ASSERT( typeID != StringID::Invalid && !IsFlag(TypeData::Flags::IsAbstract) && !IsFlag(TypeData::Flags::IsEnum));
-        for ( auto const& prop : properties )
-        {
-            if ( prop.propertyID == propertyID )
-            {
-                return &prop;
-            }
-        }
+        ENGINE_ASSERT(typeID != StringID::Invalid && IsFlag(TypeInfoBase::Flag::IsStruct));
 
         return nullptr;
     }
@@ -69,20 +62,22 @@ namespace SE::BuildTool
 
         return name;
     }
+
+
     //-------------------------------------------------------------------------
 
-    void TypeData::AddEnumConstant( EnumDataConstant const& constant )
+    void TypeInfoEnum::AddEnumConstant(EnumDataConstant const& constant)
     {
-        ENGINE_ASSERT( typeID != StringID::Invalid && IsFlag(TypeData::Flags::IsEnum) );
+        ENGINE_ASSERT( typeID != StringID::Invalid && IsFlag(TypeInfoBase::Flag::IsEnum) );
         ENGINE_ASSERT( constant.ID != StringID::Invalid );
         ENGINE_ASSERT( !IsValidEnumLabelID( constant.ID ) );
 
 		enumConstants.push_back( constant );
     }
 
-    bool TypeData::GetValueFromEnumLabel( StringID labelID, uint32_t& value ) const
+    bool TypeInfoEnum::GetValueFromEnumLabel(StringID labelID, uint32_t& value) const
     {
-        ENGINE_ASSERT( typeID != StringID::Invalid && IsFlag(TypeData::Flags::IsEnum) );
+        ENGINE_ASSERT( typeID != StringID::Invalid && IsFlag(TypeInfoBase::Flag::IsEnum) );
 
         for ( auto const& constant : enumConstants )
         {
@@ -96,7 +91,7 @@ namespace SE::BuildTool
         return false;
     }
 
-    bool TypeData::IsValidEnumLabelID( StringID labelID ) const
+    bool TypeInfoEnum::IsValidEnumLabelID(StringID labelID) const
     {
         for ( auto const& constant : enumConstants )
         {
@@ -109,14 +104,14 @@ namespace SE::BuildTool
         return false;
     }
 
-	std::string TypeData::GetFriendlyName() const
+	std::string TypeInfoBase::GetFriendlyName() const
     {
 		std::string friendlyName = name;
         GenerateFriendlyName( friendlyName );
         return friendlyName;
     }
 
-	std::string TypeData::GetCategory() const
+	std::string TypeInfoBase::GetCategory() const
     {
 		std::string category = Utils::CombineStringList(namespaceScopeList, "::");
 		Utils::String::ReplaceAll(category, Settings::g_engineNamespacePlusDelimiter, "");
@@ -133,11 +128,11 @@ namespace SE::BuildTool
         return category;
     }
 
-    bool TypeData::HasArrayProperties() const
+    bool TypeInfoStruct::HasArrayProperties() const
     {
-        for ( auto& propertyDesc : properties )
+        for (auto const& field : fields)
         {
-            if ( propertyDesc.IsArrayProperty() )
+            if (field.arraySize > 0)
             {
                 return true;
             }
@@ -146,20 +141,12 @@ namespace SE::BuildTool
         return false;
     }
 
-    bool TypeData::HasDynamicArrayProperties() const
+    bool TypeInfoStruct::HasDynamicArrayProperties() const
     {
-        for ( auto& propertyDesc : properties )
-        {
-            if ( propertyDesc.IsDynamicArrayProperty() )
-            {
-                return true;
-            }
-        }
-
         return false;
     }
 
-    bool TypeData::HasResourcePtrProperties() const
+    bool TypeInfoStruct::HasResourcePtrProperties() const
     {
 /*        for ( auto& propertyDesc : m_properties )
         {
@@ -177,7 +164,7 @@ namespace SE::BuildTool
         return false;
     }
 
-    bool TypeData::HasResourcePtrOrStructProperties() const
+    bool TypeInfoStruct::HasResourcePtrOrStructProperties() const
     {
 /*        for ( auto& propertyDesc : m_properties )
         {

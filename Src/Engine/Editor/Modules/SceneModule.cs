@@ -154,7 +154,7 @@ namespace SE.Editor
                 return;
 
             m_RefreshFrames = 0;
-            RefreshScenes();
+            RefreshScenes();  
         }
 
         public override void OnDispose()
@@ -177,13 +177,13 @@ namespace SE.Editor
             HierarchyChanged = null;
         }
 
-        private void OnSceneLoaded(SE.Scene scene, Guid sceneId)
+        private void OnSceneLoaded(SE.Scene scene, ref Guid sceneId)
         {
             RefreshScenes();
             HierarchyChanged?.Invoke();
         }
 
-        private void OnSceneUnloaded(SE.Scene scene, Guid sceneId)
+        private void OnSceneUnloaded(SE.Scene scene, ref Guid sceneId)
         {
             RemoveActorsForScene(scene);
             RefreshScenes();

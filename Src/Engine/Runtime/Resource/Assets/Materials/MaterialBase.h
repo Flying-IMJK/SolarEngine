@@ -9,7 +9,7 @@ namespace SE
 {
     class MaterialInstance;
 
-    SE_CLASS(Reflect, API, NoSpawn, Abstract)
+    SE_CLASS(Reflect, API(NoSpawn, Abstract))
     class SE_API_RUNTIME MaterialBase : public BinaryAsset, public IMaterial
     {
         SE_DEFINE_CLASS(MaterialBase, BinaryAsset);

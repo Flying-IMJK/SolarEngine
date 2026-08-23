@@ -20,7 +20,7 @@ namespace SE.Interop
     /// Editor utilities and helper functions for System.Type.
     /// </summary>
     public static class NativeInteropUtils
-    {
+    { 
         /// <summary>
         /// Gets all currently loaded assemblies in the runtime.
         /// </summary>

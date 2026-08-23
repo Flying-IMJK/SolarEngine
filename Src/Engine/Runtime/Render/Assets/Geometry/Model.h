@@ -25,7 +25,7 @@ namespace SE
     /// <summary>
     /// Model asset that contains model object made of meshes which can rendered on the GPU.
     /// </summary>
-    SE_CLASS(Reflect, API, NoSpawn)
+    SE_CLASS(Reflect, API(NoSpawn))
     class SE_API_RUNTIME Model : public ModelBase
     {
         friend Mesh;

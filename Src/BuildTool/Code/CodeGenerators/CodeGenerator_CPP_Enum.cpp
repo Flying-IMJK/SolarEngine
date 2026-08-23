@@ -5,7 +5,7 @@
 
 namespace SE::BuildTool
 {
-    static mustache::data GenerateFile(std::string const &exportMacro, TypeData const &type)
+    static mustache::data GenerateFile(std::string const& exportMacro, TypeInfoEnum const& type)
     {
         mustache::data generatorData;
 
@@ -104,9 +104,13 @@ namespace SE::BuildTool
 
     //-------------------------------------------------------------------------
 
-    void CppGenerateEnum(Generator* generator, std::stringstream &codeFile, std::string const &exportMacro, TypeData const &type, std::string templateStr)
+    void CppGenerateEnum(Generator*          generator,
+                         std::stringstream&  codeFile,
+                         std::string const&  exportMacro,
+                         TypeInfoEnum const& type,
+                         std::string         templateStr)
     {
-        ENGINE_ASSERT(type.IsFlag(TypeData::Flags::IsEnum));
+        ENGINE_ASSERT(type.IsFlag(TypeInfoBase::Flag::IsEnum));
         // GenerateFile(codeFile, exportMacro, type);
 
         mustache::data data = GenerateFile(exportMacro, type);

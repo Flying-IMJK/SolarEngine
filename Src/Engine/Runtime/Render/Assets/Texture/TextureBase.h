@@ -62,7 +62,7 @@ namespace SE
 	/// <summary>
 	/// Base class for <see cref="Texture"/>, <see cref="SpriteAtlas"/>, <see cref="IESProfile"/> and other assets that can contain texture data.
 	/// </summary>
-	SE_CLASS(Reflect, API, NoSpawn, Abstract)
+	SE_CLASS(Reflect, API(NoSpawn, Abstract))
 	class SE_API_RUNTIME TextureBase : public BinaryAsset
 	{
 		friend class StreamingTexture;
@@ -94,7 +94,7 @@ namespace SE
 		/// <summary>
 		/// Gets the total width of the texture. Actual resident size may be different due to dynamic content streaming. Returns 0 if texture is not loaded.
 		/// </summary>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         FORCE_INLINE int32 Width() const
 		{
 			return m_Texture.TotalWidth();
@@ -103,7 +103,7 @@ namespace SE
 		/// <summary>
 		/// Gets the total height of the texture. Actual resident size may be different due to dynamic content streaming. Returns 0 if texture is not loaded.
 		/// </summary>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         FORCE_INLINE int32 Height() const
 		{
 			return m_Texture.TotalHeight();
@@ -112,7 +112,7 @@ namespace SE
 		/// <summary>
 		/// Gets the total size of the texture. Actual resident size may be different due to dynamic content streaming. Returns Float2::Zero if texture is not loaded.
 		/// </summary>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         Float2 Size() const;
 
 		/// <summary>

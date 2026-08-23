@@ -4,6 +4,7 @@
 #include "Runtime/Core/Math/Rectangle.h"
 #include "Runtime/Core/Types/Property.h"
 #include "Runtime/Core/Types/Strings/StringView.h"
+#include "Runtime/Core/Types/Collections/List.h"
 #include "Runtime/Render/Assets/Texture/TextureBase.h"
 #include "Runtime/Resource/AssetRef.h"
 
@@ -15,21 +16,21 @@ namespace SE
     /// <summary>
     /// Contains information about single atlas slot with sprite texture.
     /// </summary>
-    SE_STRUCT(API)
+    SE_STRUCT(API())
     struct SE_API_RUNTIME Sprite
     {
-        SCRIPTING_TYPE_STRUCTURE(Sprite);
+        SCRIPTING_TYPE_MIN(Sprite);
 
         /// <summary>
         /// The normalized area of the sprite in the atlas (in range [0;1]).
         /// </summary>
-        SE_PROPERTY(API);
+        SE_FIELD(API());
         Rectangle Area;
 
         /// <summary>
         /// The sprite name.
         /// </summary>
-        SE_PROPERTY(API);
+        SE_FIELD(API());
         String Name;
 
         Sprite() : Area() {}
@@ -40,9 +41,11 @@ namespace SE
     /// <summary>
     /// Handle to sprite atlas slot with a single sprite texture.
     /// </summary>
-    SE_STRUCT(API)
+    SE_STRUCT(API())
     struct SE_API_RUNTIME SpriteHandle : ISerializable
     {
+        SCRIPTING_TYPE_MIN(SpriteHandle);
+
         /// <summary>
         /// Invalid sprite handle.
         /// </summary>
@@ -51,13 +54,13 @@ namespace SE
         /// <summary>
         /// The parent atlas.
         /// </summary>
-        SE_PROPERTY(API)
+        SE_FIELD(API())
         AssetRef<SpriteAtlas> Atlas;
 
         /// <summary>
         /// The atlas sprites array index.
         /// </summary>
-        SE_PROPERTY(API)
+        SE_FIELD(API())
         int32 Index = -1;
 
         /// <summary>
@@ -140,7 +143,7 @@ namespace SE
     /// Sprite atlas asset that contains collection of sprites combined into a single texture.
     /// </summary>
     /// <seealso cref="TextureBase" />
-    SE_CLASS(Reflect, API, NoSpawn)
+    SE_CLASS(Reflect, API(NoSpawn))
     class SE_API_RUNTIME SpriteAtlas : public TextureBase
     {
         SE_DEFINE_CLASS(SpriteAtlas, TextureBase)
@@ -150,13 +153,13 @@ namespace SE
         /// <summary>
         /// List with all tiles in the sprite atlas.
         /// </summary>
-        SE_PROPERTY(API)
+        SE_FIELD(API())
         List<Sprite> Sprites;
 
         /// <summary>
         /// Gets the sprites count.
         /// </summary>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         int32 GetSpritesCount() const;
 
         /// <summary>
@@ -164,7 +167,7 @@ namespace SE
         /// </summary>
         /// <param name="index">The index.</param>
         /// <returns>The sprite data.</returns>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         Sprite GetSprite(int32 index) const;
 
         /// <summary>
@@ -173,7 +176,7 @@ namespace SE
         /// <param name="index">The index.</param>
         /// <param name="result">The output sprite area.</param>
         /// <returns>The sprite data.</returns>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         void GetSpriteArea(int32 index, Rectangle& result) const;
 
         /// <summary>
@@ -181,7 +184,7 @@ namespace SE
         /// </summary>
         /// <param name="index">The index.</param>
         /// <param name="value">The sprite data.</param>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         void SetSprite(int32 index, const Sprite& value);
 
         /// <summary>
@@ -189,7 +192,7 @@ namespace SE
         /// </summary>
         /// <param name="name">The name.</param>
         /// <returns>The sprite handle.</returns>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         SpriteHandle FindSprite(const StringView& name) const;
 
         /// <summary>
@@ -197,14 +200,14 @@ namespace SE
         /// </summary>
         /// <param name="sprite">The sprite.</param>
         /// <returns>The sprite handle.</returns>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         SpriteHandle AddSprite(const Sprite& sprite);
 
         /// <summary>
         /// Removes the sprite.
         /// </summary>
         /// <param name="index">The sprite index.</param>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         void RemoveSprite(int32 index);
 
         uint32 GetSerializedVersion() const override;

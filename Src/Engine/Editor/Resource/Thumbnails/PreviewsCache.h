@@ -10,7 +10,7 @@ namespace SE::Editor
     // <summary>
     /// Asset which contains set of asset items thumbnails (cached previews).
     /// </summary>
-    SE_CLASS(Reflect, API, NoSpawn)
+    SE_CLASS(Reflect, API(NoSpawn))
     class PreviewsCache final : public SpriteAtlas
     {
         SE_DEFINE_CLASS(PreviewsCache, SpriteAtlas)
@@ -119,4 +119,3 @@ namespace SE::Editor
         AssetChunksFlag GetChunksToPreload() const override;
     };
 } // SE
-

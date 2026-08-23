@@ -2,67 +2,110 @@
 
 #include "ClangUtils.h"
 #include "Database/DataTypes.h"
+#include "Database/DataTypes_Template.h"
 #include "Database/ReflectionProjectTypes.h"
 #include "Core/Dictionary.h"
+
+#include <memory>
 
 //-------------------------------------------------------------------------
 
 namespace SE::BuildTool
 {
-    class ReflectionDatabase;
+    class TypeDatabase;
 
     //-------------------------------------------------------------------------
 
-#define ABSTRACT_FLAG() "Abstract"
-#define DEPRECATED_FLAG() "Deprecated"
-#define HIDDEN_FLAG() "Hidden"
-#define NO_CONSTRUCTOR_FLAG() "NoConstructor"
-#define NO_PROXY_FLAG() "NoProxy"
-#define NO_SPAWN_FLAG() "NoSpawn"
-#define READ_ONLY_FLAG() "ReadOnly"
-#define SEALED_FLAG() "Sealed"
-#define SHOW_IN_RESTRICTED_MODE_FLAG() "ShowInRestrictedMode"
-#define STATIC_FLAG() "Static"
-#define TEMPLATE_FLAG() "Template"
-#define TOOLS_READ_ONLY_FLAG() "ToolsReadOnly"
+    enum class MacroTypeEnum
+    {
+        SEMeta,
 
-    //-------------------------------------------------------------------------
+        SEClass,       // SE_CLASS(Reflect, API(...))
+        SEStruct,      // SE_STRUCT(...)
+        SEInterface,   // SE_INTERFACE(...)
+        SEEnum,        // SE_ENUM(Reflect, API(...))
+        SEField,       // SE_FIELD(Reflect, API(...))
+        SEFunction,    // SE_FUNCTION(API(...))
+        SEEvent,       // SE_EVENT(API(...))
+        SETypeDef,     // SE_TYPEDEF(...)
+        SEInjectCode,  // SE_INJECT_CODE(cpp|csharp, "code")
+
+        NumMacros,
+        Unknown = NumMacros,
+    };
+
+    struct MarkToken
+    {
+        MarkToken(CXCursor &cursor, CXSourceRange& sourceRange);
+        ~MarkToken();
+        bool Next();
+        bool Peek(std::string& outToken) const;
+        std::string Current() const;
+
+    private:
+        CXToken*          tokens          = nullptr;
+        uint32            numTokens       = 0;
+        int32             tokenIndex      = 0;
+        CXTranslationUnit translationUnit;
+    };
+
+
+    struct MarkAPI
+    {
+    public:
+        MarkAPI(MarkToken& context);
+    public:
+        bool IsAbstract      = false;
+        bool IsStatic        = false;
+        bool IsSealed        = false;
+        bool IsReadOnly      = false;
+        bool IsNoSpawn       = false;
+        bool IsNoProxy       = false;
+        bool IsNoConstructor = false;
+        bool IsProperty      = false;
+        bool IsNativeInvokeUseName = false;
+        std::string name;
+        std::string attributes;
+        std::string marshalAs;
+        std::string inBuildMapType;
+    };
 
     struct MarkMacro
     {
     public:
         MarkMacro() = default;
-        MarkMacro(HeaderInfo const*   pHeaderInfo,
-                  CXCursor            cursor,
-                  CXSourceRange&      sourceLocation,
-                  ReflectionMacroType type);
+        MarkMacro(MarkMacro const& other);
+        MarkMacro& operator=(MarkMacro const& other);
+        MarkMacro(MarkMacro&& other) noexcept = default;
+        MarkMacro& operator=(MarkMacro&& other) noexcept = default;
+        MarkMacro(HeaderInfo const* pHeaderInfo, CXCursor cursor, CXSourceRange& sourceLocation, MacroTypeEnum type);
 
-        bool IsValid() const { return type != ReflectionMacroType::Unknown; }
-        bool IsModuleMacro() const { return false; }
-        bool IsEnumMacro() const { return type == ReflectionMacroType::SEEnum && hasReflect; }
-        bool IsMetaMacro() const { return type == ReflectionMacroType::ReflectMeta; }
-        bool IsTypeMacro() const
-        {
-            return type == ReflectionMacroType::SEClass || type == ReflectionMacroType::SEStruct ||
-                   type == ReflectionMacroType::SEInterface;
-        }
-        void AddParameter(std::string parameter);
-        bool HasFlag(std::string_view flag) const;
-        bool TryGetValue(std::string_view key, std::string& outValue) const;
-        bool HasContent(std::string_view value) const;
+        bool IsValid() const { return type != MacroTypeEnum::Unknown; }
+        bool IsEnumMacro() const { return type == MacroTypeEnum::SEEnum; }
+        bool IsMetaMacro() const { return type == MacroTypeEnum::SEMeta; }
+        bool IsTypeMacro() const { return type == MacroTypeEnum::SEClass || type == MacroTypeEnum::SEStruct || type == MacroTypeEnum::SEInterface; }
+
+        bool HasApi() const { return api != nullptr; }
+        MarkAPI& GetApi() { ENGINE_ASSERT(api != nullptr); return *api; }
+        MarkAPI const& GetApi() const { ENGINE_ASSERT(api != nullptr); return *api; }
+
+        //-------------------------------------------------------------------------
+
+        static char const* GetMarkMacroText(MacroTypeEnum macro);
 
     public:
-        HeaderID                 headerID;
-        uint32_t                 fileLine      = 0;
-        uint32_t                 fileColumn    = 0;
-        uint32_t                 fileEndLine   = 0;
-        uint32_t                 fileEndColumn = 0;
-        ReflectionMacroType      type          = ReflectionMacroType::Unknown;
-        std::string              macroComment;
-        bool                     hasReflect = false;
-        bool                     hasAPI     = false;
-        std::string              macroMetadata;
-        std::vector<std::string> macroContents;
+        HeaderID                          headerID;
+        uint32_t                          fileLine      = 0;
+        uint32_t                          fileColumn    = 0;
+        uint32_t                          fileEndLine   = 0;
+        uint32_t                          fileEndColumn = 0;
+        MacroTypeEnum                     type          = MacroTypeEnum::Unknown;
+        std::string                       macroComment;
+        bool                              hasReflect = false;
+        bool                              hasTemplate = false;
+        bool                              isAlias = false;
+        std::unique_ptr<MarkAPI>          api;
+        std::string                       macroMetadata;
     };
 
     //-------------------------------------------------------------------------
@@ -85,8 +128,7 @@ namespace SE::BuildTool
 
         struct TemplateTypeData
         {
-            TypeData                 type;
-            std::vector<std::string> parameterNames;
+            std::unique_ptr<TypeInfoStructTemplate> type;
         };
 
         struct TypeDefData
@@ -95,14 +137,13 @@ namespace SE::BuildTool
             int32                    lineNumber = -1;
             MarkMacro                macro;
             std::string              name;
-            std::string              templateTypeName;
-            std::vector<std::string> templateArguments;
+            TypeRefTemplate          targetType;
             std::vector<std::string> namespaceScopeList;
             std::vector<std::string> structScopeList;
         };
 
     public:
-        ClangParserContext(SolutionInfo* pSolution, ReflectionDatabase* pDatabase) :
+        ClangParserContext(SolutionInfo* pSolution, TypeDatabase* pDatabase) :
             pTU(nullptr), pDatabase(pDatabase), pParentReflectedType(nullptr), pSolution(pSolution)
         {
             ENGINE_ASSERT(pSolution != nullptr && pDatabase != nullptr);
@@ -137,11 +178,11 @@ namespace SE::BuildTool
         std::string const& GetCurrentStructScope() const { return m_currentStructScope; }
 
         void AddMarkMacro(MarkMacro const& foundMacro);
-        bool FindMarkMacro(HeaderID headerID, CXCursor const& cr, MarkMacro& macro, ReflectionMacroType macroType);
+        bool FindMarkMacro(HeaderID headerID, CXCursor const& cr, MarkMacro& macro, MacroTypeEnum macroType);
 
-        bool FindReflectionMacroForMeta(HeaderID headerID, CXCursor const& cr, MarkMacro& reflectionMacro);
+        void FindInjectCodeFormHead(HeaderID headerID, std::vector<TypeInfoInjectedCode>& injectCodes);
 
-        void AddTemplateType(TypeData const& type, std::vector<std::string> const& parameterNames);
+        void AddTemplateType(std::unique_ptr<TypeInfoStructTemplate> type);
         void AddTypeDef(TypeDefData const& typeDef);
         bool ResolvePendingTypeDefs();
 
@@ -157,7 +198,7 @@ namespace SE::BuildTool
         CXTranslationUnit* pTU;
 
         SolutionInfo*              pSolution;
-        ReflectionDatabase*        pDatabase;
+        TypeDatabase*        pDatabase;
         std::vector<HeaderToVisit> headersToVisit;
 
         // The current parent/enclosing reflected type

@@ -7,7 +7,7 @@ namespace SE
     /// <summary>
     /// Instance of the <seealso cref="Material" /> with custom set of material parameter values.
     /// </summary>
-    SE_CLASS(Reflect, API, NoSpawn)
+    SE_CLASS(Reflect, API(NoSpawn))
     class SE_API_RUNTIME MaterialInstance : public MaterialBase
     {
         SE_DEFINE_CLASS(MaterialInstance, MaterialBase);

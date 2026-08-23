@@ -21,9 +21,10 @@ set("SOURCES"
     Core/Dictionary.h
     Core/Json.h
 
-    Database/ReflectionDatabase.h
-    Database/ReflectionDatabase.cpp
+    Database/TypeDatabase.h
+    Database/TypeDatabase.cpp
     Database/DataTypes.h
+    Database/DataTypes_Template.h
     Database/DataTypes.cpp
     Database/ReflectionProjectTypes.h
 
@@ -54,6 +55,8 @@ set("SOURCES"
     Clang/ClangParser.cpp
     Clang/ClangParserContext.h
     Clang/ClangParserContext.cpp
+    Clang/ClangTemplateTypes.h
+    Clang/ClangTemplateTypes.cpp
     Clang/ClangUtils.h
     Clang/ClangUtils.cpp
     Clang/ClangVisitors_Enum.h

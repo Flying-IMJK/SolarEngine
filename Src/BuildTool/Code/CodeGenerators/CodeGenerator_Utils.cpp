@@ -131,12 +131,16 @@ namespace SE::BuildTool::CodeGeneratorUtils
 		case AccessLevel::Internal:  return "internal";
 		default:                     return "public";
 		}
+    }
+
+    bool IsNativePointer(const std::string& cppType) 
+	{
+		std::string type = cppType;
+		Utils::String::TrimStart(type);
+		Utils::String::TrimEnd(type);
+		return !type.empty() && type.back() == '*';
 	}
 
-	bool IsCSharpCode(const ApiInjectedCode& code)
-	{
-		return Utils::String::ToLowerCopy(code.lang) == "csharp";
-	}
 
 	std::string MakeCSharpIdentifier(const std::string& identifier)
 	{
@@ -193,6 +197,11 @@ namespace SE::BuildTool::CodeGeneratorUtils
 				return false;
 		}
 		return true;
+	}
+
+	bool IsCSharpCode(TypeInfoInjectedCode const* code)
+	{
+		return code != nullptr && code->lang == InjectEnum::CS;
 	}
 
 	void AppendCSharpLibraryImport(std::string& output, const std::string& assemblyName, const std::string& entryPoint)
@@ -261,7 +270,7 @@ namespace SE::BuildTool::CodeGeneratorUtils
 			: Utils::String::Format("{0}.ConvertToUnmanaged({1})", marshaller, expression);
 	}
 
-	std::string NormalizeCSharpDefaultValue(const ApiParam& param)
+	std::string NormalizeCSharpDefaultValue(const TypeInfoParam& param)
 	{
 		std::string value = param.defaultValue;
 		Utils::String::TrimStart(value);

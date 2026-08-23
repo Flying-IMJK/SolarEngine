@@ -312,10 +312,10 @@ namespace SE::BuildTool
                 auto const foundCommentIdx = Utils::String::Find(line, "//");
 
                 // Check for registration macros
-                for (auto i = 0u; i < (uint32_t)ReflectionMacroType::NumMacros; i++)
+                for (auto i = 0u; i < (uint32_t)MacroTypeEnum::NumMacros; i++)
                 {
-                    ReflectionMacroType const macro = (ReflectionMacroType)i;
-                    auto const foundMacroIdx = Utils::String::Find(line, GetMarkMacroText(macro));
+                    MacroTypeEnum const macro = (MacroTypeEnum)i;
+                    auto const          foundMacroIdx    = Utils::String::Find(line, MarkMacro::GetMarkMacroText(macro));
                     bool const macroExists = foundMacroIdx != INVALID_INDEX;
                     bool const uncommentedMacro = foundCommentIdx == INVALID_INDEX || foundCommentIdx > foundMacroIdx;
 

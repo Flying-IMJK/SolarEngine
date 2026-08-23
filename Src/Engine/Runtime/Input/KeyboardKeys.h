@@ -6,7 +6,7 @@ namespace SE
 	/// <summary>
 	/// Enumeration for key codes.
 	/// </summary>
-	SE_ENUM(API)
+	SE_ENUM(API())
 	enum class KeyboardKeys
 	{
 		/// <summary>
@@ -824,5 +824,4 @@ namespace SE
 		MAX
 	};
 }
-
 

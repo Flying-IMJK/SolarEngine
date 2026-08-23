@@ -24,7 +24,7 @@ namespace SE
     /// <summary>
     /// Texture resource that contains an atlas of cached font glyphs.
     /// </summary>
-    SE_CLASS(Reflect, API, NoSpawn)
+    SE_CLASS(Reflect, API(NoSpawn))
     class SE_API_RUNTIME FontTextureAtlas : public Texture
     {
         SE_DEFINE_CLASS(FontTextureAtlas, Texture);
@@ -215,4 +215,3 @@ namespace SE
         void Unload(bool isReloading) override;
     };
 } // SE
-

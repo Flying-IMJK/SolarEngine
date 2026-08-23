@@ -22,7 +22,7 @@ namespace SE
 	/// <summary>
 	/// Asset objects base class.
 	/// </summary>
-	SE_CLASS(Reflect, API, NoSpawn)
+	SE_CLASS(Reflect, API(NoSpawn))
 	class SE_API_RUNTIME Asset : public ManagedScriptingObject
 	{
 		SE_DEFINE_CLASS(Asset, ManagedScriptingObject);
@@ -91,7 +91,7 @@ namespace SE
 		/// <summary>
 		/// Gets asset's reference count. Asset will be automatically unloaded when this reaches zero.
 		/// </summary>
-		SE_FUNCTION(API) int32 GetReferencesCount() const;
+		SE_FUNCTION(API()) int32 GetReferencesCount() const;
 
 		/// <summary>
 		/// Adds reference to that asset.

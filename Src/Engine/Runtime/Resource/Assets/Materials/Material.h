@@ -12,7 +12,7 @@ namespace SE
 	// <summary>
 	/// Material asset that contains shader for rendering models on the GPU.
 	/// </summary>
-	SE_CLASS(Reflect, API, NoSpawn)
+	SE_CLASS(Reflect, API(NoSpawn))
 	class SE_API_RUNTIME Material final : public MaterialBase, public IShaderAsset
 	{
 		SE_DEFINE_CLASS(Material, MaterialBase);

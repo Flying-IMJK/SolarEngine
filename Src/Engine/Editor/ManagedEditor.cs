@@ -13,10 +13,10 @@ namespace SE.Editor
         /// </summary>
         public static Editor? Instance { get; private set; }
 
-        private readonly List<EditorModule> m_Modules;
+        private readonly List<EditorModule> m_Modules = new List<EditorModule>();
         private Window? m_MainWindow;
-        private bool m_IsInitialized;
-        private bool m_IsExiting;
+        private bool m_IsInitialized = false;
+        private bool m_IsExiting = false;
         
 
         /// <summary>
@@ -48,25 +48,26 @@ namespace SE.Editor
             Instance = this;
             
             EnsureMainWindow();
-            
+
+            m_Modules.Clear();
             m_Modules.Add(UI = new UIModule(this));
             m_Modules.Add(Scene = new SceneModule(this));
             m_Modules.Add(Windows = new WindowsModule(this));
 
-            
+
             m_Modules.Sort( (left, right) => left.Order.CompareTo(right.Order));
-            
-            
+
+
             foreach (EditorModule module in m_Modules)
             {
                 module.OnInit();
             }
-            
+
             foreach (EditorModule module in m_Modules)
             {
                 module.OnEndInit();
             }
-            
+
             m_IsInitialized = true;
         }
 

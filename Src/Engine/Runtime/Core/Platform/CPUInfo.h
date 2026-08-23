@@ -8,7 +8,7 @@ namespace SE
 	/// <summary>
 	/// Contains information about CPU (Central Processing Unit).
 	/// </summary>
-	SE_STRUCT(API)
+	SE_STRUCT(API())
 	struct SE_API_RUNTIME CPUInfo
 	{
 		SCRIPTING_TYPE_MIN(CPUInfo)

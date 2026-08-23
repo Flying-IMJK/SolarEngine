@@ -1,13 +1,14 @@
 #pragma once
 
 #include "Runtime/Core/Math/Rectangle.h"
+#include <Runtime/Core/Scripting/ScriptingTypeDefine.h>
 
 namespace SE
 {
     /// <summary>
     /// Specifies the alignment of the text along horizontal or vertical direction in the layout box.
     /// </summary>
-    SE_ENUM(API)
+    SE_ENUM(API())
     enum class TextAlignment
     {
         /// <summary>
@@ -29,7 +30,7 @@ namespace SE
     /// <summary>
     /// Specifies text wrapping to be used in a particular multiline paragraph.
     /// </summary>
-    SE_ENUM(API)
+    SE_ENUM(API())
     enum class TextWrapping
     {
         /// <summary>
@@ -51,43 +52,45 @@ namespace SE
     /// <summary>
     /// Structure which describes text layout properties.
     /// </summary>
-    SE_STRUCT(API)
+    SE_STRUCT(API())
     struct TextLayoutOptions
     {
+        SCRIPTING_TYPE_MIN(TextLayoutOptions);
+
         /// <summary>
         /// The layout rectangle (text bounds).
         /// </summary>
-        SE_PROPERTY(API)
+        SE_FIELD(API())
         Rectangle Bounds;
 
         /// <summary>
         /// The horizontal alignment mode.
         /// </summary>
-        SE_PROPERTY(API)
+        SE_FIELD(API())
         TextAlignment HorizontalAlignment;
 
         /// <summary>
         /// The vertical alignment mode.
         /// </summary>
-        SE_PROPERTY(API)
+        SE_FIELD(API())
         TextAlignment VerticalAlignment;
 
         /// <summary>
         /// The text wrapping mode.
         /// </summary>
-        SE_PROPERTY(API)
+        SE_FIELD(API())
         TextWrapping TextWrapping = TextWrapping::NoWrap;
 
         /// <summary>
         /// The text scale factor. Default is 1.
         /// </summary>
-        SE_PROPERTY(API)
+        SE_FIELD(API())
         float Scale = 1.0f;
 
         /// <summary>
         /// Base line gap scale. Default is 1.
         /// </summary>
-        SE_PROPERTY(API)
+        SE_FIELD(API())
         float BaseLinesGapScale = 1.0f;
 
         /// <summary>

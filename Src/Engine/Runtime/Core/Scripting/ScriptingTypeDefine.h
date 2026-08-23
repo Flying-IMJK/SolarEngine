@@ -8,6 +8,7 @@ namespace SE
     friend class type##Internal; \
     static struct ScriptingTypeInitializer TypeInitializer; \
 
+
     /// <summary>
     /// Helper define used to declare required components for native structures that have managed type.
     /// </summary>

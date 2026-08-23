@@ -1,5 +1,5 @@
 #pragma once
-#include "../Database/ReflectionDatabase.h"
+#include "../Database/TypeDatabase.h"
 #include "../mustache.hpp"
 #include <sstream>
 
@@ -9,5 +9,5 @@ namespace SE::BuildTool
 {
     class Generator;
 
-    void CppGenerateEnum(Generator* generator, std::stringstream &codeFile, std::string const &exportMacro, TypeData const &type, std::string templateStr);
+    void CppGenerateEnum(Generator* generator, std::stringstream &codeFile, std::string const &exportMacro, TypeInfoEnum const &type, std::string templateStr);
 }

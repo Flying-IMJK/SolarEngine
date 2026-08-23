@@ -7,28 +7,20 @@
 
 namespace SE::BuildTool
 {
-    /// Raw source code injected into generated binding files.
-    struct ApiInjectedCode
-    {
-        std::string lang;
-        std::string code;
-        int         lineNumber = -1;
-    };
-
     /// All API-annotated items extracted from a single header file.
     /// Temporarily retained during the merge - will be removed once all generators
     /// consume DataType::bindingInfo directly.
     struct BindingsHeaderInfo
     {
-        std::string         filePath;
-        std::string         assemblyName;  // e.g. "SE.Core", "SE.Runtime", "SE.Editor"
-        std::string         assemblyDir;   // assembly TargetDir absolute path
-        uint64             contentHash = 0;  // for incremental build
-        std::vector<ApiClass>     classes;
-        std::vector<ApiEnum>      enums;
-        std::vector<ApiInterface> interfaces;
-        std::vector<ApiEvent>     events;
-        std::vector<ApiInjectedCode> injectedCode;
+        std::string                  filePath;
+        std::string                  assemblyName;    // e.g. "SE.Core", "SE.Runtime", "SE.Editor"
+        std::string                  assemblyDir;     // assembly TargetDir absolute path
+        uint64                       contentHash = 0; // for incremental build
+        std::vector<TypeInfoStruct*> classes;
+        std::vector<TypeInfoEnum*>   enums;
+        std::vector<TypeInfoStruct*> interfaces;
+        std::vector<TypeInfoEvent*>  events;
+        std::vector<TypeInfoInjectedCode*> injectedCode;
     };
 
     /// Information about a binary module for generating module-level files.

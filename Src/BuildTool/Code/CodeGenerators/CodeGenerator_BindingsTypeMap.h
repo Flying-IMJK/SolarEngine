@@ -131,7 +131,7 @@ namespace SE::BuildTool
 
     /// Returns the ABI description for contiguous collection types. Pass a
     /// positive fixedArraySize for a C-style field whose extent is stored out
-    /// of band in ApiField.
+    /// of band in TypeInfoField.
     CollectionAbiInfo GetCollectionAbiInfo(const std::string& cppType, int fixedArraySize = 0);
 
     /// Returns a fully-qualified managed type name suitable for native runtime

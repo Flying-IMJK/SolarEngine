@@ -1,7 +1,7 @@
 #pragma once
 
 #include <iostream>
-#include "Database/ReflectionDatabase.h"
+#include "Database/TypeDatabase.h"
 
 //-------------------------------------------------------------------------
 
@@ -76,7 +76,7 @@ namespace SE::BuildTool
     private:
 		std::string m_reflectionDataPath;
         SolutionInfo m_solution;
-        ReflectionDatabase m_database;
+        TypeDatabase m_database;
 
         // Up to data checks
 		std::vector<HeaderTimestamp> m_registeredHeaderTimestamps;

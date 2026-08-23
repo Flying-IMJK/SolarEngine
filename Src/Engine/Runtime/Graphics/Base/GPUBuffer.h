@@ -10,7 +10,7 @@ namespace SE
 	/// <summary>
 	/// Defines a view for the <see cref="GPUBuffer"/>. Used to bind buffer to the shaders (for input as shader resource or for input/output as unordered access).
 	/// </summary>
-	SE_CLASS(API, Sealed, NoSpawn)
+	SE_CLASS(API(Sealed, NoSpawn))
 	class SE_API_RUNTIME GPUBufferView : public GPUResourceView
 	{
 		SCRIPTING_TYPE_NO_SPAWN(GPUBufferView);
@@ -19,7 +19,7 @@ namespace SE
 		GPUBufferView();
 	};
 
-	SE_CLASS(API, Sealed)
+	SE_CLASS(API(Sealed))
 	class SE_API_RUNTIME GPUBuffer : public GPUResource
 	{
 		SCRIPTING_TYPE_NO_SPAWN(GPUBuffer);

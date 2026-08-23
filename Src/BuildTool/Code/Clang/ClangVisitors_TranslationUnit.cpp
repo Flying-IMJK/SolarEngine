@@ -2,83 +2,23 @@
 #include "ClangVisitors_Macro.h"
 #include "ClangVisitors_Enum.h"
 #include "Clangvisitors_Structure.h"
+#include "ClangTemplateTypes.h"
+
+#include <utility>
 
 //-------------------------------------------------------------------------
 
 namespace SE::BuildTool
 {
-    static void SplitTemplateArguments(std::string const& text, std::vector<std::string>& outArgs)
-    {
-        int32 depth = 0;
-        int32 start = 0;
-        for (int32 i = 0; i < text.length(); i++)
-        {
-            char const c = text[(size_t)i];
-            if (c == '<')
-            {
-                depth++;
-            }
-            else if (c == '>')
-            {
-                depth--;
-            }
-            else if (c == ',' && depth == 0)
-            {
-                std::string arg = text.substr((size_t)start, (size_t)(i - start));
-                Utils::String::TrimStart(arg);
-                Utils::String::TrimEnd(arg);
-                outArgs.push_back(arg);
-                start = i + 1;
-            }
-        }
-
-        if (start < text.length())
-        {
-            std::string arg = text.substr((size_t)start);
-            Utils::String::TrimStart(arg);
-            Utils::String::TrimEnd(arg);
-            outArgs.push_back(arg);
-        }
-    }
-
-    static bool TryParseTemplateSpecialization(std::string typeName, std::string& outTemplateName, std::vector<std::string>& outTemplateArgs)
-    {
-        Utils::String::TrimStart(typeName);
-        Utils::String::TrimEnd(typeName);
-        if (Utils::String::StartsWith(typeName, "struct "))
-        {
-            typeName = typeName.substr(7);
-        }
-        else if (Utils::String::StartsWith(typeName, "class "))
-        {
-            typeName = typeName.substr(6);
-        }
-
-        int32 const openIdx = Utils::String::Find(typeName, '<');
-        int32 const closeIdx = Utils::String::FindLast(typeName, '>');
-        if (openIdx == INVALID_INDEX || closeIdx == INVALID_INDEX || closeIdx <= openIdx)
-        {
-            return false;
-        }
-
-        outTemplateName = typeName.substr(0, (size_t)openIdx);
-        Utils::String::TrimStart(outTemplateName);
-        Utils::String::TrimEnd(outTemplateName);
-
-        std::string argText = typeName.substr((size_t)openIdx + 1, (size_t)(closeIdx - openIdx - 1));
-        SplitTemplateArguments(argText, outTemplateArgs);
-        return !outTemplateName.empty() && !outTemplateArgs.empty();
-    }
-
     static CXChildVisitResult VisitTypeDef(ClangParserContext* pContext, CXCursor cr, HeaderID headerID)
     {
         MarkMacro macro;
-        if (!pContext->FindMarkMacro(headerID, cr, macro, ReflectionMacroType::SETypeDef))
+        if (!pContext->FindMarkMacro(headerID, cr, macro, MacroTypeEnum::SETypeDef))
         {
             return CXChildVisit_Continue;
         }
 
-        if (macro.HasContent("Alias"))
+        if (macro.isAlias)
         {
             return CXChildVisit_Continue;
         }
@@ -86,9 +26,16 @@ namespace SE::BuildTool
         CXType underlyingType = clang_getTypedefDeclUnderlyingType(cr);
         std::string underlyingTypeName = ClangUtils::GetTypeSpellingAnsi(underlyingType);
 
-        std::string templateTypeName;
-        std::vector<std::string> templateArguments;
-        if (!TryParseTemplateSpecialization(underlyingTypeName, templateTypeName, templateArguments))
+        TypeRefTemplate targetType = ParseTemplateTypeRef(pContext, underlyingType, {});
+        if (targetType.genericArgs.empty() && !TryParseTemplateTypeRef(underlyingTypeName, targetType))
+        {
+            pContext->LogError("SE_TYPEDEF can only generate concrete types from template specializations. Typedef: {0}, underlying type: {1}",
+                               ClangUtils::GetCursorDisplayName(cr),
+                               underlyingTypeName);
+            return CXChildVisit_Break;
+        }
+
+        if (targetType.genericArgs.empty())
         {
             pContext->LogError("SE_TYPEDEF can only generate concrete types from template specializations. Typedef: {0}, underlying type: {1}",
                                ClangUtils::GetCursorDisplayName(cr),
@@ -101,8 +48,7 @@ namespace SE::BuildTool
         typeDef.lineNumber = (int32)ClangUtils::GetLineNumberForCursor(cr);
         typeDef.macro = macro;
         typeDef.name = ClangUtils::GetCursorDisplayName(cr);
-        typeDef.templateTypeName = templateTypeName;
-        typeDef.templateArguments = templateArguments;
+        typeDef.targetType = std::move(targetType);
         typeDef.namespaceScopeList = pContext->GetNamespaces();
         typeDef.structScopeList = pContext->GetStructScopes();
         pContext->AddTypeDef(typeDef);

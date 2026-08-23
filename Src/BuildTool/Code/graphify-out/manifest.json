@@ -1,28 +1,28 @@
 {
   "Clang/ClangParser.cpp": {
-    "mtime": 1783344673.7375982,
-    "ast_hash": "bb3daacd4f722886b6910dc81e9bd906",
-    "semantic_hash": "bb3daacd4f722886b6910dc81e9bd906"
+    "mtime": 1787408635.01293,
+    "ast_hash": "eddfdb54a48671178de604675548432e",
+    "semantic_hash": "eddfdb54a48671178de604675548432e"
   },
   "Clang/ClangParser.h": {
-    "mtime": 1783151606.6289575,
-    "ast_hash": "06469f14e70528c27f0cf2f7186ed4c9",
-    "semantic_hash": "06469f14e70528c27f0cf2f7186ed4c9"
+    "mtime": 1787387940.5066087,
+    "ast_hash": "47852ce0b1057229e69102f73e6d261a",
+    "semantic_hash": "47852ce0b1057229e69102f73e6d261a"
   },
   "Clang/ClangParserContext.cpp": {
-    "mtime": 1785673993.2834966,
-    "ast_hash": "e75f67d75bbc12584c8d0f93af7d3e64",
-    "semantic_hash": "e75f67d75bbc12584c8d0f93af7d3e64"
+    "mtime": 1787409857.4854674,
+    "ast_hash": "25344a4e6f23070e7e148922d2c90f25",
+    "semantic_hash": "25344a4e6f23070e7e148922d2c90f25"
   },
   "Clang/ClangParserContext.h": {
-    "mtime": 1786179545.6996408,
-    "ast_hash": "ba3c6b6a36f8d8ce2634aa9ff9a2f2da",
-    "semantic_hash": "ba3c6b6a36f8d8ce2634aa9ff9a2f2da"
+    "mtime": 1787409857.483466,
+    "ast_hash": "e95a01560c0b1fee181ebe79be18b3d8",
+    "semantic_hash": "e95a01560c0b1fee181ebe79be18b3d8"
   },
   "Clang/ClangUtils.cpp": {
-    "mtime": 1786178502.0423503,
-    "ast_hash": "45c21034bd7a42b0ad029efd955763c1",
-    "semantic_hash": "45c21034bd7a42b0ad029efd955763c1"
+    "mtime": 1787379538.6545763,
+    "ast_hash": "432d26a06c0affab057f53c438eefd29",
+    "semantic_hash": "432d26a06c0affab057f53c438eefd29"
   },
   "Clang/ClangUtils.h": {
     "mtime": 1786178365.0748618,
@@ -30,9 +30,9 @@
     "semantic_hash": "56e6fb6b4b815bcdd1ba91288cdc32ee"
   },
   "Clang/ClangVisitors_Enum.cpp": {
-    "mtime": 1785673744.783521,
-    "ast_hash": "6378d462992beb1669aa8b0fdf7dfbdb",
-    "semantic_hash": "6378d462992beb1669aa8b0fdf7dfbdb"
+    "mtime": 1787409228.389392,
+    "ast_hash": "526231c28fdd3efd752245c17ae44a0f",
+    "semantic_hash": "526231c28fdd3efd752245c17ae44a0f"
   },
   "Clang/ClangVisitors_Enum.h": {
     "mtime": 1783151606.8621104,
@@ -40,9 +40,9 @@
     "semantic_hash": "a457ce3ae9341abe354e124d11d4690a"
   },
   "Clang/ClangVisitors_Macro.cpp": {
-    "mtime": 1783223366.684813,
-    "ast_hash": "ab4dff23a6a6fe758591bf9329a56b86",
-    "semantic_hash": "ab4dff23a6a6fe758591bf9329a56b86"
+    "mtime": 1787367909.733049,
+    "ast_hash": "e72ae0d746552deaeff71ef15a8009d6",
+    "semantic_hash": "e72ae0d746552deaeff71ef15a8009d6"
   },
   "Clang/ClangVisitors_Macro.h": {
     "mtime": 1783151606.7260904,
@@ -50,9 +50,9 @@
     "semantic_hash": "1874037d41432cf5e4d9c1c7b2c308e7"
   },
   "Clang/ClangVisitors_Structure.cpp": {
-    "mtime": 1786178918.8264008,
-    "ast_hash": "6da1e76e2d7852ceeb073c5fe2627eb3",
-    "semantic_hash": "6da1e76e2d7852ceeb073c5fe2627eb3"
+    "mtime": 1787409857.491975,
+    "ast_hash": "c8f75b7ab5676656cf8baa61c9382473",
+    "semantic_hash": "c8f75b7ab5676656cf8baa61c9382473"
   },
   "Clang/ClangVisitors_Structure.h": {
     "mtime": 1783223465.9338858,
@@ -60,9 +60,9 @@
     "semantic_hash": "110f10eec73bbc3184a954ac0058982f"
   },
   "Clang/ClangVisitors_TranslationUnit.cpp": {
-    "mtime": 1783431351.264785,
-    "ast_hash": "8a87fffaa23e5b1a61d29f2c731e0a93",
-    "semantic_hash": "8a87fffaa23e5b1a61d29f2c731e0a93"
+    "mtime": 1787367909.7350488,
+    "ast_hash": "3a7a6085bb7f2356073e17566c9dfeaf",
+    "semantic_hash": "3a7a6085bb7f2356073e17566c9dfeaf"
   },
   "Clang/ClangVisitors_TranslationUnit.h": {
     "mtime": 1783151606.6349614,
@@ -70,44 +70,44 @@
     "semantic_hash": "803d9bd079cd5c38127249c79e5e911d"
   },
   "CodeGenerators/CodeGenerator_BindingsCSharp.cpp": {
-    "mtime": 1785940929.7318366,
-    "ast_hash": "bc5859e38463ce4f60192361ee2ffe9d",
-    "semantic_hash": "bc5859e38463ce4f60192361ee2ffe9d"
+    "mtime": 1787409857.4969742,
+    "ast_hash": "aeacf9163e10c6bee3f91798f44aa050",
+    "semantic_hash": "aeacf9163e10c6bee3f91798f44aa050"
   },
   "CodeGenerators/CodeGenerator_BindingsCSharp.h": {
-    "mtime": 1785672912.2560382,
-    "ast_hash": "418da32156f9aca999b9cd82192c8b2b",
-    "semantic_hash": "418da32156f9aca999b9cd82192c8b2b"
+    "mtime": 1787367909.7370486,
+    "ast_hash": "70d5ac20aec174d241ffef2144769596",
+    "semantic_hash": "70d5ac20aec174d241ffef2144769596"
   },
   "CodeGenerators/CodeGenerator_BindingsCpp.cpp": {
-    "mtime": 1786155236.7988377,
-    "ast_hash": "97245f5d5eb941377fb5de196a75c58c",
-    "semantic_hash": "97245f5d5eb941377fb5de196a75c58c"
+    "mtime": 1787463253.687091,
+    "ast_hash": "9b84f67272f5d397fe30814babc70d01",
+    "semantic_hash": "9b84f67272f5d397fe30814babc70d01"
   },
   "CodeGenerators/CodeGenerator_BindingsCpp.h": {
-    "mtime": 1785679399.4752283,
-    "ast_hash": "51462b553722620d32595ae3982920b3",
-    "semantic_hash": "51462b553722620d32595ae3982920b3"
+    "mtime": 1787394068.0687065,
+    "ast_hash": "2a021b441f56af796980e4c6dfe31735",
+    "semantic_hash": "2a021b441f56af796980e4c6dfe31735"
   },
   "CodeGenerators/CodeGenerator_BindingsDataTypes.h": {
-    "mtime": 1783740162.05009,
-    "ast_hash": "127b754e1e05f3daff9658f7b8f5df34",
-    "semantic_hash": "127b754e1e05f3daff9658f7b8f5df34"
+    "mtime": 1787367909.7390528,
+    "ast_hash": "33a8e99c53bb02778e67d7dc54e3e13b",
+    "semantic_hash": "33a8e99c53bb02778e67d7dc54e3e13b"
   },
   "CodeGenerators/CodeGenerator_BindingsModel.cpp": {
-    "mtime": 1785766715.4440396,
-    "ast_hash": "fd48c5e1b6cc5676cced4d7ae670448f",
-    "semantic_hash": "fd48c5e1b6cc5676cced4d7ae670448f"
+    "mtime": 1787367909.7400508,
+    "ast_hash": "c2b3a9d7ea20ab444a6c01b22beb261b",
+    "semantic_hash": "c2b3a9d7ea20ab444a6c01b22beb261b"
   },
   "CodeGenerators/CodeGenerator_BindingsModel.h": {
-    "mtime": 1785766714.4303837,
-    "ast_hash": "c42efea6a1a9d3f6c19c22fc1143da9c",
-    "semantic_hash": "c42efea6a1a9d3f6c19c22fc1143da9c"
+    "mtime": 1787367909.7400508,
+    "ast_hash": "ecf9e0c92727ff78ce10b08cbaefc5de",
+    "semantic_hash": "ecf9e0c92727ff78ce10b08cbaefc5de"
   },
   "CodeGenerators/CodeGenerator_BindingsNativeStubs.cpp": {
-    "mtime": 1785766717.755474,
-    "ast_hash": "4eca91fcfced05e03651ea930e7e163a",
-    "semantic_hash": "4eca91fcfced05e03651ea930e7e163a"
+    "mtime": 1787408635.01993,
+    "ast_hash": "995530a12085a283f5534f3e0f4cddfc",
+    "semantic_hash": "995530a12085a283f5534f3e0f4cddfc"
   },
   "CodeGenerators/CodeGenerator_BindingsNativeStubs.h": {
     "mtime": 1781705863.6342857,
@@ -115,64 +115,64 @@
     "semantic_hash": "45da5faae691437fe687d9da358af2c7"
   },
   "CodeGenerators/CodeGenerator_BindingsTypeMap.cpp": {
-    "mtime": 1786177067.4050338,
-    "ast_hash": "4af9d9236b8b22eab45edda39ebd875a",
-    "semantic_hash": "4af9d9236b8b22eab45edda39ebd875a"
+    "mtime": 1787392518.3299534,
+    "ast_hash": "f07dcf67b2488b42248aab26f9414afe",
+    "semantic_hash": "f07dcf67b2488b42248aab26f9414afe"
   },
   "CodeGenerators/CodeGenerator_BindingsTypeMap.h": {
-    "mtime": 1785679434.3770282,
-    "ast_hash": "675c55725d0ea722120cb61dd831971f",
-    "semantic_hash": "675c55725d0ea722120cb61dd831971f"
+    "mtime": 1787367909.7420518,
+    "ast_hash": "91ea3b3794984b4a727368bef385cbb7",
+    "semantic_hash": "91ea3b3794984b4a727368bef385cbb7"
   },
   "CodeGenerators/CodeGenerator_CPP.cpp": {
-    "mtime": 1786026940.947972,
-    "ast_hash": "4a1ee9645b7c4197e591f9d0c25f6fa1",
-    "semantic_hash": "4a1ee9645b7c4197e591f9d0c25f6fa1"
+    "mtime": 1787394068.071705,
+    "ast_hash": "16659eb15e3ea88e2ee66a29cbee282d",
+    "semantic_hash": "16659eb15e3ea88e2ee66a29cbee282d"
   },
   "CodeGenerators/CodeGenerator_CPP.h": {
-    "mtime": 1783151606.611717,
-    "ast_hash": "37b05da9c2f33c1537bf1420f3242a0b",
-    "semantic_hash": "37b05da9c2f33c1537bf1420f3242a0b"
+    "mtime": 1787367909.7437077,
+    "ast_hash": "6033f9e549a4f5790538bc5cf0e2edf6",
+    "semantic_hash": "6033f9e549a4f5790538bc5cf0e2edf6"
   },
   "CodeGenerators/CodeGenerator_CPP_Enum.cpp": {
-    "mtime": 1783518174.5196514,
-    "ast_hash": "898e35470d73796481bbb6eacfc5510c",
-    "semantic_hash": "898e35470d73796481bbb6eacfc5510c"
+    "mtime": 1787367909.7437077,
+    "ast_hash": "6a410f25e61eb69b6c593ecd556b2f34",
+    "semantic_hash": "6a410f25e61eb69b6c593ecd556b2f34"
   },
   "CodeGenerators/CodeGenerator_CPP_Enum.h": {
-    "mtime": 1783151606.7175725,
-    "ast_hash": "306a91b76cdb1bbc2c1f089c8dce86e3",
-    "semantic_hash": "306a91b76cdb1bbc2c1f089c8dce86e3"
+    "mtime": 1787367909.7447083,
+    "ast_hash": "aa4746e9c5e2a60bed992b16a5b2b56e",
+    "semantic_hash": "aa4746e9c5e2a60bed992b16a5b2b56e"
   },
   "CodeGenerators/CodeGenerator_CPP_Meta.cpp": {
-    "mtime": 1783431923.7309003,
-    "ast_hash": "456fb601f07ed7cfd68430e5d18478a5",
-    "semantic_hash": "456fb601f07ed7cfd68430e5d18478a5"
+    "mtime": 1787367909.7447083,
+    "ast_hash": "0ef375d32d84062a5e87878922d97a05",
+    "semantic_hash": "0ef375d32d84062a5e87878922d97a05"
   },
   "CodeGenerators/CodeGenerator_CPP_Meta.h": {
-    "mtime": 1783151606.61881,
-    "ast_hash": "0a17891da71c0378144cf815255b74db",
-    "semantic_hash": "0a17891da71c0378144cf815255b74db"
+    "mtime": 1787367909.7457087,
+    "ast_hash": "244a44a02b10b7095ea9bd71ac7cb5cd",
+    "semantic_hash": "244a44a02b10b7095ea9bd71ac7cb5cd"
   },
   "CodeGenerators/CodeGenerator_CPP_Type.cpp": {
-    "mtime": 1783518219.7966278,
-    "ast_hash": "9b18a41b8ef171aa8e4b4c85d2108d7d",
-    "semantic_hash": "9b18a41b8ef171aa8e4b4c85d2108d7d"
+    "mtime": 1787367909.746708,
+    "ast_hash": "b995076d25b59a0e41ed693566df4079",
+    "semantic_hash": "b995076d25b59a0e41ed693566df4079"
   },
   "CodeGenerators/CodeGenerator_CPP_Type.h": {
-    "mtime": 1783151606.869132,
-    "ast_hash": "2232b4b682324f54fde4d985736426aa",
-    "semantic_hash": "2232b4b682324f54fde4d985736426aa"
+    "mtime": 1787367909.746708,
+    "ast_hash": "f626e1e9ced40f9bd93968b1fae17d35",
+    "semantic_hash": "f626e1e9ced40f9bd93968b1fae17d35"
   },
   "CodeGenerators/CodeGenerator_Utils.cpp": {
-    "mtime": 1786154117.7516134,
-    "ast_hash": "d20a2fedd8461936f2372d64f821742d",
-    "semantic_hash": "d20a2fedd8461936f2372d64f821742d"
+    "mtime": 1787463021.173629,
+    "ast_hash": "ff4c9e5ec38efcc26a2b8badb0f3b0ff",
+    "semantic_hash": "ff4c9e5ec38efcc26a2b8badb0f3b0ff"
   },
   "CodeGenerators/CodeGenerator_Utils.h": {
-    "mtime": 1786154117.7581208,
-    "ast_hash": "7c784a5279efe107b60b58c5662c6637",
-    "semantic_hash": "7c784a5279efe107b60b58c5662c6637"
+    "mtime": 1787463052.8102462,
+    "ast_hash": "2056d1050a4918151c2731b43bf671a8",
+    "semantic_hash": "2056d1050a4918151c2731b43bf671a8"
   },
   "Core/Dictionary.h": {
     "mtime": 1783151606.876137,
@@ -215,34 +215,24 @@
     "semantic_hash": "315abdcac6b50c5a53e9134ed0d2c297"
   },
   "Core/Utils.cpp": {
-    "mtime": 1783740175.0537293,
-    "ast_hash": "b463ebe0040595bb8483feb7534711e7",
-    "semantic_hash": "b463ebe0040595bb8483feb7534711e7"
+    "mtime": 1787367909.7497075,
+    "ast_hash": "5360fbfd94dde15e5f80c0da3a3f1462",
+    "semantic_hash": "5360fbfd94dde15e5f80c0da3a3f1462"
   },
   "Core/Utils.h": {
-    "mtime": 1783740168.9673746,
-    "ast_hash": "212c534ab874cfe618d318f28445eee8",
-    "semantic_hash": "212c534ab874cfe618d318f28445eee8"
+    "mtime": 1787367909.7497075,
+    "ast_hash": "da7f0e12c6f6e476570823f4033daaab",
+    "semantic_hash": "da7f0e12c6f6e476570823f4033daaab"
   },
   "Database/DataTypes.cpp": {
-    "mtime": 1783518153.2790153,
-    "ast_hash": "3618928d310702fa3284981ab2fee3ce",
-    "semantic_hash": "3618928d310702fa3284981ab2fee3ce"
+    "mtime": 1787367909.7507083,
+    "ast_hash": "4b0f805e31854a150a9699e54c430196",
+    "semantic_hash": "4b0f805e31854a150a9699e54c430196"
   },
   "Database/DataTypes.h": {
-    "mtime": 1786154091.8737564,
-    "ast_hash": "ded9966c8bc6b324e4b1662cc2c8032e",
-    "semantic_hash": "ded9966c8bc6b324e4b1662cc2c8032e"
-  },
-  "Database/ReflectionDatabase.cpp": {
-    "mtime": 1785671273.563431,
-    "ast_hash": "3b55f08266dfc99a05c361a3fba259a7",
-    "semantic_hash": "3b55f08266dfc99a05c361a3fba259a7"
-  },
-  "Database/ReflectionDatabase.h": {
-    "mtime": 1785671338.4199953,
-    "ast_hash": "f6603410b36e94397036368a98b8826e",
-    "semantic_hash": "f6603410b36e94397036368a98b8826e"
+    "mtime": 1787409857.4879785,
+    "ast_hash": "210b7c4bbde4c16c6c6236f384e73e88",
+    "semantic_hash": "210b7c4bbde4c16c6c6236f384e73e88"
   },
   "Database/ReflectionProjectTypes.h": {
     "mtime": 1783151606.8213568,
@@ -250,14 +240,14 @@
     "semantic_hash": "97bff998a9743d10cdabc45f4b47d749"
   },
   "Reflector.cpp": {
-    "mtime": 1783742184.267948,
-    "ast_hash": "a470ff4d0aba8c85f215d4ca80009ecc",
-    "semantic_hash": "a470ff4d0aba8c85f215d4ca80009ecc"
+    "mtime": 1787367909.7538216,
+    "ast_hash": "8e44bba813d4717a4e69209ce9a9d3ed",
+    "semantic_hash": "8e44bba813d4717a4e69209ce9a9d3ed"
   },
   "Reflector.h": {
-    "mtime": 1783151606.765633,
-    "ast_hash": "309e8a55f176098d733f06cede430b37",
-    "semantic_hash": "309e8a55f176098d733f06cede430b37"
+    "mtime": 1787367909.7538216,
+    "ast_hash": "99311bf338de4d8c5c74861a633c5ace",
+    "semantic_hash": "99311bf338de4d8c5c74861a633c5ace"
   },
   "Resources/resource.h": {
     "mtime": 1699930855.0,
@@ -273,5 +263,35 @@
     "mtime": 1730126775.6164618,
     "ast_hash": "bcfd4e3cf921434d447bb0aca946668c",
     "semantic_hash": "bcfd4e3cf921434d447bb0aca946668c"
+  },
+  "Database/TypeDatabase.cpp": {
+    "mtime": 1787367909.7527077,
+    "ast_hash": "56cf4dfe31a1ae94241d144986bddbad",
+    "semantic_hash": "56cf4dfe31a1ae94241d144986bddbad"
+  },
+  "Database/TypeDatabase.h": {
+    "mtime": 1787367909.7527077,
+    "ast_hash": "c5fde5c48e4d438146cfd4daa5aae5eb",
+    "semantic_hash": "c5fde5c48e4d438146cfd4daa5aae5eb"
+  },
+  "CMakeLists.txt": {
+    "mtime": 1787367909.7280486,
+    "ast_hash": "47e054f6e1e60cd4d6e6d79e6b8855d8",
+    "semantic_hash": "47e054f6e1e60cd4d6e6d79e6b8855d8"
+  },
+  "Clang/ClangTemplateTypes.cpp": {
+    "mtime": 1787409857.4949753,
+    "ast_hash": "f45b7215061692b5855af65e085eb5e3",
+    "semantic_hash": "f45b7215061692b5855af65e085eb5e3"
+  },
+  "Clang/ClangTemplateTypes.h": {
+    "mtime": 1787367909.732049,
+    "ast_hash": "aad84e8d7b15a91587dc39c940c3d95b",
+    "semantic_hash": "aad84e8d7b15a91587dc39c940c3d95b"
+  },
+  "Database/DataTypes_Template.h": {
+    "mtime": 1787409857.4899752,
+    "ast_hash": "e48f50553e76a928fea4f076d46b091b",
+    "semantic_hash": "e48f50553e76a928fea4f076d46b091b"
   }
 }

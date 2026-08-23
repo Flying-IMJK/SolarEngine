@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'RuntimeCSharp'">
+    <BaseOutputPath>$(MSBuildProjectDirectory)\..\..\..\Intermediate\Runtime\bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(MSBuildProjectDirectory)\..\..\..\Intermediate\Runtime\obj\</BaseIntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'EditorCSharp'">
+    <BaseOutputPath>$(MSBuildProjectDirectory)\..\..\..\Intermediate\Editor\bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(MSBuildProjectDirectory)\..\..\..\Intermediate\Editor\obj\</BaseIntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
+  </PropertyGroup>
+</Project>

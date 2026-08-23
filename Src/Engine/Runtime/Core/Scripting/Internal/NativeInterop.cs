@@ -86,7 +86,7 @@ namespace SE.Interop
         internal static unsafe void Init()
         {
             NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), NativeLibraryImportResolver);
-
+            
             // Change default culture to match with Mono runtime default culture
             CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
             CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
@@ -97,6 +97,7 @@ namespace SE.Interop
             DelegateHelpers.InitMethods();
 
             Debug.Log("测试");
+
         }
 
 
@@ -1813,7 +1814,7 @@ namespace SE.Interop
 #endif
         }
 
-        #if !USE_AOT
+#if !USE_AOT
         /// <summary>
         /// Wrapper class for invoking function pointers from unmanaged code.
         /// </summary>

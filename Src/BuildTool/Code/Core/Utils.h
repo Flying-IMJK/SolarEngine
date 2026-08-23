@@ -10,26 +10,6 @@
 
 namespace SE::BuildTool
 {
-    enum class ReflectionMacroType
-    {
-        ReflectMeta,
-
-        SEClass,                // SE_CLASS(Reflect, API, ...)
-        SEStruct,               // SE_STRUCT(...)
-        SEInterface,            // SE_INTERFACE(...)
-        SEEnum,                 // SE_ENUM(Reflect, API, ...)
-        SEProperty,             // SE_PROPERTY(Reflect, API, ...)
-        SEFunction,             // SE_FUNCTION(Reflect, API, ...)
-        SEEvent,                // SE_EVENT(API, ...)
-        SETypeDef,              // SE_TYPEDEF(...)
-        APIInjectCode,          // API_INJECT_CODE(cpp|csharp, "code")
-
-        NumMacros,
-        Unknown = NumMacros,
-    };
-
-    char const* GetMarkMacroText(ReflectionMacroType macro);
-
     //-------------------------------------------------------------------------
 
     namespace Settings

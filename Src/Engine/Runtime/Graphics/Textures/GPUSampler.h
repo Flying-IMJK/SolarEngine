@@ -10,7 +10,7 @@ namespace SE
 	/// GPU texture sampler object.
 	/// </summary>
 	/// <seealso cref="GPUResource" />
-	SE_CLASS(API, Sealed)
+	SE_CLASS(API(Sealed))
 	class SE_API_RUNTIME GPUSampler : public GPUResource
 	{
 		SCRIPTING_TYPE_NO_SPAWN(GPUSampler);

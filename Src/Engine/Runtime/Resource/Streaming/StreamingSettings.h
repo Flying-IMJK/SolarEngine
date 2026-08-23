@@ -17,7 +17,7 @@ namespace SE
 		/// <summary>
 		/// Textures streaming configuration (per-group).
 		/// </summary>
-		SE_PROPERTY(API, Attributes="EditorOrder(100), EditorDisplay(\"Textures\")")
+		SE_PROPERTY(API(Attributes="EditorOrder(100), EditorDisplay(\"Textures\")"))
 		List<TextureGroup, InlinedAllocation<32>> TextureGroups;
 
 	public:

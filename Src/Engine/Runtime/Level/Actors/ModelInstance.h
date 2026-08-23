@@ -8,7 +8,7 @@ namespace SE
 {
 	class IRender;
 
-	SE_CLASS(Reflect, API, Abstract)
+	SE_CLASS(Reflect, API(Abstract))
 	class SE_API_RUNTIME ModelInstance : public RenderActor
 	{
 		SCRIPTING_TYPE_NO_SPAWN(ModelInstance);
@@ -75,4 +75,3 @@ namespace SE
 	};
 
 } // SE
-

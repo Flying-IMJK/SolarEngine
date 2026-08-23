@@ -7,7 +7,7 @@ namespace SE
 	/// <summary>
 	/// Contains information about current memory usage and capacity.
 	/// </summary>
-	SE_STRUCT(API)
+	SE_STRUCT(API())
 	struct MemoryStats
 	{
 		SCRIPTING_TYPE_MIN(MemoryStats)
@@ -35,7 +35,7 @@ namespace SE
 	/// <summary>
 	/// Contains information about current memory usage by the process.
 	/// </summary>
-	SE_STRUCT(API)
+	SE_STRUCT(API())
 	struct ProcessMemoryStats
 	{
 		SCRIPTING_TYPE_MIN(MemoryStats)

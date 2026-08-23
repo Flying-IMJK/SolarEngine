@@ -105,7 +105,7 @@ namespace SE::BuildTool
         return result;
     }
 
-    BindingCallable MakeBindingMethodCallable(const ApiFunction& function)
+    BindingCallable MakeBindingMethodCallable(const TypeInfoFunc& function)
     {
         BindingCallable result;
         result.function = function;
@@ -113,58 +113,53 @@ namespace SE::BuildTool
         return result;
     }
 
-    BindingCallable MakeBindingPropertyGetter(const ApiProperty& property)
+    BindingCallable MakeBindingPropertyGetter(const TypeInfoStruct& cls, const TypeInfoFunc& fn)
     {
         BindingCallable result;
-        result.function.name = property.getterName;
-        result.function.returnType = property.getterCppType.empty() ? property.cppType : property.getterCppType;
-        result.function.isStatic = property.isStatic;
-        result.function.uniqueName = property.getterUniqueName;
-        result.function.entryPoint = property.getterEntryPoint;
-        result.function.isHidden = property.isHidden;
-        result.function.isDeprecated = property.isDeprecated;
-        result.function.access = property.getterAccess;
-        result.function.attributes = property.attributes;
-        result.function.comment = property.comment;
-        result.function.marshalAs = property.marshalAs;
-        result.function.lineNumber = property.lineNumber;
+        result.function.name       = fn.name;
+        result.function.returnType = fn.returnType;
+        result.function.isStatic   = fn.isStatic;
+        result.function.uniqueName = fn.uniqueName;
+        result.function.entryPoint = fn.entryPoint;
+        result.function.access     = fn.access;
+        result.function.attributes = fn.attributes;
+        result.function.comment    = fn.comment;
+        result.function.marshalAs  = fn.marshalAs;
+        result.function.lineNumber = fn.lineNumber;
         result.invocation = BindingInvocationKind::Method;
         return result;
     }
 
-    BindingCallable MakeBindingPropertySetter(const ApiProperty& property)
+    BindingCallable MakeBindingPropertySetter(const TypeInfoStruct& cls, const TypeInfoFunc& fn)
     {
         BindingCallable result;
-        result.function.name = property.setterName;
+        result.function.name       = fn.name;
         result.function.returnType = "void";
-        result.function.isStatic = property.isStatic;
-        result.function.uniqueName = property.setterUniqueName;
-        result.function.entryPoint = property.setterEntryPoint;
-        result.function.isHidden = property.isHidden;
-        result.function.isDeprecated = property.isDeprecated;
-        result.function.access = property.setterAccess;
-        result.function.attributes = property.attributes;
-        result.function.comment = property.comment;
-        result.function.marshalAs = property.marshalAs;
-        result.function.lineNumber = property.lineNumber;
-        ApiParam& value = Utils::Vector::AddOne(result.function.params);
-        value.name = "value";
-        value.cppType = property.setterCppType.empty() ? property.cppType : property.setterCppType;
-        result.invocation = BindingInvocationKind::Method;
+        result.function.isStatic   = fn.isStatic;
+        result.function.uniqueName = fn.uniqueName;
+        result.function.entryPoint = fn.entryPoint;
+        result.function.access     = fn.access;
+        result.function.attributes = fn.attributes;
+        result.function.comment    = fn.comment;
+        result.function.marshalAs  = fn.marshalAs;
+        result.function.lineNumber = fn.lineNumber;
+
+        TypeInfoParam& value = Utils::Vector::AddOne(result.function.params);
+        value.name           = "value";
+        value.type           = fn.params[0].type;
+        result.invocation    = BindingInvocationKind::Method;
         return result;
     }
 
-    BindingCallable MakeBindingFieldGetter(const ApiClass& cls, const ApiField& field)
+    BindingCallable MakeBindingFieldGetter(const TypeInfoStruct& cls, const TypeInfoField& field)
     {
         BindingCallable result;
         result.function.name = field.name;
-        result.function.returnType = field.cppType;
+        result.function.returnType = field.type;
         result.function.returnArraySize = field.arraySize;
         result.function.isStatic = field.isStatic;
         result.function.uniqueName = field.name + "_Get";
         result.function.entryPoint = Utils::String::Format("{0}_{1}_Get", cls.name, field.name);
-        result.function.isHidden = field.isHidden;
-        result.function.isDeprecated = field.isDeprecated;
         result.function.attributes = field.attributes;
         result.function.comment = field.comment;
         result.function.marshalAs = field.marshalAs;
@@ -173,25 +168,25 @@ namespace SE::BuildTool
         return result;
     }
 
-    BindingCallable MakeBindingFieldSetter(const ApiClass& cls, const ApiField& field)
+    BindingCallable MakeBindingFieldSetter(const TypeInfoStruct& cls, const TypeInfoField& field)
     {
         BindingCallable result;
-        result.function.name = field.name;
+        result.function.name       = field.name;
         result.function.returnType = "void";
-        result.function.isStatic = field.isStatic;
+        result.function.isStatic   = field.isStatic;
         result.function.uniqueName = field.name + "_Set";
         result.function.entryPoint = Utils::String::Format("{0}_{1}_Set", cls.name, field.name);
-        result.function.isHidden = field.isHidden;
-        result.function.isDeprecated = field.isDeprecated;
         result.function.attributes = field.attributes;
-        result.function.comment = field.comment;
-        result.function.marshalAs = field.marshalAs;
+        result.function.comment    = field.comment;
+        result.function.marshalAs  = field.marshalAs;
         result.function.lineNumber = field.lineNumber;
-        ApiParam& value = Utils::Vector::AddOne(result.function.params);
-        value.name = "value";
-        value.cppType = field.cppType;
-        value.arraySize = field.arraySize;
-        result.invocation = BindingInvocationKind::FieldSet;
+
+        TypeInfoParam& value = Utils::Vector::AddOne(result.function.params);
+        value.name           = "value";
+        value.type           = field.type;
+        value.arraySize      = field.arraySize;
+        result.invocation    = BindingInvocationKind::FieldSet;
+
         return result;
     }
 

@@ -337,18 +337,22 @@ namespace SE::Log
 			StringAnsi traceMessage;
 			if (entry.filename.IsEmpty())
 			{
-				traceMessage = StringAnsi::Format("[{0}][{1}][{2}] {3}", entry.timestamp,
+				traceMessage = StringAnsi::Format("[{0}][{1}] {2}:{3}", entry.timestamp,
 					g_severityLabelchars[(int32)entry.severity], entry.category, entry.message);
 			}
 			else
 			{
-				traceMessage = StringAnsi::Format("[{0}][{1}][{2}] {3} at {4}:{5}", entry.timestamp,
+				traceMessage = StringAnsi::Format("[{0}][{1}] {2}:{3} at {4}:{5}", entry.timestamp,
 					g_severityLabelchars[(int32)entry.severity], entry.category, entry.message, entry.filename, entry.lineNumber);
 			}
 
 
 			// Print to std out
+            #if !BUILD_RELEASE
 			std::cout << traceMessage.Get() << std::endl;
+            Platform::Log(traceMessage.ToString());
+            #endif
+
 
 			// Track unhandled warnings and errors
 			//-------------------------------------------------------------------------

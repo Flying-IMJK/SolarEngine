@@ -26,7 +26,7 @@ namespace SE
 	/// <summary>
 	/// Represents date and time.
 	/// </summary>
-	SE_STRUCT(API)
+	SE_STRUCT(API(InBuild("System.DateTime")))
 	struct SE_API_RUNTIME DateTime
 	{
 	public:

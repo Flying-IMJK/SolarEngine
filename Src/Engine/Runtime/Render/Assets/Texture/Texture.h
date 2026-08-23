@@ -6,7 +6,7 @@ namespace SE
 {
 	#define ASSET_VERSION_TEXTURE 4
 
-	SE_CLASS(Reflect, API, NoSpawn)
+	SE_CLASS(Reflect, API(NoSpawn))
 	class SE_API_RUNTIME Texture : public TextureBase
 	{
 		SE_DEFINE_CLASS(Texture, TextureBase);

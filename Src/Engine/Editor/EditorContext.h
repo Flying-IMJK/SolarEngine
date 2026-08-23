@@ -13,7 +13,6 @@ namespace SE
     class SystemRegistry;
     class ResourceSystem;
     
-    namespace Reflect { class Types; }
     namespace SGUI 
     {
          class ImageCache;

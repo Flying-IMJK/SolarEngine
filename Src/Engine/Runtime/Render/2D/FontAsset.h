@@ -88,7 +88,7 @@ namespace SE
     /// <summary>
     /// Font asset contains glyph collection and cached data used to render text.
     /// </summary>
-    SE_CLASS(API, NoSpawn, Reflect)
+    SE_CLASS(Reflect, API(NoSpawn))
     class SE_API_RUNTIME FontAsset final : public BinaryAsset
     {
         SE_DEFINE_CLASS(FontAsset, BinaryAsset);
@@ -146,7 +146,7 @@ namespace SE
         /// </summary>
         /// <param name="size">The font characters size.</param>
         /// <returns>The created font object.</returns>
-        SE_FUNCTION(API)
+        SE_FUNCTION(API())
         Font* CreateFont(float size);
 
         /// <summary>
@@ -208,4 +208,3 @@ namespace SE
     };
 
 } // SE
-

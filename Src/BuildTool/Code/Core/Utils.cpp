@@ -8,37 +8,6 @@
 
 namespace SE::BuildTool
 {
-    //-------------------------------------------------------------------------
-
-    char const* GetMarkMacroText( ReflectionMacroType macro )
-    {
-        switch ( macro )
-        {
-        case ReflectionMacroType::ReflectMeta:
-            return "SE_META";
-        case ReflectionMacroType::SEClass:
-            return "SE_CLASS";
-        case ReflectionMacroType::SEStruct:
-            return "SE_STRUCT";
-        case ReflectionMacroType::SEInterface:
-            return "SE_INTERFACE";
-        case ReflectionMacroType::SEEnum:
-            return "SE_ENUM";
-        case ReflectionMacroType::SEProperty:
-            return "SE_PROPERTY";
-        case ReflectionMacroType::SEFunction:
-            return "SE_FUNCTION";
-        case ReflectionMacroType::SEEvent:
-            return "SE_EVENT";
-        case ReflectionMacroType::SETypeDef:
-            return "SE_TYPEDEF";
-        case ReflectionMacroType::APIInjectCode:
-            return "API_INJECT_CODE";
-        case ReflectionMacroType::NumMacros:
-            break;
-        }
-        return "";
-    }
 
     int32 Utils::String::Length(const char* text)
     {

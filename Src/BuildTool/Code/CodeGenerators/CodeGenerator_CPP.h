@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Database/ReflectionDatabase.h"
+#include "../Database/TypeDatabase.h"
 #include "../mustache.hpp"
 #include <sstream>
 
@@ -13,7 +13,7 @@ namespace SE::BuildTool
     public:
         Generator() : m_pDatabase(nullptr) {}
         ~Generator() {}
-        bool Generate(ReflectionDatabase const &database, SolutionInfo const &solution);
+        bool        Generate(TypeDatabase const& database, SolutionInfo const& solution);
         char const *GetErrorMessage() const { return m_errorMessage.c_str(); }
 
         template<typename... Params>
@@ -28,13 +28,15 @@ namespace SE::BuildTool
 
         // File specific functions
         void GenerateTypeInfoFileHeader(HeaderInfo const &hdr, std::string_view solutionPath);
-        void AppendBindingIncludesIfNeeded();
-        void GenerateModuleCodeFile(ReflectionDatabase const& database, ProjectInfo const &prj, std::vector<TypeData> const &typesInModule);
+        void AppendAPIIncludesIfNeeded();
+        void GenerateModuleCodeFile(TypeDatabase const&               database,
+                                    ProjectInfo const&                prj,
+                                    std::vector<TypeInfoBase*> const& typesInModule);
 
         // Utils
         static bool SaveStreamToFile(std::string const &filePath, std::stringstream &stream);
     private:
-        ReflectionDatabase const *m_pDatabase;
+        TypeDatabase const* m_pDatabase;
         std::stringstream m_typeInfoFile;
         std::stringstream m_moduleFile;
         std::stringstream m_engineTypeRegistrationFile;

@@ -1,1 +1,487 @@
-{"nodes": [], "edges": [], "hyperedges": [], "input_tokens": 0, "output_tokens": 0}
+{
+  "nodes": [
+    {
+      "label": "BuildTool CMake Configuration",
+      "file_type": "code",
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_buildtool_code_cmakelists_buildtool_cmake_configuration"
+    },
+    {
+      "label": "SEBuildTool",
+      "file_type": "code",
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_buildtool_code_cmakelists_sebuildtool"
+    },
+    {
+      "label": "SOURCES",
+      "file_type": "code",
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_buildtool_code_cmakelists_sources"
+    },
+    {
+      "label": "Core Sources",
+      "file_type": "concept",
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_buildtool_code_cmakelists_core_sources"
+    },
+    {
+      "label": "Database Sources",
+      "file_type": "concept",
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_buildtool_code_cmakelists_database_sources"
+    },
+    {
+      "label": "CodeGenerator Sources",
+      "file_type": "concept",
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_buildtool_code_cmakelists_codegenerator_sources"
+    },
+    {
+      "label": "Clang Sources",
+      "file_type": "concept",
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_buildtool_code_cmakelists_clang_sources"
+    },
+    {
+      "label": "mustache.hpp",
+      "file_type": "code",
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_buildtool_code_cmakelists_mustache"
+    },
+    {
+      "label": "Visual Studio Source Visibility",
+      "file_type": "rationale",
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_buildtool_code_cmakelists_visual_studio_source_visibility"
+    },
+    {
+      "label": "LLVM15",
+      "file_type": "concept",
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_buildtool_code_cmakelists_llvm15"
+    },
+    {
+      "label": "LLVM Include Dirs",
+      "file_type": "code",
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_buildtool_code_cmakelists_llvm_include_dirs"
+    },
+    {
+      "label": "sqlite3",
+      "file_type": "concept",
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_buildtool_code_cmakelists_sqlite3"
+    },
+    {
+      "label": "fmt::fmt",
+      "file_type": "concept",
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_buildtool_code_cmakelists_fmt"
+    },
+    {
+      "label": "RapidJSON Include Directory",
+      "file_type": "concept",
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_buildtool_code_cmakelists_rapidjson_include"
+    },
+    {
+      "label": "C++17 Standard",
+      "file_type": "concept",
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_buildtool_code_cmakelists_cpp17"
+    },
+    {
+      "label": "Windows LLVM Libraries",
+      "file_type": "concept",
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_buildtool_code_cmakelists_windows_llvm_libraries"
+    },
+    {
+      "label": "Linux libclang.so.12",
+      "file_type": "concept",
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_buildtool_code_cmakelists_linux_libclang"
+    },
+    {
+      "label": "macOS libclang.dylib",
+      "file_type": "concept",
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_buildtool_code_cmakelists_macos_libclang"
+    },
+    {
+      "label": "LLVM Runtime Files",
+      "file_type": "code",
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_buildtool_code_cmakelists_llvm_runtime_files"
+    },
+    {
+      "label": "Post Build Runtime Copy",
+      "file_type": "code",
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "src_buildtool_code_cmakelists_post_build_runtime_copy"
+    }
+  ],
+  "edges": [
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_buildtool_cmake_configuration",
+      "target": "src_buildtool_code_cmakelists_sebuildtool"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_post_build_runtime_copy",
+      "target": "src_buildtool_code_cmakelists_sebuildtool"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_sebuildtool",
+      "target": "src_buildtool_code_cmakelists_cpp17"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_sebuildtool",
+      "target": "src_buildtool_code_cmakelists_fmt"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_sebuildtool",
+      "target": "src_buildtool_code_cmakelists_linux_libclang"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_sebuildtool",
+      "target": "src_buildtool_code_cmakelists_llvm_include_dirs"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_sebuildtool",
+      "target": "src_buildtool_code_cmakelists_macos_libclang"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_sebuildtool",
+      "target": "src_buildtool_code_cmakelists_rapidjson_include"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_sebuildtool",
+      "target": "src_buildtool_code_cmakelists_sources"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_sebuildtool",
+      "target": "src_buildtool_code_cmakelists_sqlite3"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_sebuildtool",
+      "target": "src_buildtool_code_cmakelists_windows_llvm_libraries"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_sources",
+      "target": "src_buildtool_code_cmakelists_clang_sources"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_sources",
+      "target": "src_buildtool_code_cmakelists_codegenerator_sources"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_sources",
+      "target": "src_buildtool_code_cmakelists_core_sources"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_sources",
+      "target": "src_buildtool_code_cmakelists_database_sources"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_sources",
+      "target": "src_buildtool_code_cmakelists_mustache"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_visual_studio_source_visibility",
+      "target": "src_buildtool_code_cmakelists_sources"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_llvm_include_dirs",
+      "target": "src_buildtool_code_cmakelists_llvm15"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_llvm_runtime_files",
+      "target": "src_buildtool_code_cmakelists_llvm15"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_windows_llvm_libraries",
+      "target": "src_buildtool_code_cmakelists_llvm15"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_windows_llvm_libraries",
+      "target": "src_buildtool_code_cmakelists_linux_libclang"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_linux_libclang",
+      "target": "src_buildtool_code_cmakelists_macos_libclang"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CMakeLists.txt",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "src_buildtool_code_cmakelists_post_build_runtime_copy",
+      "target": "src_buildtool_code_cmakelists_llvm_runtime_files"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "src_buildtool_code_cmakelists_platform_specific_llvm_linkage",
+      "label": "Platform Specific LLVM Linkage",
+      "nodes": [
+        "src_buildtool_code_cmakelists_windows_llvm_libraries",
+        "src_buildtool_code_cmakelists_linux_libclang",
+        "src_buildtool_code_cmakelists_macos_libclang"
+      ],
+      "relation": "form",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "CMakeLists.txt"
+    },
+    {
+      "id": "src_buildtool_code_cmakelists_buildtool_source_groups",
+      "label": "BuildTool Source Groups",
+      "nodes": [
+        "src_buildtool_code_cmakelists_core_sources",
+        "src_buildtool_code_cmakelists_database_sources",
+        "src_buildtool_code_cmakelists_codegenerator_sources",
+        "src_buildtool_code_cmakelists_clang_sources"
+      ],
+      "relation": "form",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "CMakeLists.txt"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

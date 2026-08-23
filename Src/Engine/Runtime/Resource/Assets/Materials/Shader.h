@@ -8,7 +8,7 @@ namespace SE
 	// <summary>
 	/// The shader asset. Contains a program that runs on the GPU and is able to perform rendering calculation using textures, vertices and other resources.
 	/// </summary>
-	SE_CLASS(Reflect, API, NoSpawn)
+	SE_CLASS(Reflect, API(NoSpawn))
 	class SE_API_RUNTIME Shader final : public BinaryAsset, public IShaderAsset
 	{
 		SE_DEFINE_CLASS(Shader, BinaryAsset)

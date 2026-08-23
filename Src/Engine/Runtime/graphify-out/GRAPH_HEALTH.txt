@@ -1,0 +1,40 @@
+[graphify] MultiDiGraph edge-collapse diagnostic
+input: <in-memory>
+input_stage: provided JSON (normal graph.json is post-build)
+effective_directed: <direct-call>
+nodes: 21987
+raw_edges: 50470
+valid_candidate_edges: 48461
+missing_endpoint_edges: 0
+dangling_endpoint_edges: 2009
+self_loop_edges: 0
+exact_duplicate_edges: 0
+directed_unique_endpoint_pairs: 47164
+directed_same_endpoint_collapsed_edges: 1297
+undirected_unique_endpoint_pairs: 46455
+undirected_same_endpoint_collapsed_edges: 2006
+same_endpoint_group_count: 1257
+relation_variant_groups: 369
+source_file_variant_groups: 1
+source_location_variant_groups: 463
+context_variant_groups: 922
+post_build_graph_type: Graph
+post_build_edges: 46743
+producer_suppression_sites: 10
+producer_suppression_examples:
+  - L958 seen_ids arity=unknown
+  - L1108 seen_ids arity=unknown
+  - L1110 seen_doc_refs arity=unknown
+  - L1533 seen_ids arity=unknown
+  - L2002 seen_keys arity=unknown
+  - L2925 seen_ids arity=unknown
+  - L3033 seen_ids arity=unknown
+  - L3112 seen_ids arity=unknown
+examples:
+  - graph_shadergraphvalue_shadergraphvalue_cast -> graph_shadergraphvalue_shadergraphvalue edges=4 relations=['calls', 'references'] locations=['L316', 'L401', 'L505'] contexts=['call', 'parameter_type', 'return_type']
+  - core_inifile_inifile_getstringordefault -> core_types_variable_stringansi edges=3 relations=['calls', 'references'] locations=['L241', 'L250'] contexts=['call', 'parameter_type', 'return_type']
+  - core_math_boundingvolumes_boundingbox_fromsphere -> core_math_boundingvolumes_cpp_boundingbox edges=3 relations=['calls', 'references'] locations=['L76', 'L78', 'L84'] contexts=['call', 'parameter_type', 'return_type']
+  - core_math_boundingvolumes_boundingbox_transform -> core_math_boundingvolumes_cpp_boundingbox edges=3 relations=['calls', 'references'] locations=['L135', 'L91'] contexts=['call', 'parameter_type', 'return_type']
+  - core_math_boundingvolumes_boundingbox_makescaled -> core_math_boundingvolumes_cpp_boundingbox edges=3 relations=['calls', 'references'] locations=['L106', 'L113'] contexts=['call', 'parameter_type', 'return_type']
+note: normal graph.json is post-build; raw producer loss must be measured earlier.
+GRAPH HEALTH WARNING: 2009 dangling-endpoint edges; 1297 collapsed directed edges; 2006 collapsed undirected edges

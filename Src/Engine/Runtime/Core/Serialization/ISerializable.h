@@ -3,6 +3,7 @@
 #include "JsonFwd.h"
 #include "Runtime/API.h"
 #include <Runtime/Core/TypeSystem/TypeMacro.h>
+#include <Runtime/Core/Scripting/ScriptingType.h>
 
 namespace SE
 {
@@ -81,7 +82,7 @@ namespace SE
 	/// <summary>
 	/// Interface for objects that can be serialized/deserialized to/from JSON format.
 	/// </summary>
-    SE_INTERFACE(API)
+    SE_INTERFACE(API())
 	class SE_API_RUNTIME ISerializable
 	{
         SCRIPTING_TYPE_MIN(ISerializable);
@@ -96,13 +97,13 @@ namespace SE
 		/// 将 object 序列化到输出流中。
 		/// </summary>
 		/// <param name="context">context</param>
-		virtual void Serialize(SerializeContext &context) = 0;
+		virtual void Serialize(SerializeContext &context);
 
 		/// <summary>
 		/// 从 input 流中反序列化 object。
 		/// </summary>
 		/// <param name="context">context</param>
-		virtual void Deserialize(DeserializeContext &context) = 0;
+		virtual void Deserialize(DeserializeContext &context);
 
 		/// <summary>
 		/// Deserializes object from the input stream child member. Won't deserialize it if member is missing.

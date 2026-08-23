@@ -8,7 +8,7 @@
 #include "Runtime/API.h"
 #include "Runtime/Resource/AssetRef.h"
 #include "Runtime/Render/Assets/Geometry/ModelData.h"
-#include "../../Resource/Assets/Materials/MaterialBase.h"
+#include "Runtime/Resource/Assets/Materials/MaterialBase.h"
 
 namespace SE
 {

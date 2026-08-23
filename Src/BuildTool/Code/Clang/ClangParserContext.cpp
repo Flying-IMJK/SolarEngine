@@ -1,8 +1,8 @@
 #include "ClangParserContext.h"
-#include "Database/ReflectionDatabase.h"
+#include "ClangTemplateTypes.h"
+#include "Database/TypeDatabase.h"
 
 #include <algorithm>
-#include <cctype>
 
 //-------------------------------------------------------------------------
 
@@ -37,115 +37,6 @@ namespace SE::BuildTool
             return typeName.substr((size_t)pos + 1);
         }
         return typeName;
-    }
-
-    static bool IsIdentifierChar(char value)
-    {
-        return std::isalnum((unsigned char)value) || value == '_';
-    }
-
-    static void ReplaceTemplateParameter(std::string& text, std::string const& parameterName, std::string const& argumentName)
-    {
-        if (text.empty() || parameterName.empty())
-            return;
-
-        size_t pos = 0;
-        while ((pos = text.find(parameterName, pos)) != std::string::npos)
-        {
-            bool leftBoundary = pos == 0 || !IsIdentifierChar(text[pos - 1]);
-            size_t endPos = pos + parameterName.length();
-            bool rightBoundary = endPos >= text.length() || !IsIdentifierChar(text[endPos]);
-            if (leftBoundary && rightBoundary)
-            {
-                text.replace(pos, parameterName.length(), argumentName);
-                pos += argumentName.length();
-            }
-            else
-            {
-                pos = endPos;
-            }
-        }
-    }
-
-    static void InflateText(std::string& text, std::vector<std::string> const& parameters, std::vector<std::string> const& arguments)
-    {
-        uint32 const count = (uint32)std::min(parameters.size(), arguments.size());
-        for (uint32 i = 0; i < count; i++)
-        {
-            ReplaceTemplateParameter(text, parameters[i], arguments[i]);
-        }
-    }
-
-    static void InflateApiParam(ApiParam& param, std::vector<std::string> const& parameters, std::vector<std::string> const& arguments)
-    {
-        InflateText(param.cppType, parameters, arguments);
-    }
-
-    static void InflateApiFunction(ApiFunction& fn, std::vector<std::string> const& parameters, std::vector<std::string> const& arguments)
-    {
-        InflateText(fn.returnType, parameters, arguments);
-        for (auto& param : fn.params)
-        {
-            InflateApiParam(param, parameters, arguments);
-        }
-    }
-
-    static void InflateApiProperty(ApiProperty& prop, std::vector<std::string> const& parameters, std::vector<std::string> const& arguments)
-    {
-        InflateText(prop.cppType, parameters, arguments);
-        InflateText(prop.getterCppType, parameters, arguments);
-        InflateText(prop.setterCppType, parameters, arguments);
-    }
-
-    static void InflateApiField(ApiField& field, std::vector<std::string> const& parameters, std::vector<std::string> const& arguments)
-    {
-        InflateText(field.cppType, parameters, arguments);
-    }
-
-    static void InflateApiEvent(ApiEvent& evt, std::vector<std::string> const& parameters, std::vector<std::string> const& arguments)
-    {
-        InflateText(evt.cppType, parameters, arguments);
-        for (auto& param : evt.params)
-        {
-            InflateApiParam(param, parameters, arguments);
-        }
-    }
-
-    static void InflateTypeData(TypeData& type, std::vector<std::string> const& parameters, std::vector<std::string> const& arguments)
-    {
-        for (auto& property : type.properties)
-        {
-            InflateText(property.typeName, parameters, arguments);
-            InflateText(property.templateArgTypeName, parameters, arguments);
-            if (!property.typeName.empty())
-            {
-                property.typeID = TypeID(property.typeName);
-            }
-        }
-
-        for (auto& fn : type.bindingInfo.functions)
-        {
-            InflateApiFunction(fn, parameters, arguments);
-        }
-        for (auto& prop : type.bindingInfo.bindingProperties)
-        {
-            InflateApiProperty(prop, parameters, arguments);
-        }
-        for (auto& field : type.bindingInfo.fields)
-        {
-            InflateApiField(field, parameters, arguments);
-        }
-        for (auto& iface : type.bindingInfo.interfaces)
-        {
-            for (auto& fn : iface.functions)
-            {
-                InflateApiFunction(fn, parameters, arguments);
-            }
-        }
-        for (auto& evt : type.bindingInfo.events)
-        {
-            InflateApiEvent(evt, parameters, arguments);
-        }
     }
 
     static void CalculateFullNamespace(std::vector<std::string> const &namespaceStack, std::string &fullNamespace)
@@ -320,150 +211,341 @@ namespace SE::BuildTool
         metadata += value;
     }
 
+    static std::string GetMacroAttributeValue(std::string value)
+    {
+        value = GetMacroValue(std::move(value));
+        if (!value.empty() && !Utils::String::StartsWith(value, "["))
+        {
+            value.insert(0, "[");
+            value += "]";
+        }
+        return value;
+    }
+
     //-------------------------------------------------------------------------
 
-    MarkMacro::MarkMacro(HeaderInfo const *pHeaderInfo, CXCursor cursor, CXSourceRange& sourceRange, ReflectionMacroType type)
-        : headerID(pHeaderInfo->headerId), type(type)
+    MarkToken::MarkToken(CXCursor& cursor, CXSourceRange& sourceRange)
     {
-        ENGINE_ASSERT(type < ReflectionMacroType::NumMacros);
+        translationUnit = clang_Cursor_getTranslationUnit(cursor);
+        clang_tokenize(translationUnit, sourceRange, &tokens, &numTokens);
+    }
+
+    MarkToken::~MarkToken()
+    {
+        clang_disposeTokens(translationUnit, tokens, numTokens);
+    }
+
+    bool MarkToken::Next() { return ++tokenIndex < numTokens; }
+
+    bool MarkToken::Peek(std::string& outToken) const
+    {
+        int32 const nextTokenIndex = tokenIndex + 1;
+        if (nextTokenIndex >= numTokens)
+        {
+            return false;
+        }
+
+        outToken = ClangUtils::GetString(clang_getTokenSpelling(translationUnit, tokens[nextTokenIndex]));
+        return true;
+    }
+
+    std::string MarkToken::Current() const
+    {
+        return ClangUtils::GetString(clang_getTokenSpelling(translationUnit, tokens[tokenIndex]));
+    }
+
+    static bool TryReadAssignmentValue(MarkToken& context, std::string& outValue)
+    {
+        if (!context.Next() || context.Current() != "=")
+        {
+            return false;
+        }
+        if (!context.Next())
+        {
+            return false;
+        }
+
+        outValue = GetMacroValue(context.Current());
+        return true;
+    }
+
+    static std::string TryReadCallExpression(MarkToken& context, std::string firstToken)
+    {
+        std::string nextToken;
+        if (!context.Peek(nextToken) || nextToken != "(")
+        {
+            return {};
+        }
+
+        context.Next();
+        firstToken += "(";
+
+        int32 depth = 1;
+        while (context.Next())
+        {
+            std::string token = context.Current();
+            firstToken += token;
+
+            if (token == "(")
+            {
+                depth++;
+            }
+            else if (token == ")")
+            {
+                depth--;
+                if (depth == 0)
+                {
+                    break;
+                }
+            }
+        }
+
+        return firstToken;
+    }
+
+
+    MarkAPI::MarkAPI(MarkToken& context)
+    {
+        if (!(context.Next() && context.Current() == "("))
+        {
+            return;
+        }
+
+        int insiderIntent = 1;
+
+        while(context.Next())
+        {
+            std::string token = context.Current();
+            if ( token == ",")
+            {
+                continue;
+            }
+
+            if ( token == "(")
+            {
+                insiderIntent++;
+                continue;
+            }
+
+            if ( token == ")")
+            {
+                insiderIntent--;
+                if (insiderIntent <= 0)
+                {
+                    break;
+                }
+                continue;
+            }
+
+            if (token == "Abstract")
+            {
+                IsAbstract = true;
+            }
+            else if (token == "NoConstructor")
+            {
+                IsNoConstructor = true;
+            }
+            else if (token == "NoSpawn")
+            {
+                IsNoSpawn = true;
+            }
+            else if (token == "ReadOnly")
+            {
+                IsReadOnly = true;
+            }
+            else if (token == "Sealed")
+            {
+                IsSealed = true;
+            }
+            else if (token == "Static")
+            {
+                IsStatic = true;
+            }
+            else if (token == "NoProxy")
+            {
+                IsNoProxy = true;
+            }
+            else if (token == "Prop")
+            {
+                IsProperty = true;
+            }
+            else if (token == "NativeInvokeUseName")
+            {
+                IsNativeInvokeUseName = true;
+            }
+            else if (token == "Name")
+            {
+                TryReadAssignmentValue(context, name);
+            }
+            else if (token == "Attributes")
+            {
+                std::string value;
+                if (TryReadAssignmentValue(context, value))
+                {
+                    attributes = GetMacroAttributeValue(std::move(value));
+                }
+            }
+            else if (token == "MarshalAs")
+            {
+                TryReadAssignmentValue(context, marshalAs);
+            }
+            else if (token == "InBuild")
+            {
+                if (context.Next() && context.Current() == "(")
+                {
+                    if (context.Next() && context.Current() != ")")
+                    {
+                        inBuildMapType = GetMacroValue(context.Current());
+                        std::string nextToken;
+                        if (context.Peek(nextToken) && nextToken == ")")
+                        {
+                            context.Next();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    //-------------------------------------------------------------------------
+
+    MarkMacro::MarkMacro(MarkMacro const& other) :
+        headerID(other.headerID),
+        fileLine(other.fileLine),
+        fileColumn(other.fileColumn),
+        fileEndLine(other.fileEndLine),
+        fileEndColumn(other.fileEndColumn),
+        type(other.type),
+        macroComment(other.macroComment),
+        hasReflect(other.hasReflect),
+        hasTemplate(other.hasTemplate),
+        isAlias(other.isAlias),
+        api(other.api ? std::make_unique<MarkAPI>(*other.api) : nullptr),
+        macroMetadata(other.macroMetadata)
+    {}
+
+    MarkMacro& MarkMacro::operator=(MarkMacro const& other)
+    {
+        if (this == &other)
+        {
+            return *this;
+        }
+
+        headerID          = other.headerID;
+        fileLine          = other.fileLine;
+        fileColumn        = other.fileColumn;
+        fileEndLine       = other.fileEndLine;
+        fileEndColumn     = other.fileEndColumn;
+        type              = other.type;
+        macroComment      = other.macroComment;
+        hasReflect        = other.hasReflect;
+        hasTemplate       = other.hasTemplate;
+        isAlias           = other.isAlias;
+        api               = other.api ? std::make_unique<MarkAPI>(*other.api) : nullptr;
+        macroMetadata     = other.macroMetadata;
+        return *this;
+    }
+
+    //-------------------------------------------------------------------------
+
+    MarkMacro::MarkMacro(HeaderInfo const* pHeaderInfo,
+                         CXCursor          cursor,
+                         CXSourceRange&    sourceRange,
+                         MacroTypeEnum     type) : headerID(pHeaderInfo->headerId), type(type)
+    {
+        ENGINE_ASSERT(type < MacroTypeEnum::NumMacros);
 
         clang_getExpansionLocation(clang_getRangeStart(sourceRange), nullptr, &fileLine, &fileColumn, nullptr);
         clang_getExpansionLocation(clang_getRangeEnd(sourceRange), nullptr, &fileEndLine, &fileEndColumn, nullptr);
 
-        //-------------------------------------------------------------------------
-
-        // macroComment = TryToParseMacro(pHeaderInfo->fileContents, lineNumber);
-
-        //-------------------------------------------------------------------------
 
         // Read the contents of the macro for all annotation types
         //-------------------------------------------------------------------------
-        bool needsParamParsing = (type == ReflectionMacroType::SEClass ||
-                                   type == ReflectionMacroType::SEStruct ||
-                                   type == ReflectionMacroType::SEInterface ||
-                                   type == ReflectionMacroType::SEEnum ||
-                                   type == ReflectionMacroType::SEProperty ||
-                                   type == ReflectionMacroType::SEFunction ||
-                                   type == ReflectionMacroType::SEEvent ||
-                                   type == ReflectionMacroType::SETypeDef);
+        bool needsParamParsing =
+            (type == MacroTypeEnum::SEClass || type == MacroTypeEnum::SEStruct || type == MacroTypeEnum::SEInterface ||
+             type == MacroTypeEnum::SEEnum || type == MacroTypeEnum::SEField || type == MacroTypeEnum::SEFunction ||
+             type == MacroTypeEnum::SEEvent || type == MacroTypeEnum::SETypeDef);
 
         if (needsParamParsing)
         {
-            CXToken *tokens = nullptr;
-            uint32 numTokens = 0;
-            CXTranslationUnit translationUnit = clang_Cursor_getTranslationUnit(cursor);
-            clang_tokenize(translationUnit, sourceRange, &tokens, &numTokens);
-            std::string rawContents;
-            for (uint32 n = 0; n < numTokens; n++)
-            {
-                rawContents += ClangUtils::GetString(clang_getTokenSpelling(translationUnit, tokens[n]));
-            }
-            clang_disposeTokens(translationUnit, tokens, numTokens);
+            MarkToken markToken(cursor, sourceRange);
 
-            std::string macroContent;
-            // Extract content between parentheses
-            int32 startIdx = Utils::String::Find(rawContents, "(");
-            int32 endIdx = Utils::String::FindLast(rawContents, ')');
-            if (startIdx != INVALID_INDEX && endIdx != INVALID_INDEX && endIdx > (startIdx + 1))
+            while(markToken.Next())
             {
-                macroContent = rawContents.substr(startIdx + 1, endIdx - startIdx - 1);
-            }
-            else
-            {
-                macroContent.clear();
-            }
-
-            if (!macroContent.empty())
-            {
-                std::vector<std::string> params;
-                SplitRespectingBrackets(macroContent, ',', params);
-
-                for (auto &param : params)
+                std::string token = markToken.Current();
+                if ( token == "," || token == "(" || token == ")")
                 {
-                    AddParameter(std::move(param));
+                    continue;
                 }
-            }
-        }
-    }
 
-    //-------------------------------------------------------------------------
 
-    void MarkMacro::AddParameter(std::string parameter)
-    {
-        Utils::String::TrimStart(parameter);
-        Utils::String::TrimEnd(parameter);
-        if (parameter.empty())
-        {
-            return;
-        }
-
-        if (parameter == "Reflect")
-        {
-            hasReflect = true;
-            return;
-        }
-        if (parameter == "API")
-        {
-            hasAPI = true;
-            return;
-        }
-
-        int32 const equalsIndex = Utils::String::Find(parameter, '=');
-        if (equalsIndex != INVALID_INDEX)
-        {
-            std::string key = parameter.substr(0, (size_t)equalsIndex);
-            Utils::String::TrimStart(key);
-            Utils::String::TrimEnd(key);
-            if (key == "Meta" || key == "Metadata")
-            {
-                AppendMacroMetadata(macroMetadata, GetMacroValue(parameter.substr((size_t)equalsIndex + 1)));
-            }
-        }
-        else if (Utils::String::Find(parameter, '(') != INVALID_INDEX && Utils::String::FindLast(parameter, ')') != INVALID_INDEX)
-        {
-            // Allow concise reflection metadata such as Range(0, 1).
-            AppendMacroMetadata(macroMetadata, parameter);
-        }
-
-        macroContents.emplace_back(std::move(parameter));
-    }
-
-    bool MarkMacro::HasFlag(std::string_view flag) const
-    {
-        for (auto const& content : macroContents)
-        {
-            if (content == flag)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    bool MarkMacro::TryGetValue(std::string_view key, std::string& outValue) const
-    {
-        std::string const prefix = std::string(key) + "=";
-        for (auto const& content : macroContents)
-        {
-            if (Utils::String::StartsWith(content, prefix))
-            {
-                outValue = GetMacroValue(content.substr(prefix.length()));
-                if (key == "Attributes" && !outValue.empty() && !Utils::String::StartsWith(outValue, "["))
+                if (token == "Reflect")
                 {
-                    outValue.insert(0, "[");
-                    outValue += "]";
+                    hasReflect = true;
+                    continue;
                 }
-                return true;
+
+                if (token == "Template")
+                {
+                    hasTemplate = true;
+                    continue;
+                }
+
+                if (token == "Alias")
+                {
+                    isAlias = true;
+                    continue;
+                }
+
+                if (token == "API")
+                {
+                    api = std::make_unique<MarkAPI>(markToken);
+                    continue;
+                }
+
+                if (token == "Meta" || token == "Metadata")
+                {
+                    std::string value;
+                    if (TryReadAssignmentValue(markToken, value))
+                    {
+                        AppendMacroMetadata(macroMetadata, value);
+                    }
+                    continue;
+                }
+
+                AppendMacroMetadata(macroMetadata, TryReadCallExpression(markToken, token));
             }
         }
-        return false;
     }
 
-    //-------------------------------------------------------------------------
-
-    bool MarkMacro::HasContent(std::string_view value) const
+    char const* MarkMacro::GetMarkMacroText(MacroTypeEnum macro)
     {
-        return HasFlag(value);
+        switch (macro)
+        {
+            case MacroTypeEnum::SEMeta:
+                return "SE_META";
+            case MacroTypeEnum::SEClass:
+                return "SE_CLASS";
+            case MacroTypeEnum::SEStruct:
+                return "SE_STRUCT";
+            case MacroTypeEnum::SEInterface:
+                return "SE_INTERFACE";
+            case MacroTypeEnum::SEEnum:
+                return "SE_ENUM";
+            case MacroTypeEnum::SEField:
+                return "SE_FIELD";
+            case MacroTypeEnum::SEFunction:
+                return "SE_FUNCTION";
+            case MacroTypeEnum::SEEvent:
+                return "SE_EVENT";
+            case MacroTypeEnum::SETypeDef:
+                return "SE_TYPEDEF";
+            case MacroTypeEnum::SEInjectCode:
+                return "SE_INJECT_CODE";
+            case MacroTypeEnum::NumMacros:
+                break;
+        }
+        return "";
     }
 
     //-------------------------------------------------------------------------
@@ -558,13 +640,13 @@ namespace SE::BuildTool
     void ClangParserContext::AddMarkMacro(MarkMacro const &foundMacro)
     {
         ENGINE_ASSERT(foundMacro.headerID != StringID::Invalid);
-        ENGINE_ASSERT(foundMacro.type != ReflectionMacroType::Unknown);
+        ENGINE_ASSERT(foundMacro.type != MacroTypeEnum::Unknown);
 
         std::vector<MarkMacro> &macrosForHeader = m_MarkMacros[foundMacro.headerID];
         macrosForHeader.push_back(foundMacro);
     }
 
-    bool ClangParserContext::FindMarkMacro(HeaderID headerID, CXCursor const& cr, MarkMacro& macro, ReflectionMacroType macroType)
+    bool ClangParserContext::FindMarkMacro(HeaderID headerID, CXCursor const& cr, MarkMacro& macro, MacroTypeEnum macroType)
     {
         // Try get macros for this header
         //-------------------------------------------------------------------------
@@ -610,17 +692,14 @@ namespace SE::BuildTool
         return false;
     }
 
-    bool ClangParserContext::FindReflectionMacroForMeta(HeaderID headerID, CXCursor const& cr, MarkMacro& reflectionMacro)
-    {
-        return FindMarkMacro(headerID, cr, reflectionMacro, ReflectionMacroType::ReflectMeta);
-    }
 
-    void ClangParserContext::AddTemplateType(TypeData const& type, std::vector<std::string> const& parameterNames)
+
+    void ClangParserContext::AddTemplateType(std::unique_ptr<TypeInfoStructTemplate> type)
     {
+        ENGINE_ASSERT(type != nullptr);
         TemplateTypeData data;
-        data.type = type;
-        data.parameterNames = parameterNames;
-        m_TemplateTypes.emplace_back(data);
+        data.type = std::move(type);
+        m_TemplateTypes.emplace_back(std::move(data));
     }
 
     void ClangParserContext::AddTypeDef(TypeDefData const& typeDef)
@@ -632,7 +711,7 @@ namespace SE::BuildTool
     {
         for (auto const& pending : m_TypeDefs)
         {
-            if (pending.macro.HasContent("Alias"))
+            if (pending.macro.isAlias)
             {
                 continue;
             }
@@ -640,8 +719,8 @@ namespace SE::BuildTool
             TemplateTypeData const* pTemplateType = nullptr;
             for (auto const& templateType : m_TemplateTypes)
             {
-                std::string const fullTemplateName = GetFullTypeName(templateType.type.namespaceScopeList, templateType.type.structScopeList, templateType.type.name);
-                if (pending.templateTypeName == fullTemplateName || pending.templateTypeName == templateType.type.name || GetUnqualifiedTypeName(pending.templateTypeName) == templateType.type.name)
+                std::string const fullTemplateName = GetFullTypeName(templateType.type->namespaceScopeList, templateType.type->structScopeList, templateType.type->name);
+                if (pending.targetType.name == fullTemplateName || pending.targetType.name == templateType.type->name || GetUnqualifiedTypeName(pending.targetType.name) == templateType.type->name)
                 {
                     pTemplateType = &templateType;
                     break;
@@ -650,47 +729,24 @@ namespace SE::BuildTool
 
             if (pTemplateType == nullptr)
             {
-                LogError("SE_TYPEDEF target template type ({0}) was not found for typedef ({1})", pending.templateTypeName, pending.name);
+                LogError("SE_TYPEDEF target template type ({0}) was not found for typedef ({1})", pending.targetType.name, pending.name);
                 return false;
             }
 
-            if (pending.templateArguments.size() != pTemplateType->parameterNames.size())
+            auto type = InstantiateTemplateType(this, *pTemplateType->type, pending);
+            if (!type)
             {
-                LogError("SE_TYPEDEF typedef ({0}) provides {1} template argument(s), but template ({2}) expects {3}",
-                         pending.name,
-                         pending.templateArguments.size(),
-                         pTemplateType->type.name,
-                         pTemplateType->parameterNames.size());
                 return false;
             }
 
-            TypeData type = pTemplateType->type;
             std::string const fullAliasName = GetFullTypeName(pending.namespaceScopeList, pending.structScopeList, pending.name);
-            type.typeID = GenerateTypeID(fullAliasName);
-            type.headerID = pTemplateType->type.headerID;
-            type.name = pending.name;
-            type.namespaceScopeList = pending.namespaceScopeList;
-            type.structScopeList = pending.structScopeList;
-            type.flags.SetFlag(TypeData::Flags::IsTemplate);
-            type.isAPI = true;
-            type.isReflect = pending.macro.hasReflect;
-            if (!type.isReflect)
-            {
-                type.properties.clear();
-            }
-            type.bindingInfo.assemblyName.clear();
-            type.bindingInfo.assemblyDir.clear();
-            GetAssemblyInfoForHeader(type.headerID, type.bindingInfo.assemblyName, type.bindingInfo.assemblyDir);
-
-            InflateTypeData(type, pTemplateType->parameterNames, pending.templateArguments);
-
-            if (pDatabase->IsTypeRegistered(type.typeID))
+            if (pDatabase->IsTypeRegistered(type->typeID))
             {
                 LogError("SE_TYPEDEF typedef ({0}) generated a duplicate type ({1})", pending.name, fullAliasName);
                 return false;
             }
 
-            pDatabase->RegisterType(&type, false);
+            pDatabase->RegisterType(std::move(type), false);
         }
 
         m_TypeDefs.clear();
@@ -736,4 +792,5 @@ namespace SE::BuildTool
             }
         }
     }
-}
+
+} // namespace SE::BuildTool

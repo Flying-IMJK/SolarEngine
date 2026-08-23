@@ -9,7 +9,7 @@ namespace SE
 	/// <summary>
 	/// The platform the game is running.
 	/// </summary>
-	SE_ENUM(API)
+	SE_ENUM(API())
 	enum class PlatformType
 	{
 		/// <summary>
@@ -75,7 +75,7 @@ namespace SE
 	/// <summary>
 	/// The platform architecture types.
 	/// </summary>
-	SE_ENUM(API)
+	SE_ENUM(API())
 	enum class ArchitectureType
 	{
 		/// <summary>
