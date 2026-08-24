@@ -8,8 +8,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(LLVM "LLVM15")
 
 set("SOURCES"
-    Reflector.h
-    Reflector.cpp
+    Builder.h
+    Builder.cpp
     Core/Utils.h
     Core/Utils.cpp
     Core/TopologicalSort.h
@@ -68,7 +68,7 @@ set("SOURCES"
     Clang/ClangVisitors_TranslationUnit.h
     Clang/ClangVisitors_TranslationUnit.cpp
 
-    mustache.hpp
+    ThirdParty/mustache.hpp
 )
 
 

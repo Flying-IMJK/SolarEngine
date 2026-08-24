@@ -1,4 +1,4 @@
-#include "Reflector.h"
+#include "Builder.h"
 #include "Clang/ClangParser.h"
 #include "CodeGenerators/CodeGenerator_CPP.h"
 #include "Core/Json.h"
@@ -70,7 +70,7 @@ namespace SE::BuildTool
         }
     }
 
-    bool Reflector::ParseSolution(std::string slnRootPath, std::string &slnPath)
+    bool Builder::ParseSolution(std::string slnRootPath, std::string &slnPath)
     {
         if (slnPath.empty() || !FileSystem::MatchesExtension(slnPath, "json"))
         {
@@ -172,13 +172,13 @@ namespace SE::BuildTool
         return true;
     }
 
-	uint64_t Reflector::CalculateHeaderChecksum(std::string &engineIncludePath, std::string &filePath)
+	uint64_t Builder::CalculateHeaderChecksum(std::string &engineIncludePath, std::string &filePath)
     {
         static char const *headerString = "Note: including file: ";
         return FileSystem::GetFileLastEditTime(filePath);
     }
 
-    bool Reflector::ParseProject(ProjectObject &prjObject)
+    bool Builder::ParseProject(ProjectObject &prjObject)
     {
         ENGINE_ASSERT(FileSystem::IsUnderDirectory(prjObject.path, m_solution.path));
 
@@ -263,7 +263,7 @@ namespace SE::BuildTool
         return true;
     }
 
-    Reflector::HeaderProcessResult Reflector::ProcessHeaderFile(std::string &filePath, std::string &exportMacroName, std::vector<std::string> &headerFileContents)
+    Builder::HeaderProcessResult Builder::ProcessHeaderFile(std::string &filePath, std::string &exportMacroName, std::vector<std::string> &headerFileContents)
     {
         // Open header file
         bool const isModuleAPIHeader = Utils::String::Contains(filePath, "API.h");
@@ -365,7 +365,7 @@ namespace SE::BuildTool
         return HeaderProcessResult::IgnoreHeader;
     }
 
-    bool Reflector::Clean()
+    bool Builder::Clean()
     {
         std::cout << " * Cleaning Solution: " << m_solution.path << std::endl;
         std::cout << " ----------------------------------------------" << std::endl
@@ -418,7 +418,7 @@ namespace SE::BuildTool
         return result;
     }
 
-    bool Reflector::Build()
+    bool Builder::Build()
     {
         std::cout << " * Reflecting Solution: " << m_solution.path << std::endl;
         std::cout << " ----------------------------------------------" << std::endl
@@ -453,7 +453,7 @@ namespace SE::BuildTool
         return true;
     }
 
-    bool Reflector::UpToDateCheck()
+    bool Builder::UpToDateCheck()
     {
         std::cout << " * Performing Up-to-date check - ";
         Milliseconds time = 0;
@@ -541,7 +541,7 @@ namespace SE::BuildTool
         return true;
     }
 
-    bool Reflector::ReflectRegisteredHeaders()
+    bool Builder::ReflectRegisteredHeaders()
     {
         // Create list of all headers to parse
         std::vector<HeaderInfo *> headersToParse;
@@ -599,7 +599,7 @@ namespace SE::BuildTool
         return true;
     }
 
-    bool Reflector::WriteTypeData()
+    bool Builder::WriteTypeData()
     {
         std::cout << " * Writing Type Database - ";
 
@@ -673,7 +673,7 @@ int main(int argc, char *argv[])
     SE::BuildTool::FileSystem::NormalizePath(slnPath);
 
     // Parse solution
-    SE::BuildTool::Reflector reflector;
+    SE::BuildTool::Builder reflector;
     if (reflector.ParseSolution(slnRootPath, slnPath))
     {
         if (shouldRebuild)

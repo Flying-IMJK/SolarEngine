@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../Database/TypeDatabase.h"
-#include "../mustache.hpp"
+#include <ThirdParty/mustache.hpp>
 
 using namespace kainjow;
 

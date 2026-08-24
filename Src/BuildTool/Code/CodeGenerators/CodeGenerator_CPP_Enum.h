@@ -1,6 +1,6 @@
 #pragma once
 #include "../Database/TypeDatabase.h"
-#include "../mustache.hpp"
+#include <ThirdParty/mustache.hpp>     
 #include <sstream>
 
 using namespace kainjow;

@@ -7,7 +7,7 @@
 
 namespace SE::BuildTool
 {
-    class Reflector
+    class Builder
     {
         enum class HeaderProcessResult
         {
@@ -32,7 +32,7 @@ namespace SE::BuildTool
         };
 
     public:
-        Reflector() = default;
+        Builder() = default;
 
         bool ParseSolution(std::string slnRootPath, std::string &slnPath);
         bool Clean();
