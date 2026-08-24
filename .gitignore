@@ -23,7 +23,6 @@
 *.lai
 *.la
 *.a
-*.lib
 
 # Executables
 *.exe
@@ -35,6 +34,4 @@ build/
 Debug/
 Release/
 Intermediate/
-.vs/
-build/
-/graphify-out
+graphify-out/
