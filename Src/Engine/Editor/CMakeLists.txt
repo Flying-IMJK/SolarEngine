@@ -78,7 +78,7 @@ target_include_directories(${EDITOR_TARGET}
 target_link_libraries(${EDITOR_TARGET} PUBLIC SERuntime)
 
 # 引擎C#运行时库
-CSHARP_TARGET(${EDITOR_TARGET} "${EditorCSharpFiles}" "${CMAKE_CURRENT_SOURCE_DIR}/EditorCSharp.csproj" Editor)
+CSHARP_TARGET(${EDITOR_TARGET} "${CMAKE_CURRENT_SOURCE_DIR}/EditorCSharp.csproj")
 
 # 第三方链接库
 ISPCTextureCompressorLink(${EDITOR_TARGET})

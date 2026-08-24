@@ -31,13 +31,28 @@ MACRO(SET_TARGET_DLL_OUTPUT_DIR target dir)
 ENDMACRO()
 
 #CSharp Target
-MACRO(CSHARP_TARGET target sourceFiles configFile)
+MACRO(CSHARP_TARGET target configFile)
     set(CSHARP_INTERMEDIATE_DIR "${ProjectRootDir}/Intermediate/${target}")
+    set(CSHARP_OUTPUT_DLL "${ProjectBuildDir}/${target}CSharp.dll")
 
-    add_custom_command(
-            OUTPUT  "${ProjectBuildDir}/${target}.CSharp.dll"
+    if(CMAKE_GENERATOR MATCHES "Visual Studio")
+        set(CSHARP_VS_PROJECT_TARGET "${target}CSharp")
+
+        include_external_msproject(
+            ${CSHARP_VS_PROJECT_TARGET}
+            "${configFile}"
+            TYPE 9A19103F-16F7-4668-BE54-9A1E7A4F7556F
+        )
+
+        set_target_properties(${CSHARP_VS_PROJECT_TARGET} PROPERTIES
+            EXCLUDE_FROM_ALL TRUE
+            EXCLUDE_FROM_DEFAULT_BUILD TRUE
+        )
+    endif()
+
+    add_custom_target(${target}.CSharp ALL
             COMMAND ${CMAKE_COMMAND} -E env DOTNET_CLI_UI_LANGUAGE=en dotnet build
-            ${configFile}
+            "${configFile}"
             --configuration ${CSHARP_CONFIGURATION}
             --output        "${ProjectBuildDir}"
             -p:BaseIntermediateOutputPath="${CSHARP_INTERMEDIATE_DIR}/obj/"
@@ -46,13 +61,9 @@ MACRO(CSHARP_TARGET target sourceFiles configFile)
             --nologo
             -v minimal
             ${CSHARP_EDITOR_FLAG}
-            DEPENDS ${sourceFiles} ${configFile}
+            BYPRODUCTS "${CSHARP_OUTPUT_DLL}"
             COMMENT "Building ${target} (dotnet build)..."
             VERBATIM
-    )
-
-    add_custom_target(${target}.CSharp ALL
-            DEPENDS "${ProjectBuildDir}/${target}.CSharp.dll"
     )
 ENDMACRO()
 
@@ -120,7 +131,6 @@ add_dependencies(${PRECOMPILE_REBUILD_TARGET} SEBuildTool)
 add_dependencies(${PRECOMPILE_CLEAR_TARGET} SEBuildTool)
 add_dependencies(${PRECOMPILE_TARGET} SEBuildTool)
 
-#add_dependencies(SE.Runtime SE.Core SE.Resources SE.CSharp)
 add_dependencies(SEEditor SERuntime)
 
 

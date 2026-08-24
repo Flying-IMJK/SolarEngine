@@ -80,7 +80,7 @@ source_group(TREE ${EngineRuntimeDir} FILES ${RuntimeSourceFiles} ${RuntimeHeadF
 add_library(${RUNTIME_TARGET} SHARED "${RuntimeHeadFiles}" "${RuntimeSourceFiles}")
 
 # 引擎C#运行时库
-CSHARP_TARGET(${RUNTIME_TARGET} "${RuntimeCSharpFiles}" "${CMAKE_CURRENT_SOURCE_DIR}/RuntimeCSharp.csproj" Runtime)
+CSHARP_TARGET(${RUNTIME_TARGET} "${CMAKE_CURRENT_SOURCE_DIR}/RuntimeCSharp.csproj")
 
 target_include_directories(${RUNTIME_TARGET}
     PUBLIC ${EngineDir}

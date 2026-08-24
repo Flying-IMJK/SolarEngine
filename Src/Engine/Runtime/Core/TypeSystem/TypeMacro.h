@@ -11,46 +11,56 @@ namespace SE
 	struct Reflect
     {};
 
+	struct Template
+    {};
+
 	struct API
+    {
+    public:
+        struct Mark
+        {
+		};
+
+		template<typename... Args, 
+			typename = typename TEnableIf<(... && TIsBaseOf<Mark, Args>::Value)>::Type>
+        API(Args... params)
+        {}
+	};
+
+	struct NoSpawn : public API::Mark
     {};
 
-	struct NoSpawn
-    {};
-
-	struct NoConstructor
+	struct NoConstructor : public API::Mark
     {};
 	
-	struct Abstract
+	struct Abstract : public API::Mark
     {};
 	
-	struct Sealed
+	struct Sealed : public API::Mark
     {};
 
-	struct Static
+	struct Static : public API::Mark
     {};
 
-	struct Attributes
+	struct Attributes : public API::Mark
     {};
 
-	struct Name
+	struct Name : public API::Mark
     {
 	public:
 		Name(const char* name) {}
 	};
 
-	struct Tag
+	struct Tag : public API::Mark
     {};
 	
-	struct Prop
+	struct Prop : public API::Mark
     {};
 
-	struct ReadOnly
+	struct ReadOnly : public API::Mark
     {};
 
-	struct Template
-    {};
-
-	struct InBuild
+	struct InBuild : public API::Mark
     {
     public:
 		InBuild(const char* mapType) {}

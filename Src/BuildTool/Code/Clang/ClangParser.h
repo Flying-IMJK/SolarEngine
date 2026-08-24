@@ -46,8 +46,30 @@ namespace SE::BuildTool
                                              std::string& outSdkVersion,
                                              std::string& outIncludeRoot);
         void TryAddWindowsSdkRootsFromRegistry(std::vector<std::string>& sdkRoots);
-        bool TryResolveMsvcToolsDirectory(std::string const& requestedVersion, std::string& outToolsDirectory);
-        bool TryResolveWindowsSdkIncludeRoot(std::string const& requestedVersion, std::string& outIncludeRoot);
+        struct ToolchainVersionCandidate
+        {
+            std::string version;
+            std::string path;
+        };
+        int CompareToolchainVersions(std::string const& lhs, std::string const& rhs);
+        bool IsToolchainVersionAtMost(std::string const& version, std::string const& maxVersion);
+        void AddToolchainVersionCandidate(std::vector<ToolchainVersionCandidate>& candidates,
+                                          std::string const& version,
+                                          std::string const& path);
+        void TryAddMsvcToolsCandidatesFromRoot(std::vector<ToolchainVersionCandidate>& candidates,
+                                               std::string const& toolRoot);
+        void TryAddWindowsSdkIncludeCandidatesFromRoot(std::vector<ToolchainVersionCandidate>& candidates,
+                                                       std::string const& sdkRoot);
+        bool TrySelectNewestToolchainCandidate(std::vector<ToolchainVersionCandidate>& candidates,
+                                               std::string const& maxVersion,
+                                               std::string& outVersion,
+                                               std::string& outPath);
+        bool TryResolveMsvcToolsDirectory(std::string const& maxVersion,
+                                          std::string& outToolsVersion,
+                                          std::string& outToolsDirectory);
+        bool TryResolveWindowsSdkIncludeRoot(std::string const& maxVersion,
+                                             std::string& outSdkVersion,
+                                             std::string& outIncludeRoot);
 
         bool AddClangSystemInclude(std::vector<std::string>& argumentStorage,
                                    std::vector<char const*>& clangArgs,

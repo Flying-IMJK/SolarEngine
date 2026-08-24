@@ -9,12 +9,16 @@
 
 #include "ClangVisitors_TranslationUnit.h"
 
+#include <algorithm>
 #include <array>
+#include <cctype>
+#include <cstdint>
 #include <cstdlib>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <system_error>
 
 //-------------------------------------------------------------------------
 
@@ -622,10 +626,193 @@ namespace SE::BuildTool
         }
     }
 
-    bool ClangParser::TryResolveMsvcToolsDirectory(std::string const& requestedVersion, std::string& outToolsDirectory)
+    int ClangParser::CompareToolchainVersions(std::string const& lhs, std::string const& rhs)
     {
+        std::vector<std::string> lhsParts;
+        std::vector<std::string> rhsParts;
+        Utils::String::Split(lhs, '.', lhsParts);
+        Utils::String::Split(rhs, '.', rhsParts);
+
+        size_t const count = std::max(lhsParts.size(), rhsParts.size());
+        for (size_t i = 0; i < count; ++i)
+        {
+            std::string const lhsPart = i < lhsParts.size() ? lhsParts[i] : "0";
+            std::string const rhsPart = i < rhsParts.size() ? rhsParts[i] : "0";
+
+            bool lhsNumeric = !lhsPart.empty();
+            bool rhsNumeric = !rhsPart.empty();
+            uint64_t lhsValue = 0;
+            uint64_t rhsValue = 0;
+            for (char const ch : lhsPart)
+            {
+                if (!std::isdigit(static_cast<unsigned char>(ch)))
+                {
+                    lhsNumeric = false;
+                    break;
+                }
+                lhsValue = lhsValue * 10 + (uint64_t)(ch - '0');
+            }
+            for (char const ch : rhsPart)
+            {
+                if (!std::isdigit(static_cast<unsigned char>(ch)))
+                {
+                    rhsNumeric = false;
+                    break;
+                }
+                rhsValue = rhsValue * 10 + (uint64_t)(ch - '0');
+            }
+
+            if (lhsNumeric && rhsNumeric)
+            {
+                if (lhsValue < rhsValue)
+                {
+                    return -1;
+                }
+                if (lhsValue > rhsValue)
+                {
+                    return 1;
+                }
+                continue;
+            }
+
+            int const textCompare = lhsPart.compare(rhsPart);
+            if (textCompare < 0)
+            {
+                return -1;
+            }
+            if (textCompare > 0)
+            {
+                return 1;
+            }
+        }
+
+        return 0;
+    }
+
+    bool ClangParser::IsToolchainVersionAtMost(std::string const& version, std::string const& maxVersion)
+    {
+        return CompareToolchainVersions(version, maxVersion) <= 0;
+    }
+
+    void ClangParser::AddToolchainVersionCandidate(std::vector<ToolchainVersionCandidate>& candidates,
+                                                   std::string const& version,
+                                                   std::string const& path)
+    {
+        std::string normalizedPath = NormalizeToolchainPath(path);
+        if (version.empty() || normalizedPath.empty())
+        {
+            return;
+        }
+        for (ToolchainVersionCandidate const& candidate : candidates)
+        {
+            if (candidate.version == version && candidate.path == normalizedPath)
+            {
+                return;
+            }
+        }
+
+        ToolchainVersionCandidate& candidate = Utils::Vector::AddOne(candidates);
+        candidate.version = version;
+        candidate.path = normalizedPath;
+    }
+
+    void ClangParser::TryAddMsvcToolsCandidatesFromRoot(std::vector<ToolchainVersionCandidate>& candidates,
+                                                        std::string const& toolRoot)
+    {
+        std::string const normalizedRoot = NormalizeToolchainPath(toolRoot);
+        if (!FileSystem::DirectoryExists(normalizedRoot))
+        {
+            return;
+        }
+
+        std::error_code ec;
+        for (auto const& entry : std::filesystem::directory_iterator(normalizedRoot, ec))
+        {
+            if (!entry.is_directory())
+            {
+                continue;
+            }
+
+            std::string const toolsDirectory = entry.path().generic_string();
+            if (!FileSystem::DirectoryExists(FileSystem::PathCombine(toolsDirectory, "include")))
+            {
+                continue;
+            }
+
+            AddToolchainVersionCandidate(candidates, entry.path().filename().generic_string(), toolsDirectory);
+        }
+    }
+
+    void ClangParser::TryAddWindowsSdkIncludeCandidatesFromRoot(std::vector<ToolchainVersionCandidate>& candidates,
+                                                                std::string const& sdkRoot)
+    {
+        std::string const includeRoot = FileSystem::PathCombine(NormalizeToolchainPath(sdkRoot), "Include");
+        if (!FileSystem::DirectoryExists(includeRoot))
+        {
+            return;
+        }
+
+        std::error_code ec;
+        for (auto const& entry : std::filesystem::directory_iterator(includeRoot, ec))
+        {
+            if (!entry.is_directory())
+            {
+                continue;
+            }
+
+            std::string const versionIncludeRoot = entry.path().generic_string();
+            if (!FileSystem::DirectoryExists(FileSystem::PathCombine(versionIncludeRoot, "ucrt")) ||
+                !FileSystem::DirectoryExists(FileSystem::PathCombine(versionIncludeRoot, "shared")) ||
+                !FileSystem::DirectoryExists(FileSystem::PathCombine(versionIncludeRoot, "um")))
+            {
+                continue;
+            }
+
+            AddToolchainVersionCandidate(candidates, entry.path().filename().generic_string(), versionIncludeRoot);
+        }
+    }
+
+    bool ClangParser::TrySelectNewestToolchainCandidate(std::vector<ToolchainVersionCandidate>& candidates,
+                                                        std::string const& maxVersion,
+                                                        std::string& outVersion,
+                                                        std::string& outPath)
+    {
+        outVersion.clear();
+        outPath.clear();
+
+        Utils::Vector::QuickSort(candidates, [this](ToolchainVersionCandidate const& lhs,
+                                                    ToolchainVersionCandidate const& rhs) {
+            int const versionCompare = CompareToolchainVersions(lhs.version, rhs.version);
+            if (versionCompare != 0)
+            {
+                return versionCompare > 0;
+            }
+            return lhs.path < rhs.path;
+        });
+
+        for (ToolchainVersionCandidate const& candidate : candidates)
+        {
+            if (!IsToolchainVersionAtMost(candidate.version, maxVersion))
+            {
+                continue;
+            }
+
+            outVersion = candidate.version;
+            outPath = candidate.path;
+            return true;
+        }
+
+        return false;
+    }
+
+    bool ClangParser::TryResolveMsvcToolsDirectory(std::string const& maxVersion,
+                                                   std::string& outToolsVersion,
+                                                   std::string& outToolsDirectory)
+    {
+        outToolsVersion.clear();
         outToolsDirectory.clear();
 
+        std::vector<ToolchainVersionCandidate> candidates;
         std::vector<std::string> exactToolDirectories;
         std::vector<std::string> toolRoots;
 
@@ -668,32 +855,28 @@ namespace SE::BuildTool
             {
                 continue;
             }
-            if (toolsVersion == requestedVersion &&
-                FileSystem::DirectoryExists(FileSystem::PathCombine(normalizedToolsDirectory, "include")))
+            if (FileSystem::DirectoryExists(FileSystem::PathCombine(normalizedToolsDirectory, "include")))
             {
-                outToolsDirectory = normalizedToolsDirectory;
-                return true;
+                AddToolchainVersionCandidate(candidates, toolsVersion, normalizedToolsDirectory);
             }
         }
 
         for (std::string const& toolRoot : toolRoots)
         {
-            std::string const toolsDirectory = FileSystem::PathCombine(toolRoot, requestedVersion);
-            if (FileSystem::DirectoryExists(FileSystem::PathCombine(toolsDirectory, "include")))
-            {
-                outToolsDirectory = toolsDirectory;
-                return true;
-            }
+            TryAddMsvcToolsCandidatesFromRoot(candidates, toolRoot);
         }
 
-        return false;
+        return TrySelectNewestToolchainCandidate(candidates, maxVersion, outToolsVersion, outToolsDirectory);
     }
 
-    bool ClangParser::TryResolveWindowsSdkIncludeRoot(std::string const& requestedVersion, std::string& outIncludeRoot)
+    bool ClangParser::TryResolveWindowsSdkIncludeRoot(std::string const& maxVersion,
+                                                      std::string& outSdkVersion,
+                                                      std::string& outIncludeRoot)
     {
+        outSdkVersion.clear();
         outIncludeRoot.clear();
 
-        std::vector<std::string> includeRoots;
+        std::vector<ToolchainVersionCandidate> candidates;
         std::vector<std::string> sdkRoots;
         TryAddEnvironmentPath(sdkRoots, "WindowsSdkDir");
         TryAddEnvironmentPath(sdkRoots, "UniversalCRTSdkDir");
@@ -701,8 +884,7 @@ namespace SE::BuildTool
 
         for (std::string const& sdkRoot : sdkRoots)
         {
-            std::string const includeRoot = FileSystem::PathCombine(FileSystem::PathCombine(sdkRoot, "Include"), requestedVersion);
-            AddUniquePath(includeRoots, includeRoot);
+            TryAddWindowsSdkIncludeCandidatesFromRoot(candidates, sdkRoot);
         }
 
         std::vector<std::string> includePaths;
@@ -711,24 +893,16 @@ namespace SE::BuildTool
         {
             std::string sdkVersion;
             std::string includeRoot;
-            if (TryExtractWindowsSdkIncludeRoot(includePath, sdkVersion, includeRoot) && sdkVersion == requestedVersion)
-            {
-                AddUniquePath(includeRoots, includeRoot);
-            }
-        }
-
-        for (std::string const& includeRoot : includeRoots)
-        {
-            if (FileSystem::DirectoryExists(FileSystem::PathCombine(includeRoot, "ucrt")) &&
+            if (TryExtractWindowsSdkIncludeRoot(includePath, sdkVersion, includeRoot) &&
+                FileSystem::DirectoryExists(FileSystem::PathCombine(includeRoot, "ucrt")) &&
                 FileSystem::DirectoryExists(FileSystem::PathCombine(includeRoot, "shared")) &&
                 FileSystem::DirectoryExists(FileSystem::PathCombine(includeRoot, "um")))
             {
-                outIncludeRoot = includeRoot;
-                return true;
+                AddToolchainVersionCandidate(candidates, sdkVersion, includeRoot);
             }
         }
 
-        return false;
+        return TrySelectNewestToolchainCandidate(candidates, maxVersion, outSdkVersion, outIncludeRoot);
     }
 
     bool ClangParser::AddClangSystemInclude(std::vector<std::string>& argumentStorage,
@@ -750,20 +924,22 @@ namespace SE::BuildTool
     bool ClangParser::AddMsvcToolchainArgs(std::vector<std::string>& argumentStorage,
                                            std::vector<char const*>& clangArgs)
     {
-        constexpr char const* msvcToolsVersion = "14.40.33807";
-        constexpr char const* windowsSdkVersion = "10.0.22621.0";
+        constexpr char const* maxMsvcToolsVersion = "14.40.33807";
+        constexpr char const* maxWindowsSdkVersion = "10.0.22621.0";
 
+        std::string msvcToolsVersion;
         std::string msvcToolsDirectory;
-        if (!TryResolveMsvcToolsDirectory(msvcToolsVersion, msvcToolsDirectory))
+        if (!TryResolveMsvcToolsDirectory(maxMsvcToolsVersion, msvcToolsVersion, msvcToolsDirectory))
         {
-            m_context.LogError("Could not find MSVC tools version {0}", msvcToolsVersion);
+            m_context.LogError("Could not find MSVC tools version <= {0}", maxMsvcToolsVersion);
             return false;
         }
 
+        std::string windowsSdkVersion;
         std::string windowsSdkIncludeRoot;
-        if (!TryResolveWindowsSdkIncludeRoot(windowsSdkVersion, windowsSdkIncludeRoot))
+        if (!TryResolveWindowsSdkIncludeRoot(maxWindowsSdkVersion, windowsSdkVersion, windowsSdkIncludeRoot))
         {
-            m_context.LogError("Could not find Windows SDK version {0}", windowsSdkVersion);
+            m_context.LogError("Could not find Windows SDK version <= {0}", maxWindowsSdkVersion);
             return false;
         }
 
