@@ -31,7 +31,5 @@
 .idea/
 .vs/
 build/
-Debug/
-Release/
 Intermediate/
 graphify-out/
