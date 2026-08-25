@@ -4,6 +4,9 @@ cmake_minimum_required (VERSION 3.26)
 # # 设置工程名 使用语言c/c++
 project(SolarEngine LANGUAGES CXX C)
 
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "CMake")
+
 set(CMAKE_C_STANDARD 11)            # 使用c 11
 set(CMAKE_CXX_STANDARD 17)          # 使用c++ 17
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # 指定所选标准版本，如果版本不可以，CMake停止配置并出错

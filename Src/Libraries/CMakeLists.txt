@@ -25,21 +25,30 @@ include(cmake/Tools.cmake)
 endif()]]
 
 if(NOT TARGET ShaderCompiler)
+    set(SE_PREVIOUS_CMAKE_FOLDER "${CMAKE_FOLDER}")
+    set(CMAKE_FOLDER "ThirdParty/ShaderCompiler")
     add_subdirectory(ShaderCompiler)
-    set_target_properties(ShaderCompiler PROPERTIES FOLDER ${EngineLibDir}/ShaderCompiler)
+    set(CMAKE_FOLDER "${SE_PREVIOUS_CMAKE_FOLDER}")
+    set_target_properties(ShaderCompiler PROPERTIES FOLDER "ThirdParty/ShaderCompiler")
 endif()
 
 # version 9.1.0
 if(NOT TARGET fmt)
+    set(SE_PREVIOUS_CMAKE_FOLDER "${CMAKE_FOLDER}")
+    set(CMAKE_FOLDER "ThirdParty/Fmt")
     add_subdirectory(fmt)
-    set_target_properties(fmt PROPERTIES FOLDER ${EngineLibDir}/Fmt)
+    set(CMAKE_FOLDER "${SE_PREVIOUS_CMAKE_FOLDER}")
+    set_target_properties(fmt PROPERTIES FOLDER "ThirdParty/Fmt")
     NoWarning(fmt)
 endif()
 
 if(NOT TARGET sqlite3)
+    set(SE_PREVIOUS_CMAKE_FOLDER "${CMAKE_FOLDER}")
+    set(CMAKE_FOLDER "ThirdParty/Sqlite3")
     add_subdirectory(sqlite3)
+    set(CMAKE_FOLDER "${SE_PREVIOUS_CMAKE_FOLDER}")
 
-    set_target_properties(sqlite3 PROPERTIES FOLDER ${EngineLibDir}/Sqlite3)
+    set_target_properties(sqlite3 PROPERTIES FOLDER "ThirdParty/Sqlite3")
 
     if (WIN32)
     set_target_properties(sqlite3 PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS  True)
@@ -54,9 +63,12 @@ if(NOT TARGET freetype)
     set(FT_DISABLE_HARFBUZZ ON CACHE BOOL "" FORCE)
     set(FT_DISABLE_BROTLI ON CACHE BOOL "" FORCE)
     
+    set(SE_PREVIOUS_CMAKE_FOLDER "${CMAKE_FOLDER}")
+    set(CMAKE_FOLDER "ThirdParty/Freetype")
     add_subdirectory(Freetype)
+    set(CMAKE_FOLDER "${SE_PREVIOUS_CMAKE_FOLDER}")
 
-    set_target_properties(freetype PROPERTIES FOLDER ${EngineLibDir}/Freetype)
+    set_target_properties(freetype PROPERTIES FOLDER "ThirdParty/Freetype")
 
     # if (WIN32)
     # set_target_properties(sqlite3 PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS True)
@@ -142,7 +154,10 @@ if(NOT TARGET assimp)
     set(ASSIMP_BUILD_DOCS OFF CACHE BOOL "" FORCE) # "Build documentation using Doxygen."
     set(ASSIMP_INJECT_DEBUG_POSTFIX OFF CACHE BOOL "" FORCE) #"Inject debug postfix in .a/.so/.dll lib names"
     set(ASSIMP_IGNORE_GIT_HASH OFF CACHE BOOL "" FORCE) #"Don't call git to get the hash."
+    set(SE_PREVIOUS_CMAKE_FOLDER "${CMAKE_FOLDER}")
+    set(CMAKE_FOLDER "ThirdParty/Assimp")
     add_subdirectory(assimp)
-    set_target_properties(assimp PROPERTIES FOLDER ${EngineLibDir}/Assimp)
+    set(CMAKE_FOLDER "${SE_PREVIOUS_CMAKE_FOLDER}")
+    set_target_properties(assimp PROPERTIES FOLDER "ThirdParty/Assimp")
     NoWarning(assimp)
 endif()

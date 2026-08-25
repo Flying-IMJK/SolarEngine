@@ -38,11 +38,12 @@ MACRO(CSHARP_TARGET target configFile)
     if(CMAKE_GENERATOR MATCHES "Visual Studio")
         set(CSHARP_VS_PROJECT_TARGET "${target}CSharp")
 
-        include_external_msproject(
-            ${CSHARP_VS_PROJECT_TARGET}
-            "${configFile}"
-            TYPE 9A19103F-16F7-4668-BE54-9A1E7A4F7556F
-        )
+            include_external_msproject(
+                ${CSHARP_VS_PROJECT_TARGET}
+                "${configFile}"
+                TYPE 9A19103F-16F7-4668-BE54-9A1E7A4F7556F
+                PLATFORM AnyCPU
+            )
 
         set_target_properties(${CSHARP_VS_PROJECT_TARGET} PROPERTIES
             EXCLUDE_FROM_ALL TRUE
