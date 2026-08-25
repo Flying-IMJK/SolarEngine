@@ -113,7 +113,7 @@ add_subdirectory(Applications)
 
 
 ############### 引擎资源拷贝 ###############
-add_custom_target(SE.Resources ALL
+add_custom_target(SEResources ALL
 	# mustache templates directory
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		"${EngineAssetsDir}"
@@ -131,6 +131,7 @@ add_dependencies(${PRECOMPILE_REBUILD_TARGET} SEBuildTool)
 add_dependencies(${PRECOMPILE_CLEAR_TARGET} SEBuildTool)
 add_dependencies(${PRECOMPILE_TARGET} SEBuildTool)
 
+add_dependencies(SERuntime SEResources)
 add_dependencies(SEEditor SERuntime)
 
 

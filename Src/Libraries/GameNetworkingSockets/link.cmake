@@ -2,13 +2,8 @@
 
 if (WIN32)
 
-    if (CMAKE_BUILD_TYPE STREQUAL Debug)
-        set(NETWORKING_LIBRARY_DIR  ${EngineLibDir}/GameNetworkingSockets/debug/lib)
-        set(NETWORKING_SHARED_LIBRARY_DIR  ${EngineLibDir}/GameNetworkingSockets/debug/bin)
-    else()
-        set(NETWORKING_LIBRARY_DIR  ${EngineLibDir}/GameNetworkingSockets/release/lib)
-        set(NETWORKING_SHARED_LIBRARY_DIR  ${EngineLibDir}/GameNetworkingSockets/release/bin)
-    endif()
+    set(NETWORKING_LIBRARY_DIR  ${EngineLibDir}/GameNetworkingSockets/lib/win)
+    set(NETWORKING_SHARED_LIBRARY_DIR  ${EngineLibDir}/GameNetworkingSockets/bin/win)
 
 elseif(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Linux")
     set(NETWORKING_LIBRARY_DIR  ${EngineLibDir}/GameNetworkingSockets/lib/Linux)

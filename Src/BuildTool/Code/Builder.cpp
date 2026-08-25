@@ -659,8 +659,9 @@ int main(int argc, char *argv[])
     bool const shouldClean = cmdParser.get<bool>("clean");
     bool const shouldRebuild = cmdParser.get<bool>("rebuild");
 #else
-    std::string slnRootPath = "E:/EngineProject/SolarEngine/Src";
-    std::string slnPath = "E:/EngineProject/SolarEngine/Src/BuildTool/Precompile/precompilefile.json";
+    std::filesystem::path const engineRoot = std::filesystem::path(__FILE__).parent_path().parent_path().parent_path().parent_path();
+    std::string slnRootPath = (engineRoot / "Src").generic_string();
+    std::string slnPath = (engineRoot / "Src/BuildTool/Precompile/precompilefile.json").generic_string();
     bool const shouldClean = cmdParser.get<bool>("clean");
     bool const shouldRebuild = cmdParser.get<bool>("rebuild");
 #endif

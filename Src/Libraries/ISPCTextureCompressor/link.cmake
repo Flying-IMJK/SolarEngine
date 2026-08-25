@@ -1,13 +1,8 @@
 
 
 if (WIN32)
-    if (CMAKE_BUILD_TYPE STREQUAL Debug)
-        set(ISPC_TEXCOMP_LIBRARY_DIR  ${EngineLibDir}/ISPCTextureCompressor/lib/win/debug)
-        set(ISPC_TEXCOMP_SHARED_LIBRARY_DIR  ${EngineLibDir}/ISPCTextureCompressor/bin/win/debug)
-    else()
-        set(ISPC_TEXCOMP_LIBRARY_DIR  ${EngineLibDir}/ISPCTextureCompressor/lib/win/release)
-        set(ISPC_TEXCOMP_SHARED_LIBRARY_DIR  ${EngineLibDir}/ISPCTextureCompressor/bin/win/release)
-    endif()
+    set(ISPC_TEXCOMP_LIBRARY_DIR  ${EngineLibDir}/ISPCTextureCompressor/lib/win)
+    set(ISPC_TEXCOMP_SHARED_LIBRARY_DIR  ${EngineLibDir}/ISPCTextureCompressor/bin/win)
 
 elseif(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Linux")
     set(ISPC_TEXCOMP_LIBRARY_DIR  ${EngineLibDir}/ISPCTextureCompressor/lib/Linux)
