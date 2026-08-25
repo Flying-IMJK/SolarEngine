@@ -14,12 +14,6 @@ macro(EDITOR_ADD)
             else()
                 list(APPEND HEAD_FILES ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE_FILE})
             endif()
-        elseif(SOURCE_FILE MATCHES ".*\.cs")
-            if(SOURCE_FILE MATCHES "^/.*")
-                list(APPEND CSHARP_FILES ${SOURCE_FILE})
-            else()
-                list(APPEND CSHARP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE_FILE})
-            endif()
         else()
             if(SOURCE_FILE MATCHES "^/.*")
                 list(APPEND SOURCE_FILES ${SOURCE_FILE})
@@ -30,12 +24,7 @@ macro(EDITOR_ADD)
     endforeach()
     set(EditorHeadFiles ${EditorHeadFiles} ${HEAD_FILES} PARENT_SCOPE)
     set(EditorSourceFiles ${EditorSourceFiles} ${SOURCE_FILES} PARENT_SCOPE)
-    set(EditorCSharpFiles ${EditorCSharpFiles} ${CSHARP_FILES} PARENT_SCOPE)
 endmacro()
-
-set(EditorCSharpFiles
-    ${CMAKE_CURRENT_SOURCE_DIR}/ManagedEditor.cs
-)
 
 set(EditorHeadFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/API.h

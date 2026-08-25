@@ -15,7 +15,5 @@ RUNTIME_ADD(
         ScriptingObject.cpp
 
 #        CS
-        Scripting.cs
-        ScriptingLoadContext.cs
 )
 

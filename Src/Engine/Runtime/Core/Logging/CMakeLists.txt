@@ -16,13 +16,5 @@ RUNTIME_ADD(
         Exceptions/FileNotFoundException.h
 
 #        CS
-        Assert.cs
-        AssertionException.cs
 
-        Debug.cs
-        DebugLogHandler.cs
-        FloatComparer.cs
-        ILogger.cs
-        ILogHandler.cs
-        Logger.cs
 )

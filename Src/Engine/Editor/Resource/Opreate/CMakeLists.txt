@@ -1,7 +1,6 @@
 
 
 EDITOR_ADD(
-    ContentOperate.cs
         ContentOperate.h
         ContentOperate.cpp
         AssetOperate.h

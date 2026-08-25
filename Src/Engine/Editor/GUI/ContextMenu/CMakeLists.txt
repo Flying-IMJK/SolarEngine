@@ -1,8 +1,6 @@
 
 
 EDITOR_ADD(
-    ContextMenu.cs
-    ContextMenuSingleSelectGroup.cs
     ContextMenuBase.h
     ContextMenuBase.cpp
     ContextMenu.h

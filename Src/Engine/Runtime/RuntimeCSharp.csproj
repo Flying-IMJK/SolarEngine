@@ -26,6 +26,10 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Remove="**\*.cpp;**\*.h;**\*.hpp;**\*.inl;**\CMakeLists.txt" />
+  </ItemGroup>
+
   <!-- Editor-mode compile symbol: set SE_EDITOR=true when building for the editor -->
   <PropertyGroup Condition="'$(SE_EDITOR)' == 'true'">
     <DefineConstants>$(DefineConstants);SE_EDITOR</DefineConstants>

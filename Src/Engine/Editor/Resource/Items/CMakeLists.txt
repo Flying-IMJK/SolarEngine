@@ -1,7 +1,6 @@
 
 
 EDITOR_ADD(
-        ContentItem.cs
         ContentItem.h
         ContentItem.cpp
         ContentFolder.h

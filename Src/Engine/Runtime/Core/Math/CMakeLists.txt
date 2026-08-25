@@ -50,38 +50,4 @@ RUNTIME_ADD(
 
 
 #        CS
-        BoundingBox.cs
-        BoundingFrustum.cs
-        BoundingSphere.cs
-        AlphaBlendMode.cs
-        CollisionsHelper.cs
-        Color.cs
-        Color.Palette.cs
-        Color32.cs
-        ColorHSV.cs
-        Double.cs
-        Float.cs
-        FloatR10G10B10A2.cs
-        FloatR11G11B10.cs
-        Half.cs
-        HalfUtils.cs
-        Int.cs
-        Margin.cs
-        Mathd.cs
-        MathFields.cs
-        Mathf.cs
-        Matrix.cs
-        Matrix2x2.cs
-        Matrix3x3.cs
-        OrientedBoundingBox.cs
-        Plane.cs
-        Quaternion.cs
-        Ray.cs
-        Rectangle.cs
-        SphericalHarmonics.cs
-        Transform.cs
-        Vector2.cs
-        Vector3.cs
-        Vector4.cs
-        Viewport.cs
 )

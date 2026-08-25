@@ -28,5 +28,4 @@ RUNTIME_ADD(
 		Object.cpp
 
 #		CS
-		Object.cs
 )

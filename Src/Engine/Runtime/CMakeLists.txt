@@ -18,12 +18,6 @@ macro(RUNTIME_ADD)
             else()
                 list(APPEND HEAD_FILES ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE_FILE})
             endif()
-        elseif(SOURCE_FILE MATCHES ".*\.cs")
-            if(SOURCE_FILE MATCHES "^/.*")
-                list(APPEND CSHARP_FILES ${SOURCE_FILE})
-            else()
-                list(APPEND CSHARP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE_FILE})
-            endif()
         else()
             if(SOURCE_FILE MATCHES "^/.*")
                 list(APPEND SOURCE_FILES ${SOURCE_FILE})
@@ -34,7 +28,6 @@ macro(RUNTIME_ADD)
     endforeach()
     set(RuntimeHeadFiles ${RuntimeHeadFiles} ${HEAD_FILES} PARENT_SCOPE)
     set(RuntimeSourceFiles ${RuntimeSourceFiles} ${SOURCE_FILES} PARENT_SCOPE)
-    set(RuntimeCSharpFiles ${RuntimeCSharpFiles} ${CSHARP_FILES} PARENT_SCOPE)
 endmacro()
 
 
@@ -50,8 +43,6 @@ set(RuntimeSourceFiles
         ${CMAKE_CURRENT_SOURCE_DIR}/Engine.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/EngineContext.cpp
 #        ${CMAKE_CURRENT_SOURCE_DIR}/ShaderReflection.cpp
-)
-set(RuntimeCSharpFiles
 )
 
 
