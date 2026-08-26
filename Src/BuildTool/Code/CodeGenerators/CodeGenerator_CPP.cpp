@@ -314,22 +314,12 @@ namespace SE::BuildTool
     {
         for (int i = 0; i < cls->functions.size(); ++i)
         {
-            TypeInfoFunc& fn             = cls->functions[i];
-            std::string   baseName       = fn.uniqueName.empty() ? fn.name : fn.uniqueName;
-            int           duplicateIndex = 0;
+            TypeInfoFunc& fn = cls->functions[i];
+            const std::string baseName = fn.name;
+            int duplicateIndex = 0;
             for (int j = 0; j < i; ++j)
             {
-                std::string previousBaseName = cls->functions[j].name;
-                if (Utils::String::StartsWith(cls->functions[j].uniqueName, baseName + "_"))
-                {
-                    previousBaseName = baseName;
-                }
-                else if (!cls->functions[j].uniqueName.empty())
-                {
-                    previousBaseName = cls->functions[j].uniqueName;
-                }
-
-                if (previousBaseName == baseName || cls->functions[j].name == fn.name)
+                if (cls->functions[j].name == baseName)
                 {
                     duplicateIndex++;
                 }
