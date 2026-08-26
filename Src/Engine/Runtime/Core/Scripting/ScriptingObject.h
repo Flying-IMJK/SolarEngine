@@ -252,6 +252,6 @@ namespace SE
         bool CreateManaged() override;
     };
 
-    extern SE_API_RUNTIME class ScriptingObject* FindObject(const UID& id, class MClass* type);
+    extern SE_API_RUNTIME class ScriptingObject* FindObject(const UID& id, class CLRClass* type);
     
 } // namespace SE

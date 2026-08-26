@@ -14,6 +14,9 @@
 #include "Runtime/Resource/Factories/IAssetFactory.h"
 #include "Runtime/Core/TypeSystem/Types.h"
 
+#include <Runtime/Core/Scripting/Scripting.h>
+#include <Runtime/Core/Scripting/ManagedCLR/CLRClass.h>
+
 namespace SE
 {
 	TimeSpan AssetContent::AssetsUpdateInterval = TimeSpan::FromMilliseconds(500);
@@ -378,17 +381,45 @@ namespace SE
 		return stats;
 	}
 
-/*
-	Asset* AssetContent::LoadAsyncInternal(const StringView& internalPath, const MClass* type)
+
+	Asset* AssetContent::LoadAsyncInternal(const StringView& internalPath, const CLRClass* type)
 	{
-		CHECK_RETURN(type, nullptr);
+		if (type == nullptr)
+		{
+			return nullptr;
+		}
+
 		const auto scriptingType = Scripting::FindScriptingType(type->GetFullName());
 		if (scriptingType)
+		{
 			return LoadAsyncInternal(internalPath, scriptingType);
+		}
 		LOG_ERROR("Resource", "Failed to find asset type '{0}'.", String(type->GetFullName()));
 		return nullptr;
 	}
-	*/
+
+	Asset* AssetContent::LoadAsyncInternal(const StringView& internalPath, const ScriptingTypeHandle& type)
+	{
+#if SE_EDITOR
+		const String path = EngineContext::ProjectCacheFolder / internalPath + ASSET_FILES_EXTENSION_WITH_DOT;
+		if (!FileSystem::FileExists(path))
+		{
+			LOG_ERROR("Resource", "Missing file \'{0}\'", path);
+			return nullptr;
+		}
+#else
+		const String path = EngineContext::ProjectContentFolder / internalPath + ASSET_FILES_EXTENSION_WITH_DOT;
+#endif
+
+		const auto asset = LoadAsync(path, type);
+		if (asset == nullptr)
+		{
+			LOG_ERROR("Resource", "Failed to load \'{0}\' (type: {1})", internalPath, type.ToString());
+		}
+
+		return asset;
+	}
+	
 
 	Asset* AssetContent::LoadAsyncInternal(StringView internalPath, const TypeID& type)
 	{
@@ -418,21 +449,56 @@ namespace SE
 		return LoadAsyncInternal(StringView(internalPath), type);
 	}
 
+	Asset* AssetContent::LoadAsyncInternal(const Char* internalPath, const ScriptingTypeHandle& type)
+	{
+		return LoadAsyncInternal(StringView(internalPath), type);
+	}
+
 	/*Asset* LoadAsset(const SGUID& id, const ScriptingTypeHandle& type)
 	{
 		return AssetContent::LoadAsync(id, type);
 	}*/
 
 
-/*	Asset* AssetContent::LoadAsync(const StringView& path, const MClass* type)
+	Asset* AssetContent::LoadAsync(const StringView& path, const CLRClass* type)
 	{
-		CHECK_RETURN(type, nullptr);
+		if (type == nullptr)
+		{
+			return nullptr;
+		}
+
 		const auto scriptingType = Scripting::FindScriptingType(type->GetFullName());
 		if (scriptingType)
+		{
 			return LoadAsync(path, scriptingType);
+		}
 		LOG_ERROR("Resource", "Failed to find asset type '{0}'.", String(type->GetFullName()));
 		return nullptr;
-	}*/
+	}
+
+	Asset* AssetContent::LoadAsync(const StringView& path, const ScriptingTypeHandle& type)
+	{
+		// Ensure path is in a valid format
+		String pathNorm(path);
+		AssetStorages::FormatPath(pathNorm);
+		const StringView filePath = pathNorm;
+
+#if SE_EDITOR
+		if (!FileSystem::FileExists(filePath))
+		{
+			LOG_ERROR("Resource", "Missing file \'{0}\'", filePath);
+			return nullptr;
+		}
+#endif
+
+		AssetInfo assetInfo;
+		if (GetAssetInfo(filePath, assetInfo))
+		{
+			return LoadAsync(assetInfo.id, type);
+		}
+
+		return nullptr;
+	}
 
 	Asset* AssetContent::LoadAsync(const StringView& path, const TypeID& type)
 	{
@@ -473,15 +539,21 @@ namespace SE
 		return contentData->Assets;
 	}
 
-/*	Asset* AssetContent::LoadAsync(const SGUID& id, const MClass* type)
+	Asset* AssetContent::LoadAsync(const UID& id, const CLRClass* type)
 	{
-		CHECK_RETURN(type, nullptr);
+		if (type == nullptr)
+		{
+			return nullptr;
+		}
+
 		const auto scriptingType = Scripting::FindScriptingType(type->GetFullName());
 		if (scriptingType)
+		{
 			return LoadAsync(id, scriptingType);
+		}
 		LOG_ERROR("Resource", "Failed to find asset type '{0}'.", String(type->GetFullName()));
 		return nullptr;
-	}*/
+	}
 
 	Asset* AssetContent::GetAsset(const StringView& outputPath)
 	{
@@ -801,7 +873,7 @@ namespace SE
 		return false;
 	}
 	
-	#endif
+#endif
 
 	void AssetContent::UnloadAsset(Asset* asset)
 	{
@@ -810,15 +882,16 @@ namespace SE
 		asset->DeleteObject();
 	}
 
-	/*	Asset* AssetContent::CreateVirtualAsset(const MClass* type)
+	Asset* AssetContent::CreateVirtualAsset(const CLRClass* type)
 	{
-		CHECK_RETURN(type, nullptr);
-		const auto scriptingType = Scripting::FindScriptingType(type->GetFullName());
-		if (scriptingType)
-			return CreateVirtualAsset(scriptingType);
-		LOG_ERROR("Resource", "Failed to find asset type '{0}'.", String(type->GetFullName()));
+		if (type == nullptr)
+		{
+			return nullptr;
+		}
+
+		LOG_ERROR("Resource", "Cannot create virtual asset from CLRClass '{0}'. TypeID is required.", String(type->GetFullName()));
 		return nullptr;
-	}*/
+	}
 
 	Asset* AssetContent::CreateVirtualAsset(const TypeID& type)
 	{
@@ -917,6 +990,141 @@ namespace SE
 		}
 
 		return Types::AreTypesInTheSameHierarchy(assetTypeID, typeID);
+	}
+
+	bool AssetContent::IsAssetTypeIdInvalid(const ScriptingTypeHandle& type, const ScriptingTypeHandle& assetType)
+	{
+		// Skip if no restrictions for the type
+		if (!type || !assetType)
+		{
+			return false;
+		}
+
+		// Early out if type matches
+		if (type == assetType)
+		{
+			return false;
+		}
+
+		// Check if the asset type inherited from the requested type
+		ScriptingTypeHandle it = assetType.GetType().GetBaseType();
+		while (it)
+		{
+			if (type == it)
+			{
+				return false;
+			}
+			it = it.GetType().GetBaseType();
+		}
+
+		return true;
+	}
+
+	Asset* AssetContent::LoadAsync(const UID& id, const ScriptingTypeHandle& type)
+	{
+		if (!id.IsValid())
+		{
+			return nullptr;
+		}
+
+		// Check if asset has been already loaded
+		Asset* result = nullptr;
+		contentData->AssetsLocker.Lock();
+		contentData->Assets.TryGet(id, result);
+		if (result)
+		{
+			contentData->AssetsLocker.Unlock();
+
+			// Validate type
+			if (IsAssetTypeIdInvalid(type, result->GetTypeHandle()) && !result->Is(type))
+			{
+				LOG_WARNING("Resource", "Different loaded asset type! Asset: \'{0}\'. Expected type: {1}", result->ToString(), type.ToString());
+				return nullptr;
+			}
+			return result;
+		}
+
+		// Check if that asset is during loading
+		if (contentData->LoadCallAssets.Contains(id))
+		{
+			contentData->AssetsLocker.Unlock();
+
+			// Wait for loading end by other thread
+			bool contains = true;
+			while (contains)
+			{
+				Platform::Sleep(1);
+				contentData->AssetsLocker.Lock();
+				contains = contentData->LoadCallAssets.Contains(id);
+				contentData->AssetsLocker.Unlock();
+			}
+			contentData->Assets.TryGet(id, result);
+			return result;
+		}
+
+		// Mark asset as loading and release lock so other threads can load other assets
+		contentData->LoadCallAssets.Add(id);
+		contentData->AssetsLocker.Unlock();
+
+#define LOAD_FAILED() contentData->AssetsLocker.Lock(); contentData->LoadCallAssets.Remove(id); contentData->AssetsLocker.Unlock(); return nullptr
+
+		// Get cached asset info (from registry)
+		AssetInfo assetInfo;
+		if (!GetAssetInfo(id, assetInfo))
+		{
+			LOG_WARNING("Resource", "Invalid or missing asset ({0}, {1}).", id, type.ToString());
+			LOAD_FAILED();
+		}
+#if ASSETS_LOADING_EXTRA_VERIFICATION
+		if (!FileSystem::FileExists(assetInfo.path))
+		{
+			LOG_ERROR("Resource", "Cannot find file '{0}'", assetInfo.path);
+			LOAD_FAILED();
+		}
+#endif
+
+		// Find asset factory based in its stored asset type
+		auto factory = GetAssetFactory(assetInfo);
+		if (factory == nullptr)
+		{
+			LOG_ERROR("Resource", "Cannot find asset factory. Info: {0}", assetInfo.ToString());
+			LOAD_FAILED();
+		}
+
+		// Create asset object
+		result = factory->New(&assetInfo);
+		if (result == nullptr)
+		{
+			LOG_ERROR("Resource", "Cannot create asset object. Info: {0}", assetInfo.ToString());
+			LOAD_FAILED();
+		}
+		ENGINE_ASSERT(result->GetID() == id);
+#if ASSETS_LOADING_EXTRA_VERIFICATION
+		if (IsAssetTypeIdInvalid(type, result->GetTypeHandle()) && !result->Is(type))
+		{
+			LOG_WARNING("Resource", "Different loaded asset type! Asset: '{0}'. Expected type: {1}", assetInfo.ToString(), type.ToString());
+			result->DeleteObject();
+			LOAD_FAILED();
+		}
+#endif
+
+		// Register asset
+		contentData->AssetsLocker.Lock();
+#if ASSETS_LOADING_EXTRA_VERIFICATION
+		ENGINE_ASSERT(!contentData->Assets.ContainsKey(id));
+#endif
+		contentData->Assets.Add(id, result);
+
+		// Start asset loading
+		result->StartLoadAsset();
+
+		// Remove from the loading queue and release lock
+		contentData->LoadCallAssets.Remove(id);
+		contentData->AssetsLocker.Unlock();
+
+#undef LOAD_FAILED
+
+		return result;
 	}
 
 	Asset* AssetContent::LoadAsync(const UID& id, const TypeID type)

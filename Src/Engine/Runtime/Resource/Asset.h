@@ -162,6 +162,7 @@ namespace SE
 		/// </summary>
 		/// <param name="timeoutInMilliseconds">Custom timeout value in milliseconds.</param>
 		/// <returns>True if cannot load that asset (failed or has been cancelled), otherwise false.</returns>
+        SE_FUNCTION(API())
 		bool WaitForLoaded(double timeoutInMilliseconds = 30000.0) const;
 
 		/// <summary>

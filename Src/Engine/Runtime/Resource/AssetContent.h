@@ -9,24 +9,25 @@ namespace SE
 	class Engine;
 	class AssetsCache;
 	class IAssetFactory;
+	struct ScriptingTypeHandle;
 
 	// Content and assets statistics container.
-	SE_CLASS(Reflect)
-	class SE_API_RUNTIME ContentStats : public IType
+	SE_STRUCT(API())
+	struct SE_API_RUNTIME ContentStats
 	{
-		SE_DEFINE_CLASS_DEFAULT(ContentStats, IType);
+		SCRIPTING_TYPE_MIN(ContentStats);
 
 		// Amount of asset objects in memory.
-//		SE_PROPERTY(Reflect)
+		SE_FIELD(API())
 		int32 AssetsCount = 0;
-//		SE_PROPERTY(Reflect)
 		// Amount of loaded assets.
+		SE_FIELD(API())
 		int32 LoadedAssetsCount = 0;
-//		SE_PROPERTY(Reflect)
 		// Amount of loading assets. Zero if all assets are loaded in.
+		SE_FIELD(API())
 		int32 LoadingAssetsCount = 0;
-//		SE_PROPERTY(Reflect)
 		// Amount of virtual assets (don't have representation in file).
+		SE_FIELD(API())
 		int32 VirtualAssetsCount = 0;
 
 
@@ -35,8 +36,10 @@ namespace SE
 	/// <summary>
 	/// 加载和管理资源
 	/// </summary>
+	SE_CLASS(API(Static))
 	class SE_API_RUNTIME AssetContent
 	{
+		SCRIPTING_TYPE_NO_SPAWN(AssetContent);
 		friend Engine;
 		friend Asset;
 		friend AssetTask;
@@ -66,6 +69,7 @@ namespace SE
 		/// <param name="id">The asset id.</param>
 		/// <param name="info">The output asset info. Filled with valid values only if method returns true.</param>
 		/// <returns>True if found any asset, otherwise false.</returns>
+		SE_FUNCTION(API())
 		static bool GetAssetInfo(const UID& id, AssetInfo& info);
 
 		/// <summary>
@@ -74,6 +78,7 @@ namespace SE
 		/// <param name="path">The asset path.</param>
 		/// <param name="info">The output asset info. Filled with valid values only if method returns true.</param>
 		/// <returns>True if found any asset, otherwise false.</returns>
+		SE_FUNCTION(API())
 		static bool GetAssetInfo(const StringView& path, AssetInfo& info);
 
 		/// <summary>
@@ -81,12 +86,14 @@ namespace SE
 		/// </summary>
 		/// <param name="id">The asset id.</param>
 		/// <returns>The asset path, or empty if failed to find.</returns>
+		SE_FUNCTION(API())
 		static String GetEditorAssetPath(const UID& id);
 
 		/// <summary>
 		/// Finds all the asset IDs. Uses asset registry.
 		/// </summary>
 		/// <returns>The list of all asset IDs.</returns>
+		SE_FUNCTION(API())
 		static List<UID, HeapAllocation> GetAllAssets();
 
 		/// <summary>
@@ -94,6 +101,7 @@ namespace SE
 		/// </summary>
 		/// <param name="type">The asset type.</param>
 		/// <returns>The list of asset IDs that match the given type.</returns>
+		SE_FUNCTION(API())
 		static List<UID, HeapAllocation> GetAllAssetsByType(const TypeID type);
 
 	public:
@@ -116,18 +124,21 @@ namespace SE
 		/// Generates temporary asset path.
 		/// </summary>
 		/// <returns>Asset path for a temporary usage.</returns>
+		SE_FUNCTION(API())
 		static String CreateTemporaryAssetPath();
 
 	public:
 		/// <summary>
 		/// Gets content statistics.
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		static ContentStats GetStats();
 
 		/// <summary>
 		/// Gets the assets (loaded or during load).
 		/// </summary>
 		/// <returns>The collection of assets.</returns>
+		SE_FUNCTION(API())
 		static List<Asset*, HeapAllocation> GetAssets();
 
 		/// <summary>
@@ -142,7 +153,16 @@ namespace SE
 		/// <param name="id">Asset unique ID</param>
 		/// <param name="type">The asset type. If loaded object has different type (excluding types derived from the given) the loading fails.</param>
 		/// <returns>Loaded asset or null if cannot</returns>
-//		static Asset* LoadAsync(const SGUID& id, const MClass* type);
+		static Asset* LoadAsync(const UID& id, const CLRClass* type);
+
+		/// <summary>
+		/// Loads asset and holds it until it won't be referenced by any object. Returns null if asset is missing. Actual asset data loading is performed on a other thread in async.
+		/// </summary>
+		/// <param name="id">Asset unique ID</param>
+		/// <param name="type">The asset scripting type. If loaded object has different type (excluding types derived from the given) the loading fails.</param>
+		/// <returns>Loaded asset or null if cannot</returns>
+		SE_FUNCTION(API())
+		static Asset* LoadAsync(const UID& id, const ScriptingTypeHandle& type);
 
 		/// <summary>
 		/// Loads asset and holds it until it won't be referenced by any object. Returns null if asset is missing. Actual asset data loading is performed on a other thread in async.
@@ -170,7 +190,16 @@ namespace SE
 		/// <param name="path">The path of the asset (absolute or relative to the current workspace directory).</param>
 		/// <param name="type">The asset type. If loaded object has different type (excluding types derived from the given) the loading fails.</param>
 		/// <returns>Loaded asset or null if cannot</returns>
-/*		static Asset* LoadAsync(const StringView& path, const MClass* type);*/
+		static Asset* LoadAsync(const StringView& path, const CLRClass* type);
+
+		/// <summary>
+		/// Loads asset and holds it until it won't be referenced by any object. Returns null if asset is missing. Actual asset data loading is performed on a other thread in async.
+		/// </summary>
+		/// <param name="path">The path of the asset (absolute or relative to the current workspace directory).</param>
+		/// <param name="type">The asset scripting type. If loaded object has different type (excluding types derived from the given) the loading fails.</param>
+		/// <returns>Loaded asset or null if cannot</returns>
+		SE_FUNCTION(API())
+		static Asset* LoadAsync(const StringView& path, const ScriptingTypeHandle& type);
 
 		/// <summary>
 		/// Loads asset and holds it until it won't be referenced by any object. Returns null if asset is missing. Actual asset data loading is performed on a other thread in async.
@@ -198,7 +227,16 @@ namespace SE
 		/// <param name="internalPath">The path of the asset relative to the engine internal content (excluding the extension).</param>
 		/// <param name="type">The asset type. If loaded object has different type (excluding types derived from the given) the loading fails.</param>
 		/// <returns>The loaded asset or null if failed.</returns>
-/*		static Asset* LoadAsyncInternal(const StringView& internalPath, const MClass* type);*/
+		static Asset* LoadAsyncInternal(const StringView& internalPath, const CLRClass* type);
+
+		/// <summary>
+		/// Loads internal engine asset and holds it until it won't be referenced by any object. Returns null if asset is missing. Actual asset data loading is performed on a other thread in async.
+		/// </summary>
+		/// <param name="internalPath">The path of the asset relative to the engine internal content (excluding the extension).</param>
+		/// <param name="type">The asset scripting type. If loaded object has different type (excluding types derived from the given) the loading fails.</param>
+		/// <returns>The loaded asset or null if failed.</returns>
+		SE_FUNCTION(API())
+		static Asset* LoadAsyncInternal(const StringView& internalPath, const ScriptingTypeHandle& type);
 
 		/// <summary>
 		/// Loads internal engine asset and holds it until it won't be referenced by any object. Returns null if asset is missing. Actual asset data loading is performed on a other thread in async.
@@ -215,6 +253,14 @@ namespace SE
 		/// <param name="type">The asset type. If loaded object has different type (excluding types derived from the given) the loading fails.</param>
 		/// <returns>The loaded asset or null if failed.</returns>
 		static Asset* LoadAsyncInternal(const Char* internalPath, const TypeID& type);
+
+		/// <summary>
+		/// Loads internal engine asset and holds it until it won't be referenced by any object. Returns null if asset is missing. Actual asset data loading is performed on a other thread in async.
+		/// </summary>
+		/// <param name="internalPath">The path of the asset relative to the engine internal content (excluding the extension).</param>
+		/// <param name="type">The asset scripting type. If loaded object has different type (excluding types derived from the given) the loading fails.</param>
+		/// <returns>The loaded asset or null if failed.</returns>
+		static Asset* LoadAsyncInternal(const Char* internalPath, const ScriptingTypeHandle& type);
 
 		/// <summary>
 		/// Loads internal engine asset and holds it until it won't be referenced by any object. Returns null if asset is missing. Actual asset data loading is performed on a other thread in async.
@@ -277,12 +323,21 @@ namespace SE
 		/// <returns><c>true</c> if asset type identifier is invalid otherwise, <c>false</c>.</returns>
 		static bool IsAssetTypeIdInvalid(const TypeID& typeID, const TypeID& assetTypeID);
 
+		/// <summary>
+		/// Determines whether input asset scripting type is invalid.
+		/// </summary>
+		/// <param name="type">The requested type of the asset to be.</param>
+		/// <param name="assetType">The actual type of the asset.</param>
+		/// <returns><c>true</c> if asset type identifier is invalid otherwise, <c>false</c>.</returns>
+		static bool IsAssetTypeIdInvalid(const ScriptingTypeHandle& type, const ScriptingTypeHandle& assetType);
+
 	public:
 		/// <summary>
 		/// Finds the asset with at given path. Checks all loaded assets.
 		/// </summary>
 		/// <param name="path">The path.</param>
 		/// <returns>The found asset or null if not loaded.</returns>
+		SE_FUNCTION(API())
 		static Asset* GetAsset(const StringView& path);
 
 		/// <summary>
@@ -290,6 +345,7 @@ namespace SE
 		/// </summary>
 		/// <param name="id">The id.</param>
 		/// <returns>The found asset or null if not loaded.</returns>
+		SE_FUNCTION(API())
 		static Asset* GetAsset(const UID& id);
 
 	public:
@@ -297,12 +353,14 @@ namespace SE
 		/// Deletes the specified asset.
 		/// </summary>
 		/// <param name="asset">The asset.</param>
+		SE_FUNCTION(API())
 		static void DeleteAsset(Asset* asset);
 
 		/// <summary>
 		/// Deletes the asset at the specified path.
 		/// </summary>
 		/// <param name="path">The asset path.</param>
+		SE_FUNCTION(API())
 		static void DeleteAsset(const StringView& path);
 
 	public:
@@ -314,6 +372,7 @@ namespace SE
 		/// <param name="oldPath">The old asset path.</param>
 		/// <param name="newPath">The new asset path.</param>
 		/// <returns>True if failed, otherwise false.</returns>
+		SE_FUNCTION(API())
 		static bool RenameAsset(const StringView& oldPath, const StringView& newPath);
 
 		/// <summary>
@@ -339,6 +398,7 @@ namespace SE
 		/// Unloads the specified asset.
 		/// </summary>
 		/// <param name="asset">The asset.</param>
+		SE_FUNCTION(API())
 		static void UnloadAsset(Asset* asset);
 
 		/// <summary>
@@ -356,7 +416,7 @@ namespace SE
 		/// </summary>
 		/// <param name="type">The asset type klass.</param>
 		/// <returns>Created asset or null if failed.</returns>
-/*		static Asset* CreateVirtualAsset(const MClass* type);*/
+		static Asset* CreateVirtualAsset(const CLRClass* type);
 
 		/// <summary>
 		/// Creates temporary and virtual asset of the given type.
@@ -368,11 +428,13 @@ namespace SE
 		/// <summary>
 		/// Occurs when asset is being disposed and will be unloaded (by force). All references to it should be released.
 		/// </summary>
+		SE_EVENT(API())
 		static Delegate<Asset*> AssetDisposing;
 
 		/// <summary>
 		/// Occurs when asset is being reloaded and will be unloaded (by force) to be loaded again (e.g. after reimport). Always called from the main thread.
 		/// </summary>
+		SE_EVENT(API())
 		static Delegate<Asset*> AssetReloading;
 
 	private:
