@@ -38,12 +38,12 @@ MACRO(CSHARP_TARGET target configFile)
     if(CMAKE_GENERATOR MATCHES "Visual Studio")
         set(CSHARP_VS_PROJECT_TARGET "${target}CSharp")
 
-            include_external_msproject(
-                ${CSHARP_VS_PROJECT_TARGET}
-                "${configFile}"
-                TYPE 9A19103F-16F7-4668-BE54-9A1E7A4F7556F
-                PLATFORM AnyCPU
-            )
+        include_external_msproject(
+            ${CSHARP_VS_PROJECT_TARGET}
+            "${configFile}"
+            TYPE 9A19103F-16F7-4668-BE54-9A1E7A4F7556F
+            PLATFORM AnyCPU
+        )
 
         set_target_properties(${CSHARP_VS_PROJECT_TARGET} PROPERTIES
             EXCLUDE_FROM_ALL TRUE
@@ -66,6 +66,7 @@ MACRO(CSHARP_TARGET target configFile)
             COMMENT "Building ${target} (dotnet build)..."
             VERBATIM
     )
+    set_target_properties(${target}.CSharp PROPERTIES FOLDER "Tool")
 ENDMACRO()
 
 ############### 配置 ###############
@@ -123,6 +124,7 @@ add_custom_target(SEResources ALL
         "${EngineShadersDir}"
         "${ProjectBuildDir}/Shaders"
 )
+set_target_properties(SEResources PROPERTIES FOLDER "Tool")
 
 ############### 引擎反射 ###############
 include(BuildTool/Code/precompile.cmake)
