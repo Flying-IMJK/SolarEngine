@@ -13,7 +13,7 @@ namespace SE
         /// <returns>Asset instance if loaded, null otherwise.</returns>
         public static Asset LoadAsync(Guid id, Type type)
         {
-            return LoadAsync(ref id, ref type);
+            return LoadAsync(ref id, type);
         }
 
         /// <summary>
@@ -42,17 +42,6 @@ namespace SE
         /// Loads asset to the Content Pool and holds it until it won't be referenced by any object. Returns null if asset is missing.
         /// </summary>
         /// <param name="path">Path to the asset.</param>
-        /// <param name="type">Type of the asset to load. Includes any asset types derived from the type.</param>
-        /// <returns>Asset instance if loaded, null otherwise.</returns>
-        public static Asset LoadAsync(string path, Type type)
-        {
-            return LoadAsync(path, ref type);
-        }
-
-        /// <summary>
-        /// Loads asset to the Content Pool and holds it until it won't be referenced by any object. Returns null if asset is missing.
-        /// </summary>
-        /// <param name="path">Path to the asset.</param>
         /// <typeparam name="T">Type of the asset to load. Includes any asset types derived from the type.</typeparam>
         /// <returns>Asset instance if loaded, null otherwise.</returns>
         public static T LoadAsync<T>(string path) where T : Asset
@@ -69,17 +58,6 @@ namespace SE
         public static Asset LoadAsync(string path)
         {
             return LoadAsync(path, typeof(Asset));
-        }
-
-        /// <summary>
-        /// Loads internal engine asset and holds it until it won't be referenced by any object. Returns null if asset is missing.
-        /// </summary>
-        /// <param name="internalPath">Internal path to the asset without an asset file extension.</param>
-        /// <param name="type">Type of the asset to load. Includes any asset types derived from the type.</param>
-        /// <returns>Asset instance if loaded, null otherwise.</returns>
-        public static Asset LoadAsyncInternal(string internalPath, Type type)
-        {
-            return LoadAsyncInternal(internalPath, ref type);
         }
 
         /// <summary>
