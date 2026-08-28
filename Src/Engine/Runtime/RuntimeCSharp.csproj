@@ -13,7 +13,7 @@
     <DisableRuntimeMarshalling>true</DisableRuntimeMarshalling>
     <Optimize>false</Optimize>
     <!-- Suppress default items; sources will be added explicitly or via globbing -->
-    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <EnableDefaultItems>false</EnableDefaultItems>
     <!-- Intermediate output paths are set by CMake via MSBuild properties (BaseIntermediateOutputPath/BaseOutputPath) -->
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
@@ -27,7 +27,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="**\*.cpp;**\*.h;**\*.hpp;**\*.inl;**\CMakeLists.txt" />
+    <Compile Include="**\*.cs" />
   </ItemGroup>
 
   <!-- Editor-mode compile symbol: set SE_EDITOR=true when building for the editor -->
@@ -35,6 +35,5 @@
     <DefineConstants>$(DefineConstants);SE_EDITOR</DefineConstants>
   </PropertyGroup>
 
-  <!-- All .cs files in this directory are included automatically by the SDK glob.
-       Explicit <Compile> entries are only needed for files outside this directory. -->
+  <!-- C# source files are included explicitly by the Compile glob above. -->
 </Project>

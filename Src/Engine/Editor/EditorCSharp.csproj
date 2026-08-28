@@ -12,7 +12,7 @@
     <DisableRuntimeMarshalling>true</DisableRuntimeMarshalling>
     <Optimize>false</Optimize>
     <!-- Suppress default items; sources will be added explicitly or via globbing -->
-    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <EnableDefaultItems>false</EnableDefaultItems>
     <!-- Intermediate output paths are set by CMake via MSBuild properties (BaseIntermediateOutputPath/BaseOutputPath) -->
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
@@ -26,7 +26,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="**\*.cpp;**\*.h;**\*.hpp;**\*.inl;**\CMakeLists.txt" />
+    <Compile Include="**\*.cs" />
   </ItemGroup>
 
   <!-- Editor-mode compile symbol: set SE_EDITOR=true when building for the editor -->
@@ -38,10 +38,9 @@
     <ProjectReference Include= "..\Runtime\RuntimeCSharp.csproj" />
   </ItemGroup>
 
-  <!-- All .cs files in this directory are included automatically by the SDK glob.
-       Explicit <Compile> entries are only needed for files outside this directory. -->
-  <!-- Task 2: ScriptingLoadContext.cs — included via SDK glob -->
-  <!-- Task 4: NativeInterop.cs       — included via SDK glob -->
-  <!-- Task 10: ScriptingObject.cs, Script.cs — included via SDK glob when added -->
+  <!-- C# source files are included explicitly by the Compile glob above. -->
+  <!-- Task 2: ScriptingLoadContext.cs - included via Compile glob -->
+  <!-- Task 4: NativeInterop.cs       - included via Compile glob -->
+  <!-- Task 10: ScriptingObject.cs, Script.cs - included via Compile glob when added -->
 
 </Project>
