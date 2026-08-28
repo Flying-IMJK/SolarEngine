@@ -126,15 +126,10 @@ add_custom_target(SEResources ALL
 )
 set_target_properties(SEResources PROPERTIES FOLDER "Tool")
 
-############### 引擎反射 ###############
-include(BuildTool/Code/precompile.cmake)
-
-############### 引擎代码编译依赖 ###############
-add_dependencies(${PRECOMPILE_REBUILD_TARGET} SEBuildTool)
-add_dependencies(${PRECOMPILE_CLEAR_TARGET} SEBuildTool)
-add_dependencies(${PRECOMPILE_TARGET} SEBuildTool)
+############### 引擎Target 依赖 ###############
 
 add_dependencies(SERuntime SEResources)
 add_dependencies(SEEditor SERuntime)
 
-
+############### 引擎预构建 ###############
+include(BuildTool/Code/precompile.cmake)

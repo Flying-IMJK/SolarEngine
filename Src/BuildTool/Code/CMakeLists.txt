@@ -1,5 +1,5 @@
 #cmake_policy(SET CMP0074 OLD)
-set(REFLECTOR_TARGET SEBuildTool)
+set(REFLECTOR_TARGET SEBuilder)
 
 #set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/../CMake")
 

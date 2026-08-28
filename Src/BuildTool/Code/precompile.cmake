@@ -112,6 +112,11 @@ COMMAND ${PrecompileParser} -r ${EngineRootDir} -s "${SGEPreCompileParamsPath}"
 COMMAND ${CMAKE_COMMAND} -E echo "+++ Precompile Update finished +++"
 )
 
-set_target_properties(${PRECOMPILE_REBUILD_TARGET} PROPERTIES FOLDER "Src" )
-set_target_properties(${PRECOMPILE_CLEAR_TARGET} PROPERTIES FOLDER "Src" )
-set_target_properties(${PRECOMPILE_TARGET} PROPERTIES FOLDER "Src" )
+set_target_properties(${PRECOMPILE_REBUILD_TARGET} PROPERTIES FOLDER "Tool" )
+set_target_properties(${PRECOMPILE_CLEAR_TARGET} PROPERTIES FOLDER "Tool" )
+set_target_properties(${PRECOMPILE_TARGET} PROPERTIES FOLDER "Tool" )
+
+############### 依赖 ###############
+add_dependencies(${PRECOMPILE_REBUILD_TARGET} SEBuilder)
+add_dependencies(${PRECOMPILE_CLEAR_TARGET} SEBuilder)
+add_dependencies(${PRECOMPILE_TARGET} SEBuilder)
