@@ -67,21 +67,33 @@ namespace SE::BuildTool
 
     static std::string GetInteropValueType(const std::string& cppType)
     {
-        std::string stripped = StripTypeQualifiers(cppType);
-        if (IsStringType(cppType))
+        const TypeSemanticKind kind = GetTypeSemanticKind(cppType);
+        const std::string stripped = StripTypeQualifiers(cppType);
+        if (kind == TypeSemanticKind::String)
+        {
             return "CLRString*";
+        }
 
         std::string interopStruct = GetApiInteropStructCppType(cppType);
         if (!interopStruct.empty())
+        {
             return interopStruct;
+        }
 
-        if (IsScriptingObjectPointer(cppType) || CodeGeneratorUtils::IsNativePointer(cppType))
-            return "void*";
-
-        if (stripped == "Variant")
+        if (kind == TypeSemanticKind::ManagedObject)
+        {
             return "CLRObject*";
-        if (stripped == "VariantType" || stripped == "ScriptingTypeHandle")
+        }
+        if (kind == TypeSemanticKind::ManagedType || kind == TypeSemanticKind::ScriptingType)
+        {
             return "CLRTypeObject*";
+        }
+        if (kind == TypeSemanticKind::ScriptingObjectPointer
+            || kind == TypeSemanticKind::NativeObjectPointer
+            || kind == TypeSemanticKind::RawPointer)
+        {
+            return "void*";
+        }
 
         return CodeGeneratorUtils::QualifyCppType(stripped);
     }
@@ -151,22 +163,41 @@ namespace SE::BuildTool
     {
         TypeInfoBase const* registeredType = GetRegisteredType(typeID);
         std::string const cppType = typeID.ToString();
+        const TypeSemanticKind kind = GetTypeSemanticKind(cppType);
         std::string stripped = StripTypeQualifiers(cppType);
+        const std::string unqualified = GetCppSimpleTypeName(cppType);
         if (registeredType != nullptr && registeredType->IsFlag(TypeInfoBase::Flag::IsEnum))
+        {
             return expr;
-        if (IsStringType(cppType))
+        }
+        if (kind == TypeSemanticKind::String)
         {
             return Utils::String::Format("CLRUtils::ToString({0})", expr);
         }
-        if (IsApiInteropStructType(cppType))
+        if (kind == TypeSemanticKind::ApiStruct)
+        {
             return Utils::String::Format("BindingsInterop::ToManaged({0})", expr);
-        if (stripped == "Variant")
+        }
+        if (kind == TypeSemanticKind::ManagedObject)
+        {
             return Utils::String::Format("CLRUtils::BoxVariant({0})", expr);
-        if (stripped == "VariantType")
-            return Utils::String::Format("CLRUtils::BoxVariantType({0})", expr);
-        if (stripped == "ScriptingTypeHandle")
+        }
+        if (kind == TypeSemanticKind::ManagedType)
+        {
+            if (unqualified == "VariantType")
+            {
+                return Utils::String::Format("CLRUtils::BoxVariantType({0})", expr);
+            }
+            if (unqualified == "CLRClass" || unqualified == "MClass")
+            {
+                return Utils::String::Format("CLRUtils::GetType({0})", expr);
+            }
+        }
+        if (kind == TypeSemanticKind::ScriptingType)
+        {
             return Utils::String::Format("CLRUtils::BoxScriptingTypeHandle({0})", expr);
-        if (IsScriptingObjectPointer(cppType))
+        }
+        if (kind == TypeSemanticKind::ScriptingObjectPointer)
         {
             // API headers frequently forward-declare a scripting object return
             // type. Use an explicit base-pointer reinterpret cast so the stub
@@ -181,44 +212,86 @@ namespace SE::BuildTool
     {
         TypeInfoBase const* registeredType = GetRegisteredType(typeID);
         std::string const cppType = typeID.ToString();
+        const TypeSemanticKind kind = GetTypeSemanticKind(cppType);
         std::string stripped = StripTypeQualifiers(cppType);
+        const std::string unqualified = GetCppSimpleTypeName(cppType);
         if (registeredType != nullptr && registeredType->IsFlag(TypeInfoBase::Flag::IsEnum))
+        {
             return expr;
-        if (IsStringType(cppType))
+        }
+        if (kind == TypeSemanticKind::String)
         {
             const std::string simpleType = GetCppSimpleTypeName(cppType);
             if (simpleType == "String" || simpleType == "StringView")
+            {
                 return Utils::String::Format("CLRUtils::ToString((CLRString*){0})", expr);
+            }
             return Utils::String::Format("CLRUtils::ToStringAnsi((CLRString*){0})", expr);
         }
-        if (IsApiInteropStructType(cppType))
+        if (kind == TypeSemanticKind::ApiStruct)
+        {
             return Utils::String::Format("BindingsInterop::ToNative({0})", expr);
-        if (stripped == "Variant")
+        }
+        if (kind == TypeSemanticKind::ManagedObject)
+        {
             return Utils::String::Format("CLRUtils::UnboxVariant((CLRObject*){0})", expr);
-        if (stripped == "VariantType")
-            return Utils::String::Format("CLRUtils::UnboxVariantType((CLRTypeObject*){0})", expr);
-        if (stripped == "ScriptingTypeHandle")
+        }
+        if (kind == TypeSemanticKind::ManagedType)
+        {
+            if (unqualified == "VariantType")
+            {
+                return Utils::String::Format("CLRUtils::UnboxVariantType((CLRTypeObject*){0})", expr);
+            }
+            if (unqualified == "CLRClass" || unqualified == "MClass")
+            {
+                return Utils::String::Format("CLRUtils::GetClass((CLRTypeObject*){0})", expr);
+            }
+        }
+        if (kind == TypeSemanticKind::ScriptingType)
+        {
             return Utils::String::Format("CLRUtils::UnboxScriptingTypeHandle((CLRTypeObject*){0})", expr);
-        if (IsScriptingObjectPointer(cppType))
+        }
+        if (kind == TypeSemanticKind::ScriptingObjectPointer)
+        {
             return Utils::String::Format("({0}*){1}", CodeGeneratorUtils::QualifyCppType(stripped), expr);
-        if (CodeGeneratorUtils::IsNativePointer(cppType))
+        }
+        if (kind == TypeSemanticKind::RawPointer || kind == TypeSemanticKind::NativeObjectPointer)
+        {
             return Utils::String::Format("({0}*){1}", CodeGeneratorUtils::QualifyCppType(stripped), expr);
+        }
         return expr;
     }
 
     bool BindingsCppGenerator::ShouldUseOutResult(const std::string& cppType) const
     {
+        const TypeSemanticKind kind = GetTypeSemanticKind(cppType);
         std::string stripped = StripTypeQualifiers(cppType);
-        if (stripped == "void" || stripped.empty())
+        if (kind == TypeSemanticKind::Void || stripped.empty())
+        {
             return false;
-        if (IsStringType(cppType))
+        }
+        if (kind == TypeSemanticKind::String)
+        {
             return false;
+        }
         if (GetCollectionAbiInfo(cppType).IsCollection())
+        {
             return false;
-        if (IsScriptingObjectPointer(cppType) || CodeGeneratorUtils::IsNativePointer(cppType))
+        }
+        if (kind == TypeSemanticKind::ManagedObject
+            || kind == TypeSemanticKind::ManagedType
+            || kind == TypeSemanticKind::ScriptingType
+            || kind == TypeSemanticKind::ScriptingObjectPointer
+            || kind == TypeSemanticKind::NativeObjectPointer
+            || kind == TypeSemanticKind::ObjectReference
+            || kind == TypeSemanticKind::RawPointer)
+        {
             return false;
-        if (IsApiInteropStructType(cppType))
+        }
+        if (kind == TypeSemanticKind::ApiStruct)
+        {
             return true;
+        }
         return UsePassByReference(cppType);
     }
 
@@ -226,8 +299,15 @@ namespace SE::BuildTool
     {
         std::string const cppType = param.type.ToString();
         if (GetCollectionAbiInfo(cppType, param.arraySize).IsCollection())
+        {
             return false;
-        return param.isOut || param.isRef || UsePassByReference(cppType);
+        }
+        const TypeSemanticKind kind = GetTypeSemanticKind(cppType);
+        if (kind == TypeSemanticKind::ManagedType || kind == TypeSemanticKind::ScriptingType)
+        {
+            return param.isOut;
+        }
+        return param.isOut || UsePassByReference(cppType);
     }
 
     std::string BindingsCppGenerator::GetNativeToVariantConvert(TypeID typeID, const std::string& expr) const

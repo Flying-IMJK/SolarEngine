@@ -29,6 +29,25 @@ namespace SE::BuildTool
         bool HasRuntimeCount() const { return kind == CollectionAbiKind::Variable; }
     };
 
+    enum class TypeSemanticKind
+    {
+        Unknown,
+        Void,
+        Blittable,
+        Bool,
+        Char,
+        String,
+        ApiStruct,
+        Collection,
+        ManagedObject,
+        ManagedType,
+        ScriptingType,
+        ScriptingObjectPointer,
+        NativeObjectPointer,
+        ObjectReference,
+        RawPointer,
+    };
+
     // -------------------------------------------------------------------------
     // Core lookup functions
     // -------------------------------------------------------------------------
@@ -45,6 +64,10 @@ namespace SE::BuildTool
 
     /// Strips trailing '*', '&', 'const ' from a C++ type name.
     std::string StripTypeQualifiers(const std::string& cppType);
+
+    /// Returns the binding semantic category for a C++ type after normalizing
+    /// top-level namespace, const, pointer, and reference spelling.
+    TypeSemanticKind GetTypeSemanticKind(const std::string& cppType);
 
     /// Checks whether a property's getter return type and setter value type can
     /// share one managed property. Exact type matches are accepted, together

@@ -177,7 +177,7 @@ namespace SE::BuildTool
         // Scripting types
         { "Variant",        "object",       "System.IntPtr",  false,   false,    false },
         { "VariantType",    "System.Type",  "System.IntPtr",  false,   false,    false },
-        { "ScriptingTypeHandle", "System.Type", "System.IntPtr", false,  false,  false },
+        { "ScriptingTypeHandle", "System.Type", "System.Type", false,  false,  false },
         { "CLRObject",      "object",       "System.IntPtr",  false,   false,    false },
         { "CLRClass",       "System.Type",  "System.IntPtr",  false,   false,    false },
         // Version
@@ -484,6 +484,76 @@ namespace SE::BuildTool
         return result;
     }
 
+    TypeSemanticKind GetTypeSemanticKind(const std::string& cppType)
+    {
+        const std::string stripped = NormalizeCppNameForAlias(StripTypeQualifiers(cppType));
+        const std::string unqualified = GetUnqualifiedTypeName(stripped);
+        if (stripped.empty())
+        {
+            return TypeSemanticKind::Unknown;
+        }
+
+        if (unqualified == "void")
+        {
+            return TypeSemanticKind::Void;
+        }
+        if (unqualified == "bool")
+        {
+            return TypeSemanticKind::Bool;
+        }
+        if (unqualified == "Char")
+        {
+            return TypeSemanticKind::Char;
+        }
+        if (unqualified == "Variant")
+        {
+            return TypeSemanticKind::ManagedObject;
+        }
+        if (unqualified == "VariantType" || unqualified == "CLRClass" || unqualified == "MClass")
+        {
+            return TypeSemanticKind::ManagedType;
+        }
+        if (unqualified == "ScriptingTypeHandle")
+        {
+            return TypeSemanticKind::ScriptingType;
+        }
+        if (GetCollectionAbiInfo(cppType).IsCollection())
+        {
+            return TypeSemanticKind::Collection;
+        }
+        if (IsStringType(cppType))
+        {
+            return TypeSemanticKind::String;
+        }
+        if (IsApiInteropStructType(cppType))
+        {
+            return TypeSemanticKind::ApiStruct;
+        }
+        if (IsScriptingObjectPointer(cppType))
+        {
+            return TypeSemanticKind::ScriptingObjectPointer;
+        }
+        if (IsNativeApiObjectPointer(cppType))
+        {
+            return TypeSemanticKind::NativeObjectPointer;
+        }
+        if (IsObjectTypeRef(cppType))
+        {
+            return TypeSemanticKind::ObjectReference;
+        }
+        if (IsNativePointer(cppType))
+        {
+            return TypeSemanticKind::RawPointer;
+        }
+
+        const TypeMapping* mapping = FindTypeMappingNormalized(stripped);
+        if (mapping && mapping->isBlittable)
+        {
+            return TypeSemanticKind::Blittable;
+        }
+        return TypeSemanticKind::Unknown;
+    }
+
     std::string GetCSharpFullTypeName(const std::string& cppType)
     {
         const TypeMapping* mapping = FindTypeMappingNormalized(cppType);
@@ -532,11 +602,16 @@ namespace SE::BuildTool
     std::string GetCSharpInteropType(const std::string& cppType, int fixedArraySize)
     {
         std::string stripped = StripTypeQualifiers(cppType);
-
         const CollectionAbiInfo collection = GetCollectionAbiInfo(cppType, fixedArraySize);
         if (collection.IsCollection())
         {
             return GetCSharpPublicType(collection.elementCppType) + "[]";
+        }
+
+        const TypeSemanticKind kind = GetTypeSemanticKind(cppType);
+        if (kind == TypeSemanticKind::ManagedType || kind == TypeSemanticKind::ScriptingType)
+        {
+            return std::string("System.Type");
         }
 
         // Check for known type mappings first
@@ -705,9 +780,17 @@ namespace SE::BuildTool
     std::string GetCSharpFromInterop(const std::string& cppType, const std::string& varName)
     {
         std::string stripped = StripTypeQualifiers(cppType);
+        const TypeSemanticKind kind = GetTypeSemanticKind(cppType);
         const TypeMapping* mapping = FindTypeMappingNormalized(stripped);
         if (mapping && mapping->isString)
+        {
             return varName; // StringMarshalling handles strings automatically
+        }
+
+        if (kind == TypeSemanticKind::ManagedType || kind == TypeSemanticKind::ScriptingType)
+        {
+            return varName;
+        }
 
         if (IsScriptingObjectPointer(cppType))
         {
@@ -738,9 +821,17 @@ namespace SE::BuildTool
     std::string GetCSharpToInterop(const std::string& cppType, const std::string& varName)
     {
         std::string stripped = StripTypeQualifiers(cppType);
+        const TypeSemanticKind kind = GetTypeSemanticKind(cppType);
         const TypeMapping* mapping = FindTypeMappingNormalized(stripped);
         if (mapping && mapping->isString)
+        {
             return varName; // LibraryImport StringMarshalling handles strings
+        }
+
+        if (kind == TypeSemanticKind::ManagedType || kind == TypeSemanticKind::ScriptingType)
+        {
+            return varName;
+        }
 
         if (IsScriptingObjectPointer(cppType))
             return Utils::String::Format("Object.GetUnmanagedPtr({0})", varName);
@@ -767,27 +858,34 @@ namespace SE::BuildTool
     bool UsePassByReference(const std::string& cppType)
     {
         std::string stripped = StripTypeQualifiers(cppType);
+        const TypeSemanticKind kind = GetTypeSemanticKind(cppType);
 
         // Pointers and objects: no
         if (stripped.empty())
+        {
             return false;
-        if (IsScriptingObjectPointer(cppType))
+        }
+        if (kind == TypeSemanticKind::ScriptingObjectPointer
+            || kind == TypeSemanticKind::NativeObjectPointer
+            || kind == TypeSemanticKind::ObjectReference
+            || kind == TypeSemanticKind::RawPointer)
+        {
             return false;
-        if (IsNativePointer(cppType))
-            return false;
-        if (IsObjectTypeRef(cppType))
-            return false;
+        }
 
         // Strings and collections: no
-        const TypeMapping* mapping = FindTypeMappingNormalized(stripped);
-        if (mapping && mapping->isString)
+        if (kind == TypeSemanticKind::String || kind == TypeSemanticKind::Collection)
+        {
             return false;
-        if (IsCollectionType(cppType))
-            return false;
+        }
 
         // Variant/Type: no
-        if (stripped == "Variant" || stripped == "VariantType" || stripped == "ScriptingTypeHandle")
+        if (kind == TypeSemanticKind::ManagedObject
+            || kind == TypeSemanticKind::ManagedType
+            || kind == TypeSemanticKind::ScriptingType)
+        {
             return false;
+        }
 
         // Explicit ref: yes
         if (cppType.c_str()[cppType.length() - 1] == '&')
@@ -860,6 +958,7 @@ namespace SE::BuildTool
                                                int fixedArraySize)
     {
         std::string stripped = StripTypeQualifiers(cppType);
+        const TypeSemanticKind kind = GetTypeSemanticKind(cppType);
         const CollectionAbiInfo collection = GetCollectionAbiInfo(cppType, fixedArraySize);
 
         if (collection.IsCollection())
@@ -892,13 +991,13 @@ namespace SE::BuildTool
         }
 
         // Variant/object → ManagedHandleMarshaller
-        if (stripped == "Variant" || stripped == "object")
+        if (kind == TypeSemanticKind::ManagedObject || stripped == "object")
         {
             return std::string("[MarshalUsing(typeof(ManagedHandleMarshaller))]");
         }
 
         // System.Type
-        if (stripped == "VariantType" || stripped == "ScriptingTypeHandle")
+        if (kind == TypeSemanticKind::ManagedType || kind == TypeSemanticKind::ScriptingType)
         {
             return std::string("[MarshalUsing(typeof(SystemTypeMarshaller))]");
         }
@@ -933,6 +1032,7 @@ namespace SE::BuildTool
     std::string GetCSharpReturnMarshalAttribute(const std::string& cppType, int fixedArraySize)
     {
         std::string stripped = StripTypeQualifiers(cppType);
+        const TypeSemanticKind kind = GetTypeSemanticKind(cppType);
         const CollectionAbiInfo collection = GetCollectionAbiInfo(cppType, fixedArraySize);
 
         if (collection.IsCollection())
@@ -959,13 +1059,13 @@ namespace SE::BuildTool
         }
 
         // Variant/object
-        if (stripped == "Variant" || stripped == "object")
+        if (kind == TypeSemanticKind::ManagedObject || stripped == "object")
         {
             return std::string("[return: MarshalUsing(typeof(ManagedHandleMarshaller))]");
         }
 
         // System.Type
-        if (stripped == "VariantType" || stripped == "ScriptingTypeHandle")
+        if (kind == TypeSemanticKind::ManagedType || kind == TypeSemanticKind::ScriptingType)
         {
             return std::string("[return: MarshalUsing(typeof(SystemTypeMarshaller))]");
         }
