@@ -131,5 +131,16 @@ set_target_properties(SEResources PROPERTIES FOLDER "Tool")
 add_dependencies(SERuntime SEResources)
 add_dependencies(SEEditor SERuntime)
 
+
+if(CMAKE_GENERATOR MATCHES "Visual Studio")
+    set(SOLAR_ENGINE_NATVIS "${EngineRootDir}/SG.natvis")
+    set_source_files_properties("${SOLAR_ENGINE_NATVIS}" PROPERTIES
+        VS_TOOL_OVERRIDE Natvis
+    )
+    target_sources(SERuntime PRIVATE "${SOLAR_ENGINE_NATVIS}")
+    target_sources(SEEditor PRIVATE "${SOLAR_ENGINE_NATVIS}")
+endif()
+
+
 ############### 引擎预构建 ###############
 include(BuildTool/Code/precompile.cmake)

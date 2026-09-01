@@ -2,13 +2,8 @@
 
 if (WIN32)
 
-    if (CMAKE_BUILD_TYPE STREQUAL Debug)
-        set(SLANG_LIBRARY_DIR  ${EngineLibDir}/slang/lib)
-        set(SLANG_SHARED_LIBRARY_DIR  ${EngineLibDir}/slang/bin)
-    else()
-        set(SLANG_LIBRARY_DIR  ${EngineLibDir}/slang/lib)
-        set(SLANG_SHARED_LIBRARY_DIR  ${EngineLibDir}/slang/bin)
-    endif()
+    set(SLANG_LIBRARY_DIR  ${EngineLibDir}/slang/lib)
+    set(SLANG_SHARED_LIBRARY_DIR  ${EngineLibDir}/slang/bin)
 
 elseif(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Linux")
     set(SLANG_LIBRARY_DIR  ${EngineLibDir}/slang/lib)
