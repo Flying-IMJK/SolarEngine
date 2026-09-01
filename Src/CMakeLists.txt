@@ -126,11 +126,16 @@ add_custom_target(SEResources ALL
 )
 set_target_properties(SEResources PROPERTIES FOLDER "Tool")
 
-############### 引擎Target 依赖 ###############
+############### 引擎反射 ###############
+include(BuildTool/Code/precompile.cmake)
+
+############### 引擎代码编译依赖 ###############
+add_dependencies(${PRECOMPILE_REBUILD_TARGET} SEBuildTool)
+add_dependencies(${PRECOMPILE_CLEAR_TARGET} SEBuildTool)
+add_dependencies(${PRECOMPILE_TARGET} SEBuildTool)
 
 add_dependencies(SERuntime SEResources)
 add_dependencies(SEEditor SERuntime)
-
 
 if(CMAKE_GENERATOR MATCHES "Visual Studio")
     set(SOLAR_ENGINE_NATVIS "${EngineRootDir}/SG.natvis")
@@ -140,7 +145,3 @@ if(CMAKE_GENERATOR MATCHES "Visual Studio")
     target_sources(SERuntime PRIVATE "${SOLAR_ENGINE_NATVIS}")
     target_sources(SEEditor PRIVATE "${SOLAR_ENGINE_NATVIS}")
 endif()
-
-
-############### 引擎预构建 ###############
-include(BuildTool/Code/precompile.cmake)
