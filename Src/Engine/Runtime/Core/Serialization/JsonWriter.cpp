@@ -26,9 +26,10 @@ namespace SE
 
 	void JsonWriter::Blob(const void* data, int32 length)
 	{
-		List<char> base64;
+        List<char> base64;
+        base64.Resize((Encoding::Base64::EncodeLength(length)));
 		Encoding::Base64::Encode(static_cast<const byte*>(data), length, base64.Get());
-		RawValue(base64.Get(), base64.Count());
+		String(base64.Get(), base64.Count());
 	}
 
 	void JsonWriter::DateTime(const ::SE::DateTime& value)
