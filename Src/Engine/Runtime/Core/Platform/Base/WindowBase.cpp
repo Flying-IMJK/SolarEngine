@@ -82,7 +82,6 @@ namespace SE
 
 	WindowBase* WindowBase::Create(CreateWindowSettings settings)
 	{
-		settings.Backend = CreateWindowSettings::GuiBackend::Managed;
 		return New<GraphicWindow>(settings);
 	}
 

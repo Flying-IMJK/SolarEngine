@@ -111,30 +111,19 @@ add_subdirectory(Libraries)
 add_subdirectory(BuildTool/Code)
 add_subdirectory(Engine/Runtime)
 add_subdirectory(Engine/Editor)
+add_subdirectory(Engine/Shaders)
 add_subdirectory(Applications)
 
-
-############### 引擎资源拷贝 ###############
-add_custom_target(SEResources ALL
-	# mustache templates directory
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${EngineAssetsDir}"
-		"${ProjectBuildDir}/Cache/Assets"
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${EngineShadersDir}"
-        "${ProjectBuildDir}/Shaders"
-)
-set_target_properties(SEResources PROPERTIES FOLDER "Tool")
 
 ############### 引擎反射 ###############
 include(BuildTool/Code/precompile.cmake)
 
 ############### 引擎代码编译依赖 ###############
-add_dependencies(${PRECOMPILE_REBUILD_TARGET} SEBuildTool)
-add_dependencies(${PRECOMPILE_CLEAR_TARGET} SEBuildTool)
-add_dependencies(${PRECOMPILE_TARGET} SEBuildTool)
+add_dependencies(${PRECOMPILE_REBUILD_TARGET} SEBuilder)
+add_dependencies(${PRECOMPILE_CLEAR_TARGET} SEBuilder)
+add_dependencies(${PRECOMPILE_TARGET} SEBuilder)
 
-add_dependencies(SERuntime SEResources)
+add_dependencies(SERuntime SEShader)
 add_dependencies(SEEditor SERuntime)
 
 if(CMAKE_GENERATOR MATCHES "Visual Studio")

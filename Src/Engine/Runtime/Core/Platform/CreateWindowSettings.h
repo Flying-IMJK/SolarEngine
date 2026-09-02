@@ -155,17 +155,6 @@ namespace SE
 		bool ShowAfterFirstPaint = true;
 
 		/// <summary>
-		/// Selects the GUI implementation for this window. C++ callers retain the native backend by default.
-		/// </summary>
-		enum class GuiBackend : byte
-		{
-			NativeLegacy,
-			Managed,
-		};
-
-		GuiBackend Backend = GuiBackend::NativeLegacy;
-
-		/// <summary>
 		/// The custom data (platform dependant).
 		/// </summary>
 		void* Data = nullptr;

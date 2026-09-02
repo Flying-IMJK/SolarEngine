@@ -27,11 +27,6 @@ namespace SE
 			return m_GUI;
 		}
 
-		/// <summary>
-		/// Returns true when this window owns a managed C# GUI tree instead of the native compatibility tree.
-		/// </summary>
-		bool UsesManagedGui() const;
-
 		GraphicWindow(const CreateWindowSettings &setting);
 
 		GraphicWindow(GraphicWindow & window);
@@ -56,9 +51,6 @@ namespace SE
 		void FullscreenSwapChain(bool isFullscreen) override;
 
 		void Bind();
-		bool EnsureManagedGui();
-		bool InvokeManagedGui(const char* methodName, int32 paramsCount, void** params, CLRObject** result = nullptr);
-		DragDropEffect InvokeManagedGuiDrag(const char* methodName, IGuiData* data, const Float2& mousePosition);
 
 		void DrawInternal();
 		void UpdateInternal();
