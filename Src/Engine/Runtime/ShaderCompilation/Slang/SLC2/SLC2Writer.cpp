@@ -43,6 +43,8 @@ namespace SE
 		{
 			// SLC2 只序列化引擎自定义 ShaderReflectionIR，不保存 Slang 对象指针或原生枚举值。
 			writer.StartObject();
+			writer.Key(SE_TEXT("schema"));
+			writer.Uint(layout.Schema);
 			writer.Key(SE_TEXT("rootBlockId"));
 			writer.Uint(layout.RootBlockId);
 			writer.Key(SE_TEXT("pipelineLayoutFingerprint"));
@@ -130,25 +132,85 @@ namespace SE
 				writer.Uint(block.ElementTypeId);
 				writer.Key(SE_TEXT("uniformByteSize"));
 				writer.Uint(block.UniformByteSize);
-				writer.Key(SE_TEXT("descriptorRanges"));
-				writer.StartArray();
-				for (int32 rangeIndex = 0; rangeIndex < block.DescriptorRanges.Count(); rangeIndex++)
+				writer.Key(SE_TEXT("defaultUniformBuffer"));
+				if (block.HasDefaultUniformBuffer)
 				{
-					const ShaderIRDescriptorRange& range = block.DescriptorRanges[rangeIndex];
 					writer.StartObject();
+					const ShaderIRDescriptorRange& range = block.DefaultUniformBuffer;
+					writer.Key(SE_TEXT("role"));
+					writer.String(range.Role);
 					writer.Key(SE_TEXT("set"));
 					writer.Uint(range.Set);
 					writer.Key(SE_TEXT("binding"));
 					writer.Uint(range.Binding);
+					writer.Key(SE_TEXT("arrayElementBase"));
+					writer.Uint(range.ArrayElementBase);
+					writer.Key(SE_TEXT("logicalElementStride"));
+					writer.Uint(range.LogicalElementStride);
 					writer.Key(SE_TEXT("descriptorCount"));
 					writer.Uint(range.DescriptorCount);
 					writer.Key(SE_TEXT("descriptorType"));
 					writer.String(range.DescriptorType);
 					writer.Key(SE_TEXT("stageMask"));
 					writer.String(range.StageMask);
+					writer.Key(SE_TEXT("flags"));
+					WriteStringArray(writer, range.Flags);
 					writer.EndObject();
 				}
-				writer.EndArray(block.DescriptorRanges.Count());
+				else
+				{
+					writer.RawValue("null", 4);
+				}
+
+				writer.Key(SE_TEXT("rangeBindings"));
+				writer.StartArray();
+				for (int32 bindingIndex = 0; bindingIndex < block.RangeBindings.Count(); bindingIndex++)
+				{
+					const ShaderIRRangeBinding& binding = block.RangeBindings[bindingIndex];
+					writer.StartObject();
+					writer.Key(SE_TEXT("rangeIndex"));
+					writer.Uint(binding.RangeIndex);
+					writer.Key(SE_TEXT("flavor"));
+					writer.String(binding.Flavor);
+					writer.Key(SE_TEXT("subBlockId"));
+					if (binding.SubBlockId >= 0)
+					{
+						writer.Uint(static_cast<uint32>(binding.SubBlockId));
+					}
+					else
+					{
+						writer.RawValue("null", 4);
+					}
+					writer.Key(SE_TEXT("descriptorRanges"));
+					writer.StartArray();
+					for (int32 descriptorIndex = 0; descriptorIndex < binding.DescriptorRanges.Count(); descriptorIndex++)
+					{
+						const ShaderIRDescriptorRange& range = binding.DescriptorRanges[descriptorIndex];
+						writer.StartObject();
+						writer.Key(SE_TEXT("role"));
+						writer.String(range.Role);
+						writer.Key(SE_TEXT("set"));
+						writer.Uint(range.Set);
+						writer.Key(SE_TEXT("binding"));
+						writer.Uint(range.Binding);
+						writer.Key(SE_TEXT("arrayElementBase"));
+						writer.Uint(range.ArrayElementBase);
+						writer.Key(SE_TEXT("logicalElementStride"));
+						writer.Uint(range.LogicalElementStride);
+						writer.Key(SE_TEXT("descriptorCount"));
+						writer.Uint(range.DescriptorCount);
+						writer.Key(SE_TEXT("descriptorType"));
+						writer.String(range.DescriptorType);
+						writer.Key(SE_TEXT("stageMask"));
+						writer.String(range.StageMask);
+						writer.Key(SE_TEXT("flags"));
+						WriteStringArray(writer, range.Flags);
+						writer.EndObject();
+					}
+					writer.EndArray(binding.DescriptorRanges.Count());
+					writer.EndObject();
+				}
+				writer.EndArray(block.RangeBindings.Count());
 				writer.EndObject();
 			}
 			writer.EndArray(layout.ParameterBlocks.Count());
@@ -198,10 +260,10 @@ namespace SE
 				writer.String(target.TargetKey);
 				writer.Key(SE_TEXT("platform"));
 				writer.String(ToString(target.Target.Platform));
-				writer.Key(SE_TEXT("backend"));
-				writer.String(ToString(target.Target.Backend));
-				writer.Key(SE_TEXT("shaderModel"));
-				writer.String(ToString(target.Target.ShaderModel));
+				writer.Key(SE_TEXT("shaderProfile"));
+				writer.String(ToString(target.Target.Profile));
+				writer.Key(SE_TEXT("featureLevel"));
+				writer.String(ToString(target.Target.Feature));
 
 				writer.Key(SE_TEXT("variants"));
 				writer.StartArray();
@@ -233,6 +295,8 @@ namespace SE
 						{
 							writer.String(SE_TEXT(""));
 						}
+						writer.Key(SE_TEXT("codeHash"));
+						writer.String(ComputeSHA256Hex(stage.Code.Get(), stage.Code.Count()));
 						writer.EndObject();
 					}
 					writer.EndArray(variant.Stages.Count());

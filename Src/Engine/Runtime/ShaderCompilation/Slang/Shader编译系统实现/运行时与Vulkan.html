@@ -22,18 +22,19 @@
   <section>
     <h2 id="runtime-boundary">1. 运行时对象与接入边界</h2>
     <p>系统设计中的“Shader Program”是完整的 graphics/compute 程序，而 SolarEngine 现有 <code>GPUShaderProgram</code> 表示单个 Stage。实施中保留现有 Stage GPU 对象，但新增一个拥有共享 Layout 与参数状态的完整程序对象，避免名称混淆。</p>
-    <p class="contract"><strong>边界：</strong>运行时从一份已经通过编译侧 self-read 的 SLC2 开始工作，只消费 <code>ShaderProgramArtifact</code>、<code>ShaderReflectionIR</code> 和 Stage code。运行时不得调用 Slang、不得从 SPIR-V 二次反射，也不得参与 Program 发现、Variant 规划、Target codegen 或 SLC2 写入。</p>
+    <p class="contract"><strong>边界：</strong>运行时从一份已经通过编译侧 self-read 的 SLC2 开始工作，只消费 <code>SLC2GPUShader</code>、<code>ShaderReflectionIR</code> 和 Stage code。运行时不得调用 Slang、不得从 SPIR-V 二次反射，也不得参与 Program 发现、Variant 规划、Target codegen 或 SLC2 写入。</p>
 
     <h3 id="runtime-files">新增文件</h3>
     <table>
       <thead><tr><th>路径</th><th>核心类型</th><th>职责</th></tr></thead>
       <tbody>
-        <tr><td class="path">Graphics/Shaders/SLC2/ShaderProgramArtifact.h/.cpp</td><td><code>ShaderProgramArtifact</code></td><td>不可变的 SLC2 Program/Target/Variant/Stage 数据。</td></tr>
+        <tr><td class="path">Graphics/Shaders/SLC2GPUShader.h/.cpp</td><td><code>SLC2GPUShader</code></td><td>不可变 SLC2 Program/Target/Variant 数据和共享 Program 缓存；负责创建独立实例。</td></tr>
         <tr><td class="path">Graphics/Shaders/Reflection/ShaderProgramReflection.h/.cpp</td><td><code>ShaderProgramReflection</code></td><td>从 IR 建立 type/block 索引和物理 Pipeline 描述。</td></tr>
-        <tr><td class="path">Graphics/Shaders/Reflection/ShaderVar.h/.cpp</td><td><code>ShaderVar</code></td><td>沿成员与固定数组计算相对位置，不持有 Slang 对象。</td></tr>
+        <tr><td class="path">Graphics/Shaders/Reflection/ShaderVar.h/.cpp</td><td><code>ShaderVar</code></td><td>绑定到运行时 ParameterBlock 的成员、固定数组、资源与 uniform 访问句柄，不持有 Slang 对象。</td></tr>
         <tr><td class="path">Graphics/Shaders/Reflection/ShaderNameResolver.h/.cpp</td><td><code>ShaderNameResolver</code></td><td>解析 <code>a.b[2].c</code>，并缓存规范全名到 ShaderVarLocation。</td></tr>
-        <tr><td class="path">Graphics/Shaders/ShaderParameterBlockState.h/.cpp</td><td><code>ShaderParameterBlockState</code></td><td>保存 uniform bytes 和按逻辑 range/index 设置的资源对象。</td></tr>
-        <tr><td class="path">Graphics/Shaders/ShaderProgramInstance.h/.cpp</td><td><code>ShaderProgramInstance</code></td><td>拥有完整 Program 的选择结果、Stage GPU 对象、共享 Reflection 和根参数块。</td></tr>
+        <tr><td class="path">Graphics/Shaders/ShaderParameterBlock.h/.cpp</td><td><code>ShaderParameterBlock</code></td><td>保存一个 blockId 的 uniform bytes、逻辑资源槽和递归子块。</td></tr>
+        <tr><td class="path">Graphics/Shaders/ShaderBindingSnapshot.h/.cpp</td><td><code>ShaderBindingSnapshot</code></td><td>绑定验证成功后冻结的逻辑资源与 Uniform Buffer 提交快照。</td></tr>
+        <tr><td class="path">Graphics/Shaders/ShaderProgramInstance.h/.cpp</td><td><code>ShaderProgramInstance</code></td><td>拥有完整 Program 的选择结果、Stage GPU 对象、共享 Reflection 和唯一根参数块。</td></tr>
         <tr><td class="path">GraphicsDevice/Vulkan/ShaderProgramLayoutVulkan.h/.cpp</td><td><code>ShaderProgramLayoutVulkan</code></td><td>把规范物理描述转换为 VkDescriptorSetLayout/VkPipelineLayout。</td></tr>
         <tr><td class="path">GraphicsDevice/Vulkan/ShaderDescriptorWriterVulkan.h/.cpp</td><td><code>ShaderDescriptorWriterVulkan</code></td><td>按 range mapping 创建 VkWriteDescriptorSet 并验证完整绑定。</td></tr>
       </tbody>
@@ -81,7 +82,7 @@ ShaderProgramInstance* CreateProgram(
     <h3 id="runtime-pseudocode-select">Program/Target/Variant 选择伪代码</h3>
     <div class="pseudo">
       <div class="pseudo-header">
-        <strong>ShaderProgramArtifact.Select</strong>
+        <strong>SLC2GPUShader.Select</strong>
         <small>计划实现 · Variant 使用规范宏名称字符串，不使用 hash</small>
       </div>
       <div class="pseudo-io">
@@ -114,13 +115,13 @@ ShaderProgramInstance* CreateProgram(
     <h3 id="runtime-instance">完整程序实例</h3>
     <pre><code>class ShaderProgramInstance
 {
-    const ShaderProgramArtifact* _artifact;
+    const SLC2ShaderProgram* _program;
     const ShaderProgramReflection* _reflection;
     GPUShaderProgram* _stages[ShaderStageCount];
-    ShaderParameterBlockState _rootParameters;
+    ShaderParameterBlock _rootParameters;
     void* _backendLayout; // Vulkan: ShaderProgramLayoutVulkan
 };</code></pre>
-    <p>graphics 的 VS/PS/其他 Stage 与 compute 的 CS 都通过同一类型表示。<code>_reflection</code> 和 <code>_backendLayout</code> 属于完整 Variant，不属于任一 Stage。</p>
+    <p>graphics 的 VS/PS/其他 Stage 与 compute 的 CS 都通过同一类型表示。<code>_reflection</code> 和 <code>_backendLayout</code> 属于完整 Variant，不属于任一 Stage。每个 Instance 都从 rootBlockId 递归创建独立的 ParameterBlock 树；共享的只有不可变 Program/Reflection/后端对象。</p>
   </section>
 
   <section>
@@ -237,32 +238,37 @@ ShaderProgramInstance* CreateProgram(
 
   <section>
     <h2 id="runtime-binding">4. 资源与 Uniform 绑定</h2>
-    <h3 id="runtime-binding-api">名称 API</h3>
-    <pre><code>bool SetTexture(StringView path, GPUTextureView* value, String&amp; error);
-bool SetBuffer(StringView path, GPUBuffer* value, String&amp; error);
-bool SetSampler(StringView path, GPUSampler* value, String&amp; error);
-bool SetUniform(StringView path, const void* data, uint32 size, String&amp; error);</code></pre>
+    <h3 id="runtime-binding-api">Falcor 风格访问 API</h3>
+    <pre><code>ShaderVar ShaderProgramInstance::GetRootVar();
+ShaderVar ShaderProgramInstance::FindVar(StringView path);
+
+bool ShaderVar::SetTexture(GPUTextureView* value, String&amp; error);
+bool ShaderVar::SetBuffer(GPUBuffer* value, String&amp; error);
+bool ShaderVar::SetSampler(GPUSampler* value, String&amp; error);
+bool ShaderVar::SetUniform(const void* data, uint32 size, String&amp; error);
+ShaderVar ShaderVar::FindMember(StringView name);
+ShaderVar ShaderVar::operator[](uint32 index);</code></pre>
     <ul>
-      <li>API 先解析路径，再按 Type Record 检查资源大类、shape、access 和数组边界。</li>
+      <li>名称 API 先解析路径并从根 ParameterBlock 返回 ShaderVar；ShaderVar 的成员与数组访问不重新解析完整路径，二者都按 Type Record 检查资源大类、shape、access 和数组边界。</li>
       <li>设置 <code>null</code> 等价于未绑定；当前没有 required/optional 策略，也没有默认资源库。</li>
       <li>一次主资源绑定自动覆盖其 <code>auxiliaryRanges</code> 对应的内部 counter 等物理 mapping；用户不能按内部 role 名直接绑定。</li>
       <li>固定资源数组支持逐元素绑定；首版不要求“一次传入整段数组”的批量 API。</li>
-      <li>Uniform 写入只复制到对应 BlockId 的 CPU byte array；上传到 GPU buffer 的生命周期和 dirty tracking 不在本设计文档中展开。</li>
+      <li>Uniform 写入只复制到对应 ParameterBlock 的 CPU byte array；上传到 GPU buffer 的生命周期和 dirty tracking 不在本设计文档中展开。</li>
     </ul>
 
-    <h3 id="runtime-pseudocode-set">按名称设置资源伪代码</h3>
+    <h3 id="runtime-pseudocode-set">通过 ShaderVar 设置资源伪代码</h3>
     <div class="pseudo">
       <div class="pseudo-header">
-        <strong>ShaderProgramInstance.SetResource</strong>
+        <strong>ShaderVar.SetResource</strong>
         <small>计划实现 · Texture/Buffer/Sampler 公共内部入口</small>
       </div>
       <div class="pseudo-io">
-        <div><strong>输入</strong>完整名称、资源对象、调用 API 期望类型</div>
+        <div><strong>输入</strong>已绑定的 ShaderVar、资源对象、调用 API 期望类型</div>
         <div><strong>不变量</strong>失败不覆盖旧绑定；null 表示清除绑定</div>
         <div><strong>输出</strong>更新后的逻辑绑定槽</div>
       </div>
-      <pre><code>SetResource(path, value, apiExpectedKind):
-    location = TRY(_nameResolver.Resolve(path))
+      <pre><code>ShaderVar.SetResource(value, apiExpectedKind):
+    location = _location
     type = _reflection.Types[location.TypeId]
     REQUIRE(type.Kind == Resource)
     REQUIRE(IsCompatibleApiKind(type.ResourceKind, apiExpectedKind))
@@ -275,8 +281,7 @@ bool SetUniform(StringView path, const void* data, uint32 size, String&amp; erro
             type.Access,
             type.ImageFormat))
 
-    blockState = _parameterState.Block(location.BlockId)
-    slot = blockState.ResourceSlot(
+    slot = _parameterBlock.ResourceSlot(
         location.ResourceRangeIndex,
         location.ResourceIndex)
 
@@ -287,18 +292,22 @@ bool SetUniform(StringView path, const void* data, uint32 size, String&amp; erro
       <p class="pseudo-note">内部 auxiliary range 不暴露名称；提交时从主资源对象派生 counter 等内部 view。</p>
     </div>
 
-    <h3 id="runtime-binding-state">状态存储</h3>
-    <pre><code>ShaderParameterBlockState
+    <h3 id="runtime-binding-state">ParameterBlock 树与提交快照</h3>
+    <pre><code>ShaderParameterBlock
+  blockId
   uniformData[uniformByteSize]
   resources[logicalRange][logicalElement]
-  subBlocks[]</code></pre>
-    <p>资源状态按逻辑位置保存，不按 Vulkan binding 保存。后端提交时才遍历 rangeBindings，把同一逻辑资源映射到 1～N 个物理 descriptor。</p>
+  subBlocks[]                         // block-flavor mapping 的唯一子块
+
+ShaderBindingSnapshot (immutable)
+  logicalResources[(blockId, rangeIndex, resourceIndex)]
+  uniformBuffers[blockId]</code></pre>
+    <p>每个 Instance 从 rootBlockId 递归构造一棵 ParameterBlock 树。资源状态按逻辑位置保存，不按 Vulkan binding 保存；后端提交时只遍历冻结的 snapshot，并以 rangeBindings 将同一逻辑资源映射到 1～N 个物理 descriptor。</p>
 
     <h3 id="runtime-binding-validation">提交前完整性</h3>
     <ol>
-      <li>从 rootBlock 遍历所有可达 block。</li>
-      <li>对每个 simple logical range 的每个元素，检查类型兼容且非空。</li>
-      <li>对 defaultUniformBuffer，确保对应块的 uniform GPU buffer 已可用。</li>
+      <li>第一阶段从 rootBlock 遍历所有可达 block，对每个 simple logical range 的每个元素检查类型兼容且非空，并复制到待冻结 snapshot。</li>
+      <li>第二阶段才对 defaultUniformBuffer 物化对应块的 uniform GPU buffer 并加入 snapshot。</li>
       <li>发现首个缺失资源即生成包含完整路径、期望类型、Program/Variant 的错误。</li>
       <li>任何缺失都中止对应 Draw/Dispatch，不提交部分 descriptor writes。</li>
     </ol>
@@ -311,9 +320,9 @@ bool SetUniform(StringView path, const void* data, uint32 size, String&amp; erro
         <small>计划实现 · 在构造任何 VkWriteDescriptorSet 前执行</small>
       </div>
       <div class="pseudo-io">
-        <div><strong>输入</strong>根参数状态 + Reflection</div>
+        <div><strong>输入</strong>根 ShaderParameterBlock 树 + Reflection</div>
         <div><strong>不变量</strong>只要求用户可绑定主 range；辅助 range 从所有者派生</div>
-        <div><strong>输出</strong>ValidatedBindingSnapshot</div>
+        <div><strong>输出</strong>冻结的 ShaderBindingSnapshot</div>
       </div>
       <pre><code>ValidateAllBindings():
     snapshot = NewBindingSnapshot()
@@ -321,7 +330,7 @@ bool SetUniform(StringView path, const void* data, uint32 size, String&amp; erro
     // Pass 1：只验证逻辑绑定，不分配 GPU 对象、不写 descriptor。
     FOR blockId IN reflection.ReachableBlocksRootFirst:
         block = reflection.ParameterBlocks[blockId]
-        state = parameterState.Block(blockId)
+        state = FindParameterBlock(blockId)
 
         logicalRanges = reflection.Types[block.ElementTypeId].ResourceRanges
         FOR rangeIndex, logicalRange IN Enumerate(logicalRanges):
@@ -343,7 +352,7 @@ bool SetUniform(StringView path, const void* data, uint32 size, String&amp; erro
         block = reflection.ParameterBlocks[blockId]
         CONTINUE_IF(block.DefaultUniformBuffer == null)
 
-        state = parameterState.Block(blockId)
+        state = FindParameterBlock(blockId)
         uniformGpuBuffer = TRY(MaterializeUniformBuffer(
             blockId,
             state.UniformData))
@@ -453,7 +462,7 @@ bool SetUniform(StringView path, const void* data, uint32 size, String&amp; erro
         <small>计划实现 · 先构造完整批次，再调用 Vulkan</small>
       </div>
       <div class="pseudo-io">
-        <div><strong>输入</strong>ValidatedBindingSnapshot + RangeBindings</div>
+        <div><strong>输入</strong>冻结的 ShaderBindingSnapshot + RangeBindings</div>
         <div><strong>不变量</strong>逻辑数组下标只影响 dstArrayElement</div>
         <div><strong>输出</strong>完整 descriptor set 更新批次</div>
       </div>
@@ -588,7 +597,7 @@ CreatePipelineState(desc, backendProgram):
 PrepareAndBind(commandContext, pipelineState):
     REQUIRE(pipelineState.PipelineLayoutFingerprint ==
             _backend.Layout.PipelineLayoutFingerprint)
-    snapshot = TRY(_rootParameters.ValidateAllBindings())
+    snapshot = TRY(_programInstance.ValidateAllBindings())
     sets = TRY(commandContext.AllocateDescriptorSets(_backend.Layout))
     TRY(_backend.DescriptorWriter.BuildAndCommit(snapshot, sets))
     commandContext.BindPipeline(pipelineState.Pipeline)

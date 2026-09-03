@@ -262,6 +262,73 @@ namespace SE
 		return result;
 	}
 
+	const Char* ToString(const ShaderStage value)
+    {
+        switch (value)
+        {
+            case ShaderStage::Vertex:
+                return SE_TEXT("vs");
+            case ShaderStage::Hull:
+                return SE_TEXT("hs");
+            case ShaderStage::Domain:
+                return SE_TEXT("ds");
+            case ShaderStage::Geometry:
+                return SE_TEXT("gs");
+            case ShaderStage::Pixel:
+                return SE_TEXT("ps");
+            case ShaderStage::Compute:
+                return SE_TEXT("cs");
+            default:
+                return SE_TEXT("unknown");
+        }
+    }
+
+    bool ParseShaderStage(const char* text, ShaderStage& stage)
+    {
+        if (text == nullptr)
+        {
+            stage = ShaderStage::Max;
+            return false;
+        }
+
+        const StringAnsi value(text);
+        if (value == "vertex" || value == "vs")
+        {
+            stage = ShaderStage::Vertex;
+            return true;
+        }
+        if (value == "hull" || value == "hs")
+        {
+            stage = ShaderStage::Hull;
+            return true;
+        }
+        if (value == "domain" || value == "ds")
+        {
+            stage = ShaderStage::Domain;
+            return true;
+        }
+        if (value == "geometry" || value == "gs")
+        {
+            stage = ShaderStage::Geometry;
+            return true;
+        }
+        if (value == "fragment" || value == "pixel" || value == "ps")
+        {
+            stage = ShaderStage::Pixel;
+            return true;
+        }
+        if (value == "compute" || value == "cs")
+        {
+            stage = ShaderStage::Compute;
+            return true;
+        }
+
+        stage = ShaderStage::Max;
+        return false;
+    }
+
+
+
 	StringView ToString(MSAALevel value)
 	{
 		const Char* result;

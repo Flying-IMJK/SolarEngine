@@ -249,6 +249,13 @@ namespace SE
 
 		static bool HasExtension(const List<const char*, HeapAllocation>& extensions, const char* name);
 
+		
+		static bool ToVkDescriptorType(const String& value, VkDescriptorType& output);
+
+        static bool ToVkStageFlags(const String& value, VkShaderStageFlags& output);
+
+		
+		static bool ToVulkanShaderStage(const ShaderStage stage, VkShaderStageFlagBits& output);
 
 		/// <summary>
 		/// Converts Flax blend mode to the Vulkan blend factor.
@@ -265,30 +272,20 @@ namespace SE
 		/// </summary>
 		/// <param name="value">The Flax blend operation.</param>
 		/// <returns>The Vulkan blend operation.</returns>
-		static VkBlendOp ToVulkanBlendOp(const BlendingMode::Operation value)
-		{
-			return m_OperationToVkBlendOp[(int32)value];
-		}
+        static VkBlendOp ToVulkanBlendOp(const BlendingMode::Operation value);
 
 		/// <summary>
 		/// Converts Flax comparison function to the Vulkan comparison operation.
 		/// </summary>
 		/// <param name="value">The Flax comparison function.</param>
 		/// <returns>The Vulkan comparison operation.</returns>
-		static VkCompareOp ToVulkanCompareOp(const ComparisonFunc value)
-		{
-			return m_ComparisonFuncToVkCompareOp[(int32)value];
-		}
-
-		static VkBlendFactor ConvertBlend(RHIBlendFactor value);
-
-		static VkBlendOp ConvertBlendOp(RHIBlendOp value);
+        static VkCompareOp ConvertCompareOp(const ComparisonFunc value);
 
 		static VkSamplerAddressMode ConvertTextureAddressMode(RHIAddressMode value, const VkPhysicalDeviceVulkan12Features &features_1_2);
 
 		static VkBorderColor ConvertSamplerBorderColor(RHIBorderColor value);
 
-		static VkStencilOp ConvertStencilOp(RHIStencilOp value);
+		static VkStencilOp ConvertStencilOp(StencilOperation value);
 
 		static VkImageLayout ConvertImageLayout(RHIResourceStateFlag value);
 

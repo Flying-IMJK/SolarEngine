@@ -16,6 +16,7 @@ namespace SE
 	class RenderPassVulkan;
 	class GPUPipelineStateVulkan;
 	class ComputePipelineStateVulkan;
+	class SLC2GraphicsPipelineStateVulkan;
 	class GPUTextureViewVulkan;
 	class GPUTextureVulkan;
 	class GPUBufferVulkan;
@@ -72,6 +73,7 @@ namespace SE
 
 		RenderPassVulkan* _renderPass;
 		GPUPipelineStateVulkan* _currentState;
+		SLC2GraphicsPipelineStateVulkan* _currentSLC2GraphicsState;
 		GPUTextureViewVulkan* _rtDepth;
 		GPUTextureViewVulkan* _rtHandles[GPU_MAX_RT_BINDED];
 		DescriptorResourceVulkan* _cbHandles[GPU_MAX_CB_BINDED];
@@ -87,6 +89,7 @@ namespace SE
 		void UpdateDescriptorSets(const struct SpirvShaderDescriptorInfo& descriptorInfo, class DescriptorSetWriterVulkan& dsWriter, bool& needsWrite);
 		void UpdateDescriptorSets(ComputePipelineStateVulkan* pipelineState);
 		void OnDrawCall();
+		bool OnSLC2DrawCall(SLC2GraphicsPipelineStateVulkan* state, ShaderProgramInstance& instance);
 
 	public:
 		/// <summary>
@@ -145,10 +148,15 @@ namespace SE
 
 	public:
 		void Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ) override;
+		// SLC2 新路径：从 ShaderProgramInstance 冻结绑定快照，再交给 Vulkan 后端绑定 pipeline/descriptor。
+		void Dispatch(ShaderProgramInstance& instance, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ) override;
 		void DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
+        void DispatchIndirect(ShaderProgramInstance& instance, GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
 		void ResolveMultisample(GPUTexture* sourceMultisampleTexture, GPUTexture* destTexture, int32 sourceSubResource, int32 destSubResource, PixelFormat format) override;
 		void DrawInstanced(uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex) override;
+		void DrawInstanced(ShaderProgramInstance& instance, const GPUPipelineState::Description& desc, uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex) override;
 		void DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex) override;
+		void DrawIndexedInstanced(ShaderProgramInstance& instance, const GPUPipelineState::Description& desc, uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex) override;
 		void DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
 		void DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
 

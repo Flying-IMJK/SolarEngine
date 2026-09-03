@@ -8,32 +8,6 @@
 namespace SE
 {
 	/// <summary>
-	/// Stencil operation modes.
-	/// </summary>
-	SE_ENUM(Reflect)
-	enum class StencilOperation
-	{
-		// Keep the existing stencil data.
-		Keep,
-		// Set the stencil data to 0.
-		Zero,
-		// Set the stencil data to the reference value (set via GPUContext::SetStencilRef).
-		Replace,
-		// Increment the stencil value by 1, and clamp the result.
-		IncrementSaturated,
-		// Decrement the stencil value by 1, and clamp the result.
-		DecrementSaturated,
-		// Invert the stencil data.
-		Invert,
-		// Increment the stencil value by 1, and wrap the result if necessary.
-		Increment,
-		// Decrement the stencil value by 1, and wrap the result if necessary.
-		Decrement,
-
-		MAX
-	};
-
-	/// <summary>
 	/// Describes full graphics pipeline state within single object.
 	/// </summary>
 	SE_CLASS(API(Sealed))

@@ -1,10 +1,12 @@
 #include "SlangShaderCompiler.h"
 
-#include "Runtime/ShaderCompilation/Slang/SLC2/SLC2Artifact.h"
-#include "Runtime/ShaderCompilation/Slang/SLC2/SLC2Reader.h"
-#include "Runtime/ShaderCompilation/Slang/SLC2/SLC2Writer.h"
-#include "Runtime/ShaderCompilation/Slang/SlangReflectionBuilder.h"
-#include "Runtime/ShaderCompilation/Slang/SlangShaderFileSystem.h"
+#include <Runtime/EngineContext.h>
+#include <Runtime/Core/Types/Collections/List.h>
+#include <Runtime/ShaderCompilation/Slang/SLC2/SLC2Artifact.h>
+#include <Runtime/ShaderCompilation/Slang/SLC2/SLC2Reader.h>
+#include <Runtime/ShaderCompilation/Slang/SLC2/SLC2Writer.h>
+#include <Runtime/ShaderCompilation/Slang/SlangReflectionBuilder.h>
+#include <Runtime/ShaderCompilation/Slang/SlangShaderFileSystem.h>
 
 #include <slang-com-ptr.h>
 #include <slang-tag-version.h>
@@ -14,33 +16,6 @@ namespace SE
 {
 	namespace
 	{
-		static const char* SolarSlangPreamble = R"(
-[__AttributeUsage(_AttributeTargets.Struct)]
-struct SolarShaderProgramAttribute {};
-
-[__AttributeUsage(_AttributeTargets.Struct)]
-struct SolarShaderStageAttribute
-{
-	string stage;
-	string entry;
-};
-
-[__AttributeUsage(_AttributeTargets.Struct)]
-struct SolarShaderMacroGroupAttribute
-{
-	string members;
-};
-
-#define SHADER_VS(entry) [SolarShaderStage("vertex", #entry)]
-#define SHADER_HS(entry) [SolarShaderStage("hull", #entry)]
-#define SHADER_DS(entry) [SolarShaderStage("domain", #entry)]
-#define SHADER_GS(entry) [SolarShaderStage("geometry", #entry)]
-#define SHADER_PS(entry) [SolarShaderStage("fragment", #entry)]
-#define SHADER_CS(entry) [SolarShaderStage("compute", #entry)]
-#define SHADER_MACRO(...) [SolarShaderMacroGroup(#__VA_ARGS__)]
-#define SHADER_PROGRAM(name, context) [SolarShaderProgram] context struct name {}
-)";
-
 		String FromUtf8(const char* text)
 		{
 			return text ? StringAnsi(text).ToString() : String::Empty;
@@ -88,40 +63,34 @@ struct SolarShaderMacroGroupAttribute
 			return false;
 		}
 
-		SlangStage ToSlangStage(const SlangShaderStage stage)
+		SlangStage ToSlangStage(const ShaderStage stage)
 		{
 			switch (stage)
 			{
-			case SlangShaderStage::Vertex:
+                case ShaderStage::Vertex:
 				return SLANG_STAGE_VERTEX;
-			case SlangShaderStage::Hull:
+                case ShaderStage::Hull:
 				return SLANG_STAGE_HULL;
-			case SlangShaderStage::Domain:
+                case ShaderStage::Domain:
 				return SLANG_STAGE_DOMAIN;
-			case SlangShaderStage::Geometry:
+                case ShaderStage::Geometry:
 				return SLANG_STAGE_GEOMETRY;
-			case SlangShaderStage::Pixel:
+                case ShaderStage::Pixel:
 				return SLANG_STAGE_FRAGMENT;
-			case SlangShaderStage::Compute:
+                case ShaderStage::Compute:
 				return SLANG_STAGE_COMPUTE;
 			default:
 				return SLANG_STAGE_NONE;
 			}
 		}
 
-		const char* GetProfileName(const ShaderCompileShaderModel shaderModel)
+		const char* GetProfileName(const ShaderProfile profile, const FeatureLevel feature)
 		{
-			switch (shaderModel)
+			if (profile == ShaderProfile::DirectX_SM6 || profile == ShaderProfile::PS5 || feature >= FeatureLevel::SM6)
 			{
-			case ShaderCompileShaderModel::SM_6_6:
-				return "sm_6_6";
-			case ShaderCompileShaderModel::SM_6_0:
 				return "sm_6_0";
-			case ShaderCompileShaderModel::SM_5_0:
-				return "sm_5_0";
-			default:
-				return "sm_5_0";
 			}
+			return "sm_5_0";
 		}
 
 		String MakeCompilerBuildTag()
@@ -163,7 +132,7 @@ struct SolarShaderMacroGroupAttribute
 			group.DefaultMember = group.Members.Count() > 0 ? group.Members[0] : String::Empty;
 		}
 
-		bool HasStage(const SlangProgramDeclaration& program, const SlangShaderStage stage)
+		bool HasStage(const SlangProgramDeclaration& program, const ShaderStage stage)
 		{
 			for (int32 i = 0; i < program.Stages.Count(); i++)
 			{
@@ -183,13 +152,14 @@ struct SolarShaderMacroGroupAttribute
 				{
 					if (program.Stages[i].Stage == program.Stages[j].Stage)
 					{
-						error = SE_TEXT("Shader program has duplicated stage: ") + ToString(program.Stages[i].Stage);
+                        error = String::Format(SE_TEXT("Shader program has duplicated stage: {0}"),
+                                               StringView(ToString(program.Stages[i].Stage)));
 						return false;
 					}
 				}
 			}
 
-			const bool hasCS = HasStage(program, SlangShaderStage::Compute);
+			const bool hasCS = HasStage(program, ShaderStage::Compute);
 			if (hasCS)
 			{
 				if (program.Stages.Count() != 1)
@@ -200,18 +170,18 @@ struct SolarShaderMacroGroupAttribute
 				return true;
 			}
 
-			if (!HasStage(program, SlangShaderStage::Vertex))
+			if (!HasStage(program, ShaderStage::Vertex))
 			{
 				error = SE_TEXT("Graphics shader program must contain VS.");
 				return false;
 			}
-			if (!HasStage(program, SlangShaderStage::Pixel))
+			if (!HasStage(program, ShaderStage::Pixel))
 			{
 				error = SE_TEXT("Graphics shader program must contain PS.");
 				return false;
 			}
-			const bool hasHS = HasStage(program, SlangShaderStage::Hull);
-			const bool hasDS = HasStage(program, SlangShaderStage::Domain);
+			const bool hasHS = HasStage(program, ShaderStage::Hull);
+			const bool hasDS = HasStage(program, ShaderStage::Domain);
 			if (hasHS != hasDS)
 			{
 				error = SE_TEXT("HS and DS must appear together.");
@@ -292,7 +262,7 @@ struct SolarShaderMacroGroupAttribute
 						SlangProgramStageDeclaration stageDecl;
 						const String stageName = FromUtf8(stageText, stageSize);
 						const StringAnsi stageNameAnsi(stageName);
-						if (!ParseSlangShaderStage(stageNameAnsi.Get(), stageDecl.Stage))
+						if (!ParseShaderStage(stageNameAnsi.Get(), stageDecl.Stage))
 						{
 							error = SE_TEXT("Unknown shader stage declared on program: ") + program.ProgramId;
 							return false;
@@ -448,14 +418,19 @@ struct SolarShaderMacroGroupAttribute
 
 		bool CreateSession(slang::IGlobalSession* globalSession, SlangShaderFileSystem& fileSystem, const ShaderCompileTarget& target, const ShaderVariantPlan& variant, Slang::ComPtr<slang::ISession>& session, String& error)
 		{
-			if (target.Platform == ShaderTargetPlatform::Unknown || target.Backend == ShaderGraphicsBackend::Unknown || target.ShaderModel == ShaderCompileShaderModel::Unknown)
+			if (target.Platform == ShaderTargetPlatform::Unknown || target.Profile == ShaderProfile::Unknown)
 			{
-				error = SE_TEXT("Shader compile target must specify platform, backend and shader model.");
+				error = SE_TEXT("Shader compile target must specify platform and shader profile.");
 				return false;
 			}
-			if (target.Backend != ShaderGraphicsBackend::Vulkan)
+			if (target.Profile != ShaderProfile::Vulkan_SM5)
 			{
-				error = SE_TEXT("Only Vulkan backend is supported by the current offline Slang compiler.");
+				error = SE_TEXT("Only Vulkan SM5 shader profile is supported by the current offline Slang compiler.");
+				return false;
+			}
+			if (target.Feature != FeatureLevel::SM5)
+			{
+				error = SE_TEXT("Vulkan SM5 shader profile must use SM5 feature level.");
 				return false;
 			}
 
@@ -477,7 +452,14 @@ struct SolarShaderMacroGroupAttribute
 
 			slang::TargetDesc targetDesc = {};
 			targetDesc.format = SLANG_SPIRV;
-			targetDesc.profile = globalSession->findProfile(GetProfileName(target.ShaderModel));
+			targetDesc.profile = globalSession->findProfile(GetProfileName(target.Profile, target.Feature));
+
+			List<slang::CompilerOptionEntry> compilerOptionEntries;
+			slang::CompilerOptionEntry useVulkanEntryPointNameOption = {};
+			useVulkanEntryPointNameOption.name = slang::CompilerOptionName::VulkanUseEntryPointName;
+			useVulkanEntryPointNameOption.value.kind = slang::CompilerOptionValueKind::Int;
+			useVulkanEntryPointNameOption.value.intValue0 = 1;
+			compilerOptionEntries.Add(useVulkanEntryPointNameOption);
 
 			slang::SessionDesc sessionDesc = {};
 			sessionDesc.targetCount = 1;
@@ -486,6 +468,8 @@ struct SolarShaderMacroGroupAttribute
 			sessionDesc.preprocessorMacros = macroDescs.Count() == 0 ? nullptr : macroDescs.Get();
 			sessionDesc.fileSystem = fileSystem.GetSlangFileSystem();
 			sessionDesc.defaultMatrixLayoutMode = SLANG_MATRIX_LAYOUT_ROW_MAJOR;
+			sessionDesc.compilerOptionEntries = compilerOptionEntries.Get();
+			sessionDesc.compilerOptionEntryCount = compilerOptionEntries.Count();
 
 			if (!SlangSucceeded(globalSession->createSession(sessionDesc, session.writeRef())))
 			{
@@ -502,9 +486,9 @@ struct SolarShaderMacroGroupAttribute
 			{
 				sourcePath = SE_TEXT("memory.slang");
 			}
-			const String source = String(StringAnsi(SolarSlangPreamble)) + SE_TEXT("\n") + request.SourceCode;
+
 			const StringAnsi sourcePathAnsi(sourcePath);
-			const StringAnsi sourceAnsi(source);
+            const StringAnsi sourceAnsi(request.SourceCode);
 			return session->loadModuleFromSourceString("SolarShaderModule", sourcePathAnsi.Get(), sourceAnsi.Get(), diagnostics.writeRef());
 		}
 
@@ -604,7 +588,10 @@ struct SolarShaderMacroGroupAttribute
 			return result;
 		}
 
-		Slang::ComPtr<SlangShaderFileSystem> fileSystem(Slang::INIT_ATTACH, new SlangShaderFileSystem(request.SourcePath));
+		List<String> rootSourcePath;
+        rootSourcePath.Add(EngineContext::StartupFolder);
+
+		Slang::ComPtr<SlangShaderFileSystem> fileSystem(Slang::INIT_ATTACH, new SlangShaderFileSystem(rootSourcePath));
 
 		ShaderVariantPlan baselineVariant;
 		Slang::ComPtr<slang::ISession> baselineSession;
@@ -771,8 +758,14 @@ struct SolarShaderMacroGroupAttribute
 					SLC2VariantRecord variantRecord;
 					variantRecord.Variant = variant.Variant;
 					SlangReflectionBuilder reflectionBuilder;
+					List<ShaderStage> reflectionStages;
+					reflectionStages.Resize(baselineProgram.Stages.Count());
+					for (int32 stageIndex = 0; stageIndex < baselineProgram.Stages.Count(); stageIndex++)
+					{
+						reflectionStages[stageIndex] = baselineProgram.Stages[stageIndex].Stage;
+					}
 					// linked component 已经完成当前 Target/Variant 的组合，编译期在这里固化运行时所需的反射 IR。
-					if (!reflectionBuilder.Build(baselineProgram.ProgramId, targetRecord.TargetKey, variant.Variant, layout, variantRecord.Layout, error))
+					if (!reflectionBuilder.Build(baselineProgram.ProgramId, targetRecord.TargetKey, variant.Variant, linked, reflectionStages, 0, layout, variantRecord.Layout, error))
 					{
 						AddDiagnostic(error);
 						result.CompileMessage.Text = m_Diagnostics;

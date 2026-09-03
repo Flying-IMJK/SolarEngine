@@ -21,7 +21,7 @@ namespace SE
 	class SE_API_RUNTIME ShaderVariantPlanner
 	{
 	public:
-		static bool BuildAll(const List<ShaderVariantGroup>& groups, List<ShaderVariantPlan>& variants, String& error);
+        static bool BuildAll(const List<ShaderVariantGroup>& groups, List<ShaderVariantPlan>& variants, String& error);
 		static bool Normalize(const List<ShaderVariantGroup>& groups, const List<String>& requestedDefines, ShaderVariantPlan& variant, String& error);
 
 	private:

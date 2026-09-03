@@ -666,6 +666,14 @@ InternType(raw, internedByKey, records):
       <li>块 flavor 递归创建 subBlockId；同一非根 block 只有一个父出现位置，块图必须无环。</li>
     </ol>
     <p class="note">Slang 的 binding range 与 descriptor range 是不同层级。实现必须使用 <code>getFieldBindingRangeOffset</code>、binding-range descriptor-set/first-descriptor-range 查询等 API 建立显式映射，不能把两个索引当成同一个索引。</p>
+    <h4>阶段 0 固定流程</h4>
+    <ol>
+      <li>为当前具体 CB/PB occurrence 预留稳定 <code>blockId</code>，并以 element TypeLayout 构造 <code>ParameterBlockRecord</code>。</li>
+      <li>按原 <code>rangeIndex</code> 建立与 element type <code>resourceRanges[]</code> 等长的 <code>rangeBindings[]</code>；禁止按 descriptor 枚举顺序推断 logical range。</li>
+      <li>先以 <code>getSubObjectRangeBindingRangeIndex()</code> 建立 binding-range 到 sub-object 的反向索引。CB/PB range 必须恰有一个 sub-object，使用其 offset VariableLayout 进入子块并递归生成唯一 <code>SubBlockId</code>。</li>
+      <li>simple range 只使用 binding-range descriptor-set、first-descriptor-range 与 descriptor-range-count 查询枚举其物理 mapping；每条 mapping 的 descriptor count 必须等于 logical range count。</li>
+      <li>CB/PB mapping 不携带 descriptor ranges；simple mapping 不携带 <code>SubBlockId</code>。递归结束后全部 block 组成单根、无环、非共享的树。</li>
+    </ol>
 
     <h3 id="reflection-pseudocode-blocks">ParameterBlock 与 Range Mapping 伪代码</h3>
     <div class="pseudo">
@@ -827,13 +835,15 @@ BuildStageMask(category, absoluteSet, absoluteBinding):
         IF used:
             mask.Add(item.Stage)
 
-    // Layout 仍保留已声明但被目标代码优化掉的逻辑资源；
-    // 此时用完整 Program Stage 集作为合法、确定性的可见性上界。
-    IF mask.IsEmpty:
-        mask = orderedStages
+    return StableSort(mask, StableStageOrder)
 
-    return StableSort(mask, StableStageOrder)</code></pre>
-      <p class="pseudo-note"><code>stageMask</code> 表示 Vulkan Layout 允许访问该 binding 的 Stage 集；对实际使用的资源使用精确 metadata 结果，对所有 Stage 均未使用的已声明资源使用完整 Program Stage 集。metadata 查询失败是编译失败，不静默回退。</p>
+BuildPrunedRange(candidateRange):
+    activeDescriptors = candidateRange.DescriptorRanges.Filter(
+        descriptor =&gt; !BuildStageMask(descriptor.category, descriptor.set, descriptor.binding).IsEmpty)
+    IF activeDescriptors.IsEmpty:
+        return null
+    return candidateRange.With(activeDescriptors)</code></pre>
+      <p class="pseudo-note"><code>stageMask</code> 只表示实际访问该 binding 的 Stage 集。若当前 <code>ProgramId × TargetKey × Variant</code> 的全部 Stage 都未使用 descriptor，则 descriptor 不进入 IR；其 logical range 与删空的子块递归裁剪，绝不使用完整 Stage 集或 <code>all</code> 回退。default Uniform Buffer 的 metadata 粒度是整个物理 UBO：它全 Stage 未使用时，连同该块全部 ordinary Uniform 一起裁剪；它被任一 Stage 使用时，保留完整 ordinary 数据布局。metadata 查询失败是编译失败。</p>
     </div>
   </section>
 
@@ -848,8 +858,8 @@ BuildStageMask(category, absoluteSet, absoluteBinding):
         <tr><td>数组</td><td>elementCount 有限且 &gt; 0；不存在无界；数组闭包不含块。</td><td>成员路径与类型链。</td></tr>
         <tr><td>块</td><td>单根、无环、非根单父；块 elementType 不是 array。</td><td>blockId 和父 range。</td></tr>
         <tr><td>Builder BindingPath</td><td>deepest 指针属于当前链；container/element 成对；块 binding range 与 sub-object range 一对一；所有类别累计有限且无 uint64/uint32 溢出。</td><td>Program、类型/成员路径、category 和 Slang 原值。</td></tr>
-        <tr><td>Uniform</td><td><code>uniformByteSize == 0 ⇔ defaultUniformBuffer == null</code>。</td><td>blockId、size 和 binding。</td></tr>
-        <tr><td>Range</td><td>N 个 logical ranges 对应恰好 N 个 rangeBindings，rangeIndex 完整覆盖；BaseIndex 等于 count 前缀和；counter 的 OwnerRangeOffset 指向同类型主 range，Resource 的正向 RangeOffset 回指同一 counter。</td><td>blockId、缺失/重复 index 或 owner。</td></tr>
+        <tr><td>Uniform</td><td><code>uniformByteSize == 0 ⇔ defaultUniformBuffer == null</code>；全 Stage 未使用的 UBO 必须连同 ordinary Uniform 一起缺席，已保留 UBO 不按字段继续裁剪。</td><td>blockId、size 和 binding。</td></tr>
+        <tr><td>Range</td><td>N 个裁剪后的 logical ranges 对应恰好 N 个 rangeBindings，rangeIndex 完整覆盖；BaseIndex 等于 count 前缀和；全 Stage 未使用的 simple range 与删空子块不得保留。</td><td>blockId、缺失/重复 index 或 owner。</td></tr>
         <tr><td>物理描述符</td><td>count &gt; 0 且等于逻辑 count；Base=0、Stride=1；同 set/binding 只有一个逻辑写入所有者且定义无冲突。</td><td>set、binding、role 与两个 owner。</td></tr>
         <tr><td>不支持项</td><td>无 Push Constant、EntryPoint uniform/resource 参数、块数组或 unbounded range。</td><td>Program/Stage/参数或类型路径。</td></tr>
         <tr><td>Fingerprint</td><td>重算结果与 SHA-256 的 64 个小写十六进制字符一致。</td><td>保存值和计算值。</td></tr>
@@ -1033,6 +1043,7 @@ BuildStageMask(category, absoluteSet, absoluteBinding):
       <li>重建规范物理布局并验证 pipelineLayoutFingerprint。</li>
       <li>构造不可变 <code>ShaderProgramArtifact</code>；仅全部成功后对调用者可见。</li>
     </ol>
+    <p>布局验证先检查类型与 ID 引用，再按 <code>rootBlockId</code> 验证 ParameterBlock 树：每个 block 的 <code>rangeBindings[]</code> 必须覆盖 element type 的全部 logical range；block/simple mapping 字段互斥；每个子块只有一个父块，且不存在环或不可达块。任一失败都拒绝整个 Artifact。</p>
 
     <h3 id="slc2-pseudocode-read">严格 Reader 伪代码</h3>
     <div class="pseudo">

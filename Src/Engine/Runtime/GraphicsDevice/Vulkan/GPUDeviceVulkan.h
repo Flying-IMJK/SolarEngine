@@ -55,6 +55,8 @@ namespace SE
 
 		GPUShader* CreateShader(const StringView& name) override;
 
+		SLC2GPUShader* CreateSLC2Shader(const StringView& name) override;
+
 //		virtual GPUTimerQuery* CreateTimerQuery() = 0;
 
 		GPUBuffer* CreateBuffer(const StringView& name) override;

@@ -4,8 +4,10 @@
 
 #include "Runtime/API.h"
 #include "Runtime/Graphics/Base/PixelFormat.h"
+#include "Runtime/Graphics/Base/GPUPipelineState.h"
 #include "Viewport.h"
 #include "Runtime/Core/Scripting/ScriptingObject.h"
+#include "Runtime/Core/Types/Strings/String.h"
 
 namespace SE
 {
@@ -22,6 +24,7 @@ namespace SE
 	class GPUResourceView;
 	class GPUTextureView;
 	class GPUBufferView;
+	class ShaderProgramInstance;
 
 	// Gets the GPU texture view. Checks if pointer is not null and texture has one or more mip levels loaded.
 	#define GET_TEXTURE_VIEW_SAFE(t) (t && t->ResidentMipLevels() > 0 ? t->View() : nullptr)
@@ -169,12 +172,31 @@ namespace SE
 		virtual void Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ) = 0;
 
 		/**
+		 * Executes an SLC2 compute shader program instance.
+		 * @param instance The SLC2 shader program instance to execute.
+		 * @param threadGroupCountX The number of groups dispatched in the x direction.
+		 * @param threadGroupCountY The number of groups dispatched in the y direction.
+		 * @param threadGroupCountZ The number of groups dispatched in the z direction.
+		 * @param error The dispatch error output.
+		 */
+		virtual void Dispatch(ShaderProgramInstance& instance, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ) = 0;
+
+		/**
 		 * Executes a command list from a thread group. Buffer must contain GPUDispatchIndirectArgs.
 		 * @param shader The compute shader program to execute.
 		 * @param bufferForArgs The buffer with drawing arguments.
 		 * @param offsetForArgs The aligned byte offset for arguments.
 		 */
 		virtual void DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* bufferForArgs, uint32 offsetForArgs) = 0;
+
+		/**
+		 * Executes an SLC2 compute shader program instance from an indirect dispatch argument buffer. Buffer must contain GPUDispatchIndirectArgs.
+		 * @param instance The SLC2 shader program instance to execute.
+		 * @param bufferForArgs The buffer with dispatch arguments.
+		 * @param offsetForArgs The aligned byte offset for arguments.
+		 * @param error The dispatch error output.
+		 */
+		virtual void DispatchIndirect(ShaderProgramInstance& instance, GPUBuffer* bufferForArgs, uint32 offsetForArgs) = 0;
 
 		/**
 		 * Resolves the multisampled texture by performing a copy of the resource into a non-multisampled resource.
@@ -232,6 +254,17 @@ namespace SE
 		virtual void DrawInstanced(uint32 verticesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0) = 0;
 
 		/**
+		 * 使用 SLC2 ShaderProgramInstance 绘制非索引图元。
+		 * @param instance SLC2 shader program instance。
+		 * @param desc 固定图形管线状态；shader stage 来自 instance，不读取 desc.VS/desc.PS 作为 shader。
+		 * @param verticesCount 顶点数量。
+		 * @param instanceCount 实例数量。
+		 * @param startInstance 起始实例。
+		 * @param startVertex 起始顶点。
+		 */
+		virtual void DrawInstanced(ShaderProgramInstance& instance, const GPUPipelineState::Description& desc, uint32 verticesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0) = 0;
+
+		/**
 		 * Draws the indexed primitives.
 		 * @param indicesCount The indices count.
 		 * @param startVertex A value added to each index before reading a vertex from the vertex buffer.
@@ -251,6 +284,18 @@ namespace SE
 		 * @param startIndex The location of the first index read by the GPU from the index buffer.
 		 */
 		virtual void DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0, int32 startIndex = 0) = 0;
+
+		/**
+		 * 使用 SLC2 ShaderProgramInstance 绘制索引图元。
+		 * @param instance SLC2 shader program instance。
+		 * @param desc 固定图形管线状态；shader stage 来自 instance，不读取 desc.VS/desc.PS 作为 shader。
+		 * @param indicesCount 索引数量。
+		 * @param instanceCount 实例数量。
+		 * @param startInstance 起始实例。
+		 * @param startVertex 顶点偏移。
+		 * @param startIndex 起始索引。
+		 */
+		virtual void DrawIndexedInstanced(ShaderProgramInstance& instance, const GPUPipelineState::Description& desc, uint32 indicesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0, int32 startIndex = 0) = 0;
 
 		/**
 		 * Draws the instanced GPU-generated primitives. Buffer must contain GPUDrawIndirectArgs.

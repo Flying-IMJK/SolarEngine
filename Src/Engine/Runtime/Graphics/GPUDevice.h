@@ -14,6 +14,7 @@ namespace SE
 	class GPUContext;
 	class GPUTexture;
 	class GPUShader;
+	class SLC2GPUShader;
 	class GPUBuffer;
 	class GPUSampler;
 	class GPUSwapChain;
@@ -121,6 +122,8 @@ namespace SE
 		virtual GPUTexture* CreateTexture(const StringView& name = StringView::Empty) = 0;
 
 		virtual GPUShader* CreateShader(const StringView& name = StringView::Empty) = 0;
+
+		virtual SLC2GPUShader* CreateSLC2Shader(const StringView& name = StringView::Empty) = 0;
 
 //		virtual GPUTimerQuery* CreateTimerQuery() = 0;
 

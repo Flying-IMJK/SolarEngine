@@ -11,7 +11,9 @@
 #include "GPUShaderProgramVulkan.h"
 #include "GPUShaderVulkan.h"
 #include "GPUSamplerVulkan.h"
+#include "SLC2ShaderProgramVulkan.h"
 #include "Runtime/Core/Math/Rectangle.h"
+#include "Runtime/Graphics/Shaders/ShaderProgramInstance.h"
 
 namespace SE
 {
@@ -38,6 +40,7 @@ namespace SE
 		, _device(device)
 		, _queue(queue)
 		, _cmdBufferManager(New<CmdBufferManagerVulkan>(device, this))
+		, _currentSLC2GraphicsState(nullptr)
 	{
 		Platform::MemoryClear(_rtHandles, sizeof(GPUTextureViewVulkan*) * GPU_MAX_RT_BINDED );
 		Platform::MemoryClear(_cbHandles, sizeof(DescriptorResourceVulkan*) * GPU_MAX_CB_BINDED );
@@ -333,6 +336,75 @@ namespace SE
 		_rtDirtyFlag = false;
 	}
 
+	bool GPUContextVulkan::OnSLC2DrawCall(SLC2GraphicsPipelineStateVulkan* state, ShaderProgramInstance& instance)
+	{
+		if (state == nullptr)
+		{
+			LOG_ERROR("Graphic", "SLC2 draw requires a graphics pipeline state.");
+			return false;
+		}
+
+		ShaderBindingSnapshot snapshot;
+		// SLC2 graphics 与 compute 一样，先冻结 instance 的可变绑定状态，再交给 Vulkan descriptor 层消费。
+		if (!instance.ValidateAllBindings(snapshot))
+		{
+			return false;
+		}
+
+		SLC2ShaderProgram* shaderProgram = instance.GetProgram();
+		if (shaderProgram == nullptr)
+		{
+			LOG_ERROR("Graphic", "SLC2 draw requires an initialized shader program instance.");
+			return false;
+		}
+		SLC2ShaderProgramVulkan* shaderProgramVulkan = static_cast<SLC2ShaderProgramVulkan*>(shaderProgram);
+
+		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		if (_rtDirtyFlag && cmdBuffer->IsInsideRenderPass())
+		{
+			EndRenderPass();
+		}
+
+		if (!shaderProgramVulkan->PrepareAndBindGraphicsDescriptors(this, snapshot, state))
+		{
+			return false;
+		}
+
+		const auto vertexInputState = state->GetVertexInputState();
+		const int32 missingVBs = vertexInputState->vertexBindingDescriptionCount - _vbCount;
+		if (missingVBs > 0)
+		{
+			VkBuffer buffers[GPU_MAX_VB_BINDED];
+			VkDeviceSize offsets[GPU_MAX_VB_BINDED] = {};
+			for (int32 index = 0; index < missingVBs; index++)
+			{
+				buffers[index] = _device->dummyResources.GetDummyVertexBuffer()->GetHandle();
+			}
+			vkCmdBindVertexBuffers(cmdBuffer->GetHandle(), _vbCount, missingVBs, buffers, offsets);
+		}
+
+		_currentState = nullptr;
+		_currentSLC2GraphicsState = state;
+		if (cmdBuffer->IsOutsideRenderPass())
+		{
+			BeginRenderPass();
+		}
+		else if (_barriers.HasBarrier())
+		{
+			EndRenderPass();
+			BeginRenderPass();
+		}
+
+		const VkPipeline pipeline = state->GetState(_renderPass);
+		if (pipeline == VK_NULL_HANDLE)
+		{
+			return false;
+		}
+		vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		_rtDirtyFlag = false;
+		return true;
+	}
+
 	void GPUContextVulkan::AddImageBarrier(VkImage image, VkImageLayout srcLayout, VkImageLayout dstLayout, const VkImageSubresourceRange& subresourceRange, GPUTextureViewVulkan* handle)
 	{
 #if VK_ENABLE_BARRIERS_BATCHING
@@ -594,7 +666,7 @@ namespace SE
 		framebufferKey.attachmentCount = _rtCount;
 		RenderTargetLayoutVulkan layout;
 		layout.RTsCount = _rtCount;
-		layout.BlendEnable = _currentState && _currentState->blendEnable;
+		layout.BlendEnable = _currentState ? _currentState->blendEnable : (_currentSLC2GraphicsState != nullptr && _currentSLC2GraphicsState->blendEnable);
 		layout.DepthFormat = _rtDepth ? _rtDepth->GetFormat() : PixelFormat::Undefined;
 		for (int32 i = 0; i < GPU_MAX_RT_BINDED; i++)
 		{
@@ -680,6 +752,7 @@ namespace SE
 		_stencilRef = 0;
 		_renderPass = nullptr;
 		_currentState = nullptr;
+		_currentSLC2GraphicsState = nullptr;
 		_rtDepth = nullptr;
 		Platform::MemoryClear(_rtHandles, sizeof(_rtHandles));
 		Platform::MemoryClear(_cbHandles, sizeof(_cbHandles));
@@ -870,6 +943,46 @@ namespace SE
 		vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 0, nullptr);
 	}
 
+	void GPUContextVulkan::Dispatch(ShaderProgramInstance& instance, const uint32 threadGroupCountX, const uint32 threadGroupCountY, const uint32 threadGroupCountZ)
+	{
+		ShaderBindingSnapshot snapshot;
+		// SLC2 dispatch 不直接读取可变 ParameterBlock；先冻结成快照，再由 Vulkan 后端写 descriptor。
+		if (!instance.ValidateAllBindings(snapshot))
+		{
+			return;
+		}
+
+		SLC2ShaderProgram* shaderProgram = instance.GetProgram();
+		if (shaderProgram == nullptr)
+		{
+			LOG_ERROR("Graphics", "Compute dispatch requires an initialized shader program instance.");
+			return;
+		}
+
+		SLC2ShaderProgramVulkan* shaderProgramVulkan = static_cast<SLC2ShaderProgramVulkan*>(shaderProgram);
+		SLC2ComputePipelineStateVulkan* pipelineState = shaderProgramVulkan->GetOrCreateComputeState();
+		if (pipelineState == nullptr)
+		{
+			return;
+		}
+
+		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		if (cmdBuffer->IsInsideRenderPass())
+		{
+			EndRenderPass();
+		}
+
+		vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, pipelineState->GetHandle());
+		if (!shaderProgramVulkan->PrepareAndBindComputeDescriptors(this, snapshot))
+		{
+			return;
+		}
+		FlushBarriers();
+
+		vkCmdDispatch(cmdBuffer->GetHandle(), threadGroupCountX, threadGroupCountY, threadGroupCountZ);
+		vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 0, nullptr);
+	}
+
 	void GPUContextVulkan::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 	{
 		ENGINE_ASSERT(shader && bufferForArgs);
@@ -901,6 +1014,56 @@ namespace SE
 		// TODO: optimize it by moving inputs/outputs into higher-layer so eg. Global SDF can manually optimize it
 		vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr,
 			0, nullptr, 0, nullptr);
+	}
+
+	void GPUContextVulkan::DispatchIndirect(ShaderProgramInstance& instance, GPUBuffer* bufferForArgs, const uint32 offsetForArgs)
+	{
+		if (bufferForArgs == nullptr)
+		{
+            LOG_ERROR("Graphics", "Indirect compute dispatch requires an argument buffer.");
+			return;
+		}
+
+		ShaderBindingSnapshot snapshot;
+		// indirect 路径与直接 dispatch 使用同一套 SLC2 pipeline/descriptor 绑定流程，只额外绑定参数 buffer。
+		if (!instance.ValidateAllBindings(snapshot))
+		{
+			return;
+		}
+
+		SLC2ShaderProgram* shaderProgram = instance.GetProgram();
+		if (shaderProgram == nullptr)
+		{
+            LOG_ERROR("Graphics", "Indirect compute dispatch requires an initialized shader program instance.");
+			return;
+		}
+		SLC2ShaderProgramVulkan* shaderProgramVulkan = static_cast<SLC2ShaderProgramVulkan*>(shaderProgram);
+		SLC2ComputePipelineStateVulkan* pipelineState = shaderProgramVulkan->GetOrCreateComputeState();
+		if (pipelineState == nullptr)
+		{
+			return;
+		}
+
+		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		if (cmdBuffer->IsInsideRenderPass())
+		{
+			EndRenderPass();
+		}
+
+		const auto bufferForArgsVulkan = static_cast<GPUBufferVulkan*>(bufferForArgs);
+		vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, pipelineState->GetHandle());
+		if (!shaderProgramVulkan->PrepareAndBindComputeDescriptors(this, snapshot))
+		{
+			return;
+		}
+		AddBufferBarrier(bufferForArgsVulkan, VK_ACCESS_INDIRECT_COMMAND_READ_BIT);
+		FlushBarriers();
+
+		vkCmdDispatchIndirect(cmdBuffer->GetHandle(), bufferForArgsVulkan->GetHandle(), offsetForArgs);
+		vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr,
+			0, nullptr, 0, nullptr);
+
+		return;
 	}
 
 	void GPUContextVulkan::ResolveMultisample(GPUTexture* sourceMultisampleTexture,
@@ -960,6 +1123,31 @@ namespace SE
 //		RENDER_STAT_DRAW_CALL(verticesCount * instanceCount, verticesCount * instanceCount / 3);
 	}
 
+	void GPUContextVulkan::DrawInstanced(ShaderProgramInstance& instance,
+		const GPUPipelineState::Description& desc,
+		uint32 verticesCount,
+		uint32 instanceCount,
+		int32 startInstance,
+		int32 startVertex)
+	{
+		SLC2ShaderProgram* shaderProgram = instance.GetProgram();
+		if (shaderProgram == nullptr)
+		{
+			LOG_ERROR("Graphic", "SLC2 draw requires an initialized shader program instance.");
+			return;
+		}
+
+		SLC2ShaderProgramVulkan* shaderProgramVulkan = static_cast<SLC2ShaderProgramVulkan*>(shaderProgram);
+		SLC2GraphicsPipelineStateVulkan* pipelineState = shaderProgramVulkan->GetOrCreateGraphicsState(desc);
+		if (!OnSLC2DrawCall(pipelineState, instance))
+		{
+			return;
+		}
+
+		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		vkCmdDraw(cmdBuffer->GetHandle(), verticesCount, instanceCount, startVertex, startInstance);
+	}
+
 	void GPUContextVulkan::DrawIndexedInstanced(uint32 indicesCount,
 		uint32 instanceCount,
 		int32 startInstance,
@@ -971,6 +1159,32 @@ namespace SE
 		vkCmdDrawIndexed(cmdBuffer->GetHandle(), indicesCount, instanceCount, startIndex, startVertex, startInstance);
 //		RENDER_STAT_DRAW_CALL(0, indicesCount / 3 * instanceCount);
 
+	}
+
+	void GPUContextVulkan::DrawIndexedInstanced(ShaderProgramInstance& instance,
+		const GPUPipelineState::Description& desc,
+		uint32 indicesCount,
+		uint32 instanceCount,
+		int32 startInstance,
+		int32 startVertex,
+		int32 startIndex)
+	{
+		SLC2ShaderProgram* shaderProgram = instance.GetProgram();
+		if (shaderProgram == nullptr)
+		{
+			LOG_ERROR("Graphic", "SLC2 indexed draw requires an initialized shader program instance.");
+			return;
+		}
+
+		SLC2ShaderProgramVulkan* shaderProgramVulkan = static_cast<SLC2ShaderProgramVulkan*>(shaderProgram);
+		SLC2GraphicsPipelineStateVulkan* pipelineState = shaderProgramVulkan->GetOrCreateGraphicsState(desc);
+		if (!OnSLC2DrawCall(pipelineState, instance))
+		{
+			return;
+		}
+
+		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		vkCmdDrawIndexed(cmdBuffer->GetHandle(), indicesCount, instanceCount, startIndex, startVertex, startInstance);
 	}
 	void GPUContextVulkan::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 	{
@@ -1214,9 +1428,10 @@ namespace SE
 
 	void GPUContextVulkan::SetState(GPUPipelineState* state)
 	{
-		if (_currentState != state)
+		if (_currentState != state || _currentSLC2GraphicsState != nullptr)
 		{
 			_currentState = static_cast<GPUPipelineStateVulkan*>(state);
+			_currentSLC2GraphicsState = nullptr;
 			_psDirtyFlag = true;
 		}
 	}
@@ -1252,6 +1467,7 @@ namespace SE
 	{
 		FlushState();
 		_currentState = nullptr;
+		_currentSLC2GraphicsState = nullptr;
 
 		// Execute commands
 		_cmdBufferManager->SubmitActiveCmdBuffer();

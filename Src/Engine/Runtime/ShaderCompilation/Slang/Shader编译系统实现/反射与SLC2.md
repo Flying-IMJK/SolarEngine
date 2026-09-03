@@ -267,10 +267,18 @@ Counter：
 - 每个具体 CB/PB 出现位置创建独立 block。
 - `uniformByteSize > 0` 时必须有 `defaultUniformBuffer`。
 - `uniformByteSize == 0` 时 `defaultUniformBuffer = null`。
-- `rangeBindings[]` 数量必须等于 element type 的 `resourceRanges[]` 数量。
+- `rangeBindings[]` 数量必须等于当前 Variant 裁剪后的 element type `resourceRanges[]` 数量。
 - block flavor 必须有一个 `SubBlockId` 且没有 descriptor ranges。
 - simple flavor 必须有 descriptor ranges 且没有 `SubBlockId`。
 - 块图无环；非根 block 单父。
+
+阶段 0 的固定构建流程：
+
+1. 为当前具体 CB/PB occurrence 预留稳定 `blockId`，并以其 element TypeLayout 构造 `ParameterBlockRecord`。
+2. 读取 `getBindingRangeCount()`，按原 `rangeIndex` 建立候选 range；根据当前 Variant 的活动物理 descriptor 裁剪无活动 simple range 与删空的块子树，再压紧为与裁剪后 element type `resourceRanges[]` 等长的 `rangeBindings[]`；禁止按 descriptor 枚举顺序推断 range 对应关系。
+3. 先用 `getSubObjectRangeBindingRangeIndex()` 将 sub-object ranges 反向索引到 binding range。CB/PB range 必须恰好命中一个 sub-object；读取 offset/spaceOffset，使用 offset VariableLayout 进入子块并递归生成唯一 `SubBlockId`。
+4. simple range 只使用 `getBindingRangeDescriptorSetIndex()`、`getBindingRangeFirstDescriptorRangeIndex()` 和 `getBindingRangeDescriptorRangeCount()` 枚举其 1-N 条 descriptor mapping。每条 mapping 的 `DescriptorCount` 必须等于 logical range 的有限 `Count`。
+5. CB/PB mapping 不携带 descriptor ranges；simple mapping 不携带 `SubBlockId`。递归结束后，全部 block 从 root 组成单根、无环、非共享的树。
 
 Sub-object 是独立索引域：
 
@@ -289,11 +297,13 @@ StructuredBuffer：
 
 从 linked component 的 `getEntryPointMetadata()` 查询：
 
-- 以绝对 `(set, binding)` 判断每个 Stage 是否使用。
+- 以 descriptor 的绝对 `(category, set, binding)` 判断每个 Stage 是否使用。
 - 同一物理 binding 多 Stage 出现时，descriptor type/count/flags 必须一致。
 - Stage mask 取并集。
 - metadata 查询失败是编译失败。
-- 如果 declared 资源被优化到所有 Stage 都未使用，Stage mask 使用完整 Program Stage 集合作为确定性上界。
+- 如果 descriptor 在当前 `ProgramId × TargetKey × Variant` 的所有 Stage 中都未使用，则不写入该 descriptor；全部物理 mapping 都未使用的 logical range 也不写入，随后递归删除删空的块子树。
+- `defaultUniformBuffer` 在全部 Stage 未使用时，连同该块的全部 ordinary Uniform、`uniformByteSize` 和 UBO descriptor 一起裁剪；只要 UBO 被任一 Stage 使用，则保留整个 UBO 数据布局。Slang metadata 只能按物理 binding 判断使用，不能对已保留 UBO 的普通字段再做独立 DCE。
+- 不写入 `all` 或完整 Stage 集作为回退；保留 descriptor 的 Stage mask 只能由实际使用它的 Stage 构成。
 
 ## IR Validator
 
@@ -317,6 +327,10 @@ Writer 和 Reader 共用同一个 Validator。
 - rangeIndex 完整覆盖
 - `BaseIndex` 为 count 前缀和
 - descriptor count 等于 logical count
+- 每个 block 的 `rangeBindings[]` 与其 element type 的 logical range 按 `rangeIndex` 完整一一对应
+- range/type/block 均为裁剪后的树：root 允许为空；非根 block 与 type 不得作为孤儿保留
+- block flavor 只有 `SubBlockId`，simple flavor 只有 descriptor ranges
+- 每个 `SubBlockId` 有效、非根 block 只有一个父 block、块图无环且全部从 root 可达
 - physical `(set,binding)` 写入所有者唯一
 - fingerprint 重算一致
 
@@ -378,6 +392,8 @@ SLC2Artifact
 
 Reader 不调用 Slang，不反射 SPIR-V，不尝试修复旧 cache。
 
+其中布局验证先检查类型与 ID 引用，再按 `rootBlockId` 验证 ParameterBlock 树：每个 block 的 `rangeBindings[]` 必须覆盖 element type 的所有 logical range；block/simple mapping 的字段必须互斥；每个子块只能有一个父块，且不存在环或不可达块。任何失败都拒绝整个 Artifact。
+
 ## PipelineLayoutFingerprint
 
 输入：
@@ -414,4 +430,3 @@ LowerHex(SHA-256(UTF8(CanonicalPipelineLayoutText)))
 - arrayElementBase
 - logicalElementStride
 - 当前绑定对象
-

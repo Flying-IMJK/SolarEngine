@@ -243,69 +243,111 @@ namespace SE
 				return true;
 		}
 		return false;
-	}
+    }
 
-	VkBlendFactor VulkanTool::ConvertBlend(RHIBlendFactor value)
-	{
-		switch (value)
-		{
-		case RHIBlendFactor::ZERO:
-			return VK_BLEND_FACTOR_ZERO;
-		case RHIBlendFactor::ONE:
-			return VK_BLEND_FACTOR_ONE;
-		case RHIBlendFactor::SRC_COLOR:
-			return VK_BLEND_FACTOR_SRC_COLOR;
-		case RHIBlendFactor::INV_SRC_COLOR:
-			return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-		case RHIBlendFactor::SRC_ALPHA:
-			return VK_BLEND_FACTOR_SRC_ALPHA;
-		case RHIBlendFactor::INV_SRC_ALPHA:
-			return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		case RHIBlendFactor::DEST_ALPHA:
-			return VK_BLEND_FACTOR_DST_ALPHA;
-		case RHIBlendFactor::INV_DEST_ALPHA:
-			return VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
-		case RHIBlendFactor::DEST_COLOR:
-			return VK_BLEND_FACTOR_DST_COLOR;
-		case RHIBlendFactor::INV_DEST_COLOR:
-			return VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
-		case RHIBlendFactor::SRC_ALPHA_SAT:
-			return VK_BLEND_FACTOR_SRC_ALPHA_SATURATE;
-		case RHIBlendFactor::BLEND_FACTOR:
-			return VK_BLEND_FACTOR_CONSTANT_COLOR;
-		case RHIBlendFactor::INV_BLEND_FACTOR:
-			return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
-		case RHIBlendFactor::SRC1_COLOR:
-			return VK_BLEND_FACTOR_SRC1_COLOR;
-		case RHIBlendFactor::INV_SRC1_COLOR:
-			return VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR;
-		case RHIBlendFactor::SRC1_ALPHA:
-			return VK_BLEND_FACTOR_SRC1_ALPHA;
-		case RHIBlendFactor::INV_SRC1_ALPHA:
-			return VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
-		default:
-			return VK_BLEND_FACTOR_ZERO;
-		}
-	}
+    bool VulkanTool::ToVkDescriptorType(const String& value, VkDescriptorType& output)
+    {
+        if (value == SE_TEXT("Sampler"))
+        {
+            output = VK_DESCRIPTOR_TYPE_SAMPLER;
+            return true;
+        }
+        if (value == SE_TEXT("Texture"))
+        {
+            output = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+            return true;
+        }
+        if (value == SE_TEXT("ConstantBuffer"))
+        {
+            output = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+            return true;
+        }
+        if (value == SE_TEXT("TypedBuffer"))
+        {
+            output = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+            return true;
+        }
+        if (value == SE_TEXT("RawBuffer") || value == SE_TEXT("StorageBuffer"))
+        {
+            output = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            return true;
+        }
+        LOG_ERROR("Graphics", "Descriptor type is not supported by Vulkan runtime layout: {0}", value);
+        return false;
+    }
 
-	VkBlendOp VulkanTool::ConvertBlendOp(RHIBlendOp value)
+    bool VulkanTool::ToVkStageFlags(const String& value, VkShaderStageFlags& output)
+    {
+        output = 0;
+        if (value.Contains(SE_TEXT("vs")))
+        {
+            output |= VK_SHADER_STAGE_VERTEX_BIT;
+        }
+        if (value.Contains(SE_TEXT("hs")))
+        {
+            output |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+        }
+        if (value.Contains(SE_TEXT("ds")))
+        {
+            output |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+        }
+        if (value.Contains(SE_TEXT("gs")))
+        {
+            output |= VK_SHADER_STAGE_GEOMETRY_BIT;
+        }
+        if (value.Contains(SE_TEXT("ps")))
+        {
+            output |= VK_SHADER_STAGE_FRAGMENT_BIT;
+        }
+        if (value.Contains(SE_TEXT("cs")))
+        {
+            output |= VK_SHADER_STAGE_COMPUTE_BIT;
+        }
+
+        if (output == 0)
+        {
+            LOG_ERROR("Graphics", "Descriptor stage mask is empty for Vulkan runtime layout.");
+            return false;
+        }
+        return true;
+    }
+
+    bool VulkanTool::ToVulkanShaderStage(const ShaderStage stage, VkShaderStageFlagBits& output)
+    {
+        switch (stage)
+        {
+            case ShaderStage::Vertex:
+                output = VK_SHADER_STAGE_VERTEX_BIT;
+                return true;
+            case ShaderStage::Hull:
+                output = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+                return true;
+            case ShaderStage::Domain:
+                output = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+                return true;
+            case ShaderStage::Geometry:
+                output = VK_SHADER_STAGE_GEOMETRY_BIT;
+                return true;
+            case ShaderStage::Pixel:
+                output = VK_SHADER_STAGE_FRAGMENT_BIT;
+                return true;
+            default:
+                LOG_ERROR("Graphic", "graphics pipeline contains unsupported shader stage.");
+                return false;
+        }
+    }
+
+
+	VkBlendOp VulkanTool::ToVulkanBlendOp(const BlendingMode::Operation value) 
 	{
-		switch (value)
-		{
-		case RHIBlendOp::ADD:
-			return VK_BLEND_OP_ADD;
-		case RHIBlendOp::SUBTRACT:
-			return VK_BLEND_OP_SUBTRACT;
-		case RHIBlendOp::REVERSE_SUBTRACT:
-			return VK_BLEND_OP_REVERSE_SUBTRACT;
-		case RHIBlendOp::MIN:
-			return VK_BLEND_OP_MIN;
-		case RHIBlendOp::MAX:
-			return VK_BLEND_OP_MAX;
-		default:
-			return VK_BLEND_OP_ADD;
-		}
-	}
+        return m_OperationToVkBlendOp[(int32)value];
+    }
+
+    VkCompareOp VulkanTool::ConvertCompareOp(const ComparisonFunc value) 
+	{
+        return m_ComparisonFuncToVkCompareOp[(int32)value];
+    }
+
 
 	VkSamplerAddressMode VulkanTool::ConvertTextureAddressMode(RHIAddressMode value, const VkPhysicalDeviceVulkan12Features &features_1_2)
 	{
@@ -345,25 +387,25 @@ namespace SE
 		}
 	}
 
-	VkStencilOp VulkanTool::ConvertStencilOp(RHIStencilOp value)
+	VkStencilOp VulkanTool::ConvertStencilOp(StencilOperation value)
 	{
 		switch (value)
 		{
-		case RHIStencilOp::Keep:
+            case StencilOperation::Keep:
 			return VK_STENCIL_OP_KEEP;
-		case RHIStencilOp::ZERO:
+            case StencilOperation::Zero:
 			return VK_STENCIL_OP_ZERO;
-		case RHIStencilOp::Replace:
+            case StencilOperation::Replace:
 			return VK_STENCIL_OP_REPLACE;
-		case RHIStencilOp::IncrementAndClamp:
+            case StencilOperation::IncrementSaturated:
 			return VK_STENCIL_OP_INCREMENT_AND_CLAMP;
-		case RHIStencilOp::DecrementAndClamp:
+            case StencilOperation::DecrementSaturated:
 			return VK_STENCIL_OP_DECREMENT_AND_CLAMP;
-		case RHIStencilOp::Invert:
+            case StencilOperation::Invert:
 			return VK_STENCIL_OP_INVERT;
-		case RHIStencilOp::IncrementAndWarp:
+            case StencilOperation::Increment:
 			return VK_STENCIL_OP_INCREMENT_AND_WRAP;
-		case RHIStencilOp::DecrementAndWarp:
+            case StencilOperation::Decrement:
 			return VK_STENCIL_OP_DECREMENT_AND_WRAP;
 		default:
 			return VK_STENCIL_OP_KEEP;

@@ -273,6 +273,8 @@ namespace SE
 		request.ShaderName = SE_TEXT("SolarSlangOfflineSelfTest");
 		request.SourcePath = SE_TEXT("SolarSlangOfflineSelfTest.slang");
 		request.SourceCode = SE_TEXT(R"(
+#include "Shaders/Slang/SolarShaderProgram.slang"
+
 struct VSInput
 {
 	float3 Position : POSITION;
@@ -306,8 +308,8 @@ SHADER_PROGRAM(SelfTestProgram, SHADER_VS(VSMain) SHADER_PS(PSMain) SHADER_MACRO
 
 		ShaderCompileTarget target;
 		target.Platform = ShaderTargetPlatform::Windows;
-		target.Backend = ShaderGraphicsBackend::Vulkan;
-		target.ShaderModel = ShaderCompileShaderModel::SM_6_0;
+		target.Profile = ShaderProfile::Vulkan_SM5;
+		target.Feature = FeatureLevel::SM5;
 		request.Targets.Add(target);
 
 		// 自测只调用离线编译入口；CompileSlang 内部会完成 SLC2 写出与结构校验。

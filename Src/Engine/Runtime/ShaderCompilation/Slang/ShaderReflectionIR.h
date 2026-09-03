@@ -47,11 +47,25 @@ namespace SE
 	// 当前 Target 下已经展开的物理绑定范围，字段必须保持稳定文本，避免序列化 Slang 原生枚举。
 	struct SE_API_RUNTIME ShaderIRDescriptorRange
 	{
+		String Role;
 		uint32 Set = 0;
 		uint32 Binding = 0;
+		uint32 ArrayElementBase = 0;
+		uint32 LogicalElementStride = 1;
 		uint32 DescriptorCount = 0;
 		String DescriptorType;
 		String StageMask;
+		List<String> Flags;
+	};
+
+	// 一个逻辑 resource range 在当前 Target 下的唯一落点。simple 直接写 descriptor，
+	// constantBuffer/parameterBlock 进入子块，两个分支不能同时出现。
+	struct SE_API_RUNTIME ShaderIRRangeBinding
+	{
+		uint32 RangeIndex = 0;
+		String Flavor;
+		List<ShaderIRDescriptorRange> DescriptorRanges;
+		int32 SubBlockId = -1;
 	};
 
 	// ParameterBlock 记录一次具体出现位置；即使 ElementTypeId 相同，也不能在运行时合并。
@@ -61,15 +75,22 @@ namespace SE
 		String Name;
 		uint32 ElementTypeId = 0;
 		uint32 UniformByteSize = 0;
-		List<ShaderIRDescriptorRange> DescriptorRanges;
+		bool HasDefaultUniformBuffer = false;
+		ShaderIRDescriptorRange DefaultUniformBuffer;
+		List<ShaderIRRangeBinding> RangeBindings;
 	};
 
 	// SLC2 中保存的运行时反射输入；运行时只读取该 IR，不再调用 Slang 或 SPIR-V 反射。
 	struct SE_API_RUNTIME ShaderReflectionIR
 	{
+		uint32 Schema = 2;
 		uint32 RootBlockId = 0;
 		String PipelineLayoutFingerprint;
 		List<ShaderIRTypeRecord> Types;
 		List<ShaderIRParameterBlock> ParameterBlocks;
 	};
+
+	// 不依赖 Slang/Vulkan 的规范物理布局身份。Builder、Reader 与运行时均使用这一入口。
+	SE_API_RUNTIME String BuildPipelineLayoutFingerprint(const ShaderReflectionIR& layout);
+	SE_API_RUNTIME String ComputeSHA256Hex(const byte* data, int32 length);
 }

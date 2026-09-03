@@ -10,7 +10,7 @@ namespace SE
 {
 	struct SE_API_RUNTIME SlangProgramStageDeclaration
 	{
-		SlangShaderStage Stage = SlangShaderStage::Unknown;
+        ShaderStage Stage = ShaderStage::Max;
 		String EntryPoint;
 	};
 

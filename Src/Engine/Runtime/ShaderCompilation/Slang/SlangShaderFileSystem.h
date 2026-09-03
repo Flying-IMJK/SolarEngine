@@ -17,7 +17,7 @@ namespace SE
 	class SlangShaderFileSystem final : public ISlangFileSystemExt
 	{
 	public:
-		explicit SlangShaderFileSystem(const String& rootSourcePath);
+        explicit SlangShaderFileSystem(const List<String>& rootSourcePath);
 
 		ISlangFileSystem* GetSlangFileSystem();
 
@@ -40,8 +40,6 @@ namespace SE
 
 	private:
 		int64 volatile _refCount;
-		String _rootSourcePath;
-		String _rootSourceDirectory;
 		List<String> _searchRoots;
 	};
 }

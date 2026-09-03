@@ -3,6 +3,7 @@
 #include "Runtime/API.h"
 #include "Runtime/Core/Types/Collections/List.h"
 #include "Runtime/Core/Types/Strings/String.h"
+#include "Runtime/Graphics/Base/GPUEnums.h"
 
 namespace SE
 {
@@ -18,39 +19,16 @@ namespace SE
 		Windows,
 		Linux,
 		MacOS,
+		PS4,
+		PS5,
 	};
 
-	enum class ShaderGraphicsBackend
-	{
-		Unknown,
-		Vulkan,
-		DirectX,
-	};
-
-	enum class ShaderCompileShaderModel
-	{
-		Unknown,
-		SM_5_0,
-		SM_6_0,
-		SM_6_6,
-	};
-
-	enum class SlangShaderStage
-	{
-		Unknown,
-		Vertex,
-		Hull,
-		Domain,
-		Geometry,
-		Pixel,
-		Compute,
-	};
 
 	struct SE_API_RUNTIME ShaderCompileTarget
 	{
 		ShaderTargetPlatform Platform = ShaderTargetPlatform::Unknown;
-		ShaderGraphicsBackend Backend = ShaderGraphicsBackend::Unknown;
-		ShaderCompileShaderModel ShaderModel = ShaderCompileShaderModel::Unknown;
+		ShaderProfile Profile = ShaderProfile::Unknown;
+		FeatureLevel Feature = FeatureLevel::ES2;
 	};
 
 	struct SE_API_RUNTIME ShaderVariantRequest
@@ -87,10 +65,6 @@ namespace SE
 
 	SE_API_RUNTIME String ToString(const ShaderCompileStatus value);
 	SE_API_RUNTIME String ToString(const ShaderTargetPlatform value);
-	SE_API_RUNTIME String ToString(const ShaderGraphicsBackend value);
-	SE_API_RUNTIME String ToString(const ShaderCompileShaderModel value);
-	SE_API_RUNTIME String ToString(const SlangShaderStage value);
 
-	SE_API_RUNTIME bool ParseSlangShaderStage(const char* text, SlangShaderStage& stage);
 	SE_API_RUNTIME String BuildTargetKey(const ShaderCompileTarget& target);
 }

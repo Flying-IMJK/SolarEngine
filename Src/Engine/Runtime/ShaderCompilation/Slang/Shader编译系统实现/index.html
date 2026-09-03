@@ -278,7 +278,7 @@ LoadAndCreate(slc2Data, selection, bindings):
     <div class="flow">
       <div>SLC2 Reader</div>
       <div class="arrow">→</div>
-      <div>ShaderProgramArtifact</div>
+      <div>SLC2GPUShader<br><small>immutable Program cache</small></div>
       <div class="arrow">→</div>
       <div>ShaderProgramInstance</div>
       <div class="arrow">→</div>
@@ -291,7 +291,7 @@ LoadAndCreate(slc2Data, selection, bindings):
       <tbody>
         <tr><td>ShaderCompilation/Slang</td><td>Slang Session、Module、Component、原生 Layout adapter。</td><td>GPU/Vulkan 运行时状态。</td></tr>
         <tr><td>ShaderReflectionIR + SLC2</td><td>稳定类型图、块实例、Range mapping、Stage code；支持编译器 self-read 和 compile-only 测试。</td><td>Slang 指针、Vulkan 原生枚举、GPU 设备和资源对象。</td></tr>
-        <tr><td>Graphics/Shaders runtime</td><td>Artifact、Program 选择、ShaderVar、逻辑绑定状态。</td><td>Slang、Shader 源码、SPIR-V 二次反射。</td></tr>
+        <tr><td>Graphics/Shaders runtime</td><td>SLC2GPUShader、Program 选择、ParameterBlock 树、ShaderVar、冻结绑定快照。</td><td>Slang、Shader 源码、SPIR-V 二次反射。</td></tr>
         <tr><td>GraphicsDevice/Vulkan</td><td>VkShaderModule、DescriptorSetLayout、PipelineLayout、descriptor writes。</td><td>Program 声明宏和 Variant 发现逻辑。</td></tr>
       </tbody>
     </table>

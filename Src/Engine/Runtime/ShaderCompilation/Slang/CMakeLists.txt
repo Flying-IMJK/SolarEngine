@@ -3,6 +3,7 @@
 RUNTIME_ADD(
 
     ShaderReflectionIR.h
+    ShaderReflectionIR.cpp
 
     SLC2/SLC2Artifact.h
     SLC2/SLC2Reader.h

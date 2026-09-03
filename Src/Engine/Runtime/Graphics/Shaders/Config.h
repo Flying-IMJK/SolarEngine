@@ -27,21 +27,6 @@ namespace SE
 	/// </summary>
 	#define MAX_CONSTANT_BUFFER_SLOTS 4
 
-	/**
-	 * GPU 程序 阶段
-	 */
-	enum class ShaderStage : int32
-	{
-		Vertex,
-		Hull,
-		Domain,
-		Geometry,
-		Mesh,
-		Pixel,
-		Compute,
-		Max
-	};
-
 	/// <summary>
 	/// Shader macro definition structure
 	/// </summary>

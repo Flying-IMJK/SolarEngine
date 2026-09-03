@@ -1,3 +1,5 @@
+#include "Shaders/Slang/SolarShaderProgram.slang"
+
 SHADER_PROGRAM(CompileOnlyMinimalCS,
 	SHADER_CS(MainCS)
 )

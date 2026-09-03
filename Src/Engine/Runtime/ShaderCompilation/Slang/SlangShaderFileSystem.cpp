@@ -14,23 +14,22 @@ namespace SE
 		class SlangShaderBlob final : public ISlangBlob
 		{
 		public:
-            explicit SlangShaderBlob(DataContainer<byte>&& data)
+            explicit SlangShaderBlob(DataContainer<char>&& data)
 				: _refCount(1)
 				, _data(MoveTemp(data))
 			{
 			}
 
+			explicit SlangShaderBlob(StringAnsi& data) : _refCount(1)
+			{ 
+				_data.Copy(data.Get(), data.Length());
+			}
+
 			static SlangShaderBlob* FromString(const String& text)
 			{
-				const StringAnsi textAnsi(text);
-				List<byte, HeapAllocation> data;
-				data.Resize(textAnsi.Length() + 1);
-				for (int32 i = 0; i < textAnsi.Length(); i++)
-				{
-					data[i] = (byte)textAnsi.Get()[i];
-				}
-				data[textAnsi.Length()] = 0;
-				return new SlangShaderBlob(MoveTemp(data));
+				 StringAnsi textAnsi(text);
+
+				return new SlangShaderBlob(textAnsi);
 			}
 
 			SLANG_NO_THROW SlangResult SLANG_MCALL queryInterface(SlangUUID const& uuid, void** outObject) override
@@ -73,7 +72,7 @@ namespace SE
 
 		private:
 			int64 volatile _refCount;
-            DataContainer<byte> _data;
+            DataContainer<char> _data;
 		};
 
 		String NormalizePath(String path)
@@ -135,14 +134,14 @@ namespace SE
 		}
 	}
 
-	SlangShaderFileSystem::SlangShaderFileSystem(const String& rootSourcePath)
-		: _refCount(1)
-		, _rootSourcePath(NormalizePath(rootSourcePath))
-		, _rootSourceDirectory(GetDirectoryName(_rootSourcePath))
+	SlangShaderFileSystem::SlangShaderFileSystem(const List<String>& rootSourcePaths) : _refCount(1)
 	{
-		if (!_rootSourceDirectory.IsEmpty())
+		for (const String& rootSourcePath : rootSourcePaths)
 		{
-			_searchRoots.Add(_rootSourceDirectory);
+			if (!rootSourcePath.IsEmpty())
+			{
+				_searchRoots.Add(rootSourcePath);
+			}
 		}
 	}
 
@@ -211,14 +210,14 @@ namespace SE
 		}
 		*outBlob = nullptr;
         
-		DataContainer<byte> bytes;
+		StringAnsi bytes;
 		const String resolvedPath = ResolvePath(path);
-		if (resolvedPath.IsEmpty() || !ReadFileBytes(resolvedPath, bytes))
+        if (resolvedPath.IsEmpty() || !File::ReadAllText(resolvedPath, bytes))
 		{
 			return SLANG_E_NOT_FOUND;
 		}
 
-		*outBlob = new SlangShaderBlob(MoveTemp(bytes));
+		*outBlob = new SlangShaderBlob(bytes);
 		return SLANG_OK;
 	}
 
@@ -255,11 +254,7 @@ namespace SE
 
 		String basePath = String(fromPath);
         basePath = NormalizePath(basePath);
-		if (basePath.IsEmpty())
-		{
-			basePath = _rootSourceDirectory;
-		}
-		else if (fromPathType == SLANG_PATH_TYPE_FILE)
+		if (fromPathType == SLANG_PATH_TYPE_FILE)
 		{
 			basePath = GetDirectoryName(basePath);
 		}
@@ -331,11 +326,6 @@ namespace SE
 		}
 
 		if (IsAbsolutePath(requestedPath) && PathExistsAsFileOrDirectory(requestedPath))
-		{
-			return requestedPath;
-		}
-
-		if (requestedPath == _rootSourcePath)
 		{
 			return requestedPath;
 		}

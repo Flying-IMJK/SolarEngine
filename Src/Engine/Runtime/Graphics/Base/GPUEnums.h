@@ -83,6 +83,33 @@ namespace SE
 		ReadWrite = Read | Write,
 	};
 
+
+	/// <summary>
+    /// Stencil operation modes.
+    /// </summary>
+    SE_ENUM(Reflect)
+    enum class StencilOperation
+    {
+        // Keep the existing stencil data.
+        Keep,
+        // Set the stencil data to 0.
+        Zero,
+        // Set the stencil data to the reference value (set via GPUContext::SetStencilRef).
+        Replace,
+        // Increment the stencil value by 1, and clamp the result.
+        IncrementSaturated,
+        // Decrement the stencil value by 1, and clamp the result.
+        DecrementSaturated,
+        // Invert the stencil data.
+        Invert,
+        // Increment the stencil value by 1, and wrap the result if necessary.
+        Increment,
+        // Decrement the stencil value by 1, and wrap the result if necessary.
+        Decrement,
+
+        MAX
+    };
+
 	/// <summary>
 	/// Comparison function modes
 	/// </summary>
@@ -455,6 +482,25 @@ namespace SE
 
 	const Char* ToString(FeatureLevel value);
 
+	/**
+     * GPU 程序 阶段
+     */
+    enum class ShaderStage : int32
+    {
+        Vertex,
+        Hull,
+        Domain,
+        Geometry,
+        Mesh,
+        Pixel,
+        Compute,
+        Max
+    };
+
+	SE_API_RUNTIME const Char* ToString(const ShaderStage value);
+
+    SE_API_RUNTIME bool ParseShaderStage(const char* text, ShaderStage& stage);
+
 	/// <summary>
 	/// Describes the shader function flags used for shader compilation.
 	/// </summary>
@@ -543,130 +589,6 @@ namespace SE
         DiscreteGpu,
         VirtualGpu,
         Cpu,
-    };
-
-    enum class RHIShadingRate
-    {
-        RATE_1X1, // Default/full shading rate
-        RATE_1X2,
-        RATE_2X1,
-        RATE_2X2,
-        RATE_2X4,
-        RATE_4X2,
-        RATE_4X4,
-
-        RATE_INVALID
-    };
-
-
-
-    enum class RHIShaderFormat
-    {
-        NONE,     // Not used
-        HLSL5,    // DXBC
-        HLSL6,    // DXIL
-        SPIRV,    // SPIR-V
-        HLSL6_XS, // XBOX Series Native
-        PS5,      // Playstation 5
-    };
-
-	SE_ENUM(Reflect)
-    enum class RHIShaderModel
-    {
-        SM_5_0,
-        SM_6_0,
-        SM_6_1,
-        SM_6_2,
-        SM_6_3,
-        SM_6_4,
-        SM_6_5,
-        SM_6_6,
-        SM_6_7,
-    };
-
-
-
-    enum class RHIBlendOp : uint8
-    {
-        ADD,
-        SUBTRACT,
-        REVERSE_SUBTRACT,
-        MIN,
-        MAX
-    };
-
-    enum class RHIBlendFactor : uint8
-    {
-        ZERO,
-        ONE,
-        SRC_COLOR,
-        INV_SRC_COLOR,
-        SRC_ALPHA,
-        INV_SRC_ALPHA,
-        DEST_ALPHA,
-        INV_DEST_ALPHA,
-        DEST_COLOR,
-        INV_DEST_COLOR,
-        SRC_ALPHA_SAT,
-        BLEND_FACTOR,
-        INV_BLEND_FACTOR,
-        SRC1_COLOR,
-        INV_SRC1_COLOR,
-        SRC1_ALPHA,
-        INV_SRC1_ALPHA,
-    };
-
-    enum class RHIStencilOp : uint8
-    {
-        Keep,
-        ZERO,
-        Replace,
-        IncrementAndClamp,
-        DecrementAndClamp,
-        Invert,
-        IncrementAndWarp,
-        DecrementAndWarp
-    };
-
-	SE_ENUM(Reflect)
-    enum class RHIFilter
-    {
-        MIN_MAG_MIP_POINT,
-        MIN_MAG_POINT_MIP_LINEAR,
-        MIN_POINT_MAG_LINEAR_MIP_POINT,
-        MIN_POINT_MAG_MIP_LINEAR,
-        MIN_LINEAR_MAG_MIP_POINT,
-        MIN_LINEAR_MAG_POINT_MIP_LINEAR,
-        MIN_MAG_LINEAR_MIP_POINT,
-        MIN_MAG_MIP_LINEAR,
-        ANISOTROPIC,
-        COMPARISON_MIN_MAG_MIP_POINT,
-        COMPARISON_MIN_MAG_POINT_MIP_LINEAR,
-        COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT,
-        COMPARISON_MIN_POINT_MAG_MIP_LINEAR,
-        COMPARISON_MIN_LINEAR_MAG_MIP_POINT,
-        COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR,
-        COMPARISON_MIN_MAG_LINEAR_MIP_POINT,
-        COMPARISON_MIN_MAG_MIP_LINEAR,
-        COMPARISON_ANISOTROPIC,
-        MINIMUM_MIN_MAG_MIP_POINT,
-        MINIMUM_MIN_MAG_POINT_MIP_LINEAR,
-        MINIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT,
-        MINIMUM_MIN_POINT_MAG_MIP_LINEAR,
-        MINIMUM_MIN_LINEAR_MAG_MIP_POINT,
-        MINIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR,
-        MINIMUM_MIN_MAG_LINEAR_MIP_POINT,
-        MINIMUM_MIN_MAG_MIP_LINEAR,
-        MINIMUM_ANISOTROPIC,
-        MAXIMUM_MIN_MAG_MIP_POINT,
-        MAXIMUM_MIN_MAG_POINT_MIP_LINEAR,
-        MAXIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT,
-        MAXIMUM_MIN_POINT_MAG_MIP_LINEAR,
-        MAXIMUM_MIN_LINEAR_MAG_MIP_POINT,
-        MAXIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR,
-        MAXIMUM_MIN_MAG_LINEAR_MIP_POINT,
-        MAXIMUM_MIN_MAG_MIP_LINEAR,
-        MAXIMUM_ANISOTROPIC,
     };
 
     enum class RHIAddressMode : uint8

@@ -11,7 +11,7 @@ namespace SE
 {
 	struct SE_API_RUNTIME SLC2StageRecord
 	{
-		SlangShaderStage Stage = SlangShaderStage::Unknown;
+        ShaderStage Stage = ShaderStage::Max;
 		String EntryPoint;
 		List<byte> Code;
 	};

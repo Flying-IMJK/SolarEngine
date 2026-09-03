@@ -8,6 +8,7 @@
 #include "GPUSwapChainVulkan.h"
 #include "GPUPipelineStateVulkan.h"
 #include "GPUShaderVulkan.h"
+#include "SLC2GPUShaderVulkan.h"
 #include "GPUBufferVulkan.h"
 #include "GPUSamplerVulkan.h"
 #include "GPUAdapterVulkan.h"
@@ -1108,6 +1109,11 @@ namespace SE
 	GPUShader* GPUDeviceVulkan::CreateShader(const StringView& name)
 	{
 		return New<GPUShaderVulkan>(this, name);
+	}
+
+	SLC2GPUShader* GPUDeviceVulkan::CreateSLC2Shader(const StringView& name)
+	{
+		return New<SLC2GPUShaderVulkan>(this, name);
 	}
 
 	GPUBuffer* GPUDeviceVulkan::CreateBuffer(const StringView& name)
