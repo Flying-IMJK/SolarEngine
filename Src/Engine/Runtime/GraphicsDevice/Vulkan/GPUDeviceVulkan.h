@@ -51,6 +51,8 @@ namespace SE
 
 		GPUPipelineState* CreatePipelineState() override;
 
+		SLC2GPUPipelineState* CreateSLC2PipelineState() override;
+
 		GPUTexture* CreateTexture(const StringView& name) override;
 
 		GPUShader* CreateShader(const StringView& name) override;

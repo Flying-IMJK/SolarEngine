@@ -80,7 +80,7 @@ namespace SE
 		List<ShaderIRRangeBinding> RangeBindings;
 	};
 
-	// SLC2 中保存的运行时反射输入；运行时只读取该 IR，不再调用 Slang 或 SPIR-V 反射。
+	// SLC2 中保存的运行时反射输入；运行时只读取该 IR。
 	struct SE_API_RUNTIME ShaderReflectionIR
 	{
 		uint32 Schema = 2;

@@ -33,10 +33,6 @@ RUNTIME_ADD(
         QueueVulkan.h
         QueueVulkan.cpp
         GPUShaderProgramVulkan.h
-        SLC2GPUShaderVulkan.h
-        SLC2GPUShaderVulkan.cpp
-        SLC2ShaderProgramVulkan.h
-        SLC2ShaderProgramVulkan.cpp
         GPUShaderVulkan.h
         GPUShaderVulkan.cpp
 

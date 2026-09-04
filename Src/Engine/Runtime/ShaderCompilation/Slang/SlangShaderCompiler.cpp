@@ -63,6 +63,48 @@ namespace SE
 			return false;
 		}
 
+		bool ReadOutputControlPoints(slang::IGlobalSession* globalSession, slang::ProgramLayout* layout, const int32 entryPointIndex, const SlangProgramStageDeclaration& stage, int32& outputControlPoints, String& error)
+		{
+			outputControlPoints = 0;
+			if (stage.Stage != ShaderStage::Hull)
+			{
+				return true;
+			}
+			if (globalSession == nullptr || layout == nullptr)
+			{
+				error = SE_TEXT("Hull shader output control points require Slang reflection.");
+				return false;
+			}
+
+			slang::EntryPointReflection* entryPoint = layout->getEntryPointByIndex(entryPointIndex);
+			if (entryPoint == nullptr || entryPoint->getFunction() == nullptr)
+			{
+				error = SE_TEXT("Hull shader entry point reflection is missing: ") + stage.EntryPoint;
+				return false;
+			}
+
+			slang::Attribute* attribute = entryPoint->getFunction()->findUserAttributeByName(globalSession, "outputcontrolpoints");
+			if (attribute == nullptr)
+			{
+				error = SE_TEXT("Hull shader entry point requires [outputcontrolpoints(N)]: ") + stage.EntryPoint;
+				return false;
+			}
+			if (attribute->getArgumentCount() != 1)
+			{
+				error = SE_TEXT("Hull shader [outputcontrolpoints] must have one integer argument: ") + stage.EntryPoint;
+				return false;
+			}
+
+			int value = 0;
+			if (!SlangSucceeded(attribute->getArgumentValueInt(0, &value)) || value <= 0 || value > 32)
+			{
+				error = SE_TEXT("Hull shader [outputcontrolpoints] must be in range 1-32: ") + stage.EntryPoint;
+				return false;
+			}
+			outputControlPoints = static_cast<int32>(value);
+			return true;
+		}
+
 		SlangStage ToSlangStage(const ShaderStage stage)
 		{
 			switch (stage)
@@ -793,6 +835,12 @@ namespace SE
 						SLC2StageRecord stageRecord;
 						stageRecord.Stage = baselineProgram.Stages[stageIndex].Stage;
 						stageRecord.EntryPoint = baselineProgram.Stages[stageIndex].EntryPoint;
+						if (!ReadOutputControlPoints(globalSession, layout, stageIndex, baselineProgram.Stages[stageIndex], stageRecord.OutputControlPoints, error))
+						{
+							AddDiagnostic(error);
+							result.CompileMessage.Text = m_Diagnostics;
+							return result;
+						}
 						stageRecord.Code.Set((const byte*)code->getBufferPointer(), (int32)code->getBufferSize());
 						variantRecord.Stages.Add(stageRecord);
 					}

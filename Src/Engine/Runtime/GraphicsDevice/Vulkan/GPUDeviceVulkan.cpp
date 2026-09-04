@@ -8,7 +8,6 @@
 #include "GPUSwapChainVulkan.h"
 #include "GPUPipelineStateVulkan.h"
 #include "GPUShaderVulkan.h"
-#include "SLC2GPUShaderVulkan.h"
 #include "GPUBufferVulkan.h"
 #include "GPUSamplerVulkan.h"
 #include "GPUAdapterVulkan.h"
@@ -1098,8 +1097,13 @@ namespace SE
 
 	GPUPipelineState* GPUDeviceVulkan::CreatePipelineState()
 	{
-		return New<GPUPipelineStateVulkan>(this);
-	}
+		return New<GPUPipelineStateVulkan>(this); 
+    }
+
+    SLC2GPUPipelineState* GPUDeviceVulkan::CreateSLC2PipelineState()
+    { 
+        return New<SLC2GraphicsPipelineStateVulkan>(this); 
+    }
 
 	GPUTexture* GPUDeviceVulkan::CreateTexture(const StringView& name)
 	{

@@ -286,6 +286,8 @@ namespace SE
 						writer.String(ToString(stage.Stage));
 						writer.Key(SE_TEXT("entryPoint"));
 						writer.String(stage.EntryPoint);
+						writer.Key(SE_TEXT("outputControlPoints"));
+						writer.Uint(static_cast<uint32>(stage.OutputControlPoints));
 						writer.Key(SE_TEXT("code"));
 						if (stage.Code.Count() > 0)
 						{

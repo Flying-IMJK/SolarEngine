@@ -1,12 +1,13 @@
 #include "ShaderProgramInstance.h"
 
 #include "SLC2GPUShader.h"
+#include "SLC2GPUShaderProgram.h"
 #include "Reflection/ShaderNameResolver.h"
 #include "Reflection/ShaderProgramReflection.h"
 
 namespace SE
 {
-	bool ShaderProgramInstance::Initialize(SLC2ShaderProgram* program)
+	bool ShaderProgramInstance::Initialize(SLC2GPUShaderProgram* program)
 	{
 		if (program == nullptr)
 		{
@@ -94,7 +95,7 @@ namespace SE
 		return true;
 	}
 
-	SLC2ShaderProgram* ShaderProgramInstance::GetProgram() const
+	SLC2GPUShaderProgram* ShaderProgramInstance::GetProgram() const
 	{
 		return m_Program;
 	}

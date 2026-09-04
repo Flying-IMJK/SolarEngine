@@ -452,7 +452,8 @@ namespace SE
 			String stageName;
 			String encodedCode;
 			String codeHash;
-			if (!ReadString(value, "stage", stageName, error) || !ReadString(value, "entryPoint", output.EntryPoint, error) || !ReadString(value, "code", encodedCode, error) || !ReadString(value, "codeHash", codeHash, error))
+			uint32 outputControlPoints = 0;
+			if (!ReadString(value, "stage", stageName, error) || !ReadString(value, "entryPoint", output.EntryPoint, error) || !ReadUint(value, "outputControlPoints", outputControlPoints, error) || !ReadString(value, "code", encodedCode, error) || !ReadString(value, "codeHash", codeHash, error))
 			{
 				return false;
 			}
@@ -463,6 +464,13 @@ namespace SE
 				error = SE_TEXT("SLC2 stage is invalid.");
 				return false;
 			}
+			if ((output.Stage == ShaderStage::Hull && (outputControlPoints == 0 || outputControlPoints > 32)) ||
+				(output.Stage != ShaderStage::Hull && outputControlPoints != 0))
+			{
+				error = SE_TEXT("SLC2 stage output control points are invalid.");
+				return false;
+			}
+			output.OutputControlPoints = static_cast<int32>(outputControlPoints);
 			const StringAnsi encodedAnsi(encodedCode);
 			Encoding::Base64::Decode(encodedAnsi.Get(), encodedAnsi.Length(), output.Code);
 			if (output.Code.Count() < 4 || (output.Code.Count() & 3) != 0 || output.Code[0] != 0x03 || output.Code[1] != 0x02 || output.Code[2] != 0x23 || output.Code[3] != 0x07 || ComputeSHA256Hex(output.Code.Get(), output.Code.Count()) != codeHash)

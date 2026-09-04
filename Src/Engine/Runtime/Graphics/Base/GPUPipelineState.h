@@ -2,8 +2,10 @@
 
 #include "Runtime/Core/TypeSystem/IType.h"
 #include "Runtime/Graphics/Shaders/GPUShaderProgram.h"
+#include <Runtime/Graphics/Shaders/SLC2GPUShaderProgram.h>
 #include "GPUResource.h"
 #include "GPUEnums.h"
+
 
 namespace SE
 {
@@ -201,4 +203,148 @@ namespace SE
 		// [GPUResource]
 		GPUResourceType GetResType() const final override;
 	};
+
+
+	SE_CLASS(API(Sealed))
+    class SE_API_RUNTIME SLC2GPUPipelineState : public GPUResource
+    {
+        SCRIPTING_TYPE_NO_SPAWN(GPUPipelineState);
+
+    public:
+        static SLC2GPUPipelineState* Spawn(const SpawnParams& params);
+        static SLC2GPUPipelineState* New();
+
+    public:
+        /// <summary>
+        /// Pipeline state description
+        /// </summary>
+        struct SE_API_RUNTIME Description
+        {
+
+            /// <summary>
+            /// Enable/disable depth (DepthFunc and DepthWriteEnable)
+            /// </summary>
+            bool DepthEnable = false;
+
+            /// <summary>
+            /// Enable/disable depth write
+            /// </summary>
+            bool DepthWriteEnable = false;
+
+            /// <summary>
+            /// Enable/disable depth clipping
+            /// </summary>
+            bool DepthClipEnable = false;
+
+            /// <summary>
+            /// A function that compares depth data against existing depth data
+            /// </summary>
+            ComparisonFunc DepthFunc = ComparisonFunc::GreaterEqual;
+
+            /// <summary>
+            /// Enable/disable stencil buffer usage
+            /// </summary>
+            bool StencilEnable = false;
+
+            /// <summary>
+            /// The read mask applied to the reference value and each stencil buffer entry to determine the significant
+            /// bits for the stencil test.
+            /// </summary>
+            uint8 StencilReadMask = 0;
+
+            /// <summary>
+            /// The write mask applied to values written into the stencil buffer.
+            /// </summary>
+            uint8 StencilWriteMask = 0;
+
+            /// <summary>
+            /// The comparison function for the stencil test.
+            /// </summary>
+            ComparisonFunc StencilFunc = ComparisonFunc::GreaterEqual;
+
+            /// <summary>
+            /// The stencil operation to perform when stencil testing fails.
+            /// </summary>
+            StencilOperation StencilFailOp = StencilOperation::Zero;
+
+            /// <summary>
+            /// The stencil operation to perform when stencil testing passes and depth testing fails.
+            /// </summary>
+            StencilOperation StencilDepthFailOp = StencilOperation::Zero;
+
+            /// <summary>
+            /// The stencil operation to perform when stencil testing and depth testing both pass.
+            /// </summary>
+            StencilOperation StencilPassOp = StencilOperation::Zero;
+
+            /// <summary>
+            /// Input primitives topology
+            /// </summary>
+            PrimitiveTopologyType PrimitiveTopology = PrimitiveTopologyType::Triangle;
+
+            /// <summary>
+            /// True if use wireframe rendering, otherwise false
+            /// </summary>
+            bool Wireframe = false;
+
+            /// <summary>
+            /// Primitives culling mode
+            /// </summary>
+            CullMode CullMode = CullMode::Normal;
+
+            /// <summary>
+            /// Colors blending mode
+            /// </summary>
+            BlendingMode BlendMode = BlendingMode::Opaque;
+
+        public:
+            /// <summary>
+            /// Default description
+            /// </summary>
+            static Description Default;
+
+            /// <summary>
+            /// Default description without using depth buffer at all
+            /// </summary>
+            static Description DefaultNoDepth;
+
+            /// <summary>
+            /// Default description for fullscreen triangle rendering
+            /// </summary>
+            static Description DefaultFullscreenTriangle;
+        };
+
+    protected:
+        SLC2GPUPipelineState();
+
+    public:
+        // #if BUILD_DEBUG
+        /// <summary>
+        /// The description of the pipeline state cached on creation in debug builds. Can be used to help with rendering
+        /// crashes or issues and validation.
+        /// </summary>
+        Description debugDesc;
+        // #endif
+        // #if USE_EDITOR
+        int32 complexity;
+        // #endif
+
+    public:
+        /// <summary>
+        /// Returns true if pipeline state is valid and ready to use
+        /// </summary>
+        virtual bool IsValid() const = 0;
+
+        /// <summary>
+        /// Create new state data
+        /// </summary>
+        /// <param name="desc">Full pipeline state description</param>
+        /// <param name="program">SLC2 shader program</param>
+        /// <returns>True if cannot create state, otherwise false</returns>
+        virtual bool Init(const Description& desc, const SLC2GPUShaderProgram* program) = 0;
+
+    public:
+        // [GPUResource]
+        GPUResourceType GetResType() const final override;
+    };
 }

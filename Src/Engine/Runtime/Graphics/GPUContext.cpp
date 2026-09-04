@@ -89,6 +89,61 @@ namespace SE
 			BlendingMode::Opaque, // BlendMode
 		};
 
+	SLC2GPUPipelineState::Description SLC2GPUPipelineState::Description::Default = {
+        true,                            // DepthEnable
+        true,                            // DepthWriteEnable
+        true,                            // DepthClipEnable
+        ComparisonFunc::Less,            // DepthFunc
+        false,                           // StencilEnable
+        0xff,                            // StencilReadMask
+        0xff,                            // StencilWriteMask
+        ComparisonFunc::Always,          // StencilFunc
+        StencilOperation::Keep,          // StencilFailOp
+        StencilOperation::Keep,          // StencilDepthFailOp
+        StencilOperation::Keep,          // StencilPassOp
+        PrimitiveTopologyType::Triangle, // PrimitiveTopology
+        false,                           // Wireframe
+        CullMode::Normal,                // CullMode
+        BlendingMode::Opaque,            // BlendMode
+    };
+
+    SLC2GPUPipelineState::Description SLC2GPUPipelineState::Description::DefaultNoDepth = {
+        false,                           // DepthEnable
+        false,                           // DepthWriteEnable
+        false,                           // DepthClipEnable
+        ComparisonFunc::Less,            // DepthFunc
+        false,                           // StencilEnable
+        0xff,                            // StencilReadMask
+        0xff,                            // StencilWriteMask
+        ComparisonFunc::Always,          // StencilFunc
+        StencilOperation::Keep,          // StencilFailOp
+        StencilOperation::Keep,          // StencilDepthFailOp
+        StencilOperation::Keep,          // StencilPassOp
+        PrimitiveTopologyType::Triangle, // PrimitiveTopology
+        false,                           // Wireframe
+        CullMode::Normal,                // CullMode
+        BlendingMode::Opaque,            // BlendMode
+    };
+
+    SLC2GPUPipelineState::Description SLC2GPUPipelineState::Description::DefaultFullscreenTriangle = {
+        false,                           // DepthEnable
+        false,                           // DepthWriteEnable
+        false,                           // DepthClipEnable
+        ComparisonFunc::Less,            // DepthFunc
+        false,                           // StencilEnable
+        0xff,                            // StencilReadMask
+        0xff,                            // StencilWriteMask
+        ComparisonFunc::Always,          // StencilFunc
+        StencilOperation::Keep,          // StencilFailOp
+        StencilOperation::Keep,          // StencilDepthFailOp
+        StencilOperation::Keep,          // StencilPassOp
+        PrimitiveTopologyType::Triangle, // PrimitiveTopology
+        false,                           // Wireframe
+        CullMode::TwoSided,              // CullMode
+        BlendingMode::Opaque,            // BlendMode
+    };
+
+
 	struct GPUContext::PrivateData
 	{
 		AssetRef<Shader> QuadShader;

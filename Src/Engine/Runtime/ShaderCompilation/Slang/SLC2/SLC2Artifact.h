@@ -14,6 +14,7 @@ namespace SE
         ShaderStage Stage = ShaderStage::Max;
 		String EntryPoint;
 		List<byte> Code;
+		int32 OutputControlPoints = 0;
 	};
 
 	struct SE_API_RUNTIME SLC2VariantRecord

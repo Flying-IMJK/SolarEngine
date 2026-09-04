@@ -11,7 +11,6 @@
 #include "GPUShaderProgramVulkan.h"
 #include "GPUShaderVulkan.h"
 #include "GPUSamplerVulkan.h"
-#include "SLC2ShaderProgramVulkan.h"
 #include "Runtime/Core/Math/Rectangle.h"
 #include "Runtime/Graphics/Shaders/ShaderProgramInstance.h"
 
@@ -336,13 +335,10 @@ namespace SE
 		_rtDirtyFlag = false;
 	}
 
-	bool GPUContextVulkan::OnSLC2DrawCall(SLC2GraphicsPipelineStateVulkan* state, ShaderProgramInstance& instance)
+	bool GPUContextVulkan::OnSLC2DrawCall(ShaderProgramInstance& instance)
 	{
-		if (state == nullptr)
-		{
-			LOG_ERROR("Graphic", "SLC2 draw requires a graphics pipeline state.");
-			return false;
-		}
+        SLC2GraphicsPipelineStateVulkan* pipelineState = _currentSLC2GraphicsState;
+        ENGINE_ASSERT(pipelineState && pipelineState->IsValid());
 
 		ShaderBindingSnapshot snapshot;
 		// SLC2 graphics 与 compute 一样，先冻结 instance 的可变绑定状态，再交给 Vulkan descriptor 层消费。
@@ -351,7 +347,7 @@ namespace SE
 			return false;
 		}
 
-		SLC2ShaderProgram* shaderProgram = instance.GetProgram();
+		SLC2GPUShaderProgram* shaderProgram = instance.GetProgram();
 		if (shaderProgram == nullptr)
 		{
 			LOG_ERROR("Graphic", "SLC2 draw requires an initialized shader program instance.");
@@ -365,12 +361,12 @@ namespace SE
 			EndRenderPass();
 		}
 
-		if (!shaderProgramVulkan->PrepareAndBindGraphicsDescriptors(this, snapshot, state))
+		if (!shaderProgramVulkan->PrepareAndBindGraphicsDescriptors(this, snapshot, pipelineState))
 		{
 			return false;
 		}
 
-		const auto vertexInputState = state->GetVertexInputState();
+		const auto vertexInputState = pipelineState->GetVertexInputState();
 		const int32 missingVBs = vertexInputState->vertexBindingDescriptionCount - _vbCount;
 		if (missingVBs > 0)
 		{
@@ -383,8 +379,6 @@ namespace SE
 			vkCmdBindVertexBuffers(cmdBuffer->GetHandle(), _vbCount, missingVBs, buffers, offsets);
 		}
 
-		_currentState = nullptr;
-		_currentSLC2GraphicsState = state;
 		if (cmdBuffer->IsOutsideRenderPass())
 		{
 			BeginRenderPass();
@@ -395,7 +389,7 @@ namespace SE
 			BeginRenderPass();
 		}
 
-		const VkPipeline pipeline = state->GetState(_renderPass);
+		const VkPipeline pipeline = pipelineState->GetState(_renderPass);
 		if (pipeline == VK_NULL_HANDLE)
 		{
 			return false;
@@ -952,7 +946,7 @@ namespace SE
 			return;
 		}
 
-		SLC2ShaderProgram* shaderProgram = instance.GetProgram();
+		SLC2GPUShaderProgram* shaderProgram = instance.GetProgram();
 		if (shaderProgram == nullptr)
 		{
 			LOG_ERROR("Graphics", "Compute dispatch requires an initialized shader program instance.");
@@ -1031,7 +1025,7 @@ namespace SE
 			return;
 		}
 
-		SLC2ShaderProgram* shaderProgram = instance.GetProgram();
+		SLC2GPUShaderProgram* shaderProgram = instance.GetProgram();
 		if (shaderProgram == nullptr)
 		{
             LOG_ERROR("Graphics", "Indirect compute dispatch requires an initialized shader program instance.");
@@ -1124,22 +1118,19 @@ namespace SE
 	}
 
 	void GPUContextVulkan::DrawInstanced(ShaderProgramInstance& instance,
-		const GPUPipelineState::Description& desc,
 		uint32 verticesCount,
 		uint32 instanceCount,
 		int32 startInstance,
 		int32 startVertex)
 	{
-		SLC2ShaderProgram* shaderProgram = instance.GetProgram();
+		SLC2GPUShaderProgram* shaderProgram = instance.GetProgram();
 		if (shaderProgram == nullptr)
 		{
 			LOG_ERROR("Graphic", "SLC2 draw requires an initialized shader program instance.");
 			return;
 		}
 
-		SLC2ShaderProgramVulkan* shaderProgramVulkan = static_cast<SLC2ShaderProgramVulkan*>(shaderProgram);
-		SLC2GraphicsPipelineStateVulkan* pipelineState = shaderProgramVulkan->GetOrCreateGraphicsState(desc);
-		if (!OnSLC2DrawCall(pipelineState, instance))
+		if (!OnSLC2DrawCall(instance))
 		{
 			return;
 		}
@@ -1169,16 +1160,14 @@ namespace SE
 		int32 startVertex,
 		int32 startIndex)
 	{
-		SLC2ShaderProgram* shaderProgram = instance.GetProgram();
+		SLC2GPUShaderProgram* shaderProgram = instance.GetProgram();
 		if (shaderProgram == nullptr)
 		{
 			LOG_ERROR("Graphic", "SLC2 indexed draw requires an initialized shader program instance.");
 			return;
 		}
 
-		SLC2ShaderProgramVulkan* shaderProgramVulkan = static_cast<SLC2ShaderProgramVulkan*>(shaderProgram);
-		SLC2GraphicsPipelineStateVulkan* pipelineState = shaderProgramVulkan->GetOrCreateGraphicsState(desc);
-		if (!OnSLC2DrawCall(pipelineState, instance))
+		if (!OnSLC2DrawCall(instance))
 		{
 			return;
 		}
@@ -1186,6 +1175,7 @@ namespace SE
 		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
 		vkCmdDrawIndexed(cmdBuffer->GetHandle(), indicesCount, instanceCount, startIndex, startVertex, startInstance);
 	}
+
 	void GPUContextVulkan::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 	{
 		ENGINE_ASSERT(bufferForArgs && bufferForArgs->GetFlags().IsFlag(GPUBufferFlags::Argument));
@@ -1438,8 +1428,18 @@ namespace SE
 
 	GPUPipelineState* GPUContextVulkan::GetState() const
 	{
-		return _currentState;
+		return _currentState; }
+
+    void GPUContextVulkan::SetSLC2State(SLC2GPUPipelineState* state) 
+	{
+        if (_currentSLC2GraphicsState != state || _currentSLC2GraphicsState != nullptr)
+        {
+            _currentSLC2GraphicsState = static_cast<SLC2GraphicsPipelineStateVulkan*>(state);
+            _psDirtyFlag              = true;
+        }
 	}
+
+    SLC2GPUPipelineState* GPUContextVulkan::GetSLC2State() const { return _currentSLC2GraphicsState; }
 
 	void GPUContextVulkan::ClearState()
 	{

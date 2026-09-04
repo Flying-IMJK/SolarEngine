@@ -11,6 +11,7 @@
 namespace SE
 {
 	class GPUPipelineState;
+    class SLC2GPUPipelineState;
 	class GPUContext;
 	class GPUTexture;
 	class GPUShader;
@@ -118,6 +119,8 @@ namespace SE
 		virtual GPUSwapChain* CreateSwapChain(Window* window) = 0;
 
 		virtual GPUPipelineState* CreatePipelineState() = 0;
+
+		virtual SLC2GPUPipelineState* CreateSLC2PipelineState() = 0;
 
 		virtual GPUTexture* CreateTexture(const StringView& name = StringView::Empty) = 0;
 

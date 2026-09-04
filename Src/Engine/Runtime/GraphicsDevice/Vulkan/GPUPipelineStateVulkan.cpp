@@ -5,7 +5,6 @@
 #include "GPUSamplerVulkan.h"
 #include "GPUBufferVulkan.h"
 #include "GPUShaderVulkan.h"
-#include "SLC2ShaderProgramVulkan.h"
 
 #include "Runtime/Core/Types/Strings/String.h"
 #include "Runtime/Core/Types/Strings/StringView.h"
@@ -46,6 +45,7 @@ namespace SE
 	{
 
 	}
+
 	PipelineLayoutVulkan* GPUPipelineStateVulkan::GetLayout()
 	{
 		if (m_Layout)
@@ -360,10 +360,10 @@ namespace SE
 
 
 
-	SLC2PipelineStateVulkanBase::SLC2PipelineStateVulkanBase(GPUDeviceVulkan*      device,
-                                                             PipelineLayoutVulkan* layout) :
-        m_Device(device), m_Layout(layout)
-    {}
+	SLC2PipelineStateVulkanBase::SLC2PipelineStateVulkanBase(GPUDeviceVulkan* device) :
+        GPUResourceVulkan<SLC2GPUPipelineState>(device, StringView::Empty)
+    {
+    }
 
     SLC2PipelineStateVulkanBase::~SLC2PipelineStateVulkanBase()
     {
@@ -381,7 +381,7 @@ namespace SE
     bool SLC2PipelineStateVulkanBase::PrepareAndBindDescriptors(GPUContextVulkan*                        context,
                                                                 const ShaderBindingSnapshot&             snapshot,
                                                                 const List<SLC2VulkanDescriptorBinding>& bindings,
-                                                                const VkPipelineBindPoint                bindPoint)
+                                                                VkPipelineBindPoint                      bindPoint)
     {
         if (!snapshot.IsFrozen())
         {
@@ -405,12 +405,13 @@ namespace SE
         {
             if (bindings.HasItems())
             {
-                LOG_ERROR("Graphic", "SLC2 Vulkan descriptor binding map is not empty but the layout has no descriptor sets.");
+                LOG_ERROR("Graphic",
+                          "SLC2 Vulkan descriptor binding map is not empty but the layout has no descriptor sets.");
                 return false;
             }
             if (snapshot.GetResources().HasItems() || snapshot.GetUniformData().HasItems())
             {
-               LOG_ERROR("Graphic",
+                LOG_ERROR("Graphic",
                           "Descriptor snapshot contains bindings but the Vulkan layout has no descriptor sets.");
                 return false;
             }
@@ -476,10 +477,16 @@ namespace SE
         return true;
     }
 
+
+    bool SLC2PipelineStateVulkanBase::IsValid() const
+    {
+        return m_MemoryUsage != 0;
+    }
+
 	SLC2ComputePipelineStateVulkan::SLC2ComputePipelineStateVulkan(GPUDeviceVulkan*      device,
                                                                    VkPipeline            pipeline,
                                                                    PipelineLayoutVulkan* layout) :
-        SLC2PipelineStateVulkanBase(device, layout), m_Pipeline(pipeline)
+        SLC2PipelineStateVulkanBase(device), m_Pipeline(pipeline)
     {}
 
     SLC2ComputePipelineStateVulkan::~SLC2ComputePipelineStateVulkan()
@@ -489,6 +496,11 @@ namespace SE
             m_Device->deferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::Pipeline, m_Pipeline);
             m_Pipeline = VK_NULL_HANDLE;
         }
+    }
+
+    bool SLC2ComputePipelineStateVulkan::Init(const Description& desc, const SLC2GPUShaderProgram* program)
+    {
+        return false;
     }
 
     VkPipeline SLC2ComputePipelineStateVulkan::GetHandle() const { return m_Pipeline; }
@@ -506,6 +518,8 @@ namespace SE
     {
         return SLC2PipelineStateVulkanBase::PrepareAndBindDescriptors(context, snapshot, bindings, VK_PIPELINE_BIND_POINT_COMPUTE);
     }
+
+    void SLC2ComputePipelineStateVulkan::OnReleaseGPU() {}
 
     bool SLC2PipelineStateVulkanBase::SetupDescriptorWrites()
     {
@@ -1044,10 +1058,8 @@ namespace SE
         m_DescriptorWritesReady = false;
     }
 
-    SLC2GraphicsPipelineStateVulkan::SLC2GraphicsPipelineStateVulkan(GPUDeviceVulkan*        device,
-                                                                     SLC2ShaderProgramVulkan* program) :
-        SLC2PipelineStateVulkanBase(device, program != nullptr ? program->GetPipelineLayout() : nullptr),
-        m_Program(program),
+    SLC2GraphicsPipelineStateVulkan::SLC2GraphicsPipelineStateVulkan(GPUDeviceVulkan* device) :
+        SLC2PipelineStateVulkanBase(device),
         m_Pipelines(16)
     {
         blendEnable = 0;
@@ -1055,6 +1067,7 @@ namespace SE
         depthWriteEnable = 0;
         stencilReadEnable = 0;
         stencilWriteEnable = 0;
+        Platform::MemoryClear(m_ShaderStagesMark, sizeof(m_ShaderStagesMark));
     }
 
     SLC2GraphicsPipelineStateVulkan::~SLC2GraphicsPipelineStateVulkan()
@@ -1063,13 +1076,18 @@ namespace SE
         m_Program = nullptr;
     }
 
-    bool SLC2GraphicsPipelineStateVulkan::Initialize(const GPUPipelineState::Description& desc)
+    bool SLC2GraphicsPipelineStateVulkan::Init(const Description& desc, const SLC2GPUShaderProgram* program)
     {
+        SLC2GPUShaderProgram* programConst = const_cast<SLC2GPUShaderProgram*>(program);
+        m_Program                          = static_cast<SLC2ShaderProgramVulkan*>(programConst);
         if (m_Program == nullptr)
         {
             LOG_ERROR("Graphic", "SLC2 graphics pipeline requires a shader program.");
             return false;
         }
+
+        m_Layout = static_cast<PipelineLayoutVulkan*>(m_Program->GetPipelineLayout());
+
         if (m_Layout == nullptr)
         {
             LOG_ERROR("Graphic", "SLC2 graphics pipeline requires a pipeline layout.");
@@ -1086,7 +1104,6 @@ namespace SE
         m_DescKey = desc;
         VulkanTool::ZeroStruct(m_Desc, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
 
-        bool hasVertexStage = false;
         for (int32 stageIndex = 0; stageIndex < variant->Stages.Count(); stageIndex++)
         {
             ShaderStage stage = variant->Stages[stageIndex].Stage;
@@ -1101,29 +1118,27 @@ namespace SE
             {
                 return false;
             }
+
             if (!AddShaderStage(stage, stageFlag))
             {
                 return false;
             }
-            if (stage == ShaderStage::Vertex)
-            {
-                hasVertexStage = true;
-            }
         }
 
-        if (!hasVertexStage)
+        if (!m_ShaderStagesMark[(int)ShaderStage::Vertex])
         {
             LOG_ERROR("Graphic", "SLC2 graphics pipeline requires a vertex stage.");
             return false;
         }
+
         m_Desc.pStages = m_ShaderStages;
 
-        if (desc.VS != nullptr)
+/*        if (desc.VS != nullptr)
         {
             // P6.0 先复用旧 VS 输入布局描述；无 VS 时走空 vertex input，用于 fullscreen/triangle smoke。
             m_DescVertexInput = *static_cast<const VkPipelineVertexInputStateCreateInfo*>(desc.VS->GetInputLayout());
         }
-        else
+        else*/
         {
             VulkanTool::ZeroStruct(m_DescVertexInput, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
         }
@@ -1146,16 +1161,31 @@ namespace SE
             break;
         }
 
-        if (desc.HS != nullptr)
+        if (m_ShaderStagesMark[(int)ShaderStage::Domain])
         {
             m_DescInputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
         }
         m_Desc.pInputAssemblyState = &m_DescInputAssembly;
 
-        if (desc.HS != nullptr)
+        if (m_ShaderStagesMark[(int)ShaderStage::Hull])
         {
+            int32 outputControlPoints = 0;
+            for (int32 stageIndex = 0; stageIndex < variant->Stages.Count(); stageIndex++)
+            {
+                SLC2StageRecord stageRecord = variant->Stages[stageIndex];
+                if (stageRecord.Stage == ShaderStage::Hull)
+                {
+                    outputControlPoints = stageRecord.OutputControlPoints;
+                }
+            }
+
+            if (outputControlPoints <= 0 || outputControlPoints > 32)
+            {
+                LOG_ERROR("Graphic", "SLC2 graphics pipeline requires valid hull shader output control points.");
+                return false;
+            }
             VulkanTool::ZeroStruct(m_DescTessellation, VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO);
-            m_DescTessellation.patchControlPoints = desc.HS->GetControlPointsCount();
+            m_DescTessellation.patchControlPoints = static_cast<uint32>(outputControlPoints);
             m_Desc.pTessellationState = &m_DescTessellation;
         }
 
@@ -1243,7 +1273,7 @@ namespace SE
         return true;
     }
 
-    bool SLC2GraphicsPipelineStateVulkan::Matches(const GPUPipelineState::Description& desc) const
+    bool SLC2GraphicsPipelineStateVulkan::Matches(const Description& desc) const
     {
         return m_DescKey.DepthEnable == desc.DepthEnable &&
                m_DescKey.DepthWriteEnable == desc.DepthWriteEnable &&
@@ -1256,8 +1286,6 @@ namespace SE
                m_DescKey.StencilFailOp == desc.StencilFailOp &&
                m_DescKey.StencilDepthFailOp == desc.StencilDepthFailOp &&
                m_DescKey.StencilPassOp == desc.StencilPassOp &&
-               m_DescKey.VS == desc.VS &&
-               m_DescKey.HS == desc.HS &&
                m_DescKey.PrimitiveTopology == desc.PrimitiveTopology &&
                m_DescKey.Wireframe == desc.Wireframe &&
                m_DescKey.CullMode == desc.CullMode &&
@@ -1309,6 +1337,8 @@ namespace SE
         return SLC2PipelineStateVulkanBase::PrepareAndBindDescriptors(context, snapshot, bindings, VK_PIPELINE_BIND_POINT_GRAPHICS);
     }
 
+    void SLC2GraphicsPipelineStateVulkan::OnReleaseGPU() {}
+
     void SLC2GraphicsPipelineStateVulkan::ReleasePipelines()
     {
         for (auto iterator = m_Pipelines.begin(); iterator.IsNotEnd(); ++iterator)
@@ -1334,6 +1364,8 @@ namespace SE
             LOG_ERROR("Graphic", "SLC2 graphics shader module or entry point is missing.");
             return false;
         }
+
+        m_ShaderStagesMark[(int)stage] = true;
 
         VkPipelineShaderStageCreateInfo& stageDesc = m_ShaderStages[m_Desc.stageCount++];
         VulkanTool::ZeroStruct(stageDesc, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);

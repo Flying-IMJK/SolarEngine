@@ -89,7 +89,7 @@ namespace SE
 		void UpdateDescriptorSets(const struct SpirvShaderDescriptorInfo& descriptorInfo, class DescriptorSetWriterVulkan& dsWriter, bool& needsWrite);
 		void UpdateDescriptorSets(ComputePipelineStateVulkan* pipelineState);
 		void OnDrawCall();
-		bool OnSLC2DrawCall(SLC2GraphicsPipelineStateVulkan* state, ShaderProgramInstance& instance);
+		bool OnSLC2DrawCall(ShaderProgramInstance& instance);
 
 	public:
 		/// <summary>
@@ -154,7 +154,7 @@ namespace SE
         void DispatchIndirect(ShaderProgramInstance& instance, GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
 		void ResolveMultisample(GPUTexture* sourceMultisampleTexture, GPUTexture* destTexture, int32 sourceSubResource, int32 destSubResource, PixelFormat format) override;
 		void DrawInstanced(uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex) override;
-		void DrawInstanced(ShaderProgramInstance& instance, const GPUPipelineState::Description& desc, uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex) override;
+		void DrawInstanced(ShaderProgramInstance& instance, uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex) override;
 		void DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex) override;
 		void DrawIndexedInstanced(ShaderProgramInstance& instance, const GPUPipelineState::Description& desc, uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex) override;
 		void DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
@@ -181,6 +181,9 @@ namespace SE
 
 		void SetState(GPUPipelineState* state) override;
 		GPUPipelineState* GetState() const override;
+        void SetSLC2State(SLC2GPUPipelineState* state) override;
+        SLC2GPUPipelineState* GetSLC2State() const override;
+
 		void ClearState() override;
 		void FlushState() override;
 		void Flush() override;

@@ -262,7 +262,7 @@ namespace SE
 		 * @param startInstance 起始实例。
 		 * @param startVertex 起始顶点。
 		 */
-		virtual void DrawInstanced(ShaderProgramInstance& instance, const GPUPipelineState::Description& desc, uint32 verticesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0) = 0;
+		virtual void DrawInstanced(ShaderProgramInstance& instance, uint32 verticesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0) = 0;
 
 		/**
 		 * Draws the indexed primitives.
@@ -463,6 +463,19 @@ namespace SE
 		/// </summary>
 		/// <returns>The current state.</returns>
 		virtual GPUPipelineState* GetState() const = 0;
+
+		/// <summary>
+        /// Sets the graphics pipeline state.
+        /// </summary>
+        /// <param name="state">The state to bind.</param>
+        virtual void SetSLC2State(SLC2GPUPipelineState* state) = 0;
+
+        /// <summary>
+        /// Gets the current pipeline state binded to the graphics pipeline.
+        /// </summary>
+        /// <returns>The current state.</returns>
+        virtual SLC2GPUPipelineState* GetSLC2State() const = 0;
+
 
 		/// <summary>
 		/// Clears the context state.

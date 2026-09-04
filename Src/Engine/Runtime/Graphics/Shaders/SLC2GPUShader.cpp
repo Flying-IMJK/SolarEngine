@@ -1,35 +1,13 @@
 #include "SLC2GPUShader.h"
 
 #include "ShaderProgramInstance.h"
+#include "SLC2GPUShaderProgram.h"
 #include "Runtime/Core/Memory/Memory.h"
 #include "Runtime/ShaderCompilation/Slang/SLC2/SLC2Reader.h"
 #include "Runtime/ShaderCompilation/Slang/ShaderVariantPlanner.h"
 
 namespace SE
 {
-	bool SLC2ShaderProgram::Initialize(const SLC2ProgramRecord* program, const SLC2TargetRecord* target, const SLC2VariantRecord* variant)
-	{
-		_program = program;
-		_target = target;
-		_variant = variant;
-		if (variant == nullptr)
-		{
-            LOG_ERROR("Shader", "Shader program requires a selected variant.");
-			return false;
-		}
-		return _reflection.Initialize(variant->Layout);
-	}
-
-	const SLC2VariantRecord* SLC2ShaderProgram::GetVariant() const
-	{
-		return _variant;
-	}
-
-	const ShaderProgramReflection& SLC2ShaderProgram::GetReflection() const
-	{
-		return _reflection;
-	}
-
 	SLC2GPUShader::SLC2GPUShader()
 		: GPUResource()
 	{
@@ -59,7 +37,7 @@ namespace SE
 				programCapacity += _artifact.Programs[programIndex].Targets[targetIndex].Variants.Count();
 			}
 		}
-		_programs.SetCapacity(programCapacity, false);
+		m_Programs.SetCapacity(programCapacity, false);
 		m_MemoryUsage = data.Count();
 		return true;
 	}
@@ -120,23 +98,23 @@ namespace SE
 		return true;
 	}
 
-	bool SLC2GPUShader::GetOrCreateProgram(const SLC2ProgramRecord* program, const SLC2TargetRecord* target, const SLC2VariantRecord* variant, SLC2ShaderProgram*& shaderProgram)
+	bool SLC2GPUShader::GetOrCreateProgram(const SLC2ProgramRecord* program, const SLC2TargetRecord* target, const SLC2VariantRecord* variant, SLC2GPUShaderProgram*& shaderProgram)
 	{
 		// Variant 记录来自 _artifact，指针在下一次 Load/Release 前稳定，可作为当前 GPUShader 内部缓存 key。
-		for (int32 index = 0; index < _programs.Count(); index++)
+		for (int32 index = 0; index < m_Programs.Count(); index++)
 		{
-			if (_programs[index]->GetVariant() == variant)
+			if (m_Programs[index]->GetVariant() == variant)
 			{
-				shaderProgram = _programs[index];
+				shaderProgram = m_Programs[index];
 				return true;
 			}
 		}
-		SLC2ShaderProgram* created = CreateSLC2ShaderProgram(program, target, variant);
+		SLC2GPUShaderProgram* created = CreateSLC2ShaderProgram(program, target, variant);
 		if (created == nullptr)
 		{
 			return false;
 		}
-		_programs.Add(created);
+		m_Programs.Add(created);
 		shaderProgram = created;
 		return true;
 	}
@@ -150,7 +128,7 @@ namespace SE
 		{
 			return false;
 		}
-		SLC2ShaderProgram* shaderProgram = nullptr;
+		SLC2GPUShaderProgram* shaderProgram = nullptr;
 		if (!GetOrCreateProgram(program, target, variant, shaderProgram))
 		{
 			return false;
@@ -160,7 +138,7 @@ namespace SE
 
 	void SLC2GPUShader::ReleasePrograms()
 	{
-		_programs.ClearDelete();
+		m_Programs.ClearDelete();
 	}
 
 	GPUResourceType SLC2GPUShader::GetResType() const

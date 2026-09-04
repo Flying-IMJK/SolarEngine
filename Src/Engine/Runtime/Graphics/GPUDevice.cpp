@@ -435,4 +435,15 @@ namespace SE
 	{
 		return GPUResourceType::PipelineState;
 	}
+
+	SLC2GPUPipelineState* SLC2GPUPipelineState::Spawn(const SpawnParams& params)
+    {
+        return GPUDevice::instance->CreateSLC2PipelineState();
+    }
+
+    SLC2GPUPipelineState* SLC2GPUPipelineState::New() { return GPUDevice::instance->CreateSLC2PipelineState(); }
+
+    SLC2GPUPipelineState::SLC2GPUPipelineState() : GPUResource(SpawnParams(UID::New(), TypeInitializer)) {}
+
+    GPUResourceType SLC2GPUPipelineState::GetResType() const { return GPUResourceType::PipelineState; }
 }

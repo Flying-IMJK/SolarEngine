@@ -6,12 +6,14 @@
 #include "VulkanTypes.h"
 #include "DescriptorSetVulkan.h"
 #include "CmdBufferVulkan.h"
-#include "SLC2ShaderProgramVulkan.h"
 #include "Runtime/Graphics/Shaders/ShaderBindingSnapshot.h"
 
 namespace SE
 {
     class PipelineLayoutVulkan;
+    class SLC2ShaderProgramVulkan;
+    struct SLC2VulkanDescriptorBinding;
+    
 
     /// <summary>
     /// Vulkan Compute管线状态对象
@@ -203,10 +205,14 @@ namespace SE
     /// SLC2 Vulkan pipeline 公共 descriptor 绑定状态。
     /// Compute 与 Graphics 都使用 ShaderBindingSnapshot 写 descriptor，区别只在 pipeline bind point。
     /// </summary>
-    class SLC2PipelineStateVulkanBase
+    class SLC2PipelineStateVulkanBase : public GPUResourceVulkan<SLC2GPUPipelineState>
     {
+    public:
+        // [SLC2GPUPipelineState]
+        bool IsValid() const final override;
+
     protected:
-        SLC2PipelineStateVulkanBase(GPUDeviceVulkan* device, PipelineLayoutVulkan* layout);
+        SLC2PipelineStateVulkanBase(GPUDeviceVulkan* device);
         ~SLC2PipelineStateVulkanBase();
 
         PipelineLayoutVulkan*            GetLayout() const;
@@ -241,7 +247,6 @@ namespace SE
         void                               ReleaseDescriptorState();
 
     protected:
-        GPUDeviceVulkan*                  m_Device                         = nullptr;
         PipelineLayoutVulkan*             m_Layout                        = nullptr;
 
     private:
@@ -258,11 +263,13 @@ namespace SE
     /// 一个不可变 compute variant 对应的 Vulkan pipeline 状态。
     /// descriptor set 每次按 ShaderBindingSnapshot 写入，pipeline/layout 本身保持缓存复用。
     /// </summary>
-    class SLC2ComputePipelineStateVulkan : private SLC2PipelineStateVulkanBase
+    class SLC2ComputePipelineStateVulkan : public SLC2PipelineStateVulkanBase
     {
     public:
         SLC2ComputePipelineStateVulkan(GPUDeviceVulkan* device, VkPipeline pipeline, PipelineLayoutVulkan* layout);
         ~SLC2ComputePipelineStateVulkan();
+
+        bool Init(const Description& desc, const SLC2GPUShaderProgram* program) override;
 
         VkPipeline                       GetHandle() const;
         PipelineLayoutVulkan*            GetLayout() const;
@@ -270,6 +277,10 @@ namespace SE
         bool                             PrepareAndBindDescriptors(GPUContextVulkan*                        context,
                                                                    const ShaderBindingSnapshot&             snapshot,
                                                                    const List<SLC2VulkanDescriptorBinding>& bindings);
+
+    protected:
+        // [GPUResourceVulkan]
+        void OnReleaseGPU() override;
 
     private:
         VkPipeline m_Pipeline = VK_NULL_HANDLE;
@@ -279,14 +290,15 @@ namespace SE
     /// Vulkan Graphics管线状态对象
     /// SLC2 graphics variant 使用独立 pipeline state，旧 GPUPipelineStateVulkan 仍保留给旧 GPUShaderProgram 路径。
     /// </summary>
-    class SLC2GraphicsPipelineStateVulkan : private SLC2PipelineStateVulkanBase
+    class SLC2GraphicsPipelineStateVulkan : public SLC2PipelineStateVulkanBase
     {
     public:
-        SLC2GraphicsPipelineStateVulkan(GPUDeviceVulkan* device, SLC2ShaderProgramVulkan* program);
+        SLC2GraphicsPipelineStateVulkan(GPUDeviceVulkan* device);
         ~SLC2GraphicsPipelineStateVulkan();
 
-        bool                                      Initialize(const GPUPipelineState::Description& desc);
-        bool                                      Matches(const GPUPipelineState::Description& desc) const;
+        virtual bool Init(const Description& desc, const SLC2GPUShaderProgram* program) override;
+
+        bool                                     Matches(const Description& desc) const;
         VkPipeline                                GetState(RenderPassVulkan* renderPass);
         PipelineLayoutVulkan*                     GetLayout() const;
         const VkPipelineVertexInputStateCreateInfo* GetVertexInputState() const;
@@ -300,15 +312,20 @@ namespace SE
         uint32 stencilReadEnable : 1;
         uint32 stencilWriteEnable : 1;
 
+    protected:
+        // [GPUResourceVulkan]
+        void OnReleaseGPU() override;
+
     private:
         void                                      ReleasePipelines();
         bool                                      AddShaderStage(ShaderStage stage, VkShaderStageFlagBits stageFlag);
 
         SLC2ShaderProgramVulkan*                  m_Program = nullptr;
         Dictionary<RenderPassVulkan*, VkPipeline> m_Pipelines;
-        GPUPipelineState::Description             m_DescKey;
+        Description                               m_DescKey;
         VkGraphicsPipelineCreateInfo              m_Desc;
         VkPipelineShaderStageCreateInfo           m_ShaderStages[(int)ShaderStage::Max];
+        bool                                      m_ShaderStagesMark[(int)ShaderStage::Max];
         VkPipelineVertexInputStateCreateInfo      m_DescVertexInput;
         VkPipelineInputAssemblyStateCreateInfo    m_DescInputAssembly;
         VkPipelineTessellationStateCreateInfo     m_DescTessellation;
