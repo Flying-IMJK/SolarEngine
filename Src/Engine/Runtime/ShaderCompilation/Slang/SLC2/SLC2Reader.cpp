@@ -68,6 +68,102 @@ namespace SE
 			return true;
 		}
 
+		// Reader 顶点输入边界同时区分“显式空数组”和“字段缺失”，禁止为旧缓存补默认值。
+		namespace SLC2VertexInputReader
+		{
+			bool ParseMinimalVertexBufferLayout(const Json::Value& value, SLC2VertexBufferLayout& output, String& error)
+			{
+				const Json::Value* bindings = nullptr;
+				const Json::Value* elements = nullptr;
+				if (!ReadArray(value, "bindings", bindings, error) || !ReadArray(value, "elements", elements, error))
+				{
+					return false;
+				}
+				if (bindings->Size() != elements->Size() || bindings->Size() > 1)
+				{
+					error = SE_TEXT(
+						"Minimal SLC2 vertex input requires matching empty arrays or one binding and one element.");
+					return false;
+				}
+				if (bindings->Empty())
+				{
+					return true;
+				}
+
+				SLC2VertexBufferBinding binding;
+				String inputRate;
+				if (!ReadUint((*bindings)[0], "slot", binding.Slot, error) ||
+					!ReadUint((*bindings)[0], "stride", binding.Stride, error) ||
+					!ReadString((*bindings)[0], "inputRate", inputRate, error) ||
+					!ReadUint((*bindings)[0], "instanceStepRate", binding.InstanceStepRate, error))
+				{
+					return false;
+				}
+				if (binding.Slot != 0 || binding.Stride != 12 || inputRate != SE_TEXT("perVertex") ||
+					binding.InstanceStepRate != 0)
+				{
+					error = SE_TEXT("Minimal SLC2 vertex binding is invalid.");
+					return false;
+				}
+				binding.InputRate = SLC2VertexInputRate::PerVertex;
+
+				SLC2VertexInputElement element;
+				String pixelFormat;
+				if (!ReadString((*elements)[0], "semantic", element.Semantic, error) ||
+					!ReadUint((*elements)[0], "semanticIndex", element.SemanticIndex, error) ||
+					!ReadString((*elements)[0], "pixelFormat", pixelFormat, error) ||
+					!ReadUint((*elements)[0], "slot", element.Slot, error) ||
+					!ReadUint((*elements)[0], "offset", element.Offset, error))
+				{
+					return false;
+				}
+				if (element.Semantic != SE_TEXT("POSITION") || element.SemanticIndex != 0 ||
+					pixelFormat != SE_TEXT("R32G32B32_Float") || element.Slot != 0 || element.Offset != 0)
+				{
+					error = SE_TEXT("Minimal SLC2 vertex element is invalid.");
+					return false;
+				}
+				element.Format = PixelFormat::R32G32B32_Float;
+				output.Bindings.Add(binding);
+				output.Elements.Add(element);
+				return true;
+			}
+
+			bool ParseMinimalVertexInputSignature(const Json::Value& value,
+												  List<SLC2VertexInputSignatureElement>& output,
+												  String& error)
+			{
+				if (!value.IsArray() || value.Size() > 1)
+				{
+					error = SE_TEXT("Minimal SLC2 vertex input signature must be an array with at most one element.");
+					return false;
+				}
+				if (value.Empty())
+				{
+					return true;
+				}
+
+				SLC2VertexInputSignatureElement element;
+				String shaderType;
+				if (!ReadString(value[0], "semantic", element.Semantic, error) ||
+					!ReadUint(value[0], "semanticIndex", element.SemanticIndex, error) ||
+					!ReadUint(value[0], "location", element.Location, error) ||
+					!ReadString(value[0], "shaderType", shaderType, error))
+				{
+					return false;
+				}
+				if (element.Semantic != SE_TEXT("POSITION") || element.SemanticIndex != 0 ||
+					shaderType != SE_TEXT("float3"))
+				{
+					error = SE_TEXT("Minimal SLC2 vertex input signature is invalid.");
+					return false;
+				}
+				element.ShaderType = SLC2VertexInputType::Float3;
+				output.Add(element);
+				return true;
+			}
+		} // namespace SLC2VertexInputReader
+
 		int32 GetStageMaskOrder(const String& stage)
 		{
 			if (stage == SE_TEXT("vs"))
@@ -464,6 +560,26 @@ namespace SE
 				error = SE_TEXT("SLC2 stage is invalid.");
 				return false;
 			}
+
+			// Vertex Stage 必须显式携带签名；其他 Stage 出现该字段说明缓存结构归属错误。
+			Json::Value::ConstMemberIterator signature = value.FindMember("vertexInputSignature");
+			if (output.Stage == ShaderStage::Vertex)
+			{
+				if (signature == value.MemberEnd() || !SLC2VertexInputReader::ParseMinimalVertexInputSignature(
+														  signature->value, output.VertexInputSignature, error))
+				{
+					if (error.IsEmpty())
+					{
+						error = SE_TEXT("SLC2 vertex stage is missing vertexInputSignature.");
+					}
+					return false;
+				}
+			}
+			else if (signature != value.MemberEnd())
+			{
+				error = SE_TEXT("SLC2 non-vertex stage cannot contain vertexInputSignature.");
+				return false;
+			}
 			if ((output.Stage == ShaderStage::Hull && (outputControlPoints == 0 || outputControlPoints > 32)) ||
 				(output.Stage != ShaderStage::Hull && outputControlPoints != 0))
 			{
@@ -574,13 +690,15 @@ namespace SE
 					variant.Stages.Add(record);
 				}
 				bool hasCompute = false;
+				bool hasVertex = false;
 				bool hasPixel = false;
 				for (int32 stageIndex = 0; stageIndex < variant.Stages.Count(); stageIndex++)
 				{
                     hasCompute |= variant.Stages[stageIndex].Stage == ShaderStage::Compute;
+					hasVertex |= variant.Stages[stageIndex].Stage == ShaderStage::Vertex;
                     hasPixel |= variant.Stages[stageIndex].Stage == ShaderStage::Pixel;
 				}
-				if ((hasCompute && variant.Stages.Count() != 1) || (!hasCompute && !hasPixel))
+				if ((hasCompute && variant.Stages.Count() != 1) || (!hasCompute && (!hasVertex || !hasPixel)))
 				{
 					error = SE_TEXT("SLC2 variant stage contract is invalid.");
 					return false;
@@ -597,7 +715,78 @@ namespace SE
 			}
 			return true;
 		}
-	}
+
+		// Program 级物理布局必须与每个 Variant 的 Vertex Stage 逻辑签名一致。
+		namespace SLC2VertexInputReader
+		{
+			bool ValidateMinimalProgramVertexInput(const SLC2ProgramRecord& program, String& error)
+			{
+				for (int32 targetIndex = 0; targetIndex < program.Targets.Count(); targetIndex++)
+				{
+					const SLC2TargetRecord& target = program.Targets[targetIndex];
+					for (int32 variantIndex = 0; variantIndex < target.Variants.Count(); variantIndex++)
+					{
+						const SLC2VariantRecord& variant = target.Variants[variantIndex];
+						const SLC2StageRecord* vertexStage = nullptr;
+						bool hasCompute = false;
+						for (int32 stageIndex = 0; stageIndex < variant.Stages.Count(); stageIndex++)
+						{
+							const SLC2StageRecord& stage = variant.Stages[stageIndex];
+							hasCompute |= stage.Stage == ShaderStage::Compute;
+							if (stage.Stage == ShaderStage::Vertex)
+							{
+								vertexStage = &stage;
+							}
+						}
+
+						if (hasCompute)
+						{
+							if (program.VertexBufferLayout.Bindings.HasItems() ||
+								program.VertexBufferLayout.Elements.HasItems())
+							{
+								error = SE_TEXT("SLC2 compute program must use an empty vertex buffer layout.");
+								return false;
+							}
+							continue;
+						}
+
+						if (vertexStage == nullptr)
+						{
+							error = SE_TEXT("SLC2 graphics program is missing a vertex stage.");
+							return false;
+						}
+						if (vertexStage->VertexInputSignature.IsEmpty())
+						{
+							if (program.VertexBufferLayout.Bindings.HasItems() ||
+								program.VertexBufferLayout.Elements.HasItems())
+							{
+								error = SE_TEXT(
+									"SLC2 system-value-only vertex stage must use an empty vertex buffer layout.");
+								return false;
+							}
+							continue;
+						}
+
+						if (program.VertexBufferLayout.Bindings.Count() != 1 ||
+							program.VertexBufferLayout.Elements.Count() != 1 ||
+							vertexStage->VertexInputSignature.Count() != 1)
+						{
+							error = SE_TEXT("Minimal SLC2 vertex input counts are inconsistent.");
+							return false;
+						}
+						const SLC2VertexInputElement& physical = program.VertexBufferLayout.Elements[0];
+						const SLC2VertexInputSignatureElement& logical = vertexStage->VertexInputSignature[0];
+						if (physical.Semantic != logical.Semantic || physical.SemanticIndex != logical.SemanticIndex)
+						{
+							error = SE_TEXT("SLC2 vertex input layout does not match the vertex stage signature.");
+							return false;
+						}
+					}
+				}
+				return true;
+			}
+		} // namespace SLC2VertexInputReader
+	} // namespace
 
 	bool SLC2Reader::Read(const byte* data, const int32 length, SLC2Artifact& artifact, String& error)
 	{
@@ -615,7 +804,10 @@ namespace SE
 			error = SE_TEXT("SLC2 data is not valid JSON.");
 			return false;
 		}
-		if (!ReadString(document, "format", artifact.Format, error) || !ReadUint(document, "version", artifact.Version, error) || !ReadString(document, "compilerBuildTag", artifact.CompilerBuildTag, error) || artifact.Format != SE_TEXT("SLC2") || artifact.Version != 2)
+		if (!ReadString(document, "format", artifact.Format, error) ||
+			!ReadUint(document, "version", artifact.Version, error) ||
+			!ReadString(document, "compilerBuildTag", artifact.CompilerBuildTag, error) ||
+			artifact.Format != SE_TEXT("SLC2") || artifact.Version != 3)
 		{
 			if (error.IsEmpty())
 			{
@@ -633,7 +825,21 @@ namespace SE
 			SLC2ProgramRecord program;
 			const Json::Value* groups = nullptr;
 			const Json::Value* targets = nullptr;
-			if (!ReadString(*it, "programId", program.ProgramId, error) || !ReadArray(*it, "variantGroups", groups, error) || !ReadArray(*it, "targets", targets, error) || program.ProgramId.IsEmpty() || targets->Empty())
+			Json::Value::ConstMemberIterator vertexBufferLayout;
+			if (!ReadString(*it, "programId", program.ProgramId, error) ||
+				!RequireMember(*it, "vertexBufferLayout", vertexBufferLayout, error))
+			{
+				return false;
+			}
+			if (!vertexBufferLayout->value.IsObject())
+			{
+				error = SE_TEXT("SLC2 vertexBufferLayout must be an object.");
+				return false;
+			}
+			if (!SLC2VertexInputReader::ParseMinimalVertexBufferLayout(
+					vertexBufferLayout->value, program.VertexBufferLayout, error) ||
+				!ReadArray(*it, "variantGroups", groups, error) || !ReadArray(*it, "targets", targets, error) ||
+				program.ProgramId.IsEmpty() || targets->Empty())
 			{
 				return false;
 			}
@@ -672,6 +878,10 @@ namespace SE
 					}
 				}
 				program.Targets.Add(record);
+			}
+			if (!SLC2VertexInputReader::ValidateMinimalProgramVertexInput(program, error))
+			{
+				return false;
 			}
 			for (int32 existing = 0; existing < artifact.Programs.Count(); existing++)
 			{

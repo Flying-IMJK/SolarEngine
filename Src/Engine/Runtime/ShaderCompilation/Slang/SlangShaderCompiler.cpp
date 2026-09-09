@@ -1,6 +1,7 @@
 #include "SlangShaderCompiler.h"
 
 #include <Runtime/EngineContext.h>
+#include <Runtime/Core/Platform/StringUtils.h>
 #include <Runtime/Core/Types/Collections/List.h>
 #include <Runtime/ShaderCompilation/Slang/SLC2/SLC2Artifact.h>
 #include <Runtime/ShaderCompilation/Slang/SLC2/SLC2Reader.h>
@@ -137,8 +138,289 @@ namespace SE
 
 		String MakeCompilerBuildTag()
 		{
-			return String(SE_TEXT("SolarSlangCompiler/1;Slang/")) + StringAnsi(SLANG_TAG_VERSION).ToString() + SE_TEXT(";SLC2/2");
+			return String(SE_TEXT("SolarSlangCompiler/1;Slang/")) + StringAnsi(SLANG_TAG_VERSION).ToString() + SE_TEXT(";SLC2/3");
 		}
+
+		// 编译端顶点输入职责集中在此处：声明解析、Slang 逻辑签名提取和最小契约校验共用同一边界。
+		namespace SLC2VertexInputCompiler
+		{
+			bool ReadAttributeInt(slang::Attribute* attribute, const uint32 argumentIndex, int32& value)
+			{
+				int slangValue = 0;
+				if (!SlangSucceeded(attribute->getArgumentValueInt(argumentIndex, &slangValue)))
+				{
+					return false;
+				}
+				value = static_cast<int32>(slangValue);
+				return true;
+			}
+
+			bool ReadAttributeString(slang::Attribute* attribute, const uint32 argumentIndex, String& value)
+			{
+				size_t length = 0;
+				const char* text = attribute->getArgumentValueString(argumentIndex, &length);
+				if (text == nullptr)
+				{
+					return false;
+				}
+				value = FromUtf8(text, length);
+				return true;
+			}
+
+			// 票 01 只开放 Position-only 的安全子集。其他布局会明确失败，后续能力扩展不会形成静默半支持。
+			bool ReadMinimalVertexBinding(slang::Attribute* attribute, SlangProgramDeclaration& program, String& error)
+			{
+				int32 slot = 0;
+				int32 stride = 0;
+				int32 instanceStepRate = 0;
+				String inputRate;
+				if (attribute->getArgumentCount() != 4 || !ReadAttributeInt(attribute, 0, slot) ||
+					!ReadAttributeInt(attribute, 1, stride) || !ReadAttributeString(attribute, 2, inputRate) ||
+					!ReadAttributeInt(attribute, 3, instanceStepRate))
+				{
+					error = SE_TEXT("SolarShaderVertexInputBinding attribute is invalid.");
+					return false;
+				}
+				if (program.VertexBufferLayout.Bindings.HasItems())
+				{
+					error = SE_TEXT("Minimal SLC2 vertex input supports exactly one binding.");
+					return false;
+				}
+				if (slot != 0 || stride != 12 || inputRate != SE_TEXT("PER_VERTEX") || instanceStepRate != 0)
+				{
+					error =
+						SE_TEXT("Minimal SLC2 vertex input requires slot 0, stride 12, PER_VERTEX and step rate 0.");
+					return false;
+				}
+
+				SLC2VertexBufferBinding binding;
+				binding.Slot = static_cast<uint32>(slot);
+				binding.Stride = static_cast<uint32>(stride);
+				binding.InputRate = SLC2VertexInputRate::PerVertex;
+				binding.InstanceStepRate = static_cast<uint32>(instanceStepRate);
+				program.VertexBufferLayout.Bindings.Add(binding);
+				return true;
+			}
+
+			bool ReadMinimalVertexElement(slang::Attribute* attribute, SlangProgramDeclaration& program, String& error)
+			{
+				String semantic;
+				String format;
+				String offsetText;
+				int32 semanticIndex = 0;
+				int32 slot = 0;
+				if (attribute->getArgumentCount() != 5 || !ReadAttributeString(attribute, 0, semantic) ||
+					!ReadAttributeInt(attribute, 1, semanticIndex) || !ReadAttributeString(attribute, 2, format) ||
+					!ReadAttributeInt(attribute, 3, slot) || !ReadAttributeString(attribute, 4, offsetText))
+				{
+					error = SE_TEXT("SolarShaderVertexInputElement attribute is invalid.");
+					return false;
+				}
+				if (program.VertexBufferLayout.Elements.HasItems())
+				{
+					error = SE_TEXT("Minimal SLC2 vertex input supports exactly one element.");
+					return false;
+				}
+
+				semantic.ToUpper();
+				uint32 offset = 0;
+				const StringAnsi offsetAnsi(offsetText);
+				if (!StringUtils::Parse(offsetAnsi.Get(), offsetAnsi.Length(), &offset) ||
+					semantic != SE_TEXT("POSITION") || semanticIndex != 0 || format != SE_TEXT("R32G32B32_Float") ||
+					slot != 0 || offset != 0)
+				{
+					error = SE_TEXT("Minimal SLC2 vertex input requires POSITION0 R32G32B32_Float at slot 0 offset 0.");
+					return false;
+				}
+
+				SLC2VertexInputElement element;
+				element.Semantic = semantic;
+				element.SemanticIndex = static_cast<uint32>(semanticIndex);
+				element.Format = PixelFormat::R32G32B32_Float;
+				element.Slot = static_cast<uint32>(slot);
+				element.Offset = offset;
+				program.VertexBufferLayout.Elements.Add(element);
+				return true;
+			}
+
+			bool ValidateMinimalVertexDeclaration(const SlangProgramDeclaration& program, String& error)
+			{
+				const bool hasBinding = program.VertexBufferLayout.Bindings.HasItems();
+				const bool hasElement = program.VertexBufferLayout.Elements.HasItems();
+				if (hasBinding != hasElement)
+				{
+					error = SE_TEXT("Vertex input binding and element must be declared together.");
+					return false;
+				}
+				bool hasCompute = false;
+				for (int32 stageIndex = 0; stageIndex < program.Stages.Count(); stageIndex++)
+				{
+					hasCompute |= program.Stages[stageIndex].Stage == ShaderStage::Compute;
+				}
+				if (hasCompute && hasBinding)
+				{
+					error = SE_TEXT("Compute shader program cannot declare vertex input.");
+					return false;
+				}
+				return true;
+			}
+
+			bool SameVertexBufferLayout(const SLC2VertexBufferLayout& a, const SLC2VertexBufferLayout& b)
+			{
+				if (a.Bindings.Count() != b.Bindings.Count() || a.Elements.Count() != b.Elements.Count())
+				{
+					return false;
+				}
+				for (int32 index = 0; index < a.Bindings.Count(); index++)
+				{
+					const SLC2VertexBufferBinding& lhs = a.Bindings[index];
+					const SLC2VertexBufferBinding& rhs = b.Bindings[index];
+					if (lhs.Slot != rhs.Slot || lhs.Stride != rhs.Stride || lhs.InputRate != rhs.InputRate ||
+						lhs.InstanceStepRate != rhs.InstanceStepRate)
+					{
+						return false;
+					}
+				}
+				for (int32 index = 0; index < a.Elements.Count(); index++)
+				{
+					const SLC2VertexInputElement& lhs = a.Elements[index];
+					const SLC2VertexInputElement& rhs = b.Elements[index];
+					if (lhs.Semantic != rhs.Semantic || lhs.SemanticIndex != rhs.SemanticIndex ||
+						lhs.Format != rhs.Format || lhs.Slot != rhs.Slot || lhs.Offset != rhs.Offset)
+					{
+						return false;
+					}
+				}
+				return true;
+			}
+
+			bool AppendMinimalVertexInput(slang::VariableLayoutReflection* variable,
+										  List<SLC2VertexInputSignatureElement>& signature,
+										  String& error)
+			{
+				if (variable == nullptr || variable->getTypeLayout() == nullptr)
+				{
+					error = SE_TEXT("Vertex input reflection is missing a variable layout.");
+					return false;
+				}
+
+				const char* semanticName = variable->getSemanticName();
+				if (semanticName != nullptr && semanticName[0] != '\0')
+				{
+					String semantic = FromUtf8(semanticName);
+					semantic.ToUpper();
+					if (semantic.StartsWith(SE_TEXT("SV_")))
+					{
+						return true;
+					}
+
+					slang::TypeLayoutReflection* typeLayout = variable->getTypeLayout();
+					if (typeLayout->getKind() != slang::TypeReflection::Kind::Vector ||
+						typeLayout->getScalarType() != slang::TypeReflection::ScalarType::Float32 ||
+						typeLayout->getColumnCount() != 3)
+					{
+						error = SE_TEXT("Minimal SLC2 vertex input only supports a float3 POSITION input.");
+						return false;
+					}
+
+					const size_t location = variable->getOffset(slang::ParameterCategory::VaryingInput);
+					if (location > static_cast<size_t>(0xffffffffu))
+					{
+						error = SE_TEXT("Vertex input location exceeds the SLC2 range.");
+						return false;
+					}
+
+					const size_t semanticIndex = variable->getSemanticIndex();
+					if (semanticIndex > static_cast<size_t>(0xffffffffu))
+					{
+						error = SE_TEXT("Vertex input semantic index exceeds the SLC2 range.");
+						return false;
+					}
+
+					SLC2VertexInputSignatureElement element;
+					element.Semantic = semantic;
+					element.SemanticIndex = static_cast<uint32>(semanticIndex);
+					element.Location = static_cast<uint32>(location);
+					element.ShaderType = SLC2VertexInputType::Float3;
+					signature.Add(element);
+					return true;
+				}
+
+				slang::TypeLayoutReflection* typeLayout = variable->getTypeLayout();
+				if (typeLayout->getKind() != slang::TypeReflection::Kind::Struct)
+				{
+					error = SE_TEXT("Vertex input parameter has no semantic.");
+					return false;
+				}
+				for (uint32 fieldIndex = 0; fieldIndex < typeLayout->getFieldCount(); fieldIndex++)
+				{
+					if (!AppendMinimalVertexInput(typeLayout->getFieldByIndex(fieldIndex), signature, error))
+					{
+						return false;
+					}
+				}
+				return true;
+			}
+
+			bool ReadMinimalVertexInputSignature(slang::ProgramLayout* layout,
+												 const int32 entryPointIndex,
+												 List<SLC2VertexInputSignatureElement>& signature,
+												 String& error)
+			{
+				signature.Clear();
+				if (layout == nullptr)
+				{
+					error = SE_TEXT("Vertex input signature requires Slang reflection.");
+					return false;
+				}
+				slang::EntryPointReflection* entryPoint = layout->getEntryPointByIndex(entryPointIndex);
+				if (entryPoint == nullptr)
+				{
+					error = SE_TEXT("Vertex entry point reflection is missing.");
+					return false;
+				}
+				for (uint32 parameterIndex = 0; parameterIndex < entryPoint->getParameterCount(); parameterIndex++)
+				{
+					if (!AppendMinimalVertexInput(entryPoint->getParameterByIndex(parameterIndex), signature, error))
+					{
+						return false;
+					}
+				}
+				return true;
+			}
+
+			bool ValidateMinimalVertexInput(const SLC2VertexBufferLayout& layout,
+											const List<SLC2VertexInputSignatureElement>& signature,
+											String& error)
+			{
+				if (signature.IsEmpty())
+				{
+					if (layout.Bindings.HasItems() || layout.Elements.HasItems())
+					{
+						error = SE_TEXT("System-value-only vertex shader must use an empty vertex buffer layout.");
+						return false;
+					}
+					return true;
+				}
+				if (signature.Count() != 1 || layout.Bindings.Count() != 1 || layout.Elements.Count() != 1)
+				{
+					error =
+						SE_TEXT("Minimal SLC2 vertex input requires one binding, one element and one reflected input.");
+					return false;
+				}
+
+				const SLC2VertexInputElement& physical = layout.Elements[0];
+				const SLC2VertexInputSignatureElement& logical = signature[0];
+				if (physical.Semantic != logical.Semantic || physical.SemanticIndex != logical.SemanticIndex ||
+					physical.Semantic != SE_TEXT("POSITION") || physical.Format != PixelFormat::R32G32B32_Float ||
+					physical.Slot != 0 || physical.Offset != 0 || logical.ShaderType != SLC2VertexInputType::Float3)
+				{
+					error = SE_TEXT("Minimal SLC2 vertex input declaration does not match Slang reflection.");
+					return false;
+				}
+				return true;
+			}
+		} // namespace SLC2VertexInputCompiler
 
 		void SplitMacroGroup(const String& raw, ShaderVariantGroup& group)
 		{
@@ -340,9 +622,30 @@ namespace SE
 						}
 						program.VariantGroups.Add(group);
 					}
+					else if (IsAttribute(attribute, "SolarShaderVertexInputBinding"))
+					{
+						if (!SLC2VertexInputCompiler::ReadMinimalVertexBinding(attribute, program, error))
+						{
+							error = program.ProgramId + SE_TEXT(": ") + error;
+							return false;
+						}
+					}
+					else if (IsAttribute(attribute, "SolarShaderVertexInputElement"))
+					{
+						if (!SLC2VertexInputCompiler::ReadMinimalVertexElement(attribute, program, error))
+						{
+							error = program.ProgramId + SE_TEXT(": ") + error;
+							return false;
+						}
+					}
 				}
 
 				if (!ValidateStageContract(program, error))
+				{
+					error = program.ProgramId + SE_TEXT(": ") + error;
+					return false;
+				}
+				if (!SLC2VertexInputCompiler::ValidateMinimalVertexDeclaration(program, error))
 				{
 					error = program.ProgramId + SE_TEXT(": ") + error;
 					return false;
@@ -362,7 +665,9 @@ namespace SE
 
 		bool SameProgramShape(const SlangProgramDeclaration& a, const SlangProgramDeclaration& b)
 		{
-			if (a.ProgramId != b.ProgramId || a.Stages.Count() != b.Stages.Count() || a.VariantGroups.Count() != b.VariantGroups.Count())
+			if (a.ProgramId != b.ProgramId || a.Stages.Count() != b.Stages.Count() ||
+				a.VariantGroups.Count() != b.VariantGroups.Count() ||
+				!SLC2VertexInputCompiler::SameVertexBufferLayout(a.VertexBufferLayout, b.VertexBufferLayout))
 			{
 				return false;
 			}
@@ -694,6 +999,7 @@ namespace SE
 
 			SLC2ProgramRecord programRecord;
 			programRecord.ProgramId = baselineProgram.ProgramId;
+			programRecord.VertexBufferLayout = baselineProgram.VertexBufferLayout;
 			programRecord.VariantGroups = baselineProgram.VariantGroups;
 
 			for (int32 targetIndex = 0; targetIndex < request.Targets.Count(); targetIndex++)
@@ -835,6 +1141,17 @@ namespace SE
 						SLC2StageRecord stageRecord;
 						stageRecord.Stage = baselineProgram.Stages[stageIndex].Stage;
 						stageRecord.EntryPoint = baselineProgram.Stages[stageIndex].EntryPoint;
+						// 顶点逻辑签名来自当前 linked Program，运行时不需要重新加载 Slang 或反射 SPIR-V。
+						if (stageRecord.Stage == ShaderStage::Vertex &&
+							(!SLC2VertexInputCompiler::ReadMinimalVertexInputSignature(
+								 layout, stageIndex, stageRecord.VertexInputSignature, error) ||
+							 !SLC2VertexInputCompiler::ValidateMinimalVertexInput(programRecord.VertexBufferLayout,
+																				  stageRecord.VertexInputSignature, error)))
+						{
+							AddDiagnostic(baselineProgram.ProgramId + SE_TEXT(": ") + error);
+							result.CompileMessage.Text = m_Diagnostics;
+							return result;
+						}
 						if (!ReadOutputControlPoints(globalSession, layout, stageIndex, baselineProgram.Stages[stageIndex], stageRecord.OutputControlPoints, error))
 						{
 							AddDiagnostic(error);

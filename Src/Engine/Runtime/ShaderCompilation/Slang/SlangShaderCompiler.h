@@ -4,6 +4,7 @@
 #include "Runtime/Core/Types/Collections/List.h"
 #include "Runtime/Core/Types/Strings/String.h"
 #include "Runtime/ShaderCompilation/ShaderCompileTypes.h"
+#include "Runtime/ShaderCompilation/Slang/SLC2/SLC2Artifact.h"
 #include "Runtime/ShaderCompilation/Slang/ShaderVariantPlanner.h"
 
 namespace SE
@@ -19,6 +20,7 @@ namespace SE
 		String ProgramId;
 		List<SlangProgramStageDeclaration> Stages;
 		List<ShaderVariantGroup> VariantGroups;
+		SLC2VertexBufferLayout VertexBufferLayout;
 	};
 
 	class SE_API_RUNTIME SlangShaderCompiler
