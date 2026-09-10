@@ -44,6 +44,7 @@ namespace SE::BuildTool
 
         TypeInfoBase const *GetType(StringID typeID) const;
         TypeInfoBase *GetType(StringID typeID);
+        TypeInfoBase const* ResolveTypeDeclaration(TypeInfo const& type) const;
         std::vector<TypeInfoBase const*> GetAllTypes() const;
 		std::vector<TypeInfoBase*> GetAllTypes();
         bool IsTypeRegistered(StringID typeID) const;

@@ -38,7 +38,7 @@ namespace SE::BuildTool
 
     PropertyData const* TypeInfoStruct::GetPropertyDescriptor(StringID propertyID) const
     {
-        ENGINE_ASSERT(typeID != StringID::Invalid && IsFlag(TypeInfoBase::Flag::IsStruct));
+        ENGINE_ASSERT(typeID != StringID::Invalid && IsFlag(TypeInfoBase::Flag::IsClassStruct));
 
         return nullptr;
     }
@@ -65,6 +65,98 @@ namespace SE::BuildTool
 
 
     //-------------------------------------------------------------------------
+    TypeInfo TypeInfo::Void = TypeInfo(TypeID("void"));
+
+    TypeInfo::TypeInfo(const TypeInfo& other)
+    {
+        typeID = other.typeID;
+        arraySize = other.arraySize;
+        pointerDepth = other.pointerDepth;
+        isPointer = other.isPointer;
+        isConst = other.isConst;
+        isRef = other.isRef;
+        isMoveRef = other.isMoveRef;
+
+        genericityArgs = other.genericityArgs;
+    }
+
+    TypeInfo::TypeInfo(const TypeID& other) : typeID(other) {}
+
+    std::string TypeInfo::ToNativeType() const
+    {
+        std::string result;
+
+        result += typeID.ToString();
+
+        if (!genericityArgs.empty())
+        {
+            result += "<";
+            for (int i = 0; i < genericityArgs.size(); ++i)
+            {
+                if (i > 0)
+                {
+                    result += ", ";
+                }
+                result += genericityArgs[i].ToNativeType();
+            }
+            result += ">";
+        }
+
+        return result;
+    }
+
+    std::string TypeInfo::ToString(bool includeArray, bool useGlobal) const
+    {
+        std::string result;
+/*        if (isConst)
+        {
+            result += "const ";
+        }*/
+
+        std::string t = typeID.ToString();
+        // 带命名空间的类型需要使用全局限定符(::)来访问
+        if (useGlobal && Utils::String::Contains(t, "::"))
+        {
+            result += "::";
+        }
+
+        result += t;
+
+        if (!genericityArgs.empty())
+        {
+            result += "<";
+            for (int i = 0; i < genericityArgs.size(); ++i)
+            {
+                if (i > 0)
+                {
+                    result += ", ";
+                }
+                result += genericityArgs[i].ToString(includeArray, useGlobal);
+            }
+            result += ">";
+        }
+
+        const int renderedPointerDepth = pointerDepth > 0 ? pointerDepth : (isPointer ? 1 : 0);
+        for (int i = 0; i < renderedPointerDepth; ++i)
+        {
+            result += "*";
+        }
+        if (isMoveRef)
+        {
+            result += "&&";
+        }
+        else if (isRef)
+        {
+            result += "&";
+        }
+        if (includeArray && arraySize > 0)
+        {
+            result += Utils::String::Format("[{0}]", arraySize);
+        }
+
+        return result;
+    }
+
 
     void TypeInfoEnum::AddEnumConstant(EnumDataConstant const& constant)
     {
@@ -132,7 +224,7 @@ namespace SE::BuildTool
     {
         for (auto const& field : fields)
         {
-            if (field.arraySize > 0)
+            if (field.type.arraySize > 0)
             {
                 return true;
             }

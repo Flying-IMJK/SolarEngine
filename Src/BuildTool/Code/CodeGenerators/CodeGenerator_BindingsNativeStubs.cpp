@@ -1,4 +1,4 @@
-#include "CodeGenerator_BindingsNativeStubs.h"
+#include "CodeGenerator_BindingsCSharp.h"
 
 #include "CodeGenerator_BindingsModel.h"
 #include "CodeGenerator_BindingsTypeMap.h"
@@ -18,6 +18,7 @@ namespace SE::BuildTool
         bool       isEnum = false;
         uint32_t   genericArity = 0;
         std::vector<std::string> enumMembers;
+        TypeInfoStruct const* declaration = nullptr;
     };
 
     static bool IsBuiltinCSharpType(const std::string& type)
@@ -255,59 +256,52 @@ namespace SE::BuildTool
     }
 
     static void AddStubForCppType(std::vector<NativeTypeStub>& stubs, const std::vector<std::string>& availableTypes,
-                                  const std::string& cppType)
+                                  TypeDatabase const& database, TypeInfo const& cppType,
+                                  std::string_view marshalAs = {})
     {
-        bool isClass = IsScriptingObjectPointer(cppType) || IsObjectTypeRef(cppType)
-            || (!cppType.empty() && cppType.find('*') != std::string::npos);
-        AddStubForCSharpType(stubs, availableTypes, GetCSharpPublicType(cppType), isClass);
-    }
+        const BindingTypeSemantics semantics = ResolveBindingTypeSemantics(database, cppType, marshalAs);
+        const CSharpTypeConversion conversion = ResolveCSharpTypeConversion(
+            database, semantics, BindingUseSite::Parameter, BindingDirection::In);
+        const bool isClass = conversion.kind == BindingTypeKind::ScriptingObject ||
+                             conversion.kind == BindingTypeKind::NativeObject ||
+                             conversion.kind == BindingTypeKind::ObjectRef ||
+                             conversion.kind == BindingTypeKind::OpaquePointer;
+        AddStubForCSharpType(stubs, availableTypes, conversion.publicType, isClass);
 
-    static std::string GetCppType(TypeInfoParam const& param)
-    {
-        return param.type.ToString();
-    }
-
-    static std::string GetCppType(TypeInfoField const& field)
-    {
-        return field.type.ToString();
-    }
-
-    static std::string GetCppType(TypeInfoFunc const& fn)
-    {
-        return fn.returnType.ToString();
-    }
-
-    static std::string NormalizeStubDefaultValue(const TypeInfoParam& param)
-    {
-        std::string value = param.defaultValue;
-        Utils::String::TrimStart(value);
-        Utils::String::TrimEnd(value);
-        if (value.empty())
-            return value;
-
-        Utils::String::ReplaceAll(value, " :: ", "::");
-        Utils::String::ReplaceAll(value, ":: ", "::");
-        Utils::String::ReplaceAll(value, " ::", "::");
-        Utils::String::ReplaceAll(value, "nullptr", "null");
-        Utils::String::ReplaceAll(value, "NULL", "null");
-
-        int pos;
-        while ((pos = Utils::String::Find(value, "::")) != INVALID_INDEX)
+        if (semantics.isEnum)
         {
-            value = value.substr(0, pos) + "." + value.substr(pos + 2);
+            std::string const fullName = NormalizeStubTypeName(conversion.publicType);
+            NativeTypeStub& stub = AddStub(stubs, availableTypes, fullName, false);
+            if (!stub.fullName.empty())
+                stub.isEnum = true;
         }
-        return value;
+
+        // Referenced reflected structs are allowed to be non-API types. A
+        // placeholder is insufficient for non-blittable layouts because the
+        // LibraryImport declaration needs their generated custom marshaller.
+        if (conversion.kind == BindingTypeKind::InteropStruct && semantics.declaration &&
+            semantics.declaration->IsFlag(TypeInfoBase::Flag::IsClassStruct))
+        {
+            std::string const fullName = NormalizeStubTypeName(conversion.publicType);
+            NativeTypeStub& stub = AddStub(stubs, availableTypes, fullName, false);
+            if (!stub.fullName.empty())
+                stub.declaration = static_cast<TypeInfoStruct const*>(semantics.declaration);
+        }
     }
 
     static void AddEnumMemberFromDefault(std::vector<NativeTypeStub>& stubs, const std::vector<std::string>& availableTypes,
-                                         const TypeInfoParam& param)
+                                         TypeDatabase const& database, const TypeInfoParam& param)
     {
-        std::string defaultValue = NormalizeStubDefaultValue(param);
+        std::string defaultValue = BindingsCSharpGenerator::NormalizeCSharpDefaultValue(param);
         int dotPos = Utils::String::Find(defaultValue, ".");
         if (dotPos == INVALID_INDEX)
             return;
 
-        std::string enumType = NormalizeStubTypeName(GetCSharpPublicType(GetCppType(param)));
+        const BindingTypeSemantics semantics = ResolveBindingTypeSemantics(database, param.type, param.marshalAs);
+        if (!semantics.isEnum)
+            return;
+        std::string enumType = NormalizeStubTypeName(ResolveCSharpTypeConversion(
+            database, semantics, BindingUseSite::Parameter, GetBindingDirection(param)).publicType);
         if (IsBuiltinCSharpType(enumType) || Utils::Vector::Contains(availableTypes, enumType))
             return;
 
@@ -329,13 +323,13 @@ namespace SE::BuildTool
     }
 
     static void CollectFunctionStubs(std::vector<NativeTypeStub>& stubs, const std::vector<std::string>& availableTypes,
-                                     const TypeInfoFunc& fn)
+                                     TypeDatabase const& database, const TypeInfoFunc& fn)
     {
-        AddStubForCppType(stubs, availableTypes, GetCppType(fn));
+        AddStubForCppType(stubs, availableTypes, database, fn.returnType, fn.marshalAs);
         for (auto& param : fn.params)
         {
-            AddStubForCppType(stubs, availableTypes, GetCppType(param));
-            AddEnumMemberFromDefault(stubs, availableTypes, param);
+            AddStubForCppType(stubs, availableTypes, database, param.type, param.marshalAs);
+            AddEnumMemberFromDefault(stubs, availableTypes, database, param);
         }
     }
 
@@ -366,7 +360,6 @@ namespace SE::BuildTool
 
         std::vector<std::string> availableTypes;
         availableTypes.push_back("SE.Object");
-        availableTypes.push_back("SE.ScriptingObject");
 
         for (auto& header : headers)
         {
@@ -375,7 +368,8 @@ namespace SE::BuildTool
                 if (!cls->APIInBuildMapType.empty())
                     AddAvailableFullType(availableTypes, cls->APIInBuildMapType);
                 else
-                    AddAvailableType(availableTypes, CodeGeneratorUtils::GetFullCSNameSpaceName(cls->namespaceScopeList), cls->name);
+                    AddAvailableType(availableTypes, CodeGeneratorUtils::GetFullCSNameSpaceName(cls->namespaceScopeList),
+                        cls->APIName.empty() ? cls->name : cls->APIName);
             }
             for (auto& en : header.enums)
             {
@@ -401,16 +395,18 @@ namespace SE::BuildTool
                 }
                 for (auto& field : cls->fields)
                 {
-                    AddStubForCppType(stubs, availableTypes, GetCppType(field));
+                    AddStubForCppType(stubs, availableTypes, m_Database, field.type, field.marshalAs);
                 }
                 for (auto& fn : cls->functions)
                 {
-                    CollectFunctionStubs(stubs, availableTypes, fn);
+                    CollectFunctionStubs(stubs, availableTypes, m_Database, fn);
                 }
                 for (auto& evt : cls->events)
                 {
                     for (auto& param : evt.params)
-                        AddStubForCppType(stubs, availableTypes, GetCppType(param));
+                    {
+                        AddStubForCppType(stubs, availableTypes, m_Database, param.type, param.marshalAs);
+                    }
                 }
             }
             for (auto& iface : header.interfaces)
@@ -420,7 +416,7 @@ namespace SE::BuildTool
                     continue;
                 }
                 for (auto& fn : iface->functions)
-                    CollectFunctionStubs(stubs, availableTypes, fn);
+                    CollectFunctionStubs(stubs, availableTypes, m_Database, fn);
             }
         }
 
@@ -429,7 +425,10 @@ namespace SE::BuildTool
         output += "// Auto-generated by BindingsGenerator - native type placeholders.\n";
         output += "//-------------------------------------------------------------------------\n";
         output += "using System;\n";
-        output += "using System.Runtime.InteropServices;\n\n";
+        output += "using System.Runtime.CompilerServices;\n";
+        output += "using System.Runtime.InteropServices;\n";
+        output += "using System.Runtime.InteropServices.Marshalling;\n";
+        output += "using SE.Interop;\n\n";
 
         bool hasStubs = false;
         for (auto& stub : stubs)
@@ -438,6 +437,12 @@ namespace SE::BuildTool
                 continue;
 
             hasStubs = true;
+            if (stub.declaration)
+            {
+                GenerateCSharpStructure(*stub.declaration, headers[0].assemblyName, output);
+                continue;
+            }
+
             std::string nsName = GetStubNamespace(stub.fullName);
             std::string simpleName = CodeGeneratorUtils::MakeCSharpIdentifier(GetStubSimpleName(stub.fullName)) + GetGenericParameterList(stub.genericArity);
             if (!nsName.empty())
@@ -483,13 +488,18 @@ namespace SE::BuildTool
 
         std::string outDir = Utils::String::Format("{0}/{1}", headers[0].assemblyDir, Settings::g_autogeneratedDirectory);
         FileSystem::NormalizePath(outDir);
-        if (!FileSystem::DirectoryExists(outDir))
+        if (!m_GeneratedFiles && !FileSystem::DirectoryExists(outDir))
             FileSystem::CreateDirectory(outDir);
 
         std::string outPath = outDir + "/NativeTypeStubs.CSharp.cs";
         if (!hasStubs)
         {
             output += "namespace SE { }\n";
+        }
+        if (m_GeneratedFiles)
+        {
+            m_GeneratedFiles->push_back({ outPath, std::move(output) });
+            return true;
         }
         return CodeGeneratorUtils::SaveFile(outPath, std::string(output.c_str()));
     }

@@ -8,15 +8,29 @@
 
 namespace SE::BuildTool::CodeGeneratorUtils
 {
-	std::string GetNativeName(const std::vector<std::string>& nameSpaceName, const std::vector<std::string>& structScopes, const std::string& name)
+	std::string GetFullNativeName(const std::vector<std::string>& nameSpaceName, const std::vector<std::string>& structScopes, const std::string& name, bool useGlobal)
 	{
 		if (!nameSpaceName.empty() && !structScopes.empty())
 		{
-			return Utils::String::Format("{0}::{1}::{2}", Utils::CombineStringList(nameSpaceName, "::"), Utils::CombineStringList(structScopes, "::"), name);
+            if (useGlobal)
+            {
+				return Utils::String::Format("::{0}::{1}::{2}", Utils::CombineStringList(nameSpaceName, "::"), Utils::CombineStringList(structScopes, "::"), name);
+            }
+            else
+            {
+				return Utils::String::Format("{0}::{1}::{2}", Utils::CombineStringList(nameSpaceName, "::"), Utils::CombineStringList(structScopes, "::"), name);
+            }
 		}
 		else if (!nameSpaceName.empty())
 		{
-			return Utils::String::Format("{0}::{1}", Utils::CombineStringList(nameSpaceName, "::"), name);
+			if (useGlobal)
+            {
+				return Utils::String::Format("::{0}::{1}", Utils::CombineStringList(nameSpaceName, "::"), name);
+			}
+            else
+            {
+				return Utils::String::Format("{0}::{1}", Utils::CombineStringList(nameSpaceName, "::"), name);
+            }
 		}
 		else if (!structScopes.empty())
 		{
@@ -133,14 +147,21 @@ namespace SE::BuildTool::CodeGeneratorUtils
 		}
     }
 
-    bool IsNativePointer(const std::string& cppType) 
+	TypeInfo WithoutArray(TypeInfo type)
 	{
-		std::string type = cppType;
-		Utils::String::TrimStart(type);
-		Utils::String::TrimEnd(type);
-		return !type.empty() && type.back() == '*';
+		type.arraySize = 0;
+		return type;
 	}
 
+	std::string GetPropertyName(TypeInfoFunc const& function)
+	{
+		if ((Utils::String::StartsWith(function.name, "Get") || Utils::String::StartsWith(function.name, "Set"))
+			&& function.name.length() > 3)
+		{
+			return function.name.substr(3);
+		}
+		return function.name;
+	}
 
 	std::string MakeCSharpIdentifier(const std::string& identifier)
 	{
@@ -199,95 +220,11 @@ namespace SE::BuildTool::CodeGeneratorUtils
 		return true;
 	}
 
-	bool IsCSharpCode(TypeInfoInjectedCode const* code)
-	{
-		return code != nullptr && code->lang == InjectEnum::CS;
-	}
-
 	void AppendCSharpLibraryImport(std::string& output, const std::string& assemblyName, const std::string& entryPoint)
 	{
 		output += Utils::String::Format(
 			"        [LibraryImport(\"{0}\", EntryPoint = \"{1}\", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]\n",
 			assemblyName, entryPoint);
-	}
-
-	bool UsesCSharpOutResult(const std::string& cppType)
-	{
-		const std::string stripped = StripTypeQualifiers(cppType);
-		if (stripped.empty() || stripped == "void" || IsScriptingObjectPointer(cppType) || IsStringType(cppType))
-			return false;
-		return !GetApiInteropStructMarshallerType(cppType).empty() || UsePassByReference(cppType);
-	}
-
-	std::string GetCSharpStructAbiFieldType(const std::string& cppType)
-	{
-		const std::string stripped = StripTypeQualifiers(cppType);
-		if (IsStringType(cppType))
-			return "IntPtr";
-		if (stripped == "bool")
-			return "byte";
-
-		const std::string marshaller = GetApiInteropStructMarshallerType(cppType);
-		if (marshaller.empty())
-			return GetCSharpInteropType(cppType);
-
-		const std::string publicType = GetCSharpPublicType(cppType);
-		const int separator = Utils::String::FindLast(publicType, '.');
-		const std::string simpleName = separator == INVALID_INDEX ? publicType : publicType.substr(separator + 1);
-		return Utils::String::Format("{0}.{1}Internal", marshaller, simpleName);
-	}
-
-	std::string GetCSharpCollectionCountExpression(const std::string& cppType, const std::string& expression)
-	{
-		const std::string stripped = StripTypeQualifiers(cppType);
-		const bool usesCount = Utils::String::StartsWith(stripped, "Dictionary<") || Utils::String::StartsWith(stripped, "HashSet<");
-		return Utils::String::Format("{0} != null ? {0}.{1} : 0", expression, usesCount ? "Count" : "Length");
-	}
-
-	std::string GetCSharpStructFieldFromAbi(const std::string& cppType, const std::string& expression)
-	{
-		const std::string stripped = StripTypeQualifiers(cppType);
-		if (IsStringType(cppType))
-			return Utils::String::Format("Interop.StringMarshaller.ToManaged({0})", expression);
-		if (stripped == "bool")
-			return Utils::String::Format("{0} != 0", expression);
-
-		const std::string marshaller = GetApiInteropStructMarshallerType(cppType);
-		return marshaller.empty() ? GetCSharpFromInterop(cppType, expression)
-			: Utils::String::Format("{0}.ConvertToManaged({1})", marshaller, expression);
-	}
-
-	std::string GetCSharpStructFieldToAbi(const std::string& cppType, const std::string& expression)
-	{
-		const std::string stripped = StripTypeQualifiers(cppType);
-		if (IsStringType(cppType))
-			return Utils::String::Format("Interop.StringMarshaller.ManagedToNative.ConvertToUnmanaged({0})", expression);
-		if (stripped == "bool")
-			return Utils::String::Format("{0} ? (byte)1 : (byte)0", expression);
-
-		const std::string marshaller = GetApiInteropStructMarshallerType(cppType);
-		return marshaller.empty() ? GetCSharpToInterop(cppType, expression)
-			: Utils::String::Format("{0}.ConvertToUnmanaged({1})", marshaller, expression);
-	}
-
-	std::string NormalizeCSharpDefaultValue(const TypeInfoParam& param)
-	{
-		std::string value = param.defaultValue;
-		Utils::String::TrimStart(value);
-		Utils::String::TrimEnd(value);
-		if (value.empty())
-			return value;
-
-		Utils::String::ReplaceAll(value, " :: ", "::");
-		Utils::String::ReplaceAll(value, ":: ", "::");
-		Utils::String::ReplaceAll(value, " ::", "::");
-		Utils::String::ReplaceAll(value, "nullptr", "null");
-		Utils::String::ReplaceAll(value, "NULL", "null");
-
-		int pos;
-		while ((pos = Utils::String::Find(value, "::")) != INVALID_INDEX)
-			value = value.substr(0, pos) + "." + value.substr(pos + 2);
-		return value;
 	}
 
 	bool SaveFile(const std::string& path, const std::string& content)

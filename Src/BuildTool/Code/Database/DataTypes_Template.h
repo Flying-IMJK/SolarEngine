@@ -9,8 +9,21 @@
 
 namespace SE::BuildTool
 {
-    struct TypeRefTemplate
+    struct TypeInfoTemplate
     {
+        bool IsValid() const { return !fullName.empty(); }
+
+        std::string fullName;
+        std::vector<TypeInfoTemplate> genericArgs;
+        bool isTemplateParameter = false;
+        bool isConst             = false;
+        bool isPointer           = false;
+        int  pointerDepth        = 0;
+        bool isRef               = false;
+        bool isMoveRef           = false;
+        bool isArray             = false;
+        int  arraySize           = 0;
+
         std::string ToCppString(bool includeArray = true) const
         {
             std::string result;
@@ -19,7 +32,7 @@ namespace SE::BuildTool
                 result += "const ";
             }
 
-            result += name;
+            result += fullName;
             if (!genericArgs.empty())
             {
                 result += "<";
@@ -34,7 +47,8 @@ namespace SE::BuildTool
                 result += ">";
             }
 
-            if (isPointer)
+            const int renderedPointerDepth = pointerDepth > 0 ? pointerDepth : (isPointer ? 1 : 0);
+            for (int i = 0; i < renderedPointerDepth; ++i)
             {
                 result += "*";
             }
@@ -58,34 +72,23 @@ namespace SE::BuildTool
             return result;
         }
 
-        bool IsValid() const { return !name.empty(); }
-
-        std::string name;
-        std::vector<TypeRefTemplate> genericArgs;
-        bool isTemplateParameter = false;
-        bool isConst             = false;
-        bool isPointer           = false;
-        bool isRef               = false;
-        bool isMoveRef           = false;
-        bool isArray             = false;
-        int  arraySize           = 0;
     };
 
     struct TypeInfoParamTemplate
     {
-        TypeRefTemplate type;
+        TypeInfoTemplate type;
         std::string     name;
         std::string     defaultValue;
         std::string     attributes;
         std::string     marshalAs;
         std::string     comment;
-        bool            isOut = false;
+        ApiParameterDirection direction = ApiParameterDirection::In;
     };
 
     struct TypeInfoFuncTemplate
     {
         std::string                        name;
-        TypeRefTemplate                    returnType;
+        TypeInfoTemplate                   returnType;
         std::vector<TypeInfoParamTemplate> params;
 
         bool isReflect = false;
@@ -115,7 +118,7 @@ namespace SE::BuildTool
         bool isAPI     = false;
 
         std::string                        name;
-        TypeRefTemplate                    cppType;
+        TypeInfoTemplate                   cppType;
         std::vector<TypeInfoParamTemplate> params;
         bool                               isStatic = false;
         AccessLevel                        access   = AccessLevel::Public;
@@ -129,7 +132,7 @@ namespace SE::BuildTool
         bool isAPI    = false;
         bool isStatic = false;
 
-        TypeRefTemplate type;
+        TypeInfoTemplate type;
         std::string     name;
 
         bool isReflect = false;
@@ -152,7 +155,7 @@ namespace SE::BuildTool
         std::vector<std::string> structScopeList;
         std::vector<std::string> templateParameters;
 
-        TypeRefTemplate                     baseType;
+        TypeInfoTemplate                    baseType;
         std::vector<TypeInfoFieldTemplate>  fields;
         std::vector<TypeInfoFuncTemplate>   functions;
         std::vector<TypeInfoEventTemplate>  events;

@@ -3,28 +3,17 @@
 #include "Database/TypeDatabase.h"
 
 #include <algorithm>
-#include <cstdlib>
 #include <memory>
 
 //-------------------------------------------------------------------------
 
 namespace SE::BuildTool
 {
-    static std::string Trimmed(std::string value)
-    {
-        Utils::String::TrimStart(value);
-        Utils::String::TrimEnd(value);
-        return value;
-    }
-
-    static bool IsTemplateParameter(std::string const& name, std::vector<std::string> const& templateParameters)
-    {
-        return std::find(templateParameters.begin(), templateParameters.end(), name) != templateParameters.end();
-    }
-
     static std::string StripCppKeywordPrefixes(std::string type)
     {
-        type = Trimmed(type);
+        Utils::String::TrimStart(type);
+        Utils::String::TrimEnd(type);
+
         while (Utils::String::StartsWith(type, "::"))
         {
             type = type.substr(2);
@@ -41,150 +30,15 @@ namespace SE::BuildTool
         {
             type = type.substr(5);
         }
-        return Trimmed(type);
+
+        Utils::String::TrimStart(type);
+        Utils::String::TrimEnd(type);
+        return type;
     }
 
-    static int32 FindTopLevelChar(std::string const& text, char value)
+    TypeInfoTemplate ParseTemplateType(ClangParserContext* pContext, CXType type, std::vector<std::string> const& templateParam)
     {
-        int32 depth = 0;
-        for (int32 i = 0; i < text.length(); i++)
-        {
-            char const c = text[(size_t)i];
-            if (c == '<')
-            {
-                depth++;
-            }
-            else if (c == '>')
-            {
-                depth--;
-            }
-            else if (c == value && depth == 0)
-            {
-                return i;
-            }
-        }
-        return INVALID_INDEX;
-    }
-
-    static void SplitTopLevelTemplateArgs(std::string const& text, std::vector<std::string>& outArgs)
-    {
-        int32 depth = 0;
-        int32 start = 0;
-        for (int32 i = 0; i < text.length(); i++)
-        {
-            char const c = text[(size_t)i];
-            if (c == '<')
-            {
-                depth++;
-            }
-            else if (c == '>')
-            {
-                depth--;
-            }
-            else if (c == ',' && depth == 0)
-            {
-                outArgs.push_back(Trimmed(text.substr((size_t)start, (size_t)(i - start))));
-                start = i + 1;
-            }
-        }
-
-        if (start < text.length())
-        {
-            outArgs.push_back(Trimmed(text.substr((size_t)start)));
-        }
-    }
-
-    static void StripArraySuffix(std::string& text, TypeRefTemplate& outType)
-    {
-        int32 const open = Utils::String::FindLast(text, '[');
-        int32 const close = Utils::String::FindLast(text, ']');
-        if (open == INVALID_INDEX || close == INVALID_INDEX || close <= open)
-        {
-            return;
-        }
-
-        std::string suffix = text.substr((size_t)open + 1, (size_t)(close - open - 1));
-        suffix = Trimmed(suffix);
-        outType.isArray = true;
-        outType.arraySize = suffix.empty() ? 0 : std::atoi(suffix.c_str());
-        text = Trimmed(text.substr(0, (size_t)open));
-    }
-
-    bool TryParseTemplateTypeRef(std::string const& typeText,
-                                 TypeRefTemplate&   outType,
-                                 std::vector<std::string> const& templateParameters)
-    {
-        std::string text = StripCppKeywordPrefixes(typeText);
-        if (text.empty())
-        {
-            return false;
-        }
-
-        outType = TypeRefTemplate();
-        StripArraySuffix(text, outType);
-
-        if (Utils::String::StartsWith(text, "const "))
-        {
-            outType.isConst = true;
-            text = Trimmed(text.substr(6));
-        }
-
-        if (Utils::String::EndsWith(text, "&&"))
-        {
-            outType.isMoveRef = true;
-            outType.isRef = true;
-            text = Trimmed(text.substr(0, text.length() - 2));
-        }
-        else if (Utils::String::EndsWith(text, "&"))
-        {
-            outType.isRef = true;
-            text = Trimmed(text.substr(0, text.length() - 1));
-        }
-
-        if (Utils::String::EndsWith(text, "*"))
-        {
-            outType.isPointer = true;
-            text = Trimmed(text.substr(0, text.length() - 1));
-        }
-
-        if (Utils::String::StartsWith(text, "const "))
-        {
-            outType.isConst = true;
-            text = Trimmed(text.substr(6));
-        }
-
-        int32 const open = FindTopLevelChar(text, '<');
-        int32 const close = Utils::String::FindLast(text, '>');
-        if (open != INVALID_INDEX && close != INVALID_INDEX && close > open)
-        {
-            outType.name = StripCppKeywordPrefixes(text.substr(0, (size_t)open));
-
-            std::vector<std::string> args;
-            SplitTopLevelTemplateArgs(text.substr((size_t)open + 1, (size_t)(close - open - 1)), args);
-            for (auto const& arg : args)
-            {
-                TypeRefTemplate parsedArg;
-                if (!TryParseTemplateTypeRef(arg, parsedArg, templateParameters))
-                {
-                    return false;
-                }
-                outType.genericArgs.emplace_back(std::move(parsedArg));
-            }
-        }
-        else
-        {
-            outType.name = StripCppKeywordPrefixes(text);
-        }
-
-        outType.isTemplateParameter = IsTemplateParameter(outType.name, templateParameters);
-        return outType.IsValid();
-    }
-
-    static TypeRefTemplate ParseTemplateTypeRefInternal(ClangParserContext* pContext,
-                                                        CXType              type,
-                                                        std::vector<std::string> const& templateParameters)
-    {
-        TypeRefTemplate result;
+        TypeInfoTemplate result;
         CXType workingType = type;
         clang::QualType qualType = ClangUtils::GetQualType(workingType);
         if (qualType->isArrayType())
@@ -208,14 +62,31 @@ namespace SE::BuildTool
         {
             result.isRef = true;
             result.isMoveRef = canonical.kind == CXType_RValueReference;
-            workingType = clang_getPointeeType(workingType);
+            CXType pointeeType = clang_getPointeeType(workingType);
+            if (pointeeType.kind == CXType_Invalid)
+            {
+                pointeeType = clang_getPointeeType(canonical);
+            }
+            if (pointeeType.kind != CXType_Invalid)
+            {
+                workingType = pointeeType;
+            }
             canonical = clang_getCanonicalType(workingType);
         }
 
-        if (canonical.kind == CXType_Pointer)
+        while (canonical.kind == CXType_Pointer)
         {
             result.isPointer = true;
-            workingType = clang_getPointeeType(workingType);
+            ++result.pointerDepth;
+            CXType pointeeType = clang_getPointeeType(workingType);
+            if (pointeeType.kind == CXType_Invalid)
+            {
+                pointeeType = clang_getPointeeType(canonical);
+            }
+            if (pointeeType.kind != CXType_Invalid)
+            {
+                workingType = pointeeType;
+            }
             canonical = clang_getCanonicalType(workingType);
         }
 
@@ -227,24 +98,7 @@ namespace SE::BuildTool
         {
             qualifiedName = ClangUtils::GetTypeSpellingAnsi(workingType);
         }
-
-        TypeRefTemplate parsedFromText;
-        if (TryParseTemplateTypeRef(qualifiedName, parsedFromText, templateParameters))
-        {
-            bool const keepArray = result.isArray;
-            int const arraySize = result.arraySize;
-            bool const keepRef = result.isRef;
-            bool const keepMoveRef = result.isMoveRef;
-            bool const keepPointer = result.isPointer;
-            bool const keepConst = result.isConst || parsedFromText.isConst;
-            result = std::move(parsedFromText);
-            result.isArray = keepArray || result.isArray;
-            result.arraySize = arraySize > 0 ? arraySize : result.arraySize;
-            result.isRef = keepRef || result.isRef;
-            result.isMoveRef = keepMoveRef || result.isMoveRef;
-            result.isPointer = keepPointer || result.isPointer;
-            result.isConst = keepConst;
-        }
+        result.fullName = StripCppKeywordPrefixes(qualifiedName);
 
         int const numTemplateArguments = clang_Type_getNumTemplateArguments(workingType);
         if (numTemplateArguments > 0)
@@ -257,44 +111,29 @@ namespace SE::BuildTool
                 {
                     continue;
                 }
-                result.genericArgs.emplace_back(ParseTemplateTypeRefInternal(pContext, argType, templateParameters));
+                result.genericArgs.emplace_back(ParseTemplateType(pContext, argType, templateParam));
             }
         }
 
-        if (result.name.empty())
-        {
-            result.name = StripCppKeywordPrefixes(ClangUtils::GetTypeSpellingAnsi(workingType));
-        }
-
-        int32 const genericStart = FindTopLevelChar(result.name, '<');
-        if (genericStart != INVALID_INDEX)
-        {
-            result.name = StripCppKeywordPrefixes(result.name.substr(0, (size_t)genericStart));
-        }
-        result.isTemplateParameter = IsTemplateParameter(result.name, templateParameters);
+        result.isTemplateParameter = std::find(templateParam.begin(), templateParam.end(), result.fullName) != templateParam.end();
         return result;
     }
 
-    TypeRefTemplate ParseTemplateTypeRef(ClangParserContext* pContext,
-                                         CXType              type,
-                                         std::vector<std::string> const& templateParameters)
-    {
-        return ParseTemplateTypeRefInternal(pContext, type, templateParameters);
-    }
 
-    static TypeRefTemplate SubstituteTemplateType(TypeRefTemplate const& type,
+    static TypeInfoTemplate SubstituteTemplateType(TypeInfoTemplate const& type,
                                                   std::vector<std::string> const& parameters,
-                                                  std::vector<TypeRefTemplate> const& arguments)
+                                                  std::vector<TypeInfoTemplate> const& arguments)
     {
         if (type.isTemplateParameter)
         {
             for (int i = 0; i < parameters.size() && i < arguments.size(); i++)
             {
-                if (type.name == parameters[i])
+                if (type.fullName == parameters[i])
                 {
-                    TypeRefTemplate result = arguments[i];
+                    TypeInfoTemplate result = arguments[i];
                     result.isConst = type.isConst || result.isConst;
                     result.isPointer = type.isPointer || result.isPointer;
+                    result.pointerDepth += type.pointerDepth;
                     result.isRef = type.isRef || result.isRef;
                     result.isMoveRef = type.isMoveRef || result.isMoveRef;
                     result.isArray = type.isArray || result.isArray;
@@ -304,7 +143,7 @@ namespace SE::BuildTool
             }
         }
 
-        TypeRefTemplate result = type;
+        TypeInfoTemplate result = type;
         result.genericArgs.clear();
         for (auto const& arg : type.genericArgs)
         {
@@ -316,17 +155,20 @@ namespace SE::BuildTool
 
     static TypeInfoParam InstantiateParam(TypeInfoParamTemplate const& paramTemplate,
                                           std::vector<std::string> const& parameters,
-                                          std::vector<TypeRefTemplate> const& arguments)
+                                          std::vector<TypeInfoTemplate> const& arguments)
     {
         TypeInfoParam param;
-        TypeRefTemplate type = SubstituteTemplateType(paramTemplate.type, parameters, arguments);
-        param.type = TypeID(type.ToCppString(false));
+        TypeInfoTemplate type = SubstituteTemplateType(paramTemplate.type, parameters, arguments);
+        param.type.typeID = TypeID(type.fullName);
+        param.type.arraySize = type.isArray ? type.arraySize : 0;
+        param.type.isPointer = type.isPointer;
+        param.type.pointerDepth = type.pointerDepth > 0 ? type.pointerDepth : (type.isPointer ? 1 : 0);
+        param.type.isConst = type.isConst;
+        param.type.isRef = type.isRef;
+        param.type.isMoveRef = type.isMoveRef;
+
         param.name = paramTemplate.name;
-        param.arraySize = type.isArray ? type.arraySize : 0;
-        param.isPointer = type.isPointer;
-        param.isConst = type.isConst;
-        param.isRef = type.isRef;
-        param.isOut = paramTemplate.isOut;
+        param.direction = paramTemplate.direction;
         param.defaultValue = paramTemplate.defaultValue;
         param.attributes = paramTemplate.attributes;
         param.marshalAs = paramTemplate.marshalAs;
@@ -336,13 +178,21 @@ namespace SE::BuildTool
 
     static TypeInfoField InstantiateField(TypeInfoFieldTemplate const& fieldTemplate,
                                           std::vector<std::string> const& parameters,
-                                          std::vector<TypeRefTemplate> const& arguments)
+                                          std::vector<TypeInfoTemplate> const& arguments)
     {
         TypeInfoField field;
-        TypeRefTemplate type = SubstituteTemplateType(fieldTemplate.type, parameters, arguments);
+        TypeInfoTemplate type = SubstituteTemplateType(fieldTemplate.type, parameters, arguments);
         field.isAPI = fieldTemplate.isAPI;
         field.isStatic = fieldTemplate.isStatic;
-        field.type = TypeID(type.ToCppString(false));
+
+        field.type.typeID = TypeID(type.fullName);
+        field.type.arraySize = type.arraySize;
+        field.type.isPointer = type.isPointer;
+        field.type.pointerDepth = type.pointerDepth > 0 ? type.pointerDepth : (type.isPointer ? 1 : 0);
+        field.type.isConst = type.isConst;
+        field.type.isRef = type.isRef;
+        field.type.isMoveRef = type.isMoveRef;
+
         field.name = fieldTemplate.name;
         field.isReflect = fieldTemplate.isReflect;
         field.APIIsReadOnly = fieldTemplate.APIIsReadOnly;
@@ -350,20 +200,25 @@ namespace SE::BuildTool
         field.defaultValue = fieldTemplate.defaultValue;
         field.comment = fieldTemplate.comment;
         field.marshalAs = fieldTemplate.marshalAs;
-        field.arraySize = type.isArray ? type.arraySize : 0;
         field.lineNumber = fieldTemplate.lineNumber;
         return field;
     }
 
     static TypeInfoFunc InstantiateFunction(TypeInfoFuncTemplate const& functionTemplate,
                                             std::vector<std::string> const& parameters,
-                                            std::vector<TypeRefTemplate> const& arguments)
+                                            std::vector<TypeInfoTemplate> const& arguments)
     {
         TypeInfoFunc fn;
-        TypeRefTemplate returnType = SubstituteTemplateType(functionTemplate.returnType, parameters, arguments);
+        TypeInfoTemplate returnType = SubstituteTemplateType(functionTemplate.returnType, parameters, arguments);
         fn.name = functionTemplate.name;
-        fn.returnType = TypeID(returnType.ToCppString(false));
-        fn.returnArraySize = returnType.isArray ? returnType.arraySize : 0;
+        fn.returnType.typeID = TypeID(returnType.fullName);
+        fn.returnType.arraySize = returnType.isArray ? returnType.arraySize : 0;
+        fn.returnType.isPointer = returnType.isPointer;
+        fn.returnType.pointerDepth = returnType.pointerDepth > 0 ? returnType.pointerDepth : (returnType.isPointer ? 1 : 0);
+        fn.returnType.isConst = returnType.isConst;
+        fn.returnType.isRef = returnType.isRef;
+        fn.returnType.isMoveRef = returnType.isMoveRef;
+
         for (auto const& paramTemplate : functionTemplate.params)
         {
             fn.params.emplace_back(InstantiateParam(paramTemplate, parameters, arguments));
@@ -389,14 +244,22 @@ namespace SE::BuildTool
 
     static TypeInfoEvent InstantiateEvent(TypeInfoEventTemplate const& eventTemplate,
                                           std::vector<std::string> const& parameters,
-                                          std::vector<TypeRefTemplate> const& arguments)
+                                          std::vector<TypeInfoTemplate> const& arguments)
     {
         TypeInfoEvent evt;
-        TypeRefTemplate cppType = SubstituteTemplateType(eventTemplate.cppType, parameters, arguments);
+        TypeInfoTemplate cppType = SubstituteTemplateType(eventTemplate.cppType, parameters, arguments);
         evt.isReflect = eventTemplate.isReflect;
         evt.isAPI = eventTemplate.isAPI;
         evt.name = eventTemplate.name;
-        evt.cppType = TypeID(cppType.ToCppString(false));
+
+        evt.cppType.typeID = TypeID(cppType.fullName);
+        evt.cppType.arraySize = cppType.arraySize;
+        evt.cppType.isPointer = cppType.isPointer;
+        evt.cppType.pointerDepth = cppType.pointerDepth > 0 ? cppType.pointerDepth : (cppType.isPointer ? 1 : 0);
+        evt.cppType.isConst = cppType.isConst;
+        evt.cppType.isRef = cppType.isRef;
+        evt.cppType.isMoveRef = cppType.isMoveRef;
+
         for (auto const& paramTemplate : eventTemplate.params)
         {
             evt.params.emplace_back(InstantiateParam(paramTemplate, parameters, arguments));
@@ -409,45 +272,20 @@ namespace SE::BuildTool
         return evt;
     }
 
-    static std::string GetFullTypeName(std::vector<std::string> const& namespaces,
-                                       std::vector<std::string> const& structScopes,
-                                       std::string const& name)
-    {
-        std::string result;
-        if (!namespaces.empty())
-        {
-            result = Utils::CombineStringList(namespaces, "::");
-        }
-        if (!structScopes.empty())
-        {
-            if (!result.empty())
-            {
-                result += "::";
-            }
-            result += Utils::CombineStringList(structScopes, "::");
-        }
-        if (!result.empty())
-        {
-            result += "::";
-        }
-        result += name;
-        return result;
-    }
-
     static bool IsQualifiedTypeName(std::string const& name)
     {
         return name.find("::") != std::string::npos;
     }
 
     static std::string GetQualifiedTemplateInstantiationName(TypeInfoStructTemplate const& templateType,
-                                                             TypeRefTemplate const&        targetType)
+                                                             TypeInfoTemplate const&        targetType)
     {
-        TypeRefTemplate qualifiedType = targetType;
-        if (!IsQualifiedTypeName(qualifiedType.name))
+        TypeInfoTemplate qualifiedType = targetType;
+        if (!IsQualifiedTypeName(qualifiedType.fullName))
         {
-            qualifiedType.name = GetFullTypeName(templateType.namespaceScopeList,
+            qualifiedType.fullName = CodeGeneratorUtils::GetFullNativeName(templateType.namespaceScopeList,
                                                  templateType.structScopeList,
-                                                 qualifiedType.name);
+                                                 qualifiedType.fullName);
         }
         return qualifiedType.ToCppString(false);
     }
@@ -467,8 +305,7 @@ namespace SE::BuildTool
             return nullptr;
         }
 
-        std::string const fullAliasName =
-            GetFullTypeName(templateType.namespaceScopeList, templateType.structScopeList, typeDef.name);
+        std::string const fullAliasName = CodeGeneratorUtils::GetFullNativeName(templateType.namespaceScopeList, templateType.structScopeList, typeDef.name);
         auto type      = std::make_unique<TypeInfoStruct>(pContext->GenerateTypeID(fullAliasName), typeDef.name);
         type->headerID = templateType.headerID;
         type->namespaceScopeList      = templateType.namespaceScopeList;
@@ -521,9 +358,8 @@ namespace SE::BuildTool
 
         if (templateType.baseType.IsValid())
         {
-            TypeRefTemplate baseType = SubstituteTemplateType(templateType.baseType, parameters, arguments);
-            type->baseClassName      = baseType.ToCppString(false);
-            type->parentTypeID       = TypeID(type->baseClassName);
+            TypeInfoTemplate baseType = SubstituteTemplateType(templateType.baseType, parameters, arguments);
+            type->parentTypeID       = type->parentTypeID;
         }
 
         for (auto const& fieldTemplate : templateType.fields)

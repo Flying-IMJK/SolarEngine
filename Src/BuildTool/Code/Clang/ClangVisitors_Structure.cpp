@@ -16,173 +16,6 @@ namespace SE::BuildTool
     // Binding extraction helpers
     // -------------------------------------------------------------------------
 
-    struct FieldTypeInfo
-    {
-        std::string ToCppTypeString() const
-        {
-            std::string result = name;
-            if (!templateArgs.empty())
-            {
-                result.append("<");
-                for (int i = 0; i < templateArgs.size(); i++)
-                {
-                    if (i > 0)
-                        result.append(", ");
-                    result.append(templateArgs[i].ToCppTypeString());
-                }
-                result.append(">");
-            }
-            return result;
-        }
-
-        void GetFlattenedTemplateArgs(std::string &flattenedArgs) const
-        {
-            if (!templateArgs.empty())
-            {
-                for (auto arg : templateArgs)
-                {
-                    flattenedArgs.append(arg.name);
-
-                    if (!arg.templateArgs.empty())
-                    {
-                        flattenedArgs.append("<");
-                        arg.GetFlattenedTemplateArgs(flattenedArgs);
-                        flattenedArgs.append(">");
-                    }
-
-                    flattenedArgs.append(", ");
-                }
-
-                flattenedArgs = flattenedArgs.substr(0, flattenedArgs.length() - 2);
-            }
-        }
-
-        bool AllowsTemplateArguments() const
-        {
-            if (name == "SE::String")
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-		FieldTypeInfo() : name(), templateArgs(), isConstantArray(false)
-		{
-
-		}
-
-		std::string name;
-        std::vector<FieldTypeInfo> templateArgs;
-        bool isConstantArray;
-    };
-
-    struct ReflectedFieldTypeInfo
-    {
-        FieldTypeInfo typeInfo;
-        TypeID typeID;
-        bool isFixedArray = false;
-        bool isDynamicArray = false;
-        int32 arraySize = 0;
-        std::string bindingCppType;
-    };
-
-    static void GetFieldTypeInfo(ClangParserContext *pContext, TypeInfoBase *pType, CXType type, FieldTypeInfo &info)
-    {
-        clang::QualType const fieldQualType = ClangUtils::GetQualType(type);
-
-        // Get typename
-        if (!ClangUtils::GetQualifiedNameForType(fieldQualType, info.name))
-        {
-			std::string typeSpelling = ClangUtils::GetString(clang_getTypeSpelling(type));
-            return pContext->LogError("Failed to qualify typename for member: {0} in class: {1} and of type: {3}", info.name, pType->name, typeSpelling);
-        }
-
-        // Is this a constant array
-        info.isConstantArray = (type.kind == CXType_ConstantArray);
-
-        // Get info for template types
-        if (info.AllowsTemplateArguments())
-        {
-            auto const numTemplateArguments = clang_Type_getNumTemplateArguments(type);
-            if (numTemplateArguments > 0)
-            {
-                // We only support one template arg for now
-                CXType const argType = clang_Type_getTemplateArgumentAsType(type, 0);
-
-                FieldTypeInfo &templateFieldInfo = Utils::Vector::AddOne(info.templateArgs);
-                templateFieldInfo.isConstantArray = (argType.kind == CXType_ConstantArray);
-                GetFieldTypeInfo(pContext, pType, argType, templateFieldInfo);
-            }
-        }
-    }
-
-    static bool ResolveFieldType(ClangParserContext *pContext, TypeInfoBase *pClass, CXCursor cr,
-                                          const std::string& propertyName, ReflectedFieldTypeInfo& outInfo)
-    {
-        CXType type = clang_getCursorType(cr);
-        std::string typeTest = ClangUtils::GetTypeSpellingAnsi(type);
-        clang::QualType const fieldQualType = ClangUtils::GetQualType(type);
-
-        if (fieldQualType->isTemplateTypeParmType())
-        {
-            pContext->LogError("Cannot expose template argument member ({0}) in class ({1})!", propertyName, pClass->name);
-            return false;
-        }
-
-        if (fieldQualType->isArrayType())
-        {
-            if (fieldQualType->isVariableArrayType() || fieldQualType->isIncompleteArrayType())
-            {
-                pContext->LogError("Variable size array properties are not supported! Please change to List or fixed size!");
-                return false;
-            }
-
-            auto const pArrayType = (clang::ConstantArrayType*)fieldQualType.getTypePtr();
-            outInfo.isFixedArray = true;
-            outInfo.arraySize = (int32)pArrayType->getSize().getSExtValue();
-            type = clang_getElementType(type);
-        }
-
-        FieldTypeInfo fieldTypeInfo;
-        GetFieldTypeInfo(pContext, pClass, type, fieldTypeInfo);
-        ENGINE_ASSERT(!fieldTypeInfo.name.empty());
-
-        outInfo.bindingCppType = fieldTypeInfo.ToCppTypeString();
-        TypeID fieldTypeID(fieldTypeInfo.name);
-
-        if (Utils::GetCoreTypeID(Utils::TypeIDCore::List) == fieldTypeID)
-        {
-            outInfo.isDynamicArray = true;
-
-            if (fieldTypeInfo.templateArgs.empty())
-            {
-                pContext->LogError("List property ({0}) in class ({1}) is missing an element type", propertyName, pClass->name);
-                return false;
-            }
-
-            FieldTypeInfo const& templateTypeInfo = fieldTypeInfo.templateArgs.front();
-            fieldTypeInfo = FieldTypeInfo(templateTypeInfo);
-            fieldTypeID = TypeID(fieldTypeInfo.name);
-
-            if (fieldTypeInfo.isConstantArray)
-            {
-                pContext->LogError("We dont support arrays of arrays. Property: {0} in class: {1}", propertyName, pClass->name);
-                return false;
-            }
-        }
-        else if (StringID("SE::String") == fieldTypeID)
-        {
-            // We need to clear the template args since we have a type alias and clang is detected the template args for eastl::basic_string
-            fieldTypeInfo.templateArgs.clear();
-            outInfo.bindingCppType = fieldTypeInfo.ToCppTypeString();
-        }
-
-        outInfo.typeInfo = fieldTypeInfo;
-        outInfo.typeID = fieldTypeID;
-        return true;
-    }
-
     static void GetAllDerivedProperties(TypeDatabase const *pDatabase, StringID parentTypeID, std::vector<PropertyData> &results)
     {
         //TypeInfoBase const *pParentDesc = pDatabase->GetType(parentTypeID);
@@ -284,29 +117,7 @@ namespace SE::BuildTool
         evt.attributes = macro.GetApi().attributes;
     }
 
-    static void FillTypeInfoParam(CXCursor argCr, TypeInfoParam& param)
-    {
-        CXType argType = clang_getCursorType(argCr);
-        param.name = ClangUtils::GetCursorSpellingAnsi(argCr);
-        if (param.name.empty())
-        {
-            param.name = "arg";
-        }
-        param.type = TypeID(ClangUtils::GetTypeSpellingAnsi(argType));
 
-        CXType canonical = clang_getCanonicalType(argType);
-        param.isPointer = (canonical.kind == CXType_Pointer);
-        param.isRef = (canonical.kind == CXType_LValueReference ||
-                       canonical.kind == CXType_RValueReference);
-        // C++ T& is an input/output reference by default. Treating every
-        // non-const reference as C# out loses its input value. Explicit out
-        // semantics require a dedicated API annotation; until then ref is the
-        // only lossless representation.
-        param.isOut   = false;
-        param.isConst = clang_isConstQualifiedType(canonical) != 0;
-        param.defaultValue = ClangUtils::GetParameterDefaultValue(argCr);
-        param.comment      = ClangUtils::GetCursorComment(argCr);
-    }
 
     static void FillTypeInfoParamTemplate(CXCursor argCr,
                                           TypeInfoParamTemplate& param,
@@ -318,8 +129,10 @@ namespace SE::BuildTool
         {
             param.name = "arg";
         }
-        param.type = ParseTemplateTypeRef(nullptr, argType, templateParameters);
-        param.isOut = false;
+        param.type = ParseTemplateType(nullptr, argType, templateParameters);
+        param.direction = param.type.isRef && !param.type.isConst
+            ? ApiParameterDirection::Ref
+            : ApiParameterDirection::In;
         param.defaultValue = ClangUtils::GetParameterDefaultValue(argCr);
         param.comment = ClangUtils::GetCursorComment(argCr);
     }
@@ -393,24 +206,14 @@ namespace SE::BuildTool
         {
             TypeInfoField field;
             field.name = ClangUtils::GetCursorSpellingAnsi(cr);
-            ReflectedFieldTypeInfo resolvedFieldType;
-            if (!ResolveFieldType(pContext, pClass, cr, field.name, resolvedFieldType))
-            {
-                return false;
-            }
 
             field.isReflect = filedMacro.hasReflect;
             field.isAPI = filedMacro.HasApi();
 
-            field.type    = TypeID(resolvedFieldType.bindingCppType);
+            ClangUtils::FillTypeInfo(clang_getCursorType(cr), field.type);
             field.isStatic   = ClangUtils::IsStatic(cr);
-            field.arraySize  = resolvedFieldType.isFixedArray ? resolvedFieldType.arraySize : 0;
             field.lineNumber = (int)lineNumber;
             field.comment    = ClangUtils::GetCursorComment(cr);
-            if (field.comment.empty())
-            {
-                field.comment = filedMacro.macroComment;
-            }
             ApplyFieldOptions(filedMacro, field);
             pClass->fields.push_back(field);
 
@@ -531,7 +334,7 @@ namespace SE::BuildTool
             evt.isAPI   = eventMacro.HasApi();
 
             evt.name                = ClangUtils::GetCursorSpellingAnsi(cr);
-            evt.cppType             = TypeID(ClangUtils::GetTypeSpellingAnsi(eventType));
+            ClangUtils::FillTypeInfo(eventType, evt.cppType);
             evt.isStatic            = ClangUtils::IsStatic(cr);
             evt.access              = ClangUtils::GetAccessLevel(cr);
             evt.comment             = ClangUtils::GetCursorComment(cr);
@@ -540,22 +343,11 @@ namespace SE::BuildTool
             // SE_EVENT marks a Delegate<...> field. Unlike a function cursor,
             // the Delegate arguments do not have declaration cursors, so unpack
             // the template argument types and synthesize stable argument names.
-            const int numTemplateArguments = clang_Type_getNumTemplateArguments(eventType);
-            for (int i = 0; i < numTemplateArguments; i++)
+            for (int i = 0; i < evt.cppType.genericityArgs.size(); i++)
             {
-                CXType argumentType = clang_Type_getTemplateArgumentAsType(eventType, i);
-                if (argumentType.kind == CXType_Invalid)
-                    continue;
-
                 TypeInfoParam param;
                 param.name = Utils::String::Format("arg{0}", i);
-                param.type = TypeID(ClangUtils::GetTypeSpellingAnsi(argumentType));
-
-                CXType canonical = clang_getCanonicalType(argumentType);
-                param.isPointer  = canonical.kind == CXType_Pointer;
-                param.isRef      = canonical.kind == CXType_LValueReference || canonical.kind == CXType_RValueReference;
-                param.isConst    = clang_isConstQualifiedType(canonical) != 0;
-                param.isOut      = false;
+                param.type = evt.cppType.genericityArgs[i];
                 evt.params.push_back(param);
             }
 
@@ -579,7 +371,7 @@ namespace SE::BuildTool
             func.isAPI = macro.HasApi();
 
             func.name       = ClangUtils::GetCursorSpellingAnsi(cr);
-            func.returnType = TypeID(ClangUtils::GetTypeSpellingAnsi(clang_getResultType(cursorType)));
+            ClangUtils::FillTypeInfo(clang_getResultType(cursorType), func.returnType);
             func.isStatic   = (clang_CXXMethod_isStatic(cr) != 0);
             func.isVirtual  = (clang_CXXMethod_isVirtual(cr) != 0);
             func.isConst    = (clang_CXXMethod_isConst(cr) != 0);
@@ -606,7 +398,7 @@ namespace SE::BuildTool
                 CXCursor argCr = clang_Cursor_getArgument(cr, i);
 
                 TypeInfoParam param;
-                FillTypeInfoParam(argCr, param);
+                ClangUtils::FillTypeInfoParam(argCr, param);
                 func.params.push_back(param);
             }
 
@@ -671,7 +463,7 @@ namespace SE::BuildTool
             if (!pClass->isScriptingObject)
             {
                 TypeInfoBase const* pBaseType = pContext->pDatabase->GetType(pClass->parentTypeID);
-                if (pBaseType && pBaseType->isAPI && pBaseType->IsFlag(TypeInfoBase::Flag::IsStruct))
+                if (pBaseType && pBaseType->isAPI && pBaseType->IsFlag(TypeInfoBase::Flag::IsClassStruct))
                 {
                     auto const* pBaseStruct = static_cast<TypeInfoStruct const*>(pBaseType);
                     if (pBaseStruct->isScriptingObject)
@@ -679,12 +471,6 @@ namespace SE::BuildTool
                         pClass->isScriptingObject = true;
                     }
                 }
-            }
-
-            // Populate binding info fields for base class
-            if (pClass->isAPI)
-            {
-                pClass->baseClassName = fullyQualifiedName;
             }
         }
         else if (kind == CXCursor_Constructor)
@@ -744,7 +530,7 @@ namespace SE::BuildTool
         {
             TypeInfoFieldTemplate field;
             field.name = ClangUtils::GetCursorSpellingAnsi(cr);
-            field.type = ParseTemplateTypeRef(pContext, clang_getCursorType(cr), pClass->templateParameters);
+            field.type = ParseTemplateType(pContext, clang_getCursorType(cr), pClass->templateParameters);
             field.isReflect = filedMacro.hasReflect;
             field.isAPI = filedMacro.HasApi();
             field.isStatic = ClangUtils::IsStatic(cr);
@@ -767,7 +553,7 @@ namespace SE::BuildTool
             evt.isReflect = eventMacro.hasReflect;
             evt.isAPI = eventMacro.HasApi();
             evt.name = ClangUtils::GetCursorSpellingAnsi(cr);
-            evt.cppType = ParseTemplateTypeRef(pContext, eventType, pClass->templateParameters);
+            evt.cppType = ParseTemplateType(pContext, eventType, pClass->templateParameters);
             evt.isStatic = ClangUtils::IsStatic(cr);
             evt.access = ClangUtils::GetAccessLevel(cr);
             evt.comment = ClangUtils::GetCursorComment(cr);
@@ -784,7 +570,7 @@ namespace SE::BuildTool
 
                 TypeInfoParamTemplate param;
                 param.name = Utils::String::Format("arg{0}", i);
-                param.type = ParseTemplateTypeRef(pContext, argumentType, pClass->templateParameters);
+                param.type = ParseTemplateType(pContext, argumentType, pClass->templateParameters);
                 evt.params.push_back(param);
             }
 
@@ -812,7 +598,7 @@ namespace SE::BuildTool
             func.isAPI = macro.HasApi();
 
             func.name = ClangUtils::GetCursorSpellingAnsi(cr);
-            func.returnType = ParseTemplateTypeRef(pContext, clang_getResultType(cursorType), pClass->templateParameters);
+            func.returnType = ParseTemplateType(pContext, clang_getResultType(cursorType), pClass->templateParameters);
             func.isStatic = (clang_CXXMethod_isStatic(cr) != 0);
             func.isVirtual = (clang_CXXMethod_isVirtual(cr) != 0);
             func.isConst = (clang_CXXMethod_isConst(cr) != 0);
@@ -865,42 +651,19 @@ namespace SE::BuildTool
                 return CXChildVisit_Continue;
             }
 
-            clang::CXXBaseSpecifier* pBaseSpecifier = (clang::CXXBaseSpecifier*)cr.data[0];
-            TypeRefTemplate baseType;
-            std::string baseTypeText = pBaseSpecifier->getType().getAsString().c_str();
-            if (!TryParseTemplateTypeRef(baseTypeText, baseType, pClass->templateParameters))
+            TypeInfoTemplate baseType = ParseTemplateType(pContext, clang_getCursorType(cr), pClass->templateParameters);
+            if (!baseType.IsValid())
             {
                 pContext->LogError("Failed to parse template base type for class: {0}, base class = {1}", pClass->name, ClangUtils::GetCursorDisplayName(cr));
                 return CXChildVisit_Break;
             }
             pClass->baseType = std::move(baseType);
-            std::string const baseSimpleName = pClass->baseType.ToCppString(false);
-            static const char* ScriptingObjectBases[] = {
-                "SE::ScriptingObject",
-                "SE::ManagedScriptingObject",
-                "SE::BinaryAsset",
-                "SE::SceneObject",
-                "SE::Asset",
-                "SE::Script",
-                "SE::Actor",
-            };
-            for (const char* name : ScriptingObjectBases)
-            {
-                if (baseSimpleName == name)
-                {
-                    pClass->isScriptingObject = true;
-                    break;
-                }
-            }
 
-            if (!pClass->isScriptingObject)
+            TypeInfoBase const* pBaseType = pContext->pDatabase->GetType(TypeID(pClass->baseType.fullName));
+            if (pBaseType)
             {
-                TypeInfoBase const* pBaseType = pContext->pDatabase->GetType(TypeID(baseSimpleName));
-                if (pBaseType && pBaseType->isAPI && pBaseType->IsFlag(TypeInfoBase::Flag::IsStruct))
-                {
-                    auto const* pBaseStruct = static_cast<TypeInfoStruct const*>(pBaseType);
-                    pClass->isScriptingObject = pBaseStruct->isScriptingObject;
-                }
+                auto const* pBaseStruct = static_cast<TypeInfoStruct const*>(pBaseType);
+                pClass->isScriptingObject = pBaseStruct->isScriptingObject;
             }
         }
         else if (kind == CXCursor_FieldDecl)

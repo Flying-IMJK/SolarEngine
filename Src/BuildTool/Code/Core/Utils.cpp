@@ -239,8 +239,6 @@ namespace SE::BuildTool
     }
 
 
-
-
     TypeID coreTypeID[] = {
         TypeID("bool"),
         TypeID("uint8"),

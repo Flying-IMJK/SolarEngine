@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Database/TypeDatabase.h"
+#include "CodeGenerator_BindingsTypeMap.h"
 #include <ThirdParty/mustache.hpp>
 #include <sstream>
 
@@ -34,7 +35,9 @@ namespace SE::BuildTool
                                     std::vector<TypeInfoBase*> const& typesInModule);
 
         // Utils
-        static bool SaveStreamToFile(std::string const &filePath, std::stringstream &stream);
+        bool SaveStreamToFile(std::string const& filePath, std::stringstream& stream);
+        void TrackGeneratedPath(std::string path);
+        bool CommitGeneratedFiles(std::string const& solutionPath);
     private:
         TypeDatabase const* m_pDatabase;
         std::stringstream m_typeInfoFile;
@@ -43,6 +46,9 @@ namespace SE::BuildTool
         std::stringstream m_toolsTypeRegistrationFile;
         bool m_typeInfoFileHasBinding = false;
         mutable std::string m_errorMessage;
+        std::vector<GeneratedFile> m_generatedFiles;
+        std::vector<std::string> m_expectedGeneratedFiles;
+        std::vector<std::string> m_abiFingerprints;
 
         std::string m_CodeModuleTemplate;
         std::string m_CodeCppMetaTemplate;
