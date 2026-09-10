@@ -537,7 +537,7 @@ namespace SE
 		}
 	}
 
-	const UID& Actor::GetSceneObjectId() const
+	UID Actor::GetSceneObjectId() const
 	{
 		return GetInstanceID();
 	}

@@ -98,7 +98,7 @@ namespace SE.GUI
 
             Rectangle splitter = new Rectangle(ScreenPos + m_SplitterBounds.Location, m_SplitterBounds.Size);
             Color color = m_IsTrackingSplitter ? Style.Current.BackgroundSelected : m_IsMouseOverSplitter ? Style.Current.BackgroundHighlighted : Style.Current.BackgroundNormal;
-            Render2D.FillRectangle(ref splitter, ref color);
+            Render2D.FillRectangle(splitter, color);
         }
 
         protected override void OnLayoutChildren()

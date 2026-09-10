@@ -74,7 +74,7 @@ namespace SE.GUI
             if (background.A > 0.0f)
             {
                 Rectangle bounds = ScreenBounds;
-                Render2D.FillRectangle(ref bounds, ref background);
+                Render2D.FillRectangle(bounds, background);
             }
 
             Font? font = Font ?? Style.Current.FontMedium;
@@ -85,7 +85,7 @@ namespace SE.GUI
             Color textColor = TextColor;
             if (!EnabledInHierarchy)
                 textColor.A *= 0.6f;
-            Render2D.RenderText(font, Text, ref textBounds, ref textColor, HorizontalAlignment, VerticalAlignment, TextWrapping);
+            Render2D.RenderText(font, Text, textBounds, textColor, HorizontalAlignment, VerticalAlignment, TextWrapping);
         }
     }
 }

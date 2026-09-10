@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Runtime/Core/Types/Variable.h"
 #include <type_traits>
 
 // @formatter:off
@@ -453,15 +452,6 @@ struct TIsBitwiseConstructible<const T*, T*>
 {
     enum { Value = true };
 };
-
-template<> struct TIsBitwiseConstructible<uint8, int8>   { enum { Value = true }; };
-template<> struct TIsBitwiseConstructible<int8, uint8>   { enum { Value = true }; };
-template<> struct TIsBitwiseConstructible<uint16, int16> { enum { Value = true }; };
-template<> struct TIsBitwiseConstructible<int16, uint16> { enum { Value = true }; };
-template<> struct TIsBitwiseConstructible<uint32, int32> { enum { Value = true }; };
-template<> struct TIsBitwiseConstructible<int32, uint32> { enum { Value = true }; };
-template<> struct TIsBitwiseConstructible<uint64, int64> { enum { Value = true }; };
-template<> struct TIsBitwiseConstructible<int64, uint64> { enum { Value = true }; };
 
 // @formatter:on
 

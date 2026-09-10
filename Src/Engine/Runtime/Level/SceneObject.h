@@ -96,7 +96,7 @@ namespace SE
 		/// </summary>
 		/// <returns>The scene object ID.</returns>
         SE_FUNCTION(API(ReadOnly, Prop))
-		virtual const UID& GetSceneObjectId() const = 0;
+		virtual UID GetSceneObjectId() const = 0;
 
 		/// <summary>
 		/// Gets zero-based index in parent actor children list (scripts or child actors).

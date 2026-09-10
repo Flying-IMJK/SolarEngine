@@ -137,7 +137,7 @@ namespace SE
             set
             {
                 var clientSize = value;
-                SetClientSize(ref clientSize);
+                SetClientSize(clientSize);
             }
         }
 
@@ -181,7 +181,7 @@ namespace SE
         internal void Internal_OnDraw()
         {
             Matrix3x3.Scaling(DpiScale, out var scale);
-            Render2D.PushTransform(ref scale);
+            Render2D.PushTransform(scale);
             GUI.Draw();
             Render2D.PopTransform();
         }

@@ -671,7 +671,7 @@ namespace SE.GUI
 
             Rectangle bounds = ScreenBounds;
             Color color = BackgroundColor;
-            Render2D.FillRectangle(ref bounds, ref color);
+            Render2D.FillRectangle(bounds, color);
         }
 
         protected virtual void OnDispose()

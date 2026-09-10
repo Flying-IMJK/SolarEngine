@@ -129,7 +129,7 @@ namespace SE.GUI
                 return;
 
             Rectangle clip = new Rectangle(ScreenPos, m_ViewportSize);
-            Render2D.PushClip(ref clip);
+            Render2D.PushClip(clip);
             for (int index = 0; index < Children.Count; index++)
             {
                 Control child = Children[index];

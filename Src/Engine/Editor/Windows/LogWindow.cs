@@ -401,17 +401,17 @@ namespace SE.Editor.GUI
                 if (ReferenceEquals(m_Window.Selected, this))
                 {
                     Color selected = IsFocused ? style.BackgroundSelected : style.BackgroundNormal;
-                    Render2D.FillRectangle(ref clientRect, ref selected);
+                    Render2D.FillRectangle(clientRect, selected);
                 }
                 else if (IsMouseOver)
                 {
                     Color highlighted = style.BackgroundHighlighted;
-                    Render2D.FillRectangle(ref clientRect, ref highlighted);
+                    Render2D.FillRectangle(clientRect, highlighted);
                 }
                 else if (index % 2 == 0)
                 {
                     Color striped = style.Background * 0.9f;
-                    Render2D.FillRectangle(ref clientRect, ref striped);
+                    Render2D.FillRectangle(clientRect, striped);
                 }
 
                 Color markerColor = Group switch
@@ -421,7 +421,7 @@ namespace SE.Editor.GUI
                     _ => style.Foreground,
                 };
                 Rectangle marker = new(clientRect.X, clientRect.Y, MarkerWidth, clientRect.Height);
-                Render2D.FillRectangle(ref marker, ref markerColor);
+                Render2D.FillRectangle(marker, markerColor);
 
                 // TODO: replace the marker with EditorIcons Info/Warning/Error sprites
                 // once managed EditorIcons are exposed:
@@ -434,7 +434,7 @@ namespace SE.Editor.GUI
                     return;
 
                 Color textColor = style.Foreground;
-                Render2D.RenderText(font, title, ref textRect, ref textColor, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap);
+                Render2D.RenderText(font, title, textRect, textColor, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap);
             }
 
             public override void OnGetFocus()

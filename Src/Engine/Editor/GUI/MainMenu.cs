@@ -122,7 +122,7 @@ namespace SE.Editor.GUI
             {
                 Color background = opened ? Style.Current.Background : Style.Current.BackgroundHighlighted;
                 Rectangle bounds = ScreenBounds;
-                Render2D.FillRectangle(ref bounds, ref background);
+                Render2D.FillRectangle(bounds, background);
             }
 
             Font? font = Style.Current.FontMedium;
@@ -131,7 +131,7 @@ namespace SE.Editor.GUI
 
             Rectangle textBounds = ScreenBounds;
             Color textColor = active ? Style.Current.Foreground : Style.Current.ForegroundDisabled;
-            Render2D.RenderText(font, Text, ref textBounds, ref textColor, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+            Render2D.RenderText(font, Text, textBounds, textColor, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
         }
     }
 }

@@ -38,7 +38,7 @@ namespace SE.GUI
 
             Rectangle bounds = ScreenBounds;
             Color color = TextColor;
-            Render2D.RenderText(font, Text, ref bounds, ref color, HorizontalAlignment, VerticalAlignment, TextWrapping);
+            Render2D.RenderText(font, Text, bounds, color, HorizontalAlignment, VerticalAlignment, TextWrapping);
         }
     }
 }

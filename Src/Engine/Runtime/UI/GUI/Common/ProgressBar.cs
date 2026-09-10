@@ -127,7 +127,7 @@ namespace SE.GUI
 
             Rectangle full = ScreenBounds;
             BarMargin.ShrinkRectangle(ref full);
-            Render2D.PushClip(ref bar);
+            Render2D.PushClip(bar);
             DrawBar(full);
             Render2D.PopClip();
         }
@@ -153,7 +153,7 @@ namespace SE.GUI
             if (BarBrush != null)
                 BarBrush.Draw(bounds, color);
             else
-                Render2D.FillRectangle(ref bounds, ref color);
+                Render2D.FillRectangle(bounds, color);
         }
     }
 }

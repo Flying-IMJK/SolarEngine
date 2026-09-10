@@ -29,7 +29,7 @@ namespace SE.GUI
 
             Rectangle bounds = ScreenBounds;
             Color color = BorderColor;
-            Render2D.DrawRectangle(ref bounds, ref color, BorderWidth);
+            Render2D.DrawRectangle(bounds, color, BorderWidth);
         }
     }
 }
