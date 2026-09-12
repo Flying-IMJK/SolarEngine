@@ -88,26 +88,32 @@ namespace SE
     /// <summary>
     /// The font line info generated during text processing.
     /// </summary>
+    SE_STRUCT(API())
     struct SE_API_RUNTIME FontLineCache
     {
+        SCRIPTING_TYPE_MIN(FontLineCache);
         /// <summary>
         /// The root position of the line (upper left corner).
         /// </summary>
+        SE_FIELD(API())
         Float2 Location;
 
         /// <summary>
         /// The line bounds (width and height).
         /// </summary>
+        SE_FIELD(API())
         Float2 Size;
 
         /// <summary>
         /// The first character index (from the input text).
         /// </summary>
+        SE_FIELD(API())
         int32 FirstCharIndex;
 
         /// <summary>
         /// The last character index (from the input text), inclusive.
         /// </summary>
+        SE_FIELD(API())
         int32 LastCharIndex;
     };
     
@@ -145,66 +151,80 @@ namespace SE
     /// <summary>
     /// The cached font character entry (read for rendering and further processing).
     /// </summary>
+    SE_STRUCT(API())
     struct SE_API_RUNTIME FontCharacterEntry
     {
+        SCRIPTING_TYPE_MIN(FontCharacterEntry);
         /// <summary>
         /// The character represented by this entry.
         /// </summary>
+        SE_FIELD(API())
         Char Character;
 
         /// <summary>
         /// True if entry is valid, otherwise false.
         /// </summary>
+        SE_FIELD(API())
         bool IsValid = false;
 
         /// <summary>
         /// The index to a specific texture in the font cache.
         /// </summary>
+        SE_FIELD(API())
         byte TextureIndex;
 
         /// <summary>
         /// The left bearing expressed in integer pixels.
         /// </summary>
+        SE_FIELD(API())
         int16 OffsetX;
 
         /// <summary>
         /// The top bearing expressed in integer pixels.
         /// </summary>
+        SE_FIELD(API())
         int16 OffsetY;
 
         /// <summary>
         /// The amount to advance in X before drawing the next character in a string.
         /// </summary>
+        SE_FIELD(API())
         int16 AdvanceX;
 
         /// <summary>
         /// The distance from baseline to glyph top most point.
         /// </summary>
+        SE_FIELD(API())
         int16 BearingY;
 
         /// <summary>
         /// The height in pixels of the glyph.
         /// </summary>
+        SE_FIELD(API())
         int16 Height;
 
         /// <summary>
         /// The start location of the character in the texture (in texture coordinates space).
         /// </summary>
+        SE_FIELD(API())
         Float2 UV;
 
         /// <summary>
         /// The size the character in the texture (in texture coordinates space).
         /// </summary>
+        SE_FIELD(API())
         Float2 UVSize;
 
         /// <summary>
         /// The slot in texture atlas, containing the pixel data of the glyph.
         /// </summary>
+        SE_FIELD(API())
         const FontTextureAtlasSlot* Slot;
 
         /// <summary>
         /// The owner font.
         /// </summary>
+        SE_FIELD(API())
         const class Font* Font;
     };
 
@@ -246,6 +266,7 @@ namespace SE
         /// <summary>
         /// The active fallback fonts.
         /// </summary>
+        SE_FIELD(API())
         static List<AssetRef<FontAsset>, HeapAllocation> FallbackFonts;
 
         /// <summary>

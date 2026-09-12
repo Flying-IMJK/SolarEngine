@@ -36,6 +36,7 @@ namespace SE::BuildTool
         { "int", "int", AbiValueKind::Integer, true, false, false },
         { "char", "sbyte", AbiValueKind::Integer, true, false, false },
         { "Char", "char", AbiValueKind::Integer, true, false, false },
+        { "SE::Char", "char", AbiValueKind::Integer, true, false, false },
         { "void", "void", AbiValueKind::Void, true, false, false },
         { "Guid", "System.Guid", AbiValueKind::BlittableStruct, true, false, false },
         { "UID", "System.Guid", AbiValueKind::BlittableStruct, true, false, false },
@@ -259,22 +260,25 @@ namespace SE::BuildTool
 
         const std::string& name = type.typeID.ToString();
         const std::string canonicalName = type.ToNativeType();
-        if (const BuiltinMapping* builtin = FindBuiltin(canonicalName))
+        if (pointerDepth == 0)
         {
-            result.canonicalType = TypeID(canonicalName);
-            result.isEnum = builtin->abiKind == AbiValueKind::Enum;
-            result.kind = builtin->isString
-                ? (builtin->isStringView ? BindingTypeKind::StringView : BindingTypeKind::String)
-                : BindingTypeKind::Blittable;
-            return result;
-        }
-        if (const BuiltinMapping* builtin = FindBuiltin(name))
-        {
-            result.isEnum = builtin->abiKind == AbiValueKind::Enum;
-            result.kind = builtin->isString
-                ? (builtin->isStringView ? BindingTypeKind::StringView : BindingTypeKind::String)
-                : BindingTypeKind::Blittable;
-            return result;
+            if (const BuiltinMapping* builtin = FindBuiltin(canonicalName))
+            {
+                result.canonicalType = TypeID(canonicalName);
+                result.isEnum = builtin->abiKind == AbiValueKind::Enum;
+                result.kind = builtin->isString
+                    ? (builtin->isStringView ? BindingTypeKind::StringView : BindingTypeKind::String)
+                    : BindingTypeKind::Blittable;
+                return result;
+            }
+            if (const BuiltinMapping* builtin = FindBuiltin(name))
+            {
+                result.isEnum = builtin->abiKind == AbiValueKind::Enum;
+                result.kind = builtin->isString
+                    ? (builtin->isStringView ? BindingTypeKind::StringView : BindingTypeKind::String)
+                    : BindingTypeKind::Blittable;
+                return result;
+            }
         }
         if (IsOneOf(name, { "SE::Variant", "Variant", "SE::CLRObject", "CLRObject" }))
         {
@@ -292,7 +296,10 @@ namespace SE::BuildTool
         if (!declaration)
         {
             if (pointerDepth > 0)
-                return Unsupported(type, "SEBIND004", "raw pointer has no resolved declaration or pointer semantic");
+            {
+                result.kind = BindingTypeKind::OpaquePointer;
+                return result;
+            }
             return Unsupported(type, "SEBIND005", "type declaration could not be resolved");
         }
         result.canonicalType = declaration->typeID;
@@ -318,7 +325,10 @@ namespace SE::BuildTool
             return result;
         }
         if (pointerDepth > 0)
-            return Unsupported(type, "SEBIND004", "raw pointers to structs require an explicit pointer semantic");
+        {
+            result.kind = BindingTypeKind::OpaquePointer;
+            return result;
+        }
 
         result.kind = structType->isPod ? BindingTypeKind::Blittable : BindingTypeKind::InteropStruct;
         return result;

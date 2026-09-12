@@ -143,6 +143,14 @@ namespace SE::BuildTool
             expr = Utils::String::Format("ScriptingObject::ToManaged(reinterpret_cast<ScriptingObject*>({0}))", expr);
             return true;
         }
+        if (conversion.kind == BindingTypeKind::OpaquePointer)
+        {
+            // Opaque pointers are address values. Cast through const void* so
+            // const-qualified native pointees can be returned through the
+            // pointer-sized ABI slot without changing their native type.
+            expr = Utils::String::Format("const_cast<void*>(reinterpret_cast<const void*>({0}))", expr);
+            return true;
+        }
         return false;
     }
 
@@ -231,6 +239,10 @@ namespace SE::BuildTool
         {
             return Utils::String::Format("Variant((ScriptingObject*){0}.Get())", expr);
         }
+        if (conversion.kind == BindingTypeKind::OpaquePointer)
+        {
+            return Utils::String::Format("Variant(const_cast<void*>(reinterpret_cast<const void*>({0})))", expr);
+        }
         return Utils::String::Format("Variant({0})", expr);
     }
 
@@ -263,6 +275,10 @@ namespace SE::BuildTool
             const std::string targetType = type.genericityArgs.empty()
                 ? "ScriptingObject" : CodeGeneratorUtils::QualifyCppType(type.genericityArgs[0].ToString(false, true));
             return Utils::String::Format("{0}(({1}*)(void*){2})", nativeType, targetType, expr);
+        }
+        if (conversion.kind == BindingTypeKind::OpaquePointer)
+        {
+            return Utils::String::Format("({0})(void*){1}", nativeType, expr);
         }
         if (conversion.kind != BindingTypeKind::Blittable)
         {
@@ -1266,10 +1282,6 @@ namespace SE::BuildTool
                 continue;
             }
 
-            if (fn.APINoProxy)
-            {
-                continue;
-            }
             GenerateCppMethodWrapperFunction(cls, fn, bodyOut, endOut);
         }
 
