@@ -42,54 +42,24 @@ namespace SE
 		// Writer 只接受当前票据支持的受控枚举，避免把未知内存值静默写成合法缓存文本。
 		namespace SLC2VertexInputWriter
 		{
-			bool WriteVertexBufferLayout(JsonWriter& writer, const SLC2VertexBufferLayout& layout, String& error)
+			const char* ShaderTypeName(const SLC2VertexInputType type)
 			{
-				// Program 级物理布局使用平台无关字段，不能把 VkFormat 或 Vulkan 结构写入缓存。
-				writer.StartObject();
-				writer.Key(SE_TEXT("bindings"));
-				writer.StartArray();
-				for (int32 bindingIndex = 0; bindingIndex < layout.Bindings.Count(); bindingIndex++)
+				switch (type)
 				{
-					const SLC2VertexBufferBinding& binding = layout.Bindings[bindingIndex];
-					if (binding.InputRate != SLC2VertexInputRate::PerVertex)
-					{
-						error = SE_TEXT("Minimal SLC2 writer only supports per-vertex input.");
-						return false;
-					}
-					writer.StartObject();
-					writer.Key(SE_TEXT("slot"));
-					writer.Uint(binding.Slot);
-					writer.Key(SE_TEXT("stride"));
-					writer.Uint(binding.Stride);
-					writer.Key(SE_TEXT("inputRate"));
-					writer.String(SE_TEXT("perVertex"));
-					writer.Key(SE_TEXT("instanceStepRate"));
-					writer.Uint(binding.InstanceStepRate);
-					writer.EndObject();
-				}
-				writer.EndArray(layout.Bindings.Count());
-
-				writer.Key(SE_TEXT("elements"));
-				writer.StartArray();
-				for (int32 elementIndex = 0; elementIndex < layout.Elements.Count(); elementIndex++)
-				{
-					const SLC2VertexInputElement& element = layout.Elements[elementIndex];
-					writer.StartObject();
-					writer.Key(SE_TEXT("semantic"));
-					writer.String(element.Semantic);
-					writer.Key(SE_TEXT("semanticIndex"));
-					writer.Uint(element.SemanticIndex);
-					writer.Key(SE_TEXT("pixelFormat"));
-					writer.String(PixelFormatGetString(element.Format));
-					writer.Key(SE_TEXT("slot"));
-					writer.Uint(element.Slot);
-					writer.Key(SE_TEXT("offset"));
-					writer.Uint(element.Offset);
-					writer.EndObject();
-				}
-				writer.EndArray(layout.Elements.Count());
-				writer.EndObject();
-				return true;
+				case SLC2VertexInputType::Float: return "float";
+				case SLC2VertexInputType::Float2: return "float2";
+				case SLC2VertexInputType::Float3: return "float3";
+				case SLC2VertexInputType::Float4: return "float4";
+				case SLC2VertexInputType::Int: return "int";
+				case SLC2VertexInputType::Int2: return "int2";
+				case SLC2VertexInputType::Int3: return "int3";
+				case SLC2VertexInputType::Int4: return "int4";
+				case SLC2VertexInputType::UInt: return "uint";
+				case SLC2VertexInputType::UInt2: return "uint2";
+				case SLC2VertexInputType::UInt3: return "uint3";
+				case SLC2VertexInputType::UInt4: return "uint4";
+				default: return nullptr;
+			}
 			}
 
 			bool WriteVertexInputSignature(JsonWriter& writer,
@@ -100,10 +70,21 @@ namespace SE
 				for (int32 elementIndex = 0; elementIndex < signature.Count(); elementIndex++)
 				{
 					const SLC2VertexInputSignatureElement& element = signature[elementIndex];
-					if (element.ShaderType != SLC2VertexInputType::Float3)
+					const char* shaderType = ShaderTypeName(element.ShaderType);
+					if (element.Semantic.IsEmpty() || element.Semantic.StartsWith(SE_TEXT("SV_")) || shaderType == nullptr)
 					{
-						error = SE_TEXT("Minimal SLC2 writer only supports float3 vertex input.");
+						error = SE_TEXT("SLC2 vertex input signature contains an invalid semantic or ShaderType.");
 						return false;
+					}
+					for (int32 otherIndex = 0; otherIndex < elementIndex; otherIndex++)
+					{
+						const SLC2VertexInputSignatureElement& other = signature[otherIndex];
+						if ((other.Semantic == element.Semantic && other.SemanticIndex == element.SemanticIndex) ||
+							other.Location == element.Location)
+						{
+							error = SE_TEXT("SLC2 vertex input signature contains a duplicated semantic or location.");
+							return false;
+						}
 					}
 					writer.StartObject();
 					writer.Key(SE_TEXT("semantic"));
@@ -113,7 +94,7 @@ namespace SE
 					writer.Key(SE_TEXT("location"));
 					writer.Uint(element.Location);
 					writer.Key(SE_TEXT("shaderType"));
-					writer.String(SE_TEXT("float3"));
+					writer.String(StringAnsi(shaderType).ToString());
 					writer.EndObject();
 				}
 				writer.EndArray(signature.Count());
@@ -304,7 +285,7 @@ namespace SE
 	{
 		output.Clear();
 
-		if (artifact.Format != SE_TEXT("SLC2") || artifact.Version != 3)
+		if (artifact.Format != SE_TEXT("SLC2") || artifact.Version != 4)
 		{
 			error = SE_TEXT("Invalid SLC2 artifact header.");
 			return false;
@@ -329,12 +310,6 @@ namespace SE
 			writer.StartObject();
 			writer.Key(SE_TEXT("programId"));
 			writer.String(program.ProgramId);
-			writer.Key(SE_TEXT("vertexBufferLayout"));
-			if (!SLC2VertexInputWriter::WriteVertexBufferLayout(writer, program.VertexBufferLayout, error))
-			{
-				output.Clear();
-				return false;
-			}
 			writer.Key(SE_TEXT("variantGroups"));
 			WriteVariantGroups(writer, program.VariantGroups);
 

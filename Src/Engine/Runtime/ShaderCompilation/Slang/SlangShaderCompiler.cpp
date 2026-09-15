@@ -3,11 +3,15 @@
 #include <Runtime/EngineContext.h>
 #include <Runtime/Core/Platform/StringUtils.h>
 #include <Runtime/Core/Types/Collections/List.h>
+#include <Runtime/Core/Types/Collections/Sorting.h>
 #include <Runtime/ShaderCompilation/Slang/SLC2/SLC2Artifact.h>
 #include <Runtime/ShaderCompilation/Slang/SLC2/SLC2Reader.h>
 #include <Runtime/ShaderCompilation/Slang/SLC2/SLC2Writer.h>
+#include <Runtime/ShaderCompilation/Slang/SLC2/SLC2Util.h>
 #include <Runtime/ShaderCompilation/Slang/SlangReflectionBuilder.h>
 #include <Runtime/ShaderCompilation/Slang/SlangShaderFileSystem.h>
+#include <Runtime/ShaderCompilation/Slang/SlangVertexInputCompiler.h>
+
 
 #include <slang-com-ptr.h>
 #include <slang-tag-version.h>
@@ -17,54 +21,7 @@ namespace SE
 {
 	namespace
 	{
-		String FromUtf8(const char* text)
-		{
-			return text ? StringAnsi(text).ToString() : String::Empty;
-		}
-
-		String FromUtf8(const char* text, const size_t length)
-		{
-			return text ? StringAnsi(text, (int32)length).ToString() : String::Empty;
-		}
-
-		bool SlangSucceeded(const SlangResult result)
-		{
-			return SLANG_SUCCEEDED(result);
-		}
-
-		bool IsAttribute(slang::Attribute* attribute, const char* name)
-		{
-			if (attribute == nullptr)
-			{
-				return false;
-			}
-			const char* attributeName = attribute->getName();
-			if (attributeName == nullptr)
-			{
-				return false;
-			}
-			const String actual = FromUtf8(attributeName);
-			const String expected = FromUtf8(name);
-			return actual == expected || actual == expected + SE_TEXT("Attribute");
-		}
-
-		bool HasAttribute(slang::TypeReflection* type, const char* name)
-		{
-			if (type == nullptr)
-			{
-				return false;
-			}
-			for (unsigned int i = 0; i < type->getUserAttributeCount(); i++)
-			{
-				if (IsAttribute(type->getUserAttributeByIndex(i), name))
-				{
-					return true;
-				}
-			}
-			return false;
-		}
-
-		bool ReadOutputControlPoints(slang::IGlobalSession* globalSession, slang::ProgramLayout* layout, const int32 entryPointIndex, const SlangProgramStageDeclaration& stage, int32& outputControlPoints, String& error)
+		bool ReadOutputControlPoints(slang::IGlobalSession* globalSession, slang::ProgramLayout* layout, const int32 entryPointIndex, const SLC2ProgramStageDeclaration& stage, int32& outputControlPoints, String& error)
 		{
 			outputControlPoints = 0;
 			if (stage.Stage != ShaderStage::Hull)
@@ -97,34 +54,13 @@ namespace SE
 			}
 
 			int value = 0;
-			if (!SlangSucceeded(attribute->getArgumentValueInt(0, &value)) || value <= 0 || value > 32)
+			if (!SLANG_SUCCEEDED(attribute->getArgumentValueInt(0, &value)) || value <= 0 || value > 32)
 			{
 				error = SE_TEXT("Hull shader [outputcontrolpoints] must be in range 1-32: ") + stage.EntryPoint;
 				return false;
 			}
 			outputControlPoints = static_cast<int32>(value);
 			return true;
-		}
-
-		SlangStage ToSlangStage(const ShaderStage stage)
-		{
-			switch (stage)
-			{
-                case ShaderStage::Vertex:
-				return SLANG_STAGE_VERTEX;
-                case ShaderStage::Hull:
-				return SLANG_STAGE_HULL;
-                case ShaderStage::Domain:
-				return SLANG_STAGE_DOMAIN;
-                case ShaderStage::Geometry:
-				return SLANG_STAGE_GEOMETRY;
-                case ShaderStage::Pixel:
-				return SLANG_STAGE_FRAGMENT;
-                case ShaderStage::Compute:
-				return SLANG_STAGE_COMPUTE;
-			default:
-				return SLANG_STAGE_NONE;
-			}
 		}
 
 		const char* GetProfileName(const ShaderProfile profile, const FeatureLevel feature)
@@ -136,291 +72,6 @@ namespace SE
 			return "sm_5_0";
 		}
 
-		String MakeCompilerBuildTag()
-		{
-			return String(SE_TEXT("SolarSlangCompiler/1;Slang/")) + StringAnsi(SLANG_TAG_VERSION).ToString() + SE_TEXT(";SLC2/3");
-		}
-
-		// 编译端顶点输入职责集中在此处：声明解析、Slang 逻辑签名提取和最小契约校验共用同一边界。
-		namespace SLC2VertexInputCompiler
-		{
-			bool ReadAttributeInt(slang::Attribute* attribute, const uint32 argumentIndex, int32& value)
-			{
-				int slangValue = 0;
-				if (!SlangSucceeded(attribute->getArgumentValueInt(argumentIndex, &slangValue)))
-				{
-					return false;
-				}
-				value = static_cast<int32>(slangValue);
-				return true;
-			}
-
-			bool ReadAttributeString(slang::Attribute* attribute, const uint32 argumentIndex, String& value)
-			{
-				size_t length = 0;
-				const char* text = attribute->getArgumentValueString(argumentIndex, &length);
-				if (text == nullptr)
-				{
-					return false;
-				}
-				value = FromUtf8(text, length);
-				return true;
-			}
-
-			// 票 01 只开放 Position-only 的安全子集。其他布局会明确失败，后续能力扩展不会形成静默半支持。
-			bool ReadMinimalVertexBinding(slang::Attribute* attribute, SlangProgramDeclaration& program, String& error)
-			{
-				int32 slot = 0;
-				int32 stride = 0;
-				int32 instanceStepRate = 0;
-				String inputRate;
-				if (attribute->getArgumentCount() != 4 || !ReadAttributeInt(attribute, 0, slot) ||
-					!ReadAttributeInt(attribute, 1, stride) || !ReadAttributeString(attribute, 2, inputRate) ||
-					!ReadAttributeInt(attribute, 3, instanceStepRate))
-				{
-					error = SE_TEXT("SolarShaderVertexInputBinding attribute is invalid.");
-					return false;
-				}
-				if (program.VertexBufferLayout.Bindings.HasItems())
-				{
-					error = SE_TEXT("Minimal SLC2 vertex input supports exactly one binding.");
-					return false;
-				}
-				if (slot != 0 || stride != 12 || inputRate != SE_TEXT("PER_VERTEX") || instanceStepRate != 0)
-				{
-					error =
-						SE_TEXT("Minimal SLC2 vertex input requires slot 0, stride 12, PER_VERTEX and step rate 0.");
-					return false;
-				}
-
-				SLC2VertexBufferBinding binding;
-				binding.Slot = static_cast<uint32>(slot);
-				binding.Stride = static_cast<uint32>(stride);
-				binding.InputRate = SLC2VertexInputRate::PerVertex;
-				binding.InstanceStepRate = static_cast<uint32>(instanceStepRate);
-				program.VertexBufferLayout.Bindings.Add(binding);
-				return true;
-			}
-
-			bool ReadMinimalVertexElement(slang::Attribute* attribute, SlangProgramDeclaration& program, String& error)
-			{
-				String semantic;
-				String format;
-				String offsetText;
-				int32 semanticIndex = 0;
-				int32 slot = 0;
-				if (attribute->getArgumentCount() != 5 || !ReadAttributeString(attribute, 0, semantic) ||
-					!ReadAttributeInt(attribute, 1, semanticIndex) || !ReadAttributeString(attribute, 2, format) ||
-					!ReadAttributeInt(attribute, 3, slot) || !ReadAttributeString(attribute, 4, offsetText))
-				{
-					error = SE_TEXT("SolarShaderVertexInputElement attribute is invalid.");
-					return false;
-				}
-				if (program.VertexBufferLayout.Elements.HasItems())
-				{
-					error = SE_TEXT("Minimal SLC2 vertex input supports exactly one element.");
-					return false;
-				}
-
-				semantic.ToUpper();
-				uint32 offset = 0;
-				const StringAnsi offsetAnsi(offsetText);
-				if (!StringUtils::Parse(offsetAnsi.Get(), offsetAnsi.Length(), &offset) ||
-					semantic != SE_TEXT("POSITION") || semanticIndex != 0 || format != SE_TEXT("R32G32B32_Float") ||
-					slot != 0 || offset != 0)
-				{
-					error = SE_TEXT("Minimal SLC2 vertex input requires POSITION0 R32G32B32_Float at slot 0 offset 0.");
-					return false;
-				}
-
-				SLC2VertexInputElement element;
-				element.Semantic = semantic;
-				element.SemanticIndex = static_cast<uint32>(semanticIndex);
-				element.Format = PixelFormat::R32G32B32_Float;
-				element.Slot = static_cast<uint32>(slot);
-				element.Offset = offset;
-				program.VertexBufferLayout.Elements.Add(element);
-				return true;
-			}
-
-			bool ValidateMinimalVertexDeclaration(const SlangProgramDeclaration& program, String& error)
-			{
-				const bool hasBinding = program.VertexBufferLayout.Bindings.HasItems();
-				const bool hasElement = program.VertexBufferLayout.Elements.HasItems();
-				if (hasBinding != hasElement)
-				{
-					error = SE_TEXT("Vertex input binding and element must be declared together.");
-					return false;
-				}
-				bool hasCompute = false;
-				for (int32 stageIndex = 0; stageIndex < program.Stages.Count(); stageIndex++)
-				{
-					hasCompute |= program.Stages[stageIndex].Stage == ShaderStage::Compute;
-				}
-				if (hasCompute && hasBinding)
-				{
-					error = SE_TEXT("Compute shader program cannot declare vertex input.");
-					return false;
-				}
-				return true;
-			}
-
-			bool SameVertexBufferLayout(const SLC2VertexBufferLayout& a, const SLC2VertexBufferLayout& b)
-			{
-				if (a.Bindings.Count() != b.Bindings.Count() || a.Elements.Count() != b.Elements.Count())
-				{
-					return false;
-				}
-				for (int32 index = 0; index < a.Bindings.Count(); index++)
-				{
-					const SLC2VertexBufferBinding& lhs = a.Bindings[index];
-					const SLC2VertexBufferBinding& rhs = b.Bindings[index];
-					if (lhs.Slot != rhs.Slot || lhs.Stride != rhs.Stride || lhs.InputRate != rhs.InputRate ||
-						lhs.InstanceStepRate != rhs.InstanceStepRate)
-					{
-						return false;
-					}
-				}
-				for (int32 index = 0; index < a.Elements.Count(); index++)
-				{
-					const SLC2VertexInputElement& lhs = a.Elements[index];
-					const SLC2VertexInputElement& rhs = b.Elements[index];
-					if (lhs.Semantic != rhs.Semantic || lhs.SemanticIndex != rhs.SemanticIndex ||
-						lhs.Format != rhs.Format || lhs.Slot != rhs.Slot || lhs.Offset != rhs.Offset)
-					{
-						return false;
-					}
-				}
-				return true;
-			}
-
-			bool AppendMinimalVertexInput(slang::VariableLayoutReflection* variable,
-										  List<SLC2VertexInputSignatureElement>& signature,
-										  String& error)
-			{
-				if (variable == nullptr || variable->getTypeLayout() == nullptr)
-				{
-					error = SE_TEXT("Vertex input reflection is missing a variable layout.");
-					return false;
-				}
-
-				const char* semanticName = variable->getSemanticName();
-				if (semanticName != nullptr && semanticName[0] != '\0')
-				{
-					String semantic = FromUtf8(semanticName);
-					semantic.ToUpper();
-					if (semantic.StartsWith(SE_TEXT("SV_")))
-					{
-						return true;
-					}
-
-					slang::TypeLayoutReflection* typeLayout = variable->getTypeLayout();
-					if (typeLayout->getKind() != slang::TypeReflection::Kind::Vector ||
-						typeLayout->getScalarType() != slang::TypeReflection::ScalarType::Float32 ||
-						typeLayout->getColumnCount() != 3)
-					{
-						error = SE_TEXT("Minimal SLC2 vertex input only supports a float3 POSITION input.");
-						return false;
-					}
-
-					const size_t location = variable->getOffset(slang::ParameterCategory::VaryingInput);
-					if (location > static_cast<size_t>(0xffffffffu))
-					{
-						error = SE_TEXT("Vertex input location exceeds the SLC2 range.");
-						return false;
-					}
-
-					const size_t semanticIndex = variable->getSemanticIndex();
-					if (semanticIndex > static_cast<size_t>(0xffffffffu))
-					{
-						error = SE_TEXT("Vertex input semantic index exceeds the SLC2 range.");
-						return false;
-					}
-
-					SLC2VertexInputSignatureElement element;
-					element.Semantic = semantic;
-					element.SemanticIndex = static_cast<uint32>(semanticIndex);
-					element.Location = static_cast<uint32>(location);
-					element.ShaderType = SLC2VertexInputType::Float3;
-					signature.Add(element);
-					return true;
-				}
-
-				slang::TypeLayoutReflection* typeLayout = variable->getTypeLayout();
-				if (typeLayout->getKind() != slang::TypeReflection::Kind::Struct)
-				{
-					error = SE_TEXT("Vertex input parameter has no semantic.");
-					return false;
-				}
-				for (uint32 fieldIndex = 0; fieldIndex < typeLayout->getFieldCount(); fieldIndex++)
-				{
-					if (!AppendMinimalVertexInput(typeLayout->getFieldByIndex(fieldIndex), signature, error))
-					{
-						return false;
-					}
-				}
-				return true;
-			}
-
-			bool ReadMinimalVertexInputSignature(slang::ProgramLayout* layout,
-												 const int32 entryPointIndex,
-												 List<SLC2VertexInputSignatureElement>& signature,
-												 String& error)
-			{
-				signature.Clear();
-				if (layout == nullptr)
-				{
-					error = SE_TEXT("Vertex input signature requires Slang reflection.");
-					return false;
-				}
-				slang::EntryPointReflection* entryPoint = layout->getEntryPointByIndex(entryPointIndex);
-				if (entryPoint == nullptr)
-				{
-					error = SE_TEXT("Vertex entry point reflection is missing.");
-					return false;
-				}
-				for (uint32 parameterIndex = 0; parameterIndex < entryPoint->getParameterCount(); parameterIndex++)
-				{
-					if (!AppendMinimalVertexInput(entryPoint->getParameterByIndex(parameterIndex), signature, error))
-					{
-						return false;
-					}
-				}
-				return true;
-			}
-
-			bool ValidateMinimalVertexInput(const SLC2VertexBufferLayout& layout,
-											const List<SLC2VertexInputSignatureElement>& signature,
-											String& error)
-			{
-				if (signature.IsEmpty())
-				{
-					if (layout.Bindings.HasItems() || layout.Elements.HasItems())
-					{
-						error = SE_TEXT("System-value-only vertex shader must use an empty vertex buffer layout.");
-						return false;
-					}
-					return true;
-				}
-				if (signature.Count() != 1 || layout.Bindings.Count() != 1 || layout.Elements.Count() != 1)
-				{
-					error =
-						SE_TEXT("Minimal SLC2 vertex input requires one binding, one element and one reflected input.");
-					return false;
-				}
-
-				const SLC2VertexInputElement& physical = layout.Elements[0];
-				const SLC2VertexInputSignatureElement& logical = signature[0];
-				if (physical.Semantic != logical.Semantic || physical.SemanticIndex != logical.SemanticIndex ||
-					physical.Semantic != SE_TEXT("POSITION") || physical.Format != PixelFormat::R32G32B32_Float ||
-					physical.Slot != 0 || physical.Offset != 0 || logical.ShaderType != SLC2VertexInputType::Float3)
-				{
-					error = SE_TEXT("Minimal SLC2 vertex input declaration does not match Slang reflection.");
-					return false;
-				}
-				return true;
-			}
-		} // namespace SLC2VertexInputCompiler
 
 		void SplitMacroGroup(const String& raw, ShaderVariantGroup& group)
 		{
@@ -456,7 +107,7 @@ namespace SE
 			group.DefaultMember = group.Members.Count() > 0 ? group.Members[0] : String::Empty;
 		}
 
-		bool HasStage(const SlangProgramDeclaration& program, const ShaderStage stage)
+		bool HasStage(const SLC2ProgramDeclaration& program, const ShaderStage stage)
 		{
 			for (int32 i = 0; i < program.Stages.Count(); i++)
 			{
@@ -468,7 +119,7 @@ namespace SE
 			return false;
 		}
 
-		bool ValidateStageContract(const SlangProgramDeclaration& program, String& error)
+		bool ValidateStageContract(const SLC2ProgramDeclaration& program, String& error)
 		{
 			for (int32 i = 0; i < program.Stages.Count(); i++)
 			{
@@ -514,7 +165,7 @@ namespace SE
 			return true;
 		}
 
-		bool DiscoverPrograms(slang::IModule* module, List<SlangProgramDeclaration>& programs, String& error)
+		bool DiscoverPrograms(slang::IModule* module, List<SLC2ProgramDeclaration>& programs, String& error)
 		{
 			programs.Clear();
 			if (module == nullptr)
@@ -539,7 +190,7 @@ namespace SE
 				}
 
 				slang::TypeReflection* type = child->getType();
-				if (!HasAttribute(type, "SolarShaderProgram"))
+				if (!SLC2Util::HasAttribute(type, "SolarShaderProgram"))
 				{
 					continue;
 				}
@@ -551,8 +202,8 @@ namespace SE
 					return false;
 				}
 
-				SlangProgramDeclaration program;
-				program.ProgramId = FromUtf8(programName);
+				SLC2ProgramDeclaration program;
+				program.ProgramId = String(programName);
 
 				for (int32 existingIndex = 0; existingIndex < programs.Count(); existingIndex++)
 				{
@@ -566,7 +217,7 @@ namespace SE
 				for (unsigned int attrIndex = 0; attrIndex < type->getUserAttributeCount(); attrIndex++)
 				{
 					slang::Attribute* attribute = type->getUserAttributeByIndex(attrIndex);
-					if (IsAttribute(attribute, "SolarShaderStage"))
+					if (SLC2Util::IsAttribute(attribute, "SolarShaderStage"))
 					{
 						if (attribute->getArgumentCount() != 2)
 						{
@@ -583,15 +234,15 @@ namespace SE
 							return false;
 						}
 
-						SlangProgramStageDeclaration stageDecl;
-						const String stageName = FromUtf8(stageText, stageSize);
+						SLC2ProgramStageDeclaration stageDecl;
+						const String stageName = String(stageText, stageSize);
 						const StringAnsi stageNameAnsi(stageName);
 						if (!ParseShaderStage(stageNameAnsi.Get(), stageDecl.Stage))
 						{
 							error = SE_TEXT("Unknown shader stage declared on program: ") + program.ProgramId;
 							return false;
 						}
-						stageDecl.EntryPoint = FromUtf8(entryText, entrySize);
+                        stageDecl.EntryPoint = String(entryText, entrySize);
 						if (stageDecl.EntryPoint.IsEmpty())
 						{
 							error = SE_TEXT("Shader stage entry point is empty on program: ") + program.ProgramId;
@@ -599,7 +250,7 @@ namespace SE
 						}
 						program.Stages.Add(stageDecl);
 					}
-					else if (IsAttribute(attribute, "SolarShaderMacroGroup"))
+                    else if (SLC2Util::IsAttribute(attribute, "SolarShaderMacroGroup"))
 					{
 						if (attribute->getArgumentCount() != 1)
 						{
@@ -614,29 +265,13 @@ namespace SE
 							return false;
 						}
 						ShaderVariantGroup group;
-						SplitMacroGroup(FromUtf8(macroText, macroSize), group);
+                        SplitMacroGroup(String(macroText, macroSize), group);
 						if (group.Members.Count() == 0)
 						{
 							error = SE_TEXT("SHADER_MACRO group is empty on program: ") + program.ProgramId;
 							return false;
 						}
 						program.VariantGroups.Add(group);
-					}
-					else if (IsAttribute(attribute, "SolarShaderVertexInputBinding"))
-					{
-						if (!SLC2VertexInputCompiler::ReadMinimalVertexBinding(attribute, program, error))
-						{
-							error = program.ProgramId + SE_TEXT(": ") + error;
-							return false;
-						}
-					}
-					else if (IsAttribute(attribute, "SolarShaderVertexInputElement"))
-					{
-						if (!SLC2VertexInputCompiler::ReadMinimalVertexElement(attribute, program, error))
-						{
-							error = program.ProgramId + SE_TEXT(": ") + error;
-							return false;
-						}
 					}
 				}
 
@@ -645,12 +280,6 @@ namespace SE
 					error = program.ProgramId + SE_TEXT(": ") + error;
 					return false;
 				}
-				if (!SLC2VertexInputCompiler::ValidateMinimalVertexDeclaration(program, error))
-				{
-					error = program.ProgramId + SE_TEXT(": ") + error;
-					return false;
-				}
-
 				programs.Add(program);
 			}
 
@@ -663,11 +292,10 @@ namespace SE
 			return true;
 		}
 
-		bool SameProgramShape(const SlangProgramDeclaration& a, const SlangProgramDeclaration& b)
+		bool SameProgramShape(const SLC2ProgramDeclaration& a, const SLC2ProgramDeclaration& b)
 		{
 			if (a.ProgramId != b.ProgramId || a.Stages.Count() != b.Stages.Count() ||
-				a.VariantGroups.Count() != b.VariantGroups.Count() ||
-				!SLC2VertexInputCompiler::SameVertexBufferLayout(a.VertexBufferLayout, b.VertexBufferLayout))
+				a.VariantGroups.Count() != b.VariantGroups.Count())
 			{
 				return false;
 			}
@@ -695,7 +323,7 @@ namespace SE
 			return true;
 		}
 
-		SlangProgramDeclaration* FindProgram(List<SlangProgramDeclaration>& programs, const String& programId)
+		SLC2ProgramDeclaration* FindProgram(List<SLC2ProgramDeclaration>& programs, const String& programId)
 		{
 			for (int32 i = 0; i < programs.Count(); i++)
 			{
@@ -719,7 +347,7 @@ namespace SE
 			return nullptr;
 		}
 
-		bool PlanProgramVariants(const ShaderCompileRequest& request, const SlangProgramDeclaration& program, List<ShaderVariantPlan>& variants, String& error)
+		bool PlanProgramVariants(const ShaderCompileRequest& request, const SLC2ProgramDeclaration& program, List<ShaderVariantPlan>& variants, String& error)
 		{
 			variants.Clear();
 			const ShaderProgramVariantSelection* selection = FindSelection(request, program.ProgramId);
@@ -818,7 +446,7 @@ namespace SE
 			sessionDesc.compilerOptionEntries = compilerOptionEntries.Get();
 			sessionDesc.compilerOptionEntryCount = compilerOptionEntries.Count();
 
-			if (!SlangSucceeded(globalSession->createSession(sessionDesc, session.writeRef())))
+			if (!SLANG_SUCCEEDED(globalSession->createSession(sessionDesc, session.writeRef())))
 			{
 				error = SE_TEXT("Failed to create Slang session.");
 				return false;
@@ -866,22 +494,6 @@ namespace SE
 			}
 			return true;
 		}
-
-		void SortPrograms(List<SLC2ProgramRecord>& programs)
-		{
-			for (int32 i = 0; i < programs.Count(); i++)
-			{
-				for (int32 j = i + 1; j < programs.Count(); j++)
-				{
-					if (programs[j].ProgramId < programs[i].ProgramId)
-					{
-						SLC2ProgramRecord tmp = programs[i];
-						programs[i] = programs[j];
-						programs[j] = tmp;
-					}
-				}
-			}
-		}
 	}
 
 	void SlangShaderCompiler::AddDiagnostic(const String& text)
@@ -904,7 +516,7 @@ namespace SE
 		{
 			return;
 		}
-		AddDiagnostic(FromUtf8((const char*)blob->getBufferPointer(), blob->getBufferSize()));
+        AddDiagnostic(String((const char*)blob->getBufferPointer(), blob->getBufferSize()));
 	}
 
 	ShaderCompileResult SlangShaderCompiler::Compile(const ShaderCompileRequest& request)
@@ -928,7 +540,7 @@ namespace SE
 		}
 
 		Slang::ComPtr<slang::IGlobalSession> globalSession;
-		if (!SlangSucceeded(slang::createGlobalSession(globalSession.writeRef())))
+		if (!SLANG_SUCCEEDED(slang::createGlobalSession(globalSession.writeRef())))
 		{
 			AddDiagnostic(SE_TEXT("Failed to create Slang global session."));
 			result.CompileMessage.Text = m_Diagnostics;
@@ -961,7 +573,7 @@ namespace SE
 			return result;
 		}
 
-		List<SlangProgramDeclaration> baselinePrograms;
+		List<SLC2ProgramDeclaration> baselinePrograms;
 		if (!DiscoverPrograms(baselineModule, baselinePrograms, error))
 		{
 			AddDiagnostic(error);
@@ -980,11 +592,13 @@ namespace SE
 		}
 
 		SLC2Artifact artifact;
-		artifact.CompilerBuildTag = MakeCompilerBuildTag();
+		artifact.CompilerBuildTag = String::Format(SE_TEXT("SolarSlangCompiler/1;Slang/{0};SLC2/{1}"),
+                                                   StringAnsiView(SLANG_TAG_VERSION),
+                                                   StringUtils::ToString(4));
 
 		for (int32 baselineProgramIndex = 0; baselineProgramIndex < baselinePrograms.Count(); baselineProgramIndex++)
 		{
-			const SlangProgramDeclaration& baselineProgram = baselinePrograms[baselineProgramIndex];
+			const SLC2ProgramDeclaration& baselineProgram = baselinePrograms[baselineProgramIndex];
 			List<ShaderVariantPlan> variants;
 			if (!PlanProgramVariants(request, baselineProgram, variants, error))
 			{
@@ -999,8 +613,9 @@ namespace SE
 
 			SLC2ProgramRecord programRecord;
 			programRecord.ProgramId = baselineProgram.ProgramId;
-			programRecord.VertexBufferLayout = baselineProgram.VertexBufferLayout;
 			programRecord.VariantGroups = baselineProgram.VariantGroups;
+			List<SLC2VertexInputSignatureElement> programVertexSignature;
+			bool hasProgramVertexSignature = false;
 
 			for (int32 targetIndex = 0; targetIndex < request.Targets.Count(); targetIndex++)
 			{
@@ -1008,6 +623,8 @@ namespace SE
 				SLC2TargetRecord targetRecord;
 				targetRecord.Target = target;
 				targetRecord.TargetKey = BuildTargetKey(target);
+				List<SLC2VertexInputSignatureElement> targetVertexSignature;
+				bool hasTargetVertexSignature = false;
 
 				for (int32 variantIndex = 0; variantIndex < variants.Count(); variantIndex++)
 				{
@@ -1031,7 +648,7 @@ namespace SE
 						return result;
 					}
 
-					List<SlangProgramDeclaration> variantPrograms;
+					List<SLC2ProgramDeclaration> variantPrograms;
 					// Variant 环境会重新加载 Module，但不允许宏改变 Program 声明形状，只允许改变 shader 实现代码。
 					if (!DiscoverPrograms(module, variantPrograms, error))
 					{
@@ -1040,7 +657,7 @@ namespace SE
 						return result;
 					}
 
-					SlangProgramDeclaration* variantProgram = FindProgram(variantPrograms, baselineProgram.ProgramId);
+					SLC2ProgramDeclaration* variantProgram = FindProgram(variantPrograms, baselineProgram.ProgramId);
 					if (variantProgram == nullptr || !SameProgramShape(baselineProgram, *variantProgram))
 					{
 						AddDiagnostic(SE_TEXT("Variant-controlled Program/Stage/Macro declarations are not allowed: ") + baselineProgram.ProgramId);
@@ -1054,22 +671,25 @@ namespace SE
 					entryPoints.Resize(baselineProgram.Stages.Count());
 					for (int32 stageIndex = 0; stageIndex < baselineProgram.Stages.Count(); stageIndex++)
 					{
-						const SlangProgramStageDeclaration& stage = baselineProgram.Stages[stageIndex];
+						const SLC2ProgramStageDeclaration& stage = baselineProgram.Stages[stageIndex];
 						Slang::ComPtr<slang::IBlob> entryDiagnostics;
 						const StringAnsi entryName(stage.EntryPoint);
-						if (!SlangSucceeded(module->findAndCheckEntryPoint(entryName.Get(), ToSlangStage(stage.Stage), entryPoints[stageIndex].writeRef(), entryDiagnostics.writeRef())))
-						{
-							AddSlangDiagnostics(entryDiagnostics);
-							AddDiagnostic(SE_TEXT("Failed to find or check entry point: ") + stage.EntryPoint);
-							result.CompileMessage.Text = m_Diagnostics;
-							return result;
-						}
+                        if (!SLANG_SUCCEEDED(module->findAndCheckEntryPoint(entryName.Get(),
+                                                                           SLC2Util::ToSlangStage(stage.Stage),
+                                                                           entryPoints[stageIndex].writeRef(),
+                                                                           entryDiagnostics.writeRef())))
+                        {
+                            AddSlangDiagnostics(entryDiagnostics);
+                            AddDiagnostic(SE_TEXT("Failed to find or check entry point: ") + stage.EntryPoint);
+                            result.CompileMessage.Text = m_Diagnostics;
+                            return result;
+                        }
 						components.Add(entryPoints[stageIndex]);
 					}
 
 					Slang::ComPtr<slang::IComponentType> composite;
 					Slang::ComPtr<slang::IBlob> compositeDiagnostics;
-					if (!SlangSucceeded(session->createCompositeComponentType(components.Get(), (SlangInt)components.Count(), composite.writeRef(), compositeDiagnostics.writeRef())))
+					if (!SLANG_SUCCEEDED(session->createCompositeComponentType(components.Get(), (SlangInt)components.Count(), composite.writeRef(), compositeDiagnostics.writeRef())))
 					{
 						AddSlangDiagnostics(compositeDiagnostics);
 						AddDiagnostic(SE_TEXT("Failed to create Slang composite component."));
@@ -1079,7 +699,7 @@ namespace SE
 
 					Slang::ComPtr<slang::IComponentType> linked;
 					Slang::ComPtr<slang::IBlob> linkDiagnostics;
-					if (!SlangSucceeded(composite->link(linked.writeRef(), linkDiagnostics.writeRef())))
+					if (!SLANG_SUCCEEDED(composite->link(linked.writeRef(), linkDiagnostics.writeRef())))
 					{
 						AddSlangDiagnostics(linkDiagnostics);
 						AddDiagnostic(SE_TEXT("Failed to link Slang component."));
@@ -1124,7 +744,7 @@ namespace SE
 					{
 						Slang::ComPtr<slang::IBlob> code;
 						Slang::ComPtr<slang::IBlob> codeDiagnostics;
-						if (!SlangSucceeded(linked->getEntryPointCode(stageIndex, 0, code.writeRef(), codeDiagnostics.writeRef())))
+						if (!SLANG_SUCCEEDED(linked->getEntryPointCode(stageIndex, 0, code.writeRef(), codeDiagnostics.writeRef())))
 						{
 							AddSlangDiagnostics(codeDiagnostics);
 							AddDiagnostic(SE_TEXT("Failed to emit target code for entry point: ") + baselineProgram.Stages[stageIndex].EntryPoint);
@@ -1143,14 +763,39 @@ namespace SE
 						stageRecord.EntryPoint = baselineProgram.Stages[stageIndex].EntryPoint;
 						// 顶点逻辑签名来自当前 linked Program，运行时不需要重新加载 Slang 或反射 SPIR-V。
 						if (stageRecord.Stage == ShaderStage::Vertex &&
-							(!SLC2VertexInputCompiler::ReadMinimalVertexInputSignature(
-								 layout, stageIndex, stageRecord.VertexInputSignature, error) ||
-							 !SLC2VertexInputCompiler::ValidateMinimalVertexInput(programRecord.VertexBufferLayout,
-																				  stageRecord.VertexInputSignature, error)))
+							!SLC2VertexInputCompiler::ReadVertexInputSignature(
+								 layout, stageIndex, stageRecord.VertexInputSignature, error))
 						{
 							AddDiagnostic(baselineProgram.ProgramId + SE_TEXT(": ") + error);
 							result.CompileMessage.Text = m_Diagnostics;
 							return result;
+						}
+						if (stageRecord.Stage == ShaderStage::Vertex)
+						{
+							if (!hasProgramVertexSignature)
+							{
+								programVertexSignature = stageRecord.VertexInputSignature;
+								hasProgramVertexSignature = true;
+							}
+							else if (!SLC2VertexInputCompiler::SameVertexInputSignature(
+									programVertexSignature, stageRecord.VertexInputSignature, false))
+							{
+								AddDiagnostic(baselineProgram.ProgramId + SE_TEXT(": vertex input semantic/type changed between variants or targets."));
+								result.CompileMessage.Text = m_Diagnostics;
+								return result;
+							}
+							if (!hasTargetVertexSignature)
+							{
+								targetVertexSignature = stageRecord.VertexInputSignature;
+								hasTargetVertexSignature = true;
+							}
+							else if (!SLC2VertexInputCompiler::SameVertexInputSignature(
+									targetVertexSignature, stageRecord.VertexInputSignature, true))
+							{
+								AddDiagnostic(baselineProgram.ProgramId + SE_TEXT(": vertex input locations changed between variants of one target."));
+								result.CompileMessage.Text = m_Diagnostics;
+								return result;
+							}
 						}
 						if (!ReadOutputControlPoints(globalSession, layout, stageIndex, baselineProgram.Stages[stageIndex], stageRecord.OutputControlPoints, error))
 						{
@@ -1171,7 +816,9 @@ namespace SE
 			artifact.Programs.Add(programRecord);
 		}
 
-		SortPrograms(artifact.Programs);
+		Sorting::QuickSort(artifact.Programs, [](const SLC2ProgramRecord& a, const SLC2ProgramRecord& b) {
+			return a.ProgramId < b.ProgramId;
+		});
 
 		if (!SLC2Writer::WriteDeterministic(artifact, result.SLC2Data, error))
 		{

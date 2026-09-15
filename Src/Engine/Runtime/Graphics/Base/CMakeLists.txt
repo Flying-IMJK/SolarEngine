@@ -10,6 +10,10 @@ RUNTIME_ADD(
         GPUBufferDescription.h
         GPUBuffer.h
         GPUBuffer.cpp
+        VertexFactoryLayout.h
+        VertexFactoryLayout.cpp
+        RenderGeometry.h
+        RenderGeometry.cpp
         GPUPipelineState.h
         GPUPipelineStatePermutations.h
         GPUUtils.h

@@ -138,12 +138,13 @@ CompilerBuildTag =
     <h3 id="compile-transaction">编译事务步骤</h3>
     <ol>
       <li><strong>规范化资源身份：</strong>规范化 Shader 虚拟资源路径，计算 <code>SLC2FileKey</code>。</li>
-      <li><strong>基线发现：</strong>以 <code>Defines = {}</code> 加载根 Slang Module，只遍历根作用域的直接声明，不进入 namespace 或 imported Module；对 marker struct 的 <code>DeclReflection</code> 调用 <code>getName()</code> 并复制非空 UTF-8 结果作为 ProgramId，再从 Attribute 中读取 Stage 和 Variant Group，并校验 ProgramId 唯一性与 Stage 契约。</li>
+      <li><strong>基线发现：</strong>以 <code>Defines = {}</code> 加载根 Slang Module，只遍历根作用域的直接声明，不进入 namespace 或 imported Module；对 marker struct 的 <code>DeclReflection</code> 调用 <code>getName()</code> 并复制非空 UTF-8 结果作为 ProgramId，再从 Attribute 中读取 Stage、Variant Group、Vertex Input Binding 与 Vertex Input Element，并校验 ProgramId 唯一性、Stage 契约和 Program 级物理顶点缓冲布局。</li>
       <li><strong>选择 Variant：</strong>请求未设置过滤器时生成完整笛卡尔积；设置过滤器时执行默认补全、校验、规范化和去重。</li>
       <li><strong>创建编译环境：</strong>针对每个 Target × Variant，以目标参数、搜索路径、实际宏 defines 和自定义文件系统创建 Slang session 并重新加载 module。</li>
       <li><strong>检查并联合链接：</strong>按声明的名称和 Stage 调用 <code>findAndCheckEntryPoint</code>，并拒绝除 varying/system-value 输入输出之外的 EntryPoint uniform/resource 参数；同一 graphics Program 的全部入口必须组合到同一个 linked component。</li>
+      <li><strong>验证顶点输入：</strong>从每个 Target × Variant 的 Vertex EntryPoint Reflection 提取非 system-value 的 Semantic、SemanticIndex、Location 和 Shader 数值类型。它必须与 Program 级物理布局双向匹配，并与同一 Target 的其他 Variant 保持完全相同的 Semantic/Index/Location/ShaderType；不同 Target 只允许 Location 不同。顶点输入不参与 Variant 裁剪。</li>
       <li><strong>验证 Layout 支持边界：</strong>拒绝任何 Push Constant 布局，以及 ConstantBuffer/ParameterBlock 自身形成数组或被数组直接、间接重复实例化的类型图；该编译单元失败且不产生 SLC2。</li>
-      <li><strong>提取产物：</strong>从 linked component 获取每个 Stage 的目标代码和统一 <code>ProgramLayout</code>；为当前 <code>ProgramId × TargetKey × Variant</code> 生成一份 <code>schema = 2</code> 的 ID 化 <code>ShaderProgramLayout</code>：<code>types[]</code> 保存类型树、成员局部名称和 ShaderVar 相对偏移，<code>parameterBlocks[]</code> 为每个逻辑 resource range 生成一条 <code>rangeBinding</code>，再以 0～N 条 <code>descriptorRanges[]</code> 或一个 <code>subBlockId</code> 表达当前 Target 落点；各 Stage 只保存入口信息与代码。</li>
+      <li><strong>提取产物：</strong>从 linked component 获取每个 Stage 的目标代码和统一 <code>ProgramLayout</code>；为当前 <code>ProgramId × TargetKey × Variant</code> 生成一份 <code>schema = 2</code> 的 ID 化 <code>ShaderProgramLayout</code>。SLC2 v3 在 Program 级保存不可裁剪的 <code>vertexBufferLayout</code>，并在每个 Vertex Stage 保存当前 Target 的 <code>vertexInputSignature</code>；其余 Stage 不保存该字段。</li>
       <li><strong>路径解析：</strong>通过编译侧 <code>SlangShaderFileSystem</code> 解析根源码、source/import/include；当前阶段不持久化 DependencyIndex，source/import 路径与内容 hash 不写入 SLC2。</li>
       <li><strong>返回并写入：</strong>只有全部请求单元成功且聚合 SLC2 自检通过时，<code>ShaderCompiler</code> 才返回 <code>Success</code> 和完整 <code>SLC2Data</code>；<code>CompileMessage</code> 可以携带 Warning，并在编译结束后输出日志。随后由外层 <code>ShadersCompilation</code> 原子替换正式文件。任一单元失败都返回 <code>Failed</code> 和包含错误的 <code>CompileMessage</code>，同时清空 <code>SLC2Data</code> 并保留原缓存。</li>
     </ol>
@@ -163,6 +164,11 @@ SLC2
   format
   programs[]
     programId
+    vertexBufferLayout         // Program 级；全部 Target/Variant 共用
+      bindings[]
+        slot / stride / inputRate / instanceStepRate
+      elements[]
+        semantic / semanticIndex / format / slot / offset
     variantGroups[]          // Program 级，只保存一次
       members[]              // 实际宏，保持声明顺序
       default                // 第一个宏或 null
@@ -188,12 +194,15 @@ SLC2
           PROG
             entryPoint
             stage
+            vertexInputSignature[] // 只存在于 Vertex Stage
+              semantic / semanticIndex / location / shaderType
             code</code></pre>
 
     <table>
       <thead><tr><th>数据</th><th>写入 SLC2</th><th>职责</th></tr></thead>
       <tbody>
         <tr><td><code>format / programs / targets / variants / stages</code></td><td>是</td><td>运行时选择 Program、Target、Variant，使用共享 Layout 创建 Pipeline Layout 和各阶段 Shader。</td></tr>
+        <tr><td><code>vertexBufferLayout / vertexInputSignature</code></td><td>是</td><td>分别保存 Program 级物理顶点缓冲布局和当前 Vertex Stage 的逻辑输入签名；运行时不从 SPIR-V 二次反射。</td></tr>
         <tr><td><code>variantGroups</code></td><td>是</td><td>运行时执行与编译期相同的默认补全、校验和 Variant 匹配。</td></tr>
         <tr><td><code>DependencyIndex</code></td><td>否</td><td>当前阶段不设计或持久化；SLC2 不加入依赖索引字段。</td></tr>
         <tr><td>编译信息（Warning/Error）</td><td>否</td><td>只随当前实际编译调用返回，并在编译结束后输出日志；不写入 SLC2 或外部编译信息，缓存命中时不重放。</td></tr>
@@ -229,18 +238,22 @@ StageRecordKey = EntryPoint × Stage</code></pre>
       <li>路径规范化规则变化时，必须提升格式 Minor 版本或清空该版本缓存命名空间。</li>
     </ul>
 
-    <h3 id="cache-example">9.3 SLC2 v2.0 文本示例</h3>
-    <p>以下示例使用一个 Compute Program 和 <code>SHADER_MACRO(_, FOG_ON)</code>，完整展示空宏与有宏两个 Variant，并使用已确认的 <code>layout.schema = 2</code>、精确 Type Record 与嵌套 <code>descriptorRanges[]</code>。两段 <code>code.data</code> 都是同一份完整的最小 SPIR-V 1.0 Compute Module，而不是仅含魔数的占位数据：Module 声明 <code>inputTexture</code> 为 <code>set = 0, binding = 0</code> 的 <code>sampledImage</code>，入口为 <code>CSMain</code>，工作组大小为 <code>1 × 1 × 1</code>，函数体只执行 <code>OpReturn</code>。两段目标代码和物理 Pipeline Layout 相同仅用于说明文件结构，因此两个 Variant 使用相同的 <code>pipelineLayoutFingerprint</code>；每个 Variant 仍独立保存其完整 Layout。</p>
+    <h3 id="cache-example">9.3 SLC2 v3.0 文本示例</h3>
+    <p>以下示例使用一个 Compute Program 和 <code>SHADER_MACRO(_, FOG_ON)</code>，完整展示空宏与有宏两个 Variant。SLC2 文件格式 Major 为 3；资源反射子结构仍使用独立的 <code>layout.schema = 2</code>。Compute Program 没有 Vertex Stage，因此 Program 级 <code>vertexBufferLayout</code> 使用空 bindings/elements，Stage 也不含 <code>vertexInputSignature</code>。两段 <code>code.data</code> 都是同一份完整的最小 SPIR-V 1.0 Compute Module，而不是仅含魔数的占位数据。</p>
     <pre><code>{
   "format": {
     "magic": "SLC2",
-    "major": 2,
+    "major": 3,
     "minor": 0,
     "encoding": "utf-8"
   },
   "programs": [
     {
       "programId": "ComputeProgram",
+      "vertexBufferLayout": {
+        "bindings": [],
+        "elements": []
+      },
       "variantGroups": [
         {
           "members": ["FOG_ON"],
@@ -487,13 +500,17 @@ StageRecordKey = EntryPoint × Stage</code></pre>
       <li>文件必须是无 BOM 的 UTF-8、LF 换行和合法 JSON；禁止注释、重复 key 和浮点数。</li>
       <li>写入器固定字段顺序并使用两个空格缩进；读取器不依赖空白格式。</li>
       <li>顶层只能包含 <code>format</code> 和 <code>programs</code>；不得写入 <code>shaderId</code>、<code>sourcePath</code> 或 <code>pathHash</code>。</li>
-      <li>每个 Program 必须包含唯一 <code>programId</code>、<code>variantGroups</code> 和非空 <code>targets</code>；没有宏组时使用空数组。</li>
+      <li>SLC2 文件格式 Major 固定为 3；Reader 必须严格拒绝其他 Major，不对 v2 或更早格式执行缺省补字段、猜测或兼容读取。</li>
+      <li>每个 Program 必须包含唯一 <code>programId</code>、必需的 <code>vertexBufferLayout</code>、<code>variantGroups</code> 和非空 <code>targets</code>；没有顶点数据或宏组时使用空数组，字段本身不得省略。</li>
       <li><code>programId</code> 必须逐字等于对应 <code>SHADER_PROGRAM</code> 的 <code>name</code>，区分大小写，是合法 Slang 标识符，并且在当前 Shader Resource 的 <code>programs[]</code> 中唯一。</li>
       <li><code>variantGroups.members</code> 只保存实际宏并保持声明顺序；必选组的 <code>default</code> 等于 <code>members[0]</code>，含 <code>_</code> 的组使用 <code>null</code>。</li>
       <li>每个 Target 包含共享 <code>meta</code> 和非空 <code>variants</code>。<code>meta</code> 必须且只能包含稳定小写字符串 <code>platform</code>、<code>backend</code> 和规范 <code>shaderModel</code>；不得保存 API/二进制版本、capability、optimize/debug 或其他统一编译策略字段。</li>
       <li>读取器按第 6 节的规范文本从 <code>meta</code> 生成由 64 个小写十六进制字符组成的 <code>TargetKey</code>；同一 Program 内 Key 唯一，重复的 <code>Platform × Backend × ShaderModel</code> Target 为格式错误。</li>
       <li>同一 Target 内规范化 <code>variant</code> 字符串唯一。每个 Variant 必须包含 <code>variant</code>、一份共享 <code>layout</code> 和非空 <code>stages</code>。</li>
-      <li>每个 Stage 只包含 <code>entryPoint</code>、<code>stage</code> 和 <code>code</code>；不得重复保存 <code>variant</code>、<code>layout</code>、独立 <code>names</code> 或 <code>entryPointBlockId</code> 字段。</li>
+      <li>Program 级 <code>vertexBufferLayout.bindings[]</code> 按 slot 升序保存，slot 唯一；<code>elements[]</code> 按 slot、offset、semantic、semanticIndex 排序。每个 Element 必须引用已声明 Binding，范围不得重叠并满足 <code>offset + formatByteSize &lt;= stride</code>。Semantic 保存为大写规范字符串，PixelFormat 和 inputRate 保存稳定字符串，禁止写入 C++/Vulkan 原生枚举整数。</li>
+      <li>每个 Vertex Stage 必须包含 <code>vertexInputSignature</code>，按 location、semantic、semanticIndex 排序；签名只包含非 system-value 输入并保存 Semantic、SemanticIndex、Location 和 Shader 数值类型。非 Vertex Stage 禁止出现该字段；合法空签名使用空数组。</li>
+      <li>每个 Stage 还包含 <code>entryPoint</code>、<code>stage</code> 和 <code>code</code>；不得重复保存 <code>variant</code>、<code>layout</code>、独立 <code>names</code> 或 <code>entryPointBlockId</code> 字段。</li>
+      <li>同一 Program 的物理 <code>vertexBufferLayout</code> 对全部 Target/Variant 不变。同一 Target 内所有 Variant 的 Vertex 输入签名必须完全相同；不同 Target 只允许 Location 不同。顶点输入不得按 Variant 使用情况裁剪。</li>
       <li>Layout 必须包含 <code>"schema": 2</code>、唯一且有效的 <code>rootBlockId</code>、非空 <code>types</code>、非空 <code>parameterBlocks</code> 和 <code>pipelineLayoutFingerprint</code>；所有运行时可绑定参数必须从该根块沿成员或 <code>subBlockId</code> 可达。</li>
       <li>Layout 不得包含 <code>pushConstants</code> 或等价字段。Slang 反射一旦包含 Push Constant，该编译单元必须在写入缓存前失败。</li>
       <li><code>typeId</code> 与 <code>blockId</code> 是 Layout 局部 ID；所有引用必须存在。写入器使用从 0 开始的连续 ID，读取器不得依赖 JSON 数组下标与 ID 恰好相同。</li>

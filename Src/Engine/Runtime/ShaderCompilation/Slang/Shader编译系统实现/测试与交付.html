@@ -24,11 +24,11 @@
     <p>实施采用“先建立可独立运行的编译闭环，再接入运行时名称解析，最后打通 Vulkan Compute 和 Graphics”的依赖顺序。依赖图允许的阶段可以并行开发，但下游只能消费已满足退出条件的上游接口；不得在 Vulkan 调试期间同时修改 Variant 规范或 SLC2 schema。</p>
     <div class="contract">
       <strong>Compile-only 闭环：</strong>
-      Slang 源码 → Program/Variant 发现 → Target 编译计划 → linked component → SPIR-V + ShaderReflectionIR → SLC2 → 严格 Reader/Validator → 语义 manifest 与字节确定性。
+      Slang 源码 → Program/Variant 发现 + Program VertexBufferLayout → Target 编译计划 → linked component → SPIR-V + ShaderReflectionIR + VertexInputSignature → SLC2 v3 → 严格 Reader/Validator → 语义 manifest 与字节确定性。
     </div>
     <div class="contract">
       <strong>运行时/GPU 闭环：</strong>
-      已存在 SLC2 → Program/Target/Variant 选择 → runtime reflection → 名称绑定 Texture/Buffer/Sampler → Vulkan shared PipelineLayout → Descriptor 写入 → Dispatch/Draw。
+      已存在 SLC2 → Program/Target/Variant 选择 → runtime reflection → 名称绑定 Texture/Buffer/Sampler → Vulkan shared PipelineLayout + Vertex Input State → Descriptor 写入 → Dispatch/Draw。
     </div>
 
     <h3 id="delivery-branching">提交边界</h3>
@@ -61,7 +61,7 @@
       </div>
       <div class="phase-card">
         <strong>P3 · Reflection IR 与 SLC2</strong>
-        完整 types/blocks/range mapping、Writer/Reader/self-read、fingerprint。
+        完整 types/blocks/range mapping、Program 顶点缓冲布局、Vertex Stage 输入签名、Writer/Reader/self-read、fingerprint。
         <div class="exit">退出：所有 schema invariant 可由 mutation test 捕获；compile-only fixture 可输出语义 manifest；runtime 无 Slang。</div>
       </div>
       <div class="phase-card">
@@ -76,8 +76,8 @@
       </div>
       <div class="phase-card">
         <strong>P6 · Graphics Program</strong>
-        VS/PS 联合链接，可选 HS/DS/GS；单一 Pipeline Layout 与根参数状态。
-        <div class="exit">退出：VS/PS 共享资源只产生一个合并 binding；Draw 正确。</div>
+        VS/PS 联合链接，可选 HS/DS/GS；单一 Pipeline Layout、Vertex Input State、required Slot mask 与根参数状态。
+        <div class="exit">退出：VS/PS 共享资源只产生一个合并 binding；稀疏 Slot 与缺失 Slot 行为正确；Draw 正确。</div>
       </div>
       <div class="phase-card">
         <strong>P7 · 完整已设计能力</strong>
@@ -109,16 +109,8 @@
     <table>
       <thead><tr><th>路径</th><th>内容</th></tr></thead>
       <tbody>
-        <tr><td class="path">Src/Engine/Tests/TestSlangCompilerApi.cpp</td><td>P0 Slang API 编译/链接探针与最小反射 smoke test；直接引用当前编译器和 Reflection adapter 使用的 Slang 公共 API。</td></tr>
-        <tr><td class="path">Src/Engine/Tests/TestShaderVariantPlanner.cpp</td><td>宏组解析、默认补全、笛卡尔积、规范化、排序、去重和非法输入。</td></tr>
-        <tr><td class="path">Src/Engine/Tests/TestSlangReflectionBuilder.cpp</td><td>SolarEngine 当前 Slang fixture 的 Type/Binding/Descriptor/Sub-object 三类 range 映射、BindingPath 累加、默认 UBO 与 counter 归一化。</td></tr>
-        <tr><td class="path">Src/Engine/Tests/TestShaderReflectionValidator.cpp</td><td>纯构造 IR 的 ID、可达性、Range、块数组、无界和冲突测试。</td></tr>
-        <tr><td class="path">Src/Engine/Tests/TestSLC2.cpp</td><td>Writer/Reader round-trip、严格字段、UTF-8、Base64/hash、mutation 与确定性。</td></tr>
-        <tr><td class="path">Src/Engine/Tests/TestShaderNameResolver.cpp</td><td>Struct、固定数组、块切换、类型错误、语法错误和越界。</td></tr>
-        <tr><td class="path">Src/Engine/Tests/TestShaderPipelineFingerprint.cpp</td><td>规范编码、排序、Stage 合并、冲突和 hash 已知向量。</td></tr>
-        <tr><td class="path">Src/Engine/Tests/TestSlangCompileOnly.cpp</td><td>P0-P3 编译独立闭环：请求到 SLC2、self-read、语义 manifest、失败无部分产物和字节确定性；不创建 GPU 对象。</td></tr>
-        <tr><td class="path">Src/Engine/Tests/Shaders/Slang/*.slang</td><td>编译与反射集成 fixture；每个文件只验证一个契约。</td></tr>
-        <tr><td class="path">Src/Engine/Tests/Graphics/Vulkan/TestSlangShaderVulkan.cpp</td><td>Compute/Graphics GPU 功能和 validation layer 测试。</td></tr>
+        <tr><td class="path">Src/Engine/Runtime/Test.cpp · TestSystem</td><td>统一承载 Slang API probe、Variant、ReflectionIR、SLC2、NameResolver、Fingerprint、compile-only 与 Vulkan 测试入口；按独立函数分区，不新增平行 Test.cpp。</td></tr>
+        <tr><td class="path">Tests/Shaders/Slang/*.slang</td><td>编译与反射集成 fixture；VertexInput fixture 覆盖多 Slot/Element、ALIGN、Instance、稀疏 Slot、system-only、Variant 稳定性和非法声明。</td></tr>
       </tbody>
     </table>
     <p>纯算法和 compile-only fixture 必须放在不依赖 GPU 的测试中。只有 Stage module、PipelineLayout、descriptor write 和实际结果校验进入 Vulkan 测试，避免一个 GPU 失败掩盖 schema 或编译器错误。</p>
@@ -285,7 +277,7 @@ RunSemanticSmoke():
     <table class="matrix">
       <thead><tr><th>用例</th><th>预期</th><th>层级</th></tr></thead>
       <tbody>
-        <tr><td>Slang API probe</td><td>使用 SolarEngine 当前接入 Slang 的公共头库完成编译和链接；最小反射 smoke 读取精确 ProgramId、Attribute、EntryPoint 与 binding range。</td><td>P0 build/integration</td></tr>
+        <tr><td>Slang API probe</td><td>使用 SolarEngine 当前接入 Slang 的公共头库完成编译和链接；最小反射 smoke 读取精确 ProgramId、Attribute、EntryPoint、binding range，以及 Vertex 输入的 Semantic、Location 与 Shader 数值类型。</td><td>P0 build/integration</td></tr>
         <tr><td>根 Module 直接 Program</td><td>调用 <code>DeclReflection::getName()</code>，复制其非空结果并使用精确简单名称作为 ProgramId。</td><td>Slang integration</td></tr>
         <tr><td>namespace 内 Program</td><td>不发现；若请求该 ID 则失败。</td><td>Discovery</td></tr>
         <tr><td>imported Module Program</td><td>不发现；其函数/类型仍可被入口使用。</td><td>Discovery</td></tr>
@@ -308,6 +300,7 @@ RunSemanticSmoke():
         <tr><td>输入宏顺序不同</td><td>匹配同一个 SLC2 variant。</td></tr>
         <tr><td>NAME=VALUE、未知宏、同组多选</td><td>整个请求失败。</td></tr>
         <tr><td>声明依赖 Variant 宏才出现</td><td>基线/Variant 结构比较失败。</td></tr>
+        <tr><td>顶点布局或 Vertex 签名随 Variant 改变</td><td>结构/签名稳定性校验失败；不生成部分 SLC2。</td></tr>
       </tbody>
     </table>
 
@@ -330,6 +323,10 @@ RunSemanticSmoke():
         <tr><td>Push Constant</td><td>编译失败，SLC2Data 为空。</td></tr>
         <tr><td>同输入重复编译</td><td>SLC2 byte-for-byte 相同。</td></tr>
         <tr><td>JSON 修改 ID/count/hash/fingerprint</td><td>Reader 在精确路径失败。</td></tr>
+        <tr><td>SLC2 v3 顶点输入 round-trip</td><td>Program vertexBufferLayout 与 Vertex Stage vertexInputSignature 字段、归属和确定性排序保持一致。</td></tr>
+        <tr><td>Binding/Element/ALIGN</td><td>重复 Slot、未知 Slot、重叠、越过 Stride、非法格式/频率失败；每 Slot 独立 ALIGN，首项为 0，显式 Stride 保留尾部 padding。</td></tr>
+        <tr><td>Semantic 与格式兼容</td><td>Semantic 规范化大写并双向匹配；覆盖 float/uint/int 与 Float/UNorm/SNorm/UInt/SInt 兼容矩阵及多余分量规则。</td></tr>
+        <tr><td>system-value 与 Variant</td><td>system-value-only 生成空签名/布局；所有 Variant 保留完整顶点输入，不按使用情况裁剪。</td></tr>
         <tr><td>有效最小 SPIR-V</td><td>解码后是完整 Module，可创建 VkShaderModule。</td></tr>
       </tbody>
     </table>
@@ -341,6 +338,9 @@ RunSemanticSmoke():
         <tr><td>Compute 单 Texture</td><td>按名称绑定并 Dispatch；结果纹理正确。</td></tr>
         <tr><td>资源数组第 N 项</td><td><code>dstArrayElement</code> 正确，binding 不变。</td></tr>
         <tr><td>VS/PS 共享资源</td><td>一个 binding，stageMask 合并为 vertex|fragment。</td></tr>
+        <tr><td>多 Element 与稀疏 Slot</td><td>Vk Slot/Stride/Offset/Format/Location 正确；例如 Slot 0 与 3 产生精确 required mask。</td></tr>
+        <tr><td>缺失必需 Vertex Buffer</td><td>Draw 前失败；额外绑定 Slot 合法，不提供默认 Buffer。</td></tr>
+        <tr><td>实例输入与设备能力</td><td>PerVertex step 0、PerInstance step 1 正确；divisor 大于 1、不支持 VkFormat 或超过顶点输入上限时 Program 创建失败。</td></tr>
         <tr><td>多 set 与空 set</td><td>VkPipelineLayout 的 set 索引与绝对坐标一致。</td></tr>
         <tr><td>未绑定/null</td><td>Draw/Dispatch 前报错，无 vkUpdateDescriptorSets 的部分提交。</td></tr>
         <tr><td>物理冲突</td><td>创建 PipelineLayout 前失败。</td></tr>
@@ -404,7 +404,7 @@ RunSemanticSmoke():
     </ul>
 
     <h3 id="test-mutations">Reader Mutation</h3>
-    <p>对一份有效 SLC2 逐次只修改一个字段：magic/major、重复 ProgramId、Target 枚举、variant、typeId、blockId、elementCount、rangeIndex、descriptorCount、code hash、fingerprint。每个 mutation 必须在 Reader 阶段失败，并验证错误路径。</p>
+    <p>对一份有效 SLC2 逐次只修改一个字段：magic/major、重复 ProgramId、Target 枚举、variant、vertexBufferLayout、vertexInputSignature、typeId、blockId、elementCount、rangeIndex、descriptorCount、code hash、fingerprint。每个 mutation 必须在 Reader 阶段失败，并验证错误路径。</p>
 
     <h3 id="test-pseudocode-mutation">SLC2 Mutation 测试伪代码</h3>
     <div class="pseudo">
@@ -481,6 +481,7 @@ cases = [
     <ul>
       <li>新 Slang Shader 资产只调用新请求/结果 API，旧 HLSL parser 和旧二进制 cache 不在其调用链。</li>
       <li>Vulkan Compute 与 Graphics 都以完整 Program Variant 的共享 Layout 工作。</li>
+      <li>Vulkan Graphics 使用 SLC2 v3 Program 顶点缓冲布局与 Vertex Stage 输入签名构造不可变 Vertex Input State，并在 Draw 前验证 required Slot mask。</li>
       <li>运行时按名称与固定数组下标绑定资源，不依赖显式 set/binding、Slang 或 SPIR-V 二次反射。</li>
       <li>缺失资源、非法缓存、非法 Variant 和不支持反射结构都产生确定性错误。</li>
       <li>Cook/发布、DependencyIndex、默认资源、运行时生命周期优化和其他后端仍明确留在后续设计，不以临时实现冒充完成。</li>

@@ -931,10 +931,13 @@ BuildPrunedRange(candidateRange):
   <section>
     <h2 id="slc2-writer">5. SLC2 Writer</h2>
     <h3 id="slc2-model">聚合模型</h3>
-    <pre><code>SLC2Artifact
+    <pre><code>SLC2Artifact (format 3.0)
   format
   programs[]
     programId
+    vertexBufferLayout
+      bindings[] { slot, stride, inputRate, instanceStepRate }
+      elements[] { semantic, semanticIndex, pixelFormat, slot, offset }
     variantGroups[]
     targets[]
       meta { platform, backend, shaderModel }
@@ -942,11 +945,17 @@ BuildPrunedRange(candidateRange):
         variant
         layout
         stages[]
-          { entryPoint, stage, code }</code></pre>
+          entryPoint
+          stage
+          vertexInputSignature[] // 仅 Vertex Stage
+            { semantic, semanticIndex, location, shaderType }
+          code</code></pre>
     <ul>
       <li>一个 SLC2 对应一个 Shader Resource；顶层不保存 shaderId 或资源路径。</li>
       <li>ProgramId 位于 <code>programs[]</code> 元素内；Target 在 Program 内聚合多个 Variant。</li>
+      <li><code>vertexBufferLayout</code> 位于 Program 级并跨全部 Target/Variant 固定；无顶点数据时 bindings/elements 使用空数组。</li>
       <li>Layout 位于 Variant 层并由全部 Stage 共享；Stage 不复制 Layout。</li>
+      <li>每个 Vertex Stage 必须保存非 system-value 的 <code>vertexInputSignature</code>；非 Vertex Stage 禁止该字段，合法空签名写空数组。</li>
       <li>没有独立 <code>names[]</code>；运行时从 Struct member 局部名称构建完整路径。</li>
       <li>不保存 source/import 路径、DependencyIndex、diagnostics、默认资源或运行时生命周期信息。</li>
     </ul>
@@ -954,6 +963,8 @@ BuildPrunedRange(candidateRange):
     <h3 id="slc2-json">JSON 写入规则</h3>
     <ul>
       <li>使用 SolarEngine 当前 JSON Writer；字段调用顺序就是规范顺序。</li>
+      <li>固定写 SLC2 format 3.0；资源反射子对象的 <code>ShaderReflectionIR.Schema</code> 仍为 2，两者是独立版本域。</li>
+      <li>Vertex Binding 按 slot 排序，Element 按 slot/offset/semantic/semanticIndex 排序，Signature 按 location/semantic/semanticIndex 排序；Semantic 写大写规范字符串。</li>
       <li>输出无 BOM UTF-8、LF、最终换行；字符串必须是有效 UTF-8，禁止平台本地编码。</li>
       <li>代码 blob 使用 JSON Base64 字符串；另存明确的 <code>encoding</code> 和完整 SHA-256，读取时先 Base64 解码再验证 hash。</li>
       <li>SPIR-V 首先检查长度是 4 的倍数、magic 为 <code>0x07230203</code>，并由 Slang 验证；测试示例必须是完整 Module，不使用只有 4 字节 magic 的伪产物。</li>
@@ -985,6 +996,7 @@ BuildPrunedRange(candidateRange):
     FOR program IN StableSort(canonical.Programs, ProgramId):
         json.BeginObject()
         json.Field("programId", program.ProgramId)
+        WriteVertexBufferLayout(json, program.VertexBufferLayout)
         WriteVariantGroups(json, program.VariantGroupsInDeclarationOrder)
 
         json.Key("targets")
@@ -1036,11 +1048,12 @@ BuildPrunedRange(candidateRange):
     <h3 id="slc2-reader-phases">读取阶段</h3>
     <ol class="sequence">
       <li>Parse JSON；拒绝语法错误、非 UTF-8 和根类型错误。</li>
-      <li>校验 <code>format.magic == "SLC2"</code>、major 精确匹配；未知 major 拒绝，已知 major 的更高 minor 按兼容规则处理。</li>
+      <li>校验 <code>format.magic == "SLC2"</code> 且 <code>major == 3</code>；其他 Major 全部拒绝，不兼容读取 v2。</li>
       <li>逐字段读取并执行整数范围、必需字段、Tagged Union 和稳定枚举检查。</li>
+      <li>验证 Program VertexBufferLayout、Vertex Stage VertexInputSignature、字段归属、格式与范围、Target/Variant 稳定性和逻辑/物理双向匹配。</li>
       <li>解码 Stage code，验证 code hash 与 Target 代码基本格式。</li>
       <li>执行完整 IR Validator、可达性、range mapping 和块数组检查。</li>
-      <li>重建规范物理布局并验证 pipelineLayoutFingerprint。</li>
+      <li>重建规范 descriptor 物理布局并验证 pipelineLayoutFingerprint。</li>
       <li>构造不可变 <code>ShaderProgramArtifact</code>；仅全部成功后对调用者可见。</li>
     </ol>
     <p>布局验证先检查类型与 ID 引用，再按 <code>rootBlockId</code> 验证 ParameterBlock 树：每个 block 的 <code>rangeBindings[]</code> 必须覆盖 element type 的全部 logical range；block/simple mapping 字段互斥；每个子块只有一个父块，且不存在环或不可达块。任一失败都拒绝整个 Artifact。</p>
@@ -1068,7 +1081,7 @@ BuildPrunedRange(candidateRange):
     root = StrictObjectReader(document, path = "/")
     format = TRY(ReadExactFormat(root.RequiredObject("format")))
     REQUIRE(format.Magic == "SLC2")
-    REQUIRE(format.Major == 2)
+    REQUIRE(format.Major == 3)
 
     programs = []
     seenProgramIds = Set()
@@ -1080,11 +1093,16 @@ BuildPrunedRange(candidateRange):
 
     artifact = ShaderProgramArtifact(format, programs)
     FOR program IN artifact.Programs:
+        TRY(ValidateVertexBufferLayout(program.VertexBufferLayout))
         TRY(ValidateVariantGroups(program))
         FOR target IN program.Targets:
             TRY(ValidateTargetAndRegenerateTargetKey(target))
             FOR variant IN target.Variants:
                 TRY(ShaderReflectionValidator.Validate(variant.Layout))
+                TRY(ValidateVertexInputContract(
+                    program.VertexBufferLayout,
+                    target,
+                    variant))
                 FOR stage IN variant.Stages:
                     bytes = TRY(Base64DecodeStrict(stage.Code.Data))
                     REQUIRE(Sha256LowerHex(bytes) == stage.Code.Hash)
@@ -1096,7 +1114,7 @@ BuildPrunedRange(candidateRange):
 
     <h3 id="slc2-reader-strictness">严格字段策略</h3>
     <ul>
-      <li>缺失必需字段、重复 Program/Target/Variant/Stage、未知枚举、非法 null 都是缓存损坏。</li>
+      <li>缺失必需字段、重复 Program/Target/Variant/Stage、未知枚举、非法 null 都是缓存损坏；Program 缺少 vertexBufferLayout 或 Vertex Stage 缺少 vertexInputSignature 同样失败。</li>
       <li>同一 major 内允许忽略未知的可选字段，但 Writer 当前不产生扩展字段；改变必需语义必须提升 major。</li>
       <li>Reader 错误包含 JSON Pointer 风格路径，例如 <code>/programs/0/targets/0/variants/1/layout/types/3</code>。</li>
       <li>加载失败不尝试调用 Slang、SPIR-V reflection 或旧 cache reader 修复；由上层决定重新编译。</li>
@@ -1159,7 +1177,7 @@ BuildPrunedRange(candidateRange):
     </div>
 
     <h3 id="layout-fingerprint-exclusions">明确不参与 Hash</h3>
-    <p>ProgramId、Variant、EntryPoint、代码、成员/资源名、type/block/range ID、uniform offset、resourceIndex、role、arrayElementBase、logicalElementStride 和当前绑定对象都不进入 fingerprint。它只表达后端 Pipeline Layout 的精确物理相等。</p>
+    <p>ProgramId、Variant、EntryPoint、代码、成员/资源名、type/block/range ID、uniform offset、resourceIndex、role、arrayElementBase、logicalElementStride、Program 顶点缓冲布局、Vertex Stage 输入签名和当前绑定对象都不进入 fingerprint。它只表达 descriptor 后端 Pipeline Layout 的精确物理相等；顶点输入由 Program/Pipeline 自身参与身份管理。</p>
 
     <h3 id="layout-fingerprint-cache">运行时复用</h3>
     <p>fingerprint 只作为缓存第一层 key。hash 命中后必须深比较规范化物理记录，再复用 Vulkan PipelineLayout；这同时防止 hash 碰撞和错误 Writer 产生的假相等。</p>

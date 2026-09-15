@@ -677,7 +677,7 @@ binding=0;type=sampledImage;count=1;stages=compute;flags=-</code></pre>
       <li>不实现 Falcor/Slang-gfx 式运行时 interface specialization。运行时不得根据当前绑定的 Shader Object 具体类型收集 specialization arguments，不调用 Slang <code>specialize()</code>，也不生成新的 Shader、Layout 或 Pipeline。</li>
       <li>Slang interface、generic 和 type conformance 可以用于源码组织，但在提取目标代码和 <code>ShaderReflectionIR</code> 前必须已经解析为固定具体类型；仍包含未解析 existential/interface specialization 参数的 linked component 编译失败。</li>
       <li>运行时可以修改具体对象中的 Texture、Buffer、Sampler 和 uniform 数据，但不能把同一个接口槽位从一种具体类型切换成另一种具体类型。</li>
-      <li>SLC2 v2 首期不增加 <code>SpecializationKey</code> 或 <code>specializations[]</code> 层级，只保存已经完全静态 specialization 的代码与 Layout。若未来需要同一 Program 的多个离线类型组合，必须作为独立的编译期缓存维度另行设计，不能隐式退化为运行时编译。</li>
+      <li>SLC2 v3 不增加 <code>SpecializationKey</code> 或 <code>specializations[]</code> 层级，只保存已经完全静态 specialization 的代码与 Layout。若未来需要同一 Program 的多个离线类型组合，必须作为独立的编译期缓存维度另行设计，不能隐式退化为运行时编译。</li>
       <li>运行时不携带 Slang compiler、未 specialization 的 Slang ComponentType 或用于即时 specialization 的 Module IR。</li>
     </ul>
 
@@ -689,6 +689,23 @@ binding=0;type=sampledImage;count=1;stages=compute;flags=-</code></pre>
       <li>固定资源数组按元素执行完整性校验；每个元素都必须显式绑定类型兼容的非空资源，缺少任一元素均使本次提交失败。所有数组槽位数量在编译期确定；当前设计不存在无界 range 或运行时容量配置。</li>
       <li>SLC2 不保存 <code>bindingRequirement</code>、<code>required</code>、<code>optional</code>、默认资源标识或 fallback 策略。<code>ShaderReflectionIR</code> 只保存名称路径所需的类型结构、资源类型与逻辑/物理绑定映射；统一的运行时绑定完整性校验不改变 Layout、Variant 或 <code>pipelineLayoutFingerprint</code>。</li>
       <li>当前阶段不实现默认资源库。运行时不得为未绑定槽位自动创建、选择或填充 Texture、Buffer、Sampler 或其他替代资源。</li>
+    </ul>
+
+    <h3 id="layout-vertex-input">8.14 顶点输入签名、缓冲布局与运行时状态（已确认）</h3>
+    <pre><code>Program.vertexBufferLayout                 // Shader 源码声明的物理布局，跨 Target/Variant 固定
+  + VertexStage.vertexInputSignature       // Slang Reflection 提取的逻辑签名，Location 属于 Target
+  = SLC2ShaderProgramVulkan vertex input state
+      - VkVertexInputBindingDescription[]
+      - VkVertexInputAttributeDescription[]
+      - requiredVertexBufferSlotsMask</code></pre>
+    <ul>
+      <li>逻辑输入签名回答 Vertex Shader 需要哪些非 system-value 输入，包含 Semantic、SemanticIndex、Location 与 Shader 数值类型；物理顶点缓冲布局回答数据位于哪个 Slot、Stride、Offset、PixelFormat 以及按 Vertex 或 Instance 递进。二者不能合并成同一概念。</li>
+      <li>编译期按 Semantic + SemanticIndex 做双向匹配：每个物理 Element 必须出现在每个 Variant 的 Vertex 签名中，每个非 system-value 签名项也必须有物理 Element。<code>SV_VertexID</code>、<code>SV_InstanceID</code> 等 system-value 只做合法性检查，不写入签名，也不要求 Vertex Buffer。</li>
+      <li>格式兼容采用严格规则：Shader <code>float/floatN</code> 接受 Float、UNorm 或 SNorm，<code>uint/uintN</code> 只接受 UInt，<code>int/intN</code> 只接受 SInt；PixelFormat 分量数必须不少于 Shader 需要的分量，允许多余分量。深度/模板、块压缩、YUV 和其他不能作为 Vertex Attribute 的格式直接失败。</li>
+      <li>Program 级布局在所有 Target/Variant 中固定；同一 Target 的所有 Variant 还必须保持 Semantic、SemanticIndex、Location 和 ShaderType 完全一致。不同 Target 只允许 Location 变化。即使某个 Variant 的代码没有实际读取一个已声明输入，也不能裁剪该输入。</li>
+      <li><code>SLC2ShaderProgramVulkan</code> 在 Program 创建时把布局与当前 Vertex Stage 签名连接为不可变 Vulkan vertex input state，并验证 VkFormat 映射、设备格式能力、Binding/Attribute 数量、最大 Slot、Offset 与 Stride 上限。PipelineState 只引用该 Program 状态，不重新解释 SLC2 或反射 SPIR-V。</li>
+      <li>Slot 编号允许稀疏。运行时从实际声明的 Binding 构造 <code>requiredVertexBufferSlotsMask</code>，Draw 前以 <code>missing = required &amp; ~bound</code> 校验；不得用 binding 数量或最高 Slot 推断连续范围。绑定额外 Slot 合法，缺少任一必需 Slot 则报告 ProgramId 与 Slot 并中止当前 Draw。</li>
+      <li>首期只有 <code>PER_VERTEX + stepRate 0</code> 与 <code>PER_INSTANCE + stepRate 1</code>。不支持可选顶点流、未绑定 Slot 的默认/零值 Buffer、Vertex Attribute divisor 大于 1 或运行时替换物理布局。</li>
     </ul>
 
     <h4>运行时 Falcor 风格参数对象（已确认）</h4>
@@ -735,18 +752,20 @@ class ShaderParameterBlock
     <h2 id="runtime">10. 运行时读取、Variant 匹配与绑定</h2>
     <ol>
       <li>规范化 Shader Resource Path，计算 SHA-256 并定位唯一 SLC2 文件。</li>
-      <li>解析 JSON，验证文件名、Magic、Major 版本、必选字段、字段类型和基本结构。</li>
+      <li>解析 JSON，验证文件名、Magic、Major 版本、必选字段、字段类型和基本结构；SLC2 v3 Reader 严格拒绝其他 Major。</li>
       <li>使用调用者传入的区分大小写 <code>ProgramId</code> 字符串，在 <code>programs[]</code> 中做完全匹配并选择 Program。</li>
       <li>从 <code>meta</code> 生成 <code>TargetKey</code>，按调用者请求的 <code>Platform × Backend × ShaderModel</code> 完全匹配唯一 Target。API/目标二进制版本和 capability 基线由当前引擎的统一编译策略保证，不作为 SLC2 内的第二套可变匹配维度。</li>
       <li>使用 Program 的 <code>variantGroups</code> 对运行时宏集合执行 <code>NormalizeVariant</code>。</li>
       <li>在 Target 的 <code>variants[]</code> 中按规范化字符串完全匹配并选择唯一 Variant。</li>
       <li>验证共享 Layout 的 <code>schema = 2</code>、ID 引用、类型图、ParameterBlock、<code>(blockId, rangeIndex)</code> 完整映射、descriptor/subBlock 互斥关系、固定有限数量、物理 binding 唯一所有权、<code>StageRecordKey</code> 唯一性和阶段集合完整性；按 8.11 重建规范物理布局并重算 <code>pipelineLayoutFingerprint</code>，再按需解码各 Stage 代码并校验长度和 SHA-256。</li>
+      <li>验证 Program 级 <code>vertexBufferLayout</code>、Vertex Stage <code>vertexInputSignature</code>、格式兼容、Target/Variant 稳定性及 system-value 排除规则；Compute/无 Vertex Stage Program 必须使用空物理布局。</li>
       <li>先从 <code>types[]</code> 和 <code>parameterBlocks[]</code> 重建单根不可变运行时反射对象，再从 <code>rootBlockId</code> 沿成员局部名称与子块连接派生完整路径并建立 <code>NameId → ShaderVarLocation</code> 索引；不得为 Stage 创建额外参数根。</li>
       <li>从 <code>rootBlockId</code> 遍历全部可达块，收集非空 <code>defaultUniformBuffer</code> 和 <code>rangeBindings[].descriptorRanges[]</code>，按绝对 <code>(set, binding)</code> 分组创建 Vulkan DescriptorSetLayout/PipelineLayout；SLC2 不提供独立 <code>descriptorSets[]</code>，也不创建 Push Constant range。</li>
       <li>每次 <code>CreateProgramInstance()</code> 都从 rootBlockId 递归创建独立 <code>ShaderParameterBlock</code> 树：每个 blockId 初始化自己的 CPU 普通数据区、逻辑资源槽和由 block-flavor mapping 指向的唯一子块。<code>ShaderProgramReflection</code>、后端布局和 Stage GPU 对象继续共享。</li>
       <li>按名称或由根 <code>ShaderVar</code> 访问成员时，先得到 ShaderVarLocation，再绑定到对应运行时 ParameterBlock。写入普通数据时，以该 blockId 的 CPU 普通数据区和累计 uniformByte 定位成员；写入资源时，以 <code>(blockId, rangeIndex, resourceIndex)</code> 定位可空显式资源槽。设置 <code>null</code> 后该槽位处于未绑定状态。</li>
       <li>提交前 <code>ValidateAllBindings()</code> 执行两阶段遍历：第一阶段验证全部可达块的 simple logical range、每个固定数组元素和资源类型，并把逻辑资源复制到待冻结快照；第二阶段才物化所有非空 defaultUniformBuffer 对应的 GPU Buffer 并加入快照。任一失败都不产生快照、不写 descriptor，并中止对应 Draw/Dispatch。</li>
       <li>只有冻结的 <code>ShaderBindingSnapshot</code> 可交给 Descriptor Writer。Writer 对每条 descriptor mapping 计算 <code>dstArrayElement = arrayElementBase + resourceIndex × logicalElementStride</code> 并只写入快照中的显式资源；该过程不读取 required/optional 策略，也不执行默认资源 fallback。</li>
+      <li>Graphics Program 创建时由 Vulkan adapter 生成并缓存不可变 Vertex Input State 与 required Slot mask；Draw 前将 mask 与 Context 当前已绑定 Slot mask 比较，缺失必需 Slot 时不绑定/提交该 Draw。</li>
     </ol>
     <p class="note">JSON 非法、Major 不匹配、Program/Target/Variant 不存在、设备不兼容、共享 Layout 非法、Base64/Hash 失败或阶段集合不完整，都视为所请求编译单元缓存未命中。编辑器可以触发补编译；当前运行时加载路径不现场编译，只报告 artifact 不可用。</p>
   </section>

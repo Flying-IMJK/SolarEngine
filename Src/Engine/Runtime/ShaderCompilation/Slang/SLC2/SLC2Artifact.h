@@ -18,37 +18,40 @@ namespace SE
 	// Shader 数值类型使用受控枚举保存，避免运行时依赖任意字符串解释类型。
 	enum class SLC2VertexInputType : byte
 	{
+		Float,
+		Float2,
 		Float3,
-	};
-
-	struct SE_API_RUNTIME SLC2VertexBufferBinding
-	{
-		uint32 Slot = 0;
-		uint32 Stride = 0;
-		SLC2VertexInputRate InputRate = SLC2VertexInputRate::PerVertex;
-		uint32 InstanceStepRate = 0;
-	};
-
-	struct SE_API_RUNTIME SLC2VertexInputElement
-	{
-		String Semantic;
-		uint32 SemanticIndex = 0;
-		PixelFormat Format = PixelFormat::Undefined;
-		uint32 Slot = 0;
-		uint32 Offset = 0;
-	};
-
-	struct SE_API_RUNTIME SLC2VertexBufferLayout
-	{
-		// 物理布局属于 Program，并在全部 Target/Variant 间保持稳定。
-		List<SLC2VertexBufferBinding> Bindings;
-		List<SLC2VertexInputElement> Elements;
+		Float4,
+		Int,
+		Int2,
+		Int3,
+		Int4,
+		UInt,
+		UInt2,
+		UInt3,
+		UInt4,
 	};
 
 	struct SE_API_RUNTIME SLC2VertexInputSignatureElement
 	{
+		/// <summary>
+        /// 输入语义名称 例如 POSITION, NORMAL, TEXCOORD 等。语义名称大写。
+		/// </summary>
 		String Semantic;
+		/// <summary>
+		/// 输入语义名称索引 例如 TEXCOORD0, TEXCOORD1, TEXCOORD2
+		/// </summary>
 		uint32 SemanticIndex = 0;
+		/// <summary>
+        /// 表示在Shader 中定义的输入位置索引，
+		/// struct VertexInput
+        /// {
+        ///     float3 Position : POSITION0;
+        ///     float2 UV : TEXCOORD0;
+        /// };
+		/// Position  -> Location 0
+		///		  UV  -> Location 1
+		/// </summary>
 		uint32 Location = 0;
 		SLC2VertexInputType ShaderType = SLC2VertexInputType::Float3;
 	};
@@ -80,7 +83,6 @@ namespace SE
 	struct SE_API_RUNTIME SLC2ProgramRecord
 	{
 		String ProgramId;
-		SLC2VertexBufferLayout VertexBufferLayout;
 		List<ShaderVariantGroup> VariantGroups;
 		List<SLC2TargetRecord> Targets;
 	};
@@ -88,8 +90,22 @@ namespace SE
 	struct SE_API_RUNTIME SLC2Artifact
 	{
 		String Format = SE_TEXT("SLC2");
-		uint32 Version = 3;
+		uint32 Version = 4;
 		String CompilerBuildTag;
 		List<SLC2ProgramRecord> Programs;
 	};
+
+
+	struct SE_API_RUNTIME SLC2ProgramStageDeclaration
+    {
+        ShaderStage Stage = ShaderStage::Max;
+        String      EntryPoint;
+    };
+
+    struct SE_API_RUNTIME SLC2ProgramDeclaration
+    {
+        String                             ProgramId;
+        List<SLC2ProgramStageDeclaration> Stages;
+        List<ShaderVariantGroup>           VariantGroups;
+    };
 }

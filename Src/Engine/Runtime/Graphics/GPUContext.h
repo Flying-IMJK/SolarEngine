@@ -25,6 +25,7 @@ namespace SE
 	class GPUTextureView;
 	class GPUBufferView;
 	class ShaderProgramInstance;
+	struct RenderGeometry;
 
 	// Gets the GPU texture view. Checks if pointer is not null and texture has one or more mip levels loaded.
 	#define GET_TEXTURE_VIEW_SAFE(t) (t && t->ResidentMipLevels() > 0 ? t->View() : nullptr)
@@ -254,9 +255,8 @@ namespace SE
 		virtual void DrawInstanced(uint32 verticesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0) = 0;
 
 		/**
-		 * 使用 SLC2 ShaderProgramInstance 绘制非索引图元。
-		 * @param instance SLC2 shader program instance。
-		 * @param desc 固定图形管线状态；shader stage 来自 instance，不读取 desc.VS/desc.PS 作为 shader。
+		 * 使用 ShaderProgramInstance 绘制非索引图元。
+		 * @param instance shader program instance。
 		 * @param verticesCount 顶点数量。
 		 * @param instanceCount 实例数量。
 		 * @param startInstance 起始实例。
@@ -286,16 +286,15 @@ namespace SE
 		virtual void DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0, int32 startIndex = 0) = 0;
 
 		/**
-		 * 使用 SLC2 ShaderProgramInstance 绘制索引图元。
-		 * @param instance SLC2 shader program instance。
-		 * @param desc 固定图形管线状态；shader stage 来自 instance，不读取 desc.VS/desc.PS 作为 shader。
+		 * 使用 ShaderProgramInstance 绘制索引图元。
+		 * @param instance shader program instance。
 		 * @param indicesCount 索引数量。
 		 * @param instanceCount 实例数量。
 		 * @param startInstance 起始实例。
 		 * @param startVertex 顶点偏移。
 		 * @param startIndex 起始索引。
 		 */
-		virtual void DrawIndexedInstanced(ShaderProgramInstance& instance, const GPUPipelineState::Description& desc, uint32 indicesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0, int32 startIndex = 0) = 0;
+		virtual void DrawIndexedInstanced(ShaderProgramInstance& instance, uint32 indicesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0, int32 startIndex = 0) = 0;
 
 		/**
 		 * Draws the instanced GPU-generated primitives. Buffer must contain GPUDrawIndirectArgs.
@@ -402,6 +401,12 @@ namespace SE
 		 * @param indexBuffer 顶点buffer
 		 */
 		virtual void BindIB(GPUBuffer* indexBuffer) = 0;
+
+		/**
+		 * 根据当前图形 Pipeline 准备顶点输入，并立即绑定 RenderGeometry 中本次绘制需要的 VB/IB。
+		 * 必须先设置图形 Pipeline；返回 false 后，SLC2 Draw 不得使用之前遗留的 Geometry 状态。
+		 */
+		virtual bool BindRenderGeometry(const RenderGeometry& geometry) = 0;
 
 		/**
 		 * 绑定采样器到指定位置

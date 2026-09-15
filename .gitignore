@@ -36,3 +36,5 @@ Debug/
 Release/
 Intermediate/
 graphify-out/
+/.scratch
+/docs

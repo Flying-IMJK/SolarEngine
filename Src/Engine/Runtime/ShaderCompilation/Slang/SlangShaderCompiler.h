@@ -9,20 +9,6 @@
 
 namespace SE
 {
-	struct SE_API_RUNTIME SlangProgramStageDeclaration
-	{
-        ShaderStage Stage = ShaderStage::Max;
-		String EntryPoint;
-	};
-
-	struct SE_API_RUNTIME SlangProgramDeclaration
-	{
-		String ProgramId;
-		List<SlangProgramStageDeclaration> Stages;
-		List<ShaderVariantGroup> VariantGroups;
-		SLC2VertexBufferLayout VertexBufferLayout;
-	};
-
 	class SE_API_RUNTIME SlangShaderCompiler
 	{
 	public:

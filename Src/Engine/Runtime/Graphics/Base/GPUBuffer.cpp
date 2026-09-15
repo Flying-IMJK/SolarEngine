@@ -248,7 +248,8 @@ namespace SE
 		const auto desc = m_Desc.ToStagingReadBack();
 		Threading::ScopeLock gpuLock(GPUDevice::instance->locker);
 		auto* staging = GPUDevice::instance->CreateBuffer(SE_TEXT("Staging.Readback"));
-		if (staging->Init(desc))
+		// Init 返回成功；只在初始化失败时销毁读回资源。
+		if (!staging->Init(desc))
 		{
 			staging->ReleaseGPU();
 			Delete(staging);

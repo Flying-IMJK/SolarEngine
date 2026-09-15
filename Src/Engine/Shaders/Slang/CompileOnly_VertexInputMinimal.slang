@@ -2,9 +2,7 @@
 
 SHADER_PROGRAM(CompileOnlyVertexInputMinimal,
 	SHADER_VS(PositionVS),
-	SHADER_PS(MinimalPS),
-	SHADER_VS_INPUT_BINDING(0, 12, PER_VERTEX, 0),
-	SHADER_VS_INPUT_ELEMENT(POSITION, 0, R32G32B32_Float, 0, 0)
+	SHADER_PS(MinimalPS)
 )
 
 SHADER_PROGRAM(CompileOnlyVertexSystemOnly,

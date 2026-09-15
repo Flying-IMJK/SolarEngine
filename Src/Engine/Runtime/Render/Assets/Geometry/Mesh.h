@@ -2,6 +2,7 @@
 
 #include "MeshBase.h"
 #include "MeshDataLayout.h"
+#include "Runtime/Graphics/Base/RenderGeometry.h"
 #include "../../../Resource/Assets/Materials/MaterialBase.h"
 
 namespace SE
@@ -265,6 +266,11 @@ namespace SE
         bool Intersects(const Ray& ray, const Transform& transform, float& distance, Float3& normal) const;
 
     public:
+        /// <summary>
+        /// 获取使用 StaticMesh VertexFactory 布局描述的渲染几何体。
+        /// </summary>
+        RenderGeometry GetRenderGeometry() const;
+
         /// <summary>
         /// Gets the draw call geometry for this mesh. Sets the index and vertex buffers.
         /// </summary>

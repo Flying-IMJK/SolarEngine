@@ -8,6 +8,8 @@ RUNTIME_ADD(
         MeshDataLayout.h
         MeshDeformation.h
         MeshDeformation.cpp
+        StaticMeshVertexFactory.h
+        StaticMeshVertexFactory.cpp
 
         ModelBase.h
         ModelBase.cpp

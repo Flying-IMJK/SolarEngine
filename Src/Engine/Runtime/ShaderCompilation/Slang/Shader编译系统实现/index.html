@@ -60,6 +60,7 @@
         <a href="#compiler-discovery">Program 发现</a>
         <a href="#compiler-pseudocode-discovery">发现伪代码</a>
         <a href="#compiler-entrypoints">入口检查</a>
+        <a href="#compiler-vertex-input">顶点输入编译契约</a>
         <a href="#compiler-variants">Variant Planner</a>
         <a href="#compiler-pseudocode-variants">Variant 伪代码</a>
       </div>
@@ -126,6 +127,7 @@
         <a href="#vulkan-pseudocode-write">写入伪代码</a>
         <a href="#vulkan-pipeline">Pipeline 接入</a>
         <a href="#vulkan-pseudocode-pipeline">Pipeline 伪代码</a>
+        <a href="#vulkan-vertex-input">Vulkan 顶点输入</a>
         <a href="#runtime-error-model">错误与非目标</a>
       </div>
     </details>
@@ -163,21 +165,15 @@
   </header>
 
   <section>
-    <h2 id="implementation-v2">0. 第二版迭代说明</h2>
-    <p>第二版保持系统设计契约不变，重点把第一版的职责说明转换为可直接指导编码的实现算法。每条主链路补充伪代码、输入/输出、失败边界和不变量；伪代码中的类型与文件名表示计划实现，不代表 SolarEngine 当前已经存在这些 API。</p>
-    <div class="implementation-legend" aria-label="内容状态图例">
-      <span class="observed">现有事实：已在 SolarEngine/Slang 源码中确认</span>
-      <span class="planned">计划实现：本实施方案新增</span>
-      <span class="transition">过渡路径：只为保持实施期间可构建</span>
-      <span class="deferred">后续设计：当前明确不实现</span>
-    </div>
+    <h2 id="implementation-v2">0. 实施指南说明</h2>
+    <p>本实施指南把系统设计契约转换为可直接指导编码的模块边界、算法、伪代码、失败规则、不变量和验收条件。它只表达实施方案，不记录当前完成状态或未完成事项。</p>
     <div class="decision">
       <div><strong>新增算法说明</strong>依赖构建、编译事务、Program 发现、Variant 规划和联合链接。</div>
       <div><strong>新增数据转换</strong>Slang Layout → ShaderReflectionIR、严格验证、SLC2 确定性读写。</div>
       <div><strong>新增运行时流程</strong>Program/Variant 选择、ShaderVar 路径解析、资源完整性验证。</div>
-      <div><strong>新增 Vulkan 流程</strong>共享 Pipeline Layout、逻辑资源到物理 descriptor 的映射与提交。</div>
+      <div><strong>新增 Vulkan 流程</strong>共享 Pipeline Layout、逻辑资源到物理 descriptor 的映射，以及 Program 级 Vertex Input State 与 required Slot 校验。</div>
       <div><strong>新增测试骨架</strong>Slang API 编译/链接 probe、反射 smoke、编译 fixture、SLC2 mutation、Vulkan validation 功能测试。</div>
-      <div><strong>表达优化</strong>明确区分当前代码事实、计划类型、过渡实现和非目标。</div>
+      <div><strong>表达约定</strong>全部伪代码、类型和文件清单都描述目标实施契约，不表示完成进度。</div>
     </div>
 
     <h3 id="implementation-pseudocode-overall">伪代码约定与总流程</h3>
@@ -292,7 +288,7 @@ LoadAndCreate(slc2Data, selection, bindings):
         <tr><td>ShaderCompilation/Slang</td><td>Slang Session、Module、Component、原生 Layout adapter。</td><td>GPU/Vulkan 运行时状态。</td></tr>
         <tr><td>ShaderReflectionIR + SLC2</td><td>稳定类型图、块实例、Range mapping、Stage code；支持编译器 self-read 和 compile-only 测试。</td><td>Slang 指针、Vulkan 原生枚举、GPU 设备和资源对象。</td></tr>
         <tr><td>Graphics/Shaders runtime</td><td>SLC2GPUShader、Program 选择、ParameterBlock 树、ShaderVar、冻结绑定快照。</td><td>Slang、Shader 源码、SPIR-V 二次反射。</td></tr>
-        <tr><td>GraphicsDevice/Vulkan</td><td>VkShaderModule、DescriptorSetLayout、PipelineLayout、descriptor writes。</td><td>Program 声明宏和 Variant 发现逻辑。</td></tr>
+        <tr><td>GraphicsDevice/Vulkan</td><td>VkShaderModule、DescriptorSetLayout、PipelineLayout、descriptor writes、Vertex Input State 与 required Slot mask。</td><td>Program 声明宏和 Variant 发现逻辑。</td></tr>
       </tbody>
     </table>
   </section>
@@ -302,7 +298,7 @@ LoadAndCreate(slc2Data, selection, bindings):
     title="依赖与工程接入" loading="eager"></iframe>
 
   <iframe class="module-frame" src="编译器实现.html"
-    data-anchors="compiler-boundary,compiler-files,compiler-existing-files,compiler-api,compiler-api-types,compiler-api-semantics,compiler-api-entry,compiler-pseudocode-orchestrator,compiler-transaction,compiler-pseudocode-unit,compiler-ordering,compiler-discovery,compiler-discovery-session,compiler-attributes,compiler-entrypoints,compiler-pseudocode-discovery,compiler-variants,compiler-variant-model,compiler-variant-rules,compiler-pseudocode-variants,compiler-variant-tests,compiler-target,compiler-target-key,compiler-vulkan-policy,compiler-session-cache,compiler-pseudocode-session,compiler-diagnostics,compiler-diagnostic-order,compiler-failure-policy,compiler-pseudocode-result"
+    data-anchors="compiler-boundary,compiler-files,compiler-existing-files,compiler-api,compiler-api-types,compiler-api-semantics,compiler-api-entry,compiler-pseudocode-orchestrator,compiler-transaction,compiler-pseudocode-unit,compiler-ordering,compiler-discovery,compiler-discovery-session,compiler-attributes,compiler-entrypoints,compiler-pseudocode-discovery,compiler-vertex-input,compiler-variants,compiler-variant-model,compiler-variant-rules,compiler-pseudocode-variants,compiler-variant-tests,compiler-target,compiler-target-key,compiler-vulkan-policy,compiler-session-cache,compiler-pseudocode-session,compiler-diagnostics,compiler-diagnostic-order,compiler-failure-policy,compiler-pseudocode-result"
     title="编译器实现" loading="eager"></iframe>
 
   <iframe class="module-frame" src="反射与SLC2.html"
@@ -310,14 +306,14 @@ LoadAndCreate(slc2Data, selection, bindings):
     title="反射 IR 与 SLC2" loading="eager"></iframe>
 
   <iframe class="module-frame" src="运行时与Vulkan.html"
-    data-anchors="runtime-boundary,runtime-files,runtime-transition,runtime-selection,runtime-load,runtime-select-api,runtime-pseudocode-select,runtime-instance,runtime-reflection,runtime-location,runtime-path-parser,runtime-pseudocode-resolve,runtime-no-names,runtime-binding,runtime-binding-api,runtime-pseudocode-set,runtime-binding-state,runtime-binding-validation,runtime-pseudocode-validate,vulkan-layout,vulkan-current-problem,vulkan-layout-build,vulkan-pseudocode-layout,vulkan-layout-files,vulkan-descriptors,vulkan-write-formula,vulkan-pseudocode-write,vulkan-writer-reuse,vulkan-no-unbounded,vulkan-pipeline,vulkan-compute,vulkan-graphics,vulkan-pseudocode-pipeline,runtime-error-model,runtime-errors,runtime-deferred"
+    data-anchors="runtime-boundary,runtime-files,runtime-transition,runtime-selection,runtime-load,runtime-select-api,runtime-pseudocode-select,runtime-instance,runtime-reflection,runtime-location,runtime-path-parser,runtime-pseudocode-resolve,runtime-no-names,runtime-binding,runtime-binding-api,runtime-pseudocode-set,runtime-binding-state,runtime-binding-validation,runtime-pseudocode-validate,vulkan-layout,vulkan-current-problem,vulkan-layout-build,vulkan-pseudocode-layout,vulkan-layout-files,vulkan-descriptors,vulkan-write-formula,vulkan-pseudocode-write,vulkan-writer-reuse,vulkan-no-unbounded,vulkan-pipeline,vulkan-compute,vulkan-graphics,vulkan-pseudocode-pipeline,vulkan-vertex-input,runtime-error-model,runtime-errors,runtime-deferred"
     title="运行时与 Vulkan" loading="eager"></iframe>
 
   <iframe class="module-frame" src="测试与交付.html"
     data-anchors="delivery-strategy,delivery-branching,delivery-phases,delivery-dependency-order,test-layout,test-pseudocode-api-probe,test-pseudocode-fixture,test-matrix,test-compiler,test-variants,test-reflection,test-vulkan,test-pseudocode-vulkan,test-golden,test-golden-policy,test-mutations,test-pseudocode-mutation,delivery-gates,delivery-risks,delivery-done"
     title="测试与交付" loading="eager"></iframe>
 
-  <footer>实施文档状态：第二版 · 已补充主要实现伪代码 · 系统契约已冻结 · 首个实施切片：Slang Compute → SLC2 → Vulkan 名称绑定</footer>
+  <footer>SolarEngine Slang Shader 编译系统实施指南</footer>
 </main>
 </body>
 </html>

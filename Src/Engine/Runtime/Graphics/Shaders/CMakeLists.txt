@@ -10,6 +10,8 @@ RUNTIME_ADD(
         SLC2GPUShader.cpp
         SLC2GPUShaderProgram.h
         SLC2GPUShaderProgram.cpp
+        SLC2VertexInputLayout.h
+        SLC2VertexInputLayout.cpp
         ShaderBindingSnapshot.h
         ShaderBindingSnapshot.cpp
         ShaderParameterBlock.h
