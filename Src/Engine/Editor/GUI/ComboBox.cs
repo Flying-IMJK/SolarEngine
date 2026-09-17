@@ -161,7 +161,7 @@ namespace SE.Editor.GUI
 
             Rectangle bounds = ScreenBounds;
             Color color = EnabledInHierarchy ? Style.Current.Foreground : Style.Current.ForegroundDisabled;
-            Render2D.RenderText(font, Text, ref bounds, ref color, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap);
+            Render2D.RenderText(font, Text, bounds, color, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap);
         }
 
         public void ShowPopup()

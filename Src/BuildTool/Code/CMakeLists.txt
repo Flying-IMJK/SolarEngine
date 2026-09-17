@@ -42,7 +42,6 @@ set("SOURCES"
     CodeGenerators/CodeGenerator_BindingsDataTypes.h
     CodeGenerators/CodeGenerator_BindingsModel.h
     CodeGenerators/CodeGenerator_BindingsModel.cpp
-    CodeGenerators/CodeGenerator_BindingsNativeStubs.h
     CodeGenerators/CodeGenerator_BindingsNativeStubs.cpp
     CodeGenerators/CodeGenerator_BindingsTypeMap.h
     CodeGenerators/CodeGenerator_BindingsTypeMap.cpp
@@ -85,7 +84,18 @@ include_directories(${LLVM_INCLUDE_DIRS})
 # them in the solution explorer without them being added to the list of sources
 add_executable(${REFLECTOR_TARGET} ${SOURCES})
 
+set(BINDINGS_TEST_TARGET SEBuilderBindingsTests)
+add_executable(${BINDINGS_TEST_TARGET}
+    Tests/BindingsTypeMapTests.cpp
+    Core/Utils.cpp
+    Database/DataTypes.cpp
+    Database/TypeDatabase.cpp
+    CodeGenerators/CodeGenerator_Utils.cpp
+    CodeGenerators/CodeGenerator_BindingsTypeMap.cpp
+)
+
 target_link_libraries(${REFLECTOR_TARGET} sqlite3 fmt::fmt)
+target_link_libraries(${BINDINGS_TEST_TARGET} sqlite3 fmt::fmt)
 
 target_include_directories(${REFLECTOR_TARGET}
     PUBLIC ${EngineRootDir}/BuildTool/Code
@@ -94,7 +104,15 @@ target_include_directories(${REFLECTOR_TARGET}
     PUBLIC ${EngineLibDir}/fmt/include
 )
 
+target_include_directories(${BINDINGS_TEST_TARGET}
+    PUBLIC ${EngineRootDir}/BuildTool/Code
+    PUBLIC ${EngineLibDir}/sqlite3
+    PUBLIC ${EngineLibDir}/assimp/contrib/rapidjson/include
+    PUBLIC ${EngineLibDir}/fmt/include
+)
+
 set_target_properties(${REFLECTOR_TARGET} PROPERTIES CXX_STANDARD 17)
+set_target_properties(${BINDINGS_TEST_TARGET} PROPERTIES CXX_STANDARD 17)
 
 if (CMAKE_HOST_WIN32)
 

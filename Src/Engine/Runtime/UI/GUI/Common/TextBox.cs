@@ -34,7 +34,7 @@ namespace SE.GUI
 
             Rectangle bounds = ScreenBounds;
             Color color = string.IsNullOrEmpty(Text) ? PlaceholderTextColor : TextColor;
-            Render2D.RenderText(font, text, ref bounds, ref color, HorizontalAlignment, VerticalAlignment, TextWrapping);
+            Render2D.RenderText(font, text, bounds, color, HorizontalAlignment, VerticalAlignment, TextWrapping);
         }
     }
 }

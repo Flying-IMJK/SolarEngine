@@ -39,7 +39,7 @@ namespace SE::BuildTool
         std::string m_cache;
     };
 
-    inline const StringID StringID::Invalid = StringID(0ull);
+    inline const StringID StringID::Invalid = StringID();
     using TypeID = StringID;
 }
 

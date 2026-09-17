@@ -9,17 +9,6 @@ namespace SE
         /// Loads asset to the Content Pool and holds it until it won't be referenced by any object. Returns null if asset is missing.
         /// </summary>
         /// <param name="id">Asset unique ID.</param>
-        /// <param name="type">Type of the asset to load. Includes any asset types derived from the type.</param>
-        /// <returns>Asset instance if loaded, null otherwise.</returns>
-        public static Asset LoadAsync(Guid id, Type type)
-        {
-            return LoadAsync(ref id, type);
-        }
-
-        /// <summary>
-        /// Loads asset to the Content Pool and holds it until it won't be referenced by any object. Returns null if asset is missing.
-        /// </summary>
-        /// <param name="id">Asset unique ID.</param>
         /// <typeparam name="T">Type of the asset to load. Includes any asset types derived from the type.</typeparam>
         /// <returns>Asset instance if loaded, null otherwise.</returns>
         public static T LoadAsync<T>(Guid id) where T : Asset

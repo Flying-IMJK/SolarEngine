@@ -132,12 +132,12 @@ namespace SE.Editor.GUI
                 ColumnDefinition column = m_Columns[index];
                 Rectangle header = new Rectangle(x, ScreenPos.Y, GetColumnWidth(index), HeaderHeight);
                 Color background = column.TitleBackgroundColor;
-                Render2D.FillRectangle(ref header, ref background);
+                Render2D.FillRectangle(header, background);
                 Font? font = column.TitleFont ?? Style.Current.FontMedium;
                 if (!ReferenceEquals(font, null) && column.Title.Length != 0)
                 {
                     Color foreground = column.TitleColor;
-                    Render2D.RenderText(font, column.Title, ref header, ref foreground, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+                    Render2D.RenderText(font, column.Title, header, foreground, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
                 }
                 x += header.Width;
             }

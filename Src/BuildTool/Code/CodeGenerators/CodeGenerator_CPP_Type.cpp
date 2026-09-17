@@ -35,11 +35,11 @@ namespace SE::BuildTool
             }
 
             PropertyData property(field.name, field.type.ToString(), field.lineNumber);
-            property.typeID = field.type;
+            property.typeID = field.type.typeID;
             property.description = field.comment;
-            property.arraySize = field.arraySize;
+            property.arraySize = field.type.arraySize;
             property.isDevOnly = field.isReflect;
-            if (field.arraySize > 0)
+            if (property.arraySize > 0)
             {
                 property.flags.SetFlag(PropertyFlags::IsArray);
             }

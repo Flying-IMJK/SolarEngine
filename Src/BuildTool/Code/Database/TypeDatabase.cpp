@@ -257,6 +257,36 @@ namespace SE::BuildTool
         return const_cast<TypeInfoBase *>(const_cast<TypeDatabase const *>(this)->GetType(typeID));
     }
 
+    TypeInfoBase const* TypeDatabase::ResolveTypeDeclaration(TypeInfo const& type) const
+    {
+        if (type.typeID == TypeID::Invalid)
+        {
+            return nullptr;
+        }
+
+        if (TypeInfoBase const* declaration = GetType(type.typeID))
+        {
+            return declaration;
+        }
+
+        const std::string canonicalName = type.typeID.ToString();
+        for (TypeInfoBase const* declaration : GetAllTypes())
+        {
+            if (!declaration->IsFlag(TypeInfoBase::Flag::IsClassStruct))
+            {
+                continue;
+            }
+
+            auto const* structType = static_cast<TypeInfoStruct const*>(declaration);
+            if (structType->templateInstantiationTypeName == canonicalName)
+            {
+                return declaration;
+            }
+        }
+
+        return nullptr;
+    }
+
     bool TypeDatabase::IsTypeRegistered(StringID typeID) const
     {
         if (m_reflectedTypeBase->typeID == typeID)
@@ -310,7 +340,7 @@ namespace SE::BuildTool
         ENGINE_ASSERT(pTypeDesc != nullptr);           // Unknown Type
         ENGINE_ASSERT(IsTypeRegistered(parentTypeID)); // Unknown Type
 
-        if (!pTypeDesc->IsFlag(TypeInfoBase::Flag::IsStruct))
+        if (!pTypeDesc->IsFlag(TypeInfoBase::Flag::IsClassStruct))
         {
             return false;
         }

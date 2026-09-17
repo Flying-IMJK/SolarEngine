@@ -1,204 +1,193 @@
 #pragma once
 
-// BindingsTypeMap.h
-// Type mapping table: C++ type -> C# type + marshalling strategy.
-// Extended with collection types, Variant, object references, and pass-by-reference rules.
-
 #include "CodeGenerator_BindingsDataTypes.h"
+
 #include <string>
+#include <string_view>
+#include <vector>
 
 namespace SE::BuildTool
 {
-    // A contiguous collection as represented by the managed/native ABI. Both
-    // native containers (List/Span/etc.) and C-style fixed arrays are exposed
-    // as managed T[]. The only ABI distinction is where the length comes from.
-    enum class CollectionAbiKind
+    class TypeDatabase;
+
+    enum class CollectionKind { None, Variable, Fixed };
+
+    struct CollectionInfo
     {
-        None,
-        Variable,
-        Fixed,
+        CollectionKind kind = CollectionKind::None;
+        TypeInfo elementType;
+        int fixedElementCount = 0;
+
+        bool IsCollection() const { return kind != CollectionKind::None; }
+        bool HasRuntimeCount() const { return kind == CollectionKind::Variable; }
     };
 
-    struct CollectionAbiInfo
+    enum class BindingTypeKind
     {
-        CollectionAbiKind kind = CollectionAbiKind::None;
-        std::string       elementCppType;
-        int               fixedElementCount = 0;
-
-        bool IsCollection() const { return kind != CollectionAbiKind::None; }
-        bool HasRuntimeCount() const { return kind == CollectionAbiKind::Variable; }
-    };
-
-    enum class TypeSemanticKind
-    {
-        Unknown,
-        Void,
+        Unsupported,
         Blittable,
-        Bool,
-        Char,
         String,
-        ApiStruct,
+        StringView,
+        ScriptingObject,
+        NativeObject,
+        ObjectRef,
         Collection,
-        ManagedObject,
-        ManagedType,
-        ScriptingType,
-        ScriptingObjectPointer,
-        NativeObjectPointer,
-        ObjectReference,
-        RawPointer,
+        InteropStruct,
+        VariantFamily,
+        TypeHandle,
+        OpaquePointer,
     };
 
-    // -------------------------------------------------------------------------
-    // Core lookup functions
-    // -------------------------------------------------------------------------
+    enum class BindingUseSite { Parameter, Return, Field, ArrayElement, Variant };
+    enum class BindingDirection { In, Ref, Out };
+    enum class InteropStrategy { Direct, CustomMarshaller, ManualWrapper, Unsupported };
 
-    /// Returns the TypeMapping for a known C++ type, or nullptr.
-    const TypeMapping* FindTypeMapping(const char* cppType);
-
-    /// True when a C++ type is one of the supported string types. Unlike a
-    /// direct mapping lookup this also accepts qualified names (SE::String).
-    bool IsStringType(const std::string& cppType);
-
-    /// True if the C++ type is a pointer to a registered ScriptingObject-derived API type.
-    bool IsScriptingObjectPointer(const std::string& cppType);
-
-    /// Strips trailing '*', '&', 'const ' from a C++ type name.
-    std::string StripTypeQualifiers(const std::string& cppType);
-
-    /// Returns the binding semantic category for a C++ type after normalizing
-    /// top-level namespace, const, pointer, and reference spelling.
-    TypeSemanticKind GetTypeSemanticKind(const std::string& cppType);
-
-    /// Checks whether a property's getter return type and setter value type can
-    /// share one managed property. Exact type matches are accepted, together
-    /// with the explicit String/StringView and Array<T>/Span<T> bridges.
-    /// Top-level const and reference qualifiers are intentionally ignored.
-    bool ArePropertyAccessorTypesCompatible(const std::string& getterType,
-                                            const std::string& setterType);
-
-    /// Clears generation-time API type aliases.
-    void ClearApiTypeNameAliases();
-
-    /// Registers a C++ type name to C# public API name mapping.
-    void RegisterApiTypeNameAlias(const std::string& nativeName,
-                                  const std::string& nativeFullName,
-                                  const std::string& publicName,
-                                  const std::string& publicFullName);
-
-    /// Registers a native API type that derives from ScriptingObject.
-    void RegisterApiScriptingObjectType(const std::string& nativeName,
-                                        const std::string& nativeFullName);
-
-    /// Registers a non-ScriptingObject API class that is exposed as an owning native handle wrapper.
-    void RegisterApiNativeObjectType(const std::string& nativeName,
-                                     const std::string& nativeFullName);
-
-    /// Registers a non-blittable API struct that needs an explicit generated ABI
-    /// representation (for example, a struct that contains String fields).
-    void RegisterApiInteropStructType(const std::string& nativeName,
-                                      const std::string& nativeFullName,
-                                      const std::string& publicName,
-                                      const std::string& publicFullName);
-
-    /// True if the type is represented by a generated BindingsInterop struct on
-    /// the native boundary instead of its native C++ layout.
-    bool IsApiInteropStructType(const std::string& cppType);
-
-    /// Returns the fully qualified C++ BindingsInterop type name for a registered
-    /// API struct. Returns an empty string when no special ABI type is required.
-    std::string GetApiInteropStructCppType(const std::string& cppType);
-
-    /// Returns the fully qualified C# marshaller type for a registered API struct.
-    /// Returns an empty string when no special marshaller is required.
-    std::string GetApiInteropStructMarshallerType(const std::string& cppType);
-
-    // -------------------------------------------------------------------------
-    // C# type resolution
-    // -------------------------------------------------------------------------
-
-    /// Returns the C# interop type for a P/Invoke parameter.
-    /// For strings: "string"; for ScriptingObject*: "IntPtr"; otherwise the mapped C# type.
-    std::string GetCSharpInteropType(const std::string& cppType);
-    std::string GetCSharpInteropType(const std::string& cppType, int fixedArraySize);
-
-    /// Returns the C# public-facing type (what the user sees in the API).
-    std::string GetCSharpPublicType(const std::string& cppType);
-    std::string GetCSharpPublicType(const std::string& cppType, int fixedArraySize);
-
-    /// Returns the C# expression to convert from interop type to public type.
-    /// e.g. for string: "{0}" (StringMarshalling handles it); for scripting object: "({Type})SE.Interop.ManagedHandleMarshaller.NativeToManaged.ConvertToManaged({0})"
-    std::string GetCSharpFromInterop(const std::string& cppType, const std::string& varName);
-
-    /// Returns the C# expression to convert from public type to interop type.
-    /// e.g. for string: "{0}"; for ScriptingObject: "Object.GetUnmanagedPtr({0})"
-    std::string GetCSharpToInterop(const std::string& cppType, const std::string& varName);
-
-    // -------------------------------------------------------------------------
-    // Pass-by-reference and type classification
-    // -------------------------------------------------------------------------
-
-    /// True if the C# side should pass this type by reference (struct types, math types, etc.).
-    bool UsePassByReference(const std::string& cppType);
-
-    /// True if the C++ type is a blittable POD type (can be copied directly across the interop boundary).
-    bool IsPodType(const std::string& cppType);
-
-    /// True if the C++ type is a known ScriptingObject-derived type (not just any pointer).
-    bool IsScriptingObjectType(const std::string& cppType);
-
-    /// True if the type is an object reference type (ScriptingObjectReference, AssetReference, etc.).
-    bool IsObjectTypeRef(const std::string& cppType);
-
-    /// True if the type is a collection type (Array, Span, List, Dictionary, HashSet, etc.).
-    bool IsCollectionType(const std::string& cppType);
-
-    /// Returns the ABI description for contiguous collection types. Pass a
-    /// positive fixedArraySize for a C-style field whose extent is stored out
-    /// of band in TypeInfoField.
-    CollectionAbiInfo GetCollectionAbiInfo(const std::string& cppType, int fixedArraySize = 0);
-
-    /// Returns a fully-qualified managed type name suitable for native runtime
-    /// lookup (for example, SE.Sprite or System.Int32).
-    std::string GetCSharpFullTypeName(const std::string& cppType);
-
-    // -------------------------------------------------------------------------
-    // Marshal attribute generation
-    // -------------------------------------------------------------------------
-
-    /// Returns the C# marshal attribute for a P/Invoke parameter.
-    /// e.g. "[MarshalAs(UnmanagedType.U1)]" for bool, "[MarshalUsing(typeof(ArrayMarshaller<,>))]" for arrays.
-    std::string GetCSharpParamMarshalAttribute(const std::string& cppType, const std::string& paramName,
-                                               int fixedArraySize = 0);
-
-    /// Returns the C# marshal attribute for a P/Invoke return value.
-    /// e.g. "[return: MarshalAs(UnmanagedType.U1)]" for bool.
-    std::string GetCSharpReturnMarshalAttribute(const std::string& cppType, int fixedArraySize = 0);
-
-    // -------------------------------------------------------------------------
-    // CppTypeInfo - parsed C++ type for precise analysis
-    // -------------------------------------------------------------------------
-
-    /// Parsed representation of a C++ type with all qualifiers and generic arguments.
-    struct CppTypeInfo
+    struct ReferenceSemantics
     {
-        std::string baseType;       // stripped base type name
-        bool       isConst;
-        bool       isRef;
-        bool       isMoveRef;
-        bool       isPointer;
-        bool       isArray;
-        int         arraySize;
-        std::vector<std::string> genericArgs; // template arguments
-
-        CppTypeInfo()
-            : isConst(false), isRef(false), isMoveRef(false)
-            , isPointer(false), isArray(false), arraySize(0) {}
-
-        /// Parse a C++ type string into this structure.
-        void Parse(const std::string& cppType);
-
-        /// Reconstruct the full C++ type string.
-        std::string ToString() const;
+        int pointerDepth = 0;
+        bool isConst = false;
+        bool isLValueReference = false;
+        bool isRValueReference = false;
     };
 
+    // Language-neutral facts only. No target-language spelling is stored here.
+    struct BindingTypeSemantics
+    {
+        TypeInfo sourceType;
+        TypeID canonicalType;
+        BindingTypeKind kind = BindingTypeKind::Unsupported;
+        bool isEnum = false;
+        TypeInfoBase const* declaration = nullptr;
+        CollectionInfo collection;
+        ReferenceSemantics reference;
+        std::string diagnosticCode;
+        std::string diagnostic;
+
+        bool IsSupported() const { return kind != BindingTypeKind::Unsupported; }
+    };
+
+    enum class AbiValueKind
+    {
+        Void,
+        Integer,
+        Float,
+        Enum,
+        BlittableStruct,
+        InteropStruct,
+        ClrString,
+        ClrArray,
+        ClrObject,
+        ClrTypeObject,
+        OpaquePointer,
+    };
+
+    enum class AbiPassMode { Value, Pointer, OutPointer };
+
+    struct AbiType
+    {
+        AbiValueKind kind = AbiValueKind::Void;
+        TypeID canonicalType;
+        AbiPassMode passMode = AbiPassMode::Value;
+        BindingTypeKind sourceKind = BindingTypeKind::Unsupported;
+    };
+
+    enum class AbiParameterRole { This, PublicParameter, HiddenCount, HiddenResult, Context };
+
+    struct AbiParameterPlan
+    {
+        AbiParameterRole role = AbiParameterRole::PublicParameter;
+        int publicParameterIndex = -1;
+        AbiType type;
+    };
+
+    struct PublicToAbiMapping
+    {
+        int publicParameterIndex = -1;
+        std::vector<int> abiParameterIndices;
+    };
+
+    struct FunctionAbiPlan
+    {
+        std::string entryPoint;
+        AbiType returnType;
+        std::vector<AbiParameterPlan> parameters;
+        std::vector<PublicToAbiMapping> publicMappings;
+        bool usesHiddenResult = false;
+        std::string fingerprint;
+        std::vector<std::string> diagnostics;
+
+        bool IsSupported() const { return diagnostics.empty(); }
+    };
+
+    struct GeneratedFile
+    {
+        std::string path;
+        std::string content;
+    };
+
+    enum class ConversionOp { None, ManagedToAbi, AbiToManaged, ReleaseTemporary };
+
+    struct StatementPlan
+    {
+        ConversionOp operation = ConversionOp::None;
+        std::string source;
+        std::string target;
+    };
+
+    struct CallArgumentPlan
+    {
+        std::string expression;
+        AbiPassMode passMode = AbiPassMode::Value;
+    };
+
+    // Ownership/write-back/cleanup lives here, outside FunctionAbiPlan.
+    struct ArgumentMarshallingPlan
+    {
+        std::vector<StatementPlan> preCall;
+        CallArgumentPlan callArgument;
+        std::vector<StatementPlan> postCall;
+        std::vector<StatementPlan> cleanup;
+
+        bool RequiresConversion() const
+        {
+            return !preCall.empty() || !postCall.empty() || !cleanup.empty();
+        }
+    };
+
+    // C++ and C# lower independently from the shared semantics and ABI plan.
+    struct CppTypeConversion
+    {
+        BindingTypeKind kind = BindingTypeKind::Unsupported;
+        std::string exportType;
+        std::string nativeValueType;
+        InteropStrategy strategy = InteropStrategy::Unsupported;
+        std::string diagnostic;
+    };
+
+    struct CSharpTypeConversion
+    {
+        BindingTypeKind kind = BindingTypeKind::Unsupported;
+        std::string publicType;
+        std::string libraryImportManagedType;
+        std::string marshaller;
+        InteropStrategy strategy = InteropStrategy::Unsupported;
+        std::string diagnostic;
+    };
+
+    BindingTypeSemantics ResolveBindingTypeSemantics(TypeDatabase const& database, TypeInfo const& type,
+                                                     std::string_view marshalAs = {});
+    CppTypeConversion ResolveCppTypeConversion(TypeDatabase const& database, BindingTypeSemantics const& semantics,
+                                               BindingUseSite useSite, BindingDirection direction);
+    CSharpTypeConversion ResolveCSharpTypeConversion(TypeDatabase const& database, BindingTypeSemantics const& semantics,
+                                                     BindingUseSite useSite, BindingDirection direction);
+    FunctionAbiPlan BuildFunctionAbiPlan(TypeDatabase const& database, TypeInfoStruct const& owner,
+                                         TypeInfoFunc const& function);
+    bool ValidateBindingsHeader(TypeDatabase const& database, BindingsHeaderInfo const& header,
+                                std::vector<std::string>& diagnostics,
+                                std::vector<std::string>* fingerprints = nullptr);
+
+    BindingDirection GetBindingDirection(TypeInfoParam const& parameter);
+    std::string GetManagedTypeName(TypeInfoBase const& declaration);
+    bool IsKnownBlittableBuiltin(TypeInfo const& type);
+    CollectionInfo GetCollectionInfo(TypeInfo const& type);
 } // namespace SE::BuildTool

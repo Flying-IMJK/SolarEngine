@@ -10,6 +10,7 @@
 #include "Core/StringID.h"
 #include "Core/Utils.h"
 #include <Database/DataTypes.h>
+#include <Database/TypeDatabase.h>
 
 //-------------------------------------------------------------------------
 
@@ -100,34 +101,7 @@ namespace SE::BuildTool
         // Misc
         //-------------------------------------------------------------------------
 
-        inline bool GetAllBaseClasses(std::vector<StringID> &baseClasses, clang::CXXBaseSpecifier &baseSpecifier)
-        {
-			std::string fullyQualifiedName;
-            if (!ClangUtils::GetQualifiedNameForType(baseSpecifier.getType(), fullyQualifiedName))
-            {
-                return false;
-            }
-
-            baseClasses.push_back(StringID(fullyQualifiedName));
-
-            clang::CXXRecordDecl *pBaseSpecifierRecordDecl = baseSpecifier.getType()->getAsCXXRecordDecl();
-            // 检查指针是否为NULL
-            if (!pBaseSpecifierRecordDecl)
-            {
-                return true;
-            }
-            
-            for (auto parentBaseSpecifier : pBaseSpecifierRecordDecl->bases())
-            {
-                if (!GetAllBaseClasses(baseClasses, parentBaseSpecifier))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
+        bool GetAllBaseClasses(std::vector<StringID> &baseClasses, clang::CXXBaseSpecifier &baseSpecifier);
 
         AccessLevel GetAccessLevel(CXCursor cr, AccessLevel defaultAccess = AccessLevel::Public);
 
@@ -136,5 +110,12 @@ namespace SE::BuildTool
         std::string GetParameterDefaultValue(CXCursor argCr);
 
         bool IsStatic(CXCursor cr);
+
+        void FillTypeInfoParam(CXCursor argCr, TypeInfoParam& param);
+
+        void FillTypeInfo(CXType argType, TypeInfo& param);
+
+        bool CalculateStructureIsPod(TypeDatabase const& database, TypeInfoBase const& type, std::vector<TypeID>& stack);
+
     }
 }

@@ -234,7 +234,7 @@ namespace SE.Editor.GUI
                         ? Style.Current.BackgroundHighlighted
                         : Style.Current.BackgroundNormal;
                 Rectangle bounds = ScreenBounds;
-                Render2D.FillRectangle(ref bounds, ref background);
+                Render2D.FillRectangle(bounds, background);
             }
 
             Font? font = Style.Current.FontMedium;
@@ -243,7 +243,7 @@ namespace SE.Editor.GUI
 
             Rectangle textBounds = ScreenBounds;
             Color textColor = enabled ? Style.Current.Foreground : Style.Current.ForegroundDisabled;
-            Render2D.RenderText(font, Text, ref textBounds, ref textColor, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+            Render2D.RenderText(font, Text, textBounds, textColor, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
         }
 
         public void InvokeClick()
@@ -286,7 +286,7 @@ namespace SE.Editor.GUI
         {
             Rectangle line = new Rectangle(ScreenPos.X + (Width - 1.0f) * 0.5f, ScreenPos.Y + 2.0f, 1.0f, MathF.Max(0.0f, Height - 4.0f));
             Color color = Style.Current.BackgroundHighlighted;
-            Render2D.FillRectangle(ref line, ref color);
+            Render2D.FillRectangle(line, color);
         }
     }
 }

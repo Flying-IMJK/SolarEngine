@@ -76,7 +76,7 @@ namespace SE.Editor.GUI
             {
                 SE.Window window = SE.Window.CreateManaged(title, new Float2(size.X, size.Y));
                 Float2 position = new Float2(location.X, location.Y);
-                window.SetPosition(ref position);
+                window.SetPosition(position);
                 floatingPanel.AttachHostWindow(window);
                 floatingPanel.SetBounds(0.0f, 0.0f, size.X, size.Y);
                 window.GUI.AddChild(floatingPanel);

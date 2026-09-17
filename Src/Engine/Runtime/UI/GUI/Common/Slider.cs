@@ -258,7 +258,7 @@ namespace SE.GUI
             if (brush != null)
                 brush.Draw(bounds, color);
             else
-                Render2D.FillRectangle(ref bounds, ref color);
+                Render2D.FillRectangle(bounds, color);
         }
     }
 }

@@ -137,7 +137,7 @@ namespace SE::BuildTool
             int32                    lineNumber = -1;
             MarkMacro                macro;
             std::string              name;
-            TypeRefTemplate          targetType;
+            TypeInfoTemplate         targetType;
             std::vector<std::string> namespaceScopeList;
             std::vector<std::string> structScopeList;
         };
@@ -185,6 +185,8 @@ namespace SE::BuildTool
         void AddTemplateType(std::unique_ptr<TypeInfoStructTemplate> type);
         void AddTypeDef(TypeDefData const& typeDef);
         bool ResolvePendingTypeDefs();
+        void UpdateStructPod();
+
 
         // Check if we have any orphaned reflection macros
         // If we have any then we will populate the error message with all the details

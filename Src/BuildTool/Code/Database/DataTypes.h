@@ -18,20 +18,6 @@ namespace SE::BuildTool
     };
 
     // -------------------------------------------------------------------------
-    // Type mapping table (C++ <-> C#)
-    // -------------------------------------------------------------------------
-
-    struct TypeMapping
-    {
-        const char* cppType;
-        const char* csType;
-        const char* csInterop;
-        bool        isBlittable;
-        bool        isString;
-        bool        isObject;
-    };
-
-    // -------------------------------------------------------------------------
     // Binding extension for DataType
     // -------------------------------------------------------------------------
 
@@ -128,18 +114,43 @@ namespace SE::BuildTool
     };
 
     //-------------------------------------------------------------------------
-    struct TypeInfoParam
+    struct TypeInfo
     {
-        TypeID      type;
-        std::string name;
-        // For a native C-style array parameter synthesized from a reflected field.
-        // Function declarations use the type spelling directly, while field
-        // accessors keep the extent separately in TypeInfoField.
+        TypeID      typeID;
         int         arraySize = 0;
+        int         pointerDepth = 0;
         bool        isPointer = false;
         bool        isConst   = false;
         bool        isRef     = false;
-        bool        isOut     = false;
+        bool        isMoveRef = false;
+
+        TypeInfo() = default;
+        TypeInfo(const TypeInfo& other);
+        TypeInfo(const TypeID& other);
+
+        // Template arguments are the sole generic representation.
+        std::vector<TypeInfo> genericityArgs;
+
+        std::string ToNativeType() const;
+
+        std::string ToString(bool includeArray = true, bool useGlobal = false) const;
+
+        static TypeInfo Void;
+    };
+
+    enum class ApiParameterDirection
+    {
+        In,
+        Ref,
+        Out,
+    };
+
+    struct TypeInfoParam
+    {
+        TypeInfo    type;
+        std::string name;
+        ApiParameterDirection direction = ApiParameterDirection::In;
+
         std::string defaultValue;
         std::string attributes;
         std::string marshalAs;
@@ -152,7 +163,7 @@ namespace SE::BuildTool
         enum class Flag
         {
             Unknown,
-            IsStruct,
+            IsClassStruct,
             IsEnum,
             IsMeta,
         };
@@ -187,19 +198,14 @@ namespace SE::BuildTool
         bool    isDevOnly = false;
     private:
         Flag flag = Flag::Unknown;
-
     };
 
 
     struct TypeInfoFunc
     {
         std::string                name;
-        TypeID                     returnType;
+        TypeInfo              returnType;
         std::vector<TypeInfoParam> params;
-        // Native C-style array extent for synthesized field getters. This is
-        // deliberately separate from returnType because C++ cannot return an
-        // array by value.
-        int returnArraySize = 0;
 
         bool isReflect = false;
         bool isAPI     = false;
@@ -228,7 +234,7 @@ namespace SE::BuildTool
         bool isAPI     = false;
 
         std::string                name;
-        TypeID                     cppType;
+        TypeInfo                   cppType;
         std::vector<TypeInfoParam> params;
         bool                       isStatic = false;
         AccessLevel                access   = AccessLevel::Public;
@@ -242,7 +248,7 @@ namespace SE::BuildTool
         bool isAPI    = false;
         bool isStatic = false;
 
-        TypeID type;
+        TypeInfo type;
         std::string name;
 
         bool isReflect = false;
@@ -253,18 +259,17 @@ namespace SE::BuildTool
         std::string defaultValue;
         std::string comment;
         std::string marshalAs;
-        int         arraySize  = 0;
         int         lineNumber = -1;
     };
 
     struct TypeInfoStruct : TypeInfoBase
     {
-        StringID                   parentTypeID;
-        std::string                baseClassName;
-        std::vector<TypeInfoStruct*> interfaces;
-        std::vector<TypeInfoField> fields;
-        std::vector<TypeInfoFunc>  functions;
-        std::vector<TypeInfoEvent> events;
+        TypeID                          parentTypeID;
+        std::string                     baseClassName;
+        std::vector<TypeInfoStruct*>    interfaces;
+        std::vector<TypeInfoField>      fields;
+        std::vector<TypeInfoFunc>       functions;
+        std::vector<TypeInfoEvent>      events;
 
         bool isStruct          = false;
         bool isAbstract        = false;
@@ -286,7 +291,7 @@ namespace SE::BuildTool
         // C# declaration for this native type.
         std::string APIInBuildMapType;
 
-        TypeInfoStruct(StringID typeID, std::string const& name) : TypeInfoBase(typeID, name, Flag::IsStruct) {};
+        TypeInfoStruct(StringID typeID, std::string const& name) : TypeInfoBase(typeID, name, Flag::IsClassStruct) {};
 
         bool                HasProperties() const { return !fields.empty(); }
         PropertyData const* GetPropertyDescriptor(StringID propertyID) const;
@@ -301,7 +306,7 @@ namespace SE::BuildTool
 
     struct EnumDataConstant
     {
-        StringID    ID;
+        TypeID      ID;
         std::string label;
         int         value;
         std::string description;

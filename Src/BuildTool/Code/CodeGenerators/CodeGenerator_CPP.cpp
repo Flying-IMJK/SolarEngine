@@ -7,8 +7,11 @@
 #include "Core/TopologicalSort.h"
 #include "Core/String.h"
 #include "Core/StringID.h"
+#include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <chrono>
+#include <filesystem>
 
 #include "CodeGenerator_CPP_Meta.h"
 #include "CodeGenerator_BindingsModel.h"
@@ -216,45 +219,146 @@ namespace SE::BuildTool
 
     bool Generator::SaveStreamToFile(std::string const& filePath, std::stringstream& stream)
     {
-        bool fileContentsEqual = true;
-
-        // Rewind stream to beginning
-        stream.seekg(std::ios::beg);
-
-        // Open existing file and compare contents to the newly generated stream
-        std::ifstream fileStream(filePath.c_str(), std::ios::in);
-        if (fileStream.is_open())
-        {
-            std::string lineNew, lineOld;
-            while (getline(fileStream, lineOld) && fileContentsEqual)
-            {
-                if ( !getline(stream, lineNew) || (lineOld != lineNew))
-                {
-                    fileContentsEqual = false;
-                }
-            }
-
-            // Set different if the stream is longer than the file
-            if (fileContentsEqual && getline( stream, lineNew ) )
-            {
-                fileContentsEqual = false;
-            }
-
-            fileStream.close();
-        }
-        else
-        {
-            fileContentsEqual = false;
-        }
-
-        // If the contents differ overwrite the existing file
-        if (!fileContentsEqual)
-        {
-			stream.seekg(std::ios::beg);
-			Utils::WriteAllText(filePath, std::string(stream.str().c_str()));
-        }
-
+        m_generatedFiles.push_back({ filePath, stream.str() });
+        TrackGeneratedPath(filePath);
         return true;
+    }
+
+    void Generator::TrackGeneratedPath(std::string path)
+    {
+        FileSystem::NormalizePath(path);
+        if (!Utils::Vector::Contains(m_expectedGeneratedFiles, path))
+            m_expectedGeneratedFiles.push_back(std::move(path));
+    }
+
+    bool Generator::CommitGeneratedFiles(std::string const& solutionPath)
+    {
+        namespace fs = std::filesystem;
+
+        // A file can be discovered through more than one generation route
+        // (for example a shared binding header). Publish the final queued
+        // content once so all sidecar names remain unique.
+        std::vector<GeneratedFile> uniqueFiles;
+        for (auto& generated : m_generatedFiles)
+        {
+            FileSystem::NormalizePath(generated.path);
+            TrackGeneratedPath(generated.path);
+            auto existing = std::find_if(uniqueFiles.begin(), uniqueFiles.end(), [&](GeneratedFile const& item)
+            {
+                return item.path == generated.path;
+            });
+            if (existing == uniqueFiles.end())
+                uniqueFiles.push_back(std::move(generated));
+            else
+                existing->content = std::move(generated.content);
+        }
+        m_generatedFiles = std::move(uniqueFiles);
+
+        std::string manifestPath = FileSystem::PathCombine(solutionPath, ".sebuilder-generation-manifest");
+        std::string manifest = "version=1\n";
+        for (auto const& path : m_expectedGeneratedFiles)
+            manifest += "file=" + path + "\n";
+        for (auto const& fingerprint : m_abiFingerprints)
+            manifest += "abi=" + fingerprint + "\n";
+        m_generatedFiles.push_back({ manifestPath, manifest });
+
+        std::vector<std::string> oldFiles;
+        std::string oldManifest;
+        if (Utils::ReadAllText(manifestPath, oldManifest))
+        {
+            std::istringstream lines(oldManifest);
+            std::string line;
+            while (std::getline(lines, line))
+                if (Utils::String::StartsWith(line, "file="))
+                    oldFiles.push_back(line.substr(5));
+        }
+
+        const auto nonce = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        struct CommitFile
+        {
+            std::string target;
+            std::string staged;
+            std::string backup;
+            bool hadOriginal = false;
+            bool installed = false;
+        };
+        std::vector<CommitFile> commits;
+        commits.reserve(m_generatedFiles.size());
+
+        // Stage and verify every file before changing any formal output.
+        for (auto const& generated : m_generatedFiles)
+        {
+            CommitFile commit;
+            commit.target = generated.path;
+            commit.staged = generated.path + ".sebuilder-stage-" + std::to_string(nonce);
+            commit.backup = generated.path + ".sebuilder-backup-" + std::to_string(nonce);
+            std::error_code directoryError;
+            fs::create_directories(fs::path(commit.staged).parent_path(), directoryError);
+            if (directoryError)
+            {
+                for (auto const& item : commits) FileSystem::DeleteFile(item.staged);
+                return LogError("Failed to create generated file directory: {0}", generated.path);
+            }
+            if (!Utils::WriteAllText(commit.staged, generated.content))
+            {
+                FileSystem::DeleteFile(commit.staged);
+                for (auto const& item : commits) FileSystem::DeleteFile(item.staged);
+                return LogError("Failed to stage generated file: {0}", generated.path);
+            }
+            std::string verified;
+            if (!Utils::ReadAllText(commit.staged, verified) || verified != generated.content)
+            {
+                FileSystem::DeleteFile(commit.staged);
+                for (auto const& item : commits) FileSystem::DeleteFile(item.staged);
+                return LogError("Failed to verify staged generated file: {0}", generated.path);
+            }
+            commits.push_back(std::move(commit));
+        }
+
+        std::string solutionPrefix = solutionPath;
+        FileSystem::NormalizePath(solutionPrefix);
+        if (!solutionPrefix.empty() && solutionPrefix.back() != '/') solutionPrefix.push_back('/');
+
+        std::error_code ec;
+        for (size_t i = 0; i < commits.size(); ++i)
+        {
+            CommitFile& commit = commits[i];
+            commit.hadOriginal = FileSystem::FileExists(commit.target);
+            if (commit.hadOriginal)
+            {
+                fs::rename(fs::path(commit.target), fs::path(commit.backup), ec);
+                if (ec) goto rollback;
+            }
+            fs::rename(fs::path(commit.staged), fs::path(commit.target), ec);
+            if (ec) goto rollback;
+            commit.installed = true;
+        }
+
+        for (auto const& commit : commits)
+            if (commit.hadOriginal) FileSystem::DeleteFile(commit.backup);
+
+        for (auto const& oldFile : oldFiles)
+        {
+            std::string normalizedOldFile = oldFile;
+            FileSystem::NormalizePath(normalizedOldFile);
+            if (Utils::String::StartsWith(normalizedOldFile, solutionPrefix) &&
+                !Utils::Vector::Contains(m_expectedGeneratedFiles, normalizedOldFile))
+                FileSystem::DeleteFile(normalizedOldFile);
+        }
+        return true;
+
+    rollback:
+        for (auto it = commits.rbegin(); it != commits.rend(); ++it)
+        {
+            if (it->installed) FileSystem::DeleteFile(it->target);
+            if (it->hadOriginal && FileSystem::FileExists(it->backup))
+            {
+                std::error_code restoreError;
+                fs::rename(fs::path(it->backup), fs::path(it->target), restoreError);
+            }
+            FileSystem::DeleteFile(it->staged);
+        }
+        return LogError("Failed to publish generated files transactionally: {0}", ec.message());
     }
 
     void Generator::LoadTemplateFile(SolutionInfo const &solution)
@@ -363,7 +467,7 @@ namespace SE::BuildTool
             {
                 outInfo.enums.push_back(static_cast<TypeInfoEnum*>(type));
             }
-            else if (type->IsFlag(TypeInfoBase::Flag::IsStruct))
+            else if (type->IsFlag(TypeInfoBase::Flag::IsClassStruct))
             {
                 TypeInfoStruct* structType = static_cast<TypeInfoStruct*>(type);
 
@@ -393,10 +497,39 @@ namespace SE::BuildTool
 
     bool Generator::Generate(TypeDatabase const& database, SolutionInfo const& solution)
     {
+        m_generatedFiles.clear();
+        m_expectedGeneratedFiles.clear();
+        m_abiFingerprints.clear();
         LoadTemplateFile(solution);
 
         m_pDatabase = &database;
 
+        // Build every ABI plan before either emitter runs. Diagnostics are
+        // aggregated across the complete SEBuilder transaction.
+        std::vector<std::string> preflightDiagnostics;
+        for (auto const& project : solution.projects)
+        {
+            for (auto const& headerInfo : project.headerFiles)
+            {
+                std::vector<TypeInfoBase*> typesInHeader;
+                m_pDatabase->GetAllTypesForHeader(headerInfo.headerId, typesInHeader);
+                bool headerHasBinding = false;
+                for (auto const* type : typesInHeader)
+                    if (type->isAPI) { headerHasBinding = true; break; }
+                if (!headerHasBinding) continue;
+
+                BindingsHeaderInfo bindingsHeaderInfo;
+                BuildBindingsHeaderInfoFromTypes(database, headerInfo, typesInHeader, bindingsHeaderInfo);
+                ValidateBindingsHeader(database, bindingsHeaderInfo, preflightDiagnostics, &m_abiFingerprints);
+            }
+        }
+        if (!preflightDiagnostics.empty())
+        {
+            std::string message;
+            for (auto const& diagnostic : preflightDiagnostics)
+                message += (message.empty() ? "" : "\n") + diagnostic;
+            return LogError("Bindings preflight failed with {0} diagnostic(s):\n{1}", preflightDiagnostics.size(), message);
+        }
 
         for ( auto& prj : solution.projects)
         {
@@ -406,11 +539,6 @@ namespace SE::BuildTool
 			FileSystem::NormalizePath(autoGeneratedDirectory);
 			FileSystem::NormalizePath(autoGeneratedModuleFile);
 
-			if (!FileSystem::DirectoryExists(autoGeneratedDirectory))
-			{
-				FileSystem::CreateDirectory(autoGeneratedDirectory);
-			}
-
             // Generate list of all expected header files in the auto generated directory
             std::vector<std::string> expectedFiles;
             for ( auto const& headerInfo : prj.headerFiles )
@@ -419,18 +547,8 @@ namespace SE::BuildTool
             }
             const std::string interopHeaderFilename = autoGeneratedDirectory + "/BindingsInterop.h";
             expectedFiles.push_back(interopHeaderFilename);
-
-            // Delete any unknown files from the auto generated directory
-            std::vector<std::string> files;
-			FileSystem::DirectoryGetFiles(files, autoGeneratedDirectory, nullptr, DirectorySearchOption::TopOnly);
-
-            for (auto const& file : files)
-            {
-                if (!Utils::Vector::Contains(expectedFiles, file))
-                {
-					FileSystem::DeleteFile(file);
-                }
-            }
+            for (auto const& expectedFile : expectedFiles)
+                TrackGeneratedPath(expectedFile);
 
             // Generate one module-wide ABI bridge before the per-header binding
             // files. Individual wrappers include this header when they need to
@@ -556,7 +674,7 @@ namespace SE::BuildTool
                                                 (uint32)structType->parentTypeID);
                             }
 
-                            ENGINE_ASSERT(pTypeDesc->IsFlag(TypeInfoBase::Flag::IsStruct));
+                            ENGINE_ASSERT(pTypeDesc->IsFlag(TypeInfoBase::Flag::IsClassStruct));
 
                             TypeInfoStruct const* structParentType = static_cast<TypeInfoStruct const*>(pTypeDesc);
                             CppGenerateType(this,
@@ -593,7 +711,8 @@ namespace SE::BuildTool
                 }
 
                 // Save generated file
-                SaveStreamToFile(typeInfoFilename, m_typeInfoFile);
+                if (!SaveStreamToFile(typeInfoFilename, m_typeInfoFile))
+                    return false;
             }
 
             // Get project info from database as that will contain all necessary info like module class name
@@ -612,7 +731,8 @@ namespace SE::BuildTool
             GenerateModuleCodeFile(database, *pProjectDesc, typesInProject);
 
 			std::string const module_cpp = Utils::String::Format("{0}/{1}", autoGeneratedModuleFile, std::string_view(Settings::g_autogeneratedModuleFileSuffix));
-            SaveStreamToFile(module_cpp, m_moduleFile);
+            if (!SaveStreamToFile(module_cpp, m_moduleFile))
+                return false;
         }
 
         // Generate C# bindings from unified data model
@@ -623,7 +743,7 @@ namespace SE::BuildTool
             {
                 ScopedTimer<PlatformClock> timer(csharpTime);
 
-                BindingsCSharpGenerator csharpGen;
+                BindingsCSharpGenerator csharpGen(database, &m_generatedFiles);
 
                 for (auto& prj : solution.projects)
                 {
@@ -674,14 +794,13 @@ namespace SE::BuildTool
                         projectBindingHeaders.push_back(hdrInfo);
                         if (!csharpGen.Generate(hdrInfo, solution.path))
                         {
-                            std::cout << "Warning: C# generation failed for header: " << hdrInfo.filePath.c_str() << std::endl;
+                            return LogError("C# bindings generation failed for header: {0}", hdrInfo.filePath);
                         }
                     }
 
                     if (!csharpGen.GenerateNativeTypeStubs(projectBindingHeaders))
                     {
-                        std::cout << "Warning: C# native type stub generation failed for project: "
-                                  << pProjectDesc->name.c_str() << std::endl;
+                        return LogError("C# native type stub generation failed for project: {0}", pProjectDesc->name);
                     }
 
                 }
@@ -689,7 +808,7 @@ namespace SE::BuildTool
             std::cout << "Complete! ( " << (float)csharpTime << "ms )" << std::endl;
         }
 
-        return true;
+        return CommitGeneratedFiles(solution.path);
     }
 
     void Generator::GenerateModuleCodeFile(TypeDatabase const& database, ProjectInfo const& prj, std::vector<TypeInfoBase*> const& typesInModule)
@@ -750,7 +869,7 @@ namespace SE::BuildTool
                 nameSpace = Utils::String::Format("{0}", CodeGeneratorUtils::GetFullCNameSpaceName(type->structScopeList));
             }
 
-            std::string nativeName = CodeGeneratorUtils::GetNativeName(type->namespaceScopeList, type->structScopeList, type->name);
+            std::string nativeName = CodeGeneratorUtils::GetFullNativeName(type->namespaceScopeList, type->structScopeList, type->name);
 
             registrationTypeData.set("registerNamespace", std::string(nameSpace.c_str()));
             registrationTypeData.set("registerName", std::string(type->name.c_str()));

@@ -565,7 +565,7 @@ namespace SE
 		void BeginPlay(SceneBeginData* data) override;
 		void EndPlay() override;
 
-		const UID& GetSceneObjectId() const override;
+		UID GetSceneObjectId() const override;
 		void SetParent(Actor* value, bool canBreakPrefabLink = true) override;
 		int32 GetOrderInParent() const override;
 		void SetOrderInParent(int32 index) override;

@@ -26,15 +26,7 @@ namespace SE::BuildTool
         CXType underlyingType = clang_getTypedefDeclUnderlyingType(cr);
         std::string underlyingTypeName = ClangUtils::GetTypeSpellingAnsi(underlyingType);
 
-        TypeRefTemplate targetType = ParseTemplateTypeRef(pContext, underlyingType, {});
-        if (targetType.genericArgs.empty() && !TryParseTemplateTypeRef(underlyingTypeName, targetType))
-        {
-            pContext->LogError("SE_TYPEDEF can only generate concrete types from template specializations. Typedef: {0}, underlying type: {1}",
-                               ClangUtils::GetCursorDisplayName(cr),
-                               underlyingTypeName);
-            return CXChildVisit_Break;
-        }
-
+        TypeInfoTemplate targetType = ParseTemplateType(pContext, underlyingType, {});
         if (targetType.genericArgs.empty())
         {
             pContext->LogError("SE_TYPEDEF can only generate concrete types from template specializations. Typedef: {0}, underlying type: {1}",

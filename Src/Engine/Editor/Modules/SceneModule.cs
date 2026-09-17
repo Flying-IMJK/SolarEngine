@@ -177,13 +177,13 @@ namespace SE.Editor
             HierarchyChanged = null;
         }
 
-        private void OnSceneLoaded(SE.Scene scene, ref Guid sceneId)
+        private void OnSceneLoaded(SE.Scene scene, Guid sceneId)
         {
             RefreshScenes();
             HierarchyChanged?.Invoke();
         }
 
-        private void OnSceneUnloaded(SE.Scene scene, ref Guid sceneId)
+        private void OnSceneUnloaded(SE.Scene scene, Guid sceneId)
         {
             RemoveActorsForScene(scene);
             RefreshScenes();

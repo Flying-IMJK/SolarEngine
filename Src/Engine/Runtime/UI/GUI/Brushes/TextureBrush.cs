@@ -16,7 +16,7 @@ namespace SE.GUI
 
         public void Draw(Rectangle bounds, Color color)
         {
-            Render2D.DrawTexture(Texture, ref bounds, ref color);
+            Render2D.DrawTexture(Texture, bounds, color);
         }
     }
 }

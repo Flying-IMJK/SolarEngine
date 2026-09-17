@@ -7,7 +7,7 @@ namespace SE::BuildTool
 {
 	namespace CodeGeneratorUtils
 	{
-		std::string GetNativeName(const std::vector<std::string>& nameSpaceName, const std::vector<std::string>& structScopes, const std::string& name);
+		std::string GetFullNativeName(const std::vector<std::string>& nameSpaceName, const std::vector<std::string>& structScopes, const std::string& name, bool useGlobal = false);
 
 		std::string GetFullCSTypeName(const std::vector<std::string>& nameSpaceName, const std::string& name);
 
@@ -27,22 +27,15 @@ namespace SE::BuildTool
 
 		std::string GetAccessString(AccessLevel access);
 
-		bool IsNativePointer(const std::string& cppType);
-
+		TypeInfo WithoutArray(TypeInfo type);
+		std::string GetPropertyName(TypeInfoFunc const& function);
 
 		// C# source composition helpers shared by binding generators.
 		std::string MakeCSharpIdentifier(const std::string& identifier);
 		std::string EscapeCSharpXml(const std::string& text);
 		void AppendCSharpComment(std::string& output, const std::string& indent, const std::string& comment);
 		bool IsValidCSharpAttributeList(const std::string& attributes);
-		bool IsCSharpCode(TypeInfoInjectedCode const* code);
 		void AppendCSharpLibraryImport(std::string& output, const std::string& assemblyName, const std::string& entryPoint);
-		bool UsesCSharpOutResult(const std::string& cppType);
-		std::string GetCSharpStructAbiFieldType(const std::string& cppType);
-		std::string GetCSharpCollectionCountExpression(const std::string& cppType, const std::string& expression);
-		std::string GetCSharpStructFieldFromAbi(const std::string& cppType, const std::string& expression);
-		std::string GetCSharpStructFieldToAbi(const std::string& cppType, const std::string& expression);
-		std::string NormalizeCSharpDefaultValue(const TypeInfoParam& param);
 
 		bool SaveFile(const std::string& path, const std::string& content);
 

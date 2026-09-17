@@ -135,7 +135,7 @@ namespace SE.GUI
                 border.A *= 0.5f;
 
             if (HasBorder && BorderThickness > 0.0f && border.A > 0.0f)
-                Render2D.DrawRectangle(ref box, ref border, BorderThickness);
+                Render2D.DrawRectangle(box, border, BorderThickness);
 
             if (State == CheckBoxState.Default)
                 return;
@@ -149,13 +149,13 @@ namespace SE.GUI
                 Float2 from = new Float2(box.X + box.Width * 0.2f, box.Y + box.Height * 0.55f);
                 Float2 middle = new Float2(box.X + box.Width * 0.43f, box.Y + box.Height * 0.76f);
                 Float2 to = new Float2(box.X + box.Width * 0.82f, box.Y + box.Height * 0.25f);
-                Render2D.DrawLine(ref from, ref middle, ref image, MathF.Max(1.0f, BorderThickness));
-                Render2D.DrawLine(ref middle, ref to, ref image, MathF.Max(1.0f, BorderThickness));
+                Render2D.DrawLine(from, middle, image, MathF.Max(1.0f, BorderThickness));
+                Render2D.DrawLine(middle, to, image, MathF.Max(1.0f, BorderThickness));
             }
             else
             {
                 Rectangle mark = new Rectangle(box.X + box.Width * 0.2f, box.Y + box.Height * 0.42f, box.Width * 0.6f, box.Height * 0.16f);
-                Render2D.FillRectangle(ref mark, ref image);
+                Render2D.FillRectangle(mark, image);
             }
         }
 

@@ -5,11 +5,14 @@
 // Uses direct string building instead of Mustache templates for complex generation logic.
 
 #include "CodeGenerator_BindingsModel.h"
+#include "CodeGenerator_BindingsTypeMap.h"
 #include "../Database/TypeDatabase.h"
+
+#include <string_view>
 
 namespace SE::BuildTool
 {
-    struct CollectionAbiInfo;
+    struct CollectionInfo;
 
     class BindingsCppGenerator
     {
@@ -26,8 +29,6 @@ namespace SE::BuildTool
         /// native String object layout to C#.
         bool GenerateInteropHeader(const std::vector<BindingsHeaderInfo>& headers, std::string& output);
 
-        std::string_view GetErrorMessage() const { return m_errorMessage.c_str(); }
-
         // ---- Per-type generation methods (public for unified pipeline) ----
 
         void GenerateCppClass(const TypeInfoStruct& cls, const std::string& assemblyType, std::string& output);
@@ -40,43 +41,39 @@ namespace SE::BuildTool
 
         // ---- Sub-generators ----
 
-        void GenerateCppWrapperFunction(const TypeInfoStruct& cls,
-                                        const TypeInfoFunc&    fn,
-                                        BindingInvocationKind invocation,
-                                        std::string& bodyOut, std::string& endOut);
-        void GenerateCppPropertyAccessors(const TypeInfoStruct& cls,
-                                          const TypeInfoFunc&   prop,
-                                          std::vector<bool>&    consumedFunctions,
-                                          int                   functionIndex,
-                                          std::string&          bodyOut,
-                                          std::string&          endOut);
+        void GenerateCppMethodWrapperFunction(const TypeInfoStruct& cls,
+                                              const TypeInfoFunc&   fn,
+                                              std::string& bodyOut, std::string& endOut);
+        void GenerateCppFieldWrapperFunction(const TypeInfoStruct& cls,
+                                             const TypeInfoFunc&   fn,
+                                             BindingInvocationKind invocation,
+                                             std::string& bodyOut, std::string& endOut);
+
         void GenerateCppEventWrappers(const TypeInfoStruct& cls,
                                       const TypeInfoEvent&  evt,
                                       const std::string& assemblyType, std::string& bodyOut, std::string& endOut);
-        void GenerateCppFieldAccessors(const TypeInfoStruct& cls,
-                                       const TypeInfoField&  field,
-                                       std::string&          bodyOut,
-                                       std::string&          endOut);
+
         void GenerateCppInitRuntime(const TypeInfoStruct& cls, std::string& output);
 
         // ---- Helpers ----
         TypeInfoBase const* GetRegisteredType(TypeID typeID) const;
-        bool CanGenerateVariantFieldAccess(TypeID typeID) const;
-        std::string GetNativeToManagedConvert(TypeID typeID, const std::string& expr) const;
-        std::string GetManagedToNativeConvert(TypeID typeID, const std::string& expr) const;
-        std::string GetNativeToVariantConvert(TypeID typeID, const std::string& expr) const;
-        std::string GetVariantToNativeConvert(TypeID typeID, const std::string& expr) const;
-        std::string GetInteropReturnType(const TypeInfoFunc& fn) const;
-        std::string GetInteropParamType(const TypeInfoParam& param) const;
-        bool ShouldUseOutResult(const std::string& cppType) const;
-        bool NeedsInteropPointer(const TypeInfoParam& param) const;
+        CppTypeConversion ResolveConversion(TypeInfo const& type, std::string_view marshalAs = {},
+                                            BindingUseSite useSite = BindingUseSite::Parameter,
+                                            BindingDirection direction = BindingDirection::In) const;
+        std::string GetInteropValueType(TypeInfo const& type, std::string_view marshalAs = {}) const;
+        bool CanGenerateVariantFieldAccess(TypeInfo const& type) const;
+        bool GetNativeToManagedConvert(TypeInfo const& type, std::string& expr, std::string_view marshalAs = {}) const;
+        bool GetManagedToNativeConvert(TypeInfo const& type, std::string& expr, std::string_view marshalAs = {}) const;
+        std::string GetNativeToVariantConvert(TypeInfo const& type, const std::string& expr) const;
+        std::string GetVariantToNativeConvert(TypeInfo const& type, const std::string& expr) const;
+        std::string GetReturnTypeConver(const TypeInfoFunc& fn) const;
         std::string BuildWrapperParams(const TypeInfoStruct& cls, const TypeInfoFunc& fn, bool forExport) const;
         std::string BuildForwardArgs(const TypeInfoFunc& fn) const;
-        std::string BuildCallArgs(const TypeInfoStruct& cls, const TypeInfoFunc& fn, std::string& setupOut) const;
-        void GenerateCollectionReturn(const TypeInfoFunc& fn, const CollectionAbiInfo& collection,
-                                      const std::string& nativeExpression, std::string& output) const;
-
-        mutable std::string m_errorMessage;
+        std::string BuildCallArgs(const TypeInfoStruct& cls, const TypeInfoFunc& fn,
+                                  std::string& setupOut, std::string& postCallOut) const;
+        void GenerateCollectionReturn(const TypeInfoFunc& fn, const CollectionInfo& collection,
+                                      const std::string& nativeExpression, const std::string& postCall,
+                                      std::string& output) const;
 
         TypeDatabase const& m_Database;
     };

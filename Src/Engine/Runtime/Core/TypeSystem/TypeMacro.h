@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Runtime/Core/Templates.h>
+
 namespace SE
 {
 	// Flag a class as the module class for that project
@@ -21,8 +23,7 @@ namespace SE
         {
 		};
 
-		template<typename... Args, 
-			typename = typename TEnableIf<(... && TIsBaseOf<Mark, Args>::Value)>::Type>
+		template<typename... Args, typename = typename TEnableIf<(... && TIsBaseOf<Mark, Args>::Value)>::Type>
         API(Args... params)
         {}
 	};

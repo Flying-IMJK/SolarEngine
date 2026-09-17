@@ -88,7 +88,7 @@ namespace SE.GUI
 
             Float2 viewport = ScrollViewportSize;
             Rectangle clip = new Rectangle(ScreenPos, viewport);
-            Render2D.PushClip(ref clip);
+            Render2D.PushClip(clip);
             DrawChildren();
             Render2D.PopClip();
         }

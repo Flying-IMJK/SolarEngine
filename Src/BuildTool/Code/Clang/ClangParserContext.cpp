@@ -1,6 +1,7 @@
 #include "ClangParserContext.h"
 #include "ClangTemplateTypes.h"
 #include "Database/TypeDatabase.h"
+#include <CodeGenerators/CodeGenerator_Utils.h>
 
 #include <algorithm>
 
@@ -8,62 +9,6 @@
 
 namespace SE::BuildTool
 {
-    static std::string GetFullTypeName(std::vector<std::string> const& namespaces,
-                                       std::vector<std::string> const& structScopes,
-                                       std::string const& name)
-    {
-        std::string result;
-        if (!namespaces.empty())
-        {
-            result = Utils::CombineStringList(namespaces, "::");
-        }
-        if (!structScopes.empty())
-        {
-            if (!result.empty())
-                result += "::";
-            result += Utils::CombineStringList(structScopes, "::");
-        }
-        if (!result.empty())
-            result += "::";
-        result += name;
-        return result;
-    }
-
-    static std::string GetUnqualifiedTypeName(std::string const& typeName)
-    {
-        int32 pos = Utils::String::FindLast(typeName, ':');
-        if (pos != INVALID_INDEX && pos > 0 && typeName[(size_t)pos - 1] == ':')
-        {
-            return typeName.substr((size_t)pos + 1);
-        }
-        return typeName;
-    }
-
-    static void CalculateFullNamespace(std::vector<std::string> const &namespaceStack, std::string &fullNamespace)
-    {
-        fullNamespace.clear();
-        for (int i = 0; i < namespaceStack.size(); i++)
-        {
-            fullNamespace.append(namespaceStack[i]);
-            if (i != namespaceStack.size() - 1)
-            {
-                fullNamespace.append("::");
-            }
-        }
-    }
-
-    static void CalculateFullStructScope(std::vector<std::string> const &structScope, std::string &fullStructScope)
-    {
-        fullStructScope.clear();
-        for (int i = 0; i < structScope.size(); i++)
-        {
-            fullStructScope.append(structScope[i]);
-            if (i != structScope.size() - 1)
-            {
-                fullStructScope.append("_");
-            }
-        }
-    }
 
     // TODO: Support block comments
     static std::string TryToParseMacro(std::vector<std::string> const &fileContents, int32 parsedMacroLineNumber)
@@ -578,24 +523,26 @@ namespace SE::BuildTool
     void ClangParserContext::PushNamespace(std::string const &name)
     {
         m_namespaceStack.push_back(name);
-        CalculateFullNamespace(m_namespaceStack, m_currentNamespace);
+
+        m_currentNamespace = Utils::CombineStringList(m_namespaceStack, "::");
     }
 
     void ClangParserContext::PopNamespace()
     {
         m_namespaceStack.pop_back();
-        CalculateFullNamespace(m_namespaceStack, m_currentNamespace);
+        m_currentNamespace = Utils::CombineStringList(m_namespaceStack, "::");
     }
 
     void ClangParserContext::PushStruct(std::string const& name)
     {
         m_structureStack.push_back(name);
-        CalculateFullNamespace(m_structureStack, m_currentStructScope);
+        m_currentStructScope = Utils::CombineStringList(m_structureStack, "::");
     }
 
     void ClangParserContext::PopStruct()
     {
         m_structureStack.pop_back();
+        m_currentStructScope = Utils::CombineStringList(m_structureStack, "::");
     }
 
     std::vector<std::string> ClangParserContext::GetStructScopes()
@@ -716,11 +663,14 @@ namespace SE::BuildTool
                 continue;
             }
 
+            std::string const fullTargetName = pending.targetType.fullName;
+
+
             TemplateTypeData const* pTemplateType = nullptr;
             for (auto const& templateType : m_TemplateTypes)
             {
-                std::string const fullTemplateName = GetFullTypeName(templateType.type->namespaceScopeList, templateType.type->structScopeList, templateType.type->name);
-                if (pending.targetType.name == fullTemplateName || pending.targetType.name == templateType.type->name || GetUnqualifiedTypeName(pending.targetType.name) == templateType.type->name)
+                std::string const fullTemplateName = CodeGeneratorUtils::GetFullNativeName(templateType.type->namespaceScopeList, templateType.type->structScopeList, templateType.type->name);
+                if (fullTargetName == fullTemplateName)
                 {
                     pTemplateType = &templateType;
                     break;
@@ -729,20 +679,19 @@ namespace SE::BuildTool
 
             if (pTemplateType == nullptr)
             {
-                LogError("SE_TYPEDEF target template type ({0}) was not found for typedef ({1})", pending.targetType.name, pending.name);
+                LogError("SE_TYPEDEF target template type ({0}) was not found for typedef ({1})", pending.targetType.fullName, pending.name);
                 return false;
             }
 
-            auto type = InstantiateTemplateType(this, *pTemplateType->type, pending);
+            std::unique_ptr<TypeInfoStruct> type = InstantiateTemplateType(this, *pTemplateType->type, pending);
             if (!type)
             {
                 return false;
             }
 
-            std::string const fullAliasName = GetFullTypeName(pending.namespaceScopeList, pending.structScopeList, pending.name);
             if (pDatabase->IsTypeRegistered(type->typeID))
             {
-                LogError("SE_TYPEDEF typedef ({0}) generated a duplicate type ({1})", pending.name, fullAliasName);
+                LogError("SE_TYPEDEF typedef ({0}) generated a duplicate type ({1})", pending.name, fullTargetName);
                 return false;
             }
 
@@ -751,6 +700,24 @@ namespace SE::BuildTool
 
         m_TypeDefs.clear();
         return true;
+    }
+
+    void ClangParserContext::UpdateStructPod()
+    {
+        std::vector<TypeID> stack;
+
+        std::vector<TypeInfoBase*> allTypes = pDatabase->GetAllTypes();
+        for (auto* type : allTypes)
+        {
+            if (!type->IsFlag(TypeInfoBase::Flag::IsClassStruct))
+            {
+                continue;
+            }
+
+            stack.clear();
+            auto* structType  = static_cast<TypeInfoStruct*>(type);
+            structType->isPod = structType->isStruct && ClangUtils::CalculateStructureIsPod(*pDatabase, *structType, stack);
+        }
     }
 
     bool ClangParserContext::CheckForOrphanedReflectionMacros() const

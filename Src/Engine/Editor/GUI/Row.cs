@@ -33,7 +33,7 @@ namespace SE.Editor.GUI
                 Rectangle highlight = ScreenBounds;
                 Color color = Style.Current.BackgroundHighlighted;
                 color.A *= 0.7f;
-                Render2D.FillRectangle(ref highlight, ref color);
+                Render2D.FillRectangle(highlight, color);
             }
 
             int count = Math.Min(values.Length, table.Columns.Count);
@@ -46,7 +46,7 @@ namespace SE.Editor.GUI
                 if (BackgroundColors != null && index < BackgroundColors.Length && BackgroundColors[index].A > 0.0f)
                 {
                     Color background = BackgroundColors[index];
-                    Render2D.FillRectangle(ref cell, ref background);
+                    Render2D.FillRectangle(cell, background);
                 }
 
                 string text = values[index] == null ? string.Empty : column.FormatValue?.Invoke(values[index]!) ?? values[index]!.ToString() ?? string.Empty;
@@ -63,7 +63,7 @@ namespace SE.Editor.GUI
                 {
                     Rectangle textBounds = new Rectangle(cell.X + 4.0f + leftDepthMargin, cell.Y, MathF.Max(0.0f, cell.Width - 8.0f - leftDepthMargin), cell.Height);
                     Color color = Style.Current.Foreground;
-                    Render2D.RenderText(font, text, ref textBounds, ref color, column.CellAlignment, TextAlignment.Center, TextWrapping.NoWrap);
+                    Render2D.RenderText(font, text, textBounds, color, column.CellAlignment, TextAlignment.Center, TextWrapping.NoWrap);
                 }
                 x += width;
             }
@@ -155,8 +155,8 @@ namespace SE.Editor.GUI
             }
 
             Color color = IsMouseOver ? Style.Current.Foreground : Style.Current.ForegroundDisabled;
-            Render2D.DrawLine(ref first, ref middle, ref color, 1.0f);
-            Render2D.DrawLine(ref middle, ref last, ref color, 1.0f);
+            Render2D.DrawLine(first, middle, color, 1.0f);
+            Render2D.DrawLine(middle, last, color, 1.0f);
         }
     }
 

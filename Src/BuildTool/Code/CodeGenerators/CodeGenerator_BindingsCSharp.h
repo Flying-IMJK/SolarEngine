@@ -5,13 +5,16 @@
 // Uses direct string building instead of Mustache templates for complex generation logic.
 
 #include "CodeGenerator_BindingsModel.h"
+#include "CodeGenerator_BindingsTypeMap.h"
+#include "../Database/TypeDatabase.h"
 
 namespace SE::BuildTool
 {
     class BindingsCSharpGenerator
     {
     public:
-        BindingsCSharpGenerator() = default;
+        BindingsCSharpGenerator(TypeDatabase const& database, std::vector<GeneratedFile>* generatedFiles = nullptr)
+            : m_Database(database), m_GeneratedFiles(generatedFiles) {}
 
         /// Generate C# bindings for all items in the header.
         bool Generate(const BindingsHeaderInfo& headerInfo,
@@ -21,10 +24,8 @@ namespace SE::BuildTool
         /// signatures but not generated as first-class binding types yet.
         bool GenerateNativeTypeStubs(const std::vector<BindingsHeaderInfo>& headers);
 
-        /// Generate binary module assembly info (.Gen.cs).
-        bool GenerateBinaryModuleAssemblyInfo(const BinaryModuleInfo& module);
-
-        std::string_view GetErrorMessage() const { return m_errorMessage.c_str(); }
+        /// Normalizes a C++ default-value expression (namespaces, nullptr) to C#.
+        static std::string NormalizeCSharpDefaultValue(const TypeInfoParam& param);
 
     private:
         // ---- Per-type generation methods ----
@@ -61,12 +62,34 @@ namespace SE::BuildTool
 
         // ---- Helpers ----
 
+        std::string BuildCSharpParams(const TypeInfoFunc& fn, bool forPublic);
+        bool IsCSharpOptionalConstant(const TypeInfoParam& param) const;
+        std::string BuildCSharpInteropParams(const TypeInfoStruct& cls, const TypeInfoFunc& fn);
+        std::string BuildCSharpCallArgs(const TypeInfoStruct& cls, const TypeInfoFunc& fn, bool isInterop,
+                                        std::string* preCall = nullptr, std::string* postCall = nullptr,
+                                        std::string* cleanup = nullptr);
 
-        std::string BuildCSharpParams(const TypeInfoFunc& fn, bool forPublic) const;
-        std::string BuildCSharpInteropParams(const TypeInfoStruct& cls, const TypeInfoFunc& fn) const;
-        std::string BuildCSharpCallArgs(const TypeInfoStruct& cls, const TypeInfoFunc& fn, bool isInterop) const;
+        // C# ABI layout translation for interop-struct fields.
+        std::string GetCSharpStructAbiFieldType(const TypeInfo& cppType, std::string_view marshalAs = {}) const;
+        std::string GetCSharpCollectionCountExpression(const TypeInfo& cppType, const std::string& expression) const;
+        std::string GetCSharpStructFieldFromAbi(const TypeInfo& cppType, const std::string& expression, std::string_view marshalAs = {}) const;
+        std::string GetCSharpStructFieldToAbi(const TypeInfo& cppType, const std::string& expression, std::string_view marshalAs = {}) const;
 
-        mutable std::string m_errorMessage;
+        CSharpTypeConversion ResolveConversion(const TypeInfo& cppType, std::string_view marshalAs = {},
+                                               BindingUseSite useSite = BindingUseSite::Parameter,
+                                               BindingDirection direction = BindingDirection::In) const;
+        std::string GetCSharpPublicType(const TypeInfo& cppType, std::string_view marshalAs = {}) const;
+        std::string GetCSharpFullTypeName(const TypeID& typeID) const;
+        std::string GetCSharpFromInterop(const TypeInfo& cppType, const std::string& expression, std::string_view marshalAs = {}) const;
+        std::string GetCSharpToInterop(const TypeInfo& cppType, const std::string& expression, std::string_view marshalAs = {}) const;
+        bool UsePassByReference(const TypeInfo& cppType, std::string_view marshalAs = {}) const;
+        std::string GetCSharpParamMarshalAttribute(const TypeInfo& cppType, const std::string& paramName,
+                                                   std::string_view marshalAs = {},
+                                                   BindingDirection direction = BindingDirection::In) const;
+        std::string GetCSharpReturnMarshalAttribute(const TypeInfo& cppType, std::string_view marshalAs = {}) const;
+
+        TypeDatabase const& m_Database;
+        std::vector<GeneratedFile>* m_GeneratedFiles;
     };
 
 } // namespace SE::BuildTool

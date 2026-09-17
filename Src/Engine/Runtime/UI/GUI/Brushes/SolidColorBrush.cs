@@ -20,7 +20,7 @@ namespace SE.GUI
         public void Draw(Rectangle bounds, Color color)
         {
             Color tint = Color * color;
-            Render2D.FillRectangle(ref bounds, ref tint);
+            Render2D.FillRectangle(bounds, tint);
         }
     }
 }
