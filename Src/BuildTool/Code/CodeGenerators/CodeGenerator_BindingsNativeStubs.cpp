@@ -368,19 +368,18 @@ namespace SE::BuildTool
                 if (!cls->APIInBuildMapType.empty())
                     AddAvailableFullType(availableTypes, cls->APIInBuildMapType);
                 else
-                    AddAvailableType(availableTypes, CodeGeneratorUtils::GetFullCSNameSpaceName(cls->namespaceScopeList),
-                        cls->APIName.empty() ? cls->name : cls->APIName);
+                    AddAvailableFullType(availableTypes, GetManagedTypeName(*cls));
             }
             for (auto& en : header.enums)
             {
-                AddAvailableType(availableTypes, CodeGeneratorUtils::GetFullCSNameSpaceName(en->namespaceScopeList), en->name);
+                AddAvailableFullType(availableTypes, GetManagedTypeName(*en));
             }
             for (auto& iface : header.interfaces)
             {
                 if (!iface->APIInBuildMapType.empty())
                     AddAvailableFullType(availableTypes, iface->APIInBuildMapType);
                 else
-                    AddAvailableType(availableTypes, CodeGeneratorUtils::GetFullCSNameSpaceName(iface->namespaceScopeList), iface->name);
+                    AddAvailableFullType(availableTypes, GetManagedTypeName(*iface));
             }
         }
 

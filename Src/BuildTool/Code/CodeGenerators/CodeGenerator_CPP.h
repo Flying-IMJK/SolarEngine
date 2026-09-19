@@ -29,10 +29,10 @@ namespace SE::BuildTool
 
         // File specific functions
         void GenerateTypeInfoFileHeader(HeaderInfo const &hdr, std::string_view solutionPath);
-        void AppendAPIIncludesIfNeeded();
         void GenerateModuleCodeFile(TypeDatabase const&               database,
                                     ProjectInfo const&                prj,
-                                    std::vector<TypeInfoBase*> const& typesInModule);
+                                    std::vector<TypeInfoBase*> const& typesInModule,
+                                    std::vector<std::string> const&   expectedFiles);
 
         // Utils
         bool SaveStreamToFile(std::string const& filePath, std::stringstream& stream);
@@ -44,7 +44,6 @@ namespace SE::BuildTool
         std::stringstream m_moduleFile;
         std::stringstream m_engineTypeRegistrationFile;
         std::stringstream m_toolsTypeRegistrationFile;
-        bool m_typeInfoFileHasBinding = false;
         mutable std::string m_errorMessage;
         std::vector<GeneratedFile> m_generatedFiles;
         std::vector<std::string> m_expectedGeneratedFiles;

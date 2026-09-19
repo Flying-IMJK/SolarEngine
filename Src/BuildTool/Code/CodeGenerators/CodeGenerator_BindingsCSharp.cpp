@@ -158,7 +158,8 @@ namespace SE::BuildTool
     std::string BindingsCSharpGenerator::GetCSharpStructAbiFieldType(const TypeInfo& cppType, std::string_view marshalAs) const
     {
         const CSharpTypeConversion conversion = ResolveConversion(cppType, marshalAs, BindingUseSite::Field);
-        if (conversion.kind == BindingTypeKind::String || conversion.kind == BindingTypeKind::StringView)
+        if (conversion.kind == BindingTypeKind::String || conversion.kind == BindingTypeKind::StringView ||
+            conversion.kind == BindingTypeKind::Collection)
         {
             return "IntPtr";
         }
@@ -192,6 +193,13 @@ namespace SE::BuildTool
         {
             return Utils::String::Format("Interop.StringMarshaller.ToManaged({0})", expression);
         }
+        if (conversion.kind == BindingTypeKind::Collection)
+        {
+            const std::string elementType = GetCSharpPublicType(GetCollectionInfo(cppType).elementType);
+            return Utils::String::Format(
+                "{0} != IntPtr.Zero ? Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr({0}).Target).ToArray<{1}>() : null",
+                expression, elementType);
+        }
         if (cppType.typeID == TypeID("bool"))
         {
             return Utils::String::Format("{0} != 0", expression);
@@ -207,6 +215,12 @@ namespace SE::BuildTool
         const CSharpTypeConversion conversion = ResolveConversion(cppType, marshalAs, BindingUseSite::Field);
         if (conversion.kind == BindingTypeKind::String || conversion.kind == BindingTypeKind::StringView)
             return Utils::String::Format("Interop.StringMarshaller.ManagedToNative.ConvertToUnmanaged({0})", expression);
+        if (conversion.kind == BindingTypeKind::Collection)
+        {
+            return Utils::String::Format(
+                "{0}?.Length > 0 ? ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray({0}), GCHandleType.Weak) : IntPtr.Zero",
+                expression);
+        }
         if (cppType.typeID == TypeID("bool"))
             return Utils::String::Format("{0} ? (byte)1 : (byte)0", expression);
 
@@ -221,19 +235,80 @@ namespace SE::BuildTool
         Utils::String::TrimStart(value);
         Utils::String::TrimEnd(value);
         if (value.empty())
+        {
             return value;
+        }
 
+        // Clang joins source tokens with spaces, including scoped names.
         Utils::String::ReplaceAll(value, " :: ", "::");
         Utils::String::ReplaceAll(value, ":: ", "::");
         Utils::String::ReplaceAll(value, " ::", "::");
-        Utils::String::ReplaceAll(value, "nullptr", "null");
-        Utils::String::ReplaceAll(value, "NULL", "null");
+
+        if (value == "nullptr" || value == "NULL" ||
+            value == "String::Empty" || value == "StringAnsi::Empty" ||
+            value == "StringAnsiView::Empty" || value == "StringView::Empty" ||
+            value == "SE::StringView::Empty" || value == "::SE::StringView::Empty")
+        {
+            return "null";
+        }
+
+        if (value == "Max_int8") return "sbyte.MaxValue";
+        if (value == "Max_uint8") return "byte.MaxValue";
+        if (value == "Max_int16") return "short.MaxValue";
+        if (value == "Max_uint16") return "ushort.MaxValue";
+        if (value == "Max_int32") return "int.MaxValue";
+        if (value == "Max_uint32") return "uint.MaxValue";
+        if (value == "Max_int64") return "long.MaxValue";
+        if (value == "Max_uint64") return "ulong.MaxValue";
+        if (value == "Max_float") return "float.MaxValue";
+        if (value == "Max_double") return "double.MaxValue";
+
+
+        // clang tokenization may separate the macro tokens as SE_TEXT ( "..." ).
+        constexpr size_t textMacroLength = sizeof("SE_TEXT") - 1;
+        if (value.compare(0, textMacroLength, "SE_TEXT") == 0)
+        {
+            const size_t openParen = value.find_first_not_of(" \t\r\n", textMacroLength);
+            if (openParen != std::string::npos && value[openParen] == '(')
+            {
+                const size_t literalStart = value.find_first_not_of(" \t\r\n", openParen + 1);
+                if (literalStart != std::string::npos && value[literalStart] == '"')
+                {
+                    size_t literalEnd = literalStart + 1;
+                    while (literalEnd < value.size())
+                    {
+                        if (value[literalEnd] == '\\')
+                        {
+                            literalEnd += 2;
+                            continue;
+                        }
+                        if (value[literalEnd] == '"')
+                            break;
+                        ++literalEnd;
+                    }
+                    if (literalEnd < value.size() && value[literalEnd] == '"')
+                    {
+                        const size_t closeParen = value.find_first_not_of(" \t\r\n", literalEnd + 1);
+                        if (closeParen != std::string::npos && value[closeParen] == ')' &&
+                            value.find_first_not_of(" \t\r\n", closeParen + 1) == std::string::npos)
+                        {
+                            return value.substr(literalStart, literalEnd - literalStart + 1);
+                        }
+                    }
+                }
+            }
+        }
 
         int pos;
         while ((pos = Utils::String::Find(value, "::")) != INVALID_INDEX)
+        {
             value = value.substr(0, pos) + "." + value.substr(pos + 2);
+        }
+
         if (Utils::String::StartsWith(value, "Colors."))
+        {
             value = "Color." + value.substr(7);
+        }
         return value;
     }
 
@@ -269,9 +344,10 @@ namespace SE::BuildTool
                         params += Utils::String::Format("{0} ", marshalAttr);
                 }
                 std::string defaultValue;
-                if (forPublic && !fn.params[i].defaultValue.empty() && direction == BindingDirection::In &&
-                    IsCSharpOptionalConstant(fn.params[i]))
+                if (forPublic && !fn.params[i].defaultValue.empty() && direction == BindingDirection::In && IsCSharpOptionalConstant(fn.params[i]))
+                {
                     defaultValue = Utils::String::Format(" = {0}", NormalizeCSharpDefaultValue(fn.params[i]));
+                }
                 params += Utils::String::Format("{0} {1}{2}", type, MakeCSharpIdentifier(fn.params[i].name), defaultValue);
             }
         }
@@ -282,6 +358,30 @@ namespace SE::BuildTool
     {
         if (param.defaultValue.empty())
             return false;
+
+        std::string nativeValue = param.defaultValue;
+        Utils::String::TrimStart(nativeValue);
+        Utils::String::TrimEnd(nativeValue);
+
+
+        if (nativeValue == "MAX_int8" || 
+            nativeValue == "MAX_int16" || 
+            nativeValue == "MAX_uint16" || 
+            nativeValue == "MAX_int32" || 
+            nativeValue == "MAX_uint32" || 
+            nativeValue == "MAX_int64" ||
+            nativeValue == "MAX_uint64" ||
+            nativeValue == "MAX_float" ||
+            nativeValue == "MAX_double")
+        {
+            return true;
+        }
+
+        // Preserve the existing overload for native string macro defaults.
+        if (Utils::String::StartsWith(param.defaultValue, "SE_TEXT"))
+        {
+            return false;
+        }
 
         const BindingTypeSemantics semantics = ResolveBindingTypeSemantics(m_Database, param.type, param.marshalAs);
         if (semantics.isEnum)
@@ -622,10 +722,19 @@ namespace SE::BuildTool
             GenerateCSharpWrapperFunction(cls, setter->function, assemblyName, output);
         }
 
-        const std::string publicType = getter
-            ? GetCSharpPublicType(getter->function.returnType, getter->function.marshalAs)
-            : GetCSharpPublicType(setter->function.params[0].type, setter->function.params[0].marshalAs);
-        const AccessLevel propertyAccess = getter ? getterAccess : setterAccess;
+        // NoProxy suppresses only the public facade. The interop declarations
+        // above remain available to handwritten code in the generated assembly.
+        const BindingCallable* publicGetter = getter && !getter->function.APINoProxy ? getter : nullptr;
+        const BindingCallable* publicSetter = setter && !setter->function.APINoProxy ? setter : nullptr;
+        if (!publicGetter && !publicSetter)
+        {
+            return;
+        }
+
+        const std::string publicType = publicGetter
+            ? GetCSharpPublicType(publicGetter->function.returnType, publicGetter->function.marshalAs)
+            : GetCSharpPublicType(publicSetter->function.params[0].type, publicSetter->function.params[0].marshalAs);
+        const AccessLevel propertyAccess = publicGetter ? getterAccess : setterAccess;
         const std::string propertyAccessText = CodeGeneratorUtils::GetAccessString(propertyAccess);
         AppendCSharpComment(output, "        ", comment);
         if (IsValidCSharpAttributeList(attributes))
@@ -633,9 +742,9 @@ namespace SE::BuildTool
         output += Utils::String::Format("        {0} {1}{2} {3}\n        {{\n", propertyAccessText,
             isStatic ? "static " : "", publicType, MakeCSharpIdentifier(publicName));
 
-        if (getter)
+        if (publicGetter)
         {
-            const TypeInfoFunc& getterFunction = getter->function;
+            const TypeInfoFunc& getterFunction = publicGetter->function;
             TypeInfo const getterType = getterFunction.returnType;
             const CollectionInfo getterCollection = GetCollectionInfo(getterType);
             const bool usesOutResult = BuildFunctionAbiPlan(m_Database, cls, getterFunction).usesHiddenResult;
@@ -662,13 +771,13 @@ namespace SE::BuildTool
             }
         }
 
-        if (setter)
+        if (publicSetter)
         {
-            const TypeInfoFunc& setterFunction = setter->function;
+            const TypeInfoFunc& setterFunction = publicSetter->function;
             TypeInfo setterType = setterFunction.params[0].type;
 
-            const bool usesPointer = UsePassByReference(setterType, setterFunction.params[0].marshalAs);
-            const std::string setterModifier = getter && setterAccess != propertyAccess
+            const bool usesPointer = GetBindingDirection(setterFunction.params[0]) == BindingDirection::Ref;
+            const std::string setterModifier = publicGetter && setterAccess != propertyAccess
                 ? CodeGeneratorUtils::GetAccessString(setterAccess) + " " : "";
             const std::string instanceArg = setterFunction.isStatic ? "" : "__unmanagedPtr";
             const CollectionInfo setterCollection = GetCollectionInfo(setterType);
@@ -683,11 +792,12 @@ namespace SE::BuildTool
             else
             {
                 std::string setterArgs = instanceArg;
-                if (!setterArgs.empty())
-                    setterArgs += ", ";
+                if (!setterArgs.empty()) setterArgs += ", ";
                 setterArgs += toInterop;
                 if (setterCollection.HasRuntimeCount())
+                {
                     setterArgs += Utils::String::Format(", {0}", GetCSharpCollectionCountExpression(setterType, "value"));
+                }
                 if (setterCollection.kind == CollectionKind::Fixed)
                 {
                     output += Utils::String::Format(
@@ -1135,7 +1245,24 @@ namespace SE::BuildTool
         output += "                return result;\n";
         output += "            }\n\n";
 
-        output += Utils::String::Format("            public static void Free({0}Internal unmanaged) {{ }}\n\n", cls.name);
+        output += Utils::String::Format("            public static void Free({0}Internal unmanaged)\n            {{\n", cls.name);
+        for (auto& field : cls.fields)
+        {
+            if (field.isStatic) continue;
+            const BindingTypeSemantics semantics = ResolveBindingTypeSemantics(m_Database, field.type, field.marshalAs);
+            if (semantics.kind == BindingTypeKind::Collection && semantics.collection.kind != CollectionKind::Fixed)
+            {
+                output += Utils::String::Format(
+                    "                if (unmanaged.{0} != IntPtr.Zero)\n"
+                    "                {{\n"
+                    "                    ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{0});\n"
+                    "                    Unsafe.As<ManagedArray>(handle.Target).Free();\n"
+                    "                    handle.Free();\n"
+                    "                }}\n",
+                    field.name);
+            }
+        }
+        output += "            }\n\n";
 
         output += "            public static class ManagedToNative\n            {\n";
         output += Utils::String::Format("                public static {0} ConvertToManaged({0}Internal unmanaged) => {0}Marshaller.ConvertToManaged(unmanaged);\n", cls.name);
@@ -1157,7 +1284,7 @@ namespace SE::BuildTool
         output += Utils::String::Format("                public {0}Internal ToUnmanaged() {{ unmanaged = {0}Marshaller.ConvertToUnmanaged(managed); return unmanaged; }}\n", cls.name);
         output += Utils::String::Format("                public void FromUnmanaged({0}Internal unmanaged) => this.unmanaged = unmanaged;\n", cls.name);
         output += Utils::String::Format("                public {0} ToManaged()\n                {{\n                    managed = {0}Marshaller.ConvertToManaged(unmanaged);\n                    return managed;\n                }}\n", cls.name);
-        output += "                public void Free() { }\n            }\n";
+        output += Utils::String::Format("                public void Free() => {0}Marshaller.Free(unmanaged);\n            }}\n", cls.name);
 
         output += "        }\n\n";
     }
@@ -1257,7 +1384,7 @@ namespace SE::BuildTool
         for (int i = 0; i < cls.functions.size(); ++i)
         {
             TypeInfoFunc const& fn = cls.functions[i];
-            if (fn.APINoProxy || fn.APIIsPropertie) continue;
+            if (fn.APIIsPropertie) continue;
             GenerateCSharpWrapperFunction(cls, fn, assemblyName, output);
         }
 
@@ -1294,6 +1421,41 @@ namespace SE::BuildTool
     // Structure generation
     // -------------------------------------------------------------------------
 
+    void BindingsCSharpGenerator::OpenCSharpContainingTypeScopes(const TypeInfoBase& type, std::string& output) const
+    {
+        std::vector<std::string> parentScopes;
+        parentScopes.reserve(type.structScopeList.size());
+        for (const std::string& scopeName : type.structScopeList)
+        {
+            const std::string fullNativeName = CodeGeneratorUtils::GetFullNativeName(
+                type.namespaceScopeList, parentScopes, scopeName);
+            TypeInfoBase const* declaration = m_Database.GetType(TypeID(fullNativeName));
+            ENGINE_ASSERT(declaration && declaration->IsFlag(TypeInfoBase::Flag::IsClassStruct));
+
+            auto const* containingType = static_cast<TypeInfoStruct const*>(declaration);
+            const std::string managedName = containingType->APIName.empty() ? containingType->name : containingType->APIName;
+            const std::string typeKeyword = containingType->APIIsInterface
+                ? "interface" : (containingType->isStruct ? "struct" : "class");
+            const std::string abstractKeyword = !containingType->APIIsInterface && containingType->APIIsAbstract ? "abstract " : "";
+            const std::string staticKeyword = !containingType->APIIsInterface && containingType->APIIsStatic ? "static " : "";
+            const std::string sealedKeyword = !containingType->APIIsInterface && containingType->APIIsSealed ? "sealed " : "";
+
+            output += Utils::String::Format("    public unsafe {0}{1}{2}partial {3} {4}\n    {{\n",
+                abstractKeyword,
+                staticKeyword,
+                sealedKeyword,
+                typeKeyword,
+                MakeCSharpIdentifier(managedName));
+            parentScopes.push_back(scopeName);
+        }
+    }
+
+    void BindingsCSharpGenerator::CloseCSharpContainingTypeScopes(const TypeInfoBase& type, std::string& output)
+    {
+        for (size_t i = 0; i < type.structScopeList.size(); ++i)
+            output += "    }\n";
+    }
+
     void BindingsCSharpGenerator::GenerateCSharpStructure(const TypeInfoStruct& cls, const std::string& assemblyName,
                                                             std::string& output)
     {
@@ -1302,6 +1464,8 @@ namespace SE::BuildTool
         {
             output += Utils::String::Format("namespace {0}\n{{\n", nsName);
         }
+
+        OpenCSharpContainingTypeScopes(cls, output);
 
         // Marshaller (must come before the struct for CustomMarshaller attribute)
         GenerateCSharpStructMarshaller(cls, output);
@@ -1349,7 +1513,7 @@ namespace SE::BuildTool
         // Functions - LibraryImport + public wrappers
         for (auto& fn : cls.functions)
         {
-            if (!fn.APINoProxy && !fn.APIIsPropertie)
+            if (!fn.APIIsPropertie)
                 GenerateCSharpWrapperFunction(cls, fn, assemblyName, output);
         }
 
@@ -1359,10 +1523,9 @@ namespace SE::BuildTool
                 GenerateCSharpWrapperFunctionCall(cls, fn, output);
         }
 
-        // Default property
-        output += Utils::String::Format("        public static {0} Default => new {0}();\n\n", cls.name);
-
         output += "    }\n";
+
+        CloseCSharpContainingTypeScopes(cls, output);
 
         if (!nsName.empty())
         {
@@ -1505,6 +1668,7 @@ namespace SE::BuildTool
         output += "#pragma warning disable CS8603\n";
         output += "#pragma warning disable CS8625\n";
         output += "using System;\n";
+        output += "using System.ComponentModel;\n";
         output += "using System.Runtime.CompilerServices;\n";
         output += "using System.Runtime.InteropServices;\n";
         output += "using System.Runtime.InteropServices.Marshalling;\n";

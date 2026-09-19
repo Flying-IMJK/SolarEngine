@@ -10,6 +10,7 @@
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+#include <string_view>
 
 
 
@@ -19,6 +20,74 @@ namespace SE::BuildTool
 {
     namespace
     {
+        struct CommentScanState
+        {
+            bool inBlockComment = false;
+        };
+
+        std::string GetCodeWithoutComments(std::string_view line, CommentScanState &state)
+        {
+            std::string code;
+            code.reserve(line.size());
+
+            for (size_t i = 0; i < line.size();)
+            {
+                if (state.inBlockComment)
+                {
+                    if (i + 1 < line.size() && line[i] == '*' && line[i + 1] == '/')
+                    {
+                        state.inBlockComment = false;
+                        i += 2;
+                    }
+                    else
+                    {
+                        i++;
+                    }
+                    continue;
+                }
+
+                if (i + 1 < line.size() && line[i] == '/' && line[i + 1] == '/')
+                {
+                    break;
+                }
+
+                if (i + 1 < line.size() && line[i] == '/' && line[i + 1] == '*')
+                {
+                    state.inBlockComment = true;
+                    i += 2;
+                    continue;
+                }
+
+                if (line[i] == '"' || line[i] == '\'')
+                {
+                    char const quote = line[i++];
+                    bool escaped = false;
+                    while (i < line.size())
+                    {
+                        char const character = line[i++];
+                        if (escaped)
+                        {
+                            escaped = false;
+                        }
+                        else if (character == '\\')
+                        {
+                            escaped = true;
+                        }
+                        else if (character == quote)
+                        {
+                            break;
+                        }
+                    }
+                    code.push_back(' ');
+                    continue;
+                }
+
+                code.push_back(line[i++]);
+            }
+
+            return code;
+        }
+
         bool SortProjectsByDependencies(std::vector<ProjectInfo> &projects)
         {
             int const numProjects = projects.size();
@@ -296,30 +365,22 @@ namespace SE::BuildTool
 
         // Check for the SE registration macros
         bool exportMacroFound = false;
-        uint32_t openCommentBlock = 0;
+        CommentScanState commentState;
 
         for (auto const &line : headerFileContents)
         {
-            // Check for comment blocks
-            if (Utils::String::Find(line, "/*") != INVALID_INDEX)
-                openCommentBlock++;
-            if (Utils::String::Find(line, "*/") != INVALID_INDEX)
-                openCommentBlock--;
+            std::string const codeLine = GetCodeWithoutComments(line, commentState);
 
-            if (openCommentBlock == 0)
+            if (!codeLine.empty())
             {
-                // Check for line comment
-                auto const foundCommentIdx = Utils::String::Find(line, "//");
-
                 // Check for registration macros
                 for (auto i = 0u; i < (uint32_t)MacroTypeEnum::NumMacros; i++)
                 {
                     MacroTypeEnum const macro = (MacroTypeEnum)i;
-                    auto const          foundMacroIdx    = Utils::String::Find(line, MarkMacro::GetMarkMacroText(macro));
+                    auto const          foundMacroIdx    = Utils::String::Find(codeLine, MarkMacro::GetMarkMacroText(macro));
                     bool const macroExists = foundMacroIdx != INVALID_INDEX;
-                    bool const uncommentedMacro = foundCommentIdx == INVALID_INDEX || foundCommentIdx > foundMacroIdx;
 
-                    if (macroExists && uncommentedMacro)
+                    if (macroExists)
                     {
                         // We should never have registration macros and the export definition in the same file
                         if (exportMacroFound)
@@ -337,8 +398,8 @@ namespace SE::BuildTool
                 // Check header for the module export definition
                 if (isModuleAPIHeader)
                 {
-                    auto const foundExportIdx0 = Utils::String::Find(line, "__declspec");
-                    auto const foundExportIdx1 = Utils::String::Find(line, "dllexport");
+                    auto const foundExportIdx0 = Utils::String::Find(codeLine, "__declspec");
+                    auto const foundExportIdx1 = Utils::String::Find(codeLine, "dllexport");
                     if (foundExportIdx0 != INVALID_INDEX && foundExportIdx1 != INVALID_INDEX)
                     {
                         if (!exportMacroName.empty())
@@ -348,11 +409,11 @@ namespace SE::BuildTool
                         }
                         else
                         {
-                            auto defineIdx = Utils::String::Find(line, "#define");
+                            auto defineIdx = Utils::String::Find(codeLine, "#define");
                             if (defineIdx != INVALID_INDEX)
                             {
                                 defineIdx += 8;
-                                exportMacroName = line.substr(defineIdx, foundExportIdx0 - 1 - defineIdx);
+                                exportMacroName = codeLine.substr(defineIdx, foundExportIdx0 - 1 - defineIdx);
                             }
 
                             return HeaderProcessResult::IgnoreHeader;

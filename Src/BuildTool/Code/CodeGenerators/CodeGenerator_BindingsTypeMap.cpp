@@ -203,7 +203,9 @@ namespace SE::BuildTool
             {
                 std::string chain;
                 for (auto const& item : marshalStack)
+                {
                     chain += (chain.empty() ? "" : " -> ") + item;
+                }
                 chain += (chain.empty() ? "" : " -> ") + replacement;
                 return Unsupported(type, "SEBIND003", "MarshalAs cycle: " + chain);
             }
@@ -215,14 +217,22 @@ namespace SE::BuildTool
         }
 
         if (type.isMoveRef)
+        {
             return Unsupported(type, "SEBIND010", "rvalue references are not supported by the P0 bindings ABI");
+        }
         const int pointerDepth = type.pointerDepth > 0 ? type.pointerDepth : (type.isPointer ? 1 : 0);
         if (pointerDepth > 1)
+        {
             return Unsupported(type, "SEBIND004", "multi-level pointers require an explicit pointer policy");
+        }
         if (IsWeakOrSoftReference(type))
+        {
             return Unsupported(type, "SEBIND001", "weak and soft object references require a dedicated lifetime policy");
+        }
         if (IsExplicitlyUnsupportedFamily(type))
+        {
             return Unsupported(type, "SEBIND001", "type family is outside the P0 capability matrix");
+        }
 
         BindingTypeSemantics result;
         result.sourceType = type;
@@ -236,9 +246,13 @@ namespace SE::BuildTool
         {
             BindingTypeSemantics element = ResolveSemanticsImpl(database, collection.elementType, {}, marshalStack);
             if (!element.IsSupported())
+            {
                 return Unsupported(type, element.diagnosticCode.c_str(), "unsupported collection element: " + element.diagnostic);
+            }
             if (collection.kind == CollectionKind::Fixed && element.kind != BindingTypeKind::Blittable)
+            {
                 return Unsupported(type, "SEBIND006", "fixed arrays require a blittable P0 element type");
+            }
             result.kind = BindingTypeKind::Collection;
             result.collection = std::move(collection);
             return result;
@@ -248,10 +262,14 @@ namespace SE::BuildTool
         {
             TypeInfoBase const* target = database.ResolveTypeDeclaration(type.genericityArgs[0]);
             if (!target || !target->IsFlag(TypeInfoBase::Flag::IsClassStruct))
+            {
                 return Unsupported(type, "SEBIND005", "object reference target declaration could not be resolved");
+            }
             auto const* targetStruct = static_cast<TypeInfoStruct const*>(target);
             if (targetStruct->APIIsInterface)
+            {
                 return Unsupported(type, "SEBIND001", "interface object references are not supported in P0");
+            }
             result.kind = BindingTypeKind::ObjectRef;
             result.declaration = target;
             result.canonicalType = target->typeID;
@@ -310,17 +328,25 @@ namespace SE::BuildTool
             return result;
         }
         if (!declaration->IsFlag(TypeInfoBase::Flag::IsClassStruct))
+        {
             return Unsupported(type, "SEBIND001", "declaration is not an enum, class, or struct");
+        }
 
         auto const* structType = static_cast<TypeInfoStruct const*>(declaration);
         if (!structType->APIMarshalAs.empty())
+        {
             return ResolveSemanticsImpl(database, type, structType->APIMarshalAs, marshalStack);
+        }
         if (structType->APIIsInterface)
+        {
             return Unsupported(type, "SEBIND001", "interfaces require a dedicated interop contract");
+        }
         if (!structType->isStruct)
         {
             if (pointerDepth == 0)
+            {
                 return Unsupported(type, "SEBIND004", "native class values require an explicit pointer semantic");
+            }
             result.kind = structType->isScriptingObject ? BindingTypeKind::ScriptingObject : BindingTypeKind::NativeObject;
             return result;
         }

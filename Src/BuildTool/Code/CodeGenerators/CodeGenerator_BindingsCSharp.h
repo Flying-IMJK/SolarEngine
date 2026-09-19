@@ -62,6 +62,9 @@ namespace SE::BuildTool
 
         // ---- Helpers ----
 
+        void OpenCSharpContainingTypeScopes(const TypeInfoBase& type, std::string& output) const;
+        static void CloseCSharpContainingTypeScopes(const TypeInfoBase& type, std::string& output);
+
         std::string BuildCSharpParams(const TypeInfoFunc& fn, bool forPublic);
         bool IsCSharpOptionalConstant(const TypeInfoParam& param) const;
         std::string BuildCSharpInteropParams(const TypeInfoStruct& cls, const TypeInfoFunc& fn);

@@ -11,6 +11,7 @@ namespace SE::BuildTool
         result.function.uniqueName = fn.uniqueName;
         result.function.entryPoint = fn.entryPoint;
         result.function.access     = fn.access;
+        result.function.APINoProxy = fn.APINoProxy;
         result.function.attributes = fn.attributes;
         result.function.comment    = fn.comment;
         result.function.marshalAs  = fn.marshalAs;
@@ -28,6 +29,7 @@ namespace SE::BuildTool
         result.function.uniqueName = fn.uniqueName;
         result.function.entryPoint = fn.entryPoint;
         result.function.access     = fn.access;
+        result.function.APINoProxy = fn.APINoProxy;
         result.function.attributes = fn.attributes;
         result.function.comment    = fn.comment;
         result.function.marshalAs  = fn.marshalAs;
