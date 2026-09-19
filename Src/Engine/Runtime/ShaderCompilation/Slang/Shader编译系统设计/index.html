@@ -29,6 +29,7 @@
         <a href="#program-declaration">章节概览</a>
         <a href="#program-discovery">Program 发现与校验</a>
         <a href="#entrypoint-parameters">EntryPoint 参数限制</a>
+        <a href="#vertex-input-declaration">顶点输入声明</a>
         <a href="#program-attributes">宏与 Attribute</a>
       </div>
     </details>
@@ -80,6 +81,7 @@
         <a href="#layout-fingerprint">Pipeline Layout Fingerprint</a>
         <a href="#layout-specialization">静态 Specialization</a>
         <a href="#layout-default-resources">资源绑定完整性</a>
+        <a href="#layout-vertex-input">顶点输入运行时契约</a>
       </div>
     </details>
     <details class="nav-tree">
@@ -207,11 +209,11 @@
     <p>缓存身份和原子更新以“完整编译单元”为最小语义单位。Stage Record 只负责定位单个阶段，不能独立参与缓存命名；跨编译调用的增量失效策略后续设计。</p>
   </section>
 
-  <iframe class="module-frame" src="Shader接口.html?sections=program-declaration,variants" data-anchors="program-declaration,program-discovery,entrypoint-parameters,program-attributes,variants,variant-declaration,variant-model,variant-normalization" title="Shader 接口" loading="eager"></iframe>
+  <iframe class="module-frame" src="Shader接口.html?sections=program-declaration,variants" data-anchors="program-declaration,program-discovery,entrypoint-parameters,vertex-input-declaration,program-attributes,variants,variant-declaration,variant-model,variant-normalization" title="Shader 接口" loading="eager"></iframe>
 
   <iframe class="module-frame" src="编译.html?sections=compile-request,compile-flow" data-anchors="compile-request,compile-result-transaction,target-key,target-mapping,compile-flow,discovery-environment,compile-transaction" title="编译请求与编译流程" loading="eager"></iframe>
 
-  <iframe class="module-frame" src="运行时.html?sections=layout-binding" data-anchors="layout-binding,layout-summary,layout-root-model,layout-address-spaces,layout-reflection-graph,layout-relative-offsets,layout-uniform-storage,layout-arrays,layout-block-arrays,layout-serialization,layout-type-records,layout-range-mapping,layout-slang-ir-mapping,layout-binding-path,layout-fingerprint,layout-specialization,layout-default-resources" title="反射 Layout 与运行时名称绑定" loading="eager"></iframe>
+  <iframe class="module-frame" src="运行时.html?sections=layout-binding" data-anchors="layout-binding,layout-summary,layout-root-model,layout-address-spaces,layout-reflection-graph,layout-relative-offsets,layout-uniform-storage,layout-arrays,layout-block-arrays,layout-serialization,layout-type-records,layout-range-mapping,layout-slang-ir-mapping,layout-binding-path,layout-fingerprint,layout-specialization,layout-default-resources,layout-vertex-input" title="反射 Layout 与运行时名称绑定" loading="eager"></iframe>
 
   <iframe class="module-frame" src="编译.html?sections=cache" data-anchors="cache,cache-structure,cache-keys,cache-example,cache-constraints" title="SLC2 Shader Cache" loading="eager"></iframe>
 
@@ -225,7 +227,7 @@
       <li>定义 Slang-only 编译请求、结果与 backend 调度边界，新路径不包含 Legacy Shader 分流。</li>
       <li>完成 Slang → SPIR-V → Vulkan Compute Pipeline 的最小闭环。</li>
       <li>实现 Program/Variant Attribute 发现、显式 Variant 过滤和完整排列组合。</li>
-      <li>实现 <code>ShaderProgramLayout</code>、SLC2 v2 和 Texture/Buffer/Sampler 名称绑定。</li>
+      <li>实现 <code>ShaderProgramLayout</code>、SLC2 v3、Program 级稳定顶点缓冲布局、Vertex Stage 输入签名和 Texture/Buffer/Sampler 名称绑定。</li>
       <li>联合链接 VS/PS，创建统一 graphics pipeline layout 和 descriptor sets。</li>
       <li>补齐固定数组下标访问、固定资源数组绑定、UAV、嵌套 ParameterBlock、加速结构和 uniform 字段；无界数组不进入当前或后续既定里程碑。</li>
       <li>建立 SolarEngine Slang 标准库并编写新的 Slang Vulkan Shader 资产；不迁移旧 <code>.shader</code> / HLSL Shader 资产。</li>
@@ -239,7 +241,7 @@
     <ul>
       <li>编译请求只需指定操作系统平台、图形后端和 Shader Model，即可按对应统一编译策略生成 artifact；请求中不存在 API/二进制版本、capability、Optimize、Debug、矩阵或浮点模式覆盖项。</li>
       <li><code>ShaderCompileTarget</code> 平铺 <code>Platform</code>、<code>Backend</code> 和 <code>Model</code>，不包含嵌套 <code>ShaderTargetPlatform</code>。相同三元组生成相同 <code>TargetKey</code>，任一字段变化均生成不同 Key。</li>
-      <li>基线发现以空 Variant 宏集合加载根 Module；依赖 Variant 宏才能出现的 Program、Stage 或宏组声明会产生明确错误。</li>
+      <li>基线发现以空 Variant 宏集合加载根 Module；依赖 Variant 宏才能出现的 Program、Stage、宏组或顶点缓冲布局声明会产生明确错误。</li>
       <li>新编译入口只接受 Slang Shader 资产，不按资产类型、语言字段或资产版本回退到 Legacy 编译器。</li>
       <li><code>SHADER_PROGRAM(ShaderProgramTest, ...)</code> 的根声明通过公共 Slang API <code>DeclReflection::getName()</code> 产生精确的 <code>ProgramId = "ShaderProgramTest"</code>；名称返回 <code>null</code> 或空字符串时编译失败，同一 Shader Resource 中的重名声明被拒绝，重命名后旧身份的 artifact 不再命中。</li>
       <li>实现新增或 SolarEngine 更新内置 Slang 时，compiler-side API 编译/链接探针必须使用工程当前可用的公共头文件与编译库通过；探针覆盖实现实际调用的 Slang API，反射语义另由最小 Shader fixture 验证，运行时不因此链接 Slang。</li>
@@ -249,6 +251,8 @@
       <li>EntryPoint 只允许 varying/system-value 输入输出；任何 EntryPoint uniform/resource 参数都会产生包含入口和参数名称的编译错误。全部可绑定参数必须来自 Module 全局作用域或显式 ConstantBuffer/ParameterBlock。</li>
       <li>反射中出现任何 Push Constant、unknown/unbounded 数组或资源 range，或 ConstantBuffer/ParameterBlock 自身形成数组、被数组直接或间接重复实例化时，当前编译单元失败且不产生 SLC2。</li>
       <li>同一 graphics Program 的全部入口来自同一 linked component 并共享兼容布局。</li>
+      <li>Vertex Input Binding/Element 使用分离声明；Stride、Slot、InputRate/StepRate、Offset/ALIGN 和 PixelFormat 全部通过编译期结构校验。</li>
+      <li>每个 Target × Variant 的非 system-value Vertex 输入签名与 Program 物理 Element 双向匹配；同一 Target 的 Variant 签名稳定，顶点输入不按 Variant 使用情况裁剪。</li>
     </ul>
 
     <h3 id="acceptance-variant">Variant</h3>
@@ -262,7 +266,7 @@
     <h3 id="acceptance-runtime">缓存与运行时</h3>
     <ul>
       <li><code>CompilerBuildTag</code>、Target 和 Variant 均参与完整编译单元身份；source/import 的跨调用精确失效、未请求单元复用与孤儿缓存清理由后续 <code>DependencyIndex</code> 设计处理，不列入当前验收。</li>
-      <li>SLC2 可确定性写入、严格校验并原子替换；失败不会破坏此前有效缓存。</li>
+      <li>SLC2 v3 可确定性写入、严格校验并原子替换；Reader 严格拒绝其他 Major，失败不会破坏此前有效缓存。</li>
       <li><code>ShaderCompileResult</code> 只包含 <code>Status</code>、<code>CompileMessage</code> 和 <code>SLC2Data</code>。成功时消息可以为空或包含 Warning，且数据是完整 UTF-8 JSON SLC2；失败时消息包含 Error 且数据为空，不返回逐单元或部分 Target 结果。</li>
       <li><code>CompileMessage</code> 只在本次实际编译结束后输出日志，不进入 SLC2 或其他持久化数据；缓存命中不重放历史 Warning，<code>TreatWarningsAsErrors</code> 也不重新判定历史编译信息。</li>
       <li>每个 <code>ProgramId × TargetKey × Variant</code> 只保存一份共享 Layout；其全部 Stage Record 均不重复保存 Layout。</li>
@@ -283,6 +287,7 @@
       <li>Vulkan 资源数组元素只改变 <code>dstArrayElement</code>，不会把数组下标加到 binding；组合资源和内部 counter 能按一条名称绑定更新其全部物理 descriptor。</li>
       <li><code>pipelineLayoutFingerprint</code> 始终是 64 个小写十六进制字符；物理布局相同但名称或逻辑类型图不同的 Layout 产生相同值，任一纳入规范输入的物理字段变化都会产生不同值。运行时重算验证，并在 hash 命中后深比较规范物理记录再复用 GPU 对象。</li>
       <li>Vulkan validation layer 下 descriptor layout、pipeline layout 和绑定无错误。</li>
+      <li>Vulkan Graphics 从 SLC2 Program 顶点缓冲布局和 Vertex Stage 输入签名构造不可变 Vertex Input State；稀疏 Slot mask 精确，缺失任一必需 Vertex Buffer 时在 Draw 前失败，额外 Slot 合法。</li>
       <li>运行时不依赖硬编码 set/binding，也不要求 Shader 源码显式声明 Vulkan binding。</li>
     </ul>
   </section>

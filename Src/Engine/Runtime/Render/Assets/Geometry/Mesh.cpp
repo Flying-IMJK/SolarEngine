@@ -8,6 +8,7 @@
 #include "Model.h"
 #include "ModelInstanceEntry.h"
 #include "ModelLOD.h"
+#include "StaticMeshVertexFactory.h"
 #include "Runtime/Core/Profiler/ProfilerCPU.h"
 #include "Runtime/Core/Serialization/MemoryReadStream.h"
 #include "Runtime/Graphics/GPUContext.h"
@@ -118,7 +119,8 @@ namespace SE
 
         // Setup GPU resources
         model->LODs[_lodIndex]._verticesCount -= _vertices;
-        const bool failed = Load(vertexCount, triangleCount, vb0, vb1, vb2, ib, use16BitIndices);
+        // Load 返回加载成功，UpdateMesh 的公开契约则返回是否失败。
+        const bool failed = !Load(vertexCount, triangleCount, vb0, vb1, vb2, ib, use16BitIndices);
         if (!failed)
         {
             model->LODs[_lodIndex]._verticesCount += _vertices;
@@ -226,19 +228,19 @@ namespace SE
 #endif
         
         vertexBuffer0 = GPUDevice::instance->CreateBuffer(MESH_BUFFER_NAME(".VB0"));
-        if (!vertexBuffer0->Init(GPUBufferDescription::Vertex(sizeof(VB0ElementType), vertices, vb0)))
+        if (!vertexBuffer0->Init(StaticMeshVertexFactory::CreateVertexBufferDescription(StaticMeshVertexStream::Position, vertices, vb0)))
         {
             goto ERROR_LOAD_END;
         }
         vertexBuffer1 = GPUDevice::instance->CreateBuffer(MESH_BUFFER_NAME(".VB1"));
-        if (!vertexBuffer1->Init(GPUBufferDescription::Vertex(sizeof(VB1ElementType), vertices, vb1)))
+        if (!vertexBuffer1->Init(StaticMeshVertexFactory::CreateVertexBufferDescription(StaticMeshVertexStream::Attributes, vertices, vb1)))
         {
             goto ERROR_LOAD_END;
         }
         if (vb2)
         {
             vertexBuffer2 = GPUDevice::instance->CreateBuffer(MESH_BUFFER_NAME(".VB2"));
-            if (!vertexBuffer2->Init(GPUBufferDescription::Vertex(sizeof(VB2ElementType), vertices, vb2)))
+            if (!vertexBuffer2->Init(StaticMeshVertexFactory::CreateVertexBufferDescription(StaticMeshVertexStream::Color, vertices, vb2)))
             {
                 goto ERROR_LOAD_END;
             }
@@ -363,15 +365,37 @@ namespace SE
 #endif
     }
 
+    RenderGeometry Mesh::GetRenderGeometry() const
+    {
+        RenderGeometry geometry = StaticMeshVertexFactory::CreateRenderGeometry(
+            _vertexBuffers[StaticMeshVertexFactory::PositionSlot],
+            _vertexBuffers[StaticMeshVertexFactory::AttributesSlot],
+            _vertexBuffers[StaticMeshVertexFactory::ColorSlot]);
+        geometry.IndexBuffer = _indexBuffer;
+        geometry.IndexOffset = 0;
+        if (_indexBuffer != nullptr)
+        {
+            geometry.IndexFormat = _use16BitIndexBuffer ? PixelFormat::R16_UInt : PixelFormat::R32_UInt;
+        }
+        return geometry;
+    }
+
     void Mesh::GetDrawCallGeometry(DrawCall& drawCall) const
     {
-        drawCall.Geometry.IndexBuffer = _indexBuffer;
-        drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
-        drawCall.Geometry.VertexBuffers[1] = _vertexBuffers[1];
-        drawCall.Geometry.VertexBuffers[2] = _vertexBuffers[2];
-        drawCall.Geometry.VertexBuffersOffsets[0] = 0;
-        drawCall.Geometry.VertexBuffersOffsets[1] = 0;
-        drawCall.Geometry.VertexBuffersOffsets[2] = 0;
+        const RenderGeometry geometry = GetRenderGeometry();
+        drawCall.Geometry.IndexBuffer = geometry.IndexBuffer;
+        for (uint32 slot = StaticMeshVertexFactory::PositionSlot; slot <= StaticMeshVertexFactory::ColorSlot; slot++)
+        {
+            drawCall.Geometry.VertexBuffers[slot] = nullptr;
+            drawCall.Geometry.VertexBuffersOffsets[slot] = 0;
+        }
+        for (int32 bufferIndex = 0; bufferIndex < geometry.VertexBuffers.Count(); bufferIndex++)
+        {
+            const RenderGeometryVertexBuffer& vertexBuffer = geometry.VertexBuffers[bufferIndex];
+            ENGINE_ASSERT(vertexBuffer.Slot <= StaticMeshVertexFactory::ColorSlot);
+            drawCall.Geometry.VertexBuffers[vertexBuffer.Slot] = vertexBuffer.Buffer;
+            drawCall.Geometry.VertexBuffersOffsets[vertexBuffer.Slot] = vertexBuffer.Offset;
+        }
         drawCall.Draw.StartIndex = 0;
         drawCall.Draw.IndicesCount = _triangles * 3;
     }
@@ -402,11 +426,7 @@ namespace SE
 
         // Setup draw call
         DrawCall drawCall;
-        drawCall.Geometry.IndexBuffer = _indexBuffer;
-        drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
-        drawCall.Geometry.VertexBuffers[1] = _vertexBuffers[1];
-        drawCall.Geometry.VertexBuffers[2] = _vertexBuffers[2];
-        drawCall.Draw.IndicesCount = _triangles * 3;
+        GetDrawCallGeometry(drawCall);
         drawCall.InstanceCount = 1;
         drawCall.Material = material;
         drawCall.World = world;
@@ -469,10 +489,7 @@ namespace SE
 
         // Setup draw call
         DrawCall drawCall;
-        drawCall.Geometry.IndexBuffer = _indexBuffer;
-        drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
-        drawCall.Geometry.VertexBuffers[1] = _vertexBuffers[1];
-        drawCall.Geometry.VertexBuffers[2] = _vertexBuffers[2];
+        GetDrawCallGeometry(drawCall);
         /*if (info.Deformation)
         {
             info.Deformation->RunDeformers(this, MeshBufferType::Vertex0, drawCall.Geometry.VertexBuffers[0]);
@@ -484,10 +501,11 @@ namespace SE
             uint32 vertexOffset = 0;
             for (int32 meshIndex = 0; meshIndex < _index; meshIndex++)
                 vertexOffset += ((Model*)_model)->LODs[_lodIndex].Meshes[meshIndex].GetVertexCount();
-            drawCall.Geometry.VertexBuffers[2] = info.VertexColors[_lodIndex];
-            drawCall.Geometry.VertexBuffersOffsets[2] = vertexOffset * sizeof(VB2ElementType);
+            const VertexFactoryBufferBinding* colorBinding = StaticMeshVertexFactory::GetLayout().FindBinding(StaticMeshVertexFactory::ColorSlot);
+            ENGINE_ASSERT(colorBinding != nullptr);
+            drawCall.Geometry.VertexBuffers[StaticMeshVertexFactory::ColorSlot] = info.VertexColors[_lodIndex];
+            drawCall.Geometry.VertexBuffersOffsets[StaticMeshVertexFactory::ColorSlot] = vertexOffset * colorBinding->Stride;
         }
-        drawCall.Draw.IndicesCount = _triangles * 3;
         drawCall.InstanceCount = 1;
         drawCall.Material = material;
         drawCall.World = *info.World;
@@ -541,10 +559,7 @@ namespace SE
 
         // Setup draw call
         DrawCall drawCall;
-        drawCall.Geometry.IndexBuffer = _indexBuffer;
-        drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
-        drawCall.Geometry.VertexBuffers[1] = _vertexBuffers[1];
-        drawCall.Geometry.VertexBuffers[2] = _vertexBuffers[2];
+        GetDrawCallGeometry(drawCall);
         if (info.Deformation)
         {
             info.Deformation->RunDeformers(this, MeshBufferType::Vertex0, drawCall.Geometry.VertexBuffers[0]);
@@ -556,10 +571,11 @@ namespace SE
             uint32 vertexOffset = 0;
             for (int32 meshIndex = 0; meshIndex < _index; meshIndex++)
                 vertexOffset += ((Model*)_model)->LODs[_lodIndex].Meshes[meshIndex].GetVertexCount();
-            drawCall.Geometry.VertexBuffers[2] = info.VertexColors[_lodIndex];
-            drawCall.Geometry.VertexBuffersOffsets[2] = vertexOffset * sizeof(VB2ElementType);
+            const VertexFactoryBufferBinding* colorBinding = StaticMeshVertexFactory::GetLayout().FindBinding(StaticMeshVertexFactory::ColorSlot);
+            ENGINE_ASSERT(colorBinding != nullptr);
+            drawCall.Geometry.VertexBuffers[StaticMeshVertexFactory::ColorSlot] = info.VertexColors[_lodIndex];
+            drawCall.Geometry.VertexBuffersOffsets[StaticMeshVertexFactory::ColorSlot] = vertexOffset * colorBinding->Stride;
         }
-        drawCall.Draw.IndicesCount = _triangles * 3;
         drawCall.InstanceCount = 1;
         drawCall.Material = material;
         drawCall.World = *info.World;

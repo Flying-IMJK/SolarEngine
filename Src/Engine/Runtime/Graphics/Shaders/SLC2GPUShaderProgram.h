@@ -15,6 +15,7 @@ namespace SE
 
         virtual bool Initialize(const SLC2ProgramRecord* program, const SLC2TargetRecord* target, const SLC2VariantRecord* variant);
 
+        const String&                    GetProgramId() const;
         const SLC2VariantRecord*       GetVariant() const;
         const ShaderProgramReflection& GetReflection() const;
 

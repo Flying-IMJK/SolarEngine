@@ -7,6 +7,7 @@
 #include "DescriptorSetVulkan.h"
 #include "CmdBufferVulkan.h"
 #include "Runtime/Graphics/Shaders/ShaderBindingSnapshot.h"
+#include "Runtime/Graphics/Base/VertexFactoryLayout.h"
 
 namespace SE
 {
@@ -300,8 +301,14 @@ namespace SE
 
         bool                                     Matches(const Description& desc) const;
         VkPipeline                                GetState(RenderPassVulkan* renderPass);
+        VkPipeline                                GetState(RenderPassVulkan* renderPass, const VertexFactoryLayout& layout);
+        VkPipeline                                GetPreparedState(RenderPassVulkan* renderPass);
         PipelineLayoutVulkan*                     GetLayout() const;
+        const SLC2GPUShaderProgram*                GetProgram() const;
         const VkPipelineVertexInputStateCreateInfo* GetVertexInputState() const;
+        bool                                      PrepareVertexInputState(const VertexFactoryLayout& layout);
+        uint32                                    GetRequiredVertexBufferSlotsMask() const;
+        uint64                                    GetVertexFactoryLayoutHash() const;
         bool                                      PrepareAndBindDescriptors(GPUContextVulkan*                        context,
                                                                             const ShaderBindingSnapshot&             snapshot,
                                                                             const List<SLC2VulkanDescriptorBinding>& bindings);
@@ -317,16 +324,38 @@ namespace SE
         void OnReleaseGPU() override;
 
     private:
+        struct VertexInputState
+        {
+            VkPipelineVertexInputStateCreateInfo State;
+            List<VkVertexInputBindingDescription> Bindings;
+            List<VkVertexInputAttributeDescription> Attributes;
+            uint32 RequiredVertexBufferSlotsMask = 0;
+            uint64 LayoutHash = 0;
+        };
+
+        struct PipelineCacheEntry
+        {
+            RenderPassVulkan* RenderPass = nullptr;
+            uint64 LayoutHash = 0;
+            VkPipeline Pipeline = VK_NULL_HANDLE;
+        };
+
         void                                      ReleasePipelines();
         bool                                      AddShaderStage(ShaderStage stage, VkShaderStageFlagBits stageFlag);
+        bool                                      BuildVertexInputState(const VertexFactoryLayout& layout, VertexInputState& output) const;
+        const VertexInputState*                   FindVertexInputState(uint64 layoutHash) const;
+        VertexInputState*                         FindVertexInputState(uint64 layoutHash);
+        VkPipeline                                GetStateInternal(RenderPassVulkan* renderPass, const VertexInputState& vertexInputState);
 
         SLC2ShaderProgramVulkan*                  m_Program = nullptr;
-        Dictionary<RenderPassVulkan*, VkPipeline> m_Pipelines;
+        List<PipelineCacheEntry>                  m_Pipelines;
         Description                               m_DescKey;
         VkGraphicsPipelineCreateInfo              m_Desc;
         VkPipelineShaderStageCreateInfo           m_ShaderStages[(int)ShaderStage::Max];
         bool                                      m_ShaderStagesMark[(int)ShaderStage::Max];
-        VkPipelineVertexInputStateCreateInfo      m_DescVertexInput;
+        VertexInputState                          m_EmptyVertexInputState;
+        List<VertexInputState>                    m_VertexInputStates;
+        const VertexInputState*                   m_CurrentVertexInputState = nullptr;
         VkPipelineInputAssemblyStateCreateInfo    m_DescInputAssembly;
         VkPipelineTessellationStateCreateInfo     m_DescTessellation;
         VkPipelineViewportStateCreateInfo         m_DescViewport;

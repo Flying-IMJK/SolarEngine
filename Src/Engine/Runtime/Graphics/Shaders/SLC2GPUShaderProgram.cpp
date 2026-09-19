@@ -17,6 +17,11 @@ namespace SE
         return _reflection.Initialize(variant->Layout);
     }
 
+    const String& SLC2GPUShaderProgram::GetProgramId() const
+    {
+        return _program != nullptr ? _program->ProgramId : String::Empty;
+    }
+
     const SLC2VariantRecord* SLC2GPUShaderProgram::GetVariant() const { return _variant; }
 
     const ShaderProgramReflection& SLC2GPUShaderProgram::GetReflection() const { return _reflection; }

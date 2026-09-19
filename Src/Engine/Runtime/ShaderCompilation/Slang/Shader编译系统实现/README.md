@@ -22,10 +22,10 @@
 ```text
 Compile-only:
   Slang Source
-    -> Program/Variant/Target plan
+    -> Program/Variant/Target plan + Program VertexBufferLayout
     -> linked component
-    -> target code + ShaderReflectionIR
-    -> SLC2 JSON
+    -> target code + ShaderReflectionIR + VertexInputSignature
+    -> SLC2 v3 JSON
     -> SLC2Reader + Validator
     -> semantic manifest + byte determinism
 
@@ -34,7 +34,7 @@ Runtime/GPU:
     -> Program/Target/Variant selection
     -> runtime reflection
     -> name binding
-    -> Vulkan layout/descriptors
+    -> Vulkan layout/descriptors + Vertex Input State
     -> Draw/Dispatch
 ```
 
@@ -43,6 +43,7 @@ Runtime/GPU:
 - `ShaderCompileRequest` 校验和规范化。
 - Slang global session / request session。
 - Program 发现、Stage 校验、EntryPoint 检查。
+- Program 级 Vertex Input Binding/Element 声明解析，以及 Variant 稳定性和 Reflection 双向校验。
 - Variant 规划、默认补全、规范化和去重。
 - Target 策略、`TargetKey`、目标代码生成。
 - `SlangReflectionBuilder` 生成 `ShaderReflectionIR`。
@@ -68,6 +69,7 @@ Runtime/GPU:
 - 保存 uniform bytes 和逻辑资源绑定状态。
 - 提交前验证所有资源槽已绑定非空且类型兼容。
 - 从物理 descriptor 记录创建 Vulkan Pipeline Layout。
+- 从 Program 物理顶点缓冲布局和 Vertex Stage 逻辑输入签名创建 Vulkan Vertex Input State，并校验 Draw 所需 Slot。
 - 写 descriptor 并提交 Draw/Dispatch。
 
 运行时不得：
@@ -87,6 +89,7 @@ Runtime/GPU:
 - `SLC2Reader`
 - `Variant Normalize`
 - `PipelineLayoutFingerprint`
+- `SLC2VertexBufferLayout` / `SLC2VertexInputSignature`
 
 ## 阶段划分
 
@@ -94,10 +97,10 @@ Runtime/GPU:
 P0  Slang 依赖与骨架
 P1  最小 Compute 编译
 P2  Program / Variant / Target
-P3  ReflectionIR + SLC2
+P3  ReflectionIR + SLC2 v3 + Vertex Input Artifact
 P4  Runtime Reflection + Name Binding
 P5  Vulkan Compute
-P6  Vulkan Graphics
+P6  Vulkan Graphics + Vertex Input
 P7  完整已设计能力
 P8  调用点迁移与清理
 ```

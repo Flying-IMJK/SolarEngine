@@ -11,6 +11,7 @@
 #include "Runtime/Core/Profiler/Profiler.h"
 
 #include "Runtime/Graphics/Shaders/ShaderBindingSnapshot.h"
+#include "Runtime/Graphics/Shaders/SLC2VertexInputLayout.h"
 #include "Runtime/Core/Types/Hash.h"
 
 
@@ -1133,16 +1134,12 @@ namespace SE
 
         m_Desc.pStages = m_ShaderStages;
 
-/*        if (desc.VS != nullptr)
-        {
-            // P6.0 先复用旧 VS 输入布局描述；无 VS 时走空 vertex input，用于 fullscreen/triangle smoke。
-            m_DescVertexInput = *static_cast<const VkPipelineVertexInputStateCreateInfo*>(desc.VS->GetInputLayout());
-        }
-        else*/
-        {
-            VulkanTool::ZeroStruct(m_DescVertexInput, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
-        }
-        m_Desc.pVertexInputState = &m_DescVertexInput;
+
+        // 初始状态支持 system-value-only 顶点着色器；实际网格布局由 PrepareVertexInputState 设置。
+        VulkanTool::ZeroStruct(m_EmptyVertexInputState.State, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
+        m_EmptyVertexInputState.LayoutHash = 0;
+        m_CurrentVertexInputState = &m_EmptyVertexInputState;
+        m_Desc.pVertexInputState = &m_EmptyVertexInputState.State;
 
         VulkanTool::ZeroStruct(m_DescInputAssembly, VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);
         switch (desc.PrimitiveTopology)
@@ -1270,6 +1267,7 @@ namespace SE
         m_DescColorBlend.blendConstants[3] = 0.0f;
         m_Desc.pColorBlendState = &m_DescColorBlend;
         m_Desc.layout = m_Layout->handle;
+		m_MemoryUsage = sizeof(VkGraphicsPipelineCreateInfo);
         return true;
     }
 
@@ -1292,42 +1290,249 @@ namespace SE
                m_DescKey.BlendMode == desc.BlendMode;
     }
 
-    VkPipeline SLC2GraphicsPipelineStateVulkan::GetState(RenderPassVulkan* renderPass)
+    bool SLC2GraphicsPipelineStateVulkan::BuildVertexInputState(
+        const VertexFactoryLayout& layout,
+        VertexInputState& output) const
     {
-        ENGINE_ASSERT(renderPass);
-
-        VkPipeline pipeline = VK_NULL_HANDLE;
-        if (m_Pipelines.TryGet(renderPass, pipeline))
+        if (!layout.IsValid())
         {
-            return pipeline;
+            LOG_ERROR("Graphic", "SLC2 vertex input matching requires a valid VertexFactory layout.");
+            return false;
+        }
+
+        const SLC2VariantRecord* variant = m_Program != nullptr ? m_Program->GetVariant() : nullptr;
+        const List<SLC2VertexInputSignatureElement>* signature = nullptr;
+        if (variant != nullptr)
+        {
+            for (int32 stageIndex = 0; stageIndex < variant->Stages.Count(); stageIndex++)
+            {
+                if (variant->Stages[stageIndex].Stage == ShaderStage::Vertex)
+                {
+                    signature = &variant->Stages[stageIndex].VertexInputSignature;
+                    break;
+                }
+            }
+        }
+        if (signature == nullptr)
+        {
+            LOG_ERROR("Graphic", "SLC2 graphics pipeline is missing a vertex input signature.");
+            return false;
+        }
+
+        VertexInputState candidate;
+        candidate.LayoutHash = layout.GetHash();
+        SLC2VertexInputMatchResult match;
+        String matchError;
+        if (!SLC2VertexInputLayoutMatcher::Match(*signature, layout, match, matchError))
+        {
+            LOG_ERROR("Graphic", "SLC2 vertex input layout matching failed: {0}", matchError);
+            return false;
+        }
+
+        candidate.Attributes.EnsureCapacity(match.Elements.Count());
+        // 语义匹配成功后再检查 Vulkan 格式能力，避免产生部分 Vulkan 状态后才失败。
+        for (int32 matchIndex = 0; matchIndex < match.Elements.Count(); matchIndex++)
+        {
+            const SLC2VertexInputSignatureElement& input = (*signature)[matchIndex];
+            const VertexFactoryInputElement* element = match.Elements[matchIndex];
+            if (m_Device == nullptr || VulkanTool::ToVulkanFormat(element->Format) == VK_FORMAT_UNDEFINED ||
+                !m_Device->GetPixelFormatFeatures(element->Format).Support.IsFlag(FormatSupport::InputAssemblyVertexBuffer))
+            {
+                LOG_ERROR("Graphic", "SLC2 vertex input semantic {0}{1} uses a Vulkan-unsupported format {2}.",
+                    input.Semantic, input.SemanticIndex, PixelFormatGetString(element->Format));
+                return false;
+            }
+        }
+
+        candidate.RequiredVertexBufferSlotsMask = match.RequiredVertexBufferSlotsMask;
+        for (int32 matchIndex = 0; matchIndex < match.Elements.Count(); matchIndex++)
+        {
+            const SLC2VertexInputSignatureElement& input = (*signature)[matchIndex];
+            const VertexFactoryInputElement* element = match.Elements[matchIndex];
+
+            VkVertexInputAttributeDescription& attribute = candidate.Attributes.AddOne();
+            attribute.location = input.Location;
+            attribute.binding = element->Slot;
+            attribute.format = VulkanTool::ToVulkanFormat(element->Format);
+            attribute.offset = element->Offset;
+        }
+
+        for (int32 bindingIndex = 0; bindingIndex < layout.GetBindings().Count(); bindingIndex++)
+        {
+            const VertexFactoryBufferBinding& binding = layout.GetBindings()[bindingIndex];
+            if ((candidate.RequiredVertexBufferSlotsMask & (1u << binding.Slot)) == 0)
+            {
+                continue;
+            }
+
+            if ((binding.InputRate == VertexFactoryInputRate::PerVertex && binding.InstanceStepRate != 0) ||
+                (binding.InputRate == VertexFactoryInputRate::PerInstance && binding.InstanceStepRate != 1))
+            {
+                // Vulkan 核心顶点输入只支持实例步进 1；更高 divisor 需要额外扩展，当前路径明确拒绝。
+                LOG_ERROR("Graphic", "SLC2 vertex input slot {0} has an unsupported instance step rate {1}.",
+                    binding.Slot, binding.InstanceStepRate);
+                return false;
+            }
+
+            VkVertexInputBindingDescription& description = candidate.Bindings.AddOne();
+            description.binding = binding.Slot;
+            description.stride = binding.Stride;
+            description.inputRate = binding.InputRate == VertexFactoryInputRate::PerVertex
+                ? VK_VERTEX_INPUT_RATE_VERTEX
+                : VK_VERTEX_INPUT_RATE_INSTANCE;
+        }
+
+        VulkanTool::ZeroStruct(candidate.State, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
+        candidate.State.vertexBindingDescriptionCount = candidate.Bindings.Count();
+        candidate.State.pVertexBindingDescriptions = candidate.Bindings.Get();
+        candidate.State.vertexAttributeDescriptionCount = candidate.Attributes.Count();
+        candidate.State.pVertexAttributeDescriptions = candidate.Attributes.Get();
+        output = MoveTemp(candidate);
+        return true;
+    }
+
+    const SLC2GraphicsPipelineStateVulkan::VertexInputState*
+        SLC2GraphicsPipelineStateVulkan::FindVertexInputState(const uint64 layoutHash) const
+    {
+        for (int32 index = 0; index < m_VertexInputStates.Count(); index++)
+        {
+            if (m_VertexInputStates[index].LayoutHash == layoutHash)
+            {
+                return &m_VertexInputStates[index];
+            }
+        }
+        return nullptr;
+    }
+
+    SLC2GraphicsPipelineStateVulkan::VertexInputState*
+        SLC2GraphicsPipelineStateVulkan::FindVertexInputState(const uint64 layoutHash)
+    {
+        for (int32 index = 0; index < m_VertexInputStates.Count(); index++)
+        {
+            if (m_VertexInputStates[index].LayoutHash == layoutHash)
+            {
+                return &m_VertexInputStates[index];
+            }
+        }
+        return nullptr;
+    }
+
+    bool SLC2GraphicsPipelineStateVulkan::PrepareVertexInputState(const VertexFactoryLayout& layout)
+    {
+        VertexInputState* state = FindVertexInputState(layout.GetHash());
+        if (state == nullptr)
+        {
+            VertexInputState candidate;
+            if (!BuildVertexInputState(layout, candidate))
+            {
+                return false;
+            }
+            m_VertexInputStates.Add(MoveTemp(candidate));
+            state = &m_VertexInputStates.Last();
+        }
+        m_CurrentVertexInputState = state;
+        m_Desc.pVertexInputState = &state->State;
+        return true;
+    }
+
+    uint32 SLC2GraphicsPipelineStateVulkan::GetRequiredVertexBufferSlotsMask() const
+    {
+        return m_CurrentVertexInputState != nullptr ? m_CurrentVertexInputState->RequiredVertexBufferSlotsMask : 0;
+    }
+
+    uint64 SLC2GraphicsPipelineStateVulkan::GetVertexFactoryLayoutHash() const
+    {
+        return m_CurrentVertexInputState != nullptr ? m_CurrentVertexInputState->LayoutHash : 0;
+    }
+
+    VkPipeline SLC2GraphicsPipelineStateVulkan::GetStateInternal(
+        RenderPassVulkan* renderPass,
+        const VertexInputState& vertexInputState)
+    {
+        for (int32 index = 0; index < m_Pipelines.Count(); index++)
+        {
+            const PipelineCacheEntry& entry = m_Pipelines[index];
+            if (entry.RenderPass == renderPass && entry.LayoutHash == vertexInputState.LayoutHash)
+            {
+                return entry.Pipeline;
+            }
         }
 
         PROFILE_CPU_NAMED("Create SLC2 Graphics Pipeline");
+        m_Desc.pVertexInputState = &vertexInputState.State;
         m_DescColorBlend.attachmentCount = renderPass->layout.RTsCount;
         m_DescMultisample.rasterizationSamples = static_cast<VkSampleCountFlagBits>(renderPass->layout.MSAA);
         m_Desc.renderPass = renderPass->handle;
         m_Desc.layout = m_Layout->handle;
 
+        VkPipeline pipeline = VK_NULL_HANDLE;
         const VkResult result = vkCreateGraphicsPipelines(m_Device->device, m_Device->pipelineCache, 1, &m_Desc, nullptr, &pipeline);
         LOG_VULKAN_RESULT(result);
         if (result != VK_SUCCESS)
         {
-            LOG_ERROR("Graphic", "SLC2 graphics pipeline creation failed.");
+            LOG_ERROR("Graphic", "SLC2 graphics pipeline creation failed for VertexFactory layout {0}.",
+                vertexInputState.LayoutHash);
             return VK_NULL_HANDLE;
         }
 
-        m_Pipelines.Add(renderPass, pipeline);
+        PipelineCacheEntry cacheEntry;
+        cacheEntry.RenderPass = renderPass;
+        cacheEntry.LayoutHash = vertexInputState.LayoutHash;
+        cacheEntry.Pipeline = pipeline;
+        m_Pipelines.Add(MoveTemp(cacheEntry));
+#if !BUILD_RELEASE
+        // 记录真实驱动对象的创建，便于区分 Layout 匹配通过与 Pipeline 创建通过。
+        LOG_INFO("Graphic", "SLC2 graphics pipeline created for program {0}, LayoutHash={1}, Pipeline={2}.",
+            m_Program->GetProgramId(), vertexInputState.LayoutHash, reinterpret_cast<uintptr>(pipeline));
+#endif
         return pipeline;
     }
+
+    VkPipeline SLC2GraphicsPipelineStateVulkan::GetState(RenderPassVulkan* renderPass)
+    {
+        ENGINE_ASSERT(renderPass);
+        m_CurrentVertexInputState = &m_EmptyVertexInputState;
+        return GetStateInternal(renderPass, m_EmptyVertexInputState);
+    }
+
+    VkPipeline SLC2GraphicsPipelineStateVulkan::GetState(
+        RenderPassVulkan* renderPass,
+        const VertexFactoryLayout& layout)
+    {
+        ENGINE_ASSERT(renderPass);
+        if (!PrepareVertexInputState(layout))
+        {
+            return VK_NULL_HANDLE;
+        }
+        return GetStateInternal(renderPass, *m_CurrentVertexInputState);
+    }
+
+	VkPipeline SLC2GraphicsPipelineStateVulkan::GetPreparedState(RenderPassVulkan* renderPass)
+	{
+		ENGINE_ASSERT(renderPass);
+		if (m_CurrentVertexInputState == nullptr)
+		{
+			LOG_ERROR("Graphic", "SLC2 graphics pipeline has no prepared vertex input state.");
+			return VK_NULL_HANDLE;
+		}
+		return GetStateInternal(renderPass, *m_CurrentVertexInputState);
+	}
 
     PipelineLayoutVulkan* SLC2GraphicsPipelineStateVulkan::GetLayout() const
     {
         return SLC2PipelineStateVulkanBase::GetLayout();
     }
 
+	const SLC2GPUShaderProgram* SLC2GraphicsPipelineStateVulkan::GetProgram() const
+	{
+		return m_Program;
+	}
+
     const VkPipelineVertexInputStateCreateInfo* SLC2GraphicsPipelineStateVulkan::GetVertexInputState() const
     {
-        return &m_DescVertexInput;
+        return m_CurrentVertexInputState != nullptr
+            ? &m_CurrentVertexInputState->State
+            : &m_EmptyVertexInputState.State;
     }
 
     bool SLC2GraphicsPipelineStateVulkan::PrepareAndBindDescriptors(GPUContextVulkan*                        context,
@@ -1337,15 +1542,23 @@ namespace SE
         return SLC2PipelineStateVulkanBase::PrepareAndBindDescriptors(context, snapshot, bindings, VK_PIPELINE_BIND_POINT_GRAPHICS);
     }
 
-    void SLC2GraphicsPipelineStateVulkan::OnReleaseGPU() {}
+    void SLC2GraphicsPipelineStateVulkan::OnReleaseGPU()
+	{
+		ReleasePipelines();
+		m_Program = nullptr;
+		m_Layout = nullptr;
+		m_MemoryUsage = 0;
+	}
 
     void SLC2GraphicsPipelineStateVulkan::ReleasePipelines()
     {
-        for (auto iterator = m_Pipelines.begin(); iterator.IsNotEnd(); ++iterator)
+        for (int32 index = 0; index < m_Pipelines.Count(); index++)
         {
-            m_Device->deferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::Pipeline, iterator->Value);
+            m_Device->deferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::Pipeline, m_Pipelines[index].Pipeline);
         }
         m_Pipelines.Clear();
+        m_VertexInputStates.Clear();
+        m_CurrentVertexInputState = &m_EmptyVertexInputState;
     }
 
     bool SLC2GraphicsPipelineStateVulkan::AddShaderStage(const ShaderStage stage,

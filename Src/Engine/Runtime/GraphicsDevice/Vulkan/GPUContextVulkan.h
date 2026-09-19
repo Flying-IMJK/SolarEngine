@@ -71,6 +71,15 @@ namespace SE
 		int32 _vbCount;
 		uint32 _stencilRef;
 
+		// Render Geometry State
+		bool _renderGeometryReady;
+        PixelFormat _renderGeometryIndexFormat;
+		uint32 _renderGeometryIndexBufferSize;
+		uint32 _renderGeometryIndexOffset;
+		uint64 _renderGeometryLayoutHash;
+		uint32 _renderGeometryPerInstanceSlotsMask;
+		uint32 _renderGeometryVertexElementCounts[GPU_MAX_VB_BINDED];
+
 		RenderPassVulkan* _renderPass;
 		GPUPipelineStateVulkan* _currentState;
 		SLC2GraphicsPipelineStateVulkan* _currentSLC2GraphicsState;
@@ -90,6 +99,7 @@ namespace SE
 		void UpdateDescriptorSets(ComputePipelineStateVulkan* pipelineState);
 		void OnDrawCall();
 		bool OnSLC2DrawCall(ShaderProgramInstance& instance);
+		void ClearRenderGeometry();
 
 	public:
 		/// <summary>
@@ -156,7 +166,7 @@ namespace SE
 		void DrawInstanced(uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex) override;
 		void DrawInstanced(ShaderProgramInstance& instance, uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex) override;
 		void DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex) override;
-		void DrawIndexedInstanced(ShaderProgramInstance& instance, const GPUPipelineState::Description& desc, uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex) override;
+		void DrawIndexedInstanced(ShaderProgramInstance& instance, uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex) override;
 		void DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
 		void DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
 
@@ -170,6 +180,7 @@ namespace SE
 		void BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets) override;
 		void BindVB(GPUBuffer* vertexBuffers, const uint32 vertexBuffersOffsets) override;
 		void BindIB(GPUBuffer* indexBuffer) override;
+		bool BindRenderGeometry(const RenderGeometry& geometry) override;
 		void BindSampler(int32 slot, GPUSampler* sampler) override;
 
 		void Clear(GPUTextureView* rt, const Color& color) override;

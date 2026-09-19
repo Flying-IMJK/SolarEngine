@@ -8,6 +8,7 @@
 
 - `SLC2GPUShader`（及其不可变的 `SLC2ShaderProgram` 缓存）
 - `ShaderReflectionIR`
+- Program 级 `VertexBufferLayout` 与 Vertex Stage `VertexInputSignature`
 - Stage code
 
 运行时不得：
@@ -32,6 +33,7 @@
 | `ShaderProgramInstance.h/.cpp` | `ShaderProgramInstance` | 完整 Program 实例及其唯一根 ParameterBlock |
 | `ShaderProgramLayoutVulkan.h/.cpp` | `ShaderProgramLayoutVulkan` | Vulkan layout 创建/复用 |
 | `ShaderDescriptorWriterVulkan.h/.cpp` | `ShaderDescriptorWriterVulkan` | descriptor write |
+| `GPUShaderProgramVulkan.h/.cpp` | `SLC2ShaderProgramVulkan` | 持有 SLC2 Program 的不可变 VkShaderModule、descriptor layout 与 Vertex Input State |
 
 ## 过渡策略
 
@@ -61,6 +63,7 @@ struct ShaderProgramSelection
 - 使用 SLC2 中 `variantGroups` 执行与编译期相同的 `NormalizeVariant`。
 - 未知宏、同组多选、带值宏或 Variant 不存在均失败。
 - 不做运行时 specialization。
+- 选择完成后严格验证 Program 顶点缓冲布局和当前 Vertex Stage 输入签名；不从 SPIR-V 补充或覆盖顶点输入。
 
 ```text
 Select(programId, target, defines):
@@ -292,6 +295,7 @@ Graphics：
 
 - Program Variant 包含 VS/PS，可选 HS/DS/GS。
 - 所有 Stage 共享同一 VkPipelineLayout。
+- `SLC2ShaderProgramVulkan` 从 Program `VertexBufferLayout` 和当前 Vertex Stage `VertexInputSignature` 构造并持有不可变 Vertex Input State；PipelineState 只引用该状态。
 - HS/DS 成对和 PS 必须存在已由编译/Reader 验证。
 - PipelineState 持有固定功能状态。
 - Program 可被多个兼容 PipelineState 复用。
@@ -308,6 +312,33 @@ PrepareAndBind:
   BindDescriptorSets
 ```
 
+## Vulkan 顶点输入
+
+创建流程：
+
+```text
+BuildVertexInputState(programLayout, vertexSignature, device):
+  validate each Binding slot/stride/inputRate/stepRate
+  validate each Element range and PixelFormat
+  join Element to Signature by semantic + semanticIndex
+  map PixelFormat -> VkFormat
+  validate VkFormat vertex-buffer feature and device limits
+  emit VkVertexInputBindingDescription[]
+  emit VkVertexInputAttributeDescription[] using reflected location
+  build requiredVertexBufferSlotsMask from actual Binding slots
+```
+
+规则：
+
+- SLC2 只保存平台无关 `PixelFormat`；Vulkan adapter 是 `PixelFormat -> VkFormat` 的唯一入口，并检查设备是否支持作为 Vertex Buffer format。
+- Shader `float/floatN` 只兼容 Float/UNorm/SNorm，`uint/uintN` 只兼容 UInt，`int/intN` 只兼容 SInt；物理格式分量数必须不少于 Shader 分量数。
+- Binding Slot 可以稀疏。`requiredVertexBufferSlotsMask` 按实际 Slot 置位，不使用 Binding 数量表示连续 Slot。
+- `GPUContextVulkan` 保存 `_vbBoundMask`。绑定非空 Vertex Buffer 时设置对应 bit，显式解绑时清除，`ClearState()` 清空；绑定额外 Slot 不构成错误。
+- SLC2 Draw 前计算 `missing = requiredVertexBufferSlotsMask & ~_vbBoundMask`。`missing != 0` 时记录 ProgramId 与缺失 Slot，终止当前 Draw；不创建或绑定默认 Vertex Buffer。
+- 所有声明 Binding 都是必需项。Mesh 缺少切线等数据时，资产导入阶段补齐，或选择具有不同布局的 ProgramId；运行时不根据 Mesh 自动裁剪 Attribute。
+- 首期仅映射 `PER_VERTEX/stepRate=0` 与 `PER_INSTANCE/stepRate=1`，不创建 Vertex Attribute divisor 扩展链。
+- Vertex Input State 与 Stage modules 一样由 `SLC2ShaderProgramVulkan` 拥有，并要求其生命周期覆盖引用它的 Graphics PipelineState。
+
 ## 错误分层
 
 | 阶段 | 示例 | 行为 |
@@ -316,7 +347,9 @@ PrepareAndBind:
 | 选择 | Program/Target/Variant 不存在 | 不创建实例 |
 | 名称解析 | 成员不存在、数组越界、类型不符 | Set 失败，旧值不变 |
 | 提交 | 资源未绑定/null | 中止 Draw/Dispatch |
+| Draw 顶点输入 | 必需 Vertex Buffer Slot 未绑定 | 报告缺失 Slot 并中止当前 Draw |
 | Vulkan 创建 | 设备上限、descriptor 类型不支持 | Program 创建失败 |
+| Vulkan 顶点输入创建 | PixelFormat 不可映射、设备不支持或超过顶点输入上限 | Program 创建失败 |
 
 ## 当前不展开
 
@@ -328,3 +361,6 @@ PrepareAndBind:
 - 动态 specialization。
 - Push Constant。
 - 无界 descriptor。
+- 可选顶点流与默认 Vertex Buffer fallback。
+- Vertex Attribute divisor 大于 1。
+- 运行时替换 Program 物理顶点布局。

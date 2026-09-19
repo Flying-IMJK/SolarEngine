@@ -337,10 +337,22 @@ Writer 和 Reader 共用同一个 Validator。
 ## SLC2 聚合模型
 
 ```text
-SLC2Artifact
+SLC2Artifact (format 3.0)
   format
   programs[]
     programId
+    vertexBufferLayout
+      bindings[]
+        slot
+        stride
+        inputRate
+        instanceStepRate
+      elements[]
+        semantic
+        semanticIndex
+        pixelFormat
+        slot
+        offset
     variantGroups[]
     targets[]
       meta { platform, backend, shaderModel }
@@ -350,8 +362,23 @@ SLC2Artifact
         stages[]
           entryPoint
           stage
+          vertexInputSignature[]  // 仅 Vertex Stage 必需
+            semantic
+            semanticIndex
+            location
+            shaderType
           code
 ```
+
+SLC2 v3 顶点输入规则：
+
+- `vertexBufferLayout` 位于 Program 级，所有 Program 都必须写该字段；无顶点数据时 `bindings` 与 `elements` 都是空数组。
+- `bindings` 按 slot 排序，`elements` 按 slot/offset/semantic/semanticIndex 排序；字段使用平台无关的 Slot、Stride、PixelFormat 与 inputRate，不保存 VkFormat 或 Vulkan 结构体。
+- 每个 Vertex Stage 必须写 `vertexInputSignature`，合法空签名写空数组；非 Vertex Stage 禁止该字段。
+- `vertexInputSignature` 按 location/semantic/semanticIndex 排序，Semantic 保存 ASCII 大写规范形式，ShaderType 保存稳定的标量类别与分量数。
+- Program 布局跨 Target/Variant 固定。同一 Target 的 Variant 签名必须完全相同；跨 Target 只允许 Location 不同。
+- system-value 不进入签名；顶点输入不参与 Variant 裁剪。
+- 根格式 Major 必须精确为 3。Reader 不兼容读取 v2，也不为缺失顶点字段填充默认值。
 
 不写：
 
@@ -370,6 +397,7 @@ SLC2Artifact
 要求：
 
 - 使用固定字段顺序。
+- 固定写 SLC2 format 3.0；资源反射子对象的 `ShaderReflectionIR.Schema` 仍为 2，两者是独立版本域。
 - UTF-8 without BOM。
 - LF 换行，最终换行。
 - Base64 不换行。
@@ -383,12 +411,14 @@ SLC2Artifact
 阶段：
 
 1. 严格 JSON parse。
-2. 校验 magic/major。
+2. 校验 magic 与 `major == 3`；拒绝其他 Major。
 3. 逐字段读取并范围检查。
-4. 解码 Stage code 并验证 hash。
-5. 执行 IR Validator。
-6. 重算 fingerprint。
-7. 构造不可变 `ShaderProgramArtifact`。
+4. 读取并验证 Program 级 VertexBufferLayout，以及 Vertex Stage 的 VertexInputSignature。
+5. 验证布局范围、格式、Stage 字段归属、Target/Variant 稳定性及逻辑签名与物理 Element 的双向匹配。
+6. 解码 Stage code 并验证 hash。
+7. 执行 IR Validator。
+8. 重算 fingerprint。
+9. 构造不可变 `ShaderProgramArtifact`。
 
 Reader 不调用 Slang，不反射 SPIR-V，不尝试修复旧 cache。
 
@@ -430,3 +460,4 @@ LowerHex(SHA-256(UTF8(CanonicalPipelineLayoutText)))
 - arrayElementBase
 - logicalElementStride
 - 当前绑定对象
+- Program 顶点缓冲布局和 Vertex Stage 输入签名；它们由 Program/Pipeline 自身参与 Vulkan Pipeline 身份管理，不属于 descriptor PipelineLayout fingerprint

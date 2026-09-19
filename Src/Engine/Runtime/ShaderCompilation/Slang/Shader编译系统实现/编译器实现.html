@@ -165,7 +165,7 @@ struct ShaderCompileResult
         diagnostics,
         result)
 
-    artifact = NewSLC2Artifact(format = 2.0)
+    artifact = NewSLC2Artifact(format = 3.0)
     FOR sessionGroup IN plan.GroupBy(TargetKey, Variant):
         session = TRY_OR_FINISH(
             CreateVariantSession(sessionGroup),
@@ -204,12 +204,12 @@ struct ShaderCompileResult
     <h2 id="compiler-transaction">3. 编译事务与调用顺序</h2>
     <ol class="sequence">
       <li><strong>ValidateRequest：</strong>规范化 ResourcePath，校验 Target 唯一性、请求大小和 UTF-8 源码。</li>
-      <li><strong>DiscoverPrograms：</strong>以空 Variant 宏创建基线 Session，加载根 Module，只读取 Module 根声明。</li>
+      <li><strong>DiscoverPrograms：</strong>以空 Variant 宏创建基线 Session，加载根 Module，只读取 Module 根声明，同时解析 Program 级 Vertex Input Binding/Element。</li>
       <li><strong>BuildPlan：</strong>校验 Program/Stage/宏组，展开全部 Variant 或规范化显式选择，形成有序 CompileUnit 列表。</li>
       <li><strong>CompileUnit：</strong>为每个 Target × Program × Variant 创建 Variant Session、重新加载 Module、查找入口并创建 composite component。</li>
       <li><strong>Link：</strong>一次链接同一 Program 的全部 Stage，得到共享 linked component；失败时收集 diagnostics 并终止事务。</li>
       <li><strong>Emit：</strong>从 linked component 取得共享 Layout，并为每个 EntryPoint 取得目标代码 blob。</li>
-      <li><strong>BuildIR：</strong>把 Slang Layout 转为引擎 ShaderReflectionIR，执行所有不支持项和映射完整性校验。</li>
+      <li><strong>BuildIR：</strong>把 Slang Layout 转为引擎 ShaderReflectionIR，从 Vertex EntryPoint 提取输入签名，并执行资源反射及顶点输入的完整性校验。</li>
       <li><strong>Aggregate：</strong>按确定性顺序聚合 Program、Target、Variant、Layout 与 Stage code。</li>
       <li><strong>WriteAndSelfRead：</strong>生成 SLC2 UTF-8 JSON，再立即用共享的无后端 <code>SLC2Reader</code> 严格读取和重算 fingerprint；该 reader 不依赖 Vulkan、GPU 资源或运行时 Program 对象。</li>
       <li><strong>CommitResult：</strong>仅在全部步骤成功后设置 <code>Success</code>；否则清空数据并返回完整错误文本。</li>
@@ -254,6 +254,12 @@ struct ShaderCompileResult
     slangLayout, diag = linked.getLayout(targetIndex = 0)
     diagnostics.Append(diag, Context(unit))
     reflectionIR = TRY(SlangReflectionBuilder.Build(linked, slangLayout, unit))
+    vertexSignature = TRY(BuildVertexInputSignature(linked, unit))
+    TRY(ValidateVertexInputLayout(
+        unit.Program.VertexBufferLayout,
+        vertexSignature,
+        unit.Target,
+        unit.Variant))
 
     stages = []
     FOR index, stageDecl IN Enumerate(entryPointOrder):
@@ -263,7 +269,11 @@ struct ShaderCompileResult
         stages.Add(StageRecord(stageDecl, CopyBytes(code)))
 
     TRY(ShaderReflectionValidator.Validate(reflectionIR))
-    return CompiledProgramUnit(unit.Identity, reflectionIR, stages)</code></pre>
+    return CompiledProgramUnit(
+        unit.Identity,
+        unit.Program.VertexBufferLayout,
+        reflectionIR,
+        stages)</code></pre>
       <p class="pseudo-note">任何 Stage 检查、link、codegen 或反射失败都丢弃整个 ProgramId × TargetKey × Variant 单元。</p>
     </div>
 
@@ -275,6 +285,9 @@ struct ShaderCompileResult
         <tr><td>Target</td><td>规范化 <code>platform, backend, shaderModel</code> 三元组顺序。</td></tr>
         <tr><td>Variant</td><td>规范化 <code>variant</code> 字符串 UTF-8 字节序。</td></tr>
         <tr><td>Stage</td><td>固定引擎顺序：VS、HS、DS、GS、PS、CS；不存在的 Stage 跳过。</td></tr>
+        <tr><td>Vertex Binding</td><td><code>slot</code> 升序。</td></tr>
+        <tr><td>Vertex Element</td><td><code>slot, offset, semantic, semanticIndex</code>。</td></tr>
+        <tr><td>Vertex Signature</td><td><code>location, semantic, semanticIndex</code>。</td></tr>
         <tr><td>Type/Block</td><td>从 rootBlock 深度优先遍历，按 Slang 反射成员和 rangeIndex 顺序分配连续 ID。</td></tr>
         <tr><td>JSON 字段</td><td>Writer 中固定代码顺序，禁止遍历 Dictionary 决定输出顺序。</td></tr>
       </tbody>
@@ -292,10 +305,12 @@ struct ShaderCompileResult
     </ul>
 
     <h3 id="compiler-attributes">Attribute 解析</h3>
-    <p><code>SHADER_PROGRAM</code> 首先展开一个零参数 <code>SolarShaderProgram</code> Attribute，它是唯一的 Program marker；marker struct 上可重复出现 <code>SolarShaderStage</code> 与 <code>SolarShaderMacroGroup</code> Attribute。宿主用 <code>DeclReflection</code> 枚举直接声明，通过 SolarEngine 当前 Slang 公共 API <code>decl-&gt;getName()</code> 取得并复制名称，再对 Struct 调用 <code>decl-&gt;getType()</code>，通过 <code>TypeReflection::getUserAttributeCount()</code>、<code>getUserAttributeByIndex()</code> 和 <code>getArgumentValueString()</code> 读取字符串；不把成员函数当入口。</p>
+    <p><code>SHADER_PROGRAM</code> 首先展开一个零参数 <code>SolarShaderProgram</code> Attribute，它是唯一的 Program marker；marker struct 上可重复出现 Stage、Macro Group、Vertex Input Binding 与 Vertex Input Element Attribute。宿主用 <code>DeclReflection</code> 枚举直接声明，通过 SolarEngine 当前 Slang 公共 API <code>decl-&gt;getName()</code> 取得并复制名称，再对 Struct 调用 <code>decl-&gt;getType()</code>，通过用户 Attribute API 读取字符串与整数；不把成员函数当入口。</p>
     <pre><code>SHADER_PROGRAM(MyProgram,
     SHADER_VS(MyVS)
     SHADER_PS(MyPS)
+    SHADER_VS_INPUT_BINDING(0, 32, PER_VERTEX, 0)
+    SHADER_VS_INPUT_ELEMENT(POSITION, 0, R32G32B32_Float, 0, 0)
     SHADER_MACRO(MATERIAL_LIT, MATERIAL_UNLIT)
     SHADER_MACRO(_, FOG_ON)
 );</code></pre>
@@ -304,7 +319,7 @@ struct ShaderCompileResult
       <li>同一 Shader Resource 中 ProgramId 重复直接失败；namespace 不参与身份。</li>
       <li>Compute Program 必须且只能有一个 CS，不能混入 graphics Stage。</li>
       <li>Graphics Program 每种 Stage 最多一个，必须有 PS；HS 和 DS 必须同时存在；不得含 CS。</li>
-      <li>声明结构必须在所有 Variant 下稳定。Variant Session 重新发现后若 Program/Stage/宏组与基线不同，视为 Shader 接口错误。</li>
+      <li>声明结构必须在所有 Variant 下稳定。Variant Session 重新发现后若 Program/Stage/宏组/顶点缓冲布局与基线不同，视为 Shader 接口错误。</li>
     </ul>
 
     <h3 id="compiler-entrypoints">按名称检查入口</h3>
@@ -357,15 +372,44 @@ struct ShaderCompileResult
                 SolarShaderMacroGroup(membersText):
                     program.AddVariantGroup(
                         ParseMacroGroupWithoutExpansion(membersText))
+                SolarShaderVertexInputBinding(slot, stride, inputRate, stepRate):
+                    program.VertexBufferLayout.AddBinding(
+                        ParseVertexBinding(slot, stride, inputRate, stepRate))
+                SolarShaderVertexInputElement(semantic, semanticIndex, format, slot, offset):
+                    program.VertexBufferLayout.AddElement(
+                        ParseVertexElement(semantic, semanticIndex, format, slot, offset))
 
         TRY(ValidateStageContract(program))
         TRY(ValidateVariantGroupDeclarations(program))
+        TRY(ValidateVertexBufferLayout(program))
         program.Signature = HashCanonicalDeclaration(program)
         programsById.Add(programId, program)
 
     return StableSort(programsById.Values, by = ProgramId)</code></pre>
       <p class="pseudo-note"><code>DeclReflection::getName()</code> 是 SolarEngine 当前接入 Slang 的真实公共 API；不存在 <code>SimpleName</code>。返回指针只在 Slang 反射对象有效期内借用，因此在继续处理前复制。Variant Session 重新加载 Module 后再次计算 Signature；与基线不同即说明声明被 Variant 宏条件化，编译失败。</p>
     </div>
+  </section>
+
+  <section>
+    <h2 id="compiler-vertex-input">4.1 顶点输入声明与编译校验</h2>
+    <p>源码采用 A 方案，把物理 Binding 与 Element 分开声明；Location 只从 Slang Reflection 获取，不在物理布局中重复配置。</p>
+    <pre><code>SHADER_VS_INPUT_BINDING(slot, stride, inputRate, instanceStepRate)
+SHADER_VS_INPUT_ELEMENT(semantic, semanticIndex, format, slot, offset)</code></pre>
+    <ul>
+      <li>Binding slot 唯一，Stride 为正；<code>PER_VERTEX</code> 只接受 step 0，<code>PER_INSTANCE</code> 首期只接受 step 1。</li>
+      <li><code>slot &lt; GPU_MAX_VB_BINDED</code>，Element 总数不超过 <code>VERTEX_SHADER_MAX_INPUT_ELEMENTS</code>；计数和 mask shift 在执行前检查范围。</li>
+      <li>Element Semantic 规范化为 ASCII 大写，引用的 Slot 必须存在；PixelFormat 必须是稳定的 SolarEngine 枚举名称。</li>
+      <li><code>ALIGN</code> 使用每个 Slot 各自的 cursor：首个 Element 为 0，其余紧接前一 Element，不附加自然或 16 字节对齐。</li>
+      <li>Element 范围不得重叠，且 <code>offset + formatByteSize &lt;= stride</code>；显式 Stride 允许间隙和尾部 padding。</li>
+      <li>没有 Vertex Stage 的 Program 必须使用空布局；仅含 system-value 输入的 Vertex Stage 可以使用空布局。</li>
+    </ul>
+    <p>每个 Target × Variant 联合链接后，编译器从 Vertex EntryPoint Reflection 提取非 system-value 的 Semantic、SemanticIndex、Location 与 ShaderType，并按 Semantic/Index 与物理 Element 双向唯一匹配。float 输入兼容 Float/UNorm/SNorm，uint 只兼容 UInt，int 只兼容 SInt；物理分量数不得少于 Shader 分量数。</p>
+    <ul>
+      <li>同一 Target 的全部 Variant 必须保持 Semantic、SemanticIndex、Location、ShaderType 完全一致；跨 Target 只允许 Location 不同。</li>
+      <li>顶点输入不按 Variant 实际使用情况裁剪。不同 Static/Skinned/PositionOnly 布局使用不同 ProgramId。</li>
+      <li>system-value 只做合法性检查，不写入 VertexInputSignature，也不要求 Vertex Buffer。</li>
+      <li>失败诊断包含 ProgramId、Target、Variant、EntryPoint 以及冲突的 Semantic 或 Slot。</li>
+    </ul>
   </section>
 
   <section>

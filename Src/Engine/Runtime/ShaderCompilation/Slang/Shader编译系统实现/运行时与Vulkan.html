@@ -22,7 +22,7 @@
   <section>
     <h2 id="runtime-boundary">1. 运行时对象与接入边界</h2>
     <p>系统设计中的“Shader Program”是完整的 graphics/compute 程序，而 SolarEngine 现有 <code>GPUShaderProgram</code> 表示单个 Stage。实施中保留现有 Stage GPU 对象，但新增一个拥有共享 Layout 与参数状态的完整程序对象，避免名称混淆。</p>
-    <p class="contract"><strong>边界：</strong>运行时从一份已经通过编译侧 self-read 的 SLC2 开始工作，只消费 <code>SLC2GPUShader</code>、<code>ShaderReflectionIR</code> 和 Stage code。运行时不得调用 Slang、不得从 SPIR-V 二次反射，也不得参与 Program 发现、Variant 规划、Target codegen 或 SLC2 写入。</p>
+    <p class="contract"><strong>边界：</strong>运行时从一份已经通过编译侧 self-read 的 SLC2 开始工作，只消费 <code>SLC2GPUShader</code>、<code>ShaderReflectionIR</code>、Program 级 VertexBufferLayout、Vertex Stage VertexInputSignature 和 Stage code。运行时不得调用 Slang、不得从 SPIR-V 二次反射，也不得参与 Program 发现、Variant 规划、Target codegen 或 SLC2 写入。</p>
 
     <h3 id="runtime-files">新增文件</h3>
     <table>
@@ -37,6 +37,7 @@
         <tr><td class="path">Graphics/Shaders/ShaderProgramInstance.h/.cpp</td><td><code>ShaderProgramInstance</code></td><td>拥有完整 Program 的选择结果、Stage GPU 对象、共享 Reflection 和唯一根参数块。</td></tr>
         <tr><td class="path">GraphicsDevice/Vulkan/ShaderProgramLayoutVulkan.h/.cpp</td><td><code>ShaderProgramLayoutVulkan</code></td><td>把规范物理描述转换为 VkDescriptorSetLayout/VkPipelineLayout。</td></tr>
         <tr><td class="path">GraphicsDevice/Vulkan/ShaderDescriptorWriterVulkan.h/.cpp</td><td><code>ShaderDescriptorWriterVulkan</code></td><td>按 range mapping 创建 VkWriteDescriptorSet 并验证完整绑定。</td></tr>
+        <tr><td class="path">GraphicsDevice/Vulkan/GPUShaderProgramVulkan.h/.cpp</td><td><code>SLC2ShaderProgramVulkan</code></td><td>持有 SLC2 Program 的 VkShaderModule、descriptor layout 与不可变 Vertex Input State。</td></tr>
       </tbody>
     </table>
 
@@ -77,6 +78,7 @@ ShaderProgramInstance* CreateProgram(
       <li>运行时根据 SLC2 的 variantGroups 执行与编译期相同的校验和默认补全，再排序并以分号连接。</li>
       <li><code>Defines</code> 的调用顺序不影响匹配；未知宏、同组多选、带值宏或不存在的 Variant 返回明确错误。</li>
       <li>不做运行时 interface specialization；选择结果必须已存在于 SLC2。</li>
+      <li>选择完成后严格验证 Program 顶点缓冲布局和当前 Vertex Stage 输入签名；不从 SPIR-V 补充或覆盖顶点输入。</li>
     </ul>
 
     <h3 id="runtime-pseudocode-select">Program/Target/Variant 选择伪代码</h3>
@@ -545,6 +547,7 @@ ShaderBindingSnapshot (immutable)
     <ol>
       <li>选择同一 Program Variant 内的 VS/PS 及可选 HS/DS/GS。</li>
       <li>为每个 Stage 创建 VkShaderModule；各 VkPipelineShaderStageCreateInfo 只引用 module 与 entryPoint，共享 VkPipelineLayout 设置在 VkGraphicsPipelineCreateInfo 上。</li>
+      <li><code>SLC2ShaderProgramVulkan</code> 从 Program VertexBufferLayout 与当前 Vertex Stage VertexInputSignature 构造并持有不可变 Vertex Input State；PipelineState 只引用该状态。</li>
       <li>HS/DS 成对、PS 必须存在等契约已在编译和 Reader 阶段验证，Pipeline 层只做防御性断言。</li>
       <li>Graphics PipelineState 在光栅、深度、混合、拓扑和渲染目标格式等完整状态到齐后创建 VkPipeline；ShaderProgramInstance 不拥有这些固定功能状态。</li>
       <li>descriptor set 只按共享物理 Layout 分配一次，不按 Stage 重复。</li>
@@ -573,7 +576,8 @@ ShaderBindingSnapshot (immutable)
             CreateVkShaderModule(spirv, stageRecord.EntryPoint))
 
     TRY(ValidateModuleStageContract(selection, modules))
-    return BackendShaderProgram(layout, modules)
+    vertexInput = TRY(BuildVertexInputState(selection, device))
+    return BackendShaderProgram(layout, modules, vertexInput)
 
 CreatePipelineState(desc, backendProgram):
     IF desc.Kind == Compute:
@@ -588,7 +592,8 @@ CreatePipelineState(desc, backendProgram):
         pipeline = TRY(CreateGraphicsPipeline(
             desc.GraphicsFixedFunctionState,
             backendProgram.Modules,
-            backendProgram.Layout))
+            backendProgram.Layout,
+            backendProgram.VertexInput))
 
     return PipelineState(
         pipeline,
@@ -607,6 +612,29 @@ PrepareAndBind(commandContext, pipelineState):
   </section>
 
   <section>
+    <h2 id="vulkan-vertex-input">7.1 Vulkan 顶点输入</h2>
+    <pre><code>BuildVertexInputState(programLayout, vertexSignature, device):
+  validate each Binding slot/stride/inputRate/stepRate
+  validate each Element range and PixelFormat
+  join Element to Signature by semantic + semanticIndex
+  map PixelFormat -&gt; VkFormat
+  validate VkFormat vertex-buffer feature and device limits
+  emit VkVertexInputBindingDescription[]
+  emit VkVertexInputAttributeDescription[] using reflected location
+  build requiredVertexBufferSlotsMask from actual Binding slots</code></pre>
+    <ul>
+      <li>SLC2 只保存平台无关 PixelFormat；Vulkan adapter 是 PixelFormat 到 VkFormat 的唯一入口，并检查设备 Vertex Buffer format 能力。</li>
+      <li>float 输入兼容 Float/UNorm/SNorm，uint 只兼容 UInt，int 只兼容 SInt；物理格式分量数必须不少于 Shader 分量数。</li>
+      <li>Binding Slot 可以稀疏。required mask 按实际 Slot 置位，不使用 Binding 数量或最高 Slot 推断连续范围。</li>
+      <li><code>GPUContextVulkan</code> 保存 <code>_vbBoundMask</code>：绑定非空 Buffer 时置位，解绑时清位，<code>ClearState()</code> 清空。额外 Slot 合法。</li>
+      <li>Draw 前计算 <code>missing = requiredVertexBufferSlotsMask &amp; ~_vbBoundMask</code>；非零时报告 ProgramId 与缺失 Slot 并中止当前 Draw，不提供默认 Vertex Buffer。</li>
+      <li>所有声明 Binding 都是必需项。缺少切线等 Mesh 数据时由导入阶段补齐，或选择另一 ProgramId；运行时不裁剪 Attribute。</li>
+      <li>首期只映射 PER_VERTEX/step 0 与 PER_INSTANCE/step 1，不创建 divisor 扩展链。</li>
+      <li>Vertex Input State 由 <code>SLC2ShaderProgramVulkan</code> 拥有，其生命周期必须覆盖引用它的 Graphics PipelineState。</li>
+    </ul>
+  </section>
+
+  <section>
     <h2 id="runtime-error-model">8. 运行时错误与当前非目标</h2>
     <h3 id="runtime-errors">错误分层</h3>
     <table>
@@ -616,7 +644,9 @@ PrepareAndBind(commandContext, pipelineState):
         <tr><td>选择</td><td>Program、Target、Variant 不存在</td><td>不创建实例，列出可用的规范身份。</td></tr>
         <tr><td>名称解析</td><td>成员不存在、数组越界、类型不符</td><td>Set 调用失败，旧绑定值不变。</td></tr>
         <tr><td>提交</td><td>资源未绑定或为 null</td><td>中止 Draw/Dispatch，指出完整路径。</td></tr>
+        <tr><td>Draw 顶点输入</td><td>必需 Vertex Buffer Slot 未绑定</td><td>报告缺失 Slot 并中止当前 Draw。</td></tr>
         <tr><td>Vulkan 创建</td><td>设备上限或 descriptor 类型不支持</td><td>Program instance 创建失败，保留 Vulkan result。</td></tr>
+        <tr><td>Vulkan 顶点输入创建</td><td>PixelFormat 不可映射、设备不支持或超过顶点输入上限</td><td>Program 创建失败。</td></tr>
       </tbody>
     </table>
 
@@ -630,6 +660,9 @@ PrepareAndBind(commandContext, pipelineState):
       <span class="tag deferred">动态 specialization</span>
       <span class="tag deferred">Push Constant</span>
       <span class="tag deferred">无界 descriptor</span>
+      <span class="tag deferred">可选顶点流/default Vertex Buffer</span>
+      <span class="tag deferred">Vertex Attribute divisor &gt; 1</span>
+      <span class="tag deferred">运行时替换 Program 顶点布局</span>
     </p>
     <p>“运行时生命周期为非目标”不取消创建一个可工作的最小 Program/descriptor 状态；它表示首版不承诺跨帧池化、dirty tracking、热重载失效传播和 GPU 延迟销毁策略的最终形态。</p>
   </section>

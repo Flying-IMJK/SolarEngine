@@ -12,6 +12,7 @@
 #include "GPUShaderVulkan.h"
 #include "GPUSamplerVulkan.h"
 #include "Runtime/Core/Math/Rectangle.h"
+#include "Runtime/Graphics/Base/RenderGeometry.h"
 #include "Runtime/Graphics/Shaders/ShaderProgramInstance.h"
 
 namespace SE
@@ -39,6 +40,12 @@ namespace SE
 		, _device(device)
 		, _queue(queue)
 		, _cmdBufferManager(New<CmdBufferManagerVulkan>(device, this))
+		, _renderGeometryReady(false)
+		, _renderGeometryIndexBufferSize(0)
+		, _renderGeometryIndexOffset(0)
+		, _renderGeometryIndexFormat(PixelFormat::Undefined)
+		, _renderGeometryLayoutHash(0)
+		, _renderGeometryPerInstanceSlotsMask(0)
 		, _currentSLC2GraphicsState(nullptr)
 	{
 		Platform::MemoryClear(_rtHandles, sizeof(GPUTextureViewVulkan*) * GPU_MAX_RT_BINDED );
@@ -338,7 +345,11 @@ namespace SE
 	bool GPUContextVulkan::OnSLC2DrawCall(ShaderProgramInstance& instance)
 	{
         SLC2GraphicsPipelineStateVulkan* pipelineState = _currentSLC2GraphicsState;
-        ENGINE_ASSERT(pipelineState && pipelineState->IsValid());
+		if (pipelineState == nullptr || !pipelineState->IsValid())
+		{
+			LOG_ERROR("Graphic", "SLC2 draw requires a valid pipeline state set by SetSLC2State.");
+			return false;
+		}
 
 		ShaderBindingSnapshot snapshot;
 		// SLC2 graphics 与 compute 一样，先冻结 instance 的可变绑定状态，再交给 Vulkan descriptor 层消费。
@@ -354,6 +365,18 @@ namespace SE
 			return false;
 		}
 		SLC2ShaderProgramVulkan* shaderProgramVulkan = static_cast<SLC2ShaderProgramVulkan*>(shaderProgram);
+		if (pipelineState->GetProgram() != shaderProgram)
+		{
+			LOG_ERROR("Graphic", "SLC2 draw pipeline state does not belong to the ShaderProgramInstance program.");
+			return false;
+		}
+
+		if (!_renderGeometryReady || _renderGeometryLayoutHash != pipelineState->GetVertexFactoryLayoutHash())
+		{
+			LOG_ERROR("Graphic", "SLC2 draw for program {0} requires RenderGeometry prepared by BindRenderGeometry for the current pipeline state. LayoutHash={1}.",
+				shaderProgram->GetProgramId(), pipelineState->GetVertexFactoryLayoutHash());
+			return false;
+		}
 
 		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
 		if (_rtDirtyFlag && cmdBuffer->IsInsideRenderPass())
@@ -366,19 +389,6 @@ namespace SE
 			return false;
 		}
 
-		const auto vertexInputState = pipelineState->GetVertexInputState();
-		const int32 missingVBs = vertexInputState->vertexBindingDescriptionCount - _vbCount;
-		if (missingVBs > 0)
-		{
-			VkBuffer buffers[GPU_MAX_VB_BINDED];
-			VkDeviceSize offsets[GPU_MAX_VB_BINDED] = {};
-			for (int32 index = 0; index < missingVBs; index++)
-			{
-				buffers[index] = _device->dummyResources.GetDummyVertexBuffer()->GetHandle();
-			}
-			vkCmdBindVertexBuffers(cmdBuffer->GetHandle(), _vbCount, missingVBs, buffers, offsets);
-		}
-
 		if (cmdBuffer->IsOutsideRenderPass())
 		{
 			BeginRenderPass();
@@ -389,7 +399,7 @@ namespace SE
 			BeginRenderPass();
 		}
 
-		const VkPipeline pipeline = pipelineState->GetState(_renderPass);
+		const VkPipeline pipeline = pipelineState->GetPreparedState(_renderPass);
 		if (pipeline == VK_NULL_HANDLE)
 		{
 			return false;
@@ -747,6 +757,7 @@ namespace SE
 		_renderPass = nullptr;
 		_currentState = nullptr;
 		_currentSLC2GraphicsState = nullptr;
+		ClearRenderGeometry();
 		_rtDepth = nullptr;
 		Platform::MemoryClear(_rtHandles, sizeof(_rtHandles));
 		Platform::MemoryClear(_cbHandles, sizeof(_cbHandles));
@@ -1118,26 +1129,70 @@ namespace SE
 	}
 
 	void GPUContextVulkan::DrawInstanced(ShaderProgramInstance& instance,
-		uint32 verticesCount,
-		uint32 instanceCount,
-		int32 startInstance,
-		int32 startVertex)
-	{
-		SLC2GPUShaderProgram* shaderProgram = instance.GetProgram();
-		if (shaderProgram == nullptr)
-		{
-			LOG_ERROR("Graphic", "SLC2 draw requires an initialized shader program instance.");
-			return;
-		}
+                                         uint32                 verticesCount,
+                                         uint32                 instanceCount,
+                                         int32                  startInstance,
+                                         int32                  startVertex)
+    {
+        SLC2GPUShaderProgram* shaderProgram = instance.GetProgram();
+        if (shaderProgram == nullptr)
+        {
+            LOG_ERROR("Graphic", "Draw requires an initialized shader program instance.");
+            return;
+        }
 
-		if (!OnSLC2DrawCall(instance))
-		{
-			return;
-		}
+        if (!_renderGeometryReady)
+        {
+            LOG_ERROR("Graphic", "Draw requires a successful BindRenderGeometry call.");
+            return;
+        }
 
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-		vkCmdDraw(cmdBuffer->GetHandle(), verticesCount, instanceCount, startVertex, startInstance);
-	}
+        if (startVertex < 0 || startInstance < 0)
+        {
+            LOG_ERROR("Graphic", "Draw for program {0} requires non-negative startVertex and startInstance.", shaderProgram->GetProgramId());
+            return;
+        }
+
+        const uint64 vertexStart   = static_cast<uint64>(startVertex);
+        const uint64 instanceStart = static_cast<uint64>(startInstance);
+        const uint32 requiredSlotsMask = _currentSLC2GraphicsState->GetRequiredVertexBufferSlotsMask();
+        for (uint32 slot = 0; slot < GPU_MAX_VB_BINDED; slot++)
+        {
+            const uint32 requiredBit = 1u << slot;
+            // Required Slot 即使没有完整元素也必须参与范围检查，不能用元素数量判断 Slot 是否需要校验。
+            if ((requiredSlotsMask & requiredBit) == 0)
+            {
+                continue;
+            }
+
+            if (_renderGeometryPerInstanceSlotsMask & requiredBit)
+            {
+                const uint64 available = _renderGeometryVertexElementCounts[slot];
+                if (instanceStart > available || static_cast<uint64>(instanceCount) > available - instanceStart)
+                {
+                    LOG_ERROR("Graphic", "Draw instance range exceeds vertex buffer slot {0}.", slot);
+                    return;
+                }
+            }
+            else
+            {
+                const uint64 available = _renderGeometryVertexElementCounts[slot];
+                if (vertexStart > available || static_cast<uint64>(verticesCount) > available - vertexStart)
+                {
+                    LOG_ERROR("Graphic", "Draw vertex range exceeds vertex buffer slot {0}.", slot);
+                    return;
+                }
+            }
+        }
+
+        if (!OnSLC2DrawCall(instance))
+        {
+            return;
+        }
+
+        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+        vkCmdDraw(cmdBuffer->GetHandle(), verticesCount, instanceCount, startVertex, startInstance);
+    }
 
 	void GPUContextVulkan::DrawIndexedInstanced(uint32 indicesCount,
 		uint32 instanceCount,
@@ -1153,7 +1208,6 @@ namespace SE
 	}
 
 	void GPUContextVulkan::DrawIndexedInstanced(ShaderProgramInstance& instance,
-		const GPUPipelineState::Description& desc,
 		uint32 indicesCount,
 		uint32 instanceCount,
 		int32 startInstance,
@@ -1163,7 +1217,39 @@ namespace SE
 		SLC2GPUShaderProgram* shaderProgram = instance.GetProgram();
 		if (shaderProgram == nullptr)
 		{
-			LOG_ERROR("Graphic", "SLC2 indexed draw requires an initialized shader program instance.");
+			LOG_ERROR("Graphic", "indexed draw requires an initialized shader program instance.");
+			return;
+		}
+
+		if (!_renderGeometryReady)
+		{
+			LOG_ERROR("Graphic", "SLC2 indexed draw for program {0} requires a successful BindRenderGeometry call.",
+				shaderProgram->GetProgramId());
+			return;
+		}
+
+		if (_renderGeometryIndexBufferSize == 0 ||
+			(_renderGeometryIndexFormat != PixelFormat::R16_UInt &&
+			 _renderGeometryIndexFormat != PixelFormat::R32_UInt))
+		{
+			LOG_ERROR("Graphic", "SLC2 indexed draw for program {0} requires an index buffer in the prepared RenderGeometry. LayoutHash={1}.",
+				shaderProgram->GetProgramId(), _renderGeometryLayoutHash);
+			return;
+		}
+		if (startIndex < 0 || startInstance < 0)
+		{
+			LOG_ERROR("Graphic", "indexed draw startIndex and startInstance must be non-negative.");
+			return;
+		}
+
+		const uint64 indexSize = PixelFormatGetSizeInBytes(_renderGeometryIndexFormat);
+		const uint64 firstIndexByte = static_cast<uint64>(startIndex) * indexSize;
+		const uint64 indexBytes = static_cast<uint64>(indicesCount) * indexSize;
+		const uint64 endByte = static_cast<uint64>(_renderGeometryIndexOffset) + firstIndexByte + indexBytes;
+		if (indexSize == 0 || endByte > _renderGeometryIndexBufferSize)
+		{
+			LOG_ERROR("Graphic", "SLC2 indexed draw for program {0} exceeds the prepared index buffer range. LayoutHash={1}.",
+				shaderProgram->GetProgramId(), _renderGeometryLayoutHash);
 			return;
 		}
 
@@ -1249,6 +1335,7 @@ namespace SE
 
 	void GPUContextVulkan::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets)
 	{
+		ClearRenderGeometry();
 		_vbCount = vertexBuffers.Length();
 		if (vertexBuffers.Length() == 0)
 			return;
@@ -1277,6 +1364,7 @@ namespace SE
 
 	void GPUContextVulkan::BindVB(GPUBuffer* vertexBuffers, const uint32 vertexBuffersOffsets)
 	{
+		ClearRenderGeometry();
 		_vbCount = 1;
 
 		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
@@ -1296,9 +1384,123 @@ namespace SE
 
 	void GPUContextVulkan::BindIB(GPUBuffer* indexBuffer)
 	{
+		ClearRenderGeometry();
 		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
 		const auto ibVulkan = static_cast<GPUBufferVulkan*>(indexBuffer)->GetHandle();
 		vkCmdBindIndexBuffer(cmdBuffer->GetHandle(), ibVulkan, 0, indexBuffer->GetFormat() == PixelFormat::R32_UInt ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16);
+	}
+
+	void GPUContextVulkan::ClearRenderGeometry()
+	{
+		_renderGeometryReady = false;
+		_renderGeometryIndexBufferSize = 0;
+		_renderGeometryIndexOffset = 0;
+		_renderGeometryIndexFormat = PixelFormat::Undefined;
+		_renderGeometryLayoutHash = 0;
+		_renderGeometryPerInstanceSlotsMask = 0;
+		Platform::MemoryClear(_renderGeometryVertexElementCounts, sizeof(_renderGeometryVertexElementCounts));
+	}
+
+	bool GPUContextVulkan::BindRenderGeometry(const RenderGeometry& geometry)
+	{
+		// 任何失败都必须使旧 Geometry 失效，避免后续 Draw 使用上一次的 VB/IB 绑定。
+		ClearRenderGeometry();
+
+		SLC2GraphicsPipelineStateVulkan* pipelineState = _currentSLC2GraphicsState;
+		if (pipelineState == nullptr || !pipelineState->IsValid())
+		{
+			LOG_ERROR("Graphic", "BindRenderGeometry requires a valid pipeline set by SetSLC2State.");
+			return false;
+		}
+
+		// Geometry 设置与具体 Draw 类型解耦；索引缓冲是否必需由后续 DrawIndexed 再判断。
+		if (!geometry.Validate(false))
+		{
+			return false;
+		}
+
+		if (!pipelineState->PrepareVertexInputState(*geometry.Layout))
+		{
+			return false;
+		}
+
+		const uint32 requiredSlotsMask = pipelineState->GetRequiredVertexBufferSlotsMask();
+		GPUBufferVulkan* requiredBuffers[GPU_MAX_VB_BINDED] = {};
+		VkDeviceSize requiredOffsets[GPU_MAX_VB_BINDED] = {};
+		List<uint32> missingRequiredSlots;
+		for (uint32 slot = 0; slot < GPU_MAX_VB_BINDED; slot++)
+		{
+			if ((requiredSlotsMask & (1u << slot)) == 0)
+			{
+				continue;
+			}
+
+			const RenderGeometryVertexBuffer* vertexBuffer = geometry.FindVertexBuffer(slot);
+			if (vertexBuffer == nullptr)
+			{
+				// 先收集全部缺失 Slot，避免调用方每次修复一个错误后才能看到下一个错误。
+				missingRequiredSlots.Add(slot);
+				continue;
+			}
+			requiredBuffers[slot] = static_cast<GPUBufferVulkan*>(vertexBuffer->Buffer);
+			requiredOffsets[slot] = static_cast<VkDeviceSize>(vertexBuffer->Offset);
+			const VertexFactoryBufferBinding* binding = geometry.Layout->FindBinding(slot);
+			if (binding == nullptr || binding->Stride == 0)
+			{
+				LOG_ERROR("Graphic", "RenderGeometry LayoutHash={0} has an invalid required vertex buffer binding at slot {1}.",
+					geometry.Layout->GetHash(), slot);
+				return false;
+			}
+			_renderGeometryVertexElementCounts[slot] = (vertexBuffer->Buffer->GetSize() - vertexBuffer->Offset) / binding->Stride;
+			if (binding->InputRate == VertexFactoryInputRate::PerInstance)
+			{
+				_renderGeometryPerInstanceSlotsMask |= (1u << slot);
+			}
+		}
+
+		if (missingRequiredSlots.Count() != 0)
+		{
+			const SLC2GPUShaderProgram* program = pipelineState->GetProgram();
+			for (int32 missingIndex = 0; missingIndex < missingRequiredSlots.Count(); missingIndex++)
+			{
+				LOG_ERROR("Graphic", "RenderGeometry for program {0} with LayoutHash={1} is missing required vertex buffer slot {2}.",
+					program != nullptr ? program->GetProgramId() : String::Empty,
+					geometry.Layout->GetHash(),
+					missingRequiredSlots[missingIndex]);
+			}
+			return false;
+		}
+
+		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		// 按真实 Slot 单独绑定，不以数组下标或上一 Draw 的连续绑定数量推断输入位置。
+		for (uint32 slot = 0; slot < GPU_MAX_VB_BINDED; slot++)
+		{
+			if (requiredBuffers[slot] != nullptr)
+			{
+				const VkBuffer handle = requiredBuffers[slot]->GetHandle();
+				vkCmdBindVertexBuffers(cmdBuffer->GetHandle(), slot, 1, &handle, &requiredOffsets[slot]);
+			}
+		}
+
+		if (geometry.IndexBuffer != nullptr)
+		{
+			GPUBufferVulkan* indexBuffer = static_cast<GPUBufferVulkan*>(geometry.IndexBuffer);
+			const VkIndexType indexType = geometry.IndexFormat == PixelFormat::R32_UInt
+				? VK_INDEX_TYPE_UINT32
+				: VK_INDEX_TYPE_UINT16;
+			vkCmdBindIndexBuffer(
+				cmdBuffer->GetHandle(),
+				indexBuffer->GetHandle(),
+				static_cast<VkDeviceSize>(geometry.IndexOffset),
+				indexType);
+		}
+
+		_renderGeometryIndexBufferSize = geometry.IndexBuffer != nullptr ? geometry.IndexBuffer->GetSize() : 0;
+		_renderGeometryIndexOffset = geometry.IndexOffset;
+		_renderGeometryIndexFormat = geometry.IndexFormat;
+		_renderGeometryLayoutHash = geometry.Layout->GetHash();
+		_renderGeometryReady = true;
+		return true;
 	}
 
 	void GPUContextVulkan::BindSampler(int32 slot, GPUSampler* sampler)
@@ -1422,6 +1624,7 @@ namespace SE
 		{
 			_currentState = static_cast<GPUPipelineStateVulkan*>(state);
 			_currentSLC2GraphicsState = nullptr;
+			ClearRenderGeometry();
 			_psDirtyFlag = true;
 		}
 	}
@@ -1432,9 +1635,12 @@ namespace SE
 
     void GPUContextVulkan::SetSLC2State(SLC2GPUPipelineState* state) 
 	{
-        if (_currentSLC2GraphicsState != state || _currentSLC2GraphicsState != nullptr)
+		SLC2GraphicsPipelineStateVulkan* stateVulkan = static_cast<SLC2GraphicsPipelineStateVulkan*>(state);
+        if (_currentSLC2GraphicsState != stateVulkan || _currentState != nullptr)
         {
-            _currentSLC2GraphicsState = static_cast<SLC2GraphicsPipelineStateVulkan*>(state);
+			_currentState = nullptr;
+            _currentSLC2GraphicsState = stateVulkan;
+			ClearRenderGeometry();
             _psDirtyFlag              = true;
         }
 	}
@@ -1468,6 +1674,7 @@ namespace SE
 		FlushState();
 		_currentState = nullptr;
 		_currentSLC2GraphicsState = nullptr;
+		ClearRenderGeometry();
 
 		// Execute commands
 		_cmdBufferManager->SubmitActiveCmdBuffer();

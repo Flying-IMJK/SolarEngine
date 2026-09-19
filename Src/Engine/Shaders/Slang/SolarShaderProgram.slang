@@ -43,5 +43,4 @@ struct SolarShaderMacroGroupAttribute
 #define SHADER_PS(entry) SolarShaderStage("fragment", #entry)
 #define SHADER_CS(entry) SolarShaderStage("compute", #entry)
 #define SHADER_MACRO(...) SolarShaderMacroGroup(#__VA_ARGS__)
-
 #define SHADER_PROGRAM(name, ...) [SolarShaderProgram, __VA_ARGS__] struct name {};

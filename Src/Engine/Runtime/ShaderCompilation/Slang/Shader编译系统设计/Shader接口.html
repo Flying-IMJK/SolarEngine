@@ -80,6 +80,38 @@
       <li>SLC2 不创建 EntryPoint 专属 ParameterBlock，也不序列化 <code>entryPointBlockId</code>；所有 Stage 共享 Program 的唯一根 Layout。</li>
     </ul>
 
+    <h3 id="vertex-input-declaration">顶点输入声明（已确认）</h3>
+    <p>顶点输入分为两层：Vertex EntryPoint 的逻辑输入签名描述 Shader 需要什么，Program 级顶点缓冲布局描述这些数据如何存放。源码采用 A 方案，在 <code>SHADER_PROGRAM</code> 中分别显式声明 Binding 与 Element；Location 只来自 Slang Reflection，不在源码布局中重复声明。</p>
+    <pre><code>SHADER_PROGRAM(
+    SurfaceProgram,
+
+    SHADER_VS(SurfaceVS)
+    SHADER_PS(SurfacePS)
+
+    SHADER_VS_INPUT_BINDING(0, 32, PER_VERTEX, 0)
+    SHADER_VS_INPUT_ELEMENT(POSITION, 0, R32G32B32_Float, 0, 0)
+    SHADER_VS_INPUT_ELEMENT(NORMAL,   0, R10G10B10A2_UNorm, 0, ALIGN)
+
+    SHADER_VS_INPUT_BINDING(3, 64, PER_INSTANCE, 1)
+    SHADER_VS_INPUT_ELEMENT(INSTANCE_TRANSFORM, 0, R32G32B32A32_Float, 3, 0)
+);</code></pre>
+    <table>
+      <thead><tr><th>声明</th><th>字段与语义</th></tr></thead>
+      <tbody>
+        <tr><td><code>SHADER_VS_INPUT_BINDING(slot, stride, inputRate, instanceStepRate)</code></td><td>声明一个物理 Vertex Buffer Slot。<code>stride</code> 是完整顶点/实例记录的字节步长，允许显式间隙和尾部填充；<code>PER_VERTEX</code> 必须使用 step rate 0，<code>PER_INSTANCE</code> 首期必须使用 step rate 1。</td></tr>
+        <tr><td><code>SHADER_VS_INPUT_ELEMENT(semantic, semanticIndex, format, slot, offset)</code></td><td>声明一个物理 Attribute。Semantic 按 ASCII 大小写不敏感匹配并在产物中转为大写规范形式；<code>format</code> 使用稳定的 SolarEngine <code>PixelFormat</code> 名称；<code>offset</code> 是非负字节偏移或 <code>ALIGN</code>。</td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li>同一 Slot 只能声明一个 Binding；每个 Element 引用的 Slot 必须存在。Slot 可以稀疏，例如同时使用 0 和 3；Slot 编号不是 Semantic、Location 或参数序号。</li>
+      <li>Slot 必须小于引擎 <code>GPU_MAX_VB_BINDED</code>，Element 总数不得超过 <code>VERTEX_SHADER_MAX_INPUT_ELEMENTS</code>；生成 required Slot mask 前必须先验证位宽与引擎上限。</li>
+      <li><code>ALIGN</code> 只表示紧接同一 Slot 的前一个 Element，即 <code>previous.offset + previous.formatByteSize</code>；该 Slot 的第一个 Element 使用 <code>ALIGN</code> 时 offset 为 0。它不增加自然对齐或 16 字节对齐。</li>
+      <li>Element 范围不得重叠，并且必须满足 <code>offset + formatByteSize &lt;= stride</code>。Stride 不由 Element 推导，因此布局可以表达尾部 padding。</li>
+      <li>Program 的物理顶点缓冲布局对全部 Target 与 Variant 固定。Variant 即使不读取某项输入，也不能增加、删除或修改 Binding/Element；需要 Static、Skinned、PositionOnly 等不同布局时必须声明不同 ProgramId。</li>
+      <li>所有声明的 Binding/Element 都是必需输入，不存在 optional Element 或自动默认 Vertex Buffer。Mesh 缺少其中任一数据时与该 Program 不兼容，应在导入阶段补齐数据或选择其他 ProgramId。</li>
+      <li>没有 Vertex Stage 的 Program 不得声明顶点布局；只使用 <code>SV_VertexID</code>、<code>SV_InstanceID</code> 等 system-value 的 Vertex Stage 可以声明空布局。</li>
+    </ul>
+
     <h3 id="program-attributes">宏到 Slang Attribute 的展开</h3>
     <pre><code>[__AttributeUsage(_AttributeTargets.Struct)]
 struct SolarShaderProgramAttribute {}
@@ -97,9 +129,30 @@ struct SolarShaderMacroGroupAttribute
     string members;
 };
 
+[__AttributeUsage(_AttributeTargets.Struct)]
+struct SolarShaderVertexInputBindingAttribute
+{
+    int slot;
+    int stride;
+    string inputRate;
+    int instanceStepRate;
+};
+
+[__AttributeUsage(_AttributeTargets.Struct)]
+struct SolarShaderVertexInputElementAttribute
+{
+    string semantic;
+    int semanticIndex;
+    string format;
+    int slot;
+    string offset;
+};
+
 #define SHADER_VS(entry) [SolarShaderStage("vertex", #entry)]
 #define SHADER_PS(entry) [SolarShaderStage("fragment", #entry)]
 #define SHADER_MACRO(...) [SolarShaderMacroGroup(#__VA_ARGS__)]
+#define SHADER_VS_INPUT_BINDING(slot, stride, inputRate, stepRate) [SolarShaderVertexInputBinding(slot, stride, #inputRate, stepRate)]
+#define SHADER_VS_INPUT_ELEMENT(semantic, semanticIndex, format, slot, offset) [SolarShaderVertexInputElement(#semantic, semanticIndex, #format, slot, #offset)]
 #define SHADER_PROGRAM(name, context) [SolarShaderProgram] context struct name {}</code></pre>
 
     <ul>
@@ -108,7 +161,7 @@ struct SolarShaderMacroGroupAttribute
       <li>宿主通过 <code>IModule::getModuleReflection()</code> 遍历根级声明，再通过 <code>getUserAttributeCount()</code> 和 <code>getUserAttributeByIndex()</code> 分类 Program、Stage 与 Macro Group Attribute。</li>
       <li>宿主使用 <code>IModule::findAndCheckEntryPoint(entryPoint, stage, ...)</code> 查找并检查没有 <code>[shader]</code> 标记的入口函数。</li>
       <li>找到入口后必须检查其参数布局类别；只接受 varying/system-value 输入输出，拒绝 EntryPoint uniform/resource 参数。</li>
-      <li>Program、Stage 和 Variant Group 声明不得由该 Program 自己的 Variant 宏控制，所有 Variant 必须得到稳定的 Program 结构。</li>
+      <li>Program、Stage、Variant Group 与顶点缓冲布局声明不得由该 Program 自己的 Variant 宏控制，所有 Variant 必须得到稳定的 Program 结构。</li>
     </ul>
   </section>
 
