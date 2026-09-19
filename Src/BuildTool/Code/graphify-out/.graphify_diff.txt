@@ -1,3 +1,0 @@
-299 new nodes, 866 new edges, 277 nodes removed, 896 edges removed
-New nodes: ReadAdditionalEnumData, isDevOnly, APIIsSealed, GetCppType(), defaultValue
-New edges: 866
