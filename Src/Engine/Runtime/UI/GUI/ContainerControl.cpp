@@ -330,10 +330,10 @@ namespace SE
 			switch (direction)
 			{
 			case NavDirection::Next:
-				predictedLocation = Float2(0, location.y + layoutSize.y);
+				predictedLocation = Float2(0, location.Y + layoutSize.Y);
 				break;
 			case NavDirection::Previous:
-				predictedLocation = Float2(Size.operator->().x, location.y - layoutSize.y);
+				predictedLocation = Float2(Size.operator->().X, location.Y - layoutSize.Y);
 				break;
 			}
 			if (Rectangle(Float2::Zero, Size).Contains(predictedLocation))

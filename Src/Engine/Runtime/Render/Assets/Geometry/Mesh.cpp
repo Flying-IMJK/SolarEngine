@@ -410,16 +410,16 @@ namespace SE
         context->DrawIndexedInstanced(_triangles * 3, 1, 0, 0, 0);
     }
 
-    void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, EnumFlags<StaticMask> flags,
-        bool receiveDecals, EnumFlags<DrawPass> drawModes, float perInstanceRandom, int16 sortOrder) const
+    void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticMask flags,
+        bool receiveDecals, DrawPass drawModes, float perInstanceRandom, int16 sortOrder) const
     {
         if (!material || !material->IsDeformable(MaterialDomain::Surface) || !IsInitialized())
         {
             return;
         }
-        drawModes.Marge(material->GetDrawModes());
+        drawModes = EnumAddFlags(drawModes, material->GetDrawModes());
         
-        if (drawModes.IsFlag(DrawPass::None))
+        if (drawModes == DrawPass::None)
         {
             return;
         }
@@ -477,14 +477,14 @@ namespace SE
             return;
 
         // Check if skip rendering
-        EnumFlags<ShadowsCastingMode> shadowsMode = entry.ShadowsMode;
-        shadowsMode.Marge(slot.ShadowsMode);
-        EnumFlags<DrawPass> drawModes = info.DrawModes;
-        drawModes.Marge(renderContext.view.Pass);
-        drawModes.Marge(renderContext.view.GetShadowsDrawPassMask(shadowsMode));
-        drawModes.Marge(material->GetDrawModes());
+        ShadowsCastingMode shadowsMode = entry.ShadowsMode;
+        shadowsMode = EnumAddFlags(shadowsMode, slot.ShadowsMode);
+        DrawPass drawModes = info.DrawModes;
+        drawModes = EnumAddFlags(drawModes, renderContext.view.Pass);
+        drawModes = EnumAddFlags(drawModes, renderContext.view.GetShadowsDrawPassMask(shadowsMode));
+        drawModes = EnumAddFlags(drawModes, material->GetDrawModes());
 
-        if (drawModes.IsFlag(DrawPass::None))
+        if (drawModes == DrawPass::None)
             return;
 
         // Setup draw call
@@ -597,12 +597,12 @@ namespace SE
 
         // Push draw call to the render lists
         auto shadowsMode = entry.ShadowsMode;
-        shadowsMode.Marge(slot.ShadowsMode);
+        shadowsMode = EnumAddFlags(shadowsMode, slot.ShadowsMode);
 
         auto drawModes = info.DrawModes;
-        drawModes.Marge(material->GetDrawModes());
+        drawModes = EnumAddFlags(drawModes, material->GetDrawModes());
 
-        if (!drawModes.Is(DrawPass::None))
+        if (drawModes != DrawPass::None)
         {
             renderContextBatch.GetMainContext().list->AddDrawCall(renderContextBatch, drawModes, info.Flags, shadowsMode, info.Bounds, drawCall, entry.ReceiveDecals, info.SortOrder);
         }

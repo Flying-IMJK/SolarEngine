@@ -263,8 +263,8 @@ namespace SE
         float height;
         Float2 caretPos = GetCharPosition(CaretPosition, height);
         return  Rectangle(
-                             caretPos.x - (caretWidth * 0.5f),
-                             caretPos.y,
+                             caretPos.X - (caretWidth * 0.5f),
+                             caretPos.Y,
                              caretWidth,
                              height * GetDpiScale());
     }
@@ -567,7 +567,7 @@ namespace SE
 
         float height = Height;
         Float2 location = GetCharPosition(index, height);
-        location.y += height;
+        location.Y += height;
 
         return HitTestText(location);
     }
@@ -579,7 +579,7 @@ namespace SE
 
         float height = Height;
         Float2 location = GetCharPosition(index, height);
-        location.y -= height;
+        location.Y -= height;
 
         return HitTestText(location);
     }
@@ -778,9 +778,9 @@ namespace SE
         if (IsMultiline && _text.Length() != 0 && IsMultilineScrollable)
         {
             if (Input::GetKey(KeyboardKeys::Shift))
-                TargetViewOffset = Float2::Clamp(_targetViewOffset - Float2(delta * 20.0f, 0), Float2::Zero,  Float2(_textSize.x, _targetViewOffset.y));
+                TargetViewOffset = Float2::Clamp(_targetViewOffset - Float2(delta * 20.0f, 0), Float2::Zero,  Float2(_textSize.X, _targetViewOffset.Y));
             else
-                TargetViewOffset = Float2::Clamp(_targetViewOffset - Float2(0, delta * 10.0f), Float2::Zero,  Float2(_targetViewOffset.x, _textSize.y - Height));
+                TargetViewOffset = Float2::Clamp(_targetViewOffset - Float2(0, delta * 10.0f), Float2::Zero,  Float2(_targetViewOffset.X, _textSize.Y - Height));
                 
             return true;
         }

@@ -1335,8 +1335,9 @@ namespace SE
         {
             const SLC2VertexInputSignatureElement& input = (*signature)[matchIndex];
             const VertexFactoryInputElement* element = match.Elements[matchIndex];
-            if (m_Device == nullptr || VulkanTool::ToVulkanFormat(element->Format) == VK_FORMAT_UNDEFINED ||
-                !m_Device->GetPixelFormatFeatures(element->Format).Support.IsFlag(FormatSupport::InputAssemblyVertexBuffer))
+            if (m_Device == nullptr || 
+                VulkanTool::ToVulkanFormat(element->Format) == VK_FORMAT_UNDEFINED ||
+                !EnumHasAllFlags(m_Device->GetPixelFormatFeatures(element->Format).Support, FormatSupport::InputAssemblyVertexBuffer))
             {
                 LOG_ERROR("Graphic", "SLC2 vertex input semantic {0}{1} uses a Vulkan-unsupported format {2}.",
                     input.Semantic, input.SemanticIndex, PixelFormatGetString(element->Format));

@@ -140,7 +140,7 @@ namespace SE
         LODs[lodIndex].Render(context);
     }
 
-    void Model::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, EnumFlags<StaticMask> flags, bool receiveDecals, int16 sortOrder) const
+    void Model::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticMask flags, bool receiveDecals, int16 sortOrder) const
     {
         if (!CanBeRendered())
             return;
@@ -331,7 +331,7 @@ namespace SE
 
                 const auto id = slot.Material.GetID();
                 stream->Write(id);
-                stream->WriteByte(slot.ShadowsMode.Get());
+                stream->WriteByte(static_cast<byte>(slot.ShadowsMode));
                 stream->WriteString(slot.Name, 11);
             }
 

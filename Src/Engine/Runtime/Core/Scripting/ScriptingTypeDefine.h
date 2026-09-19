@@ -15,9 +15,9 @@ namespace SE
     #define SCRIPTING_TYPE_STRUCTURE(type) \
     public: \
     friend class type##Internal; \
-    static ScriptingTypeInitializer TypeInitializer; \
-    FORCE_INLINE static const ScriptingType& GetScriptingType() { return TypeInitializer.GetType(); } \
-    FORCE_INLINE static CLRClass* GetScriptingClass() { return TypeInitializer.GetType().ManagedClass; }
+    static struct ScriptingTypeInitializer TypeInitializer; \
+    static const ScriptingType& GetScriptingType() { return TypeInitializer.GetType(); } \
+    static class CLRClass* GetScriptingClass() { return TypeInitializer.GetType().ManagedClass; }
 
     /// <summary>
     /// Helper define used to declare required components for native types that have managed type (for objects that cannot be spawned).
@@ -25,9 +25,9 @@ namespace SE
     #define SCRIPTING_TYPE_NO_SPAWN(type) \
     public: \
     friend class type##Internal; \
-    static ScriptingTypeInitializer TypeInitializer; \
-    FORCE_INLINE static const ScriptingType& GetScriptingType() { return TypeInitializer.GetType(); } \
-    FORCE_INLINE static CLRClass* GetScriptingClass() { return TypeInitializer.GetType().ManagedClass; }
+    static struct ScriptingTypeInitializer TypeInitializer; \
+    static const ScriptingType& GetScriptingType() { return TypeInitializer.GetType(); } \
+    static class CLRClass* GetScriptingClass() { return TypeInitializer.GetType().ManagedClass; }
 
     /// <summary>
     /// Helper define used to declare required components for native types that have managed type (for objects that can be spawned).

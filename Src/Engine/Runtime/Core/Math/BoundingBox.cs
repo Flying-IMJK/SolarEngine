@@ -1,10 +1,5 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-#if USE_LARGE_WORLDS
-using Real = System.Double;
-#else
-using Real = System.Single;
-#endif
 
 // -----------------------------------------------------------------------------
 // Original code from SharpDX project. https://github.com/sharpdx/SharpDX/
@@ -66,17 +61,17 @@ namespace SE
         /// <summary>
         /// A <see cref="BoundingBox"/> which represents an empty space.
         /// </summary>
-        public static readonly BoundingBox Empty = new BoundingBox(Vector3.Maximum, Vector3.Minimum);
+        public static readonly BoundingBox Empty = new BoundingBox(Float3.Maximum, Float3.Minimum);
 
         /// <summary>
         /// A <see cref="BoundingBox"/> which is located in point (0, 0, 0) and has size equal (0, 0, 0).
         /// </summary>
-        public static readonly BoundingBox Zero = new BoundingBox(Vector3.Zero, Vector3.Zero);
+        public static readonly BoundingBox Zero = new BoundingBox(Float3.Zero, Float3.Zero);
 
         /// <summary>
         /// Gets or sets the size.
         /// </summary>
-        public Vector3 Size
+        public Float3 Size
         {
             get => Maximum - Minimum;
             set
@@ -91,7 +86,7 @@ namespace SE
         /// <summary>
         /// Gets or sets the center point location.
         /// </summary>
-        public Vector3 Center
+        public Float3 Center
         {
             get => Minimum + (Maximum - Minimum) * 0.5f;
             set
@@ -107,7 +102,7 @@ namespace SE
         /// </summary>
         /// <param name="minimum">The minimum vertex of the bounding box.</param>
         /// <param name="maximum">The maximum vertex of the bounding box.</param>
-        public BoundingBox(Vector3 minimum, Vector3 maximum)
+        public BoundingBox(Float3 minimum, Float3 maximum)
         {
             Minimum = minimum;
             Maximum = maximum;
@@ -117,9 +112,9 @@ namespace SE
         /// Retrieves the eight corners of the bounding box.
         /// </summary>
         /// <returns>An array of points representing the eight corners of the bounding box.</returns>
-        public Vector3[] GetCorners()
+        public Float3[] GetCorners()
         {
-            var results = new Vector3[8];
+            var results = new Float3[8];
             GetCorners(results);
             return results;
         }
@@ -128,16 +123,16 @@ namespace SE
         /// Retrieves the eight corners of the bounding box.
         /// </summary>
         /// <returns>An array of points representing the eight corners of the bounding box.</returns>
-        public void GetCorners(Vector3[] corners)
+        public void GetCorners(Float3[] corners)
         {
-            corners[0] = new Vector3(Minimum.X, Maximum.Y, Maximum.Z);
-            corners[1] = new Vector3(Maximum.X, Maximum.Y, Maximum.Z);
-            corners[2] = new Vector3(Maximum.X, Minimum.Y, Maximum.Z);
-            corners[3] = new Vector3(Minimum.X, Minimum.Y, Maximum.Z);
-            corners[4] = new Vector3(Minimum.X, Maximum.Y, Minimum.Z);
-            corners[5] = new Vector3(Maximum.X, Maximum.Y, Minimum.Z);
-            corners[6] = new Vector3(Maximum.X, Minimum.Y, Minimum.Z);
-            corners[7] = new Vector3(Minimum.X, Minimum.Y, Minimum.Z);
+            corners[0] = new Float3(Minimum.X, Maximum.Y, Maximum.Z);
+            corners[1] = new Float3(Maximum.X, Maximum.Y, Maximum.Z);
+            corners[2] = new Float3(Maximum.X, Minimum.Y, Maximum.Z);
+            corners[3] = new Float3(Minimum.X, Minimum.Y, Maximum.Z);
+            corners[4] = new Float3(Minimum.X, Maximum.Y, Minimum.Z);
+            corners[5] = new Float3(Maximum.X, Maximum.Y, Minimum.Z);
+            corners[6] = new Float3(Maximum.X, Minimum.Y, Minimum.Z);
+            corners[7] = new Float3(Minimum.X, Minimum.Y, Minimum.Z);
         }
 
         /// <summary>
@@ -147,7 +142,7 @@ namespace SE
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray)
         {
-            return CollisionsHelper.RayIntersectsBox(ref ray, ref this, out Real _);
+            return CollisionsHelper.RayIntersectsBox(ref ray, ref this, out float _);
         }
 
         /// <summary>
@@ -156,7 +151,7 @@ namespace SE
         /// <param name="ray">The ray to test.</param>
         /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Ray ray, out Real distance)
+        public bool Intersects(ref Ray ray, out float distance)
         {
             return CollisionsHelper.RayIntersectsBox(ref ray, ref this, out distance);
         }
@@ -172,7 +167,7 @@ namespace SE
         [Obsolete("Deprecated in v1.4")]
         public bool Intersects(ref Ray ray, out float distance)
         {
-            var result = CollisionsHelper.RayIntersectsBox(ref ray, ref this, out Real dst);
+            var result = CollisionsHelper.RayIntersectsBox(ref ray, ref this, out float dst);
             distance = (float)dst;
             return result;
         }
@@ -182,9 +177,9 @@ namespace SE
         /// Determines if there is an intersection between the current object and a <see cref="Ray" />.
         /// </summary>
         /// <param name="ray">The ray to test.</param>
-        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Vector3.Zero" /> if there was no intersection.</param>
+        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Float3.Zero" /> if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Ray ray, out Vector3 point)
+        public bool Intersects(ref Ray ray, out Float3 point)
         {
             return CollisionsHelper.RayIntersectsBox(ref ray, ref this, out point);
         }
@@ -207,7 +202,7 @@ namespace SE
         /// <param name="vertex2">The second vertex of the triangle to test.</param>
         /// <param name="vertex3">The third vertex of the triangle to test.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Vector3 vertex1, ref Vector3 vertex2, ref Vector3 vertex3)
+        public bool Intersects(ref Float3 vertex1, ref Float3 vertex2, ref Float3 vertex3)
         {
             return CollisionsHelper.BoxIntersectsTriangle(ref this, ref vertex1, ref vertex2, ref vertex3);
         }
@@ -258,7 +253,7 @@ namespace SE
         /// </summary>
         /// <param name="point">The point to test.</param>
         /// <returns>The type of containment the two objects have.</returns>
-        public ContainmentType Contains(ref Vector3 point)
+        public ContainmentType Contains(ref Float3 point)
         {
             return CollisionsHelper.BoxContainsPoint(ref this, ref point);
         }
@@ -268,7 +263,7 @@ namespace SE
         /// </summary>
         /// <param name="point">The point to test.</param>
         /// <returns>The type of containment the two objects have.</returns>
-        public ContainmentType Contains(Vector3 point)
+        public ContainmentType Contains(Float3 point)
         {
             return Contains(ref point);
         }
@@ -281,7 +276,7 @@ namespace SE
         /// <param name="vertex2">The second vertex of the triangle to test.</param>
         /// <param name="vertex3">The third vertex of the triangle to test.</param>
         /// <returns>The type of containment the two objects have.</returns>
-        public ContainmentType Contains(ref Vector3 vertex1, ref Vector3 vertex2, ref Vector3 vertex3)
+        public ContainmentType Contains(ref Float3 vertex1, ref Float3 vertex2, ref Float3 vertex3)
         {
             return CollisionsHelper.BoxContainsTriangle(ref this, ref vertex1, ref vertex2, ref vertex3);
         }
@@ -333,16 +328,16 @@ namespace SE
         /// <param name="points">The points that will be contained by the box.</param>
         /// <param name="result">When the method completes, contains the newly constructed bounding box.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="points" /> is <c>null</c>.</exception>
-        public static void FromPoints(Vector3[] points, out BoundingBox result)
+        public static void FromPoints(Float3[] points, out BoundingBox result)
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
-            var min = Vector3.Maximum;
-            var max = Vector3.Minimum;
+            var min = Float3.Maximum;
+            var max = Float3.Minimum;
             for (var i = 0; i < points.Length; ++i)
             {
-                Vector3.Min(ref min, ref points[i], out min);
-                Vector3.Max(ref max, ref points[i], out max);
+                Float3.Min(ref min, ref points[i], out min);
+                Float3.Max(ref max, ref points[i], out max);
             }
             result = new BoundingBox(min, max);
         }
@@ -353,16 +348,16 @@ namespace SE
         /// <param name="points">The points that will be contained by the box.</param>
         /// <returns>The newly constructed bounding box.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="points" /> is <c>null</c>.</exception>
-        public static BoundingBox FromPoints(Vector3[] points)
+        public static BoundingBox FromPoints(Float3[] points)
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
-            var min = Vector3.Maximum;
-            var max = Vector3.Minimum;
+            var min = Float3.Maximum;
+            var max = Float3.Minimum;
             for (var i = 0; i < points.Length; ++i)
             {
-                Vector3.Min(ref min, ref points[i], out min);
-                Vector3.Max(ref max, ref points[i], out max);
+                Float3.Min(ref min, ref points[i], out min);
+                Float3.Max(ref max, ref points[i], out max);
             }
             return new BoundingBox(min, max);
         }
@@ -374,8 +369,8 @@ namespace SE
         /// <param name="result">When the method completes, contains the newly constructed bounding box.</param>
         public static void FromSphere(ref BoundingSphere sphere, out BoundingBox result)
         {
-            result.Minimum = new Vector3(sphere.Center.X - sphere.Radius, sphere.Center.Y - sphere.Radius, sphere.Center.Z - sphere.Radius);
-            result.Maximum = new Vector3(sphere.Center.X + sphere.Radius, sphere.Center.Y + sphere.Radius, sphere.Center.Z + sphere.Radius);
+            result.Minimum = new Float3(sphere.Center.X - sphere.Radius, sphere.Center.Y - sphere.Radius, sphere.Center.Z - sphere.Radius);
+            result.Maximum = new Float3(sphere.Center.X + sphere.Radius, sphere.Center.Y + sphere.Radius, sphere.Center.Z + sphere.Radius);
         }
 
         /// <summary>
@@ -386,8 +381,8 @@ namespace SE
         public static BoundingBox FromSphere(BoundingSphere sphere)
         {
             BoundingBox box;
-            box.Minimum = new Vector3(sphere.Center.X - sphere.Radius, sphere.Center.Y - sphere.Radius, sphere.Center.Z - sphere.Radius);
-            box.Maximum = new Vector3(sphere.Center.X + sphere.Radius, sphere.Center.Y + sphere.Radius, sphere.Center.Z + sphere.Radius);
+            box.Minimum = new Float3(sphere.Center.X - sphere.Radius, sphere.Center.Y - sphere.Radius, sphere.Center.Z - sphere.Radius);
+            box.Maximum = new Float3(sphere.Center.X + sphere.Radius, sphere.Center.Y + sphere.Radius, sphere.Center.Z + sphere.Radius);
             return box;
         }
 
@@ -399,8 +394,8 @@ namespace SE
         /// <param name="result">When the method completes, contains the newly constructed bounding box.</param>
         public static void Merge(ref BoundingBox value1, ref BoundingBox value2, out BoundingBox result)
         {
-            Vector3.Min(ref value1.Minimum, ref value2.Minimum, out result.Minimum);
-            Vector3.Max(ref value1.Maximum, ref value2.Maximum, out result.Maximum);
+            Float3.Min(ref value1.Minimum, ref value2.Minimum, out result.Minimum);
+            Float3.Max(ref value1.Maximum, ref value2.Maximum, out result.Maximum);
         }
 
         /// <summary>
@@ -412,8 +407,8 @@ namespace SE
         public static BoundingBox Merge(BoundingBox value1, BoundingBox value2)
         {
             BoundingBox box;
-            Vector3.Min(ref value1.Minimum, ref value2.Minimum, out box.Minimum);
-            Vector3.Max(ref value1.Maximum, ref value2.Maximum, out box.Maximum);
+            Float3.Min(ref value1.Minimum, ref value2.Minimum, out box.Minimum);
+            Float3.Max(ref value1.Maximum, ref value2.Maximum, out box.Maximum);
             return box;
         }
 
@@ -423,10 +418,10 @@ namespace SE
         /// <param name="value1">The box to merge.</param>
         /// <param name="value2">The point to merge.</param>
         /// <param name="result">When the method completes, contains the newly constructed bounding box.</param>
-        public static void Merge(ref BoundingBox value1, ref Vector3 value2, out BoundingBox result)
+        public static void Merge(ref BoundingBox value1, ref Float3 value2, out BoundingBox result)
         {
-            Vector3.Min(ref value1.Minimum, ref value2, out result.Minimum);
-            Vector3.Max(ref value1.Maximum, ref value2, out result.Maximum);
+            Float3.Min(ref value1.Minimum, ref value2, out result.Minimum);
+            Float3.Max(ref value1.Maximum, ref value2, out result.Maximum);
         }
 
         /// <summary>
@@ -434,11 +429,11 @@ namespace SE
         /// </summary>
         /// <param name="value2">The point to merge.</param>
         /// <returns>The newly constructed bounding box.</returns>
-        public BoundingBox Merge(Vector3 value2)
+        public BoundingBox Merge(Float3 value2)
         {
             BoundingBox result;
-            Vector3.Min(ref Minimum, ref value2, out result.Minimum);
-            Vector3.Max(ref Maximum, ref value2, out result.Maximum);
+            Float3.Min(ref Minimum, ref value2, out result.Minimum);
+            Float3.Max(ref Maximum, ref value2, out result.Maximum);
             return result;
         }
 
@@ -477,8 +472,8 @@ namespace SE
             var zb = backward * box.Maximum.Z;
 
             var translation = transform.TranslationVector;
-            var min = Vector3.Min(xa, xb) + Vector3.Min(ya, yb) + Vector3.Min(za, zb) + translation;
-            var max = Vector3.Max(xa, xb) + Vector3.Max(ya, yb) + Vector3.Max(za, zb) + translation;
+            var min = Float3.Min(xa, xb) + Float3.Min(ya, yb) + Float3.Min(za, zb) + translation;
+            var max = Float3.Max(xa, xb) + Float3.Max(ya, yb) + Float3.Max(za, zb) + translation;
             result = new BoundingBox(min, max);
         }
 
@@ -516,8 +511,8 @@ namespace SE
             var za = backward * box.Minimum.Z;
             var zb = backward * box.Maximum.Z;
 
-            var min = Vector3.Min(xa, xb) + Vector3.Min(ya, yb) + Vector3.Min(za, zb) + transform.Translation;
-            var max = Vector3.Max(xa, xb) + Vector3.Max(ya, yb) + Vector3.Max(za, zb) + transform.Translation;
+            var min = Float3.Min(xa, xb) + Float3.Min(ya, yb) + Float3.Min(za, zb) + transform.Translation;
+            var max = Float3.Max(xa, xb) + Float3.Max(ya, yb) + Float3.Max(za, zb) + transform.Translation;
             result = new BoundingBox(min, max);
         }
 
@@ -526,11 +521,11 @@ namespace SE
         /// </summary>
         /// <param name="offset">The bounds offset.</param>
         /// <returns>The offsetted bounds.</returns>
-        public BoundingBox MakeOffsetted(Vector3 offset)
+        public BoundingBox MakeOffsetted(Float3 offset)
         {
             BoundingBox result;
-            Vector3.Add(ref Minimum, ref offset, out result.Minimum);
-            Vector3.Add(ref Maximum, ref offset, out result.Maximum);
+            Float3.Add(ref Minimum, ref offset, out result.Minimum);
+            Float3.Add(ref Maximum, ref offset, out result.Maximum);
             return result;
         }
 
@@ -540,11 +535,11 @@ namespace SE
         /// <param name="box">The box.</param>
         /// <param name="offset">The bounds offset.</param>
         /// <returns>The offsetted bounds.</returns>
-        public static BoundingBox MakeOffsetted(ref BoundingBox box, ref Vector3 offset)
+        public static BoundingBox MakeOffsetted(ref BoundingBox box, ref Float3 offset)
         {
             BoundingBox result;
-            Vector3.Add(ref box.Minimum, ref offset, out result.Minimum);
-            Vector3.Add(ref box.Maximum, ref offset, out result.Maximum);
+            Float3.Add(ref box.Minimum, ref offset, out result.Minimum);
+            Float3.Add(ref box.Maximum, ref offset, out result.Maximum);
             return result;
         }
 
@@ -554,11 +549,11 @@ namespace SE
         /// <param name="box">The box.</param>
         /// <param name="scale">The bounds scale.</param>
         /// <returns>The scaled bounds.</returns>
-        public static BoundingBox MakeScaled(ref BoundingBox box, Real scale)
+        public static BoundingBox MakeScaled(ref BoundingBox box, float scale)
         {
-            Vector3.Subtract(ref box.Maximum, ref box.Minimum, out var size);
-            Vector3 sizeHalf = size * 0.5f;
-            Vector3 center = box.Minimum + sizeHalf;
+            Float3.Subtract(ref box.Maximum, ref box.Minimum, out var size);
+            Float3 sizeHalf = size * 0.5f;
+            Float3 center = box.Minimum + sizeHalf;
             sizeHalf *= scale;
             return new BoundingBox(center - sizeHalf, center + sizeHalf);
         }
@@ -657,10 +652,10 @@ namespace SE
         }
 
         /// <summary>
-        /// Determines whether the specified <see cref="Vector4" /> is equal to this instance.
+        /// Determines whether the specified <see cref="Float4" /> is equal to this instance.
         /// </summary>
-        /// <param name="value">The <see cref="Vector4" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <param name="value">The <see cref="Float4" /> to compare with this instance.</param>
+        /// <returns><c>true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref BoundingBox value)
         {
@@ -668,10 +663,10 @@ namespace SE
         }
 
         /// <summary>
-        /// Determines whether the specified <see cref="Vector4" /> is equal to this instance.
+        /// Determines whether the specified <see cref="Float4" /> is equal to this instance.
         /// </summary>
-        /// <param name="value">The <see cref="Vector4" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <param name="value">The <see cref="Float4" /> to compare with this instance.</param>
+        /// <returns><c>true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(BoundingBox value)
         {

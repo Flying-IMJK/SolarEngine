@@ -25,62 +25,74 @@ namespace SE
 		/// <summary>
 		/// Pipeline state description
 		/// </summary>
+		SE_STRUCT(API())
 		struct SE_API_RUNTIME Description
 		{
-
+			SCRIPTING_TYPE_MIN(Description)
 			/// <summary>
 			/// Enable/disable depth (DepthFunc and DepthWriteEnable)
 			/// </summary>
+			SE_FIELD(API())
 			bool DepthEnable = false;
 
 			/// <summary>
 			/// Enable/disable depth write
 			/// </summary>
+			SE_FIELD(API())
 			bool DepthWriteEnable = false;
 
 			/// <summary>
 			/// Enable/disable depth clipping
 			/// </summary>
+			SE_FIELD(API())
 			bool DepthClipEnable = false;
 
 			/// <summary>
 			/// A function that compares depth data against existing depth data
 			/// </summary>
+			SE_FIELD(API())
 			ComparisonFunc DepthFunc = ComparisonFunc::GreaterEqual;
 
 			/// <summary>
 			/// Enable/disable stencil buffer usage
 			/// </summary>
+			SE_FIELD(API())
 			bool StencilEnable = false;
 
 			/// <summary>
 			/// The read mask applied to the reference value and each stencil buffer entry to determine the significant bits for the stencil test.
 			/// </summary>
+			SE_FIELD(API())
 			uint8 StencilReadMask = 0;
 
 			/// <summary>
 			/// The write mask applied to values written into the stencil buffer.
 			/// </summary>
+			SE_FIELD(API())
 			uint8 StencilWriteMask = 0;
 
 			/// <summary>
 			/// The comparison function for the stencil test.
 			/// </summary>
+			SE_FIELD(API())
 			ComparisonFunc StencilFunc = ComparisonFunc::GreaterEqual;
 
 			/// <summary>
 			/// The stencil operation to perform when stencil testing fails.
 			/// </summary>
+			SE_FIELD(API())
 			StencilOperation StencilFailOp = StencilOperation::Zero;
 
 			/// <summary>
 			/// The stencil operation to perform when stencil testing passes and depth testing fails.
 			/// </summary>
+			SE_FIELD(API())
 			StencilOperation StencilDepthFailOp = StencilOperation::Zero;
 
 			/// <summary>
 			/// The stencil operation to perform when stencil testing and depth testing both pass.
 			/// </summary>
+			SE_FIELD(API())
 			StencilOperation StencilPassOp = StencilOperation::Zero;
 
 			/// <summary>
@@ -111,37 +123,44 @@ namespace SE
 			/// <summary>
 			/// Input primitives topology
 			/// </summary>
+			SE_FIELD(API())
 			PrimitiveTopologyType PrimitiveTopology = PrimitiveTopologyType::Triangle;
 
 			/// <summary>
 			/// True if use wireframe rendering, otherwise false
 			/// </summary>
+			SE_FIELD(API())
 			bool Wireframe = false;
 
 			/// <summary>
 			/// Primitives culling mode
 			/// </summary>
+			SE_FIELD(API())
 			CullMode CullMode = CullMode::Normal;
 
 			/// <summary>
 			/// Colors blending mode
 			/// </summary>
+			SE_FIELD(API())
 			BlendingMode BlendMode = BlendingMode::Opaque;
 
 		public:
 			/// <summary>
 			/// Default description
 			/// </summary>
+			SE_FIELD(API(ReadOnly))
 			static Description Default;
 
 			/// <summary>
 			/// Default description without using depth buffer at all
 			/// </summary>
+			SE_FIELD(API(ReadOnly))
 			static Description DefaultNoDepth;
 
 			/// <summary>
 			/// Default description for fullscreen triangle rendering
 			/// </summary>
+			SE_FIELD(API(ReadOnly))
 			static Description DefaultFullscreenTriangle;
 		};
 
@@ -190,6 +209,7 @@ namespace SE
 		/// <summary>
 		/// Returns true if pipeline state is valid and ready to use
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		virtual bool IsValid() const = 0;
 
 		/// <summary>
@@ -197,6 +217,7 @@ namespace SE
 		/// </summary>
 		/// <param name="desc">Full pipeline state description</param>
 		/// <returns>True if cannot create state, otherwise false</returns>
+		SE_FUNCTION(API())
 		virtual bool Init(const Description& desc);
 
 	public:

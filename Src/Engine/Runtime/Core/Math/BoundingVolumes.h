@@ -3,18 +3,11 @@
 #include "Math.h"
 #include "Matrix.h"
 #include "Plane.h"
+#include "Transform.h"
 
 namespace SE
 {
     struct Ray;
-    enum class OverlapResult
-    {
-        NoOverlap,
-        Overlap,
-        FullyEnclosed,
-    };
-
-    //-------------------------------------------------------------------------
     struct BoundingBox;
     struct BoundingSphere;
     struct Plane;
@@ -22,9 +15,10 @@ namespace SE
     //-------------------------------------------------------------------------
     // Axis Aligned Bounding Box
     //-------------------------------------------------------------------------
-
+    SE_STRUCT(API())
     struct SE_API_RUNTIME BoundingBox
     {
+        SCRIPTING_TYPE_MIN(BoundingBox)
     public:
         /// <summary>
         /// A <see cref="AABB"/> which represents an empty space.
@@ -40,11 +34,13 @@ namespace SE
         /// <summary>
         /// The minimum point of the box.
         /// </summary>
+        SE_FIELD(API())
         Float3 Minimum;
 
         /// <summary>
         /// The maximum point of the box.
         /// </summary>
+        SE_FIELD(API())
         Float3 Maximum;
 
     public:
@@ -98,7 +94,7 @@ namespace SE
         {
             Float3 size;
             Float3::Subtract(Maximum, Minimum, size);
-            return size.x * size.y * size.z;
+            return size.X * size.Y * size.Z;
         }
 
         /// <summary>
@@ -404,81 +400,6 @@ namespace SE
         /// <returns>The distance between bounding boxes.</returns>
         float Distance(const BoundingBox& box) const;
     };
-
-    /*//-------------------------------------------------------------------------
-    // Oriented Bounding Box
-    //-------------------------------------------------------------------------
-
-    struct SE_API_RUNTIME OBB
-    {
-        OBB() = default;
-        OBB(VectorSIMD center, VectorSIMD extents, Quaternion orientation = Quaternion::Identity);
-        OBB(VectorSIMD const *pPoints, uint32_t numPoints);
-        explicit OBB(AABB const &aabb);
-        explicit OBB(AABB const &aabb, Transform const &transform);
-
-        //-------------------------------------------------------------------------
-
-        inline bool IsValid() const { return m_Extents.IsGreaterThanEqual3(VectorSIMD::Zero); }
-
-        inline void Reset()
-        {
-            m_Orientation = Quaternion::Identity;
-            m_Center = m_Extents = VectorSIMD::Zero;
-        }
-
-        inline void GetCorners(VectorSIMD corners[8]) const
-        {
-            for (int32_t i = 0; i < 8; ++i)
-            {
-                corners[i] = m_Center + m_Orientation.RotateVector(m_Extents * VectorSIMD::BoxCorners[i]);
-            }
-        }
-
-        inline AABB GetAABB() const;
-
-        // Positioning
-        //-------------------------------------------------------------------------
-
-        inline void SetCenter(VectorSIMD const &newCenter) { m_Center = newCenter; }
-
-        inline void SetOrientation(Quaternion const &newOrientation) { m_Orientation = newOrientation; }
-
-        inline void Translate(VectorSIMD const &deltaVectorSIMD) { m_Center += deltaVectorSIMD; }
-
-        inline void Rotate(Quaternion const &deltaRotation) { m_Orientation = deltaRotation * m_Orientation; }
-
-        void ApplyTransform(Transform const &transform);
-
-        void ApplyScale(VectorSIMD const &scale);
-
-        inline OBB GetTransformed(Transform const &transform) const
-        {
-            OBB result = *this;
-            result.ApplyTransform(transform);
-            return result;
-        }
-
-        // Queries
-        //-------------------------------------------------------------------------
-
-        inline bool ContainsPoint(VectorSIMD const &point) const;
-
-        //-------------------------------------------------------------------------
-
-        inline OverlapResult OverlapTest(OBB const &other) const;
-        bool Overlaps(OBB const &box) const; // Slightly faster than the full overlap test
-
-        //-------------------------------------------------------------------------
-
-        inline OverlapResult OverlapTest(AABB const &aabb) const { return OverlapTest(OBB(aabb)); }
-        inline bool Overlaps(AABB const &aabb) const { return OverlapTest(OBB(aabb)) != OverlapResult::NoOverlap; }
-
-    public:
-        Quaternion m_Orientation = Quaternion::Identity;
-        VectorSIMD m_Center = VectorSIMD::UnitW;
-        VectorSIMD m_Extents = VectorSIMD::Zero;
-    };*/
 
     /// <summary>
     /// Defines a frustum which can be used in frustum culling, zoom to Extents (zoom to fit) operations, (matrix, frustum, camera) interchange, and many kind of intersection testing.
@@ -937,6 +858,205 @@ namespace SE
     };
 
 
+    enum class ContainmentType;
+
+    /// <summary>
+    /// Oriented Bounding Box (OBB) is a rectangular block, much like an AABB (Bounding Box) but with an arbitrary orientation in 3D space.
+    /// </summary>
+    SE_STRUCT(API()) 
+    struct SE_API_RUNTIME OrientedBoundingBox
+    {
+        SCRIPTING_TYPE_MIN(OrientedBoundingBox);
+
+        /// <summary>
+        /// Half lengths of the box along each axis.
+        /// </summary>
+        SE_FIELD(API()) Float3 Extents;
+
+        /// <summary>
+        /// The transformation which aligns and scales the box, and its translation vector represents the center of the box.
+        /// </summary>
+        SE_FIELD(API()) ::SE::Transform Transformation;
+
+    public:
+        /// <summary>
+        /// Empty constructor.
+        /// </summary>
+        OrientedBoundingBox()
+        {
+        }
+
+        OrientedBoundingBox(const Float3& extents, const Transform& transformation)
+        {
+            Extents = extents;
+            Transformation = transformation;
+        }
+
+        OrientedBoundingBox(const BoundingBox& bb);
+        OrientedBoundingBox(const Float3& extents, const Matrix& transformation);
+        OrientedBoundingBox(const Float3& extents, const Matrix3x3& rotationScale, const Float3& translation);
+        OrientedBoundingBox(const Float3& minimum, const Float3& maximum);
+        OrientedBoundingBox(Float3 points[], int32 pointCount);
+
+    public:
+        String ToString() const;
+
+    public:
+        // Gets the eight corners of the bounding box.
+        void GetCorners(Float3 corners[8]) const;
+        void GetCorners(Double3 corners[8]) const;
+
+        // The size of the OBB if no scaling is applied to the transformation matrix.
+        Float3 GetSizeUnscaled() const
+        {
+            return Extents * 2.0f;
+        }
+
+        // Returns the size of the OBB taking into consideration the scaling applied to the transformation matrix.
+        Float3 GetSize() const;
+
+        // Returns the square size of the OBB taking into consideration the scaling applied to the transformation matrix.
+        // @returns The size of the consideration.
+        Float3 GetSizeSquared() const;
+
+        // Gets the center of the OBB.
+        FORCE_INLINE Float3 GetCenter() const
+        {
+            return Transformation.Translation;
+        }
+
+        /// <summary>
+        /// Gets the AABB which contains all OBB corners.
+        /// </summary>
+        /// <returns>The result</returns>
+        BoundingBox GetBoundingBox() const;
+
+        /// <summary>
+        /// Gets the AABB which contains all OBB corners.
+        /// </summary>
+        /// <param name="result">The result.</param>
+        void GetBoundingBox(BoundingBox& result) const;
+
+    public:
+        // Transforms this box using a transformation matrix.
+        // @param mat The transformation matrix.
+        void Transform(const Matrix& matrix);
+        void Transform(const ::SE::Transform& transform);
+
+        // Scales the OBB by scaling its Extents without affecting the Transformation matrix.
+        // By keeping Transformation matrix scaling-free, the collision detection methods will be more accurate.
+        // @param scaling Scale to apply to the box.
+        void Scale(const Float3& scaling)
+        {
+            Extents *= scaling;
+        }
+
+        // Scales the OBB by scaling its Extents without affecting the Transformation matrix.
+        // By keeping Transformation matrix scaling-free, the collision detection methods will be more accurate.
+        // @param scaling Scale to apply to the box.
+        void Scale(float scaling)
+        {
+            Extents *= scaling;
+        }
+
+        // Translates the OBB to a new position using a translation vector.
+        // @param translation the translation vector.
+        void Translate(const Float3& translation)
+        {
+            Transformation.Translation += translation;
+        }
+
+    public:
+        FORCE_INLINE bool operator==(const OrientedBoundingBox& other) const
+        {
+            return Extents == other.Extents && Transformation == other.Transformation;
+        }
+
+        FORCE_INLINE bool operator!=(const OrientedBoundingBox& other) const
+        {
+            return Extents != other.Extents || Transformation != other.Transformation;
+        }
+
+        FORCE_INLINE OrientedBoundingBox operator*(const Matrix& matrix) const
+        {
+            OrientedBoundingBox result = *this;
+            result.Transform(matrix);
+            return result;
+        }
+
+        FORCE_INLINE OrientedBoundingBox operator*(const ::SE::Transform& matrix) const
+        {
+            OrientedBoundingBox result = *this;
+            result.Transform(matrix);
+            return result;
+        }
+
+    public:
+        /// <summary>
+        /// Creates the centered box (axis aligned).
+        /// </summary>
+        /// <param name="center">The center.</param>
+        /// <param name="size">The size.</param>
+        /// <param name="result">The result.</param>
+        static void CreateCentered(const Float3& center, const Float3& size, OrientedBoundingBox& result)
+        {
+            result.Extents = size * 0.5f;
+            result.Transformation = ::SE::Transform(center);
+        }
+
+        /// <summary>
+        /// Creates the centered box (axis-aligned).
+        /// </summary>
+        /// <param name="center">The center.</param>
+        /// <param name="size">The size.</param>
+        /// <returns>The result.</returns>
+        static OrientedBoundingBox CreateCentered(const Float3& center, const Float3& size)
+        {
+            OrientedBoundingBox result;
+            CreateCentered(center, size, result);
+            return result;
+        }
+
+    public:
+        // Determines whether a OBB contains a point.
+        // @param point The point to test.
+        // @returns The type of containment the two objects have.
+        ContainmentType Contains(const Float3& point, float* distance = nullptr) const;
+
+        // Determines whether a OBB contains a BoundingSphere.
+        // @param sphere The sphere to test.
+        // @param ignoreScale Optimize the check operation by assuming that OBB has no scaling applied.
+        // @returns The type of containment the two objects have.
+        ContainmentType Contains(const BoundingSphere& sphere, bool ignoreScale = false) const;
+
+        // Determines whether there is an intersection between a Ray and a OBB.
+        // @param ray The ray to test.
+        // @param point When the method completes, contains the point of intersection, or Float3.Zero if there was no intersection.
+        // @returns Whether the two objects intersected.
+        bool Intersects(const Ray& ray, Float3& point) const;
+
+        // Determines if there is an intersection between the current object and a Ray.
+        // @param ray The ray to test.
+        // @param distance When the method completes, contains the distance of the intersection, or 0 if there was no intersection.
+        // @returns Whether the two objects intersected.
+        bool Intersects(const Ray& ray, float& distance) const;
+
+        // Determines if there is an intersection between the current object and a Ray.
+        // @param ray The ray to test.
+        // @param distance When the method completes, contains the distance of the intersection, or 0 if there was no intersection.
+        // @param normal When the method completes, contains the intersection surface normal vector, or Float3::Up if there was no intersection.
+        // @returns Whether the two objects intersected.
+        bool Intersects(const Ray& ray, float& distance, Float3& normal) const;
+
+        // Determines whether there is an intersection between a Ray and a OBB.
+        // @param ray The ray to test.
+        // @returns Whether the two objects intersected.
+        bool Intersects(const Ray& ray) const
+        {
+            Float3 point;
+            return Intersects(ray, point);
+        }
+    };
 }
 
 template<>
@@ -962,3 +1082,12 @@ struct TIsPODType<SE::BoundingSphere>
 };
 
 DEFINE_DEFAULT_FORMATTING(SE::BoundingSphere, "Center:{0} Radius:{1}", v.Center, v.Radius);
+
+template<>
+struct TIsPODType<SE::OrientedBoundingBox>
+{
+    enum { Value = true };
+};
+
+DEFINE_DEFAULT_FORMATTING(SE::OrientedBoundingBox, "Center: {0}, Size: {1}", v.GetCenter(), v.GetSize());
+

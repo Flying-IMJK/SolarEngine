@@ -3,6 +3,7 @@
 //-------------------------------------------------------------------------
 #include "Runtime/API.h"
 #include "Runtime/Core/Types/Variable.h"
+#include <Runtime/Core/Scripting/ScriptingType.h>
 #ifdef RGB
 #undef RGB
 #endif
@@ -20,6 +21,7 @@ namespace SE
 
 	struct Color;
 
+    SE_STRUCT(API(InBuild("SE.Color32")))
     struct SE_API_RUNTIME Color32
     {
     public:
@@ -88,8 +90,10 @@ namespace SE
     	operator Float4() const;
     };
 
+    SE_STRUCT(API())
     struct SE_API_RUNTIME Color
 	{
+		SCRIPTING_TYPE_MIN(Color)
 	public:
 		union
 		{
@@ -98,22 +102,26 @@ namespace SE
 				/// <summary>
 				/// The red channel value.
 				/// </summary>
-				float r;
+				SE_FIELD(API())
+				float R;
 
 				/// <summary>
 				/// The green channel value.
 				/// </summary>
-				float g;
+				SE_FIELD(API())
+				float G;
 
 				/// <summary>
 				/// The blue channel value.
 				/// </summary>
-				float b;
+				SE_FIELD(API())
+				float B;
 
 				/// <summary>
 				/// The alpha channel value.
 				/// </summary>
-				float a;
+				SE_FIELD(API())
+				float A;
 			};
 
 			/// <summary>
@@ -133,7 +141,7 @@ namespace SE
 		/// </summary>
 		/// <param name="rgba">The RGBA channels value.</param>
 		explicit Color(float rgba)
-			: r(rgba), g(rgba), b(rgba), a(rgba)
+			: R(rgba), G(rgba), B(rgba), A(rgba)
 		{
 		}
 
@@ -145,7 +153,7 @@ namespace SE
 		/// <param name="b">The blue channel value.</param>
 		/// <param name="a">The alpha channel value.</param>
 		Color(float r, float g, float b, float a = 1)
-			: r(r), g(g), b(b), a(a)
+			: R(r), G(g), B(b), A(a)
 		{
 		}
 
@@ -155,7 +163,7 @@ namespace SE
 		/// <param name="rgb">The red, green and blue channels value.</param>
 		/// <param name="a">The alpha channel value.</param>
 		Color(const Color& rgb, float a)
-			: r(rgb.r), g(rgb.g), b(rgb.b), a(a)
+			: R(rgb.R), G(rgb.G), B(rgb.B), A(a)
 		{
 		}
 
@@ -261,83 +269,83 @@ namespace SE
 	public:
 		bool operator==(const Color& other) const
 		{
-			return r == other.r && g == other.g && b == other.b && a == other.a;
+			return R == other.R && G == other.G && B == other.B && A == other.A;
 		}
 
 		bool operator!=(const Color& other) const
 		{
-			return r != other.r || g != other.g || b != other.b || a != other.a;
+			return R != other.R || G != other.G || B != other.B || A != other.A;
 		}
 
 		Color operator+(const Color& color) const
 		{
-			return Color(r + color.r, g + color.g, b + color.b, a + color.a);
+			return Color(R + color.R, G + color.G, B + color.B, A + color.A);
 		}
 
 		Color operator-(const Color& color) const
 		{
-			return Color(r - color.r, g - color.g, b - color.b, a - color.a);
+			return Color(R - color.R, G - color.G, B - color.B, A - color.A);
 		}
 
 		inline Color operator*(const Color& color) const
 		{
-			return Color(r * color.r, g * color.g, b * color.b, a * color.a);
+			return Color(R * color.R, G * color.G, B * color.B, A * color.A);
 		}
 
 		Color& operator+=(const Color& color)
 		{
-			r += color.r;
-			g += color.g;
-			b += color.b;
-			a += color.a;
+			R += color.R;
+			G += color.G;
+			B += color.B;
+			A += color.A;
 			return *this;
 		}
 
 		Color& operator-=(const Color& color)
 		{
-			r -= color.r;
-			g -= color.g;
-			b -= color.b;
-			a -= color.a;
+			R -= color.R;
+			G -= color.G;
+			B -= color.B;
+			A -= color.A;
 			return *this;
 		}
 
 		Color& operator*=(const Color& color)
 		{
-			r *= color.r;
-			g *= color.g;
-			b *= color.b;
-			a *= color.a;
+			R *= color.R;
+			G *= color.G;
+			B *= color.B;
+			A *= color.A;
 			return *this;
 		}
 
 		Color& operator*=(const float value)
 		{
-			r = r * value;
-			g = g * value;
-			b = b * value;
-			a = a * value;
+			R = R * value;
+			G = G * value;
+			B = B * value;
+			A = A * value;
 			return *this;
 		}
 
 		Color operator+(float v) const
 		{
-			return Color(r + v, g + v, b + v, a + v);
+			return Color(R + v, G + v, B + v, A + v);
 		}
 
 		Color operator-(float v) const
 		{
-			return Color(r - v, g - v, b - v, a - v);
+			return Color(R - v, G - v, B - v, A - v);
 		}
 
 		Color operator*(float v) const
 		{
-			return Color(r * v, g * v, b * v, a * v);
+			return Color(R * v, G * v, B * v, A * v);
 		}
 
 		Color operator/(float v) const
 		{
-			return Color(r / v, g / v, b / v, a / v);
+			return Color(R / v, G / v, B / v, A / v);
 		}
 
 		// Returns true if color is fully transparent (all components are equal zero).
@@ -394,7 +402,7 @@ namespace SE
 		/// <returns>The modified color.</returns>
 		Color RGBMultiplied(float multiplier) const
 		{
-			return Color(r * multiplier, g * multiplier, b * multiplier, a);
+			return Color(R * multiplier, G * multiplier, B * multiplier, A);
 		}
 
 		/// <summary>
@@ -404,7 +412,7 @@ namespace SE
 		/// <returns>The modified color.</returns>
 		Color RGBMultiplied(Color multiplier) const
 		{
-			return Color(r * multiplier.r, g * multiplier.g, b * multiplier.b, a);
+			return Color(R * multiplier.R, G * multiplier.G, B * multiplier.B, A);
 		}
 
 		/// <summary>
@@ -414,7 +422,7 @@ namespace SE
 		/// <returns>The modified color.</returns>
 		Color AlphaMultiplied(float multiplier) const
 		{
-			return Color(r, g, b, a * multiplier);
+			return Color(R, G, B, A * multiplier);
 		}
 	};
 

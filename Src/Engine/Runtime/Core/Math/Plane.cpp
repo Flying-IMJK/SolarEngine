@@ -21,7 +21,7 @@ namespace SE
         const float invPyth = cross.InvLength();
 
         Normal = cross * invPyth;
-        D = -(Normal.x * point1.x + Normal.y * point1.y + Normal.z * point1.z);
+        D = -(Normal.X * point1.X + Normal.Y * point1.Y + Normal.Z * point1.Z);
     }
 
     String Plane::ToString() const
@@ -54,18 +54,18 @@ namespace SE
 
         // TODO: convet into cros products, dot products etc. ???
 
-        const float bc1 = inPlane1.Normal.y * inPlane3.Normal.z - inPlane3.Normal.y * inPlane1.Normal.z;
-        const float bc2 = inPlane2.Normal.y * inPlane1.Normal.z - inPlane1.Normal.y * inPlane2.Normal.z;
-        const float bc3 = inPlane3.Normal.y * inPlane2.Normal.z - inPlane2.Normal.y * inPlane3.Normal.z;
+        const float bc1 = inPlane1.Normal.Y * inPlane3.Normal.Z - inPlane3.Normal.Y * inPlane1.Normal.Z;
+        const float bc2 = inPlane2.Normal.Y * inPlane1.Normal.Z - inPlane1.Normal.Y * inPlane2.Normal.Z;
+        const float bc3 = inPlane3.Normal.Y * inPlane2.Normal.Z - inPlane2.Normal.Y * inPlane3.Normal.Z;
 
-        const float ad1 = inPlane1.Normal.x * inPlane3.D - inPlane3.Normal.x * inPlane1.D;
-        const float ad2 = inPlane2.Normal.x * inPlane1.D - inPlane1.Normal.x * inPlane2.D;
-        const float ad3 = inPlane3.Normal.x * inPlane2.D - inPlane2.Normal.x * inPlane3.D;
+        const float ad1 = inPlane1.Normal.X * inPlane3.D - inPlane3.Normal.X * inPlane1.D;
+        const float ad2 = inPlane2.Normal.X * inPlane1.D - inPlane1.Normal.X * inPlane2.D;
+        const float ad3 = inPlane3.Normal.X * inPlane2.D - inPlane2.Normal.X * inPlane3.D;
 
         const float x = -(inPlane1.D * bc3 + inPlane2.D * bc1 + inPlane3.D * bc2);
-        const float y = -(inPlane1.Normal.z * ad3 + inPlane2.Normal.z * ad1 + inPlane3.Normal.z * ad2);
-        const float z = +(inPlane1.Normal.y * ad3 + inPlane2.Normal.y * ad1 + inPlane3.Normal.y * ad2);
-        const float w = -(inPlane1.Normal.x * bc3 + inPlane2.Normal.x * bc1 + inPlane3.Normal.x * bc2);
+        const float y = -(inPlane1.Normal.Z * ad3 + inPlane2.Normal.Z * ad1 + inPlane3.Normal.Z * ad2);
+        const float z = +(inPlane1.Normal.Y * ad3 + inPlane2.Normal.Y * ad1 + inPlane3.Normal.Y * ad2);
+        const float w = -(inPlane1.Normal.X * bc3 + inPlane2.Normal.X * bc1 + inPlane3.Normal.X * bc2);
 
         // better to have detectable invalid values than to have reaaaaaaally big values
         if (w > -NormalEpsilon && w < NormalEpsilon)
@@ -123,9 +123,9 @@ namespace SE
 
     void Plane::Multiply(const Plane& value, float scale, Plane& result)
     {
-        result.Normal.x = value.Normal.x * scale;
-        result.Normal.y = value.Normal.y * scale;
-        result.Normal.z = value.Normal.z * scale;
+        result.Normal.X = value.Normal.X * scale;
+        result.Normal.Y = value.Normal.Y * scale;
+        result.Normal.Z = value.Normal.Z * scale;
         result.D = value.D * scale;
     }
 
@@ -136,71 +136,71 @@ namespace SE
 
     void Plane::Dot(const Plane& left, const Float4& right, float& result)
     {
-        result = left.Normal.x * right.x + left.Normal.y * right.y + left.Normal.z * right.z + left.D * right.w;
+        result = left.Normal.X * right.X + left.Normal.Y * right.Y + left.Normal.Z * right.Z + left.D * right.W;
     }
 
     float Plane::Dot(const Plane& left, const Float4& right)
     {
-        return left.Normal.x * right.x + left.Normal.y * right.y + left.Normal.z * right.z + left.D * right.w;
+        return left.Normal.X * right.X + left.Normal.Y * right.Y + left.Normal.Z * right.Z + left.D * right.W;
     }
 
     void Plane::DotCoordinate(const Plane& left, const Float3& right, float& result)
     {
-        result = left.Normal.x * right.x + left.Normal.y * right.y + left.Normal.z * right.z + left.D;
+        result = left.Normal.X * right.X + left.Normal.Y * right.Y + left.Normal.Z * right.Z + left.D;
     }
 
     float Plane::DotCoordinate(const Plane& left, const Float3& right)
     {
-        return left.Normal.x * right.x + left.Normal.y * right.y + left.Normal.z * right.z + left.D;
+        return left.Normal.X * right.X + left.Normal.Y * right.Y + left.Normal.Z * right.Z + left.D;
     }
 
     void Plane::DotNormal(const Plane& left, const Float3& right, float& result)
     {
-        result = left.Normal.x * right.x + left.Normal.y * right.y + left.Normal.z * right.z;
+        result = left.Normal.X * right.X + left.Normal.Y * right.Y + left.Normal.Z * right.Z;
     }
 
     float Plane::DotNormal(const Plane& left, const Float3& right)
     {
-        return left.Normal.x * right.x + left.Normal.y * right.y + left.Normal.z * right.z;
+        return left.Normal.X * right.X + left.Normal.Y * right.Y + left.Normal.Z * right.Z;
     }
 
     void Plane::Normalize(const Plane& plane, Plane& result)
     {
-        const float magnitude = 1.0f / Math::Sqrt(plane.Normal.x * plane.Normal.x + plane.Normal.y * plane.Normal.y + plane.Normal.z * plane.Normal.z);
-        result.Normal.x = plane.Normal.x * magnitude;
-        result.Normal.y = plane.Normal.y * magnitude;
-        result.Normal.z = plane.Normal.z * magnitude;
+        const float magnitude = 1.0f / Math::Sqrt(plane.Normal.X * plane.Normal.X + plane.Normal.Y * plane.Normal.Y + plane.Normal.Z * plane.Normal.Z);
+        result.Normal.X = plane.Normal.X * magnitude;
+        result.Normal.Y = plane.Normal.Y * magnitude;
+        result.Normal.Z = plane.Normal.Z * magnitude;
         result.D = plane.D * magnitude;
     }
 
     Plane Plane::Normalize(const Plane& plane)
     {
-        const float magnitude = 1.0f / Math::Sqrt(plane.Normal.x * plane.Normal.x + plane.Normal.y * plane.Normal.y + plane.Normal.z * plane.Normal.z);
+        const float magnitude = 1.0f / Math::Sqrt(plane.Normal.X * plane.Normal.X + plane.Normal.Y * plane.Normal.Y + plane.Normal.Z * plane.Normal.Z);
         return Plane(plane.Normal * magnitude, plane.D * magnitude);
     }
 
     void Plane::Transform(const Plane& plane, const Quaternion& rotation, Plane& result)
     {
-        const float x2 = rotation.x + rotation.x;
-        const float y2 = rotation.y + rotation.y;
-        const float z2 = rotation.z + rotation.z;
-        const float wx = rotation.w * x2;
-        const float wy = rotation.w * y2;
-        const float wz = rotation.w * z2;
-        const float xx = rotation.x * x2;
-        const float xy = rotation.x * y2;
-        const float xz = rotation.x * z2;
-        const float yy = rotation.y * y2;
-        const float yz = rotation.y * z2;
-        const float zz = rotation.z * z2;
+        const float x2 = rotation.X + rotation.X;
+        const float y2 = rotation.Y + rotation.Y;
+        const float z2 = rotation.Z + rotation.Z;
+        const float wx = rotation.W * x2;
+        const float wy = rotation.W * y2;
+        const float wz = rotation.W * z2;
+        const float xx = rotation.X * x2;
+        const float xy = rotation.X * y2;
+        const float xz = rotation.X * z2;
+        const float yy = rotation.Y * y2;
+        const float yz = rotation.Y * z2;
+        const float zz = rotation.Z * z2;
 
-        const float x = plane.Normal.x;
-        const float y = plane.Normal.y;
-        const float z = plane.Normal.z;
+        const float x = plane.Normal.X;
+        const float y = plane.Normal.Y;
+        const float z = plane.Normal.Z;
 
-        result.Normal.x = x * (1.0f - yy - zz) + y * (xy - wz) + z * (xz + wy);
-        result.Normal.y = x * (xy + wz) + y * (1.0f - xx - zz) + z * (yz - wx);
-        result.Normal.z = x * (xz - wy) + y * (yz + wx) + z * (1.0f - xx - yy);
+        result.Normal.X = x * (1.0f - yy - zz) + y * (xy - wz) + z * (xz + wy);
+        result.Normal.Y = x * (xy + wz) + y * (1.0f - xx - zz) + z * (yz - wx);
+        result.Normal.Z = x * (xz - wy) + y * (yz + wx) + z * (1.0f - xx - yy);
         result.D = plane.D;
     }
 
@@ -213,17 +213,17 @@ namespace SE
 
     void Plane::Transform(const Plane& plane, const Matrix& transformation, Plane& result)
     {
-        const float x = plane.Normal.x;
-        const float y = plane.Normal.y;
-        const float z = plane.Normal.z;
+        const float x = plane.Normal.X;
+        const float y = plane.Normal.Y;
+        const float z = plane.Normal.Z;
         const float d = plane.D;
 
         Matrix inverse;
         Matrix::Invert(transformation, inverse);
 
-        result.Normal.x = x * inverse.M11 + y * inverse.M12 + z * inverse.M13 + d * inverse.M14;
-        result.Normal.y = x * inverse.M21 + y * inverse.M22 + z * inverse.M23 + d * inverse.M24;
-        result.Normal.z = x * inverse.M31 + y * inverse.M32 + z * inverse.M33 + d * inverse.M34;
+        result.Normal.X = x * inverse.M11 + y * inverse.M12 + z * inverse.M13 + d * inverse.M14;
+        result.Normal.Y = x * inverse.M21 + y * inverse.M22 + z * inverse.M23 + d * inverse.M24;
+        result.Normal.Z = x * inverse.M31 + y * inverse.M32 + z * inverse.M33 + d * inverse.M34;
         result.D = x * inverse.M41 + y * inverse.M42 + z * inverse.M43 + d * inverse.M44;
     }
 

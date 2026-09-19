@@ -263,7 +263,7 @@ namespace SE::Editor
 			if (_popupMenu->Direction == ContextMenuDirection::RightUp)
 			{
 				Float2 position = _popupMenu->RootWindow()->Window()->GetPosition();
-				_popupMenu->RootWindow()->Window()->SetPosition(Float2(position.x, position.y - Height));
+				_popupMenu->RootWindow()->Window()->SetPosition(Float2(position.X, position.Y - Height));
 			}
 		}
 	}

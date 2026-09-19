@@ -696,7 +696,7 @@ namespace SE::Editor
 			Font* font = TextFont.GetFont();
 			if (font)
 			{
-				_textWidth = font->MeasureText(_text).x;
+				_textWidth = font->MeasureText(_text).X;
 				_textChanged = false;
 			}
 		}

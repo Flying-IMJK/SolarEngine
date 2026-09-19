@@ -34,15 +34,15 @@ namespace SE
 		Float2 rightBottomLocationSS = locationSS + dpiSize;
 
 		// Prioritize tooltip placement within parent window, fall back to virtual desktop
-		if (rightBottomMonitorBounds.y < rightBottomLocationSS.y)
+		if (rightBottomMonitorBounds.Y < rightBottomLocationSS.Y)
 		{
 			// Direction: up
-			locationSS.y -= dpiSize.y + flipOffset;
+			locationSS.Y -= dpiSize.Y + flipOffset;
 		}
-		if (rightBottomMonitorBounds.x < rightBottomLocationSS.x)
+		if (rightBottomMonitorBounds.X < rightBottomLocationSS.X)
 		{
 			// Direction: left
-			locationSS.x -= dpiSize.x + flipOffset * 2;
+			locationSS.X -= dpiSize.X + flipOffset * 2;
 		}
 	}
 
@@ -191,8 +191,8 @@ namespace SE
 
 		// Padding for text
 		Rectangle textRect = GetClientArea();
-		textRect.Location.x += 5;
-		textRect.Size.x -= 10;
+		textRect.Location.X += 5;
+		textRect.Size.X -= 10;
 
 		TextLayoutOptions layout;
 		layout.Bounds = textRect;
@@ -242,8 +242,8 @@ namespace SE
 			for (int i = 0; i < items.Count(); i++)
 			{
 				auto item = &items[i];
-				size.x = Math::Max(size.x, item->Size.x + 8.0f);
-				size.y += item->Size.y;
+				size.X = Math::Max(size.X, item->Size.X + 8.0f);
+				size.Y += item->Size.Y;
 			}
 			//size.X += style.FontMedium.MeasureText(_currentText).X;
 		}

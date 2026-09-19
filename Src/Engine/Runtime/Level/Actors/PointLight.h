@@ -21,28 +21,28 @@ namespace SE
         /// Light source bulb radius
         /// </summary>
         // SE_PROPERTY(API(Attributes="EditorOrder(2), DefaultValue(0.0f), EditorDisplay(\"Light\"), Limit(0, 1000, 0.01f)"))
-        SE_FIELD(Reflect)
+        SE_FIELD(Reflect, API(Attributes="EditorOrder(2), DefaultValue(0.0f), EditorDisplay(\"Light\"), Limit(0, 1000, 0.01f)"))
         float SourceRadius = 0.0f;
 
         /// <summary>
         /// Light source bulb length
         /// </summary>
         // SE_PROPERTY(API(Attributes="EditorOrder(3), DefaultValue(0.0f), EditorDisplay(\"Light\"), Limit(0, 1000, 0.01f)"))
-        SE_FIELD(Reflect)
+        SE_FIELD(Reflect, API(Attributes="EditorOrder(3), DefaultValue(0.0f), EditorDisplay(\"Light\"), Limit(0, 1000, 0.01f)"))
         float SourceLength = 0.0f;
 
         /// <summary>
         /// Whether to use physically based inverse squared distance falloff, where Radius is only clamping the light's contribution.
         /// </summary>
         // SE_PROPERTY(API(Attributes = "EditorOrder(13), DefaultValue(false), EditorDisplay(\"Light\")"))
-        SE_FIELD(Reflect)
+        SE_FIELD(Reflect, API(Attributes="EditorOrder(13), DefaultValue(false), EditorDisplay(\"Light\")"))
         bool UseInverseSquaredFalloff = false;
 
         /// <summary>
         /// Controls the radial falloff of light when UseInverseSquaredFalloff is disabled.
         /// </summary>
         // SE_PROPERTY(API(Attributes="EditorOrder(14), DefaultValue(8.0f), EditorDisplay(\"Light\"), Limit(2, 16, 0.01f), VisibleIf(nameof(UseInverseSquaredFalloff), true)"))
-        SE_FIELD(Reflect)
+        SE_FIELD(Reflect, API(Attributes="EditorOrder(14), DefaultValue(8.0f), EditorDisplay(\"Light\"), Limit(2, 16, 0.01f)"))
         float FallOffExponent = 8.0f;
 
         /// <summary>
@@ -78,6 +78,7 @@ namespace SE
         /// Gets light radius
         /// </summary>
         // SE_PROPERTY(API(Attributes="EditorOrder(1), DefaultValue(1000.0f), EditorDisplay(\"Light\"), Limit(0, 100000, 0.1f)"))
+        SE_FUNCTION(API(Prop, Attributes="EditorOrder(1), DefaultValue(1000.0f), EditorDisplay(\"Light\"), Limit(0, 100000, 0.1f)"))
         FORCE_INLINE float GetRadius() const
         {
             return _radius;
@@ -87,6 +88,7 @@ namespace SE
         /// Sets light radius
         /// </summary>
         /// <param name="value">The new value</param>
+        SE_FUNCTION(API(Prop))
         void SetRadius(float value);
 
     private:

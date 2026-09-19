@@ -21,7 +21,7 @@ namespace SE
     float WorldDeterminantSign;
     });
 
-EnumFlags<DrawPass> ForwardMaterialShader::GetDrawModes() const
+DrawPass ForwardMaterialShader::GetDrawModes() const
 {
     return _drawModes;
 }
@@ -88,8 +88,8 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     }
 
     // Select pipeline state based on current pass and render mode
-    const bool wireframe = m_Info.FeaturesFlags.IsFlag(MaterialFeatures::Wireframe) || view.Mode == ViewMode::Wireframe;
-    CullMode cullMode = view.Pass.Is(DrawPass::Depth) ? CullMode::TwoSided : m_Info.CullMode;
+    const bool wireframe = EnumHasAnyFlags(m_Info.FeaturesFlags, MaterialFeatures::Wireframe) || view.Mode == ViewMode::Wireframe;
+    CullMode cullMode = view.Pass == DrawPass::Depth ? CullMode::TwoSided : m_Info.CullMode;
 /*#if SE_EDITOR
     if (IsRunningRadiancePass)
         cullMode = CullMode::TwoSided;
@@ -123,11 +123,11 @@ void ForwardMaterialShader::Unload()
 
 bool ForwardMaterialShader::OnLoad()
 {
-    _drawModes = {DrawPass::Depth, DrawPass::Forward, DrawPass::QuadOverdraw};
+    _drawModes = EnumCombineFlags(DrawPass::Depth, DrawPass::Forward, DrawPass::QuadOverdraw);
 
     auto psDesc = GPUPipelineState::Description::Default;
-    psDesc.DepthEnable = m_Info.FeaturesFlags.IsNotFlag(MaterialFeatures::DisableDepthTest);
-    psDesc.DepthWriteEnable = m_Info.FeaturesFlags.IsNotFlag(MaterialFeatures::DisableDepthWrite);
+    psDesc.DepthEnable = EnumHasNoneFlags(m_Info.FeaturesFlags, MaterialFeatures::DisableDepthTest);
+    psDesc.DepthWriteEnable = EnumHasNoneFlags(m_Info.FeaturesFlags, MaterialFeatures::DisableDepthWrite);
 
 
     // Check if use tessellation (both material and runtime supports it)
@@ -155,7 +155,7 @@ bool ForwardMaterialShader::OnLoad()
     // Check if use transparent distortion pass
     if (m_Shader->HasShader(SE_TEXT("PS_Distortion")))
     {
-        _drawModes.SetFlag(DrawPass::Distortion);
+    _drawModes = EnumAddFlags(_drawModes, DrawPass::Distortion);
 
         // Accumulate Distortion Pass
         psDesc.VS = m_Shader->GetVS(SE_TEXT("VS"));

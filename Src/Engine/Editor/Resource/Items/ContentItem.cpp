@@ -30,14 +30,14 @@ namespace SE::Editor
 		{
 			case ContentViewType::Tiles:
 			{
-				float textHeight = DefaultTextHeight * size.x / DefaultWidth;
-				return Rectangle(0, size.y - textHeight, size.x, textHeight);
+				float textHeight = DefaultTextHeight * size.X / DefaultWidth;
+				return Rectangle(0, size.Y - textHeight, size.X, textHeight);
 			}
 			case ContentViewType::List:
 			{
-				float thumbnailSize = size.y - 2 * DefaultMarginSize;
-				float textHeight = Math::Min(size.y, 24.0f);
-				return Rectangle(thumbnailSize + DefaultMarginSize * 2, (size.y - textHeight) * 0.5f, size.x - textHeight - DefaultMarginSize * 3.0f, textHeight);
+				float thumbnailSize = size.Y - 2 * DefaultMarginSize;
+				float textHeight = Math::Min(size.Y, 24.0f);
+				return Rectangle(thumbnailSize + DefaultMarginSize * 2, (size.Y - textHeight) * 0.5f, size.X - textHeight - DefaultMarginSize * 3.0f, textHeight);
 			}
 		}
 
@@ -244,7 +244,7 @@ namespace SE::Editor
 		{
 			case ContentViewType::Tiles:
 			{
-				float thumbnailSize = size.x;
+				float thumbnailSize = size.X;
 				thumbnailRect = Rectangle(0, 0, thumbnailSize, thumbnailSize);
 				nameAlignment = TextAlignment::Center;
 
@@ -298,7 +298,7 @@ namespace SE::Editor
 			}
 			case ContentViewType::List:
 			{
-				float thumbnailSize = size.y - 2 * DefaultMarginSize;
+				float thumbnailSize = size.Y - 2 * DefaultMarginSize;
 				thumbnailRect = Rectangle(DefaultMarginSize, DefaultMarginSize, thumbnailSize, thumbnailSize);
 				nameAlignment = TextAlignment::Near;
 

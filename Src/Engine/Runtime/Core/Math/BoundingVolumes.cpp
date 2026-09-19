@@ -1,5 +1,6 @@
 #include "BoundingVolumes.h"
 #include "Transform.h"
+#include "Line.h"
 
 #include "Runtime/Core/Types/Strings/String.h"
 
@@ -17,26 +18,26 @@ namespace SE
 
     void BoundingBox::GetCorners(Float3 corners[8]) const
     {
-        corners[0] = Float3((float)Minimum.x, (float)Maximum.y, (float)Maximum.z);
-        corners[1] = Float3((float)Maximum.x, (float)Maximum.y, (float)Maximum.z);
-        corners[2] = Float3((float)Maximum.x, (float)Minimum.y, (float)Maximum.z);
-        corners[3] = Float3((float)Minimum.x, (float)Minimum.y, (float)Maximum.z);
-        corners[4] = Float3((float)Minimum.x, (float)Maximum.y, (float)Minimum.z);
-        corners[5] = Float3((float)Maximum.x, (float)Maximum.y, (float)Minimum.z);
-        corners[6] = Float3((float)Maximum.x, (float)Minimum.y, (float)Minimum.z);
-        corners[7] = Float3((float)Minimum.x, (float)Minimum.y, (float)Minimum.z);
+        corners[0] = Float3((float)Minimum.X, (float)Maximum.Y, (float)Maximum.Z);
+        corners[1] = Float3((float)Maximum.X, (float)Maximum.Y, (float)Maximum.Z);
+        corners[2] = Float3((float)Maximum.X, (float)Minimum.Y, (float)Maximum.Z);
+        corners[3] = Float3((float)Minimum.X, (float)Minimum.Y, (float)Maximum.Z);
+        corners[4] = Float3((float)Minimum.X, (float)Maximum.Y, (float)Minimum.Z);
+        corners[5] = Float3((float)Maximum.X, (float)Maximum.Y, (float)Minimum.Z);
+        corners[6] = Float3((float)Maximum.X, (float)Minimum.Y, (float)Minimum.Z);
+        corners[7] = Float3((float)Minimum.X, (float)Minimum.Y, (float)Minimum.Z);
     }
 
     void BoundingBox::GetCorners(Double3 corners[8]) const
     {
-        corners[0] = Double3(Minimum.x, Maximum.y, Maximum.z);
-        corners[1] = Double3(Maximum.x, Maximum.y, Maximum.z);
-        corners[2] = Double3(Maximum.x, Minimum.y, Maximum.z);
-        corners[3] = Double3(Minimum.x, Minimum.y, Maximum.z);
-        corners[4] = Double3(Minimum.x, Maximum.y, Minimum.z);
-        corners[5] = Double3(Maximum.x, Maximum.y, Minimum.z);
-        corners[6] = Double3(Maximum.x, Minimum.y, Minimum.z);
-        corners[7] = Double3(Minimum.x, Minimum.y, Minimum.z);
+        corners[0] = Double3(Minimum.X, Maximum.Y, Maximum.Z);
+        corners[1] = Double3(Maximum.X, Maximum.Y, Maximum.Z);
+        corners[2] = Double3(Maximum.X, Minimum.Y, Maximum.Z);
+        corners[3] = Double3(Minimum.X, Minimum.Y, Maximum.Z);
+        corners[4] = Double3(Minimum.X, Maximum.Y, Minimum.Z);
+        corners[5] = Double3(Maximum.X, Maximum.Y, Minimum.Z);
+        corners[6] = Double3(Maximum.X, Minimum.Y, Minimum.Z);
+        corners[7] = Double3(Minimum.X, Minimum.Y, Minimum.Z);
     }
 
     BoundingBox BoundingBox::MakeOffsetted(const Float3& offset) const
@@ -76,8 +77,8 @@ namespace SE
     void BoundingBox::FromSphere(const BoundingSphere& sphere, BoundingBox& result)
     {
         result = BoundingBox(
-            Float3(sphere.Center.x - sphere.Radius, sphere.Center.y - sphere.Radius, sphere.Center.z - sphere.Radius),
-            Float3(sphere.Center.x + sphere.Radius, sphere.Center.y + sphere.Radius, sphere.Center.z + sphere.Radius)
+            Float3(sphere.Center.X - sphere.Radius, sphere.Center.Y - sphere.Radius, sphere.Center.Z - sphere.Radius),
+            Float3(sphere.Center.X + sphere.Radius, sphere.Center.Y + sphere.Radius, sphere.Center.Z + sphere.Radius)
         );
     }
 
@@ -118,16 +119,16 @@ namespace SE
         // Reference: http://dev.theomader.com/transform-bounding-boxes/
 
         const auto right = matrix.GetRight();
-        const auto xa = right * box.Minimum.x;
-        const auto xb = right * box.Maximum.x;
+        const auto xa = right * box.Minimum.X;
+        const auto xb = right * box.Maximum.X;
 
         const auto up = matrix.GetUp();
-        const auto ya = up * box.Minimum.y;
-        const auto yb = up * box.Maximum.y;
+        const auto ya = up * box.Minimum.Y;
+        const auto yb = up * box.Maximum.Y;
 
         const auto backward = matrix.GetBackward();
-        const auto za = backward * box.Minimum.z;
-        const auto zb = backward * box.Maximum.z;
+        const auto za = backward * box.Minimum.Z;
+        const auto zb = backward * box.Maximum.Z;
 
         const auto translation = matrix.GetTranslation();
         const auto min = Float3::Min(xa, xb) + Float3::Min(ya, yb) + Float3::Min(za, zb) + translation;
@@ -140,16 +141,16 @@ namespace SE
         // Reference: http://dev.theomader.com/transform-bounding-boxes/
 
         const auto right = Float3::Transform(Float3::Right, transform.Orientation);
-        const auto xa = right * box.Minimum.x;
-        const auto xb = right * box.Maximum.x;
+        const auto xa = right * box.Minimum.X;
+        const auto xb = right * box.Maximum.X;
 
         const auto up = Float3::Transform(Float3::Up, transform.Orientation);
-        const auto ya = up * box.Minimum.y;
-        const auto yb = up * box.Maximum.y;
+        const auto ya = up * box.Minimum.Y;
+        const auto yb = up * box.Maximum.Y;
 
         const auto backward = Float3::Transform(Float3::Backward, transform.Orientation);
-        const auto za = backward * box.Minimum.z;
-        const auto zb = backward * box.Maximum.z;
+        const auto za = backward * box.Minimum.Z;
+        const auto zb = backward * box.Maximum.Z;
 
         const auto min = Float3::Min(xa, xb) + Float3::Min(ya, yb) + Float3::Min(za, zb) + transform.Translation;
         const auto max = Float3::Max(xa, xb) + Float3::Max(ya, yb) + Float3::Max(za, zb) + transform.Translation;
@@ -219,321 +220,6 @@ namespace SE
 
     //-------------------------------------------------------------------------
 
-    /*OBB::OBB(AABB const &aabb)
-        : m_Orientation(Quaternion::Identity), m_Center(aabb.GetCenter()), m_Extents(aabb.GetExtents())
-    {
-    }
-
-    OBB::OBB(AABB const &aabb, Transform const &transform)
-    {
-        VectorSIMD const center(aabb.GetCenter());
-
-        m_Center = transform.TransformPoint(center).ToFloat3();
-        m_Orientation = transform.GetRotation();
-        m_Extents = aabb.GetExtents();
-    }
-
-    OBB::OBB(VectorSIMD center, VectorSIMD extents, Quaternion orientation)
-        : m_Orientation(orientation), m_Center(center), m_Extents(extents)
-    {
-        ENGINE_ASSERT(extents.IsGreaterThanEqual3(VectorSIMD::Zero) && orientation.IsNormalized());
-    }
-
-    // Copied from DirectXMath:
-    //-----------------------------------------------------------------------------
-    // Find the approximate minimum oriented bounding box containing a set of
-    // points.  Exact computation of minimum oriented bounding box is possible but
-    // is slower and requires a more complex algorithm.
-    // The algorithm works by computing the inertia tensor of the points and then
-    // using the eigenvectors of the inertia tensor as the axes of the box.
-    // Computing the inertia tensor of the convex hull of the points will usually
-    // result in better bounding box but the computation is more complex.
-    // Exact computation of the minimum oriented bounding box is possible but the
-    // best know algorithm is O(N^3) and is significantly more complex to implement.
-    //
-    // WARNING: this doesnt handle symmetric point clounds very well!!!!
-    //-----------------------------------------------------------------------------
-
-    OBB::OBB(VectorSIMD const *pPoints, uint32_t numPoints)
-    {
-        ENGINE_ASSERT(pPoints != nullptr && numPoints > 0);
-
-        // Compute the center of mass and inertia tensor of the points.
-        VectorSIMD CenterOfMass = VectorSIMD::Zero;
-        for (size_t i = 0; i < numPoints; ++i)
-        {
-            CenterOfMass = CenterOfMass + pPoints[i];
-        }
-
-        CenterOfMass = CenterOfMass * VectorSIMD(1.0f / numPoints);
-
-        // Compute the inertia tensor of the points around the center of mass.
-        // Using the center of mass is not strictly necessary, but will hopefully
-        // improve the stability of finding the eigenvectors.
-        VectorSIMD XX_YY_ZZ = VectorSIMD::Zero;
-        VectorSIMD XY_XZ_YZ = VectorSIMD::Zero;
-
-        for (size_t i = 0; i < numPoints; ++i)
-        {
-            VectorSIMD point = pPoints[i] - CenterOfMass;
-            XX_YY_ZZ = XX_YY_ZZ + (point * point);
-
-            VectorSIMD XXY = point.Swizzle<0, 0, 1, 3>();
-            VectorSIMD YZZ = point.Swizzle<1, 2, 2, 3>();
-
-            XY_XZ_YZ = XY_XZ_YZ + (XXY * YZZ);
-        }
-
-        // Compute the eigenvectors of the inertia tensor.
-        VectorSIMD v1, v2, v3;
-        VectorSIMD::CalculateEigenVectorsFromCovarianceMatrix(XX_YY_ZZ.GetX(), XX_YY_ZZ.GetY(), XX_YY_ZZ.GetZ(), XY_XZ_YZ.GetX(), XY_XZ_YZ.GetY(), XY_XZ_YZ.GetZ(), v1, v2, v3);
-
-        // Put them in a matrix.
-        Matrix R;
-        R.m_rows[0] = v1.GetWithW0();
-        R.m_rows[1] = v2.GetWithW0();
-        R.m_rows[2] = v3.GetWithW0();
-        R.m_rows[3] = VectorSIMD::UnitW;
-
-        // Multiply by -1 to convert the matrix into a right handed coordinate
-        // system (determinant ~= 1) in case the eigenvectors form a left handed
-        // coordinate system (determinant ~= -1) because XMQuaternionRotationMatrix only
-        // works on right handed matrices.
-        VectorSIMD det = R.GetDeterminant();
-        if (det.IsLessThan4(VectorSIMD::Zero))
-        {
-            R.m_rows[0].Negate();
-            R.m_rows[1].Negate();
-            R.m_rows[2].Negate();
-        }
-
-        // Get the rotation quaternion from the matrix.
-        Quaternion vOrientation = R.GetRotation();
-
-        // Make sure it is normal (in case the vectors are slightly non-orthogonal).
-        vOrientation.Normalize();
-
-        // Rebuild the rotation matrix from the quaternion.
-        R = Matrix(vOrientation);
-
-        // Build the rotation into the rotated space.
-        Matrix InverseR = R.GetTransposed();
-
-        // Find the minimum OBB using the eigenvectors as the axes.
-        VectorSIMD vMin, vMax;
-        vMin = vMax = InverseR.RotateVector(pPoints[0]);
-        for (size_t i = 1; i < numPoints; ++i)
-        {
-            VectorSIMD rotatedPoint = InverseR.RotateVector(pPoints[i]);
-            vMin = VectorSIMD::Min(vMin, rotatedPoint);
-            vMax = VectorSIMD::Max(vMax, rotatedPoint);
-        }
-
-        m_Extents = (vMax - vMin) * VectorSIMD::Half;
-        m_Orientation = vOrientation;
-
-        // Rotate the center into world space.
-        VectorSIMD vCenter = vMin + m_Extents;
-        vCenter = R.RotateVector(vCenter);
-        m_Center = vCenter;
-    }
-
-    void OBB::ApplyTransform(Transform const &transform)
-    {
-        Transform currentTransform(m_Orientation, m_Center);
-        currentTransform = currentTransform * transform;
-
-        m_Center = currentTransform.GetTranslation();
-        m_Orientation = currentTransform.GetRotation();
-        m_Extents = (m_Extents * currentTransform.GetScale()).Abs();
-    }
-
-    void OBB::ApplyScale(VectorSIMD const &scale)
-    {
-        ENGINE_ASSERT(!scale.IsAnyEqualToZero3());
-        m_Extents *= scale;
-    }
-
-    bool OBB::Overlaps(OBB const &box) const
-    {
-        // Build the 3x3 rotation matrix that defines the orientation of B relative to A.
-
-        Quaternion Q = m_Orientation * box.m_Orientation.GetConjugate();
-        Matrix R(Q);
-
-        // Compute the translation of B relative to A.
-        VectorSIMD t = m_Orientation.RotateVectorInverse(box.m_Center - m_Center);
-
-        // h(A) = extents of A.
-        // h(B) = extents of B.
-        //
-        // a(u) = axes of A = (1,0,0), (0,1,0), (0,0,1)
-        // b(u) = axes of B relative to A = (r00,r10,r20), (r01,r11,r21), (r02,r12,r22)
-        //
-        // For each possible separating axis l:
-        //   d(A) = sum (for i = u,v,m_w) h(A)(i) * abs( a(i) dot l )
-        //   d(B) = sum (for i = u,v,m_w) h(B)(i) * abs( b(i) dot l )
-        //   if abs( t dot l ) > d(A) + d(B) then disjoint
-        //
-
-        // Rows. Note R[0,1,2]X.m_w = 0.
-        VectorSIMD const R0X = R[0];
-        VectorSIMD const R1X = R[1];
-        VectorSIMD const R2X = R[2];
-
-        R = R.Transpose();
-
-        // Columns. Note RX[0,1,2].m_w = 0.
-        VectorSIMD const RX0 = R[0];
-        VectorSIMD const RX1 = R[1];
-        VectorSIMD const RX2 = R[2];
-
-        VectorSIMD const NRX0 = RX0.GetNegated();
-        VectorSIMD const NRX1 = RX1.GetNegated();
-        VectorSIMD const NRX2 = RX2.GetNegated();
-
-        // Absolute value of rows.
-        VectorSIMD const AR0X = R0X.GetAbs();
-        VectorSIMD const AR1X = R1X.GetAbs();
-        VectorSIMD const AR2X = R2X.GetAbs();
-
-        // Absolute value of columns.
-        VectorSIMD const ARX0 = RX0.GetAbs();
-        VectorSIMD const ARX1 = RX1.GetAbs();
-        VectorSIMD const ARX2 = RX2.GetAbs();
-
-        // Test each of the 15 possible separating axes.
-        VectorSIMD d, d_A, d_B;
-
-        // l = a(u) = (1, 0, 0)
-        // t dot l = t.m_x
-        // d(A) = h(A).m_x
-        // d(B) = h(B) dot abs(r00, r01, r02)
-        d = t.GetSplatX();
-        d_A = m_Extents.GetSplatX();
-        d_B = box.m_Extents.Dot3(AR0X);
-        VectorSIMD NoIntersection = d.Abs().GreaterThan((d_A + d_B).Abs());
-
-#define NO_INTERSECTION_TEST NoIntersection = SIMD::Int::Or(NoIntersection, d.Abs().GreaterThan((d_A + d_B).Abs()));
-
-        // l = a(v) = (0, 1, 0)
-        // t dot l = t.m_y
-        // d(A) = h(A).m_y
-        // d(B) = h(B) dot abs(r10, r11, r12)
-        d = t.GetSplatY();
-        d_A = m_Extents.GetSplatY();
-        d_B = box.m_Extents.Dot3(AR1X);
-        NO_INTERSECTION_TEST
-
-        // l = a(m_w) = (0, 0, 1)
-        // t dot l = t.m_z
-        // d(A) = h(A).m_z
-        // d(B) = h(B) dot abs(r20, r21, r22)
-        d = t.GetSplatZ();
-        d_A = m_Extents.GetSplatZ();
-        d_B = box.m_Extents.Dot3(AR2X);
-        NO_INTERSECTION_TEST
-
-        // l = b(u) = (r00, r10, r20)
-        // d(A) = h(A) dot abs(r00, r10, r20)
-        // d(B) = h(B).m_x
-        d = t.Dot3(RX0);
-        d_A = m_Extents.Dot3(ARX0);
-        d_B = box.m_Extents.GetSplatX();
-        NO_INTERSECTION_TEST
-
-        // l = b(v) = (r01, r11, r21)
-        // d(A) = h(A) dot abs(r01, r11, r21)
-        // d(B) = h(B).m_y
-        d = t.Dot3(RX1);
-        d_A = m_Extents.Dot3(ARX1);
-        d_B = box.m_Extents.GetSplatY();
-        NO_INTERSECTION_TEST
-
-        // l = b(m_w) = (r02, r12, r22)
-        // d(A) = h(A) dot abs(r02, r12, r22)
-        // d(B) = h(B).m_z
-        d = t.Dot3(RX2);
-        d_A = m_Extents.Dot3(ARX2);
-        d_B = box.m_Extents.GetSplatZ();
-        NO_INTERSECTION_TEST
-
-        // l = a(u) m_x b(u) = (0, -r20, r10)
-        // d(A) = h(A) dot abs(0, r20, r10)
-        // d(B) = h(B) dot abs(0, r02, r01)
-        d = t.Dot3(VectorSIMD::Permute<3, 6, 1, 0>(RX0, NRX0));
-        d_A = m_Extents.Dot3(ARX0.Swizzle<3, 2, 1, 0>());
-        d_B = box.m_Extents.Dot3(AR0X.Swizzle<3, 2, 1, 0>());
-        NO_INTERSECTION_TEST
-
-        // l = a(u) m_x b(v) = (0, -r21, r11)
-        // d(A) = h(A) dot abs(0, r21, r11)
-        // d(B) = h(B) dot abs(r02, 0, r00)
-        d = t.Dot3(VectorSIMD::Permute<3, 6, 1, 0>(RX1, NRX1));
-        d_A = m_Extents.Dot3(ARX1.Swizzle<3, 2, 1, 0>());
-        d_B = box.m_Extents.Dot3(AR0X.Swizzle<2, 3, 0, 1>());
-        NO_INTERSECTION_TEST
-
-        // l = a(u) m_x b(m_w) = (0, -r22, r12)
-        // d(A) = h(A) dot abs(0, r22, r12)
-        // d(B) = h(B) dot abs(r01, r00, 0)
-        d = t.Dot3(VectorSIMD::Permute<3, 6, 1, 0>(RX2, NRX2));
-        d_A = m_Extents.Dot3(ARX2.Swizzle<3, 2, 1, 0>());
-        d_B = box.m_Extents.Dot3(AR0X.Swizzle<1, 0, 3, 2>());
-        NO_INTERSECTION_TEST
-
-        // l = a(v) m_x b(u) = (r20, 0, -r00)
-        // d(A) = h(A) dot abs(r20, 0, r00)
-        // d(B) = h(B) dot abs(0, r12, r11)
-        d = t.Dot3(VectorSIMD::Permute<2, 3, 4, 1>(RX0, NRX0));
-        d_A = m_Extents.Dot3(ARX0.Swizzle<2, 3, 0, 1>());
-        d_B = box.m_Extents.Dot3(AR1X.Swizzle<3, 2, 1, 0>());
-
-        // l = a(v) m_x b(v) = (r21, 0, -r01)
-        // d(A) = h(A) dot abs(r21, 0, r01)
-        // d(B) = h(B) dot abs(r12, 0, r10)
-        d = t.Dot3(VectorSIMD::Permute<2, 3, 4, 1>(RX1, NRX1));
-        d_A = m_Extents.Dot3(ARX1.Swizzle<2, 3, 0, 1>());
-        d_B = box.m_Extents.Dot3(AR1X.Swizzle<2, 3, 0, 1>());
-        NO_INTERSECTION_TEST
-
-        // l = a(v) m_x b(m_w) = (r22, 0, -r02)
-        // d(A) = h(A) dot abs(r22, 0, r02)
-        // d(B) = h(B) dot abs(r11, r10, 0)
-        d = t.Dot3(VectorSIMD::Permute<2, 3, 4, 1>(RX2, NRX2));
-        d_A = m_Extents.Dot3(ARX2.Swizzle<2, 3, 0, 1>());
-        d_B = box.m_Extents.Dot3(AR1X.Swizzle<1, 0, 3, 2>());
-        NO_INTERSECTION_TEST
-
-        // l = a(m_w) m_x b(u) = (-r10, r00, 0)
-        // d(A) = h(A) dot abs(r10, r00, 0)
-        // d(B) = h(B) dot abs(0, r22, r21)
-        d = t.Dot3(VectorSIMD::Permute<5, 0, 3, 2>(RX0, NRX0));
-        d_A = m_Extents.Dot3(ARX0.Swizzle<1, 0, 3, 2>());
-        d_B = box.m_Extents.Dot3(AR2X.Swizzle<3, 2, 1, 0>());
-        NO_INTERSECTION_TEST
-
-        // l = a(m_w) m_x b(v) = (-r11, r01, 0)
-        // d(A) = h(A) dot abs(r11, r01, 0)
-        // d(B) = h(B) dot abs(r22, 0, r20)
-        d = t.Dot3(VectorSIMD::Permute<5, 0, 3, 2>(RX1, NRX1));
-        d_A = m_Extents.Dot3(ARX1.Swizzle<1, 0, 3, 2>());
-        d_B = box.m_Extents.Dot3(AR2X.Swizzle<2, 3, 0, 1>());
-        NO_INTERSECTION_TEST
-
-        // l = a(m_w) m_x b(m_w) = (-r12, r02, 0)
-        // d(A) = h(A) dot abs(r12, r02, 0)
-        // d(B) = h(B) dot abs(r21, r20, 0)
-        d = t.Dot3(VectorSIMD::Permute<5, 0, 3, 2>(RX2, NRX2));
-        d_A = m_Extents.Dot3(ARX2.Swizzle<1, 0, 3, 2>());
-        d_B = box.m_Extents.Dot3(AR2X.Swizzle<1, 0, 3, 2>());
-        NO_INTERSECTION_TEST
-
-#undef NO_INTERSECTION_TEST
-
-        // No separating axis found, boxes must intersect.
-        return SIMD::Int::NotEqual(NoIntersection, SIMD::g_trueMask) ? true : false;
-    }*/
 
     //-------------------------------------------------------------------------
 
@@ -551,44 +237,44 @@ namespace SE
         // http://www.chadvernon.com/blog/resources/directx9/frustum-culling/
 
         // Left plane
-        _pLeft.Normal.x = matrix.M14 + matrix.M11;
-        _pLeft.Normal.y = matrix.M24 + matrix.M21;
-        _pLeft.Normal.z = matrix.M34 + matrix.M31;
+        _pLeft.Normal.X = matrix.M14 + matrix.M11;
+        _pLeft.Normal.Y = matrix.M24 + matrix.M21;
+        _pLeft.Normal.Z = matrix.M34 + matrix.M31;
         _pLeft.D = matrix.M44 + matrix.M41;
         _pLeft.Normalize();
 
         // Right plane
-        _pRight.Normal.x = matrix.M14 - matrix.M11;
-        _pRight.Normal.y = matrix.M24 - matrix.M21;
-        _pRight.Normal.z = matrix.M34 - matrix.M31;
+        _pRight.Normal.X = matrix.M14 - matrix.M11;
+        _pRight.Normal.Y = matrix.M24 - matrix.M21;
+        _pRight.Normal.Z = matrix.M34 - matrix.M31;
         _pRight.D = matrix.M44 - matrix.M41;
         _pRight.Normalize();
 
         // Top plane
-        _pTop.Normal.x = matrix.M14 - matrix.M12;
-        _pTop.Normal.y = matrix.M24 - matrix.M22;
-        _pTop.Normal.z = matrix.M34 - matrix.M32;
+        _pTop.Normal.X = matrix.M14 - matrix.M12;
+        _pTop.Normal.Y = matrix.M24 - matrix.M22;
+        _pTop.Normal.Z = matrix.M34 - matrix.M32;
         _pTop.D = matrix.M44 - matrix.M42;
         _pTop.Normalize();
 
         // Bottom plane
-        _pBottom.Normal.x = matrix.M14 + matrix.M12;
-        _pBottom.Normal.y = matrix.M24 + matrix.M22;
-        _pBottom.Normal.z = matrix.M34 + matrix.M32;
+        _pBottom.Normal.X = matrix.M14 + matrix.M12;
+        _pBottom.Normal.Y = matrix.M24 + matrix.M22;
+        _pBottom.Normal.Z = matrix.M34 + matrix.M32;
         _pBottom.D = matrix.M44 + matrix.M42;
         _pBottom.Normalize();
 
         // Near plane
-        _pNear.Normal.x = matrix.M13;
-        _pNear.Normal.y = matrix.M23;
-        _pNear.Normal.z = matrix.M33;
+        _pNear.Normal.X = matrix.M13;
+        _pNear.Normal.Y = matrix.M23;
+        _pNear.Normal.Z = matrix.M33;
         _pNear.D = matrix.M43;
         _pNear.Normalize();
 
         // Far plane
-        _pFar.Normal.x = matrix.M14 - matrix.M13;
-        _pFar.Normal.y = matrix.M24 - matrix.M23;
-        _pFar.Normal.z = matrix.M34 - matrix.M33;
+        _pFar.Normal.X = matrix.M14 - matrix.M13;
+        _pFar.Normal.Y = matrix.M24 - matrix.M23;
+        _pFar.Normal.Z = matrix.M34 - matrix.M33;
         _pFar.D = matrix.M44 - matrix.M43;
         _pFar.Normalize();
     }
@@ -861,12 +547,12 @@ namespace SE
     void BoundingSphere::FromBox(const BoundingBox& box, BoundingSphere& result)
     {
         ASSERT(!box.Minimum.IsNanOrInfinity() && !box.Maximum.IsNanOrInfinity());
-        const float x = box.Maximum.x - box.Minimum.x;
-        const float y = box.Maximum.y - box.Minimum.y;
-        const float z = box.Maximum.z - box.Minimum.z;
-        result.Center.x = box.Minimum.x + x * 0.5f;
-        result.Center.y = box.Minimum.y + y * 0.5f;
-        result.Center.z = box.Minimum.z + z * 0.5f;
+        const float x = box.Maximum.X - box.Minimum.X;
+        const float y = box.Maximum.Y - box.Minimum.Y;
+        const float z = box.Maximum.Z - box.Minimum.Z;
+        result.Center.X = box.Minimum.X + x * 0.5f;
+        result.Center.Y = box.Minimum.Y + y * 0.5f;
+        result.Center.Z = box.Minimum.Z + z * 0.5f;
         result.Radius = Math::Sqrt(x * x + y * y + z * z) * 0.5f;
     }
 
@@ -936,4 +622,242 @@ namespace SE
         Float3::Transform(sphere.Center, matrix, result.Center);
         result.Radius = sphere.Radius * matrix.GetScaleVector().GetAbsolute().MaxValue();
     }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    OrientedBoundingBox::OrientedBoundingBox(const BoundingBox& bb)
+    {
+        const Float3 center = bb.Minimum + (bb.Maximum - bb.Minimum) * 0.5f;
+        Extents = bb.Maximum - center;
+        Transformation = ::SE::Transform(center);
+    }
+
+    OrientedBoundingBox::OrientedBoundingBox(const Float3& extents, const Matrix& transformation)
+        : Extents(extents)
+    {
+        transformation.Decompose(Transformation);
+    }
+
+    OrientedBoundingBox::OrientedBoundingBox(const Float3& extents, const Matrix3x3& rotationScale, const Float3& translation)
+        : Extents(extents)
+        , Transformation(translation, rotationScale)
+    {
+    }
+
+    OrientedBoundingBox::OrientedBoundingBox(const Float3& minimum, const Float3& maximum)
+    {
+        const Float3 center = minimum + (maximum - minimum) * 0.5f;
+        Extents = maximum - center;
+        Transformation = ::SE::Transform(center);
+    }
+
+    OrientedBoundingBox::OrientedBoundingBox(Float3 points[], int32 pointCount)
+    {
+        ASSERT(points && pointCount > 0);
+        Float3 minimum = points[0];
+        Float3 maximum = points[0];
+        for (int32 i = 1; i < pointCount; i++)
+        {
+            Float3::Min(minimum, points[i], minimum);
+            Float3::Max(maximum, points[i], maximum);
+        }
+        const Float3 center = minimum + (maximum - minimum) * 0.5f;
+        Extents = maximum - center;
+        Transformation = ::SE::Transform(center);
+    }
+
+    String OrientedBoundingBox::ToString() const
+    {
+        return String::Format(SE_TEXT("{}"), *this);
+    }
+
+    void OrientedBoundingBox::GetCorners(Float3 corners[8]) const
+    {
+        const Float3 xv = Transformation.LocalToWorldVector(Float3((float)Extents.X, 0, 0));
+        const Float3 yv = Transformation.LocalToWorldVector(Float3(0, (float)Extents.Y, 0));
+        const Float3 zv = Transformation.LocalToWorldVector(Float3(0, 0, (float)Extents.Z));
+
+        const Float3 center = Transformation.Translation;
+
+        corners[0] = center + xv + yv + zv;
+        corners[1] = center + xv + yv - zv;
+        corners[2] = center - xv + yv - zv;
+        corners[3] = center - xv + yv + zv;
+        corners[4] = center + xv - yv + zv;
+        corners[5] = center + xv - yv - zv;
+        corners[6] = center - xv - yv - zv;
+        corners[7] = center - xv - yv + zv;
+    }
+
+    void OrientedBoundingBox::GetCorners(Double3 corners[8]) const
+    {
+        const Double3 xv = Transformation.LocalToWorldVector(Float3((float)Extents.X, 0, 0));
+        const Double3 yv = Transformation.LocalToWorldVector(Float3(0, (float)Extents.Y, 0));
+        const Double3 zv = Transformation.LocalToWorldVector(Float3(0, 0, (float)Extents.Z));
+
+        const Double3 center = Transformation.Translation;
+
+        corners[0] = center + xv + yv + zv;
+        corners[1] = center + xv + yv - zv;
+        corners[2] = center - xv + yv - zv;
+        corners[3] = center - xv + yv + zv;
+        corners[4] = center + xv - yv + zv;
+        corners[5] = center + xv - yv - zv;
+        corners[6] = center - xv - yv - zv;
+        corners[7] = center - xv - yv + zv;
+    }
+
+    Float3 OrientedBoundingBox::GetSize() const
+    {
+        const Float3 xv = Transformation.LocalToWorldVector(Float3(Extents.X * 2, 0, 0));
+        const Float3 yv = Transformation.LocalToWorldVector(Float3(0, Extents.Y * 2, 0));
+        const Float3 zv = Transformation.LocalToWorldVector(Float3(0, 0, Extents.Z * 2));
+        return Float3(xv.Length(), yv.Length(), zv.Length());
+    }
+
+    Float3 OrientedBoundingBox::GetSizeSquared() const
+    {
+        const Float3 xv = Transformation.LocalToWorldVector(Float3(Extents.X * 2, 0, 0));
+        const Float3 yv = Transformation.LocalToWorldVector(Float3(0, Extents.Y * 2, 0));
+        const Float3 zv = Transformation.LocalToWorldVector(Float3(0, 0, Extents.Z * 2));
+        return Float3(xv.LengthSquared(), yv.LengthSquared(), zv.LengthSquared());
+    }
+
+    BoundingBox OrientedBoundingBox::GetBoundingBox() const
+    {
+        BoundingBox result;
+        Float3 corners[8];
+        GetCorners(corners);
+        BoundingBox::FromPoints(corners, 8, result);
+        return result;
+    }
+
+    void OrientedBoundingBox::GetBoundingBox(BoundingBox& result) const
+    {
+        Float3 corners[8];
+        GetCorners(corners);
+
+        BoundingBox::FromPoints(corners, 8, result);
+    }
+
+    void OrientedBoundingBox::Transform(const Matrix& matrix)
+    {
+        ::SE::Transform transform;
+        matrix.Decompose(transform);
+        Transformation = transform.LocalToWorld(Transformation);
+    }
+
+    void OrientedBoundingBox::Transform(const ::SE::Transform& transform)
+    {
+        Transformation = transform.LocalToWorld(Transformation);
+    }
+
+    ContainmentType OrientedBoundingBox::Contains(const Float3& point, float* distance) const
+    {
+        // Transform the point into the obb coordinates
+        Float3 locPoint;
+        Transformation.WorldToLocal(point, locPoint);
+        locPoint.X = Math::Abs(locPoint.X);
+        locPoint.Y = Math::Abs(locPoint.Y);
+        locPoint.Z = Math::Abs(locPoint.Z);
+
+        if (distance)
+        {
+            // Get minimum distance to edge in local space
+            Float3 tmp;
+            Float3::Subtract(Extents, locPoint, tmp);
+            const float minDstToEdgeLocal = tmp.GetAbsolute().MinValue();
+
+            // Transform distance to world space
+            Float3 dstVec = Float3::UnitX * minDstToEdgeLocal;
+            Transformation.LocalToWorldVector(dstVec, dstVec);
+            *distance = dstVec.Length();
+        }
+
+        // Simple axes-aligned BB check
+        if (locPoint.X < Extents.X && locPoint.Y < Extents.Y && locPoint.Z < Extents.Z)
+            return ContainmentType::Contains;
+        if (Float3::NearEqual(locPoint, Extents))
+            return ContainmentType::Intersects;
+        return ContainmentType::Disjoint;
+    }
+
+    ContainmentType OrientedBoundingBox::Contains(const BoundingSphere& sphere, bool ignoreScale) const
+    {
+        // Transform sphere center into the obb coordinates
+        Float3 locCenter;
+        Transformation.WorldToLocal(sphere.Center, locCenter);
+
+        float locRadius;
+        if (ignoreScale)
+        {
+            locRadius = sphere.Radius;
+        }
+        else
+        {
+            // Transform sphere radius into the obb coordinates
+            Float3 vRadius = Float3::UnitX * sphere.Radius;
+            Transformation.LocalToWorldVector(vRadius, vRadius);
+            locRadius = vRadius.Length();
+        }
+
+        // Perform regular BoundingBox to BoundingSphere containment check
+        const Float3 minusExtents = -Extents;
+        Float3 vector;
+        Float3::Clamp(locCenter, minusExtents, Extents, vector);
+        const float distance = Float3::DistanceSquared(locCenter, vector);
+
+        if (distance > locRadius * locRadius)
+            return ContainmentType::Disjoint;
+        if (minusExtents.X + locRadius <= locCenter.X && locCenter.X <= Extents.X - locRadius && (Extents.X - minusExtents.X > locRadius && minusExtents.Y + locRadius <= locCenter.Y) && (locCenter.Y <= Extents.Y - locRadius && Extents.Y - minusExtents.Y > locRadius && (minusExtents.Z + locRadius <= locCenter.Z && locCenter.Z <= Extents.Z - locRadius && Extents.Z - minusExtents.Z > locRadius)))
+            return ContainmentType::Contains;
+        return ContainmentType::Intersects;
+    }
+
+    bool OrientedBoundingBox::Intersects(const Ray& ray, Float3& point) const
+    {
+        // Put ray in box space
+        Ray bRay;
+        Transformation.WorldToLocalVector(ray.Direction, bRay.Direction);
+        Transformation.WorldToLocal(ray.Position, bRay.Position);
+
+        // Perform a regular ray to BoundingBox check
+        const BoundingBox bb(-Extents, Extents);
+        const bool intersects = CollisionsHelper::RayIntersectsBox(bRay, bb, point);
+
+        // Put the result intersection back to world
+        if (intersects)
+            Transformation.LocalToWorld(point, point);
+
+        return intersects;
+    }
+
+    bool OrientedBoundingBox::Intersects(const Ray& ray, float& distance) const
+    {
+        Float3 point;
+        const bool result = Intersects(ray, point);
+        distance = Float3::Distance(ray.Position, point);
+        return result;
+    }
+
+    bool OrientedBoundingBox::Intersects(const Ray& ray, float& distance, Float3& normal) const
+    {
+        // Put ray in box space
+        Ray bRay;
+        Transformation.WorldToLocalVector(ray.Direction, bRay.Direction);
+        Transformation.WorldToLocal(ray.Position, bRay.Position);
+
+        // Perform a regular ray to BoundingBox check
+        const BoundingBox bb(-Extents, Extents);
+        if (CollisionsHelper::RayIntersectsBox(bRay, bb, distance, normal))
+        {
+            // Put the result intersection back to world
+            Transformation.LocalToWorldVector(normal, normal);
+            normal.Normalize();
+            return true;
+        }
+
+        return false;
+    }
+
 }

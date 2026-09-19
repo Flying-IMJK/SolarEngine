@@ -129,17 +129,17 @@ namespace SE
 			return;
 
 		// Calculate an perfect orthonormal matrix (no reflections)
-		const auto at = Float3(M31 / scale.z, M32 / scale.z, M33 / scale.z);
-		const auto up = Float3::Cross(at, Float3(M11 / scale.x, M12 / scale.x, M13 / scale.x));
+		const auto at = Float3(M31 / scale.Z, M32 / scale.Z, M33 / scale.Z);
+		const auto up = Float3::Cross(at, Float3(M11 / scale.X, M12 / scale.X, M13 / scale.X));
 		const auto right = Float3::Cross(up, at);
 		rotation.SetRight(right);
 		rotation.SetUp(up);
 		rotation.SetBackward(at);
 
 		// In case of reflexions
-		scale.x = Float3::Dot(right, GetRight()) > 0.0f ? scale.x : -scale.x;
-		scale.y = Float3::Dot(up, GetUp()) > 0.0f ? scale.y : -scale.y;
-		scale.z = Float3::Dot(at, GetBackward()) > 0.0f ? scale.z : -scale.z;
+		scale.X = Float3::Dot(right, GetRight()) > 0.0f ? scale.X : -scale.X;
+		scale.Y = Float3::Dot(up, GetUp()) > 0.0f ? scale.Y : -scale.Y;
+		scale.Z = Float3::Dot(at, GetBackward()) > 0.0f ? scale.Z : -scale.Z;
 	}
 
 	void Matrix::Decompose(Float3& scale, Matrix& rotation, Float3& translation) const
@@ -446,24 +446,24 @@ namespace SE
 		crossed.Normalize();
 		Float3::Cross(difference, crossed, final);
 
-		result.M11 = crossed.x;
-		result.M12 = crossed.y;
-		result.M13 = crossed.z;
+		result.M11 = crossed.X;
+		result.M12 = crossed.Y;
+		result.M13 = crossed.Z;
 		result.M14 = 0.0f;
 
-		result.M21 = final.x;
-		result.M22 = final.y;
-		result.M23 = final.z;
+		result.M21 = final.X;
+		result.M22 = final.Y;
+		result.M23 = final.Z;
 		result.M24 = 0.0f;
 
-		result.M31 = difference.x;
-		result.M32 = difference.y;
-		result.M33 = difference.z;
+		result.M31 = difference.X;
+		result.M32 = difference.Y;
+		result.M33 = difference.Z;
 		result.M34 = 0.0f;
 
-		result.M41 = objectPosition.x;
-		result.M42 = objectPosition.y;
-		result.M43 = objectPosition.z;
+		result.M41 = objectPosition.X;
+		result.M42 = objectPosition.Y;
+		result.M43 = objectPosition.Z;
 		result.M44 = 1.0f;
 	}
 
@@ -476,17 +476,17 @@ namespace SE
 		xaxis.Normalize();
 		Float3::Cross(zaxis, xaxis, yaxis);
 
-		result.M11 = xaxis.x;
-		result.M21 = xaxis.y;
-		result.M31 = xaxis.z;
+		result.M11 = xaxis.X;
+		result.M21 = xaxis.Y;
+		result.M31 = xaxis.Z;
 
-		result.M12 = yaxis.x;
-		result.M22 = yaxis.y;
-		result.M32 = yaxis.z;
+		result.M12 = yaxis.X;
+		result.M22 = yaxis.Y;
+		result.M32 = yaxis.Z;
 
-		result.M13 = zaxis.x;
-		result.M23 = zaxis.y;
-		result.M33 = zaxis.z;
+		result.M13 = zaxis.X;
+		result.M23 = zaxis.Y;
+		result.M33 = zaxis.Z;
 
 		result.M14 = 0.0f;
 		result.M24 = 0.0f;
@@ -571,9 +571,9 @@ namespace SE
 
 	void Matrix::RotationAxis(const Float3& axis, float angle, Matrix& result)
 	{
-		const float x = axis.x;
-		const float y = axis.y;
-		const float z = axis.z;
+		const float x = axis.X;
+		const float y = axis.Y;
+		const float z = axis.Z;
 		const float cosA = Math::Cos(angle);
 		const float sinA = Math::Sin(angle);
 		const float xx = x * x;
@@ -597,15 +597,15 @@ namespace SE
 
 	void Matrix::RotationQuaternion(const Quaternion& rotation, Matrix& result)
 	{
-		const float xx = rotation.x * rotation.x;
-		const float yy = rotation.y * rotation.y;
-		const float zz = rotation.z * rotation.z;
-		const float xy = rotation.x * rotation.y;
-		const float zw = rotation.z * rotation.w;
-		const float zx = rotation.z * rotation.x;
-		const float yw = rotation.y * rotation.w;
-		const float yz = rotation.y * rotation.z;
-		const float xw = rotation.x * rotation.w;
+		const float xx = rotation.X * rotation.X;
+		const float yy = rotation.Y * rotation.Y;
+		const float zz = rotation.Z * rotation.Z;
+		const float xy = rotation.X * rotation.Y;
+		const float zw = rotation.Z * rotation.W;
+		const float zx = rotation.Z * rotation.X;
+		const float yw = rotation.Y * rotation.W;
+		const float yz = rotation.Y * rotation.Z;
+		const float xw = rotation.X * rotation.W;
 
 		result.M11 = 1.0f - 2.0f * (yy + zz);
 		result.M12 = 2.0f * (xy + zw);
@@ -638,18 +638,18 @@ namespace SE
 	Matrix Matrix::Translation(const Float3& value)
 	{
 		Matrix result = Identity;
-		result.M41 = value.x;
-		result.M42 = value.y;
-		result.M43 = value.z;
+		result.M41 = value.X;
+		result.M42 = value.Y;
+		result.M43 = value.Z;
 		return result;
 	}
 
 	void Matrix::Translation(const Float3& value, Matrix& result)
 	{
 		result = Identity;
-		result.M41 = value.x;
-		result.M42 = value.y;
-		result.M43 = value.z;
+		result.M41 = value.X;
+		result.M42 = value.Y;
+		result.M43 = value.Z;
 	}
 
 	void Matrix::Translation(float x, float y, float z, Matrix& result)
@@ -682,15 +682,15 @@ namespace SE
 		const float d = rr1 / rr0 - rv1 / rv0;
 
 		matrix = Identity;
-		matrix.M11 = d * e1.x * e0.x + 1.0f;
-		matrix.M12 = d * e1.x * e0.y;
-		matrix.M13 = d * e1.x * e0.z;
-		matrix.M21 = d * e1.y * e0.x;
-		matrix.M22 = d * e1.y * e0.y + 1.0f;
-		matrix.M23 = d * e1.y * e0.z;
-		matrix.M31 = d * e1.z * e0.x;
-		matrix.M32 = d * e1.z * e0.y;
-		matrix.M33 = d * e1.z * e0.z + 1.0f;
+		matrix.M11 = d * e1.X * e0.X + 1.0f;
+		matrix.M12 = d * e1.X * e0.Y;
+		matrix.M13 = d * e1.X * e0.Z;
+		matrix.M21 = d * e1.Y * e0.X;
+		matrix.M22 = d * e1.Y * e0.Y + 1.0f;
+		matrix.M23 = d * e1.Y * e0.Z;
+		matrix.M31 = d * e1.Z * e0.X;
+		matrix.M32 = d * e1.Z * e0.Y;
+		matrix.M33 = d * e1.Z * e0.Z + 1.0f;
 	}
 
 	void Matrix::Transformation(const Float3& scaling, const Quaternion& rotation, const Float3& translation, Matrix& result)
@@ -704,15 +704,15 @@ namespace SE
 		//    *Matrix.Position(translation);
 
 		// Rotation
-		const float xx = rotation.x * rotation.x;
-		const float yy = rotation.y * rotation.y;
-		const float zz = rotation.z * rotation.z;
-		const float xy = rotation.x * rotation.y;
-		const float zw = rotation.z * rotation.w;
-		const float zx = rotation.z * rotation.x;
-		const float yw = rotation.y * rotation.w;
-		const float yz = rotation.y * rotation.z;
-		const float xw = rotation.x * rotation.w;
+		const float xx = rotation.X * rotation.X;
+		const float yy = rotation.Y * rotation.Y;
+		const float zz = rotation.Z * rotation.Z;
+		const float xy = rotation.X * rotation.Y;
+		const float zw = rotation.Z * rotation.W;
+		const float zx = rotation.Z * rotation.X;
+		const float yw = rotation.Y * rotation.W;
+		const float yz = rotation.Y * rotation.Z;
+		const float xw = rotation.X * rotation.W;
 		result.M11 = 1.0f - 2.0f * (yy + zz);
 		result.M12 = 2.0f * (xy + zw);
 		result.M13 = 2.0f * (zx - yw);
@@ -724,20 +724,20 @@ namespace SE
 		result.M33 = 1.0f - 2.0f * (yy + xx);
 
 		// Position
-		result.M41 = translation.x;
-		result.M42 = translation.y;
-		result.M43 = translation.z;
+		result.M41 = translation.X;
+		result.M42 = translation.Y;
+		result.M43 = translation.Z;
 
 		// Scale
-		result.M11 *= scaling.x;
-		result.M12 *= scaling.x;
-		result.M13 *= scaling.x;
-		result.M21 *= scaling.y;
-		result.M22 *= scaling.y;
-		result.M23 *= scaling.y;
-		result.M31 *= scaling.z;
-		result.M32 *= scaling.z;
-		result.M33 *= scaling.z;
+		result.M11 *= scaling.X;
+		result.M12 *= scaling.X;
+		result.M13 *= scaling.X;
+		result.M21 *= scaling.Y;
+		result.M22 *= scaling.Y;
+		result.M23 *= scaling.Y;
+		result.M31 *= scaling.Z;
+		result.M32 *= scaling.Z;
+		result.M33 *= scaling.Z;
 
 		result.M14 = 0.0f;
 		result.M24 = 0.0f;
@@ -795,24 +795,24 @@ namespace SE
 		Float3::Normalize(Float3::Cross(up, vector3), vector31);
 		Float3::Cross(vector3, vector31, vector32);
 
-		result.M11 = vector31.x;
-		result.M12 = vector31.y;
-		result.M13 = vector31.z;
+		result.M11 = vector31.X;
+		result.M12 = vector31.Y;
+		result.M13 = vector31.Z;
 		result.M14 = 0.0f;
 
-		result.M21 = vector32.x;
-		result.M22 = vector32.y;
-		result.M23 = vector32.z;
+		result.M21 = vector32.X;
+		result.M22 = vector32.Y;
+		result.M23 = vector32.Z;
 		result.M24 = 0.0f;
 
-		result.M31 = vector3.x;
-		result.M32 = vector3.y;
-		result.M33 = vector3.z;
+		result.M31 = vector3.X;
+		result.M32 = vector3.Y;
+		result.M33 = vector3.Z;
 		result.M34 = 0.0f;
 
-		result.M41 = position.x;
-		result.M42 = position.y;
-		result.M43 = position.z;
+		result.M41 = position.X;
+		result.M42 = position.Y;
+		result.M43 = position.Z;
 		result.M44 = 1.0f;
 	}
 
@@ -825,9 +825,9 @@ namespace SE
 
 	void Matrix::CreateFromAxisAngle(const Float3& axis, float angle, Matrix& result)
 	{
-		const float x = axis.x;
-		const float y = axis.y;
-		const float z = axis.z;
+		const float x = axis.X;
+		const float y = axis.Y;
+		const float z = axis.Z;
 		const float single = Math::Sin(angle);
 		const float single1 = Math::Cos(angle);
 		const float single2 = x * x;

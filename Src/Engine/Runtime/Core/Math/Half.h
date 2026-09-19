@@ -123,8 +123,8 @@ namespace SE
 		/// <param name="v">x and y components</param>
 		FORCE_INLINE Half2(const Float2& v)
 		{
-			x = Float16Compressor::Compress(v.x);
-			y = Float16Compressor::Compress(v.y);
+			x = Float16Compressor::Compress(v.X);
+			y = Float16Compressor::Compress(v.Y);
 		}
 	
 	public:
@@ -175,9 +175,9 @@ namespace SE
 	
 		FORCE_INLINE Half3(const Float3& v)
 		{
-			x = Float16Compressor::Compress(v.x);
-			y = Float16Compressor::Compress(v.y);
-			z = Float16Compressor::Compress(v.z);
+			x = Float16Compressor::Compress(v.X);
+			y = Float16Compressor::Compress(v.Y);
+			z = Float16Compressor::Compress(v.Z);
 		}
 	
 	public:

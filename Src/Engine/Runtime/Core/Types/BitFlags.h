@@ -154,7 +154,7 @@ namespace SE
 		{
 			((m_flags |= (uint64)args), ...);
 		}
-
+		 
 		EnumFlags &operator=(EnumFlags const &rhs) = default;
 
 		bool operator==(EnumFlags const &rhs) const

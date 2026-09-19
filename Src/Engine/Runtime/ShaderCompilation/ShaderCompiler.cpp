@@ -182,7 +182,7 @@ namespace SE
 		for (int32 i = 0; i < meta->VS.Count(); i++)
 		{
 			auto& shader = meta->VS[i];
-			ASSERT(shader.GetStage() == ShaderStage::Vertex && (shader.Flags & ShaderFlags::Hidden) == (ShaderFlags)0);
+			ASSERT(shader.GetStage() == ShaderStage::Vertex && EnumHasNoneFlags(shader.Flags, ShaderFlags::Hidden));
 			PROFILE_COMPILE_SHADER(shader);
 			if (!CompileShader(shader, &WriteCustomDataVS))
 			{
@@ -195,7 +195,7 @@ namespace SE
 		for (int32 i = 0; i < meta->HS.Count(); i++)
 		{
 			auto& shader = meta->HS[i];
-			ASSERT(shader.GetStage() == ShaderStage::Hull && (shader.Flags & ShaderFlags::Hidden) == (ShaderFlags)0);
+			ASSERT(shader.GetStage() == ShaderStage::Hull && EnumHasNoneFlags(shader.Flags, ShaderFlags::Hidden));
 			PROFILE_COMPILE_SHADER(shader);
 			if (!CompileShader(shader, &WriteCustomDataHS))
 			{
@@ -208,7 +208,7 @@ namespace SE
 		for (int32 i = 0; i < meta->DS.Count(); i++)
 		{
 			auto& shader = meta->DS[i];
-			ASSERT(shader.GetStage() == ShaderStage::Domain && (shader.Flags & ShaderFlags::Hidden) == (ShaderFlags)0);
+			ASSERT(shader.GetStage() == ShaderStage::Domain && EnumHasNoneFlags(shader.Flags, ShaderFlags::Hidden));
 			PROFILE_COMPILE_SHADER(shader);
 			if (!CompileShader(shader))
 			{
@@ -221,7 +221,7 @@ namespace SE
 		for (int32 i = 0; i < meta->GS.Count(); i++)
 		{
 			auto& shader = meta->GS[i];
-			ASSERT(shader.GetStage() == ShaderStage::Geometry && (shader.Flags & ShaderFlags::Hidden) == (ShaderFlags)0);
+			ASSERT(shader.GetStage() == ShaderStage::Geometry && EnumHasNoneFlags(shader.Flags, ShaderFlags::Hidden));
 			PROFILE_COMPILE_SHADER(shader);
 			if (!CompileShader(shader))
 			{
@@ -234,7 +234,7 @@ namespace SE
 		for (int32 i = 0; i < meta->PS.Count(); i++)
 		{
 			auto& shader = meta->PS[i];
-			ASSERT(shader.GetStage() == ShaderStage::Pixel && (shader.Flags & ShaderFlags::Hidden) == (ShaderFlags)0);
+			ASSERT(shader.GetStage() == ShaderStage::Pixel && EnumHasNoneFlags(shader.Flags, ShaderFlags::Hidden));
 			PROFILE_COMPILE_SHADER(shader);
 			if (!CompileShader(shader))
 			{
@@ -247,7 +247,7 @@ namespace SE
 		for (int32 i = 0; i < meta->CS.Count(); i++)
 		{
 			auto& shader = meta->CS[i];
-			ASSERT(shader.GetStage() == ShaderStage::Compute && (shader.Flags & ShaderFlags::Hidden) == (ShaderFlags)0);
+			ASSERT(shader.GetStage() == ShaderStage::Compute && EnumHasNoneFlags(shader.Flags, ShaderFlags::Hidden));
 			PROFILE_COMPILE_SHADER(shader);
 			if (!CompileShader(shader))
 			{
@@ -295,7 +295,7 @@ namespace SE
 		output->WriteStringAnsi(meta.Name, 11);
 
 		// [Output] Shader flags
-		output->WriteUint32(meta.Flags.Get());
+		output->WriteUint32(static_cast<uint32>(meta.Flags));
 
 		return true;
 	}

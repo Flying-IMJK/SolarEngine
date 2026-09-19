@@ -495,7 +495,7 @@ namespace SE
             {
                 Float4 f4;
                 StringToFloatArray(str, 4, f4.Raw);
-                *reinterpret_cast<Quaternion *>(pValue) = Quaternion(f4.x, f4.y, f4.z, f4.w);
+                *reinterpret_cast<Quaternion *>(pValue) = Quaternion(f4.X, f4.Y, f4.Z, f4.W);
             }
             break;
 
@@ -898,7 +898,7 @@ namespace SE
                 float floatData[7];
                 (Float3&) floatData = rotation.GetEuler();
                 (Float3&) floatData[3] = value.GetTranslation();
-                floatData[6] = value.GetScaleVector().x;
+                floatData[6] = value.GetScaleVector().X;
 
                 FloatArrayToString( floatData, 7, strValue );
             }
@@ -1177,27 +1177,27 @@ namespace SE
             case TypeIDCore::Float2:
             {
 				Float2 const* value = reinterpret_cast<Float2 const *>(pValue);
-				stream.Write(value->x);
-				stream.Write(value->y);
+				stream.Write(value->X);
+				stream.Write(value->Y);
             }
             break;
 
             case TypeIDCore::Float3:
             {
 				Float3 const* value = reinterpret_cast<Float3 const *>(pValue);
-				stream.Write(value->x);
-				stream.Write(value->y);
-				stream.Write(value->z);
+				stream.Write(value->X);
+				stream.Write(value->Y);
+				stream.Write(value->Z);
             }
             break;
 
             case TypeIDCore::Float4:
             {
 				Float4 const* value = reinterpret_cast<Float4 const *>(pValue);
-                stream.Write(value->x);
-				stream.Write(value->y);
-				stream.Write(value->z);
-				stream.Write(value->w);
+                stream.Write(value->X);
+				stream.Write(value->Y);
+				stream.Write(value->Z);
+				stream.Write(value->W);
             }
             break;
 
@@ -1488,25 +1488,25 @@ namespace SE
 
             case TypeIDCore::Float2:
             {
-                stream.Read((*reinterpret_cast<Float2 *>(pValue)).x);
-				stream.Read((*reinterpret_cast<Float2 *>(pValue)).y);
+                stream.Read((*reinterpret_cast<Float2 *>(pValue)).X);
+				stream.Read((*reinterpret_cast<Float2 *>(pValue)).Y);
             }
             break;
 
             case TypeIDCore::Float3:
             {
-				stream.Read((*reinterpret_cast<Float3 *>(pValue)).x);
-				stream.Read((*reinterpret_cast<Float3 *>(pValue)).y);
-				stream.Read((*reinterpret_cast<Float3 *>(pValue)).z);
+				stream.Read((*reinterpret_cast<Float3 *>(pValue)).X);
+				stream.Read((*reinterpret_cast<Float3 *>(pValue)).Y);
+				stream.Read((*reinterpret_cast<Float3 *>(pValue)).Z);
             }
             break;
 
             case TypeIDCore::Float4:
             {
-				stream.Read((*reinterpret_cast<Float4 *>(pValue)).x);
-				stream.Read((*reinterpret_cast<Float4 *>(pValue)).y);
-				stream.Read((*reinterpret_cast<Float4 *>(pValue)).z);
-                stream.Read((*reinterpret_cast<Float4 *>(pValue)).w);
+				stream.Read((*reinterpret_cast<Float4 *>(pValue)).X);
+				stream.Read((*reinterpret_cast<Float4 *>(pValue)).Y);
+				stream.Read((*reinterpret_cast<Float4 *>(pValue)).Z);
+                stream.Read((*reinterpret_cast<Float4 *>(pValue)).W);
             }
             break;
 

@@ -35,91 +35,91 @@ namespace SE
 
 	template<>
 	Float4::Vector4Base(const Float2& xy, float z, float w)
-		: x(xy.x)
-		, y(xy.y)
-		, z(z)
-		, w(w)
+		: X(xy.X)
+		, Y(xy.Y)
+		, Z(z)
+		, W(w)
 	{
 	}
 
 	template<>
 	Float4::Vector4Base(const Float2& xy, const Float2& zw)
-		: x(xy.x)
-		, y(xy.y)
-		, z(zw.x)
-		, w(zw.y)
+		: X(xy.X)
+		, Y(xy.Y)
+		, Z(zw.X)
+		, W(zw.Y)
 	{
 	}
 
 	template<>
 	Float4::Vector4Base(const Float3& xyz, float w)
-		: x(xyz.x)
-		, y(xyz.y)
-		, z(xyz.z)
-		, w(w)
+		: X(xyz.X)
+		, Y(xyz.Y)
+		, Z(xyz.Z)
+		, W(w)
 	{
 	}
 
 	template<>
 	Float4::Vector4Base(const Int2& xy, float z, float w)
-		: x((float)xy.x)
-		, y((float)xy.y)
-		, z(z)
-		, w(w)
+		: X((float)xy.X)
+		, Y((float)xy.Y)
+		, Z(z)
+		, W(w)
 	{
 	}
 
 	template<>
 	Float4::Vector4Base(const Int3& xyz, float w)
-		: x((float)xyz.x)
-		, y((float)xyz.y)
-		, z((float)xyz.z)
-		, w(w)
+		: X((float)xyz.X)
+		, Y((float)xyz.Y)
+		, Z((float)xyz.Z)
+		, W(w)
 	{
 	}
 
 	template<>
 	Float4::Vector4Base(const Double2& xy, float z, float w)
-		: x((float)xy.x)
-		, y((float)xy.y)
-		, z(z)
-		, w(w)
+		: X((float)xy.X)
+		, Y((float)xy.Y)
+		, Z(z)
+		, W(w)
 	{
 	}
 
 	template<>
 	Float4::Vector4Base(const Double2& xy, const Double2& zw)
-		: x((float)xy.x)
-		, y((float)xy.y)
-		, z((float)zw.x)
-		, w((float)zw.y)
+		: X((float)xy.X)
+		, Y((float)xy.Y)
+		, Z((float)zw.X)
+		, W((float)zw.Y)
 	{
 	}
 
 	template<>
 	Float4::Vector4Base(const Double3& xyz, float w)
-		: x((float)xyz.x)
-		, y((float)xyz.y)
-		, z((float)xyz.z)
-		, w(w)
+		: X((float)xyz.X)
+		, Y((float)xyz.Y)
+		, Z((float)xyz.Z)
+		, W(w)
 	{
 	}
 
 	template<>
 	Float4::Vector4Base(const Color& color)
-		: x(color.r)
-		, y(color.g)
-		, z(color.b)
-		, w(color.a)
+		: X(color.R)
+		, Y(color.G)
+		, Z(color.B)
+		, W(color.A)
 	{
 	}
 
 	template<>
 	Float4::Vector4Base(const Rectangle& rect)
-		: x(rect.Location.x)
-		, y(rect.Location.y)
-		, z(rect.Size.x)
-		, w(rect.Size.y)
+		: X(rect.Location.X)
+		, Y(rect.Location.Y)
+		, Z(rect.Size.X)
+		, W(rect.Size.Y)
 	{
 	}
 
@@ -164,91 +164,91 @@ namespace SE
 
 	template<>
 	Double4::Vector4Base(const Float2& xy, double z, double w)
-		: x((double)xy.x)
-		, y((double)xy.y)
-		, z(z)
-		, w(w)
+		: X((double)xy.X)
+		, Y((double)xy.Y)
+		, Z(z)
+		, W(w)
 	{
 	}
 
 	template<>
 	Double4::Vector4Base(const Float2& xy, const Float2& zw)
-		: x((double)xy.x)
-		, y((double)xy.y)
-		, z((double)zw.x)
-		, w((double)zw.y)
+		: X((double)xy.X)
+		, Y((double)xy.Y)
+		, Z((double)zw.X)
+		, W((double)zw.Y)
 	{
 	}
 
 	template<>
 	Double4::Vector4Base(const Float3& xyz, double w)
-		: x((double)xyz.x)
-		, y((double)xyz.y)
-		, z((double)xyz.z)
-		, w(w)
+		: X((double)xyz.X)
+		, Y((double)xyz.Y)
+		, Z((double)xyz.Z)
+		, W(w)
 	{
 	}
 
 	template<>
 	Double4::Vector4Base(const Int2& xy, double z, double w)
-		: x((double)xy.x)
-		, y((double)xy.y)
-		, z(z)
-		, w(w)
+		: X((double)xy.X)
+		, Y((double)xy.Y)
+		, Z(z)
+		, W(w)
 	{
 	}
 
 	template<>
 	Double4::Vector4Base(const Int3& xyz, double w)
-		: x((double)xyz.x)
-		, y((double)xyz.y)
-		, z((double)xyz.z)
-		, w(w)
+		: X((double)xyz.X)
+		, Y((double)xyz.Y)
+		, Z((double)xyz.Z)
+		, W(w)
 	{
 	}
 
 	template<>
 	Double4::Vector4Base(const Double2& xy, double z, double w)
-		: x(xy.x)
-		, y(xy.y)
-		, z(z)
-		, w(w)
+		: X(xy.X)
+		, Y(xy.Y)
+		, Z(z)
+		, W(w)
 	{
 	}
 
 	template<>
 	Double4::Vector4Base(const Double2& xy, const Double2& zw)
-		: x(xy.x)
-		, y(xy.y)
-		, z(zw.x)
-		, w(zw.y)
+		: X(xy.X)
+		, Y(xy.Y)
+		, Z(zw.X)
+		, W(zw.Y)
 	{
 	}
 
 	template<>
 	Double4::Vector4Base(const Double3& xyz, double w)
-		: x((double)xyz.x)
-		, y((double)xyz.y)
-		, z((double)xyz.z)
-		, w(w)
+		: X((double)xyz.X)
+		, Y((double)xyz.Y)
+		, Z((double)xyz.Z)
+		, W(w)
 	{
 	}
 
 	template<>
 	Double4::Vector4Base(const Color& color)
-		: x((double)color.r)
-		, y((double)color.g)
-		, z((double)color.b)
-		, w((double)color.a)
+		: X((double)color.R)
+		, Y((double)color.G)
+		, Z((double)color.B)
+		, W((double)color.A)
 	{
 	}
 
 	template<>
 	Double4::Vector4Base(const Rectangle& rect)
-		: x((double)rect.Location.x)
-		, y((double)rect.Location.y)
-		, z((double)rect.Size.x)
-		, w((double)rect.Size.y)
+		: X((double)rect.Location.X)
+		, Y((double)rect.Location.Y)
+		, Z((double)rect.Size.X)
+		, W((double)rect.Size.Y)
 	{
 	}
 
@@ -293,91 +293,91 @@ namespace SE
 
 	template<>
 	Int4::Vector4Base(const Float2& xy, int32 z, int32 w)
-		: x((int32)xy.x)
-		, y((int32)xy.y)
-		, z(z)
-		, w(w)
+		: X((int32)xy.X)
+		, Y((int32)xy.Y)
+		, Z(z)
+		, W(w)
 	{
 	}
 
 	template<>
 	Int4::Vector4Base(const Float2& xy, const Float2& zw)
-		: x((int32)xy.x)
-		, y((int32)xy.y)
-		, z((int32)zw.x)
-		, w((int32)zw.y)
+		: X((int32)xy.X)
+		, Y((int32)xy.Y)
+		, Z((int32)zw.X)
+		, W((int32)zw.Y)
 	{
 	}
 
 	template<>
 	Int4::Vector4Base(const Float3& xyz, int32 w)
-		: x((int32)xyz.x)
-		, y((int32)xyz.y)
-		, z((int32)xyz.z)
-		, w(w)
+		: X((int32)xyz.X)
+		, Y((int32)xyz.Y)
+		, Z((int32)xyz.Z)
+		, W(w)
 	{
 	}
 
 	template<>
 	Int4::Vector4Base(const Int2& xy, int32 z, int32 w)
-		: x(xy.x)
-		, y(xy.y)
-		, z(z)
-		, w(w)
+		: X(xy.X)
+		, Y(xy.Y)
+		, Z(z)
+		, W(w)
 	{
 	}
 
 	template<>
 	Int4::Vector4Base(const Int3& xyz, int32 w)
-		: x(xyz.x)
-		, y(xyz.y)
-		, z(xyz.z)
-		, w(w)
+		: X(xyz.X)
+		, Y(xyz.Y)
+		, Z(xyz.Z)
+		, W(w)
 	{
 	}
 
 	template<>
 	Int4::Vector4Base(const Double2& xy, int32 z, int32 w)
-		: x((int32)xy.x)
-		, y((int32)xy.y)
-		, z(z)
-		, w(w)
+		: X((int32)xy.X)
+		, Y((int32)xy.Y)
+		, Z(z)
+		, W(w)
 	{
 	}
 
 	template<>
 	Int4::Vector4Base(const Double2& xy, const Double2& zw)
-		: x((int32)xy.x)
-		, y((int32)xy.y)
-		, z((int32)zw.x)
-		, w((int32)zw.y)
+		: X((int32)xy.X)
+		, Y((int32)xy.Y)
+		, Z((int32)zw.X)
+		, W((int32)zw.Y)
 	{
 	}
 
 	template<>
 	Int4::Vector4Base(const Double3& xyz, int32 w)
-		: x((int32)xyz.x)
-		, y((int32)xyz.y)
-		, z((int32)xyz.z)
-		, w(w)
+		: X((int32)xyz.X)
+		, Y((int32)xyz.Y)
+		, Z((int32)xyz.Z)
+		, W(w)
 	{
 	}
 
 	template<>
 	Int4::Vector4Base(const Color& color)
-		: x((int32)color.r)
-		, y((int32)color.g)
-		, z((int32)color.b)
-		, w((int32)color.a)
+		: X((int32)color.R)
+		, Y((int32)color.G)
+		, Z((int32)color.B)
+		, W((int32)color.A)
 	{
 	}
 
 	template<>
 	Int4::Vector4Base(const Rectangle& rect)
-		: x((int32)rect.Location.x)
-		, y((int32)rect.Location.y)
-		, z((int32)rect.Size.x)
-		, w((int32)rect.Size.y)
+		: X((int32)rect.Location.X)
+		, Y((int32)rect.Location.Y)
+		, Z((int32)rect.Size.X)
+		, W((int32)rect.Size.Y)
 	{
 	}
 

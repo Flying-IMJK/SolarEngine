@@ -911,10 +911,10 @@ namespace SE
 	void GPUContextVulkan::SetScissor(const Rectangle& scissorRect)
 	{
 		VkRect2D rect;
-		rect.offset.x = (int32)scissorRect.Location.x;
-		rect.offset.y = (int32)scissorRect.Location.y;
-		rect.extent.width = (uint32)scissorRect.Size.x;
-		rect.extent.height = (uint32)scissorRect.Size.y;
+		rect.offset.x = (int32)scissorRect.Location.X;
+		rect.offset.y = (int32)scissorRect.Location.Y;
+		rect.extent.width = (uint32)scissorRect.Size.X;
+		rect.extent.height = (uint32)scissorRect.Size.Y;
 		vkCmdSetScissor(_cmdBufferManager->GetCmdBuffer()->GetHandle(), 0, 1, &rect);
 	}
 
@@ -1264,7 +1264,7 @@ namespace SE
 
 	void GPUContextVulkan::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 	{
-		ENGINE_ASSERT(bufferForArgs && bufferForArgs->GetFlags().IsFlag(GPUBufferFlags::Argument));
+		ENGINE_ASSERT(bufferForArgs && EnumHasAnyFlags(bufferForArgs->GetFlags(), GPUBufferFlags::Argument));
 		OnDrawCall();
 		auto bufferForArgsVK = (GPUBufferVulkan*)bufferForArgs;
 		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
@@ -1274,7 +1274,7 @@ namespace SE
 
 	void GPUContextVulkan::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 	{
-		ENGINE_ASSERT(bufferForArgs && bufferForArgs->GetFlags().IsFlag(GPUBufferFlags::Argument));
+		ENGINE_ASSERT(bufferForArgs && EnumHasAnyFlags(bufferForArgs->GetFlags(), GPUBufferFlags::Argument));
 		OnDrawCall();
 		auto bufferForArgsVK = (GPUBufferVulkan*)bufferForArgs;
 		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();

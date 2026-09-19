@@ -14,7 +14,7 @@ namespace SE
 	{
 		NON_COPYABLE(AssetRefBase)
 	protected:
-		Asset* _asset = nullptr;
+		Asset* m_Asset = nullptr;
 
 	public:
 		/// <summary>
@@ -50,7 +50,7 @@ namespace SE
 		/// </summary>
 		FORCE_INLINE UID GetID() const
 		{
-			return _asset ? _asset->GetID() : UID::Empty;
+			return m_Asset ? m_Asset->GetID() : UID::Empty;
 		}
 
 		/// <summary>
@@ -58,7 +58,15 @@ namespace SE
 		/// </summary>
 		FORCE_INLINE bool HasReference() const
 		{
-			return _asset != nullptr;
+			return m_Asset != nullptr;
+		}
+
+		/// <summary>
+		/// Gets managed instance object (or null if no asset set).
+		/// </summary>
+		FORCE_INLINE CLRObject* GetManagedInstance() const
+		{
+			return m_Asset ? m_Asset->GetOrCreateManagedInstance() : nullptr;
 		}
 
 		/// <summary>
@@ -105,12 +113,12 @@ namespace SE
 		/// <param name="other">The other.</param>
 		AssetRef(const AssetRef& other)
 		{
-			OnSet(other._asset);
+			OnSet(other.m_Asset);
 		}
 
 		AssetRef(AssetRef&& other)
 		{
-			OnSet(other._asset);
+			OnSet(other.m_Asset);
 			other.OnSet(nullptr);
 		}
 
@@ -118,7 +126,7 @@ namespace SE
 		{
 			if (&other != this)
 			{
-				OnSet(other._asset);
+				OnSet(other.m_Asset);
 				other.OnSet(nullptr);
 			}
 			return *this;
@@ -134,7 +142,7 @@ namespace SE
 	public:
 		FORCE_INLINE AssetRef& operator=(const AssetRef& other)
 		{
-			OnSet(other._asset);
+			OnSet(other.m_Asset);
 			return *this;
 		}
 
@@ -152,22 +160,22 @@ namespace SE
 
 		FORCE_INLINE bool operator==(T* other) const
 		{
-			return _asset == other;
+			return m_Asset == other;
 		}
 
 		FORCE_INLINE bool operator==(const AssetRef& other) const
 		{
-			return _asset == other._asset;
+			return m_Asset == other.m_Asset;
 		}
 
 		FORCE_INLINE bool operator!=(T* other) const
 		{
-			return _asset != other;
+			return m_Asset != other;
 		}
 
 		FORCE_INLINE bool operator!=(const AssetRef& other) const
 		{
-			return _asset != other._asset;
+			return m_Asset != other.m_Asset;
 		}
 
 		/// <summary>
@@ -175,7 +183,7 @@ namespace SE
 		/// </summary>
 		FORCE_INLINE operator T*() const
 		{
-			return (T*)_asset;
+			return (T*)m_Asset;
 		}
 
 		/// <summary>
@@ -183,7 +191,7 @@ namespace SE
 		/// </summary>
 		FORCE_INLINE operator bool() const
 		{
-			return _asset != nullptr;
+			return m_Asset != nullptr;
 		}
 
 		/// <summary>
@@ -191,7 +199,7 @@ namespace SE
 		/// </summary>
 		FORCE_INLINE T* operator->() const
 		{
-			return (T*)_asset;
+			return (T*)m_Asset;
 		}
 
 		/// <summary>
@@ -199,7 +207,7 @@ namespace SE
 		/// </summary>
 		FORCE_INLINE T* Get() const
 		{
-			return (T*)_asset;
+			return (T*)m_Asset;
 		}
 
 		/// <summary>
@@ -208,7 +216,7 @@ namespace SE
 		template<typename U>
 		FORCE_INLINE U* As() const
 		{
-			return (U*)_asset;
+			return (U*)m_Asset;
 		}
 
 	public:
@@ -235,8 +243,8 @@ namespace SE
 	class SE_API_RUNTIME SoftAssetRefBase
 	{
 	protected:
-		Asset* _asset = nullptr;
-		UID _id = UID::Empty;
+		Asset* m_Asset = nullptr;
+		UID m_ID = UID::Empty;
 
 	public:
 		/// <summary>
@@ -263,7 +271,7 @@ namespace SE
 		/// </summary>
 		FORCE_INLINE UID GetID() const
 		{
-			return _id;
+			return m_ID;
 		}
 
 		/// <summary>
@@ -274,7 +282,7 @@ namespace SE
 	protected:
 		void OnSet(Asset* asset);
 		void OnSet(const UID& id);
-		// void OnResolve(const ScriptingTypeHandle& type);
+		void OnResolve(const ScriptingTypeHandle& type);
 		void OnUnloaded(Asset* asset);
 	};
 
@@ -411,21 +419,21 @@ namespace SE
 		/// </summary>
 		T* Get() const
 		{
-			if (!_asset)
+			if (!m_Asset)
 			{
-				// const_cast<SoftAssetReference*>(this)->OnResolve(T::TypeInitializer);
+				 const_cast<SoftAssetRef*>(this)->OnResolve(T::TypeInitializer);
 			}
-			return (T*)_asset;
+			return (T*)m_Asset;
 		}
 
 		/// <summary>
 		/// Gets managed instance object (or null if no asset linked).
 		/// </summary>
-		/*MObject* GetManagedInstance() const
+		CLRObject* GetManagedInstance() const
 		{
 			auto asset = Get();
 			return asset ? asset->GetOrCreateManagedInstance() : nullptr;
-		}*/
+		}
 
 		/// <summary>
 		/// Determines whether asset is assigned and managed instance of the asset is alive.
@@ -439,11 +447,11 @@ namespace SE
 		/// <summary>
 		/// Gets the managed instance object or creates it if missing or null if not assigned.
 		/// </summary>
-		/*MObject* GetOrCreateManagedInstance() const
+		CLRObject* GetOrCreateManagedInstance() const
 		{
 			auto asset = Get();
 			return asset ? asset->GetOrCreateManagedInstance() : nullptr;
-		}*/
+		}
 
 		/// <summary>
 		/// Sets the asset.
@@ -480,7 +488,7 @@ namespace SE
 		typedef Delegate<> EventType;
 
 	protected:
-		Asset* _asset = nullptr;
+		Asset* m_Asset = nullptr;
 
 	public:
 		/// <summary>
@@ -505,7 +513,7 @@ namespace SE
 		/// </summary>
 		FORCE_INLINE UID GetID() const
 		{
-			return _asset ? _asset->GetID() : UID::Empty;
+			return m_Asset ? m_Asset->GetID() : UID::Empty;
 		}
 
 		/// <summary>
@@ -605,12 +613,12 @@ namespace SE
 
 		FORCE_INLINE bool operator==(T* other) const
 		{
-			return _asset == other;
+			return m_Asset == other;
 		}
 
 		FORCE_INLINE bool operator==(const WeakAssetRef& other) const
 		{
-			return _asset == other._asset;
+			return m_Asset == other.m_Asset;
 		}
 
 		/// <summary>
@@ -618,7 +626,7 @@ namespace SE
 		/// </summary>
 		FORCE_INLINE operator T*() const
 		{
-			return (T*)_asset;
+			return (T*)m_Asset;
 		}
 
 		/// <summary>
@@ -626,7 +634,7 @@ namespace SE
 		/// </summary>
 		FORCE_INLINE operator bool() const
 		{
-			return _asset != nullptr;
+			return m_Asset != nullptr;
 		}
 
 		/// <summary>
@@ -634,7 +642,7 @@ namespace SE
 		/// </summary>
 		FORCE_INLINE T* operator->() const
 		{
-			return (T*)_asset;
+			return (T*)m_Asset;
 		}
 
 		/// <summary>
@@ -642,7 +650,7 @@ namespace SE
 		/// </summary>
 		FORCE_INLINE T* Get() const
 		{
-			return (T*)_asset;
+			return (T*)m_Asset;
 		}
 
 		/// <summary>
@@ -651,7 +659,7 @@ namespace SE
 		template<typename U>
 		FORCE_INLINE U* As() const
 		{
-			return (U*)_asset;
+			return (U*)m_Asset;
 		}
 
 	public:

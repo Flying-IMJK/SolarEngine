@@ -62,10 +62,10 @@ namespace SE
 		, _refCount(1)
 #endif
 	{
-		int32 x = Math::RoundToInt(settings.Position.x);
-		int32 y = Math::RoundToInt(settings.Position.y);
-		int32 clientWidth = Math::RoundToInt(settings.Size.x);
-		int32 clientHeight = Math::RoundToInt(settings.Size.y);
+		int32 x = Math::RoundToInt(settings.Position.X);
+		int32 y = Math::RoundToInt(settings.Position.Y);
+		int32 clientWidth = Math::RoundToInt(settings.Size.X);
+		int32 clientHeight = Math::RoundToInt(settings.Size.Y);
 		int32 windowWidth = clientWidth;
 		int32 windowHeight = clientHeight;
 		m_ClientSize = Float2((float)clientWidth, (float)clientHeight);
@@ -321,15 +321,15 @@ namespace SE
 			const Float2 clientSize = GetClientSize();
 			const Float2 desktopSize = Platform::GetDesktopSize();
 			// Move window and half size if it is larger than desktop size
-			if (clientSize.x >= desktopSize.x && clientSize.y >= desktopSize.y)
+			if (clientSize.X >= desktopSize.X && clientSize.Y >= desktopSize.Y)
 			{
 				const Float2 halfSize = desktopSize * 0.5f;
 				const Float2 middlePos = halfSize * 0.5f;
-				SetWindowPos(_handle, nullptr, (int)middlePos.x, (int)middlePos.y, (int)halfSize.x, (int)halfSize.y, SWP_FRAMECHANGED | SWP_NOZORDER | SWP_NOACTIVATE);
+				SetWindowPos(_handle, nullptr, (int)middlePos.X, (int)middlePos.Y, (int)halfSize.X, (int)halfSize.Y, SWP_FRAMECHANGED | SWP_NOZORDER | SWP_NOACTIVATE);
 			}
 			else
 			{
-				SetWindowPos(_handle, nullptr, 0, 0, (int)clientSize.x, (int)clientSize.y, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+				SetWindowPos(_handle, nullptr, 0, 0, (int)clientSize.X, (int)clientSize.Y, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
 			}
 	
 			if (maximized)
@@ -407,10 +407,10 @@ namespace SE
 			return;
 	
 		// Get values data
-		int32 x = (int32)clientArea.Location.x;
-		int32 y = (int32)clientArea.Location.y;
-		int32 width = (int32)clientArea.Size.x;
-		int32 height = (int32)clientArea.Size.y;
+		int32 x = (int32)clientArea.Location.X;
+		int32 y = (int32)clientArea.Location.Y;
+		int32 width = (int32)clientArea.Size.X;
+		int32 height = (int32)clientArea.Size.Y;
 	
 		if (changeSize)
 		{
@@ -456,8 +456,8 @@ namespace SE
 		ENGINE_ASSERT(HasHWND());
 	
 		// Cache data
-		int32 x = (int32)position.x;
-		int32 y = (int32)position.y;
+		int32 x = (int32)position.X;
+		int32 y = (int32)position.Y;
 	
 		// Change window location
 		SetWindowPos(_handle, nullptr, x, y, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
@@ -468,8 +468,8 @@ namespace SE
 		ENGINE_ASSERT(HasHWND());
 	
 		// Cache data
-		int32 x = (int32)position.x;
-		int32 y = (int32)position.y;
+		int32 x = (int32)position.X;
+		int32 y = (int32)position.Y;
 	
 		// Check if need to adjust window rectangle
 		if (m_Settings.HasBorder)
@@ -539,8 +539,8 @@ namespace SE
 		ENGINE_ASSERT(HasHWND());
 	
 		POINT p;
-		p.x = static_cast<LONG>(screenPos.x);
-		p.y = static_cast<LONG>(screenPos.y);
+		p.x = static_cast<LONG>(screenPos.X);
+		p.y = static_cast<LONG>(screenPos.Y);
 		::ScreenToClient(_handle, &p);
 		return Float2(static_cast<float>(p.x), static_cast<float>(p.y));
 	}
@@ -556,8 +556,8 @@ namespace SE
 		}
 	
 		POINT p;
-		p.x = static_cast<LONG>(clientPos.x);
-		p.y = static_cast<LONG>(clientPos.y);
+		p.x = static_cast<LONG>(clientPos.X);
+		p.y = static_cast<LONG>(clientPos.Y);
 		::ClientToScreen(_handle, &p);
 		return Float2(static_cast<float>(p.x), static_cast<float>(p.y));
 	}
@@ -662,10 +662,10 @@ namespace SE
 	{
 		m_IsClippingCursor = true;
 		*(RECT*)_clipCursorRect = {
-			(LONG)bounds.Location.x,
-			(LONG)bounds.Location.y,
-			(LONG)bounds.GetBottomRight().x,
-			(LONG)bounds.GetBottomRight().y
+			(LONG)bounds.Location.X,
+			(LONG)bounds.Location.Y,
+			(LONG)bounds.GetBottomRight().X,
+			(LONG)bounds.GetBottomRight().Y
 		};
 		if (IsFocused())
 		{
@@ -755,7 +755,7 @@ namespace SE
 		}
 
 		// Check if window size has been changed
-		if (width > 0 && height > 0 && (width != m_ClientSize.x || height != m_ClientSize.y))
+		if (width > 0 && height > 0 && (width != m_ClientSize.X || height != m_ClientSize.Y))
 		{
 			m_ClientSize = Float2(static_cast<float>(width), static_cast<float>(height));
 			UpdateRegion();
@@ -949,14 +949,14 @@ namespace SE
 				const Float2 mousePos(static_cast<float>(WINDOWS_GET_X_LPARAM(lParam)), static_cast<float>(WINDOWS_GET_Y_LPARAM(lParam)));
 				Float2 mousePosition = ClientToScreen(mousePos);
 				Float2 newMousePosition = mousePosition;
-				if (m_IsHorizontalFlippingMouse = mousePosition.x <= desktopLocation.x + 2)
-					newMousePosition.x = desktopSize.x - 3;
-				else if (m_IsHorizontalFlippingMouse = mousePosition.x >= desktopSize.x - 1)
-					newMousePosition.x = desktopLocation.x + 3;
-				if (m_IsVerticalFlippingMouse = mousePosition.y <= desktopLocation.y + 2)
-					newMousePosition.y = desktopSize.y - 3;
-				else if (m_IsVerticalFlippingMouse = mousePosition.y >= desktopSize.y - 1)
-					newMousePosition.y = desktopLocation.y + 3;
+				if (m_IsHorizontalFlippingMouse = mousePosition.X <= desktopLocation.X + 2)
+					newMousePosition.X = desktopSize.X - 3;
+				else if (m_IsHorizontalFlippingMouse = mousePosition.X >= desktopSize.X - 1)
+					newMousePosition.X = desktopLocation.X + 3;
+				if (m_IsVerticalFlippingMouse = mousePosition.Y <= desktopLocation.Y + 2)
+					newMousePosition.Y = desktopSize.Y - 3;
+				else if (m_IsVerticalFlippingMouse = mousePosition.Y >= desktopSize.Y - 1)
+					newMousePosition.Y = desktopLocation.Y + 3;
 				if (!Float2::NearEqual(mousePosition, newMousePosition))
 				{
 					m_TrackingMouseOffset -= newMousePosition - mousePosition;
@@ -1084,8 +1084,8 @@ namespace SE
 		case WM_GETMINMAXINFO:
 		{
 			const auto minMax = reinterpret_cast<MINMAXINFO*>(lParam);
-			minMax->ptMinTrackSize.x = (int32)m_Settings.MinimumSize.x;
-			minMax->ptMinTrackSize.y = (int32)m_Settings.MinimumSize.y;
+			minMax->ptMinTrackSize.x = (int32)m_Settings.MinimumSize.X;
+			minMax->ptMinTrackSize.y = (int32)m_Settings.MinimumSize.Y;
 			if (m_Settings.MaximumSize.SumValues() > 0)
 			{
 				int32 borderWidth = 0, borderHeight = 0;
@@ -1098,8 +1098,8 @@ namespace SE
 					borderWidth = borderRect.right - borderRect.left;
 					borderHeight = borderRect.bottom - borderRect.top;
 				}
-				minMax->ptMaxTrackSize.x = (int32)m_Settings.MaximumSize.x + borderWidth;
-				minMax->ptMaxTrackSize.y = (int32)m_Settings.MaximumSize.y + borderHeight;
+				minMax->ptMaxTrackSize.x = (int32)m_Settings.MaximumSize.X + borderWidth;
+				minMax->ptMaxTrackSize.y = (int32)m_Settings.MaximumSize.Y + borderHeight;
 			}
 
 			// Include Windows task bar size into maximized tool window
@@ -1150,7 +1150,7 @@ namespace SE
 				GetWindowPlacement(_handle, &placement);
 
 				// Calculate client offsets from window borders and title bar
-				RECT winRect = { 0, 0, static_cast<LONG>(m_ClientSize.x), static_cast<LONG>(m_ClientSize.y) };
+				RECT winRect = { 0, 0, static_cast<LONG>(m_ClientSize.X), static_cast<LONG>(m_ClientSize.Y) };
 				LONG style = GetWindowLong(_handle, GWL_STYLE);
 				LONG exStyle = GetWindowLong(_handle, GWL_EXSTYLE);
 				AdjustWindowRectEx(&winRect, style, FALSE, exStyle);

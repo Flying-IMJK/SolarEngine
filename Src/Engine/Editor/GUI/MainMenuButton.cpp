@@ -75,7 +75,7 @@ namespace SE::Editor
 		float width = 18;
 
 		if (style->FontMedium)
-			width += style->FontMedium->MeasureText(Text).x;
+			width += style->FontMedium->MeasureText(Text).X;
 
 		Width = width;
 	}

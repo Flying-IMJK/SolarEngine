@@ -12,23 +12,23 @@ namespace SE
 
 	bool Rectangle::Contains(const Float2& location) const
 	{
-		return location.x >= Location.x && location.y >= Location.y && (location.x <= Location.x + Size.x && location.y <= Location.y + Size.y);
+		return location.X >= Location.X && location.Y >= Location.Y && (location.X <= Location.X + Size.X && location.Y <= Location.Y + Size.Y);
 	}
 
 	bool Rectangle::Contains(const Rectangle& value) const
 	{
-		return Location.x <= value.Location.x && value.GetRight() <= GetRight() && Location.y <= value.Location.y && value.GetBottom() <= GetBottom();
+		return Location.X <= value.Location.X && value.GetRight() <= GetRight() && Location.Y <= value.Location.Y && value.GetBottom() <= GetBottom();
 	}
 
 	bool Rectangle::Intersects(const Rectangle& value) const
 	{
-		return value.Location.x <= GetRight() && Location.x <= value.GetRight() && value.Location.y <= GetBottom() && Location.y <= value.GetBottom();
+		return value.Location.X <= GetRight() && Location.X <= value.GetRight() && value.Location.Y <= GetBottom() && Location.Y <= value.GetBottom();
 	}
 
 	void Rectangle::Offset(float x, float y)
 	{
-		Location.x += x;
-		Location.y += y;
+		Location.X += x;
+		Location.Y += y;
 	}
 
 	void Rectangle::Offset(const Float2& offset)
@@ -68,17 +68,17 @@ namespace SE
 	float Rectangle::Distance(Rectangle rect, Float2 p)
 	{
 		Float2 max = rect.Location + rect.Size;
-		float dx = Math::Max(Math::Max(rect.Location.x - p.x, p.x - max.x), 0.0f);
-		float dy = Math::Max(Math::Max(rect.Location.y - p.y, p.y - max.y), 0.0f);
+		float dx = Math::Max(Math::Max(rect.Location.X - p.X, p.X - max.X), 0.0f);
+		float dy = Math::Max(Math::Max(rect.Location.Y - p.Y, p.Y - max.Y), 0.0f);
 		return Math::Sqrt(dx * dx + dy * dy);
 	}
 
 	Rectangle Rectangle::Union(const Rectangle& a, const Float2& b)
 	{
-		const float left = Math::Min(a.GetLeft(), b.x);
-		const float right = Math::Max(a.GetRight(), b.x);
-		const float top = Math::Min(a.GetTop(), b.y);
-		const float bottom = Math::Max(a.GetBottom(), b.y);
+		const float left = Math::Min(a.GetLeft(), b.X);
+		const float right = Math::Max(a.GetRight(), b.X);
+		const float top = Math::Min(a.GetTop(), b.Y);
+		const float bottom = Math::Max(a.GetBottom(), b.Y);
 		return Rectangle(left, top, Math::Max(right - left, 0.0f), Math::Max(bottom - top, 0.0f));
 	}
 

@@ -10,26 +10,32 @@ namespace SE
 	/// <summary>
 	/// General identifiers for potential force feedback channels. These will be mapped according to the platform specific implementation.
 	/// </summary>
+	SE_STRUCT(API())
 	struct SE_API_RUNTIME GamepadVibrationState
 	{
+		SCRIPTING_TYPE_MIN(GamepadVibrationState)
 		/// <summary>
 		/// The left large motor vibration.
 		/// </summary>
+		SE_FIELD(API())
 		float LeftLarge;
 	
 		/// <summary>
 		/// The left small motor vibration.
 		/// </summary>
+		SE_FIELD(API())
 		float LeftSmall;
 	
 		/// <summary>
 		/// The right large motor vibration.
 		/// </summary>
+		SE_FIELD(API())
 		float RightLarge;
 	
 		/// <summary>
 		/// The right small motor vibration.
 		/// </summary>
+		SE_FIELD(API())
 		float RightSmall;
 	
 		GamepadVibrationState()
@@ -71,8 +77,10 @@ namespace SE
 	/// <summary>
 	/// Represents a single hardware gamepad device. Used by the Input to report raw gamepad input events.
 	/// </summary>
+	SE_CLASS(API(NoSpawn, Sealed))
 	class SE_API_RUNTIME Gamepad : public InputDevice
 	{
+		SCRIPTING_TYPE_NO_SPAWN(Gamepad)
 	public:
 		/// <summary>
 		/// The universal gamepad state description. All hardware gamepad device handlers should map input to match this structure.
@@ -118,6 +126,7 @@ namespace SE
 		/// Gets the gamepad device type identifier.
 		/// </summary>
 		/// <returns>The id.</returns>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE const UID& GetProductID() const
 		{
 			return _productId;
@@ -137,6 +146,7 @@ namespace SE
 		/// </summary>
 		/// <param name="axis">Gamepad axis to check</param>
 		/// <returns>Axis value.</returns>
+		SE_FUNCTION(API())
 		FORCE_INLINE float GetAxis(const GamepadAxis axis) const
 		{
 			return _mappedState.Axis[static_cast<int32>(axis)];
@@ -147,6 +157,7 @@ namespace SE
 		/// </summary>
 		/// <param name="button">Gamepad button to check</param>
 		/// <returns>True if user holds down the button, otherwise false.</returns>
+		SE_FUNCTION(API())
 		FORCE_INLINE bool GetButton(const GamepadButton button) const
 		{
 			return _mappedState.Buttons[static_cast<int32>(button)];
@@ -157,6 +168,7 @@ namespace SE
 		/// </summary>
 		/// <param name="button">Gamepad button to check</param>
 		/// <returns>True if user starts pressing down the button, otherwise false.</returns>
+		SE_FUNCTION(API())
 		FORCE_INLINE bool GetButtonDown(const GamepadButton button) const
 		{
 			return _mappedState.Buttons[static_cast<int32>(button)] && !_mappedPrevState.Buttons[static_cast<int32>(button)];
@@ -165,6 +177,7 @@ namespace SE
 		/// <summary>
 		/// Checks if any gamepad button is currently pressed.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		bool IsAnyButtonDown() const;
 
 		/// <summary>
@@ -172,6 +185,7 @@ namespace SE
 		/// </summary>
 		/// <param name="button">Gamepad button to check</param>
 		/// <returns>True if user releases the button, otherwise false.</returns>
+		SE_FUNCTION(API())
 		FORCE_INLINE bool GetButtonUp(const GamepadButton button) const
 		{
 			return !_mappedState.Buttons[static_cast<int32>(button)] && _mappedPrevState.Buttons[static_cast<int32>(button)];
@@ -182,6 +196,7 @@ namespace SE
 		/// Sets the state of the gamepad vibration. Ignored if controller does not support this.
 		/// </summary>
 		/// <param name="state">The state.</param>
+		SE_FUNCTION(API())
 		virtual void SetVibration(const GamepadVibrationState& state)
 		{
 		}
@@ -190,6 +205,7 @@ namespace SE
 		/// Sets the color of the gamepad light. Ignored if controller does not support this.
 		/// </summary>
 		/// <param name="color">The color.</param>
+		SE_FUNCTION(API())
 		virtual void SetColor(const Color& color)
 		{
 		}
@@ -197,6 +213,7 @@ namespace SE
 		/// <summary>
 		/// Resets the color of the gamepad light to the default. Ignored if controller does not support this.
 		/// </summary>
+		SE_FUNCTION(API())
 		virtual void ResetColor()
 		{
 		}

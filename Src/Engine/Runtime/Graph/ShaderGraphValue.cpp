@@ -54,14 +54,14 @@ namespace SE
         {
             const auto vv = v.AsFloat2();
             Type = VariantTypes::Float2;
-            Value = String::Format(SE_TEXT("float2({0}, {1})"), vv.x, vv.y);
+            Value = String::Format(SE_TEXT("float2({0}, {1})"), vv.X, vv.Y);
             break;
         }
         case VariantTypes::Float3:
         {
             const auto vv = v.AsFloat3();
             Type = VariantTypes::Float3;
-            Value = String::Format(SE_TEXT("float3({0}, {1}, {2})"), vv.x, vv.y, vv.z);
+            Value = String::Format(SE_TEXT("float3({0}, {1}, {2})"), vv.X, vv.Y, vv.Z);
             break;
         }
         case VariantTypes::Float4:
@@ -69,35 +69,35 @@ namespace SE
         {
             const auto vv = v.AsFloat4();
             Type = VariantTypes::Float4;
-            Value = String::Format(SE_TEXT("float4({0}, {1}, {2}, {3})"), vv.x, vv.y, vv.z, vv.w);
+            Value = String::Format(SE_TEXT("float4({0}, {1}, {2}, {3})"), vv.X, vv.Y, vv.Z, vv.W);
             break;
         }
         case VariantTypes::Double2:
         {
             const auto vv = (::SE::Float2)v.AsDouble2();
             Type = VariantTypes::Float2;
-            Value = String::Format(SE_TEXT("float2({0}, {1})"), vv.x, vv.y);
+            Value = String::Format(SE_TEXT("float2({0}, {1})"), vv.X, vv.Y);
             break;
         }
         case VariantTypes::Double3:
         {
             const auto vv = (::SE::Float3)v.AsDouble3();
             Type = VariantTypes::Float3;
-            Value = String::Format(SE_TEXT("float3({0}, {1}, {2})"), vv.x, vv.y, vv.z);
+            Value = String::Format(SE_TEXT("float3({0}, {1}, {2})"), vv.X, vv.Y, vv.Z);
             break;
         }
         case VariantTypes::Double4:
         {
             const auto vv = (::SE::Float4)v.AsDouble4();
             Type = VariantTypes::Float4;
-            Value = String::Format(SE_TEXT("float4({0}, {1}, {2}, {3})"), vv.x, vv.y, vv.z, vv.w);
+            Value = String::Format(SE_TEXT("float4({0}, {1}, {2}, {3})"), vv.X, vv.Y, vv.Z, vv.W);
             break;
         }
         case VariantTypes::Quaternion:
         {
             const auto vv = v.AsQuaternion();
             Type = VariantTypes::Quaternion;
-            Value = String::Format(SE_TEXT("float4({0}, {1}, {2}, {3})"), vv.x, vv.y, vv.z, vv.w);
+            Value = String::Format(SE_TEXT("float4({0}, {1}, {2}, {3})"), vv.X, vv.Y, vv.Z, vv.W);
             break;
         }
         case VariantTypes::String:

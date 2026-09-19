@@ -28,13 +28,13 @@ namespace SE
 		/// <summary>
 		/// Gets the scenes count.
 		/// </summary>
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop, ReadOnly))
 		static int32 GetScenesCount()
 		{
 			return Scenes.Count();
 		}
 
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop, ReadOnly))
 		static bool IsAnySceneLoaded()
 		{
 			return Scenes.HasItems();
@@ -173,6 +173,7 @@ namespace SE
 		/// </summary>
 		/// <param name="actor">Actor to spawn</param>
 		/// <returns>True if action cannot be done, otherwise false.</returns>
+		SE_FUNCTION(API())
 		FORCE_INLINE static bool SpawnActor(Actor* actor)
 		{
 			return SpawnActor(actor, nullptr);

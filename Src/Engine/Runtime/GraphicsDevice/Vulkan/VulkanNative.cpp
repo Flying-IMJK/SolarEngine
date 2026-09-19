@@ -745,7 +745,7 @@ namespace SE
 			texture = (GPUTextureVulkan*)_device->CreateTexture(SE_TEXT("DummyTexture"));
 			GPUTextureDescription desc;
 			const PixelFormat format = PixelFormat::R8G8B8A8_UNorm;
-			const GPUTextureBitFlags flags = GPUTextureBitFlags(GPUTextureFlags::ShaderResource, GPUTextureFlags::UnorderedAccess);
+			const GPUTextureFlags flags = EnumCombineFlags(GPUTextureFlags::ShaderResource, GPUTextureFlags::UnorderedAccess);
 			switch (type)
 			{
 			case SpirvShaderResourceType::Texture1D:
@@ -781,7 +781,7 @@ namespace SE
 		if (!_dummyBuffer)
 		{
 			_dummyBuffer = (GPUBufferVulkan*)_device->CreateBuffer(SE_TEXT("DummyBuffer"));
-			_dummyBuffer->Init(GPUBufferDescription::Buffer(sizeof(int32) * 256, EnumFlags<GPUBufferFlags>(GPUBufferFlags::ShaderResource, GPUBufferFlags::UnorderedAccess), PixelFormat::R32_SInt));
+			_dummyBuffer->Init(GPUBufferDescription::Buffer(sizeof(int32) * 256, EnumCombineFlags(GPUBufferFlags::ShaderResource, GPUBufferFlags::UnorderedAccess), PixelFormat::R32_SInt));
 		}
 
 		return _dummyBuffer;

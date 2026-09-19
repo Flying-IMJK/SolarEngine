@@ -13,7 +13,7 @@ namespace SE
 	class GPUContextVulkan;
 	class GPUResource;
 
-	SE_ENUM(Reflect)
+	SE_ENUM(Reflect, API())
 	enum class GPUResourceType
 	{
 		// GPU render target texture
@@ -87,16 +87,19 @@ namespace SE
 		/// </summary>
 		Action Releasing;
 
+		SE_FUNCTION(API(Prop, ReadOnly))
 		virtual GPUResourceType GetResType() const = 0;
 
 		/// <summary>
 		/// Gets amount of GPU memory used by this resource (in bytes). It's a rough estimation. GPU memory may be fragmented, compressed or sub-allocated so the actual memory pressure from this resource may vary (also depends on the current graphics backend).
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		uint64 GetMemoryUsage() const;
 
 		/// <summary>
 		/// Releases GPU resource data.
 		/// </summary>
+		SE_FUNCTION(API())
 		void ReleaseGPU();
 
 		virtual String ToString() const override;

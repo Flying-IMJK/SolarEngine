@@ -79,7 +79,7 @@ namespace SE
 			if (!m_TextSize.IsZero())
 			{
 				scale = (rect.Size / m_TextSize).MinValue();
-				scale = Math::Clamp(scale, AutoFitTextRange.x, AutoFitTextRange.y);
+				scale = Math::Clamp(scale, AutoFitTextRange.X, AutoFitTextRange.Y);
 			}
 		}
 
@@ -155,20 +155,20 @@ namespace SE
 				TextLayoutOptions layout = TextLayoutOptions::Default();
 				layout.TextWrapping = Wrapping;
 				if (m_AutoHeight && !m_AutoWidth)
-					layout.Bounds.Size.x = Width - Margin.GetWidth();
+					layout.Bounds.Size.X = Width - Margin.GetWidth();
 				else if (m_AutoWidth && !m_AutoHeight)
-					layout.Bounds.Size.y = Height - Margin.GetHeight();
+					layout.Bounds.Size.Y = Height - Margin.GetHeight();
 				m_TextSize = font->MeasureText(text, layout);
-				m_TextSize.y *= BaseLinesGapScale;
+				m_TextSize.Y *= BaseLinesGapScale;
 
 				// Check if size is controlled via text
 				if (m_AutoWidth || m_AutoHeight)
 				{
 					Float2 size = Size;
 					if (m_AutoWidth)
-						size.x = m_TextSize.x + Margin.GetWidth();
+						size.X = m_TextSize.X + Margin.GetWidth();
 					if (m_AutoHeight)
-						size.y = m_TextSize.y + Margin.GetHeight();
+						size.Y = m_TextSize.Y + Margin.GetHeight();
 					Size = size;
 				}
 			}

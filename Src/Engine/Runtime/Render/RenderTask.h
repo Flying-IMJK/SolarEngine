@@ -190,7 +190,7 @@ namespace SE
 		ScenesAndCustomActors = Scenes | CustomActors,
 	};
 
-	typedef EnumFlags<ActorsSources> ActorsSourcesFlags;
+	typedef ActorsSources ActorsSourcesFlags;
 
 	/// <summary>
 	/// The Post Process effect rendering location within the rendering pipeline.

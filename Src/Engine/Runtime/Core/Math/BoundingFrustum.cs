@@ -1,10 +1,5 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-#if USE_LARGE_WORLDS
-using Real = System.Double;
-#else
-using Real = System.Single;
-#endif
 
 // -----------------------------------------------------------------------------
 // Original code from SharpDX project. https://github.com/sharpdx/SharpDX/
@@ -245,16 +240,16 @@ namespace SE
             far.Normalize();
         }
 
-        private static Vector3 Get3PlanesInterPoint(ref Plane p1, ref Plane p2, ref Plane p3)
+        private static Float3 Get3PlanesInterPoint(ref Plane p1, ref Plane p2, ref Plane p3)
         {
-            Vector3.Cross(ref p2.Normal, ref p3.Normal, out var n2Xn3);
-            Vector3.Cross(ref p3.Normal, ref p1.Normal, out var n3Xn1);
-            Vector3.Cross(ref p1.Normal, ref p2.Normal, out var n1Xn2);
-            var div1 = Vector3.Dot(ref p1.Normal, ref n2Xn3);
-            var div2 = Vector3.Dot(ref p2.Normal, ref n3Xn1);
-            var div3 = Vector3.Dot(ref p3.Normal, ref n1Xn2);
+            Float3.Cross(ref p2.Normal, ref p3.Normal, out var n2Xn3);
+            Float3.Cross(ref p3.Normal, ref p1.Normal, out var n3Xn1);
+            Float3.Cross(ref p1.Normal, ref p2.Normal, out var n1Xn2);
+            var div1 = Float3.Dot(ref p1.Normal, ref n2Xn3);
+            var div2 = Float3.Dot(ref p2.Normal, ref n3Xn1);
+            var div3 = Float3.Dot(ref p3.Normal, ref n1Xn2);
             if (Mathf.IsZero(div1 * div2 * div3))
-                return Vector3.Zero;
+                return Float3.Zero;
             return n2Xn3 * (-p1.D / div1) - n3Xn1 * (p2.D / div2) - n1Xn2 * (p3.D / div3);
         }
 
@@ -269,29 +264,29 @@ namespace SE
         /// <param name="zfar">The Z far.</param>
         /// <param name="aspect">The aspect.</param>
         /// <returns>The bounding frustum calculated from perspective camera</returns>
-        public static BoundingFrustum FromCamera(Vector3 cameraPos, Vector3 lookDir, Vector3 upDir, float fov, float znear, float zfar, float aspect)
+        public static BoundingFrustum FromCamera(Float3 cameraPos, Float3 lookDir, Float3 upDir, float fov, float znear, float zfar, float aspect)
         {
             //http://knol.google.com/k/view-frustum
 
-            lookDir = Vector3.Normalize(lookDir);
-            upDir = Vector3.Normalize(upDir);
+            lookDir = Float3.Normalize(lookDir);
+            upDir = Float3.Normalize(upDir);
 
-            Vector3 nearCenter = cameraPos + lookDir * znear;
-            Vector3 farCenter = cameraPos + lookDir * zfar;
+            Float3 nearCenter = cameraPos + lookDir * znear;
+            Float3 farCenter = cameraPos + lookDir * zfar;
             var nearHalfHeight = (float)(znear * Math.Tan(fov / 2f));
             var farHalfHeight = (float)(zfar * Math.Tan(fov / 2f));
             float nearHalfWidth = nearHalfHeight * aspect;
             float farHalfWidth = farHalfHeight * aspect;
 
-            Vector3 rightDir = Vector3.Normalize(Vector3.Cross(upDir, lookDir));
-            Vector3 near1 = nearCenter - nearHalfHeight * upDir + nearHalfWidth * rightDir;
-            Vector3 near2 = nearCenter + nearHalfHeight * upDir + nearHalfWidth * rightDir;
-            Vector3 near3 = nearCenter + nearHalfHeight * upDir - nearHalfWidth * rightDir;
-            Vector3 near4 = nearCenter - nearHalfHeight * upDir - nearHalfWidth * rightDir;
-            Vector3 far1 = farCenter - farHalfHeight * upDir + farHalfWidth * rightDir;
-            Vector3 far2 = farCenter + farHalfHeight * upDir + farHalfWidth * rightDir;
-            Vector3 far3 = farCenter + farHalfHeight * upDir - farHalfWidth * rightDir;
-            Vector3 far4 = farCenter - farHalfHeight * upDir - farHalfWidth * rightDir;
+            Float3 rightDir = Float3.Normalize(Float3.Cross(upDir, lookDir));
+            Float3 near1 = nearCenter - nearHalfHeight * upDir + nearHalfWidth * rightDir;
+            Float3 near2 = nearCenter + nearHalfHeight * upDir + nearHalfWidth * rightDir;
+            Float3 near3 = nearCenter + nearHalfHeight * upDir - nearHalfWidth * rightDir;
+            Float3 near4 = nearCenter - nearHalfHeight * upDir - nearHalfWidth * rightDir;
+            Float3 far1 = farCenter - farHalfHeight * upDir + farHalfWidth * rightDir;
+            Float3 far2 = farCenter + farHalfHeight * upDir + farHalfWidth * rightDir;
+            Float3 far3 = farCenter + farHalfHeight * upDir - farHalfWidth * rightDir;
+            Float3 far4 = farCenter - farHalfHeight * upDir - farHalfWidth * rightDir;
 
             var result = new BoundingFrustum
             {
@@ -326,9 +321,9 @@ namespace SE
         /// , element7 is Far4 (far left down corner)
         /// </summary>
         /// <returns>The 8 corners of the frustum</returns>
-        public Vector3[] GetCorners()
+        public Float3[] GetCorners()
         {
-            var corners = new Vector3[8];
+            var corners = new Float3[8];
             GetCorners(corners);
             return corners;
         }
@@ -344,7 +339,7 @@ namespace SE
         /// , element7 is Far4 (far left down corner)
         /// </summary>
         /// <returns>The 8 corners of the frustum</returns>
-        public void GetCorners(Vector3[] corners)
+        public void GetCorners(Float3[] corners)
         {
             corners[0] = Get3PlanesInterPoint(ref m_PNear, ref m_PBottom, ref m_PRight); //Near1
             corners[1] = Get3PlanesInterPoint(ref m_PNear, ref m_PTop, ref m_PRight); //Near2
@@ -361,7 +356,7 @@ namespace SE
         /// </summary>
         /// <param name="point">The point.</param>
         /// <returns>Type of the containment</returns>
-        public ContainmentType Contains(ref Vector3 point)
+        public ContainmentType Contains(ref Float3 point)
         {
             var result = PlaneIntersectionType.Front;
             var planeResult = PlaneIntersectionType.Front;
@@ -408,12 +403,12 @@ namespace SE
         /// </summary>
         /// <param name="point">The point.</param>
         /// <returns>Type of the containment</returns>
-        public ContainmentType Contains(Vector3 point)
+        public ContainmentType Contains(Float3 point)
         {
             return Contains(ref point);
         }
 
-        private void GetBoxToPlanePVertexNVertex(ref BoundingBox box, ref Vector3 planeNormal, out Vector3 p, out Vector3 n)
+        private void GetBoxToPlanePVertexNVertex(ref BoundingBox box, ref Float3 planeNormal, out Float3 p, out Float3 n)
         {
             p = box.Minimum;
             if (planeNormal.X >= 0)
@@ -580,7 +575,7 @@ namespace SE
             result = Contains(ref box) != ContainmentType.Disjoint;
         }
 
-        private PlaneIntersectionType PlaneIntersectsPoints(ref Plane plane, Vector3[] points)
+        private PlaneIntersectionType PlaneIntersectsPoints(ref Plane plane, Float3[] points)
         {
             PlaneIntersectionType result = CollisionsHelper.PlaneIntersectsPoint(ref plane, ref points[0]);
             for (var i = 1; i < points.Length; i++)
@@ -616,7 +611,7 @@ namespace SE
         /// <returns>With of the frustum at the specified depth</returns>
         public float GetWidthAtDepth(float depth)
         {
-            var hAngle = (float)(Math.PI / 2.0 - Math.Acos(Vector3.Dot(m_PNear.Normal, m_PLeft.Normal)));
+            var hAngle = (float)(Math.PI / 2.0 - Math.Acos(Float3.Dot(m_PNear.Normal, m_PLeft.Normal)));
             return (float)(Math.Tan(hAngle) * depth * 2);
         }
 
@@ -627,7 +622,7 @@ namespace SE
         /// <returns>Height of the frustum at the specified depth</returns>
         public float GetHeightAtDepth(float depth)
         {
-            var vAngle = (float)(Math.PI / 2.0 - Math.Acos(Vector3.Dot(m_PNear.Normal, m_PTop.Normal)));
+            var vAngle = (float)(Math.PI / 2.0 - Math.Acos(Float3.Dot(m_PNear.Normal, m_PTop.Normal)));
             return (float)(Math.Tan(vAngle) * depth * 2);
         }
 
@@ -660,15 +655,15 @@ namespace SE
         /// <param name="inDistance">The distance at which the ray enters the frustum if there is an intersection and the ray starts outside the frustum.</param>
         /// <param name="outDistance">The distance at which the ray exits the frustum if there is an intersection.</param>
         /// <returns><c>true</c> if the current BoundingFrustum intersects the specified Ray.</returns>
-        public bool Intersects(ref Ray ray, out Real? inDistance, out Real? outDistance)
+        public bool Intersects(ref Ray ray, out float? inDistance, out float? outDistance)
         {
             if (Contains(ray.Position) != ContainmentType.Disjoint)
             {
-                Real nearstPlaneDistance = Real.MaxValue;
+                float nearstPlaneDistance = float.MaxValue;
                 for (var i = 0; i < 6; i++)
                 {
                     Plane plane = GetPlane(i);
-                    if (CollisionsHelper.RayIntersectsPlane(ref ray, ref plane, out Real distance) && (distance < nearstPlaneDistance))
+                    if (CollisionsHelper.RayIntersectsPlane(ref ray, ref plane, out float distance) && (distance < nearstPlaneDistance))
                         nearstPlaneDistance = distance;
                 }
 
@@ -679,21 +674,21 @@ namespace SE
             //We will find the two points at which the ray enters and exists the frustum
             //These two points make a line which center inside the frustum if the ray intersects it
             //Or outside the frustum if the ray intersects frustum planes outside it.
-            Real minDist = Real.MaxValue;
-            Real maxDist = Real.MinValue;
+            float minDist = float.MaxValue;
+            float maxDist = float.MinValue;
             for (var i = 0; i < 6; i++)
             {
                 Plane plane = GetPlane(i);
-                if (CollisionsHelper.RayIntersectsPlane(ref ray, ref plane, out Real distance))
+                if (CollisionsHelper.RayIntersectsPlane(ref ray, ref plane, out float distance))
                 {
                     minDist = Mathf.Min(minDist, distance);
                     maxDist = Mathf.Max(maxDist, distance);
                 }
             }
 
-            Vector3 minPoint = ray.Position + ray.Direction * minDist;
-            Vector3 maxPoint = ray.Position + ray.Direction * maxDist;
-            Vector3 center = (minPoint + maxPoint) / 2f;
+            Float3 minPoint = ray.Position + ray.Direction * minDist;
+            Float3 maxPoint = ray.Position + ray.Direction * maxDist;
+            Float3 center = (minPoint + maxPoint) / 2f;
             if (Contains(ref center) != ContainmentType.Disjoint)
             {
                 inDistance = minDist;
@@ -712,17 +707,17 @@ namespace SE
         /// </summary>
         /// <param name="points">The points.</param>
         /// <returns>The zoom to fit distance</returns>
-        public Real GetZoomToExtentsShiftDistance(Vector3[] points)
+        public float GetZoomToExtentsShiftDistance(Float3[] points)
         {
-            var vAngle = (float)(Math.PI / 2.0 - Math.Acos(Vector3.Dot(m_PNear.Normal, m_PTop.Normal)));
+            var vAngle = (float)(Math.PI / 2.0 - Math.Acos(Float3.Dot(m_PNear.Normal, m_PTop.Normal)));
             var vSin = (float)Math.Sin(vAngle);
-            var hAngle = (float)(Math.PI / 2.0 - Math.Acos(Vector3.Dot(m_PNear.Normal, m_PLeft.Normal)));
+            var hAngle = (float)(Math.PI / 2.0 - Math.Acos(Float3.Dot(m_PNear.Normal, m_PLeft.Normal)));
             var hSin = (float)Math.Sin(hAngle);
             float horizontalToVerticalMapping = vSin / hSin;
 
             BoundingFrustum ioFrustrum = GetInsideOutClone();
 
-            var maxPointDist = Real.MinValue;
+            var maxPointDist = float.MinValue;
             for (var i = 0; i < points.Length; i++)
             {
                 var pointDist = CollisionsHelper.DistancePlanePoint(ref ioFrustrum.m_PTop, ref points[i]);
@@ -741,7 +736,7 @@ namespace SE
         /// </summary>
         /// <param name="boundingBox">The bounding box.</param>
         /// <returns>The zoom to fit distance</returns>
-        public Real GetZoomToExtentsShiftDistance(ref BoundingBox boundingBox)
+        public float GetZoomToExtentsShiftDistance(ref BoundingBox boundingBox)
         {
             return GetZoomToExtentsShiftDistance(boundingBox.GetCorners());
         }
@@ -751,7 +746,7 @@ namespace SE
         /// </summary>
         /// <param name="points">The points.</param>
         /// <returns>The zoom to fit vector</returns>
-        public Vector3 GetZoomToExtentsShiftVector(Vector3[] points)
+        public Float3 GetZoomToExtentsShiftVector(Float3[] points)
         {
             return GetZoomToExtentsShiftDistance(points) * m_PNear.Normal;
         }
@@ -760,7 +755,7 @@ namespace SE
         /// Get the vector shift which when added to camera position will do the effect of zoom to extents (zoom to fit) operation, so all the passed points will fit in the current view.</summary>
         /// <param name="boundingBox">The bounding box.</param>
         /// <returns>The zoom to fit vector</returns>
-        public Vector3 GetZoomToExtentsShiftVector(ref BoundingBox boundingBox)
+        public Float3 GetZoomToExtentsShiftVector(ref BoundingBox boundingBox)
         {
             return GetZoomToExtentsShiftDistance(boundingBox.GetCorners()) * m_PNear.Normal;
         }

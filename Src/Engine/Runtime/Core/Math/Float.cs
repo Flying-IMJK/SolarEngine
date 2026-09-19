@@ -129,16 +129,6 @@ namespace SE
         /// Initializes a new instance of the <see cref="Float2" /> struct.
         /// </summary>
         /// <param name="value">A vector containing the values with which to initialize the X, Y and Z components.</param>
-        public Float2(Vector2 value)
-        {
-            X = (float)value.X;
-            Y = (float)value.Y;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Float2" /> struct.
-        /// </summary>
-        /// <param name="value">A vector containing the values with which to initialize the X, Y and Z components.</param>
         public Float2(Double2 value)
         {
             X = (float)value.X;
@@ -1560,16 +1550,6 @@ namespace SE
         }
 
         /// <summary>
-        /// Performs an implicit conversion from <see cref="Float2" /> to <see cref="Vector2" />.
-        /// </summary>
-        /// <param name="value">The value.</param>
-        /// <returns>The result of the conversion.</returns>
-        public static implicit operator Vector2(Float2 value)
-        {
-            return new Vector2(value.X, value.Y);
-        }
-
-        /// <summary>
         /// Performs an implicit conversion from <see cref="Float2" /> to <see cref="Double2" />.
         /// </summary>
         /// <param name="value">The value.</param>
@@ -1814,17 +1794,6 @@ namespace SE
             X = value.X;
             Y = value.Y;
             Z = z;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Float3" /> struct.
-        /// </summary>
-        /// <param name="value">A vector containing the values with which to initialize the X, Y and Z components.</param>
-        public Float3(Vector3 value)
-        {
-            X = (float)value.X;
-            Y = (float)value.Y;
-            Z = (float)value.Z;
         }
 
         /// <summary>
@@ -3474,16 +3443,6 @@ namespace SE
         }
 
         /// <summary>
-        /// Performs an explicit conversion from <see cref="Float3" /> to <see cref="Vector3" />.
-        /// </summary>
-        /// <param name="value">The value.</param>
-        /// <returns>The result of the conversion.</returns>
-        public static implicit operator Vector3(Float3 value)
-        {
-            return new Vector3(value.X, value.Y, value.Z);
-        }
-
-        /// <summary>
         /// Performs an implicit conversion from <see cref="Float3" /> to <see cref="Double3" />.
         /// </summary>
         /// <param name="value">The value.</param>
@@ -4880,16 +4839,6 @@ namespace SE
         public static bool operator !=(Float4 left, Float4 right)
         {
             return !left.Equals(ref right);
-        }
-
-        /// <summary>
-        /// Performs an explicit conversion from <see cref="Float4" /> to <see cref="Vector4" />.
-        /// </summary>
-        /// <param name="value">The value.</param>
-        /// <returns>The result of the conversion.</returns>
-        public static implicit operator Vector4(Float4 value)
-        {
-            return new Vector4(value.X, value.Y, value.Z, value.W);
         }
 
         /// <summary>

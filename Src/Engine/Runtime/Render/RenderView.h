@@ -96,7 +96,7 @@ namespace SE
 		/// <summary>
 		/// The draw passes mask for the current view rendering.
 		/// </summary>
-		EnumFlags<DrawPass> Pass = DrawPass::None;
+		DrawPass Pass = DrawPass::None;
 
 		/// <summary>
 		/// Flag used by static, offline rendering passes (eg. reflections rendering, lightmap rendering etc.)
@@ -126,7 +126,7 @@ namespace SE
 		/// <summary>
 		/// The static flags mask used to hide objects that don't have a given static flags. Eg. use StaticFlags::Lightmap to render only objects that can use lightmap.
 		/// </summary>
-		EnumFlags<StaticMask> StaticFlagsMask = StaticMask::None;
+		StaticMask StaticFlagsMask = StaticMask::None;
 
 		/// <summary>
 		/// The view flags.
@@ -314,21 +314,20 @@ namespace SE
 		void CopyFrom(const Camera* camera, const Viewport* viewport = nullptr);
 
 	public:
-		EnumFlags<DrawPass> GetShadowsDrawPassMask(EnumFlags<ShadowsCastingMode> shadowsMode) const
+		DrawPass GetShadowsDrawPassMask(ShadowsCastingMode shadowsMode) const
 		{
-			EnumFlags<DrawPass> flag;
-			flag.RemoveFlag(DrawPass::Depth);
+			DrawPass flag = EnumRemoveFlags(Pass, DrawPass::Depth);
 
-			if (shadowsMode.IsFlag(ShadowsCastingMode::All))
+			if (EnumHasAllFlags(shadowsMode, ShadowsCastingMode::All))
 			{
 				return DrawPass::All;
-			}else if (shadowsMode.IsFlag(ShadowsCastingMode::DynamicOnly))
+			}else if (EnumHasAllFlags(shadowsMode, ShadowsCastingMode::DynamicOnly))
 			{
 				return IsOfflinePass ? flag : DrawPass::All;
-			}else if (shadowsMode.IsFlag(ShadowsCastingMode::StaticOnly))
+			}else if (EnumHasAllFlags(shadowsMode, ShadowsCastingMode::StaticOnly))
 			{
 				return IsOfflinePass ? DrawPass::All : flag;
-			}else if (shadowsMode.IsFlag(ShadowsCastingMode::None))
+			}else if (shadowsMode == ShadowsCastingMode::None)
 			{
 				return flag;
 			}
@@ -355,9 +354,9 @@ namespace SE
 		// Applies the render origin to the transformation instance matrix.
 		FORCE_INLINE void GetWorldMatrix(Matrix& world) const
 		{
-			world.M41 -= static_cast<float>(Origin.x);
-			world.M42 -= static_cast<float>(Origin.y);
-			world.M43 -= static_cast<float>(Origin.z);
+			world.M41 -= static_cast<float>(Origin.X);
+			world.M42 -= static_cast<float>(Origin.Y);
+			world.M43 -= static_cast<float>(Origin.Z);
 		}
 	};
 

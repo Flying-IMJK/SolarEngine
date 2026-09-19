@@ -59,12 +59,12 @@ namespace SE
         /// <summary>
         /// Layer features flags
         /// </summary>
-        EnumFlags<MaterialFeatures> FeaturesFlags;
+        MaterialFeatures FeaturesFlags;
 
         /// <summary>
         /// Layer usage flags
         /// </summary>
-        EnumFlags<MaterialUsage> UsageFlags;
+        MaterialUsage UsageFlags;
 
         /// <summary>
         /// Domain

@@ -9,7 +9,7 @@
 
 namespace SE
 {
-	GPUBufferDescription GPUBufferDescription::Buffer(uint32 size, EnumFlags<GPUBufferFlags> flags, PixelFormat format, const void* initData, uint32 stride, GPUResourceUsage usage)
+	GPUBufferDescription GPUBufferDescription::Buffer(uint32 size, GPUBufferFlags flags, PixelFormat format, const void* initData, uint32 stride, GPUResourceUsage usage)
 	{
 		GPUBufferDescription desc;
 		desc.Size = size;
@@ -23,10 +23,10 @@ namespace SE
 
 	GPUBufferDescription GPUBufferDescription::Typed(int32 count, PixelFormat viewFormat, bool isUnorderedAccess, GPUResourceUsage usage)
 	{
-		EnumFlags<GPUBufferFlags> bufferFlags = GPUBufferFlags::ShaderResource;
+		GPUBufferFlags bufferFlags = GPUBufferFlags::ShaderResource;
 		if (isUnorderedAccess)
 		{
-			bufferFlags.SetFlag(GPUBufferFlags::UnorderedAccess);
+            bufferFlags = EnumAddFlags(bufferFlags, GPUBufferFlags::UnorderedAccess);
 		}
 		const auto stride = PixelFormatGetSizeInBits(viewFormat);
 		return Buffer(count * stride, bufferFlags, viewFormat, nullptr, stride, usage);
@@ -34,10 +34,10 @@ namespace SE
 
 	GPUBufferDescription GPUBufferDescription::Typed(const void* data, int32 count, PixelFormat viewFormat, bool isUnorderedAccess, GPUResourceUsage usage)
 	{
-		EnumFlags<GPUBufferFlags> bufferFlags = GPUBufferFlags::ShaderResource;
+		GPUBufferFlags bufferFlags = GPUBufferFlags::ShaderResource;
 		if (isUnorderedAccess)
 		{
-			bufferFlags.IsFlag(GPUBufferFlags::UnorderedAccess);
+            bufferFlags = EnumAddFlags(bufferFlags, GPUBufferFlags::UnorderedAccess);
 		}
 		const auto stride = PixelFormatGetSizeInBits(viewFormat);
 		return Buffer(count * stride, bufferFlags, viewFormat, data, stride, usage);
@@ -90,7 +90,7 @@ namespace SE
 	{
 		uint32 hashCode = key.Size;
 		hashCode = (hashCode * 397) ^ key.Stride;
-		hashCode = (hashCode * 397) ^ key.Flags.Get();
+		hashCode = (hashCode * 397) ^ (uint32)key.Flags;
 		hashCode = (hashCode * 397) ^ (uint32)key.Format;
 		hashCode = (hashCode * 397) ^ (uint32)key.Usage;
 		return hashCode;
@@ -210,7 +210,7 @@ namespace SE
 			&& Math::RangeInclusive<uint32>(desc.Stride, 0, 1024));
 
 		// Validate description
-		if (desc.Flags.IsFlag(GPUBufferFlags::Structured))
+		if (EnumHasAllFlags(desc.Flags, GPUBufferFlags::Structured))
 		{
 			if (desc.Stride <= 0)
 			{
@@ -218,7 +218,7 @@ namespace SE
 				return false;
 			}
 		}
-		if (desc.Flags.IsFlag(GPUBufferFlags::RawBuffer))
+		if (EnumHasAllFlags(desc.Flags, GPUBufferFlags::RawBuffer))
 		{
 			if (desc.Format != PixelFormat::Undefined)
 			{

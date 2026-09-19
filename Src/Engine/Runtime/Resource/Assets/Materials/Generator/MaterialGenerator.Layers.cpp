@@ -106,7 +106,7 @@ namespace SE
                         EAT_BOX(Mask);
                         EAT_BOX(Emissive);
                         EAT_BOX(SubsurfaceColor);
-                        if (!(GetRootLayer()->FeaturesFlags.IsFlag(MaterialFeatures::InputWorldSpaceNormal) && layer->FeaturesFlags.IsFlag(MaterialFeatures::InputWorldSpaceNormal)))
+                        if (!(EnumHasAnyFlags(GetRootLayer()->FeaturesFlags, MaterialFeatures::InputWorldSpaceNormal) && EnumHasAnyFlags(layer->FeaturesFlags, MaterialFeatures::InputWorldSpaceNormal)))
                         {
                             // TODO convert normal vector to match the output layer properties
                             LOG_WARNING("Graph", "TODO: convert normal vector to match the output layer properties");
@@ -120,7 +120,7 @@ namespace SE
                 }
 
                 // Mix usage flags
-                callingLayer->UsageFlags.Marge(_treeLayer->UsageFlags);
+                callingLayer->UsageFlags = EnumAddFlags(callingLayer->UsageFlags, _treeLayer->UsageFlags);
 
                 // Restore calling tree and layer
                 _treeLayerVarName = callingLayerVarName;
@@ -225,7 +225,7 @@ namespace SE
             value = writeLocal(defaultValue, node);
 
             // Sample layer
-#define CHECK_MATERIAL_FEATURE(type, feature) if (node->GetBox(static_cast<int32>(MaterialGraphBoxes::type))->HasConnection()) _treeLayer->UsageFlags.SetFlag(MaterialUsage::feature)
+#define CHECK_MATERIAL_FEATURE(type, feature) if (node->GetBox(static_cast<int32>(MaterialGraphBoxes::type))->HasConnection()) _treeLayer->UsageFlags = EnumAddFlags(_treeLayer->UsageFlags, MaterialUsage::feature)
 #define EAT_BOX(type) eatMaterialGraphBox(value.Value, node->GetBox((int32)MaterialGraphBoxes::type), MaterialGraphBoxes::type)
             switch (_treeType)
             {
@@ -294,7 +294,7 @@ namespace SE
             value = writeLocal(defaultValue, node);
 
             // Sample layer
-#define CHECK_MATERIAL_FEATURE(type, feature) if (node->GetBox(static_cast<int32>(MaterialGraphBoxes::type))->HasConnection()) _treeLayer->UsageFlags.SetFlag(MaterialUsage::feature)
+#define CHECK_MATERIAL_FEATURE(type, feature) if (node->GetBox(static_cast<int32>(MaterialGraphBoxes::type))->HasConnection()) _treeLayer->UsageFlags = EnumAddFlags(_treeLayer->UsageFlags, MaterialUsage::feature)
 #define EAT_BOX(type) eatMaterialGraphBox(value.Value, node->GetBox((int32)MaterialGraphBoxes::type), MaterialGraphBoxes::type)
             switch (_treeType)
             {

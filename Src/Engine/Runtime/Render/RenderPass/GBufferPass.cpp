@@ -84,7 +84,7 @@ namespace SE
 
 		// Calculate sphere model transform to cover far plane
 		Matrix m1, m2;
-		Matrix::Scaling(renderContext.view.Far / ((float)box.GetSize().y * 0.5f) * 0.95f, m1); // Scale to fit whole view frustum
+		Matrix::Scaling(renderContext.view.Far / ((float)box.GetSize().Y * 0.5f) * 0.95f, m1); // Scale to fit whole view frustum
 		Matrix::CreateWorld(renderContext.view.Position, Float3::Up, Float3::Backward, m2); // Rotate sphere model
 		m1 *= m2;
 

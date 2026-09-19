@@ -29,17 +29,17 @@ namespace SE::GraphUtilities
         {
             Float2& vv = *(Float2*)v.AsData;
             const Float2& aa = *(const Float2*)a.AsData;
-            vv.x = op(aa.x);
-            vv.y = op(aa.y);
+            vv.X = op(aa.X);
+            vv.Y = op(aa.Y);
             break;
         }
         case VariantTypes::Float3:
         {
             Float3& vv = *(Float3*)v.AsData;
             const Float3& aa = *(const Float3*)a.AsData;
-            vv.x = op(aa.x);
-            vv.y = op(aa.y);
-            vv.z = op(aa.z);
+            vv.X = op(aa.X);
+            vv.Y = op(aa.Y);
+            vv.Z = op(aa.Z);
             break;
         }
         case VariantTypes::Float4:
@@ -47,63 +47,63 @@ namespace SE::GraphUtilities
         {
             Float4& vv = *(Float4*)v.AsData;
             const Float4& aa = *(const Float4*)a.AsData;
-            vv.x = op(aa.x);
-            vv.y = op(aa.y);
-            vv.z = op(aa.z);
-            vv.w = op(aa.w);
+            vv.X = op(aa.X);
+            vv.Y = op(aa.Y);
+            vv.Z = op(aa.Z);
+            vv.W = op(aa.W);
             break;
         }
         case VariantTypes::Double2:
         {
             Double2& vv = *(Double2*)v.AsData;
             const Double2& aa = *(const Double2*)a.AsData;
-            vv.x = (double)op((float)aa.x);
-            vv.y = (double)op((float)aa.y);
+            vv.X = (double)op((float)aa.X);
+            vv.Y = (double)op((float)aa.Y);
             break;
         }
         case VariantTypes::Double3:
         {
             Double3& vv = *(Double3*)v.AsData;
             const Double3& aa = *(const Double3*)a.AsData;
-            vv.x = (double)op((float)aa.x);
-            vv.y = (double)op((float)aa.y);
-            vv.z = (double)op((float)aa.z);
+            vv.X = (double)op((float)aa.X);
+            vv.Y = (double)op((float)aa.Y);
+            vv.Z = (double)op((float)aa.Z);
             break;
         }
         case VariantTypes::Double4:
         {
             Double4& vv = *(Double4*)v.AsBlob.Data;
             const Double4& aa = *(const Double4*)a.AsBlob.Data;
-            vv.x = (double)op((float)aa.x);
-            vv.y = (double)op((float)aa.y);
-            vv.z = (double)op((float)aa.z);
-            vv.w = (double)op((float)aa.w);
+            vv.X = (double)op((float)aa.X);
+            vv.Y = (double)op((float)aa.Y);
+            vv.Z = (double)op((float)aa.Z);
+            vv.W = (double)op((float)aa.W);
             break;
         }
         case VariantTypes::Quaternion:
         {
             Quaternion& vv = *(Quaternion*)v.AsData;
             const Quaternion& aa = *(const Quaternion*)a.AsData;
-            vv.x = op(aa.x);
-            vv.y = op(aa.y);
-            vv.z = op(aa.z);
-            vv.w = op(aa.w);
+            vv.X = op(aa.X);
+            vv.Y = op(aa.Y);
+            vv.Z = op(aa.Z);
+            vv.W = op(aa.W);
             break;
         }
         case VariantTypes::Transform:
         {
             Transform& vv = *(Transform*)v.AsBlob.Data;
             const Transform& aa = *(const Transform*)a.AsBlob.Data;
-            vv.Translation.x = op((float)aa.Translation.x);
-            vv.Translation.y = op((float)aa.Translation.y);
-            vv.Translation.z = op((float)aa.Translation.z);
-            vv.Orientation.x = op(aa.Orientation.x);
-            vv.Orientation.y = op(aa.Orientation.y);
-            vv.Orientation.z = op(aa.Orientation.z);
-            vv.Orientation.w = op(aa.Orientation.w);
-            vv.Scale.x = op(aa.Scale.x);
-            vv.Scale.y = op(aa.Scale.y);
-            vv.Scale.z = op(aa.Scale.z);
+            vv.Translation.X = op((float)aa.Translation.X);
+            vv.Translation.Y = op((float)aa.Translation.Y);
+            vv.Translation.Z = op((float)aa.Translation.Z);
+            vv.Orientation.X = op(aa.Orientation.X);
+            vv.Orientation.Y = op(aa.Orientation.Y);
+            vv.Orientation.Z = op(aa.Orientation.Z);
+            vv.Orientation.W = op(aa.Orientation.W);
+            vv.Scale.X = op(aa.Scale.X);
+            vv.Scale.Y = op(aa.Scale.Y);
+            vv.Scale.Z = op(aa.Scale.Z);
             break;
         }
         default:
@@ -134,8 +134,8 @@ namespace SE::GraphUtilities
             Float2& vv = *(Float2*)v.AsData;
             const Float2& aa = *(const Float2*)a.AsData;
             const Float2& bb = *(const Float2*)b.AsData;
-            vv.x = op(aa.x, bb.x);
-            vv.y = op(aa.y, bb.y);
+            vv.X = op(aa.X, bb.X);
+            vv.Y = op(aa.Y, bb.Y);
             break;
         }
         case VariantTypes::Float3:
@@ -143,9 +143,9 @@ namespace SE::GraphUtilities
             Float3& vv = *(Float3*)v.AsData;
             const Float3& aa = *(const Float3*)a.AsData;
             const Float3& bb = *(const Float3*)b.AsData;
-            vv.x = op(aa.x, bb.x);
-            vv.y = op(aa.y, bb.y);
-            vv.z = op(aa.z, bb.z);
+            vv.X = op(aa.X, bb.X);
+            vv.Y = op(aa.Y, bb.Y);
+            vv.Z = op(aa.Z, bb.Z);
             break;
         }
         case VariantTypes::Float4:
@@ -154,10 +154,10 @@ namespace SE::GraphUtilities
             Float4& vv = *(Float4*)v.AsData;
             const Float4& aa = *(const Float4*)a.AsData;
             const Float4& bb = *(const Float4*)b.AsData;
-            vv.x = op(aa.x, bb.x);
-            vv.y = op(aa.y, bb.y);
-            vv.z = op(aa.z, bb.z);
-            vv.w = op(aa.w, bb.w);
+            vv.X = op(aa.X, bb.X);
+            vv.Y = op(aa.Y, bb.Y);
+            vv.Z = op(aa.Z, bb.Z);
+            vv.W = op(aa.W, bb.W);
             break;
         }
         case VariantTypes::Double2:
@@ -165,8 +165,8 @@ namespace SE::GraphUtilities
             Double2& vv = *(Double2*)v.AsData;
             const Double2& aa = *(const Double2*)a.AsData;
             const Double2& bb = *(const Double2*)b.AsData;
-            vv.x = (double)op((float)aa.x, (float)bb.x);
-            vv.y = (double)op((float)aa.y, (float)bb.y);
+            vv.X = (double)op((float)aa.X, (float)bb.X);
+            vv.Y = (double)op((float)aa.Y, (float)bb.Y);
             break;
         }
         case VariantTypes::Double3:
@@ -174,9 +174,9 @@ namespace SE::GraphUtilities
             Double3& vv = *(Double3*)v.AsData;
             const Double3& aa = *(const Double3*)a.AsData;
             const Double3& bb = *(const Double3*)b.AsData;
-            vv.x = (double)op((float)aa.x, (float)bb.x);
-            vv.y = (double)op((float)aa.y, (float)bb.y);
-            vv.z = (double)op((float)aa.z, (float)bb.z);
+            vv.X = (double)op((float)aa.X, (float)bb.X);
+            vv.Y = (double)op((float)aa.Y, (float)bb.Y);
+            vv.Z = (double)op((float)aa.Z, (float)bb.Z);
             break;
         }
         case VariantTypes::Double4:
@@ -184,10 +184,10 @@ namespace SE::GraphUtilities
             Double4& vv = *(Double4*)v.AsBlob.Data;
             const Double4& aa = *(const Double4*)a.AsBlob.Data;
             const Double4& bb = *(const Double4*)b.AsBlob.Data;
-            vv.x = (double)op((float)aa.x, (float)bb.x);
-            vv.y = (double)op((float)aa.y, (float)bb.y);
-            vv.z = (double)op((float)aa.z, (float)bb.z);
-            vv.w = (double)op((float)aa.w, (float)bb.w);
+            vv.X = (double)op((float)aa.X, (float)bb.X);
+            vv.Y = (double)op((float)aa.Y, (float)bb.Y);
+            vv.Z = (double)op((float)aa.Z, (float)bb.Z);
+            vv.W = (double)op((float)aa.W, (float)bb.W);
             break;
         }
         case VariantTypes::Quaternion:
@@ -195,10 +195,10 @@ namespace SE::GraphUtilities
             Quaternion& vv = *(Quaternion*)v.AsData;
             const Quaternion& aa = *(const Quaternion*)a.AsData;
             const Quaternion& bb = *(const Quaternion*)b.AsData;
-            vv.x = op(aa.x, bb.x);
-            vv.y = op(aa.y, bb.y);
-            vv.z = op(aa.z, bb.z);
-            vv.w = op(aa.w, bb.w);
+            vv.X = op(aa.X, bb.X);
+            vv.Y = op(aa.Y, bb.Y);
+            vv.Z = op(aa.Z, bb.Z);
+            vv.W = op(aa.W, bb.W);
             break;
         }
         case VariantTypes::Transform:
@@ -206,16 +206,16 @@ namespace SE::GraphUtilities
             Transform& vv = *(Transform*)v.AsBlob.Data;
             const Transform& aa = *(const Transform*)a.AsBlob.Data;
             const Transform& bb = *(const Transform*)b.AsBlob.Data;
-            vv.Translation.x = op((float)aa.Translation.x, (float)bb.Translation.x);
-            vv.Translation.y = op((float)aa.Translation.y, (float)bb.Translation.y);
-            vv.Translation.z = op((float)aa.Translation.z, (float)bb.Translation.z);
-            vv.Orientation.x = op(aa.Orientation.x, bb.Orientation.x);
-            vv.Orientation.y = op(aa.Orientation.y, bb.Orientation.y);
-            vv.Orientation.z = op(aa.Orientation.z, bb.Orientation.z);
-            vv.Orientation.w = op(aa.Orientation.w, bb.Orientation.w);
-            vv.Scale.x = op(aa.Scale.x, bb.Scale.x);
-            vv.Scale.y = op(aa.Scale.y, bb.Scale.y);
-            vv.Scale.z = op(aa.Scale.z, bb.Scale.z);
+            vv.Translation.X = op((float)aa.Translation.X, (float)bb.Translation.X);
+            vv.Translation.Y = op((float)aa.Translation.Y, (float)bb.Translation.Y);
+            vv.Translation.Z = op((float)aa.Translation.Z, (float)bb.Translation.Z);
+            vv.Orientation.X = op(aa.Orientation.X, bb.Orientation.X);
+            vv.Orientation.Y = op(aa.Orientation.Y, bb.Orientation.Y);
+            vv.Orientation.Z = op(aa.Orientation.Z, bb.Orientation.Z);
+            vv.Orientation.W = op(aa.Orientation.W, bb.Orientation.W);
+            vv.Scale.X = op(aa.Scale.X, bb.Scale.X);
+            vv.Scale.Y = op(aa.Scale.Y, bb.Scale.Y);
+            vv.Scale.Z = op(aa.Scale.Z, bb.Scale.Z);
             break;
         }
         default:
@@ -247,8 +247,8 @@ namespace SE::GraphUtilities
             const Float2& aa = *(const Float2*)a.AsData;
             const Float2& bb = *(const Float2*)b.AsData;
             const Float2& cc = *(const Float2*)b.AsData;
-            vv.x = op(aa.x, bb.x, cc.x);
-            vv.y = op(aa.y, bb.y, cc.y);
+            vv.X = op(aa.X, bb.X, cc.X);
+            vv.Y = op(aa.Y, bb.Y, cc.Y);
             break;
         }
         case VariantTypes::Float3:
@@ -257,9 +257,9 @@ namespace SE::GraphUtilities
             const Float3& aa = *(const Float3*)a.AsData;
             const Float3& bb = *(const Float3*)b.AsData;
             const Float3& cc = *(const Float3*)b.AsData;
-            vv.x = op(aa.x, bb.x, cc.x);
-            vv.y = op(aa.y, bb.y, cc.y);
-            vv.z = op(aa.z, bb.z, cc.z);
+            vv.X = op(aa.X, bb.X, cc.X);
+            vv.Y = op(aa.Y, bb.Y, cc.Y);
+            vv.Z = op(aa.Z, bb.Z, cc.Z);
             break;
         }
         case VariantTypes::Float4:
@@ -269,10 +269,10 @@ namespace SE::GraphUtilities
             const Float4& aa = *(const Float4*)a.AsData;
             const Float4& bb = *(const Float4*)b.AsData;
             const Float4& cc = *(const Float4*)b.AsData;
-            vv.x = op(aa.x, bb.x, cc.x);
-            vv.y = op(aa.y, bb.y, cc.y);
-            vv.z = op(aa.z, bb.z, cc.z);
-            vv.w = op(aa.w, bb.w, cc.w);
+            vv.X = op(aa.X, bb.X, cc.X);
+            vv.Y = op(aa.Y, bb.Y, cc.Y);
+            vv.Z = op(aa.Z, bb.Z, cc.Z);
+            vv.W = op(aa.W, bb.W, cc.W);
             break;
         }
         case VariantTypes::Double2:
@@ -281,8 +281,8 @@ namespace SE::GraphUtilities
             const Double2& aa = *(const Double2*)a.AsData;
             const Double2& bb = *(const Double2*)b.AsData;
             const Double2& cc = *(const Double2*)b.AsData;
-            vv.x = (double)op((float)aa.x, (float)bb.x, (float)cc.x);
-            vv.y = (double)op((float)aa.y, (float)bb.y, (float)cc.y);
+            vv.X = (double)op((float)aa.X, (float)bb.X, (float)cc.X);
+            vv.Y = (double)op((float)aa.Y, (float)bb.Y, (float)cc.Y);
             break;
         }
         case VariantTypes::Double3:
@@ -291,9 +291,9 @@ namespace SE::GraphUtilities
             const Double3& aa = *(const Double3*)a.AsData;
             const Double3& bb = *(const Double3*)b.AsData;
             const Double3& cc = *(const Double3*)b.AsData;
-            vv.x = (double)op((float)aa.x, (float)bb.x, (float)cc.x);
-            vv.y = (double)op((float)aa.y, (float)bb.y, (float)cc.y);
-            vv.z = (double)op((float)aa.z, (float)bb.z, (float)cc.z);
+            vv.X = (double)op((float)aa.X, (float)bb.X, (float)cc.X);
+            vv.Y = (double)op((float)aa.Y, (float)bb.Y, (float)cc.Y);
+            vv.Z = (double)op((float)aa.Z, (float)bb.Z, (float)cc.Z);
             break;
         }
         case VariantTypes::Double4:
@@ -302,10 +302,10 @@ namespace SE::GraphUtilities
             const Double4& aa = *(const Double4*)a.AsBlob.Data;
             const Double4& bb = *(const Double4*)b.AsBlob.Data;
             const Double4& cc = *(const Double4*)b.AsBlob.Data;
-            vv.x = (double)op((float)aa.x, (float)bb.x, (float)cc.x);
-            vv.y = (double)op((float)aa.y, (float)bb.y, (float)cc.y);
-            vv.z = (double)op((float)aa.z, (float)bb.z, (float)cc.z);
-            vv.w = (double)op((float)aa.w, (float)bb.w, (float)cc.w);
+            vv.X = (double)op((float)aa.X, (float)bb.X, (float)cc.X);
+            vv.Y = (double)op((float)aa.Y, (float)bb.Y, (float)cc.Y);
+            vv.Z = (double)op((float)aa.Z, (float)bb.Z, (float)cc.Z);
+            vv.W = (double)op((float)aa.W, (float)bb.W, (float)cc.W);
             break;
         }
         case VariantTypes::Quaternion:
@@ -314,10 +314,10 @@ namespace SE::GraphUtilities
             const Quaternion& aa = *(const Quaternion*)a.AsData;
             const Quaternion& bb = *(const Quaternion*)b.AsData;
             const Quaternion& cc = *(const Quaternion*)b.AsData;
-            vv.x = op(aa.x, bb.x, cc.x);
-            vv.y = op(aa.y, bb.y, cc.y);
-            vv.z = op(aa.z, bb.z, cc.z);
-            vv.w = op(aa.w, bb.w, cc.w);
+            vv.X = op(aa.X, bb.X, cc.X);
+            vv.Y = op(aa.Y, bb.Y, cc.Y);
+            vv.Z = op(aa.Z, bb.Z, cc.Z);
+            vv.W = op(aa.W, bb.W, cc.W);
             break;
         }
         case VariantTypes::Transform:
@@ -326,16 +326,16 @@ namespace SE::GraphUtilities
             const Transform& aa = *(const Transform*)a.AsBlob.Data;
             const Transform& bb = *(const Transform*)b.AsBlob.Data;
             const Transform& cc = *(const Transform*)c.AsBlob.Data;
-            vv.Translation.x = op((float)aa.Translation.x, (float)bb.Translation.x, (float)cc.Translation.x);
-            vv.Translation.y = op((float)aa.Translation.y, (float)bb.Translation.y, (float)cc.Translation.y);
-            vv.Translation.z = op((float)aa.Translation.z, (float)bb.Translation.z, (float)cc.Translation.z);
-            vv.Orientation.x = op(aa.Orientation.x, bb.Orientation.x, cc.Orientation.x);
-            vv.Orientation.y = op(aa.Orientation.y, bb.Orientation.y, cc.Orientation.y);
-            vv.Orientation.z = op(aa.Orientation.z, bb.Orientation.z, cc.Orientation.z);
-            vv.Orientation.w = op(aa.Orientation.w, bb.Orientation.w, cc.Orientation.w);
-            vv.Scale.x = op(aa.Scale.x, bb.Scale.x, cc.Scale.x);
-            vv.Scale.y = op(aa.Scale.y, bb.Scale.y, cc.Scale.y);
-            vv.Scale.z = op(aa.Scale.z, bb.Scale.z, cc.Scale.z);
+            vv.Translation.X = op((float)aa.Translation.X, (float)bb.Translation.X, (float)cc.Translation.X);
+            vv.Translation.Y = op((float)aa.Translation.Y, (float)bb.Translation.Y, (float)cc.Translation.Y);
+            vv.Translation.Z = op((float)aa.Translation.Z, (float)bb.Translation.Z, (float)cc.Translation.Z);
+            vv.Orientation.X = op(aa.Orientation.X, bb.Orientation.X, cc.Orientation.X);
+            vv.Orientation.Y = op(aa.Orientation.Y, bb.Orientation.Y, cc.Orientation.Y);
+            vv.Orientation.Z = op(aa.Orientation.Z, bb.Orientation.Z, cc.Orientation.Z);
+            vv.Orientation.W = op(aa.Orientation.W, bb.Orientation.W, cc.Orientation.W);
+            vv.Scale.X = op(aa.Scale.X, bb.Scale.X, cc.Scale.X);
+            vv.Scale.Y = op(aa.Scale.Y, bb.Scale.Y, cc.Scale.Y);
+            vv.Scale.Z = op(aa.Scale.Z, bb.Scale.Z, cc.Scale.Z);
             break;
         }
         default:

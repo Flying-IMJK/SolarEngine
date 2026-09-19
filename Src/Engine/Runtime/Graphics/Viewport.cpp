@@ -7,55 +7,55 @@
 namespace SE
 {
 	Viewport::Viewport(const Rectangle& bounds)
-		: x(bounds.Location.x)
-		, y(bounds.Location.y)
-		, width(bounds.Size.x)
-		, height(bounds.Size.y)
-		, minDepth(0.0f)
-		, maxDepth(1.0f)
+		: X(bounds.Location.X)
+		, Y(bounds.Location.Y)
+		, Width(bounds.Size.X)
+		, Height(bounds.Size.Y)
+		, MinDepth(0.0f)
+		, MaxDepth(1.0f)
 	{
 	}
 
 	String Viewport::ToString() const
 	{
-		return String::Format(SE_TEXT("{x:{0} y:{1} width:{2} height:{3}}"), x, y, width, height);
+		return String::Format(SE_TEXT("{x:{0} y:{1} width:{2} height:{3}}"), X, Y, Width, Height);
 	}
 
 	Rectangle Viewport::GetBounds() const
 	{
-		return Rectangle(Float2(x, y), Float2(width, height));
+		return Rectangle(Float2(X, Y), Float2(Width, Height));
 	}
 
 	void Viewport::SetBounds(const Rectangle& bounds)
 	{
-		x = bounds.Location.x;
-		y = bounds.Location.y;
-		width = bounds.Size.x;
-		height = bounds.Size.y;
+		X = bounds.Location.X;
+		Y = bounds.Location.Y;
+		Width = bounds.Size.X;
+		Height = bounds.Size.Y;
 	}
 
 	void Viewport::Project(const Float3& source, const Matrix& vp, Float3& result) const
 	{
 		Float3::Transform(source, vp, result);
-		const float a = source.x * vp.M14 + source.y * vp.M24 + source.z * vp.M34 + vp.M44;
+		const float a = source.X * vp.M14 + source.Y * vp.M24 + source.Z * vp.M34 + vp.M44;
 
 		if (!Math::IsOne(a))
 		{
 			result /= a;
 		}
 
-		result.x = (result.x + 1.0f) * 0.5f * width + x;
-		result.y = (-result.y + 1.0f) * 0.5f * height + y;
-		result.z = result.z * (maxDepth - minDepth) + minDepth;
+		result.X = (result.X + 1.0f) * 0.5f * Width + X;
+		result.Y = (-result.Y + 1.0f) * 0.5f * Height + Y;
+		result.Z = result.Z * (MaxDepth - MinDepth) + MinDepth;
 	}
 
 	void Viewport::UnProject(const Float3& source, const Matrix& ivp, Float3& result) const
 	{
-		result.x = (source.x - x) / width * 2.0f - 1.0f;
-		result.y = -((source.y - y) / height * 2.0f - 1.0f);
-		result.z = (source.z - minDepth) / (maxDepth - minDepth);
+		result.X = (source.X - X) / Width * 2.0f - 1.0f;
+		result.Y = -((source.Y - Y) / Height * 2.0f - 1.0f);
+		result.Z = (source.Z - MinDepth) / (MaxDepth - MinDepth);
 
-		const float a = result.x * ivp.M14 + result.y * ivp.M24 + result.z * ivp.M34 + ivp.M44;
+		const float a = result.X * ivp.M14 + result.Y * ivp.M24 + result.Z * ivp.M34 + ivp.M44;
 		Float3::Transform(result, ivp, result);
 
 		if (!Math::IsOne(a))

@@ -102,6 +102,7 @@ namespace SE
 	/// <summary>
 	/// GPU texture usage flags.
 	/// </summary>
+	SE_ENUM(API(Attributes = "Flags"))
 	enum class GPUTextureFlags
 	{
 		/// <summary>
@@ -150,12 +151,14 @@ namespace SE
 		BackBuffer = 0x0080,
 	};
 
-	typedef EnumFlags<GPUTextureFlags> GPUTextureBitFlags;
+	SE_ENUM_OPERATORS(GPUTextureFlags)
+
+	String ToString(GPUTextureFlags flags);
 
 	/// <summary>
 	/// Defines the dimension of a texture object.
 	/// </summary>
-	SE_ENUM(Reflect)
+	SE_ENUM(Reflect, API())
 	enum class TextureDimensions
 	{
 		/// <summary>
@@ -177,61 +180,74 @@ namespace SE
 	/// <summary>
 	/// A common description for all GPU textures.
 	/// </summary>
+	SE_STRUCT(API())
 	struct SE_API_RUNTIME GPUTextureDescription
 	{
+		SCRIPTING_TYPE_MIN(GPUTextureDescription)
 		/// <summary>
 		/// The dimensions of the texture.
 		/// </summary>
+		SE_FIELD(API())
 		TextureDimensions Dimensions;
 
 		/// <summary>
 		/// Texture width (in texels).
 		/// </summary>
+		SE_FIELD(API())
 		int32 Width;
 
 		/// <summary>
 		/// Texture height (in texels).
 		/// </summary>
+		SE_FIELD(API())
 		int32 Height;
 
 		/// <summary>
 		/// Texture depth (in texels) for Volume Textures.
 		/// </summary>
+		SE_FIELD(API())
 		int32 Depth;
 
 		/// <summary>
 		/// Number of textures in array for Texture Arrays.
 		/// </summary>
+		SE_FIELD(API())
 		int32 ArraySize;
 
 		/// <summary>	
 		/// The maximum number of mipmap levels in the texture. Use 1 for a multisampled texture; or 0 to generate a full set of subtextures.
 		/// </summary>	
+		SE_FIELD(API())
 		int32 MipLevels;
 
 		/// <summary>	
 		/// Texture format (see <strong><see cref="PixelFormat"/></strong>).
 		/// </summary>	
+		SE_FIELD(API())
 		PixelFormat Format;
 
 		/// <summary>	
 		/// Structure that specifies multisampling parameters for the texture.
 		/// </summary>	
+		SE_FIELD(API())
 		MSAALevel MultiSampleLevel;
 
 		/// <summary>	
 		/// Flags (see <strong><see cref="GPUTextureFlags"/></strong>) for binding to pipeline stages. The flags can be combined by a logical OR.
 		/// </summary>
-		GPUTextureBitFlags Flags = GPUTextureFlags::None;
+		SE_FIELD(API())
+		GPUTextureFlags Flags = GPUTextureFlags::None;
 
 		/// <summary>	
 		/// Value that identifies how the texture is to be read from and written to. The most common value is <see cref="GPUResourceUsage.Default"/>; see <strong><see cref="GPUResourceUsage"/></strong> for all possible values.
 		/// </summary>
+		SE_FIELD(API())
 		GPUResourceUsage Usage;
 
 		/// <summary>
 		/// Default clear color for render targets
 		/// </summary>
+		SE_FIELD(API())
 		Color32 DefaultClearColor;
 
 	public:
@@ -240,7 +256,7 @@ namespace SE
 		/// </summary>
 		inline bool IsRenderTarget() const
 		{
-			return Flags.IsFlag(GPUTextureFlags::RenderTarget);
+			return EnumHasAnyFlags(Flags, GPUTextureFlags::RenderTarget);
 		}
 
 		/// <summary>
@@ -248,7 +264,7 @@ namespace SE
 		/// </summary>
 		inline bool IsDepthStencil() const
 		{
-			return Flags.IsFlag(GPUTextureFlags::DepthStencil);
+			return EnumHasAnyFlags(Flags, GPUTextureFlags::DepthStencil);
 		}
 
 		/// <summary>
@@ -256,7 +272,7 @@ namespace SE
 		/// </summary>
 		inline bool IsShaderResource() const
 		{
-			return Flags.IsFlag(GPUTextureFlags::ShaderResource);
+			return EnumHasAnyFlags(Flags, GPUTextureFlags::ShaderResource);
 		}
 
 		/// <summary>
@@ -264,7 +280,7 @@ namespace SE
 		/// </summary>
 		inline bool IsUnorderedAccess() const
 		{
-			return Flags.IsFlag(GPUTextureFlags::UnorderedAccess);
+			return EnumHasAnyFlags(Flags, GPUTextureFlags::UnorderedAccess);
 		}
 
 		/// <summary>
@@ -272,7 +288,7 @@ namespace SE
 		/// </summary>
 		inline bool HasPerMipViews() const
 		{
-			return Flags.IsFlag(GPUTextureFlags::PerMipViews);
+			return EnumHasAnyFlags(Flags, GPUTextureFlags::PerMipViews);
 		}
 
 		/// <summary>
@@ -280,7 +296,7 @@ namespace SE
 		/// </summary>
 		inline bool HasPerSliceViews() const
 		{
-			return Flags.IsFlag(GPUTextureFlags::PerSliceViews);
+			return EnumHasAnyFlags(Flags, GPUTextureFlags::PerSliceViews);
 		}
 
 		/// <summary>
@@ -325,8 +341,8 @@ namespace SE
 		/// <param name="arraySize">Size of the texture 2D array, default to 1.</param>
 		/// <returns>A new instance of 1D <see cref="GPUTextureDescription" /> class.</returns>
 		static GPUTextureDescription New1D(int32 width, PixelFormat format,
-			GPUTextureBitFlags textureFlags = GPUTextureBitFlags(GPUTextureFlags::ShaderResource,
-				GPUTextureFlags::RenderTarget), int32 arraySize = 1)
+			GPUTextureFlags textureFlags = EnumCombineFlags<GPUTextureFlags>(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget),
+			int32 arraySize = 1)
 		{
 			return New1D(width, format, textureFlags, 1, arraySize);
 		}
@@ -341,8 +357,7 @@ namespace SE
 		/// <param name="arraySize">Size of the texture 2D array, default to 1.</param>
 		/// <returns>A new instance of 1D <see cref="GPUTextureDescription" /> class.</returns>
 		static GPUTextureDescription New1D(int32 width, int32 mipCount, PixelFormat format,
-			GPUTextureBitFlags textureFlags = GPUTextureBitFlags(GPUTextureFlags::ShaderResource,
-				GPUTextureFlags::RenderTarget),
+			GPUTextureFlags textureFlags = EnumCombineFlags<GPUTextureFlags>(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget),
 			int32 arraySize = 1)
 		{
 			return New1D(width, format, textureFlags, mipCount, arraySize);
@@ -359,7 +374,7 @@ namespace SE
 		/// <returns>A new instance of 1D <see cref="GPUTextureDescription" /> class.</returns>
 		static GPUTextureDescription New1D(int32 width,
 			PixelFormat format,
-			GPUTextureBitFlags textureFlags,
+			GPUTextureFlags textureFlags,
 			int32 mipCount,
 			int32 arraySize);
 
@@ -376,7 +391,7 @@ namespace SE
 		static GPUTextureDescription New2D(int32 width,
 			int32 height,
 			PixelFormat format,
-			GPUTextureBitFlags textureFlags = { GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget },
+			GPUTextureFlags textureFlags = EnumCombineFlags(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget),
 			int32 arraySize = 1)
 		{
 			return New2D(width, height, 1, format, textureFlags, arraySize);
@@ -397,7 +412,7 @@ namespace SE
 			int32 height,
 			int32 mipCount,
 			PixelFormat format,
-			GPUTextureBitFlags textureFlags = { GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget },
+			GPUTextureFlags textureFlags = EnumCombineFlags(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget),
 			int32 arraySize = 1,
 			MSAALevel msaaLevel = MSAALevel::None)
 		{
@@ -418,7 +433,7 @@ namespace SE
 		static GPUTextureDescription New2D(int32 width,
 			int32 height,
 			PixelFormat format,
-			GPUTextureBitFlags textureFlags,
+			GPUTextureFlags textureFlags,
 			int32 mipCount,
 			int32 arraySize,
 			MSAALevel msaaLevel = MSAALevel::None);
@@ -432,7 +447,7 @@ namespace SE
 		/// <param name="textureFlags">true if the texture needs to support unordered read write.</param>
 		/// <returns>A new instance of <see cref="GPUTextureDescription" /> class.</returns>
 		static GPUTextureDescription New3D(const Float3& size, PixelFormat format,
-			GPUTextureBitFlags textureFlags = { GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget });
+			GPUTextureFlags textureFlags = EnumCombineFlags<GPUTextureFlags>(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget));
 
 		/// <summary>
 		/// Creates a new <see cref="GPUTextureDescription" /> with a single mipmap.
@@ -447,7 +462,7 @@ namespace SE
 			int32 height,
 			int32 depth,
 			PixelFormat format,
-			GPUTextureBitFlags textureFlags = { GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget })
+			GPUTextureFlags textureFlags = EnumCombineFlags<GPUTextureFlags>(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget))
 		{
 			return New3D(width, height, depth, 1, format, textureFlags);
 		}
@@ -467,7 +482,7 @@ namespace SE
 			int32 depth,
 			int32 mipCount,
 			PixelFormat format,
-			GPUTextureBitFlags textureFlags = { GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget })
+			GPUTextureFlags textureFlags = EnumCombineFlags<GPUTextureFlags>(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget))
 		{
 			return New3D(width, height, depth, format, textureFlags, mipCount);
 		}
@@ -486,7 +501,7 @@ namespace SE
 			int32 height,
 			int32 depth,
 			PixelFormat format,
-			GPUTextureBitFlags textureFlags,
+			GPUTextureFlags textureFlags,
 			int32 mipCount);
 
 	public:
@@ -499,7 +514,7 @@ namespace SE
 		/// <returns>A new instance of <see cref="GPUTextureDescription" /> class.</returns>
 		static GPUTextureDescription NewCube(int32 size,
 			PixelFormat format,
-			GPUTextureBitFlags textureFlags = { GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget })
+			GPUTextureFlags textureFlags = EnumCombineFlags<GPUTextureFlags>(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget))
 		{
 			return NewCube(size, 1, format, textureFlags);
 		}
@@ -515,7 +530,7 @@ namespace SE
 		static GPUTextureDescription NewCube(int32 size,
 			int32 mipCount,
 			PixelFormat format,
-			GPUTextureBitFlags textureFlags = { GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget })
+			GPUTextureFlags textureFlags = EnumCombineFlags<GPUTextureFlags>(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget))
 		{
 			return NewCube(size, format, textureFlags, mipCount);
 		}
@@ -530,7 +545,7 @@ namespace SE
 		/// <returns>A new instance of <see cref="GPUTextureDescription"/> class.</returns>
 		static GPUTextureDescription NewCube(int32 size,
 			PixelFormat format,
-			GPUTextureBitFlags textureFlags,
+			GPUTextureFlags textureFlags,
 			int32 mipCount);
 
 	public:

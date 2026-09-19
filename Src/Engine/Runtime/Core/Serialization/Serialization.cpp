@@ -524,8 +524,8 @@ namespace SE
 	{
 		const auto mX = SERIALIZE_FIND_MEMBER(context.stream, "X");
 		const auto mY = SERIALIZE_FIND_MEMBER(context.stream, "Y");
-		v.x = mX != context.stream->MemberEnd() ? mX->value.GetFloat() : 0.0f;
-		v.y = mY != context.stream->MemberEnd() ? mY->value.GetFloat() : 0.0f;
+		v.X = mX != context.stream->MemberEnd() ? mX->value.GetFloat() : 0.0f;
+		v.Y = mY != context.stream->MemberEnd() ? mY->value.GetFloat() : 0.0f;
 	}
 
 	bool Serialization::ShouldSerialize(const Float3& v, const void* otherObj)
@@ -538,9 +538,9 @@ namespace SE
 		const auto mX = SERIALIZE_FIND_MEMBER(context.stream, "X");
 		const auto mY = SERIALIZE_FIND_MEMBER(context.stream, "Y");
 		const auto mZ = SERIALIZE_FIND_MEMBER(context.stream, "Z");
-		v.x = mX != context.stream->MemberEnd() ? mX->value.GetFloat() : 0.0f;
-		v.y = mY != context.stream->MemberEnd() ? mY->value.GetFloat() : 0.0f;
-		v.z = mZ != context.stream->MemberEnd() ? mZ->value.GetFloat() : 0.0f;
+		v.X = mX != context.stream->MemberEnd() ? mX->value.GetFloat() : 0.0f;
+		v.Y = mY != context.stream->MemberEnd() ? mY->value.GetFloat() : 0.0f;
+		v.Z = mZ != context.stream->MemberEnd() ? mZ->value.GetFloat() : 0.0f;
 	}
 
 	bool Serialization::ShouldSerialize(const Float4& v, const void* otherObj)
@@ -554,10 +554,10 @@ namespace SE
 		const auto mY = SERIALIZE_FIND_MEMBER(context.stream, "Y");
 		const auto mZ = SERIALIZE_FIND_MEMBER(context.stream, "Z");
 		const auto mW = SERIALIZE_FIND_MEMBER(context.stream, "W");
-		v.x = mX != context.stream->MemberEnd() ? mX->value.GetFloat() : 0.0f;
-		v.y = mY != context.stream->MemberEnd() ? mY->value.GetFloat() : 0.0f;
-		v.z = mZ != context.stream->MemberEnd() ? mZ->value.GetFloat() : 0.0f;
-		v.w = mW != context.stream->MemberEnd() ? mW->value.GetFloat() : 0.0f;
+		v.X = mX != context.stream->MemberEnd() ? mX->value.GetFloat() : 0.0f;
+		v.Y = mY != context.stream->MemberEnd() ? mY->value.GetFloat() : 0.0f;
+		v.Z = mZ != context.stream->MemberEnd() ? mZ->value.GetFloat() : 0.0f;
+		v.W = mW != context.stream->MemberEnd() ? mW->value.GetFloat() : 0.0f;
 	}
 
 
@@ -570,8 +570,8 @@ namespace SE
 	{
 		const auto mX = SERIALIZE_FIND_MEMBER(context.stream, "X");
 		const auto mY = SERIALIZE_FIND_MEMBER(context.stream, "Y");
-		v.x = mX != context.stream->MemberEnd() ? mX->value.GetInt() : 0;
-		v.y = mY != context.stream->MemberEnd() ? mY->value.GetInt() : 0;
+		v.X = mX != context.stream->MemberEnd() ? mX->value.GetInt() : 0;
+		v.Y = mY != context.stream->MemberEnd() ? mY->value.GetInt() : 0;
 	}
 
 
@@ -586,10 +586,10 @@ namespace SE
 		const auto mY = SERIALIZE_FIND_MEMBER(context.stream, "Y");
 		const auto mZ = SERIALIZE_FIND_MEMBER(context.stream, "Z");
 		const auto mW = SERIALIZE_FIND_MEMBER(context.stream, "W");
-		v.x = mX != context.stream->MemberEnd() ? mX->value.GetInt() : 0;
-		v.y = mY != context.stream->MemberEnd() ? mY->value.GetInt() : 0;
-		v.z = mZ != context.stream->MemberEnd() ? mZ->value.GetInt() : 0;
-		v.w = mW != context.stream->MemberEnd() ? mW->value.GetInt() : 0;
+		v.X = mX != context.stream->MemberEnd() ? mX->value.GetInt() : 0;
+		v.Y = mY != context.stream->MemberEnd() ? mY->value.GetInt() : 0;
+		v.Z = mZ != context.stream->MemberEnd() ? mZ->value.GetInt() : 0;
+		v.W = mW != context.stream->MemberEnd() ? mW->value.GetInt() : 0;
 	}
 
 	bool Serialization::ShouldSerialize(const Quaternion& v, const void* otherObj)
@@ -603,10 +603,10 @@ namespace SE
 		const auto mY = SERIALIZE_FIND_MEMBER(context.stream, "Y");
 		const auto mZ = SERIALIZE_FIND_MEMBER(context.stream, "Z");
 		const auto mW = SERIALIZE_FIND_MEMBER(context.stream, "W");
-		v.x = mX != context.stream->MemberEnd() ? mX->value.GetFloat() : 0.0f;
-		v.y = mY != context.stream->MemberEnd() ? mY->value.GetFloat() : 0.0f;
-		v.z = mZ != context.stream->MemberEnd() ? mZ->value.GetFloat() : 0.0f;
-		v.w = mW != context.stream->MemberEnd() ? mW->value.GetFloat() : 0.0f;
+		v.X = mX != context.stream->MemberEnd() ? mX->value.GetFloat() : 0.0f;
+		v.Y = mY != context.stream->MemberEnd() ? mY->value.GetFloat() : 0.0f;
+		v.Z = mZ != context.stream->MemberEnd() ? mZ->value.GetFloat() : 0.0f;
+		v.W = mW != context.stream->MemberEnd() ? mW->value.GetFloat() : 0.0f;
 	}
 
 	bool Serialization::ShouldSerialize(const Color& v, const void* otherObj)
@@ -620,10 +620,10 @@ namespace SE
 		const auto mG = SERIALIZE_FIND_MEMBER(context.stream, "G");
 		const auto mB = SERIALIZE_FIND_MEMBER(context.stream, "B");
 		const auto mA = SERIALIZE_FIND_MEMBER(context.stream, "A");
-		v.r = mR != context.stream->MemberEnd() ? mR->value.GetFloat() : 0.0f;
-		v.g = mG != context.stream->MemberEnd() ? mG->value.GetFloat() : 0.0f;
-		v.b = mB != context.stream->MemberEnd() ? mB->value.GetFloat() : 0.0f;
-		v.a = mA != context.stream->MemberEnd() ? mA->value.GetFloat() : 0.0f;
+		v.R = mR != context.stream->MemberEnd() ? mR->value.GetFloat() : 0.0f;
+		v.G = mG != context.stream->MemberEnd() ? mG->value.GetFloat() : 0.0f;
+		v.B = mB != context.stream->MemberEnd() ? mB->value.GetFloat() : 0.0f;
+		v.A = mA != context.stream->MemberEnd() ? mA->value.GetFloat() : 0.0f;
 	}
 
 	bool Serialization::ShouldSerialize(const Color32& v, const void* otherObj)

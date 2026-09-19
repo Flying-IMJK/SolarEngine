@@ -1,7 +1,8 @@
 #pragma once
 #include "Runtime/Core/Types/UID.h"
 #include "Runtime/Core/Types/Variable.h"
-#include "Runtime//API.h"
+#include <Runtime/Core/Scripting/ScriptingType.h>
+#include "Runtime/API.h"
 
 namespace SE
 {
@@ -19,14 +20,17 @@ namespace SE
     /// <summary>
     /// The prefab manager handles the prefabs creation, synchronization and serialization.
     /// </summary>
+    SE_CLASS(API(Static))
     class SE_API_RUNTIME PrefabManager
     {
+        SCRIPTING_TYPE_NO_SPAWN(PrefabManager)
     public:
         /// <summary>
         /// Spawns the instance of the prefab objects. Prefab will be spawned to the first loaded scene.
         /// </summary>
         /// <param name="prefab">The prefab asset.</param>
         /// <returns>The created actor (root) or null if failed.</returns>
+        SE_FUNCTION(API())
         static Actor* SpawnPrefab(Prefab* prefab);
 
         /// <summary>
@@ -35,6 +39,7 @@ namespace SE
         /// <param name="prefab">The prefab asset.</param>
         /// <param name="position">The spawn position in the world space.</param>
         /// <returns>The created actor (root) or null if failed.</returns>
+        SE_FUNCTION(API())
         static Actor* SpawnPrefab(Prefab* prefab, const Float3& position);
 
         /// <summary>
@@ -44,6 +49,7 @@ namespace SE
         /// <param name="position">The spawn position in the world space.</param>
         /// <param name="rotation">The spawn rotation (in world space).</param>
         /// <returns>The created actor (root) or null if failed.</returns>
+        SE_FUNCTION(API())
         static Actor* SpawnPrefab(Prefab* prefab, const Float3& position, const Quaternion& rotation);
 
         /// <summary>
@@ -54,6 +60,7 @@ namespace SE
         /// <param name="rotation">The spawn rotation (in world space).</param>
         /// <param name="scale">The spawn scale.</param>
         /// <returns>The created actor (root) or null if failed.</returns>
+        SE_FUNCTION(API())
         static Actor* SpawnPrefab(Prefab* prefab, const Float3& position, const Quaternion& rotation, const Float3& scale);
 
         /// <summary>
@@ -62,6 +69,7 @@ namespace SE
         /// <param name="prefab">The prefab asset.</param>
         /// <param name="transform">The spawn transformation in the world space.</param>
         /// <returns>The created actor (root) or null if failed.</returns>
+        SE_FUNCTION(API())
         static Actor* SpawnPrefab(Prefab* prefab, const Transform& transform);
 
         /// <summary>
@@ -71,6 +79,7 @@ namespace SE
         /// <param name="parent">The parent actor to add spawned object instance. Can be null to just deserialize contents of the prefab.</param>
         /// <param name="transform">The spawn transformation in the world space.</param>
         /// <returns>The created actor (root) or null if failed.</returns>
+        SE_FUNCTION(API())
         static Actor* SpawnPrefab(Prefab* prefab, Actor* parent, const Transform& transform);
 
         /// <summary>
@@ -79,6 +88,7 @@ namespace SE
         /// <param name="prefab">The prefab asset.</param>
         /// <param name="parent">The parent actor to add spawned object instance. Can be null to just deserialize contents of the prefab.</param>
         /// <returns>The created actor (root) or null if failed.</returns>
+        SE_FUNCTION(API())
         static Actor* SpawnPrefab(Prefab* prefab, Actor* parent);
 
         /// <summary>
@@ -116,6 +126,7 @@ namespace SE
         /// <param name="outputPath">The output asset path.</param>
         /// <param name="autoLink">True if auto-connect the target actor and related objects to the created prefab.</param>
         /// <returns>True if failed, otherwise false.</returns>
+        SE_FUNCTION(API())
         static bool CreatePrefab(Actor* targetActor, const StringView& outputPath, bool autoLink);
 
         /// <summary>
@@ -145,6 +156,7 @@ namespace SE
         /// </remarks>
         /// <param name="instance">The modified instance.</param>
         /// <returns>True if data is failed to apply the changes, otherwise false.</returns>
+        SE_FUNCTION(API())
         static bool ApplyAll(Actor* instance);
 
 #endif

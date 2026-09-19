@@ -73,7 +73,7 @@ namespace SE
 		/// <summary>
 		/// The chunk flags.
 		/// </summary>
-		EnumFlags<AssetChunkFlags> Flags = EnumFlags<AssetChunkFlags>(AssetChunkFlags::None);
+		AssetChunkFlags Flags = AssetChunkFlags::None;
 
 		/// <summary>
 		/// The last usage time.

@@ -14,7 +14,7 @@ namespace SE
 		int virtual RenderGetDrawCategory() = 0;
 		int32 virtual RenderGetLayerMask() = 0;
 		BoundingSphere virtual RenderGetSphere()  = 0;
-		EnumFlags<StaticMask> virtual RenderGetStaticFlags() = 0;
+		StaticMask virtual RenderGetStaticFlags() = 0;
 
 		/// <summary>
 		/// Draws this actor. Called by Scene Rendering service. This call is more optimized than generic Draw (eg. geometry is rendered during all pass types but other actors are drawn only during GBufferFill pass).

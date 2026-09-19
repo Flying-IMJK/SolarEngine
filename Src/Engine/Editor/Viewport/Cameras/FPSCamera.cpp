@@ -141,13 +141,13 @@ namespace SE::Editor
 
 			if (viewport->InvertPanning)
 			{
-				position += up * (mouseDelta.y * panningSpeed);
-				position += right * (mouseDelta.x * panningSpeed);
+				position += up * (mouseDelta.Y * panningSpeed);
+				position += right * (mouseDelta.X * panningSpeed);
 			}
 			else
 			{
-				position -= right * (mouseDelta.x * panningSpeed);
-				position -= up * (mouseDelta.y * panningSpeed);
+				position -= right * (mouseDelta.X * panningSpeed);
+				position -= up * (mouseDelta.Y * panningSpeed);
 			}
 		}
 
@@ -155,16 +155,16 @@ namespace SE::Editor
 		if (input.IsMoving)
 		{
 			// Move camera over XZ plane
-			Float3 projectedForward = Float3::Normalize(Float3(forward.x, 0, forward.z));
-			position -= projectedForward * mouseDelta.y;
-			yaw += mouseDelta.x;
+			Float3 projectedForward = Float3::Normalize(Float3(forward.X, 0, forward.Z));
+			position -= projectedForward * mouseDelta.Y;
+			yaw += mouseDelta.X;
 		}
 
 		// Rotate or orbit
 		if (input.IsRotating || (input.IsOrbiting && !isUsingGizmo && prevInput.IsOrbiting))
 		{
-			yaw += mouseDelta.x;
-			pitch += mouseDelta.y;
+			yaw += mouseDelta.X;
+			pitch += mouseDelta.Y;
 		}
 
 		// Zoom in/out

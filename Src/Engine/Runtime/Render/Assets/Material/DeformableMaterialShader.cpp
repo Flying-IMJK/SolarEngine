@@ -25,7 +25,7 @@ GES_PACK_STRUCT(struct DeformableMaterialShaderData {
     float MeshMaxZ;
     });
 
-EnumFlags<DrawPass> DeformableMaterialShader::GetDrawModes() const
+DrawPass DeformableMaterialShader::GetDrawModes() const
 {
     return m_DrawModes;
 }
@@ -80,8 +80,8 @@ void DeformableMaterialShader::Bind(BindParameters& params)
     }
 
     // Select pipeline state based on current pass and render mode
-    const bool wireframe = m_Info.FeaturesFlags.IsFlag(MaterialFeatures::Wireframe) || view.Mode == ViewMode::Wireframe;
-    CullMode cullMode = view.Pass.Is(DrawPass::Depth) ? CullMode::TwoSided : m_Info.CullMode;
+    const bool wireframe = EnumHasAnyFlags(m_Info.FeaturesFlags, MaterialFeatures::Wireframe) || view.Mode == ViewMode::Wireframe;
+    CullMode cullMode = view.Pass == DrawPass::Depth ? CullMode::TwoSided : m_Info.CullMode;
     if (cullMode != CullMode::TwoSided && drawCall.WorldDeterminantSign < 0)
     {
         // Invert culling when scale is negative
@@ -108,10 +108,10 @@ void DeformableMaterialShader::Unload()
 
 bool DeformableMaterialShader::OnLoad()
 {
-    m_DrawModes = {DrawPass::Depth, DrawPass::QuadOverdraw};
+    m_DrawModes = EnumCombineFlags(DrawPass::Depth, DrawPass::QuadOverdraw);
     auto psDesc = GPUPipelineState::Description::Default;
-    psDesc.DepthEnable = !m_Info.FeaturesFlags.IsFlag(MaterialFeatures::DisableDepthTest);
-    psDesc.DepthWriteEnable = !m_Info.FeaturesFlags.IsFlag(MaterialFeatures::DisableDepthWrite);
+    psDesc.DepthEnable = EnumHasNoneFlags(m_Info.FeaturesFlags, MaterialFeatures::DisableDepthTest);
+    psDesc.DepthWriteEnable = EnumHasNoneFlags(m_Info.FeaturesFlags, MaterialFeatures::DisableDepthWrite);
 
     // Check if use tessellation (both material and runtime supports it)
     const bool useTess = m_Info.TessellationMode != TessellationMethod::None && GPUDevice::instance->GetGPULimits().HasTessellation;
@@ -133,7 +133,7 @@ bool DeformableMaterialShader::OnLoad()
 
     if (m_Info.BlendMode == MaterialBlendMode::Opaque)
     {
-        m_DrawModes.SetFlags(DrawPass::GBuffer, DrawPass::GlobalSurfaceAtlas);
+        m_DrawModes = EnumCombineFlags(m_DrawModes, DrawPass::GBuffer, DrawPass::GlobalSurfaceAtlas);
 
         // GBuffer Pass
         psDesc.VS = m_Shader->GetVS(SE_TEXT("VS_SplineModel"));
@@ -142,7 +142,7 @@ bool DeformableMaterialShader::OnLoad()
     }
     else
     {
-        m_DrawModes.SetFlag(DrawPass::Forward);
+        m_DrawModes = EnumAddFlags(m_DrawModes, DrawPass::Forward);
 
         // Forward Pass
         psDesc.VS = m_Shader->GetVS(SE_TEXT("VS_SplineModel"));

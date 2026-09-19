@@ -20,14 +20,14 @@ namespace SE
         const Float3 position = GetPosition() - renderContext.view.Origin;
         if (Brightness > Math::ZeroTolerance
             /*&& EnumHasAnyFlags(renderContext.view.flags, ViewFlags::DirectionalLights)*/
-            && renderContext.view.Pass.IsFlag(DrawPass::GBuffer)
+            && EnumHasAnyFlags(renderContext.view.Pass, DrawPass::GBuffer)
             && (ViewDistance < Math::ZeroTolerance || Float3::DistanceSquared(renderContext.view.Position, position) < ViewDistance * ViewDistance))
         {
             RendererDirectionalLightData data;
             data.Position = position;
             // data.MinRoughness = MinRoughness;
             data.ShadowsDistance = ShadowsDistance;
-            data.Color = Color.ToFloat3() * (Color.a * brightness);
+            data.Color = Color.ToFloat3() * (Color.A * brightness);
             data.ShadowsStrength = ShadowsStrength;
             data.Direction = GetForward();
             data.ShadowsFadeDistance = ShadowsFadeDistance;

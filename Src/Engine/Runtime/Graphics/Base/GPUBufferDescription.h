@@ -10,6 +10,7 @@ namespace SE
 	/// <summary>
 	/// The GPU buffer usage flags.
 	/// </summary>
+	SE_ENUM(API(Attributes = "Flags"))
 	enum class GPUBufferFlags
 	{
 		/// <summary>
@@ -73,33 +74,40 @@ namespace SE
 		StructuredCounterBuffer = UnorderedAccess | Structured | Counter
 	};
 
+	SE_ENUM_OPERATORS(GPUBufferFlags)
+
 
 	/// <summary>
 	/// A common description for all GPU buffers.
 	/// </summary>
-	SE_STRUCT(Reflect)
+	SE_STRUCT(Reflect, API())
 	struct SE_API_RUNTIME GPUBufferDescription : IType
 	{
+		SCRIPTING_TYPE_MIN(GPUBufferDescription);
 		SE_DEFINE_CLASS_DEFAULT(GPUBufferDescription, IType);
 
 		/// <summary>
 		/// The buffer total size.
 		/// </summary>
+		SE_FIELD(API())
 		uint32 Size;
 
 		/// <summary>
 		/// The buffer structure stride (size in bytes per element).
 		/// </summary>
+		SE_FIELD(API())
 		uint32 Stride;
 
 		/// <summary>
 		/// The buffer flags.
 		/// </summary>
-		EnumFlags<GPUBufferFlags> Flags;
+		SE_FIELD(API())
+		GPUBufferFlags Flags;
 
 		/// <summary>
 		/// The format of the data in a buffer.
 		/// </summary>
+		SE_FIELD(API())
 		PixelFormat Format;
 
 		/// <summary>
@@ -110,6 +118,7 @@ namespace SE
 		/// <summary>
 		/// Value that identifies how the buffer is to be read from and written to. The most common value is <see cref="GPUResourceUsage.Default"/>; see <strong><see cref="GPUResourceUsage"/></strong> for all possible values.
 		/// </summary>
+		SE_FIELD(API())
 		GPUResourceUsage Usage;
 
 	public:
@@ -126,7 +135,7 @@ namespace SE
 		/// </summary>
 		inline bool IsShaderResource() const
 		{
-			return Flags.IsFlag(GPUBufferFlags::ShaderResource);
+			return EnumHasAllFlags(Flags, GPUBufferFlags::ShaderResource);
 		}
 
 		/// <summary>
@@ -134,7 +143,7 @@ namespace SE
 		/// </summary>
 		inline bool IsUnorderedAccess() const
 		{
-			return Flags.IsFlag(GPUBufferFlags::UnorderedAccess);
+			return EnumHasAllFlags(Flags, GPUBufferFlags::UnorderedAccess);
 		}
 
 	public:
@@ -148,7 +157,7 @@ namespace SE
 		/// <param name="stride">The stride.</param>
 		/// <param name="usage">The usage.</param>
 		/// <returns>The buffer description.</returns>
-		static GPUBufferDescription Buffer(uint32 size, EnumFlags<GPUBufferFlags> flags, PixelFormat format = PixelFormat::Undefined, const void* initData = nullptr, uint32 stride = 0, GPUResourceUsage usage = GPUResourceUsage::Default);
+		static GPUBufferDescription Buffer(uint32 size, GPUBufferFlags flags, PixelFormat format = PixelFormat::Undefined, const void* initData = nullptr, uint32 stride = 0, GPUResourceUsage usage = GPUResourceUsage::Default);
 
 		/// <summary>
 		/// Creates typed buffer description.
@@ -250,10 +259,9 @@ namespace SE
 		/// </remarks>
 		static GPUBufferDescription Structured(int32 elementCount, int32 elementSize, bool isUnorderedAccess = false)
 		{
-			EnumFlags<GPUBufferFlags> bufferFlags = GPUBufferFlags::Structured;
-			bufferFlags.SetFlag(GPUBufferFlags::ShaderResource);
+			GPUBufferFlags bufferFlags = EnumCombineFlags(GPUBufferFlags::Structured, GPUBufferFlags::ShaderResource);
 			if (isUnorderedAccess)
-				bufferFlags.SetFlag(GPUBufferFlags::UnorderedAccess);
+				bufferFlags = EnumAddFlags(bufferFlags, GPUBufferFlags::UnorderedAccess);
 
 			return Buffer(elementCount * elementSize, bufferFlags, PixelFormat::Undefined, nullptr, elementSize);
 		}
@@ -316,9 +324,9 @@ namespace SE
 		/// <param name="additionalFlags">The additional bindings (for example, to create a combined raw/index buffer, pass <see cref="GPUBufferFlags::IndexBuffer" />).</param>
 		/// <param name="usage">The usage.</param>
 		/// <returns>The buffer description.</returns>
-		static GPUBufferDescription Raw(int32 size, EnumFlags<GPUBufferFlags> additionalFlags = GPUBufferFlags::None, GPUResourceUsage usage = GPUResourceUsage::Default)
+		static GPUBufferDescription Raw(int32 size, GPUBufferFlags additionalFlags = GPUBufferFlags::None, GPUResourceUsage usage = GPUResourceUsage::Default)
 		{
-			additionalFlags.SetFlag(GPUBufferFlags::RawBuffer);
+			additionalFlags = EnumAddFlags(additionalFlags, GPUBufferFlags::RawBuffer);
 			return Buffer(size, additionalFlags, PixelFormat::R32_Float, nullptr, sizeof(float), usage);
 		}
 
@@ -330,9 +338,9 @@ namespace SE
 		/// <param name="additionalFlags">The additional bindings (for example, to create a combined raw/index buffer, pass <see cref="GPUBufferFlags::IndexBuffer" />).</param>
 		/// <param name="usage">The usage.</param>
 		/// <returns>The buffer description.</returns>
-		static GPUBufferDescription Raw(const void* data, int32 size, EnumFlags<GPUBufferFlags> additionalFlags = GPUBufferFlags::None, GPUResourceUsage usage = GPUResourceUsage::Default)
+		static GPUBufferDescription Raw(const void* data, int32 size, GPUBufferFlags additionalFlags = GPUBufferFlags::None, GPUResourceUsage usage = GPUResourceUsage::Default)
 		{
-			additionalFlags.SetFlag(GPUBufferFlags::RawBuffer);
+			additionalFlags = EnumAddFlags(additionalFlags, GPUBufferFlags::RawBuffer);
 			return Buffer(size, additionalFlags, PixelFormat::R32_Float, data, sizeof(float), usage);
 		}
 

@@ -68,17 +68,10 @@ namespace SE
         Double4,
 
         UID,
+        // Append new serialized types here to preserve the values of existing entries.
+        Color32,
 
         MAX,
-#if USE_LARGE_WORLDS
-        Vector2 = Double2,
-        Vector3 = Double3,
-        Vector4 = Double4,
-#else
-        Vector2 = Float2,
-        Vector3 = Float3,
-        Vector4 = Float4,
-#endif
     };
 
     /// <summary>
@@ -235,6 +228,7 @@ namespace SE
         Variant(const Int3& v);
         Variant(const Int4& v);
         Variant(const Color& v);
+        Variant(const Color32& v);
         Variant(const Quaternion& v);
         Variant(const BoundingSphere& v);
         Variant(const Rectangle& v);
@@ -309,6 +303,7 @@ namespace SE
         explicit operator Int3() const;
         explicit operator Int4() const;
         explicit operator Color() const;
+        explicit operator Color32() const;
         explicit operator Quaternion() const;
         explicit operator UID() const;
         explicit operator BoundingSphere() const;
@@ -332,6 +327,7 @@ namespace SE
         const Int3& AsInt3() const;
         const Int4& AsInt4() const;
         const Color& AsColor() const;
+        const Color32& AsColor32() const;
         const Quaternion& AsQuaternion() const;
         const Rectangle& AsRectangle() const;
         const UID& AsGuid() const;

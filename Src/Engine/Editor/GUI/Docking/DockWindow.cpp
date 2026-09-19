@@ -40,7 +40,7 @@ namespace SE::Editor
 	void DockWindow::PerformLayoutBeforeChildren()
 	{
 		// Cache window title dimensions
-		if (_titleSize.x <= 0)
+		if (_titleSize.X <= 0)
 		{
 			Style* style = Style::Current;
 			if (style != nullptr && style->FontMedium != nullptr)

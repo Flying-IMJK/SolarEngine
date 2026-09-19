@@ -26,50 +26,50 @@ namespace SE
 
 	template<>
 	Float2::Vector2Base(const Int3& xy)
-		: x((float)xy.x)
-		, y((float)xy.y)
+		: X((float)xy.X)
+		, Y((float)xy.Y)
 	{
 	}
 
 	template<>
 	Float2::Vector2Base(const Int4& xy)
-		: x((float)xy.x)
-		, y((float)xy.y)
+		: X((float)xy.X)
+		, Y((float)xy.Y)
 	{
 	}
 
 	template<>
 	Float2::Vector2Base(const Float3& xy)
-		: x(xy.x)
-		, y(xy.y)
+		: X(xy.X)
+		, Y(xy.Y)
 	{
 	}
 
 	template<>
 	Float2::Vector2Base(const Float4& xy)
-		: x(xy.x)
-		, y(xy.y)
+		: X(xy.X)
+		, Y(xy.Y)
 	{
 	}
 
 	template<>
 	Float2::Vector2Base(const Double3& xy)
-		: x((float)xy.x)
-		, y((float)xy.y)
+		: X((float)xy.X)
+		, Y((float)xy.Y)
 	{
 	}
 
 	template<>
 	Float2::Vector2Base(const Double4& xy)
-		: x((float)xy.x)
-		, y((float)xy.y)
+		: X((float)xy.X)
+		, Y((float)xy.Y)
 	{
 	}
 
 	template<>
 	Float2::Vector2Base(const Color& color)
-		: x(color.r)
-		, y(color.g)
+		: X(color.R)
+		, Y(color.G)
 	{
 	}
 
@@ -82,7 +82,7 @@ namespace SE
 	template<>
 	float Float2::TriangleArea(const Float2& v0, const Float2& v1, const Float2& v2)
 	{
-		return Math::Abs((v0.x * (v1.y - v2.y) + v1.x * (v2.y - v0.y) + v2.x * (v0.y - v1.y)) / 2);
+		return Math::Abs((v0.X * (v1.Y - v2.Y) + v1.X * (v2.Y - v0.Y) + v2.X * (v0.Y - v1.Y)) / 2);
 	}
 
 	template<>
@@ -113,50 +113,50 @@ namespace SE
 
 	template<>
 	Double2::Vector2Base(const Int3& xy)
-		: x((double)xy.x)
-		, y((double)xy.y)
+		: X((double)xy.X)
+		, Y((double)xy.Y)
 	{
 	}
 
 	template<>
 	Double2::Vector2Base(const Int4& xy)
-		: x((double)xy.x)
-		, y((double)xy.y)
+		: X((double)xy.X)
+		, Y((double)xy.Y)
 	{
 	}
 
 	template<>
 	Double2::Vector2Base(const Float3& xy)
-		: x((double)xy.x)
-		, y((double)xy.y)
+		: X((double)xy.X)
+		, Y((double)xy.Y)
 	{
 	}
 
 	template<>
 	Double2::Vector2Base(const Float4& xy)
-		: x((int32)xy.x)
-		, y((double)xy.y)
+		: X((int32)xy.X)
+		, Y((double)xy.Y)
 	{
 	}
 
 	template<>
 	Double2::Vector2Base(const Double3& xy)
-		: x(xy.x)
-		, y(xy.y)
+		: X(xy.X)
+		, Y(xy.Y)
 	{
 	}
 
 	template<>
 	Double2::Vector2Base(const Double4& xy)
-		: x(xy.x)
-		, y(xy.y)
+		: X(xy.X)
+		, Y(xy.Y)
 	{
 	}
 
 	template<>
 	Double2::Vector2Base(const Color& color)
-		: x((double)color.r)
-		, y((double)color.g)
+		: X((double)color.R)
+		, Y((double)color.G)
 	{
 	}
 
@@ -169,7 +169,7 @@ namespace SE
 	template<>
 	double Double2::TriangleArea(const Double2& v0, const Double2& v1, const Double2& v2)
 	{
-		return Math::Abs((v0.x * (v1.y - v2.y) + v1.x * (v2.y - v0.y) + v2.x * (v0.y - v1.y)) / 2);
+		return Math::Abs((v0.X * (v1.Y - v2.Y) + v1.X * (v2.Y - v0.Y) + v2.X * (v0.Y - v1.Y)) / 2);
 	}
 
 	template<>
@@ -200,50 +200,50 @@ namespace SE
 
 	template<>
 	Int2::Vector2Base(const Int3& xy)
-		: x(xy.x)
-		, y(xy.y)
+		: X(xy.X)
+		, Y(xy.Y)
 	{
 	}
 
 	template<>
 	Int2::Vector2Base(const Int4& xy)
-		: x(xy.x)
-		, y(xy.y)
+		: X(xy.X)
+		, Y(xy.Y)
 	{
 	}
 
 	template<>
 	Int2::Vector2Base(const Float3& xy)
-		: x((int32)xy.x)
-		, y((int32)xy.y)
+		: X((int32)xy.X)
+		, Y((int32)xy.Y)
 	{
 	}
 
 	template<>
 	Int2::Vector2Base(const Float4& xy)
-		: x((int32)xy.x)
-		, y((int32)xy.y)
+		: X((int32)xy.X)
+		, Y((int32)xy.Y)
 	{
 	}
 
 	template<>
 	Int2::Vector2Base(const Double3& xy)
-		: x((int32)xy.x)
-		, y((int32)xy.y)
+		: X((int32)xy.X)
+		, Y((int32)xy.Y)
 	{
 	}
 
 	template<>
 	Int2::Vector2Base(const Double4& xy)
-		: x((int32)xy.x)
-		, y((int32)xy.y)
+		: X((int32)xy.X)
+		, Y((int32)xy.Y)
 	{
 	}
 
 	template<>
 	Int2::Vector2Base(const Color& color)
-		: x((int32)color.r)
-		, y((int32)color.g)
+		: X((int32)color.R)
+		, Y((int32)color.G)
 	{
 	}
 
@@ -256,7 +256,7 @@ namespace SE
 	template<>
 	int32 Int2::TriangleArea(const Int2& v0, const Int2& v1, const Int2& v2)
 	{
-		return Math::Abs((v0.x * (v1.y - v2.y) + v1.x * (v2.y - v0.y) + v2.x * (v0.y - v1.y)) / 2);
+		return Math::Abs((v0.X * (v1.Y - v2.Y) + v1.X * (v2.Y - v0.Y) + v2.X * (v0.Y - v1.Y)) / 2);
 	}
 
 	template<>

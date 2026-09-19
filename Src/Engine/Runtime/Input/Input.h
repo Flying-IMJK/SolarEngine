@@ -74,19 +74,23 @@ namespace SE
 	/// <summary>
 	/// The user input handling service.
 	/// </summary>
+	SE_CLASS(API(Static))
 	class SE_API_RUNTIME Input
 	{
+		SCRIPTING_TYPE_MIN(Input)
 	public:
 		friend class InputSystem;
 
 		/// <summary>
 		/// Gets the mouse (null if platform does not support mouse or it is not connected).
 		/// </summary>
+		SE_FIELD(API(ReadOnly))
 		static Mouse* Mouse;
 
 		/// <summary>
 		/// Gets the keyboard (null if platform does not support keyboard or it is not connected).
 		/// </summary>
+		SE_FIELD(API(ReadOnly))
 		static Keyboard* Keyboard;
 
 		/// <summary>
@@ -98,6 +102,7 @@ namespace SE
 		/// Gets the gamepads count.
 		/// </summary>
 		/// <returns>The amount of active gamepads devices.</returns>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		static int32 GetGamepadsCount();
 
 		/// <summary>
@@ -105,11 +110,13 @@ namespace SE
 		/// </summary>
 		/// <param name="index">The gamepad index.</param>
 		/// <returns>The gamepad device or null if index is invalid.</returns>
+		SE_FUNCTION(API())
 		static Gamepad* GetGamepad(int32 index);
 
 		/// <summary>
 		/// Action called when gamepads collection gets changed (during input update).
 		/// </summary>
+		SE_EVENT(API())
 		static Action GamepadsChanged;
 
 		/// <summary>
@@ -127,61 +134,73 @@ namespace SE
 		/// <summary>
 		/// Event fired on character input.
 		/// </summary>
+		SE_EVENT(API())
 		static Delegate<Char> CharInput;
 
 		/// <summary>
 		/// Event fired on key pressed.
 		/// </summary>
+		SE_EVENT(API())
 		static Delegate<KeyboardKeys> KeyDown;
 
 		/// <summary>
 		/// Event fired on key released.
 		/// </summary>
+		SE_EVENT(API())
 		static Delegate<KeyboardKeys> KeyUp;
 
 		/// <summary>
 		/// Event fired when mouse button goes down.
 		/// </summary>
+		SE_EVENT(API())
 		static Delegate<const Float2&, MouseButton> MouseDown;
 
 		/// <summary>
 		/// Event fired when mouse button goes up.
 		/// </summary>
+		SE_EVENT(API())
 		static Delegate<const Float2&, MouseButton> MouseUp;
 
 		/// <summary>
 		/// Event fired when mouse button double clicks.
 		/// </summary>
+		SE_EVENT(API())
 		static Delegate<const Float2&, MouseButton> MouseDoubleClick;
 
 		/// <summary>
 		/// Event fired when mouse wheel is scrolling (wheel delta is normalized).
 		/// </summary>
+		SE_EVENT(API())
 		static Delegate<const Float2&, float> MouseWheel;
 
 		/// <summary>
 		/// Event fired when mouse moves.
 		/// </summary>
+		SE_EVENT(API())
 		static Delegate<const Float2&> MouseMove;
 
 		/// <summary>
 		/// Event fired when mouse leaves window.
 		/// </summary>
+		SE_EVENT(API())
 		static Action MouseLeave;
 
 		/// <summary>
 		/// Event fired when touch action begins.
 		/// </summary>
+		SE_EVENT(API())
 		static Delegate<const Float2&, int32> TouchDown;
 
 		/// <summary>
 		/// Event fired when touch action moves.
 		/// </summary>
+		SE_EVENT(API())
 		static Delegate<const Float2&, int32> TouchMove;
 
 		/// <summary>
 		/// Event fired when touch action ends.
 		/// </summary>
+		SE_EVENT(API())
 		static Delegate<const Float2&, int32> TouchUp;
 
 	public:
@@ -196,6 +215,7 @@ namespace SE
 		/// </summary>
 		/// <param name="key">Key ID to check</param>
 		/// <returns>True while the user holds down the key identified by id</returns>
+		SE_FUNCTION(API())
 		static bool GetKey(KeyboardKeys key);
 
 		/// <summary>
@@ -203,6 +223,7 @@ namespace SE
 		/// </summary>
 		/// <param name="key">Key ID to check</param>
 		/// <returns>True during the frame the user starts pressing down the key</returns>
+		SE_FUNCTION(API())
 		static bool GetKeyDown(KeyboardKeys key);
 
 		/// <summary>
@@ -210,6 +231,7 @@ namespace SE
 		/// </summary>
 		/// <param name="key">Key ID to check</param>
 		/// <returns>True during the frame the user releases the key</returns>
+		SE_FUNCTION(API())
 		static bool GetKeyUp(KeyboardKeys key);
 
 	public:
@@ -217,36 +239,42 @@ namespace SE
 		/// Gets the mouse position in game window coordinates.
 		/// </summary>
 		/// <returns>Mouse cursor coordinates</returns>
+		SE_FUNCTION(API(Prop))
 		static Float2 GetMousePosition();
 
 		/// <summary>
 		/// Sets the mouse position in game window coordinates.
 		/// </summary>
 		/// <param name="position">Mouse position to set on</param>
+		SE_FUNCTION(API(Prop))
 		static void SetMousePosition(const Float2& position);
 
 		/// <summary>
 		/// Gets the mouse position in screen-space coordinates.
 		/// </summary>
 		/// <returns>Mouse cursor coordinates</returns>
+		SE_FUNCTION(API(Prop))
 		static Float2 GetMouseScreenPosition();
 
 		/// <summary>
 		/// Sets the mouse position in screen-space coordinates.
 		/// </summary>
 		/// <param name="position">Mouse position to set on</param>
+		SE_FUNCTION(API(Prop))
 		static void SetMouseScreenPosition(const Float2& position);
 
 		/// <summary>
 		/// Gets the mouse position change during the last frame.
 		/// </summary>
 		/// <returns>Mouse cursor position delta</returns>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		static Float2 GetMousePositionDelta();
 
 		/// <summary>
 		/// Gets the mouse wheel change during the last frame.
 		/// </summary>
 		/// <returns>Mouse wheel value delta</returns>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		static float GetMouseScrollDelta();
 
 		/// <summary>
@@ -254,6 +282,7 @@ namespace SE
 		/// </summary>
 		/// <param name="button">Mouse button to check</param>
 		/// <returns>True while the user holds down the button</returns>
+		SE_FUNCTION(API())
 		static bool GetMouseButton(MouseButton button);
 
 		/// <summary>
@@ -261,6 +290,7 @@ namespace SE
 		/// </summary>
 		/// <param name="button">Mouse button to check</param>
 		/// <returns>True during the frame the user starts pressing down the button</returns>
+		SE_FUNCTION(API())
 		static bool GetMouseButtonDown(MouseButton button);
 
 		/// <summary>
@@ -268,6 +298,7 @@ namespace SE
 		/// </summary>
 		/// <param name="button">Mouse button to check</param>
 		/// <returns>True during the frame the user releases the button</returns>
+		SE_FUNCTION(API())
 		static bool GetMouseButtonUp(MouseButton button);
 
 	public:
@@ -277,6 +308,7 @@ namespace SE
 		/// <param name="gamepadIndex">The gamepad index</param>
 		/// <param name="axis">Gamepad axis to check</param>
 		/// <returns>Axis value.</returns>
+		SE_FUNCTION(API())
 		static float GetGamepadAxis(int32 gamepadIndex, GamepadAxis axis);
 
 		/// <summary>
@@ -285,6 +317,7 @@ namespace SE
 		/// <param name="gamepadIndex">The gamepad index</param>
 		/// <param name="button">Gamepad button to check</param>
 		/// <returns>True if user holds down the button, otherwise false.</returns>
+		SE_FUNCTION(API())
 		static bool GetGamepadButton(int32 gamepadIndex, GamepadButton button);
 
 		/// <summary>
@@ -293,6 +326,7 @@ namespace SE
 		/// <param name="gamepadIndex">The gamepad index</param>
 		/// <param name="button">Gamepad button to check</param>
 		/// <returns>True if user starts pressing down the button, otherwise false.</returns>
+		SE_FUNCTION(API())
 		static bool GetGamepadButtonDown(int32 gamepadIndex, GamepadButton button);
 
 		/// <summary>
@@ -301,6 +335,7 @@ namespace SE
 		/// <param name="gamepadIndex">The gamepad index</param>
 		/// <param name="button">Gamepad button to check</param>
 		/// <returns>True if user releases the button, otherwise false.</returns>
+		SE_FUNCTION(API())
 		static bool GetGamepadButtonUp(int32 gamepadIndex, GamepadButton button);
 
 		/// <summary>
@@ -309,6 +344,7 @@ namespace SE
 		/// <param name="gamepad">The gamepad</param>
 		/// <param name="axis">Gamepad axis to check</param>
 		/// <returns>Axis value.</returns>
+		SE_FUNCTION(API())
 		static float GetGamepadAxis(InputGamepadIndex gamepad, GamepadAxis axis);
 
 		/// <summary>
@@ -317,6 +353,7 @@ namespace SE
 		/// <param name="gamepad">The gamepad</param>
 		/// <param name="button">Gamepad button to check</param>
 		/// <returns>True if user holds down the button, otherwise false.</returns>
+		SE_FUNCTION(API())
 		static bool GetGamepadButton(InputGamepadIndex gamepad, GamepadButton button);
 
 		/// <summary>
@@ -325,6 +362,7 @@ namespace SE
 		/// <param name="gamepad">The gamepad</param>
 		/// <param name="button">Gamepad button to check</param>
 		/// <returns>True if user starts pressing down the button, otherwise false.</returns>
+		SE_FUNCTION(API())
 		static bool GetGamepadButtonDown(InputGamepadIndex gamepad, GamepadButton button);
 
 		/// <summary>
@@ -333,6 +371,7 @@ namespace SE
 		/// <param name="gamepad">The gamepad</param>
 		/// <param name="button">Gamepad button to check</param>
 		/// <returns>True if user releases the button, otherwise false.</returns>
+		SE_FUNCTION(API())
 		static bool GetGamepadButtonUp(InputGamepadIndex gamepad, GamepadButton button);
 
 	public:
@@ -364,6 +403,7 @@ namespace SE
 		/// <param name="name">The action name.</param>
 		/// <returns>True if action has been triggered in the current frame (e.g. button pressed), otherwise false.</returns>
 		/// <seealso cref="ActionMappings"/>
+		SE_FUNCTION(API())
 		static bool GetAction(const StringView& name);
 
 		/// <summary>
@@ -372,6 +412,7 @@ namespace SE
 		/// <param name="name">The action name.</param>
 		/// <returns>A InputActionPhase determining the current phase of the Action (e.g If it was just pressed, is being held or just released).</returns>
 		/// <seealso cref="ActionMappings"/>
+		SE_FUNCTION(API())
 		static InputActionState GetActionState(const StringView& name);
 
 		/// <summary>
@@ -380,6 +421,7 @@ namespace SE
 		/// <param name="name">The action name.</param>
 		/// <returns>The current axis value (e.g for gamepads it's in the range -1..1). Value is smoothed to reduce artifacts.</returns>
 		/// <seealso cref="AxisMappings"/>
+		SE_FUNCTION(API())
 		static float GetAxis(const StringView& name);
 
 		/// <summary>
@@ -388,6 +430,7 @@ namespace SE
 		/// <param name="name">The action name.</param>
 		/// <returns>The current axis value (e.g for gamepads it's in the range -1..1). No smoothing applied.</returns>
 		/// <seealso cref="AxisMappings"/>
+		SE_FUNCTION(API())
 		static float GetAxisRaw(const StringView& name);
 
 	public:

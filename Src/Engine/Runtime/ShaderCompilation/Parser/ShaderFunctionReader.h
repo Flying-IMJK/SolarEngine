@@ -324,7 +324,7 @@ namespace SE::ShaderParser
 
                 // Shader Flag type
                 text.ReadToken(&token);
-                current.Flags.SetFlag(ParseShaderFlags(token));
+                current.Flags = EnumAddFlags(current.Flags, ParseShaderFlags(token));
             }
         };
 
@@ -430,7 +430,7 @@ namespace SE::ShaderParser
             }
 
             // Check if use this shader program
-            if (!current.Flags.IsFlag(ShaderFlags::Hidden) && current.MinFeatureLevel <= parser->GetFeatureLevel())
+            if (!EnumHasAnyFlags(current.Flags, ShaderFlags::Hidden) && current.MinFeatureLevel <= parser->GetFeatureLevel())
             {
                 // Cache read function
                 ShaderMetaReaderType::_cache.Add(current);
@@ -448,4 +448,3 @@ namespace SE::ShaderParser
 	{                                                                           \
 		result->shaderMetaMemberCollection.Add(_cache);                         \
 	}
-

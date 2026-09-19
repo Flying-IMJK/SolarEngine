@@ -21,7 +21,7 @@ namespace SE
 		/// <summary>
 		/// The shadows casting mode by this visual element.
 		/// </summary>
-		EnumFlags<ShadowsCastingMode> ShadowsMode = ShadowsCastingMode::All;
+		ShadowsCastingMode ShadowsMode = ShadowsCastingMode::All;
 
 		/// <summary>
 		/// The slot name.

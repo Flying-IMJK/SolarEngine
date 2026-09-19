@@ -18,7 +18,7 @@ namespace SE
 
 	bool PanelWithMargins::ContainsPoint(Float2& location, bool precise)
 	{
-		if (precise && BackgroundColor.a <= 0.0f) // Go through transparency
+		if (precise && BackgroundColor.A <= 0.0f) // Go through transparency
 			return false;
 		return ContainerControl::ContainsPoint(location, precise);
 	}

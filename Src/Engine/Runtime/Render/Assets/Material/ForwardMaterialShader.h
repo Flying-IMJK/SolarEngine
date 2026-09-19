@@ -23,22 +23,22 @@ namespace SE
             PipelineStateCache QuadOverdrawSkinned;
 #endif
 
-            FORCE_INLINE PipelineStateCache* GetPS(const EnumFlags<DrawPass> pass, const bool useSkinning)
+            FORCE_INLINE PipelineStateCache* GetPS(const DrawPass pass, const bool useSkinning)
             {
-                if (pass.Is(DrawPass::Depth))
+                if (pass == DrawPass::Depth)
                 {
                     return useSkinning ? &DepthSkinned : &Depth;
                 }
-                else if (pass.Is(DrawPass::Depth))
+                else if (pass == DrawPass::Depth)
                 {
                     return useSkinning ? &DistortionSkinned : &Distortion;
                 }
-                else if (pass.Is(DrawPass::Forward))
+                else if (pass == DrawPass::Forward)
                 {
                     return useSkinning ? &DefaultSkinned : &Default;
                 }
 #if SE_EDITOR
-                else if (pass.Is(DrawPass::QuadOverdraw))
+                else if (pass == DrawPass::QuadOverdraw)
                 {
                     return useSkinning ? &QuadOverdrawSkinned : &QuadOverdraw;
                 }
@@ -61,7 +61,7 @@ namespace SE
     private:
         Cache _cache;
         Cache _cacheInstanced;
-        EnumFlags<DrawPass> _drawModes = DrawPass::None;
+        DrawPass _drawModes = DrawPass::None;
 
     public:
         /// <summary>
@@ -75,7 +75,7 @@ namespace SE
 
     public:
         // [MaterialShader]
-        EnumFlags<DrawPass> GetDrawModes() const override;
+        DrawPass GetDrawModes() const override;
         bool CanUseInstancing(InstancingHandler& handler) const override;
         void Bind(BindParameters& params) override;
         void Unload() override;

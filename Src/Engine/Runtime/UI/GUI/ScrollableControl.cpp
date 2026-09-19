@@ -18,8 +18,8 @@ namespace SE
 				Matrix3x3 transform = child->GetCachedTransform();
 				if (hasViewOffset && child->IsScrollable)
 				{
-					transform.M31 += _viewOffset.x;
-					transform.M32 += _viewOffset.y;
+					transform.M31 += _viewOffset.X;
+					transform.M32 += _viewOffset.Y;
 				}
 
 				Render2D::PushTransform(transform);

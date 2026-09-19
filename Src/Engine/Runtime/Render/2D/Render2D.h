@@ -69,7 +69,7 @@ namespace SE
         /// <summary>
         /// The active rendering features flags.
         /// </summary>
-        static EnumFlags<RenderingFeatures> Features;
+        static RenderingFeatures Features;
 
         /// <summary>
         /// Called when frame rendering begins by the graphics device.

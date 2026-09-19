@@ -262,12 +262,12 @@ namespace SE
         /// <param name="view">The view matrix.</param>
         /// <param name="world">The world matrix.</param>
         /// <returns>The projected vector.</returns>
-        public Vector3 Project(Vector3 source, Matrix projection, Matrix view, Matrix world)
+        public Float3 Project(Float3 source, Matrix projection, Matrix view, Matrix world)
         {
             Matrix.Multiply(ref world, ref view, out Matrix matrix);
             Matrix.Multiply(ref matrix, ref projection, out matrix);
 
-            Project(ref source, ref matrix, out Vector3 vector);
+            Project(ref source, ref matrix, out Float3 vector);
             return vector;
         }
 
@@ -277,9 +277,9 @@ namespace SE
         /// <param name="source">The vector to project.</param>
         /// <param name="matrix">A combined WorldViewProjection matrix.</param>
         /// <param name="vector">The projected vector.</param>
-        public void Project(ref Vector3 source, ref Matrix matrix, out Vector3 vector)
+        public void Project(ref Float3 source, ref Matrix matrix, out Float3 vector)
         {
-            Vector3.Transform(ref source, ref matrix, out vector);
+            Float3.Transform(ref source, ref matrix, out vector);
             var w = source.X * matrix.M14 + source.Y * matrix.M24 + source.Z * matrix.M34 + matrix.M44;
 
             if (!Mathf.IsZero(w))
@@ -300,13 +300,13 @@ namespace SE
         /// <param name="view">The view matrix.</param>
         /// <param name="world">The world matrix.</param>
         /// <returns>The unprojected Vector.</returns>
-        public Vector3 Unproject(Vector3 source, Matrix projection, Matrix view, Matrix world)
+        public Float3 Unproject(Float3 source, Matrix projection, Matrix view, Matrix world)
         {
             Matrix.Multiply(ref world, ref view, out Matrix matrix);
             Matrix.Multiply(ref matrix, ref projection, out matrix);
             Matrix.Invert(ref matrix, out matrix);
 
-            Unproject(ref source, ref matrix, out Vector3 vector);
+            Unproject(ref source, ref matrix, out Float3 vector);
             return vector;
         }
 
@@ -316,14 +316,14 @@ namespace SE
         /// <param name="source">The vector to project.</param>
         /// <param name="matrix">An inverted combined WorldViewProjection matrix.</param>
         /// <param name="vector">The unprojected vector.</param>
-        public void Unproject(ref Vector3 source, ref Matrix matrix, out Vector3 vector)
+        public void Unproject(ref Float3 source, ref Matrix matrix, out Float3 vector)
         {
             vector.X = (source.X - X) / Width * 2f - 1f;
             vector.Y = -((source.Y - Y) / Height * 2f - 1f);
             vector.Z = (source.Z - MinDepth) / (MaxDepth - MinDepth);
 
             var w = vector.X * matrix.M14 + vector.Y * matrix.M24 + vector.Z * matrix.M34 + matrix.M44;
-            Vector3.Transform(ref vector, ref matrix, out vector);
+            Float3.Transform(ref vector, ref matrix, out vector);
 
             if (!Mathf.IsZero(w))
             {

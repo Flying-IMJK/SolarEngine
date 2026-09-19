@@ -399,7 +399,7 @@ namespace SE
 				},
 				[](const void* ptr, const Color& color)
 				{
-				  *(Half4*)ptr = Half4(color.r, color.g, color.b, color.a);
+				  *(Half4*)ptr = Half4(color.R, color.G, color.B, color.A);
 				},
 			},
 			{
@@ -411,7 +411,7 @@ namespace SE
 				},
 				[](const void* ptr, const Color& color)
 				{
-				  *(RGBA16UNorm*)ptr = RGBA16UNorm(color.r, color.g, color.b, color.a);
+				  *(RGBA16UNorm*)ptr = RGBA16UNorm(color.R, color.G, color.B, color.A);
 				}
 			},
 			{
@@ -419,11 +419,11 @@ namespace SE
 				sizeof(Float2),
 				[](const void* ptr)
 				{
-				  return Color(((Float2*)ptr)->x, ((Float2*)ptr)->y, 1.0f);
+				  return Color(((Float2*)ptr)->X, ((Float2*)ptr)->Y, 1.0f);
 				},
 				[](const void* ptr, const Color& color)
 				{
-				  *(Float2*)ptr = Float2(color.r, color.g);
+				  *(Float2*)ptr = Float2(color.R, color.G);
 				},
 			},
 			{
@@ -462,8 +462,8 @@ namespace SE
 				[](const void* ptr, const Color& color)
 				{
 				  uint8* rg = (uint8*)ptr;
-				  rg[0] = (uint8)(color.r * Max_uint8);
-				  rg[1] = (uint8)(color.g * Max_uint8);
+				  rg[0] = (uint8)(color.R * Max_uint8);
+				  rg[1] = (uint8)(color.G * Max_uint8);
 				},
 			},
 			{
@@ -472,11 +472,11 @@ namespace SE
 				[](const void* ptr)
 				{
 				  const Float2 rg = ((Half2*)ptr)->ToFloat2();
-				  return Color(rg.x, rg.y, 0, 1);
+				  return Color(rg.X, rg.Y, 0, 1);
 				},
 				[](const void* ptr, const Color& color)
 				{
-				  *(Half2*)ptr = Half2(color.r, color.g);
+				  *(Half2*)ptr = Half2(color.R, color.G);
 				},
 			},
 			{
@@ -485,11 +485,11 @@ namespace SE
 				[](const void* ptr)
 				{
 				  const Float2 rg = ((RG16UNorm*)ptr)->ToFloat2();
-				  return Color(rg.x, rg.y, 0, 1);
+				  return Color(rg.X, rg.Y, 0, 1);
 				},
 				[](const void* ptr, const Color& color)
 				{
-				  *(RG16UNorm*)ptr = RG16UNorm(color.r, color.g);
+				  *(RG16UNorm*)ptr = RG16UNorm(color.R, color.G);
 				},
 			},
 			{
@@ -501,7 +501,7 @@ namespace SE
 				},
 				[](const void* ptr, const Color& color)
 				{
-				  *(float*)ptr = color.r;
+				  *(float*)ptr = color.R;
 				},
 			},
 			{
@@ -513,7 +513,7 @@ namespace SE
 				},
 				[](const void* ptr, const Color& color)
 				{
-				  *(Half*)ptr = Float16Compressor::Compress(color.r);
+				  *(Half*)ptr = Float16Compressor::Compress(color.R);
 				},
 			},
 			{
@@ -525,7 +525,7 @@ namespace SE
 				},
 				[](const void* ptr, const Color& color)
 				{
-				  *(uint16*)ptr = (uint16)(color.r * Max_uint16);
+				  *(uint16*)ptr = (uint16)(color.R * Max_uint16);
 				},
 			},
 			{
@@ -537,7 +537,7 @@ namespace SE
 				},
 				[](const void* ptr, const Color& color)
 				{
-				  *(byte*)ptr = (byte)(color.r * Max_uint8);
+				  *(byte*)ptr = (byte)(color.R * Max_uint8);
 				},
 			},
 			{
@@ -550,7 +550,7 @@ namespace SE
 				},
 				[](const void* ptr, const Color& color)
 				{
-				  *(Color32*)ptr = Color32(byte(color.b * Max_uint8), byte(color.g * Max_uint8), byte(color.r * Max_uint8), byte(color.a * Max_uint8));
+				  *(Color32*)ptr = Color32(byte(color.B * Max_uint8), byte(color.G * Max_uint8), byte(color.R * Max_uint8), byte(color.A * Max_uint8));
 				},
 			},
 			{
@@ -564,7 +564,7 @@ namespace SE
 				[](const void* ptr, const Color& color)
 				{
 				  Color srgb = Color::LinearToSrgb(color);
-				  *(Color32*)ptr = Color32(byte(srgb.b * Max_uint8), byte(srgb.g * Max_uint8), byte(srgb.r * Max_uint8), byte(srgb.a * Max_uint8));
+				  *(Color32*)ptr = Color32(byte(srgb.B * Max_uint8), byte(srgb.G * Max_uint8), byte(srgb.R * Max_uint8), byte(srgb.A * Max_uint8));
 				},
 			},
 			{
@@ -573,11 +573,11 @@ namespace SE
 				[](const void* ptr)
 				{
 				  const Float3 rgb = ((FloatR11G11B10*)ptr)->ToFloat3();
-				  return Color(rgb.x, rgb.y, rgb.z);
+				  return Color(rgb.X, rgb.Y, rgb.Z);
 				},
 				[](const void* ptr, const Color& color)
 				{
-				  *(FloatR11G11B10*)ptr = FloatR11G11B10(color.r, color.g, color.b);
+				  *(FloatR11G11B10*)ptr = FloatR11G11B10(color.R, color.G, color.B);
 				},
 			},
 			{
@@ -586,11 +586,11 @@ namespace SE
 				[](const void* ptr)
 				{
 				  const Float3 rgb = ((Float1010102*)ptr)->ToFloat3();
-				  return Color(rgb.x, rgb.y, rgb.z);
+				  return Color(rgb.X, rgb.Y, rgb.Z);
 				},
 				[](const void* ptr, const Color& color)
 				{
-				  *(Float1010102*)ptr = Float1010102(color.r, color.g, color.b, color.a);
+				  *(Float1010102*)ptr = Float1010102(color.R, color.G, color.B, color.A);
 				},
 			},
 		};
@@ -616,9 +616,9 @@ namespace SE
 		ASSERT_LOW_LAYER(sampler);
 
 		const Int2 end = size - 1;
-		const Int2 uvFloor(Math::Min(Math::FloorToInt(uv.x * size.x), end.x), Math::Min(Math::FloorToInt(uv.y * size.y), end.y));
+		const Int2 uvFloor(Math::Min(Math::FloorToInt(uv.X * size.X), end.X), Math::Min(Math::FloorToInt(uv.Y * size.Y), end.Y));
 
-		return sampler->Sample((byte*)data + rowPitch * uvFloor.y + sampler->PixelSize * uvFloor.x);
+		return sampler->Sample((byte*)data + rowPitch * uvFloor.Y + sampler->PixelSize * uvFloor.X);
 	}
 
 	Color TextureUtils::SamplePoint(const PixelFormatSampler* sampler, int32 x, int32 y, const void* data, int32 rowPitch)
@@ -632,16 +632,16 @@ namespace SE
 		ASSERT_LOW_LAYER(sampler);
 
 		const Int2 end = size - 1;
-		const Int2 uvFloor(Math::Min(Math::FloorToInt(uv.x * size.x), end.x), Math::Min(Math::FloorToInt(uv.y * size.y), end.y));
-		const Int2 uvNext(Math::Min(uvFloor.x + 1, end.x), Math::Min(uvFloor.y + 1, end.y));
-		const Float2 uvFraction(uv.x * size.y - uvFloor.x, uv.y * size.y - uvFloor.y);
+		const Int2 uvFloor(Math::Min(Math::FloorToInt(uv.X * size.X), end.X), Math::Min(Math::FloorToInt(uv.Y * size.Y), end.Y));
+		const Int2 uvNext(Math::Min(uvFloor.X + 1, end.X), Math::Min(uvFloor.Y + 1, end.Y));
+		const Float2 uvFraction(uv.X * size.Y - uvFloor.X, uv.Y * size.Y - uvFloor.Y);
 
-		const Color v00 = sampler->Sample((byte*)data + rowPitch * uvFloor.y + sampler->PixelSize * uvFloor.x);
-		const Color v01 = sampler->Sample((byte*)data + rowPitch * uvFloor.y + sampler->PixelSize * uvNext.x);
-		const Color v10 = sampler->Sample((byte*)data + rowPitch * uvNext.y + sampler->PixelSize * uvFloor.x);
-		const Color v11 = sampler->Sample((byte*)data + rowPitch * uvNext.y + sampler->PixelSize * uvNext.x);
+		const Color v00 = sampler->Sample((byte*)data + rowPitch * uvFloor.Y + sampler->PixelSize * uvFloor.X);
+		const Color v01 = sampler->Sample((byte*)data + rowPitch * uvFloor.Y + sampler->PixelSize * uvNext.X);
+		const Color v10 = sampler->Sample((byte*)data + rowPitch * uvNext.Y + sampler->PixelSize * uvFloor.X);
+		const Color v11 = sampler->Sample((byte*)data + rowPitch * uvNext.Y + sampler->PixelSize * uvNext.X);
 
-		return Color::Lerp(Color::Lerp(v00, v01, uvFraction.x), Color::Lerp(v10, v11, uvFraction.x), uvFraction.y);
+		return Color::Lerp(Color::Lerp(v00, v01, uvFraction.X), Color::Lerp(v10, v11, uvFraction.X), uvFraction.Y);
 	}
 
 	PixelFormat TextureUtils::ToPixelFormat(TextureFormatType format, int32 width, int32 height, bool canCompress)

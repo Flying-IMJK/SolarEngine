@@ -143,8 +143,9 @@ namespace SE
 
 	void Actor::SetStaticFlag(StaticMask flag, bool value)
 	{
-		if (m_StaticFlags.IsFlag(flag) != value)
+		if (EnumHasAnyFlags(m_StaticFlags, flag) != value)
 		{
+			m_StaticFlags = value ? EnumAddFlags(m_StaticFlags, flag) : EnumRemoveFlags(m_StaticFlags, flag);
 			OnStaticFlagsChanged();
 		}
 	}

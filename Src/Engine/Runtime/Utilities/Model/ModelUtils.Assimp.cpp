@@ -362,7 +362,7 @@ namespace SE
         }
 
         // Blend Indices and Blend Weights
-        if (aMesh->mNumBones > 0 && aMesh->mBones && data.Options.ImportTypes.IsFlag(ImportDataTypes::Skeleton))
+        if (aMesh->mNumBones > 0 && aMesh->mBones && EnumHasAnyFlags(data.Options.ImportTypes, ImportDataTypes::Skeleton))
         {
             const int32 vertexCount = mesh.Positions.Count();
             mesh.BlendIndices.Resize(vertexCount);
@@ -443,7 +443,7 @@ namespace SE
         }
 
         // Blend Shapes
-        if (aMesh->mNumAnimMeshes > 0 && data.Options.ImportTypes.IsFlag(ImportDataTypes::Skeleton) && data.Options.ImportBlendShapes)
+        if (aMesh->mNumAnimMeshes > 0 && EnumHasAnyFlags(data.Options.ImportTypes, ImportDataTypes::Skeleton) && data.Options.ImportBlendShapes)
         {
             mesh.BlendShapes.EnsureCapacity(aMesh->mNumAnimMeshes);
             for (unsigned int animMeshIndex = 0; animMeshIndex < aMesh->mNumAnimMeshes; animMeshIndex++)
@@ -572,7 +572,7 @@ namespace SE
                 materialSlot.Name = String(aName.C_Str()).TrimTrailing();
             materialSlot.AssetID = UID::Empty;
 
-            if (data.Options.ImportTypes.IsFlag(ImportDataTypes::Materials))
+            if (EnumHasAnyFlags(data.Options.ImportTypes, ImportDataTypes::Materials))
             {
                 aiColor3D aColor;
                 if (aMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, aColor) == AI_SUCCESS)
@@ -584,7 +584,7 @@ namespace SE
                 if (aMaterial->Get(AI_MATKEY_OPACITY, aFloat) == AI_SUCCESS)
                     materialSlot.Opacity.Value = aFloat;
 
-                if (data.Options.ImportTypes.IsFlag(ImportDataTypes::Textures))
+            if (EnumHasAnyFlags(data.Options.ImportTypes, ImportDataTypes::Textures))
                 {
                     ImportMaterialTexture(result, data, aMaterial, aiTextureType_DIFFUSE, materialSlot.Diffuse.TextureIndex, TextureEntry::TypeHint::ColorRGB);
                     ImportMaterialTexture(result, data, aMaterial, aiTextureType_EMISSIVE, materialSlot.Emissive.TextureIndex, TextureEntry::TypeHint::ColorRGB);
@@ -745,8 +745,8 @@ namespace SE
             AssimpInited = true;
             LOG_INFO("Resource", "Assimp {0}.{1}.{2}", aiGetVersionMajor(), aiGetVersionMinor(), aiGetVersionRevision());
         }
-        bool importMeshes = options.ImportTypes.IsFlag(ImportDataTypes::Geometry);
-        bool importAnimations = options.ImportTypes.IsFlag(ImportDataTypes::Animations);
+        bool importMeshes = EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry);
+        bool importAnimations = EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Animations);
         AssimpImporterData context(path, options);
 
         // Setup import flags
@@ -817,7 +817,7 @@ namespace SE
         }
 
         // Import geometry
-        if (options.ImportTypes.IsFlag(ImportDataTypes::Geometry) && context.Scene->HasMeshes())
+        if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && context.Scene->HasMeshes())
         {
             for (unsigned meshIndex = 0; meshIndex < context.Scene->mNumMeshes; meshIndex++)
             {
@@ -866,7 +866,7 @@ namespace SE
         }*/
 
         // Import nodes
-        if (options.ImportTypes.IsFlag(ImportDataTypes::Nodes))
+        if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Nodes))
         {
             data.Nodes.Resize(context.Nodes.Count());
             for (int32 i = 0; i < context.Nodes.Count(); i++)

@@ -53,7 +53,7 @@ namespace SE
 			if (!m_SwapChain)
 				return false;
 		}
-		if (!m_SwapChain->Resize(static_cast<int32>(m_ClientSize.x), static_cast<int32>(m_ClientSize.y)))
+		if (!m_SwapChain->Resize(static_cast<int32>(m_ClientSize.X), static_cast<int32>(m_ClientSize.Y)))
 			return false;
 
 		if (m_Settings.Fullscreen)
@@ -151,7 +151,7 @@ namespace SE
 	void GraphicWindow::ResizeInternal(Float2 size)
 	{
 		float dpiScale = GetDpiScale();
-		Float2 logicalSize(size.x / dpiScale, size.y / dpiScale);
+		Float2 logicalSize(size.X / dpiScale, size.Y / dpiScale);
         m_GUI->Size = logicalSize;
 	}
 

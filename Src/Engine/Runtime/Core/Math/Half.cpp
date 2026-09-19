@@ -75,26 +75,26 @@ namespace SE
 
 	Half4::Half4(const Float4& v)
 	{
-		x = Float16Compressor::Compress(v.x);
-		y = Float16Compressor::Compress(v.y);
-		z = Float16Compressor::Compress(v.z);
-		w = Float16Compressor::Compress(v.w);
+		x = Float16Compressor::Compress(v.X);
+		y = Float16Compressor::Compress(v.Y);
+		z = Float16Compressor::Compress(v.Z);
+		w = Float16Compressor::Compress(v.W);
 	}
 
 	Half4::Half4(const Color& c)
 	{
-		x = Float16Compressor::Compress(c.r);
-		y = Float16Compressor::Compress(c.g);
-		z = Float16Compressor::Compress(c.b);
-		w = Float16Compressor::Compress(c.a);
+		x = Float16Compressor::Compress(c.R);
+		y = Float16Compressor::Compress(c.G);
+		z = Float16Compressor::Compress(c.B);
+		w = Float16Compressor::Compress(c.A);
 	}
 
 	Half4::Half4(const Rectangle& rect)
 	{
-		x = Float16Compressor::Compress(rect.Location.x);
-		y = Float16Compressor::Compress(rect.Location.y);
-		z = Float16Compressor::Compress(rect.Size.x);
-		w = Float16Compressor::Compress(rect.Size.y);
+		x = Float16Compressor::Compress(rect.Location.X);
+		y = Float16Compressor::Compress(rect.Location.Y);
+		z = Float16Compressor::Compress(rect.Size.X);
+		w = Float16Compressor::Compress(rect.Size.Y);
 	}
 
 	Float2 Half4::ToFloat2() const

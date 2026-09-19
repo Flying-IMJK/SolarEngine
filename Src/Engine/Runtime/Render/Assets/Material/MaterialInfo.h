@@ -353,12 +353,12 @@ namespace SE
         /// <summary>
         /// The usage flags.
         /// </summary>
-        EnumFlags<MaterialUsage> UsageFlags;
+        MaterialUsage UsageFlags;
 
         /// <summary>
         /// The features usage flags.
         /// </summary>
-        EnumFlags<MaterialFeatures> FeaturesFlags;
+        MaterialFeatures FeaturesFlags;
 
         /// <summary>
         /// The decal material blending mode.

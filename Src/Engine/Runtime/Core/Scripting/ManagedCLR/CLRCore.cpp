@@ -43,9 +43,6 @@ namespace SE
     CLRClass* CLRCore::TypeCache::Activator = nullptr;
     CLRClass* CLRCore::TypeCache::Type = nullptr;
 
-    CLRClass* CLRCore::TypeCache::Vector2 = nullptr;
-    CLRClass* CLRCore::TypeCache::Vector3 = nullptr;
-    CLRClass* CLRCore::TypeCache::Vector4 = nullptr;
     CLRClass* CLRCore::TypeCache::Color = nullptr;
     CLRClass* CLRCore::TypeCache::Transform = nullptr;
     CLRClass* CLRCore::TypeCache::Quaternion = nullptr;

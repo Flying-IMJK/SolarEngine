@@ -146,13 +146,13 @@ namespace SE::Editor
 			if (endNodeRect.GetTop() - Math::EPSILON <= selectionRect.GetTop())
 			{
 				float diff = selectionRect.GetTop() - endNodeRect.GetTop();
-				selectionRect.Location.y -= diff;
-				selectionRect.Size.y += diff;
+				selectionRect.Location.Y -= diff;
+				selectionRect.Size.Y += diff;
 			}
 			else if (endNodeRect.GetBottom() + Math::EPSILON >= selectionRect.GetBottom())
 			{
 				float diff = endNodeRect.GetBottom() - selectionRect.GetBottom();
-				selectionRect.Size.y += diff;
+				selectionRect.Size.Y += diff;
 			}
 			Selection.Clear();
 			WalkSelectRangeExpandedTree(Selection, TypeTryCast<TreeNode>(m_Children[0]), selectionRect);

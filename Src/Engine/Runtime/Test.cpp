@@ -315,7 +315,7 @@ namespace SE
 			if (positionDescription.Stride != sizeof(VB0ElementType) ||
 				positionDescription.Size != sizeof(positionData) ||
 				positionDescription.InitData != positionData ||
-				!positionDescription.Flags.IsFlag(GPUBufferFlags::VertexBuffer))
+				!EnumHasAllFlags(positionDescription.Flags, GPUBufferFlags::VertexBuffer))
 			{
 				LOG_ERROR("Test", "StaticMesh VertexFactory produced an invalid vertex buffer description.");
 				return;

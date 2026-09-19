@@ -29,7 +29,7 @@ namespace SE
 		}
 	}
 
-	Button::Button(Float2 location, Float2 size) : ContainerControl(location.x, location.y, size.x, size.y)
+	Button::Button(Float2 location, Float2 size) : ContainerControl(location.X, location.Y, size.X, size.Y)
 	{
 	}
 

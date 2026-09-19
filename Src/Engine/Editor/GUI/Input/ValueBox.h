@@ -199,7 +199,7 @@ namespace SE::Editor
             {
                 // Update sliding
                 Float2 slideLocation = location + Root->GetTrackingMouseOffset();
-                ApplySliding(Math::RoundToInt(slideLocation.x - _startSlideLocation.x) * _slideSpeed);
+                ApplySliding(Math::RoundToInt(slideLocation.X - _startSlideLocation.X) * _slideSpeed);
                 return;
             }
 
@@ -347,7 +347,7 @@ namespace SE::Editor
             Rectangle result = TextBox::TextRectangle;
             if (CanUseSliding)
             {
-                result.Size.x -= SlidingBoxSize;
+                result.Size.X -= SlidingBoxSize;
             }
             return result;
         }
@@ -366,7 +366,7 @@ namespace SE::Editor
             Rectangle result = TextBox::__GetTextRectangle();
             if (CanUseSliding)
             {
-                result.Size.x -= SlidingBoxSize;
+                result.Size.X -= SlidingBoxSize;
             }
             return result;
         }

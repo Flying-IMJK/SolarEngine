@@ -319,10 +319,10 @@ namespace SE::Editor
 			targetDesc.format = SLANG_TARGET_UNKNOWN;
 			targetDesc.profile = pSlangGlobalSession->findProfile("sm_6_0");
 
-			EnumFlags<SlangCompilerFlags> compilerFlags;
+			SlangCompilerFlags compilerFlags = SlangCompilerFlags::None;
 			// Set floating point mode. If no shader compiler flags for this were set, we use Slang's default mode.
-			bool flagFast = compilerFlags.IsFlag(SlangCompilerFlags::FloatingPointModeFast);
-			bool flagPrecise = compilerFlags.IsFlag(SlangCompilerFlags::FloatingPointModePrecise);
+			bool flagFast = EnumHasAnyFlags(compilerFlags, SlangCompilerFlags::FloatingPointModeFast);
+			bool flagPrecise = EnumHasAnyFlags(compilerFlags, SlangCompilerFlags::FloatingPointModePrecise);
 			if (flagFast && flagPrecise)
 			{
 				flagFast = false;
@@ -361,7 +361,7 @@ namespace SE::Editor
 			// to allow it to compute correct reflection information. Slang then invokes the downstream compiler.
 			// Column major option can be useful when compiling external shader sources that don't depend
 			// on anything Falcor.
-			bool useColumnMajor = compilerFlags.IsFlag(SlangCompilerFlags::MatrixLayoutColumnMajor);
+			bool useColumnMajor = EnumHasAnyFlags(compilerFlags, SlangCompilerFlags::MatrixLayoutColumnMajor);
 			addIntOption(useColumnMajor ? slang::CompilerOptionName::MatrixLayoutColumn : slang::CompilerOptionName::MatrixLayoutRow, 1);
 
 			// New versions of slang default to short-circuiting for logical and/or operators.

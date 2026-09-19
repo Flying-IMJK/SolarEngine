@@ -80,7 +80,7 @@ namespace SE
 
 		if (_splitterClicked)
 		{
-			SplitterValue = _orientation == Orientation::Horizontal ? location.x / Width : location.y / Height;
+			SplitterValue = _orientation == Orientation::Horizontal ? location.X / Width : location.Y / Height;
 			Cursor = _orientation == Orientation::Horizontal ? CursorType::SizeWE : CursorType::SizeNS;
 			_cursorChanged = true;
 		}

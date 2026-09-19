@@ -303,37 +303,41 @@ namespace SE
 
     // Converter for Asset References.
     template<typename T>
-    class AssetReference;
+    class AssetRef;
 
     template<typename T>
-    struct CLRConverter<AssetReference<T>>
+    struct CLRConverter<AssetRef<T>>
     {
-        CLRObject* Box(const AssetReference<T>& data, const CLRClass* klass)
+        CLRObject* Box(const AssetRef<T>& data, const CLRClass* klass)
         {
             return data.GetManagedInstance();
         }
 
-        void Unbox(AssetReference<T>& result, CLRObject* data)
+        void Unbox(AssetRef<T>& result, CLRObject* data)
         {
             result = (T*)ScriptingObject::ToNative(data);
         }
 
-        void ToManagedArray(CLRArray* result, const Span<AssetReference<T>>& data)
+        void ToManagedArray(CLRArray* result, const Span<AssetRef<T>>& data)
         {
             if (data.Length() == 0)
                 return;
             CLRObject** objects = (CLRObject**)PlatformAllocator::Allocate(data.Length() * sizeof(CLRObject*));
             for (int32 i = 0; i < data.Length(); i++)
+            {
                 objects[i] = data[i].GetManagedInstance();
+            }
             CLRCore::GC::WriteArrayRef(result, Span<CLRObject*>(objects, data.Length()));
             PlatformAllocator::Free(objects);
         }
 
-        void ToNativeArray(Span<AssetReference<T>>& result, const CLRArray* data)
+        void ToNativeArray(Span<AssetRef<T>>& result, const CLRArray* data)
         {
             CLRObject** dataPtr = CLRCore::Array::GetAddress<CLRObject*>(data);
             for (int32 i = 0; i < result.Length(); i++)
+            {
                 result.Get()[i] = (T*)ScriptingObject::ToNative(dataPtr[i]);
+            }
         }
     };
 

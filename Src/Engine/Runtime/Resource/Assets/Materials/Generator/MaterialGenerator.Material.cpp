@@ -179,7 +179,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     // Vertex Color
     case 12:
         value = getVertexColor;
-        _treeLayer->UsageFlags.SetFlag(MaterialUsage::UseVertexColor);
+        _treeLayer->UsageFlags = EnumAddFlags(_treeLayer->UsageFlags, MaterialUsage::UseVertexColor);
         break;
     // Pre-skinned Local Position
     case 13:

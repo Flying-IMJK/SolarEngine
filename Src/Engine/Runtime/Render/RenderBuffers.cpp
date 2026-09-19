@@ -97,7 +97,7 @@ LastFrame##name = 0; \
         {
             // Missing buffer
             auto tempDesc = GPUTextureDescription::New2D(halfDepthWidth, halfDepthHeight, halfDepthFormat);
-            tempDesc.Flags = GPUTextureBitFlags(GPUTextureFlags::ShaderResource, GPUTextureFlags::DepthStencil);
+            tempDesc.Flags = EnumCombineFlags(GPUTextureFlags::ShaderResource, GPUTextureFlags::DepthStencil);
             HalfResDepth = RenderTargetPool::Get(tempDesc);
             RENDER_TARGET_POOL_SET_NAME(HalfResDepth, "HalfResDepth");
         }
@@ -106,7 +106,7 @@ LastFrame##name = 0; \
             // Wrong size buffer
             RenderTargetPool::Release(HalfResDepth);
             auto tempDesc = GPUTextureDescription::New2D(halfDepthWidth, halfDepthHeight, halfDepthFormat);
-            tempDesc.Flags = GPUTextureBitFlags(GPUTextureFlags::ShaderResource, GPUTextureFlags::DepthStencil);
+            tempDesc.Flags = EnumCombineFlags(GPUTextureFlags::ShaderResource, GPUTextureFlags::DepthStencil);
             HalfResDepth = RenderTargetPool::Get(tempDesc);
             RENDER_TARGET_POOL_SET_NAME(HalfResDepth, "HalfResDepth");
         }
@@ -163,16 +163,16 @@ LastFrame##name = 0; \
         bool result = false;
 
         // Debug Buffer
-        GPUTextureDescription desc = GPUTextureDescription::New2D(width, height, GPU_DEPTH_BUFFER_PIXEL_FORMAT, GPUTextureBitFlags(GPUTextureFlags::ShaderResource, GPUTextureFlags::DepthStencil));
+        GPUTextureDescription desc = GPUTextureDescription::New2D(width, height, GPU_DEPTH_BUFFER_PIXEL_FORMAT, EnumCombineFlags(GPUTextureFlags::ShaderResource, GPUTextureFlags::DepthStencil));
         if (GPUDevice::instance->GetGPULimits().HasReadOnlyDepth)
-            desc.Flags.SetFlag(GPUTextureFlags::ReadOnlyDepthView);
+            desc.Flags = EnumAddFlags(desc.Flags, GPUTextureFlags::ReadOnlyDepthView);
         result |= DepthBuffer->Init(desc);
 
         // MotionBlurPass initializes MotionVectors texture if needed (lazy init - not every game needs it)
         MotionVectors->ReleaseGPU();
 
         // GBuffer 0
-        desc.Flags = GPUTextureBitFlags(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget);
+        desc.Flags = EnumCombineFlags(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget);
         desc.Format = GBUFFER0_FORMAT;
         desc.DefaultClearColor = Colors::Transparent;
         result |= GBuffer0->Init(desc);

@@ -42,17 +42,20 @@ namespace SE
 		/// <summary>
 		/// The draw passes to use for rendering this object.
 		/// </summary>
-		EnumFlags<DrawPass> DrawModes = DrawPass::Default;
+		SE_FIELD(API(Attributes="EditorOrder(15), DefaultValue(DrawPass.Default), EditorDisplay(\"Model\")"))
+		DrawPass DrawModes = DrawPass::Default;
 
 	public:
 		/// <summary>
 		/// Gets the model Level Of Detail bias value. Allows to increase or decrease rendered model quality.
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		int32 GetLODBias() const;
 
 		/// <summary>
 		/// Sets the model Level Of Detail bias value. Allows to increase or decrease rendered model quality.
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		void SetLODBias(int32 value);
 
 		/// <summary>
@@ -61,6 +64,7 @@ namespace SE
 		/// <param name="meshIndex">The zero-based mesh index.</param>
 		/// <param name="lodIndex">The LOD index.</param>
 		/// <returns>Material or null if not assigned.</returns>
+		SE_FUNCTION(API())
 		MaterialBase* GetMaterial(int32 meshIndex, int32 lodIndex) const;
 
 

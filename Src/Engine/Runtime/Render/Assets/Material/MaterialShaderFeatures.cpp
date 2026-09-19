@@ -17,7 +17,7 @@ namespace SE
         const int32 envProbeShaderRegisterIndex = srv + 0;
         const int32 skyLightShaderRegisterIndex = srv + 1;
         const int32 dirLightShaderRegisterIndex = srv + 2;
-        const bool canUseShadow = !view.Pass.Is(DrawPass::Depth);
+        const bool canUseShadow = view.Pass != DrawPass::Depth;
 
         // Set fog input
         /*if (cache->Fog)

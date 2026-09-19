@@ -87,7 +87,7 @@ namespace SE
     bool GUIMaterialShader::OnLoad()
     {
         GPUPipelineState::Description psDesc0 = GPUPipelineState::Description::DefaultFullscreenTriangle;
-        psDesc0.Wireframe = m_Info.FeaturesFlags.IsFlag(MaterialFeatures::Wireframe);
+        psDesc0.Wireframe = EnumHasAnyFlags(m_Info.FeaturesFlags, MaterialFeatures::Wireframe);
         psDesc0.VS = m_Shader->GetVS(SE_TEXT("VS_GUI"));
         psDesc0.PS = m_Shader->GetPS(SE_TEXT("PS_GUI"));
         psDesc0.BlendMode = BlendingMode::AlphaBlend;

@@ -51,13 +51,13 @@ namespace SE::Editor
 		if (_icon.IsValid())
 		{
 			Render2D::DrawSprite(_icon, iconRect, enabled ? style->Foreground : style->ForegroundDisabled);
-			textRect.Location.x += iconSize + DefaultMargin;
+			textRect.Location.X += iconSize + DefaultMargin;
 		}
 
 		// Draw text
 		if (_text.Length() > 0)
 		{
-			textRect.Size.x = Width - DefaultMargin - textRect.GetLeft();
+			textRect.Size.X = Width - DefaultMargin - textRect.GetLeft();
 			Render2D::RenderText(style->FontMedium, _text, textRect, enabled ? style->TextColor : style->ForegroundDisabled,
 				TextAlignment::Near, TextAlignment::Center);
 		}
@@ -73,7 +73,7 @@ namespace SE::Editor
 		if (hasSprite)
 			width += iconSize;
 		if (_text.Length() > 0 && style->FontMedium)
-			width += style->FontMedium->MeasureText(_text).x + (hasSprite ? DefaultMargin : 0);
+			width += style->FontMedium->MeasureText(_text).X + (hasSprite ? DefaultMargin : 0);
 
 		Width = width;
 	}

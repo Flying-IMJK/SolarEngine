@@ -450,7 +450,7 @@ namespace SE
 		}
 
 		// Read-only depth-stencil
-		if (m_Desc.Flags.IsFlag(GPUTextureFlags::ReadOnlyDepthView))
+		if (EnumHasAnyFlags(m_Desc.Flags, GPUTextureFlags::ReadOnlyDepthView))
 		{
 			m_HandleReadOnlyDepth.Init(m_Device, this, m_Image, mipLevels, format, msaa, extent, VK_IMAGE_VIEW_TYPE_2D, mipLevels, 0, 1, 0, true);
 		}

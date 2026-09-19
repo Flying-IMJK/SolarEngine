@@ -17,10 +17,10 @@ namespace SE
 {
 	AssetRefBase::~AssetRefBase()
 	{
-		Asset* asset = _asset;
+		Asset* asset = m_Asset;
 		if (asset)
 		{
-			_asset = nullptr;
+			m_Asset = nullptr;
 			asset->OnLoadedEvent.Unbind<AssetRefBase, &AssetRefBase::OnLoaded>(this);
 			asset->OnUnloadedEvent.Unbind<AssetRefBase, &AssetRefBase::OnUnloaded>(this);
 			asset->RemoveReference();
@@ -29,12 +29,12 @@ namespace SE
 
 	String AssetRefBase::ToString() const
 	{
-		return _asset ? _asset->ToString() : SE_TEXT("<null>");
+		return m_Asset ? m_Asset->ToString() : SE_TEXT("<null>");
 	}
 
 	void AssetRefBase::OnSet(Asset* asset)
 	{
-		auto temp = _asset;
+		auto temp = m_Asset;
 		if (temp != asset)
 		{
 			if (temp)
@@ -43,7 +43,7 @@ namespace SE
 				temp->OnUnloadedEvent.Unbind<AssetRefBase, &AssetRefBase::OnUnloaded>(this);
 				temp->RemoveReference();
 			}
-			_asset = temp = asset;
+			m_Asset = temp = asset;
 			if (temp)
 			{
 				temp->AddReference();
@@ -58,14 +58,14 @@ namespace SE
 
 	void AssetRefBase::OnLoaded(Asset* asset)
 	{
-		if (_asset != asset)
+		if (m_Asset != asset)
 			return;
 		Loaded();
 	}
 
 	void AssetRefBase::OnUnloaded(Asset* asset)
 	{
-		if (_asset != asset)
+		if (m_Asset != asset)
 			return;
 		Unload();
 		OnSet(nullptr);
@@ -73,34 +73,34 @@ namespace SE
 
 	SoftAssetRefBase::~SoftAssetRefBase()
 	{
-		Asset* asset = _asset;
+		Asset* asset = m_Asset;
 		if (asset)
 		{
-			_asset = nullptr;
+			m_Asset = nullptr;
 			asset->OnUnloadedEvent.Unbind<SoftAssetRefBase, &SoftAssetRefBase::OnUnloaded>(this);
 			asset->RemoveReference();
 		}
 #if !BUILD_RELEASE
-		_id = UID::Empty;
+		m_ID = UID::Empty;
 #endif
 	}
 
 	String SoftAssetRefBase::ToString() const
 	{
-		return _asset ? _asset->ToString() : (_id.IsValid() ? _id.ToString() : SE_TEXT("<null>"));
+		return m_Asset ? m_Asset->ToString() : (m_ID.IsValid() ? m_ID.ToString() : SE_TEXT("<null>"));
 	}
 
 	void SoftAssetRefBase::OnSet(Asset* asset)
 	{
-		if (_asset == asset)
+		if (m_Asset == asset)
 			return;
-		if (_asset)
+		if (m_Asset)
 		{
-			_asset->OnUnloadedEvent.Unbind<SoftAssetRefBase, &SoftAssetRefBase::OnUnloaded>(this);
-			_asset->RemoveReference();
+			m_Asset->OnUnloadedEvent.Unbind<SoftAssetRefBase, &SoftAssetRefBase::OnUnloaded>(this);
+			m_Asset->RemoveReference();
 		}
-		_asset = asset;
-		_id = asset ? asset->GetID() : UID::Empty;
+		m_Asset = asset;
+		m_ID = asset ? asset->GetID() : UID::Empty;
 		if (asset)
 		{
 			asset->AddReference();
@@ -111,52 +111,63 @@ namespace SE
 
 	void SoftAssetRefBase::OnSet(const UID& id)
 	{
-		if (_id == id)
+		if (m_ID == id)
 			return;
-		if (_asset)
+		if (m_Asset)
 		{
-			_asset->OnUnloadedEvent.Unbind<SoftAssetRefBase, &SoftAssetRefBase::OnUnloaded>(this);
-			_asset->RemoveReference();
+			m_Asset->OnUnloadedEvent.Unbind<SoftAssetRefBase, &SoftAssetRefBase::OnUnloaded>(this);
+			m_Asset->RemoveReference();
 		}
-		_asset = nullptr;
-		_id = id;
+		m_Asset = nullptr;
+		m_ID = id;
 		Changed();
 	}
 
 	void SoftAssetRefBase::OnUnloaded(Asset* asset)
 	{
-		if (_asset != asset)
+		if (m_Asset != asset)
 			return;
-		_asset->RemoveReference();
-		_asset->OnUnloadedEvent.Unbind<SoftAssetRefBase, &SoftAssetRefBase::OnUnloaded>(this);
-		_asset = nullptr;
-		_id = UID::Empty;
+		m_Asset->RemoveReference();
+		m_Asset->OnUnloadedEvent.Unbind<SoftAssetRefBase, &SoftAssetRefBase::OnUnloaded>(this);
+		m_Asset = nullptr;
+		m_ID = UID::Empty;
 		Changed();
+	}
+
+	void SoftAssetRefBase::OnResolve(const ScriptingTypeHandle& type)
+	{
+		ENGINE_ASSERT(!m_Asset);
+		m_Asset = AssetContent::LoadAsync(m_ID, type);
+		if (m_Asset)
+		{
+			m_Asset->OnUnloadedEvent.Bind<SoftAssetRefBase, &SoftAssetRefBase::OnUnloaded>(this);
+			m_Asset->AddReference();
+		}
 	}
 
 	WeakAssetRefBase::~WeakAssetRefBase()
 	{
-		Asset* asset = _asset;
+		Asset* asset = m_Asset;
 		if (asset)
 		{
-			_asset = nullptr;
+			m_Asset = nullptr;
 			asset->OnUnloadedEvent.Unbind<WeakAssetRefBase, &WeakAssetRefBase::OnUnloaded>(this);
 		}
 	}
 
 	String WeakAssetRefBase::ToString() const
 	{
-		return _asset ? _asset->ToString() : SE_TEXT("<null>");
+		return m_Asset ? m_Asset->ToString() : SE_TEXT("<null>");
 	}
 
 	void WeakAssetRefBase::OnSet(Asset* asset)
 	{
-		auto e = _asset;
+		auto e = m_Asset;
 		if (e != asset)
 		{
 			if (e)
 				e->OnUnloadedEvent.Unbind<WeakAssetRefBase, &WeakAssetRefBase::OnUnloaded>(this);
-			_asset = e = asset;
+			m_Asset = e = asset;
 			if (e)
 				e->OnUnloadedEvent.Bind<WeakAssetRefBase, &WeakAssetRefBase::OnUnloaded>(this);
 		}
@@ -164,11 +175,11 @@ namespace SE
 
 	void WeakAssetRefBase::OnUnloaded(Asset* asset)
 	{
-		if (_asset != asset)
+		if (m_Asset != asset)
 			return;
 		Unload();
 		asset->OnUnloadedEvent.Unbind<WeakAssetRefBase, &WeakAssetRefBase::OnUnloaded>(this);
-		_asset = nullptr;
+		m_Asset = nullptr;
 	}
 
 

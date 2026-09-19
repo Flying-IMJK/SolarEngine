@@ -9,10 +9,10 @@ namespace SE
 {
 	Color32::Color32(Color c)
 	{
-		r = static_cast<uint8>(c.r * 255.0f);
-		g = static_cast<uint8>(c.g * 255.0f);
-		b = static_cast<uint8>(c.b * 255.0f);
-		a = static_cast<uint8>(c.a * 255.0f);
+		r = static_cast<uint8>(c.R * 255.0f);
+		g = static_cast<uint8>(c.G * 255.0f);
+		b = static_cast<uint8>(c.B * 255.0f);
+		a = static_cast<uint8>(c.A * 255.0f);
 	}
 
 	Color32::Color32(Float4 const& c)
@@ -54,26 +54,26 @@ namespace SE
 	}
 
 	Color::Color(const Float3& rgb, float a)
-		: r(rgb.x)
-		, g(rgb.y)
-		, b(rgb.z)
-		, a(a)
+		: R(rgb.X)
+		, G(rgb.Y)
+		, B(rgb.Z)
+		, A(a)
 	{
 	}
 
 	Color::Color(const Float4& rgba)
-		: r(rgba.x)
-		, g(rgba.y)
-		, b(rgba.z)
-		, a(rgba.w)
+		: R(rgba.X)
+		, G(rgba.Y)
+		, B(rgba.Z)
+		, A(rgba.W)
 	{
 	}
 
 	Color::Color(const Color32& color)
-		: r(color.r / 255.0f)
-		, g(color.g / 255.0f)
-		, b(color.b / 255.0f)
-		, a(color.a / 255.0f)
+		: R(color.r / 255.0f)
+		, G(color.g / 255.0f)
+		, B(color.b / 255.0f)
+		, A(color.a / 255.0f)
 	{
 	}
 
@@ -145,7 +145,7 @@ namespace SE
 
 	Color Color::FromHSV(const Float3& hsv, float alpha)
 	{
-		return FromHSV(hsv.x, hsv.y, hsv.z, alpha);
+		return FromHSV(hsv.X, hsv.Y, hsv.Z, alpha);
 	}
 
 	Color Color::Random()
@@ -155,17 +155,17 @@ namespace SE
 
 	String Color::ToString() const
 	{
-		return String::Format(SE_TEXT("{}:{}:{}:{}"), r, g, b, a);;
+		return String::Format(SE_TEXT("{}:{}:{}:{}"), R, G, B, A);;
 	}
 
 	String Color::ToHexString() const
 	{
 		static const Char * digits = SE_TEXT("0123456789ABCDEF");
 
-		const byte r = static_cast<byte>(this->r * Max_uint8);
-		const byte g = static_cast<byte>(this->g * Max_uint8);
-		const byte b = static_cast<byte>(this->b * Max_uint8);
-		const byte a = static_cast<byte>(this->a * Max_uint8);
+		const byte r = static_cast<byte>(this->R * Max_uint8);
+		const byte g = static_cast<byte>(this->G * Max_uint8);
+		const byte b = static_cast<byte>(this->B * Max_uint8);
+		const byte a = static_cast<byte>(this->A * Max_uint8);
 
 		char result[8];
 
@@ -186,46 +186,46 @@ namespace SE
 
 	bool Color::IsTransparent() const
 	{
-		return Math::IsZero(r + g + b + a);
+		return Math::IsZero(R + G + B + A);
 	}
 
 	bool Color::HasOpacity() const
 	{
-		return a != 1;
+		return A != 1;
 	}
 
 	bool Color::NearEqual(const Color& a, const Color& b)
 	{
-		return Math::IsNearEqual(a.r, b.r) &&
-			Math::IsNearEqual(a.g, b.g) &&
-			Math::IsNearEqual(a.b, b.b) &&
-			Math::IsNearEqual(a.a, b.a);
+		return Math::IsNearEqual(a.R, b.R) &&
+			Math::IsNearEqual(a.G, b.G) &&
+			Math::IsNearEqual(a.B, b.B) &&
+			Math::IsNearEqual(a.A, b.A);
 	}
 
 	bool Color::NearEqual(const Color& a, const Color& b, float epsilon)
 	{
-		return Math::IsNearEqual(a.r, b.r, epsilon) &&
-			Math::IsNearEqual(a.g, b.g, epsilon) &&
-			Math::IsNearEqual(a.b, b.b, epsilon) &&
-			Math::IsNearEqual(a.a, b.a, epsilon);
+		return Math::IsNearEqual(a.R, b.R, epsilon) &&
+			Math::IsNearEqual(a.G, b.G, epsilon) &&
+			Math::IsNearEqual(a.B, b.B, epsilon) &&
+			Math::IsNearEqual(a.A, b.A, epsilon);
 	}
 
 	Float3 Color::ToFloat3() const
 	{
-		return Float3(r, g, b);
+		return Float3(R, G, B);
 	}
 
 	Float4 Color::ToFloat4() const
 	{
-		return Float4(r, g, b, a);
+		return Float4(R, G, B, A);
 	}
 
 	Float3 Color::ToHSV() const
 	{
-		const float rgbMin = Math::Min(r, g, b);
-		const float rgbMax = Math::Max(r, g, b);
+		const float rgbMin = Math::Min(R, G, B);
+		const float rgbMax = Math::Max(R, G, B);
 		const float rgbRange = rgbMax - rgbMin;
-		const float hue = rgbMax == rgbMin ? 0.0f : rgbMax == r ? Math::FMod((g - b) / rgbRange * 60.0f + 360.0f, 360.0f) : rgbMax == g ? (b - r) / rgbRange * 60.0f + 120.0f : rgbMax == b ? (r - g) / rgbRange * 60.0f + 240.0f : 0.0f;
+		const float hue = rgbMax == rgbMin ? 0.0f : rgbMax == R ? Math::FMod((G - B) / rgbRange * 60.0f + 360.0f, 360.0f) : rgbMax == G ? (B - R) / rgbRange * 60.0f + 120.0f : rgbMax == B ? (R - G) / rgbRange * 60.0f + 240.0f : 0.0f;
 		const float saturation = rgbMax == 0.0f ? 0.0f : rgbRange / rgbMax;
 		const float value = rgbMax;
 		return Float3(hue, saturation, value);
@@ -233,10 +233,10 @@ namespace SE
 
 	void Color::Lerp(const Color& start, const Color& end, float amount, Color& result)
 	{
-		result.r = Math::Lerp(start.r, end.r, amount);
-		result.g = Math::Lerp(start.g, end.g, amount);
-		result.b = Math::Lerp(start.b, end.b, amount);
-		result.a = Math::Lerp(start.a, end.a, amount);
+		result.R = Math::Lerp(start.R, end.R, amount);
+		result.G = Math::Lerp(start.G, end.G, amount);
+		result.B = Math::Lerp(start.B, end.B, amount);
+		result.A = Math::Lerp(start.A, end.A, amount);
 	}
 
 	Color Color::Lerp(const Color& start, const Color& end, float amount)
@@ -249,24 +249,24 @@ namespace SE
 	Color Color::LinearToSrgb(const Color& linear)
 	{
 #define LINEAR_TO_SRGB(value) value < 0.00313067f ? value * 12.92f : Math::Pow(value, (1.0f / 2.4f)) * 1.055f - 0.055f
-		return Color(LINEAR_TO_SRGB(linear.r), LINEAR_TO_SRGB(linear.g), LINEAR_TO_SRGB(linear.b), LINEAR_TO_SRGB(linear.a));
+		return Color(LINEAR_TO_SRGB(linear.R), LINEAR_TO_SRGB(linear.G), LINEAR_TO_SRGB(linear.B), LINEAR_TO_SRGB(linear.A));
 #undef LINEAR_TO_SRGB
 	}
 
 	Color Color::SrgbToLinear(const Color& srgb)
 	{
 #define SRGB_TO_LINEAR(value) value < 0.04045f ? value / 12.92f : Math::Pow((value + 0.055f) / 1.055f, 2.4f)
-		return Color(SRGB_TO_LINEAR(srgb.r), SRGB_TO_LINEAR(srgb.g), SRGB_TO_LINEAR(srgb.b), SRGB_TO_LINEAR(srgb.a));
+		return Color(SRGB_TO_LINEAR(srgb.R), SRGB_TO_LINEAR(srgb.G), SRGB_TO_LINEAR(srgb.B), SRGB_TO_LINEAR(srgb.A));
 #undef LINEAR_TO_SRGB
 	}
 
 	uint32 GetHash(const Color &color)
 	{
 		const int32 range = 100000;
-		int32 hashCode = (int32)color.r * range;
-		hashCode = hashCode * 397 ^ (int32)(color.g * range);
-		hashCode = hashCode * 397 ^ (int32)(color.b * range);
-		hashCode = hashCode * 397 ^ (int32)(color.a * range);
+		int32 hashCode = (int32)color.R * range;
+		hashCode = hashCode * 397 ^ (int32)(color.G * range);
+		hashCode = hashCode * 397 ^ (int32)(color.B * range);
+		hashCode = hashCode * 397 ^ (int32)(color.A * range);
 		return hashCode;
 	}
 

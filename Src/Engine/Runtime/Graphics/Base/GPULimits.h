@@ -9,6 +9,7 @@ namespace SE
 	/// <summary>
 	/// Which resources are supported for a given format and given device.
 	/// </summary>
+	SE_ENUM(API(Attributes = "Flags"))
 	enum class FormatSupport : int32
 	{
 		/// <summary>
@@ -172,20 +173,26 @@ namespace SE
 		VideoEncoder = 1073741824,
 	};
 
+	SE_ENUM_OPERATORS(FormatSupport);
+
 	/// <summary>
 	/// The features exposed for a particular format.
 	/// </summary>
+	SE_STRUCT(API())
 	struct FormatFeatures
 	{
+		SCRIPTING_TYPE_MIN(FormatFeatures)
 		/// <summary>
 		/// Gets the maximum MSAA sample count for a particular <see cref="PixelFormat"/>.
 		/// </summary>
+		SE_FIELD(API())
 		MSAALevel MSAALevelMax;
 
 		/// <summary>
 		/// Support of a given format on the installed video device.
 		/// </summary>
-		EnumFlags<FormatSupport> Support;
+		SE_FIELD(API())
+		FormatSupport Support;
 
 		FormatFeatures()
 		{
@@ -197,7 +204,7 @@ namespace SE
 		/// <param name="format">The format.</param>
 		/// <param name="msaaLevelMax">The MSAA level maximum.</param>
 		/// <param name="formatSupport">The format support.</param>
-		FormatFeatures(const PixelFormat format, MSAALevel msaaLevelMax, EnumFlags<FormatSupport> formatSupport)
+		FormatFeatures(const PixelFormat format, MSAALevel msaaLevelMax, FormatSupport formatSupport)
 			: MSAALevelMax(msaaLevelMax)
 			, Support(formatSupport)
 		{
@@ -207,111 +214,134 @@ namespace SE
 	/// <summary>
 	/// Graphics Device limits and constraints descriptor.
 	/// </summary>
+	SE_STRUCT(API())
 	struct GPULimits
 	{
+		SCRIPTING_TYPE_MIN(GPULimits)
 		/// <summary>
 		/// True if device supports Compute shaders.
 		/// </summary>
+		SE_FIELD(API())
 		bool HasCompute;
 
 		/// <summary>
 		/// True if device supports Tessellation shaders (domain and hull shaders).
 		/// </summary>
+		SE_FIELD(API())
 		bool HasTessellation;
 
 		/// <summary>
 		/// True if device supports Geometry shaders.
 		/// </summary>
+		SE_FIELD(API())
 		bool HasGeometryShaders;
 
 		/// <summary>
 		/// True if device supports hardware geometry instancing.
 		/// </summary>
+		SE_FIELD(API())
 		bool HasInstancing;
 
 		/// <summary>
 		/// True if device supports rendering to volume textures using Geometry shaders.
 		/// </summary>
+		SE_FIELD(API())
 		bool HasVolumeTextureRendering;
 
 		/// <summary>
 		/// True if device supports indirect drawing (including pixel shader write to UAV).
 		/// </summary>
+		SE_FIELD(API())
 		bool HasDrawIndirect;
 
 		/// <summary>
 		/// True if device supports append/consume buffers with counters.
 		/// </summary>
+		SE_FIELD(API())
 		bool HasAppendConsumeBuffers;
 
 		/// <summary>
 		/// True if device supports separate render target blending states.
 		/// </summary>
+		SE_FIELD(API())
 		bool HasSeparateRenderTargetBlendState;
 
 		/// <summary>
 		/// True if device supports depth buffer texture as a shader resource view.
 		/// </summary>
+		SE_FIELD(API())
 		bool HasDepthAsSRV;
 
 		/// <summary>
 		/// True if device supports depth buffer clipping (see GPUPipelineState::Description::DepthClipEnable).
 		/// </summary>
+		SE_FIELD(API())
 		bool HasDepthClip;
 
 		/// <summary>
 		/// True if device supports depth buffer texture as a readonly depth buffer (can be sampled in the shader while performing depth-test).
 		/// </summary>
+		SE_FIELD(API())
 		bool HasReadOnlyDepth;
 
 		/// <summary>
 		/// True if device supports multisampled depth buffer texture as a shader resource view.
 		/// </summary>
+		SE_FIELD(API())
 		bool HasMultisampleDepthAsSRV;
 
 		/// <summary>
 		/// True if device supports reading from typed UAV in shader (common types such as R32G32B32A32, R16G16B16A16, R16, R8). This doesn't apply to single-component 32-bit formats.
 		/// </summary>
+		SE_FIELD(API())
 		bool HasTypedUAVLoad;
 
 		/// <summary>
 		/// The maximum amount of texture mip levels.
 		/// </summary>
+		SE_FIELD(API())
 		int32 MaximumMipLevelsCount;
 
 		/// <summary>
 		/// The maximum size of the 1D texture.
 		/// </summary>
+		SE_FIELD(API())
 		int32 MaximumTexture1DSize;
 
 		/// <summary>
 		/// The maximum length of 1D textures array.
 		/// </summary>
+		SE_FIELD(API())
 		int32 MaximumTexture1DArraySize;
 
 		/// <summary>
 		/// The maximum size of the 2D texture.
 		/// </summary>
+		SE_FIELD(API())
 		int32 MaximumTexture2DSize;
 
 		/// <summary>
 		/// The maximum length of 2D textures array.
 		/// </summary>
+		SE_FIELD(API())
 		int32 MaximumTexture2DArraySize;
 
 		/// <summary>
 		/// The maximum size of the 3D texture.
 		/// </summary>
+		SE_FIELD(API())
 		int32 MaximumTexture3DSize;
 
 		/// <summary>
 		/// The maximum size of the cube texture (both width and height).
 		/// </summary>
+		SE_FIELD(API())
 		int32 MaximumTextureCubeSize;
 
 		/// <summary>
 		/// The maximum degree of anisotropic filtering used for texture sampling.
 		/// </summary>
+		SE_FIELD(API())
 		float MaximumSamplerAnisotropy;
 	};
 }

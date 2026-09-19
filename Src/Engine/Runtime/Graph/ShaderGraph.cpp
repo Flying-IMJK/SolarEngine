@@ -86,13 +86,13 @@ namespace SE
             if (box->ID == 0)
                 value = Value(v);
             else if (box->ID == 1)
-                value = Value(cv.x);
+                value = Value(cv.X);
             else if (box->ID == 2)
-                value = Value(cv.y);
+                value = Value(cv.Y);
             else if (box->ID == 3)
-                value = Value(cv.z);
+                value = Value(cv.Z);
             else if (box->ID == 4)
-                value = Value(cv.w);
+                value = Value(cv.W);
             break;
         }
         case 8:
@@ -116,13 +116,13 @@ namespace SE
             if (box->ID == 0)
                 value = Value(v);
             else if (box->ID == 1)
-                value = Value(cv.x);
+                value = Value(cv.X);
             else if (box->ID == 2)
-                value = Value(cv.y);
+                value = Value(cv.Y);
             else if (box->ID == 3)
-                value = Value(cv.z);
+                value = Value(cv.Z);
             else if (box->ID == 4)
-                value = Value(cv.w);
+                value = Value(cv.W);
             break;
         }
         default:

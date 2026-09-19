@@ -10,7 +10,7 @@ namespace SE
 	/// <summary>
 	/// Represents a four dimensional mathematical vector with 32-bit precision (per-component).
 	/// </summary>
-    SE_STRUCT(Template)
+    SE_STRUCT(Template, API())
 	template<typename T>
 	struct Vector4Base
 	{
@@ -23,25 +23,25 @@ namespace SE
 				/// The X component.
 				/// </summary>
                 SE_FIELD(API())
-				T x;
+				T X;
 
 				/// <summary>
 				/// The Y component.
 				/// </summary>
                 SE_FIELD(API())
-				T y;
+				T Y;
 
 				/// <summary>
 				/// The Z component.
 				/// </summary>
                 SE_FIELD(API())
-				T z;
+				T Z;
 
 				/// <summary>
 				/// The W component.
 				/// </summary>
                 SE_FIELD(API())
-				T w;
+				T W;
 			};
 
 			/// <summary>
@@ -85,35 +85,35 @@ namespace SE
 		Vector4Base() = default;
 
 		Vector4Base(T xyzw)
-			: x(xyzw)
-			, y(xyzw)
-			, z(xyzw)
-			, w(xyzw)
+			: X(xyzw)
+			, Y(xyzw)
+			, Z(xyzw)
+			, W(xyzw)
 		{
 		}
 
 		explicit Vector4Base(const T* xyzw)
-			: x(xyzw[0])
-			, y(xyzw[1])
-			, z(xyzw[2])
-			, w(xyzw[3])
+			: X(xyzw[0])
+			, Y(xyzw[1])
+			, Z(xyzw[2])
+			, W(xyzw[3])
 		{
 		}
 
 		Vector4Base(T x, T y, T z, T w)
-			: x(x)
-			, y(y)
-			, z(z)
-			, w(w)
+			: X(x)
+			, Y(y)
+			, Z(z)
+			, W(w)
 		{
 		}
 
 		template<typename U = T, typename TEnableIf<TNot<TIsTheSame<T, U>>::Value>::Type...>
 		Vector4Base(const Vector4Base<U>& xyzw)
-			: x((T)xyzw.x)
-			, y((T)xyzw.y)
-			, z((T)xyzw.z)
-			, w((T)xyzw.w)
+			: X((T)xyzw.X)
+			, Y((T)xyzw.Y)
+			, Z((T)xyzw.Z)
+			, W((T)xyzw.W)
 		{
 		}
 
@@ -135,19 +135,19 @@ namespace SE
 		// Gets a value indicting whether this vector is zero.
 		bool IsZero() const
 		{
-			return Math::IsZero(x) && Math::IsZero(y) && Math::IsZero(z) && Math::IsZero(w);
+			return Math::IsZero(X) && Math::IsZero(Y) && Math::IsZero(Z) && Math::IsZero(W);
 		}
 
 		// Gets a value indicting whether any vector component is zero.
 		bool IsAnyZero() const
 		{
-			return Math::IsZero(x) || Math::IsZero(y) || Math::IsZero(z) || Math::IsZero(w);
+			return Math::IsZero(X) || Math::IsZero(Y) || Math::IsZero(Z) || Math::IsZero(W);
 		}
 
 		// Gets a value indicting whether this vector is one.
 		bool IsOne() const
 		{
-			return Math::IsOne(x) && Math::IsOne(y) && Math::IsOne(z) && Math::IsOne(w);
+			return Math::IsOne(X) && Math::IsOne(Y) && Math::IsOne(Z) && Math::IsOne(W);
 		}
 
 		/// <summary>
@@ -155,7 +155,7 @@ namespace SE
 		/// </summary>
 		T AverageArithmetic() const
 		{
-			return (x + y + z + w) * 0.25f;
+			return (X + Y + Z + W) * 0.25f;
 		}
 
 		/// <summary>
@@ -163,7 +163,7 @@ namespace SE
 		/// </summary>
 		T SumValues() const
 		{
-			return x + y + z + w;
+			return X + Y + Z + W;
 		}
 
 		/// <summary>
@@ -171,7 +171,7 @@ namespace SE
 		/// </summary>
 		T MinValue() const
 		{
-			return Math::Min(x, y, z, w);
+			return Math::Min(X, Y, Z, W);
 		}
 
 		/// <summary>
@@ -179,7 +179,7 @@ namespace SE
 		/// </summary>
 		T MaxValue() const
 		{
-			return Math::Max(x, y, z, w);
+			return Math::Max(X, Y, Z, W);
 		}
 
 		/// <summary>
@@ -187,7 +187,7 @@ namespace SE
 		/// </summary>
 		bool IsNaN() const
 		{
-			return isnan(x) || isnan(y) || isnan(z) || isnan(w);
+			return isnan(X) || isnan(Y) || isnan(Z) || isnan(W);
 		}
 
 		/// <summary>
@@ -195,7 +195,7 @@ namespace SE
 		/// </summary>
 		bool IsInfinity() const
 		{
-			return isinf(x) || isinf(y) || isinf(z) || isinf(w);
+			return isinf(X) || isinf(Y) || isinf(Z) || isinf(W);
 		}
 
 		/// <summary>
@@ -211,7 +211,7 @@ namespace SE
 		/// </summary>
 		Vector4Base GetAbsolute() const
 		{
-			return Vector4Base(Math::Abs(x), Math::Abs(y), Math::Abs(z), Math::Abs(w));
+			return Vector4Base(Math::Abs(X), Math::Abs(Y), Math::Abs(Z), Math::Abs(W));
 		}
 
 		/// <summary>
@@ -219,242 +219,242 @@ namespace SE
 		/// </summary>
 		Vector4Base GetNegative() const
 		{
-			return Vector4Base(-x, -y, -z, -w);
+			return Vector4Base(-X, -Y, -Z, -W);
 		}
 
 	public:
 		Vector4Base operator+(const Vector4Base& b) const
 		{
-			return Vector4Base(x + b.x, y + b.y, z + b.z, w + b.w);
+			return Vector4Base(X + b.X, Y + b.Y, Z + b.Z, W + b.W);
 		}
 
 		Vector4Base operator-(const Vector4Base& b) const
 		{
-			return Vector4Base(x - b.x, y - b.y, z - b.z, w - b.w);
+			return Vector4Base(X - b.X, Y - b.Y, Z - b.Z, W - b.W);
 		}
 
 		Vector4Base operator*(const Vector4Base& b) const
 		{
-			return Vector4Base(x * b.x, y * b.y, z * b.z, w * b.w);
+			return Vector4Base(X * b.X, Y * b.Y, Z * b.Z, W * b.W);
 		}
 
 		Vector4Base operator/(const Vector4Base& b) const
 		{
-			return Vector4Base(x / b.x, y / b.y, z / b.z, w / b.w);
+			return Vector4Base(X / b.X, Y / b.Y, Z / b.Z, W / b.W);
 		}
 
 		Vector4Base operator-() const
 		{
-			return Vector4Base(-x, -y, -z, -w);
+			return Vector4Base(-X, -Y, -Z, -W);
 		}
 
 		Vector4Base operator+(T b) const
 		{
-			return Vector4Base(x + b, y + b, z + b, w + b);
+			return Vector4Base(X + b, Y + b, Z + b, W + b);
 		}
 
 		Vector4Base operator-(T b) const
 		{
-			return Vector4Base(x - b, y - b, z - b, w - b);
+			return Vector4Base(X - b, Y - b, Z - b, W - b);
 		}
 
 		Vector4Base operator*(T b) const
 		{
-			return Vector4Base(x * b, y * b, z * b, w * b);
+			return Vector4Base(X * b, Y * b, Z * b, W * b);
 		}
 
 		Vector4Base operator/(T b) const
 		{
-			return Vector4Base(x / b, y / b, z / b, w / b);
+			return Vector4Base(X / b, Y / b, Z / b, W / b);
 		}
 
 		Vector4Base operator+(typename TOtherFloat<T>::Type a) const
 		{
 			T b = (T)a;
-			return Vector4Base(x + b, y + b, z + b, w + b);
+			return Vector4Base(X + b, Y + b, Z + b, W + b);
 		}
 
 		Vector4Base operator-(typename TOtherFloat<T>::Type a) const
 		{
 			T b = (T)a;
-			return Vector4Base(x - b, y - b, z - b, w - b);
+			return Vector4Base(X - b, Y - b, Z - b, W - b);
 		}
 
 		Vector4Base operator*(typename TOtherFloat<T>::Type a) const
 		{
 			T b = (T)a;
-			return Vector4Base(x * b, y * b, z * b, w * b);
+			return Vector4Base(X * b, Y * b, Z * b, W * b);
 		}
 
 		Vector4Base operator/(typename TOtherFloat<T>::Type a) const
 		{
 			T b = (T)a;
-			return Vector4Base(x / b, y / b, z / b, w / b);
+			return Vector4Base(X / b, Y / b, Z / b, W / b);
 		}
 
 		Vector4Base& operator+=(const Vector4Base& b)
 		{
-			x += b.x;
-			y += b.y;
-			z += b.z;
-			w += b.w;
+			X += b.X;
+			Y += b.Y;
+			Z += b.Z;
+			W += b.W;
 			return *this;
 		}
 
 		Vector4Base& operator-=(const Vector4Base& b)
 		{
-			x -= b.x;
-			y -= b.y;
-			z -= b.z;
-			w -= b.w;
+			X -= b.X;
+			Y -= b.Y;
+			Z -= b.Z;
+			W -= b.W;
 			return *this;
 		}
 
 		Vector4Base& operator*=(const Vector4Base& b)
 		{
-			x *= b.x;
-			y *= b.y;
-			z *= b.z;
-			w *= b.w;
+			X *= b.X;
+			Y *= b.Y;
+			Z *= b.Z;
+			W *= b.W;
 			return *this;
 		}
 
 		Vector4Base& operator/=(const Vector4Base& b)
 		{
-			x /= b.x;
-			y /= b.y;
-			z /= b.z;
-			w /= b.w;
+			X /= b.X;
+			Y /= b.Y;
+			Z /= b.Z;
+			W /= b.W;
 			return *this;
 		}
 
 		Vector4Base& operator+=(T b)
 		{
-			x += b;
-			y += b;
-			z += b;
-			w += b;
+			X += b;
+			Y += b;
+			Z += b;
+			W += b;
 			return *this;
 		}
 
 		Vector4Base& operator-=(T b)
 		{
-			x -= b;
-			y -= b;
-			z -= b;
-			w -= b;
+			X -= b;
+			Y -= b;
+			Z -= b;
+			W -= b;
 			return *this;
 		}
 
 		Vector4Base& operator*=(T b)
 		{
-			x *= b;
-			y *= b;
-			z *= b;
-			w *= b;
+			X *= b;
+			Y *= b;
+			Z *= b;
+			W *= b;
 			return *this;
 		}
 
 		Vector4Base& operator/=(T b)
 		{
-			x /= b;
-			y /= b;
-			z /= b;
-			w /= b;
+			X /= b;
+			Y /= b;
+			Z /= b;
+			W /= b;
 			return *this;
 		}
 
 		bool operator==(const Vector4Base& b) const
 		{
-			return x == b.x && y == b.y && z == b.z && w == b.w;
+			return X == b.X && Y == b.Y && Z == b.Z && W == b.W;
 		}
 
 		bool operator!=(const Vector4Base& b) const
 		{
-			return x != b.x || y != b.y || z != b.z || w != b.w;
+			return X != b.X || Y != b.Y || Z != b.Z || W != b.W;
 		}
 
 		bool operator>(const Vector4Base& b) const
 		{
-			return x > b.x && y > b.y && z > b.z && w > b.w;
+			return X > b.X && Y > b.Y && Z > b.Z && W > b.W;
 		}
 
 		bool operator>=(const Vector4Base& b) const
 		{
-			return x >= b.x && y >= b.y && z >= b.z && w >= b.w;
+			return X >= b.X && Y >= b.Y && Z >= b.Z && W >= b.W;
 		}
 
 		bool operator<(const Vector4Base& b) const
 		{
-			return x < b.x && y < b.y && z < b.z && w < b.w;
+			return X < b.X && Y < b.Y && Z < b.Z && W < b.W;
 		}
 
 		bool operator<=(const Vector4Base& b) const
 		{
-			return x <= b.x && y <= b.y && z <= b.z && w <= b.w;
+			return X <= b.X && Y <= b.Y && Z <= b.Z && W <= b.W;
 		}
 
 	public:
 		static bool NearEqual(const Vector4Base& a, const Vector4Base& b)
 		{
-			return Math::IsNearEqual(a.x, b.x) && Math::IsNearEqual(a.y, b.y) && Math::IsNearEqual(a.z, b.z) && Math::IsNearEqual(a.w, b.w);
+			return Math::IsNearEqual(a.X, b.X) && Math::IsNearEqual(a.Y, b.Y) && Math::IsNearEqual(a.Z, b.Z) && Math::IsNearEqual(a.W, b.W);
 		}
 
 		static bool NearEqual(const Vector4Base& a, const Vector4Base& b, T epsilon)
 		{
-			return Math::IsNearEqual(a.x, b.x, epsilon) && Math::IsNearEqual(a.y, b.y, epsilon) && Math::IsNearEqual(a.z, b.z, epsilon) && Math::IsNearEqual(a.w, b.w, epsilon);
+			return Math::IsNearEqual(a.X, b.X, epsilon) && Math::IsNearEqual(a.Y, b.Y, epsilon) && Math::IsNearEqual(a.Z, b.Z, epsilon) && Math::IsNearEqual(a.W, b.W, epsilon);
 		}
 
 	public:
 		static void Add(const Vector4Base& a, const Vector4Base& b, Vector4Base& result)
 		{
-			result = Vector4Base(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
+			result = Vector4Base(a.X + b.X, a.Y + b.Y, a.Z + b.Z, a.W + b.W);
 		}
 
 		static void Subtract(const Vector4Base& a, const Vector4Base& b, Vector4Base& result)
 		{
-			result = Vector4Base(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
+			result = Vector4Base(a.X - b.X, a.Y - b.Y, a.Z - b.Z, a.W - b.W);
 		}
 
 		static void Multiply(const Vector4Base& a, const Vector4Base& b, Vector4Base& result)
 		{
-			result = Vector4Base(a.x * b, a.y * b, a.z * b, a.w * b);
+			result = Vector4Base(a.X * b, a.Y * b, a.Z * b, a.W * b);
 		}
 
 		static void Divide(const Vector4Base& a, const Vector4Base& b, Vector4Base& result)
 		{
-			result = Vector4Base(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w);
+			result = Vector4Base(a.X / b.X, a.Y / b.Y, a.Z / b.Z, a.W / b.W);
 		}
 
 	public:
 		static Vector4Base Mod(const Vector4Base& a, const Vector4Base& b)
 		{
-			return Vector4Base(Math::FMod(a.x, b.x), Math::FMod(a.y, b.y), Math::FMod(a.z, b.z), Math::FMod(a.w, b.w));
+			return Vector4Base(Math::FMod(a.X, b.X), Math::FMod(a.Y, b.Y), Math::FMod(a.Z, b.Z), Math::FMod(a.W, b.W));
 		}
 
 		static Vector4Base Floor(const Vector4Base& v)
 		{
-			return Vector4Base(Math::Floor(v.x), Math::Floor(v.y), Math::Floor(v.z), Math::Floor(v.w));
+			return Vector4Base(Math::Floor(v.X), Math::Floor(v.Y), Math::Floor(v.Z), Math::Floor(v.W));
 		}
 
 		static Vector4Base Frac(const Vector4Base& v)
 		{
-			return Vector4Base(v.x - (int32)v.x, v.y - (int32)v.y, v.z - (int32)v.z, v.w - (int32)v.w);
+			return Vector4Base(v.X - (int32)v.X, v.Y - (int32)v.Y, v.Z - (int32)v.Z, v.W - (int32)v.W);
 		}
 
 		static Vector4Base Round(const Vector4Base& v)
 		{
-			return Vector4Base(Math::Round(v.x), Math::Round(v.y), Math::Round(v.z), Math::Round(v.w));
+			return Vector4Base(Math::Round(v.X), Math::Round(v.Y), Math::Round(v.Z), Math::Round(v.W));
 		}
 
 		static Vector4Base Ceil(const Vector4Base& v)
 		{
-			return Vector4Base(Math::Ceil(v.x), Math::Ceil(v.y), Math::Ceil(v.z), Math::Ceil(v.w));
+			return Vector4Base(Math::Ceil(v.X), Math::Ceil(v.Y), Math::Ceil(v.Z), Math::Ceil(v.W));
 		}
 
 		static Vector4Base Abs(const Vector4Base& v)
 		{
-			return Vector4Base(Math::Abs(v.x), Math::Abs(v.y), Math::Abs(v.z), Math::Abs(v.w));
+			return Vector4Base(Math::Abs(v.X), Math::Abs(v.Y), Math::Abs(v.Z), Math::Abs(v.W));
 		}
 
 	public:
@@ -477,7 +477,7 @@ namespace SE
 		// @param result When the method completes, contains the clamped value
 		static void Clamp(const Vector4Base& v, const Vector4Base& min, const Vector4Base& max, Vector4Base& result)
 		{
-			result = Vector4Base(Math::Clamp(v.x, min.x, max.x), Math::Clamp(v.y, min.y, max.y), Math::Clamp(v.z, min.z, max.z), Math::Clamp(v.w, min.w, max.w));
+			result = Vector4Base(Math::Clamp(v.X, min.X, max.X), Math::Clamp(v.Y, min.Y, max.Y), Math::Clamp(v.Z, min.Z, max.Z), Math::Clamp(v.W, min.W, max.W));
 		}
 
 		// Performs a linear interpolation between two vectors
@@ -487,10 +487,10 @@ namespace SE
 		// @param result When the method completes, contains the linear interpolation of the two vectors
 		static void Lerp(const Vector4Base& start, const Vector4Base& end, T amount, Vector4Base& result)
 		{
-			result.x = Math::Lerp(start.x, end.x, amount);
-			result.y = Math::Lerp(start.y, end.y, amount);
-			result.z = Math::Lerp(start.z, end.z, amount);
-			result.w = Math::Lerp(start.w, end.w, amount);
+			result.X = Math::Lerp(start.X, end.X, amount);
+			result.Y = Math::Lerp(start.Y, end.Y, amount);
+			result.Z = Math::Lerp(start.Z, end.Z, amount);
+			result.W = Math::Lerp(start.W, end.W, amount);
 		}
 
 		// <summary>
@@ -561,7 +561,7 @@ namespace SE
 	template<typename T>
 	inline uint32 GetHash(const Vector4Base<T>& key)
 	{
-		return (((((*(uint32*)&key.x * 397) ^ *(uint32*)&key.y) * 397) ^ *(uint32*)&key.z) * 397) ^*(uint32*)&key.w;
+		return (((((*(uint32*)&key.X * 397) ^ *(uint32*)&key.Y) * 397) ^ *(uint32*)&key.Z) * 397) ^*(uint32*)&key.W;
 	}
 }
 
@@ -571,7 +571,7 @@ struct TIsPODType<SE::Float4>
     enum { Value = true };
 };
 
-DEFINE_DEFAULT_FORMATTING(SE::Float4, "X:{0} Y:{1} Z:{2} W:{3}", v.x, v.y, v.z, v.w);
+DEFINE_DEFAULT_FORMATTING(SE::Float4, "X:{0} Y:{1} Z:{2} W:{3}", v.X, v.Y, v.Z, v.W);
 
 template<>
 struct TIsPODType<SE::Double4>
@@ -579,7 +579,7 @@ struct TIsPODType<SE::Double4>
     enum { Value = true };
 };
 
-DEFINE_DEFAULT_FORMATTING(SE::Double4, "X:{0} Y:{1} Z:{2} W:{3}", v.x, v.y, v.z, v.w)
+DEFINE_DEFAULT_FORMATTING(SE::Double4, "X:{0} Y:{1} Z:{2} W:{3}", v.X, v.Y, v.Z, v.W)
 
 template<>
 struct TIsPODType<SE::Int4>
@@ -587,7 +587,7 @@ struct TIsPODType<SE::Int4>
     enum { Value = true };
 };
 
-DEFINE_DEFAULT_FORMATTING(SE::Int4, "X:{0} Y:{1} Z:{2} W:{3}", v.x, v.y, v.z, v.w);
+DEFINE_DEFAULT_FORMATTING(SE::Int4, "X:{0} Y:{1} Z:{2} W:{3}", v.X, v.Y, v.Z, v.W);
 
 #if !defined(_MSC_VER) || defined(__clang__)
 // Forward specializations for Clang

@@ -52,7 +52,7 @@ namespace SE
 		const MaterialInfo& GetInfo() const override;
 		GPUShader* GetShader() const override;
 		bool IsReady() const override;
-		EnumFlags<DrawPass> GetDrawModes() const override;
+		DrawPass GetDrawModes() const override;
 		bool CanUseLightmap() const override;
 		bool CanUseInstancing(InstancingHandler& handler) const override;
 		void Bind(BindParameters& params) override;

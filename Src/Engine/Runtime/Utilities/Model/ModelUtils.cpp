@@ -148,7 +148,7 @@ namespace SE
         options.Scale = Math::Clamp(options.Scale, 0.0001f, 100000.0f);
         options.SmoothingNormalsAngle = Math::Clamp(options.SmoothingNormalsAngle, 0.0f, 175.0f);
         options.SmoothingTangentsAngle = Math::Clamp(options.SmoothingTangentsAngle, 0.0f, 45.0f);
-        options.FramesRange.y = Math::Max(options.FramesRange.y, options.FramesRange.x);
+        options.FramesRange.Y = Math::Max(options.FramesRange.Y, options.FramesRange.X);
         options.DefaultFrameRate = Math::Max(0.0f, options.DefaultFrameRate);
         options.SamplingRate = Math::Max(0.0f, options.SamplingRate);
         if (options.SplitObjects || options.Type == ModelType::Prefab)
@@ -242,7 +242,7 @@ namespace SE
         }*/
 
         // Flip normals of the imported geometry
-        if (options.FlipNormals && options.ImportTypes.IsFlag(ImportDataTypes::Geometry))
+        if (options.FlipNormals && EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry))
         {
             for (auto& lod : data.LODs)
             {
@@ -445,30 +445,30 @@ namespace SE
         switch (options.Type)
         {
         case ModelType::Model:
-            options.ImportTypes.SetFlags(ImportDataTypes::Geometry, ImportDataTypes::Nodes);
+            options.ImportTypes = EnumCombineFlags(options.ImportTypes, ImportDataTypes::Geometry, ImportDataTypes::Nodes);
             if (options.ImportMaterials)
-                options.ImportTypes.SetFlag(ImportDataTypes::Materials);
+                options.ImportTypes = EnumAddFlags(options.ImportTypes, ImportDataTypes::Materials);
             if (options.ImportTextures)
-                options.ImportTypes.SetFlag(ImportDataTypes::Textures);
+                options.ImportTypes = EnumAddFlags(options.ImportTypes, ImportDataTypes::Textures);
             break;
         case ModelType::SkinnedModel:
-            options.ImportTypes.SetFlags(ImportDataTypes::Geometry, ImportDataTypes::Nodes, ImportDataTypes::Skeleton);
+            options.ImportTypes = EnumCombineFlags(options.ImportTypes, ImportDataTypes::Geometry, ImportDataTypes::Nodes, ImportDataTypes::Skeleton);
             if (options.ImportMaterials)
-                options.ImportTypes.SetFlag(ImportDataTypes::Materials);
+                options.ImportTypes = EnumAddFlags(options.ImportTypes, ImportDataTypes::Materials);
             if (options.ImportTextures)
-                options.ImportTypes.SetFlag(ImportDataTypes::Textures);
+                options.ImportTypes = EnumAddFlags(options.ImportTypes, ImportDataTypes::Textures);
             break;
         case ModelType::Animation:
             options.ImportTypes = ImportDataTypes::Animations;
             if (options.RootMotion == RootMotionMode::ExtractCenterOfMass)
-                options.ImportTypes.SetFlag(ImportDataTypes::Skeleton);
+                options.ImportTypes = EnumAddFlags(options.ImportTypes, ImportDataTypes::Skeleton);
             break;
         case ModelType::Prefab:
-            options.ImportTypes.SetFlags(ImportDataTypes::Geometry, ImportDataTypes::Nodes, ImportDataTypes::Animations);
+            options.ImportTypes = EnumCombineFlags(options.ImportTypes, ImportDataTypes::Geometry, ImportDataTypes::Nodes, ImportDataTypes::Animations);
             if (options.ImportMaterials)
-                options.ImportTypes.SetFlag(ImportDataTypes::Materials);
+                options.ImportTypes = EnumAddFlags(options.ImportTypes, ImportDataTypes::Materials);
             if (options.ImportTextures)
-                options.ImportTypes.SetFlag(ImportDataTypes::Textures);
+                options.ImportTypes = EnumAddFlags(options.ImportTypes, ImportDataTypes::Textures);
             break;
         default:
             return false;
@@ -476,7 +476,7 @@ namespace SE
         if (!ImportData(path, data, options, errorMsg))
             return false;
         // Validate result data
-        if (options.ImportTypes.IsFlag(ImportDataTypes::Geometry))
+        if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry))
         {
             LOG_INFO("Resource", "Imported model has {0} LODs, {1} meshes (in LOD0) and {2} materials", data.LODs.Count(), data.LODs.Count() != 0 ? data.LODs[0].Meshes.Count() : 0, data.Materials.Count());
 
@@ -766,7 +766,7 @@ namespace SE
             auto& texture = data.Textures[i];
 
             // Auto-import textures
-            if (autoImportOutput.IsEmpty() || options.ImportTypes.IsNotFlag(ImportDataTypes::Textures) || texture.FilePath.IsEmpty())
+            if (autoImportOutput.IsEmpty() || EnumHasNoneFlags(options.ImportTypes, ImportDataTypes::Textures) || texture.FilePath.IsEmpty())
                 continue;
             String assetPath = GetAdditionalImportPath(autoImportOutput, importedFileNames, FileSystem::GetFileNameWithoutExtension(texture.FilePath));
 #if COMPILE_WITH_ASSETS_IMPORTER
@@ -796,7 +796,7 @@ namespace SE
                 material.Name = SE_TEXT("Material ") + StringUtils::ToString(i);
 
             // Auto-import materials
-            if (autoImportOutput.IsEmpty() || options.ImportTypes.IsNotFlag(ImportDataTypes::Materials) || !material.UsesProperties())
+            if (autoImportOutput.IsEmpty() || EnumHasNoneFlags(options.ImportTypes, ImportDataTypes::Materials) || !material.UsesProperties())
                 continue;
             String assetPath = GetAdditionalImportPath(autoImportOutput, importedFileNames, material.Name);
 #if COMPILE_WITH_ASSETS_IMPORTER
@@ -929,7 +929,7 @@ namespace SE
         }
 
         // Post-process imported data
-        if (options.ImportTypes.IsFlag(ImportDataTypes::Skeleton))
+        if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton))
         {
             /*if (options.CalculateBoneOffsetMatrices)
             {
@@ -963,7 +963,7 @@ namespace SE
             !
     #endif
         }
-        if (options.ImportTypes.IsFlag(ImportDataTypes::Geometry) && options.Type != ModelType::Prefab)
+        if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && options.Type != ModelType::Prefab)
         {
             // Perform simple nodes mapping to single node (will transform meshes to model local space)
             /*SkeletonMapping<ModelDataNode> skeletonMapping(data.Nodes, nullptr);
@@ -994,7 +994,7 @@ namespace SE
                 }
             }*/
         }
-        if (options.ImportTypes.IsFlag(ImportDataTypes::Geometry) && options.Type == ModelType::Prefab)
+        if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && options.Type == ModelType::Prefab)
         {
             // Apply just the scale and rotations.
             for (int32 lodIndex = 0; lodIndex < data.LODs.Count(); lodIndex++)
@@ -1027,7 +1027,7 @@ namespace SE
             }
         }
 
-        if (options.ImportTypes.IsFlag(ImportDataTypes::Animations))
+        if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Animations))
         {
             /*for (auto& animation : data.Animations)
             {

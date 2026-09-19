@@ -153,7 +153,7 @@ namespace SE
         return IsLoaded() && _baseMaterial && _baseMaterial->IsReady();
     }
 
-    EnumFlags<DrawPass> MaterialInstance::GetDrawModes() const
+    DrawPass MaterialInstance::GetDrawModes() const
     {
         if (_baseMaterial)
             return _baseMaterial->GetDrawModes();

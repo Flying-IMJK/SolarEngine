@@ -50,7 +50,7 @@ namespace SE::Editor
 
 		if (style->FontMedium)
 		{
-			Width = style->FontMedium->MeasureText(Text).x + 2 * DefaultMargin;
+			Width = style->FontMedium->MeasureText(Text).X + 2 * DefaultMargin;
 		}
 	}
 } // SE

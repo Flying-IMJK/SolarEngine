@@ -1,10 +1,5 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-#if USE_LARGE_WORLDS
-using Real = System.Double;
-#else
-using Real = System.Single;
-#endif
 
 // -----------------------------------------------------------------------------
 // Original code from SharpDX project. https://github.com/sharpdx/SharpDX/
@@ -46,7 +41,7 @@ namespace SE
         /// <remarks>Initially, the OBB is axis-aligned box, but it can be rotated and transformed later.</remarks>
         public OrientedBoundingBox(BoundingBox bb)
         {
-            Vector3 center = bb.Minimum + (bb.Maximum - bb.Minimum) * 0.5f;
+            Float3 center = bb.Minimum + (bb.Maximum - bb.Minimum) * 0.5f;
             Extents = bb.Maximum - center;
             Transformation = new Transform(center);
         }
@@ -56,7 +51,7 @@ namespace SE
         /// </summary>
         /// <param name="extents">The half lengths of the box along each axis.</param>
         /// <param name="transformation">The matrix which aligns and scales the box, and its translation vector represents the center of the box.</param>
-        public OrientedBoundingBox(Vector3 extents, Matrix transformation)
+        public OrientedBoundingBox(Float3 extents, Matrix transformation)
         {
             Extents = extents;
             transformation.Decompose(out Transformation);
@@ -68,9 +63,9 @@ namespace SE
         /// <param name="minimum">The minimum vertex of the bounding box.</param>
         /// <param name="maximum">The maximum vertex of the bounding box.</param>
         /// <remarks>Initially, the OrientedBoundingBox is axis-aligned box, but it can be rotated and transformed later.</remarks>
-        public OrientedBoundingBox(Vector3 minimum, Vector3 maximum)
+        public OrientedBoundingBox(Float3 minimum, Float3 maximum)
         {
-            Vector3 center = minimum + (maximum - minimum) * 0.5f;
+            Float3 center = minimum + (maximum - minimum) * 0.5f;
             Extents = maximum - center;
             Transformation = new Transform(center);
         }
@@ -80,7 +75,7 @@ namespace SE
         /// </summary>
         /// <param name="points">The points that will be contained by the box.</param>
         /// <remarks>This method is not for computing the best tight-fitting OrientedBoundingBox. And initially, the OrientedBoundingBox is axis-aligned box, but it can be rotated and transformed later.</remarks>
-        public OrientedBoundingBox(Vector3[] points)
+        public OrientedBoundingBox(Float3[] points)
         {
             if ((points == null) || (points.Length == 0))
                 throw new ArgumentNullException(nameof(points));
@@ -88,10 +83,10 @@ namespace SE
             var maximum = points[0];
             for (var i = 1; i < points.Length; ++i)
             {
-                Vector3.Min(ref minimum, ref points[i], out minimum);
-                Vector3.Max(ref maximum, ref points[i], out maximum);
+                Float3.Min(ref minimum, ref points[i], out minimum);
+                Float3.Max(ref maximum, ref points[i], out maximum);
             }
-            Vector3 center = minimum + (maximum - minimum) * 0.5f;
+            Float3 center = minimum + (maximum - minimum) * 0.5f;
             Extents = maximum - center;
             Transformation = new Transform(center);
         }
@@ -100,9 +95,9 @@ namespace SE
         /// Retrieves the eight corners of the bounding box.
         /// </summary>
         /// <returns>An array of points representing the eight corners of the bounding box.</returns>
-        public Vector3[] GetCorners()
+        public Float3[] GetCorners()
         {
-            var corners = new Vector3[8];
+            var corners = new Float3[8];
             GetCorners(corners);
             return corners;
         }
@@ -111,11 +106,11 @@ namespace SE
         /// Retrieves the eight corners of the bounding box.
         /// </summary>
         /// <param name="corners">An array of points representing the eight corners of the bounding box.</param>
-        public unsafe void GetCorners(Vector3[] corners)
+        public unsafe void GetCorners(Float3[] corners)
         {
             if (corners == null || corners.Length != 8)
                 throw new ArgumentException();
-            fixed (Vector3* ptr = corners)
+            fixed (Float3* ptr = corners)
                 GetCorners(ptr);
         }
 
@@ -123,12 +118,12 @@ namespace SE
         /// Retrieves the eight corners of the bounding box.
         /// </summary>
         /// <param name="corners">An array of points representing the eight corners of the bounding box.</param>
-        public unsafe void GetCorners(Vector3* corners)
+        public unsafe void GetCorners(Float3* corners)
         {
-            Vector3 xv = Transformation.LocalToWorldVector(new Vector3(Extents.X, 0, 0));
-            Vector3 yv = Transformation.LocalToWorldVector(new Vector3(0, Extents.Y, 0));
-            Vector3 zv = Transformation.LocalToWorldVector(new Vector3(0, 0, Extents.Z));
-            Vector3 center = Transformation.Translation;
+            Float3 xv = Transformation.LocalToWorldVector(new Float3(Extents.X, 0, 0));
+            Float3 yv = Transformation.LocalToWorldVector(new Float3(0, Extents.Y, 0));
+            Float3 zv = Transformation.LocalToWorldVector(new Float3(0, 0, Extents.Z));
+            Float3 center = Transformation.Translation;
 
             corners[0] = center + xv + yv + zv;
             corners[1] = center + xv + yv - zv;
@@ -144,7 +139,7 @@ namespace SE
         /// Retrieves the eight corners of the bounding box.
         /// </summary>
         /// <param name="corners">An collection to add the corners of the bounding box.</param>
-        public void GetCorners(List<Vector3> corners)
+        public void GetCorners(List<Float3> corners)
         {
             if (corners == null)
                 throw new ArgumentNullException();
@@ -186,7 +181,7 @@ namespace SE
         /// Scales the <see cref="OrientedBoundingBox" /> by scaling its Extents without affecting the Transformation matrix, By keeping Transformation matrix scaling-free, the collision detection methods will be more accurate.
         /// </summary>
         /// <param name="scaling"></param>
-        public void Scale(ref Vector3 scaling)
+        public void Scale(ref Float3 scaling)
         {
             Extents *= scaling;
         }
@@ -195,7 +190,7 @@ namespace SE
         /// Scales the <see cref="OrientedBoundingBox" /> by scaling its Extents without affecting the Transformation matrix, By keeping Transformation matrix scaling-free, the collision detection methods will be more accurate.
         /// </summary>
         /// <param name="scaling"></param>
-        public void Scale(Vector3 scaling)
+        public void Scale(Float3 scaling)
         {
             Extents *= scaling;
         }
@@ -204,7 +199,7 @@ namespace SE
         /// Scales the <see cref="OrientedBoundingBox" /> by scaling its Extents without affecting the Transformation matrix, By keeping Transformation matrix scaling-free, the collision detection methods will be more accurate.
         /// </summary>
         /// <param name="scaling"></param>
-        public void Scale(Real scaling)
+        public void Scale(float scaling)
         {
             Extents *= scaling;
         }
@@ -213,7 +208,7 @@ namespace SE
         /// Translates the <see cref="OrientedBoundingBox" /> to a new position using a translation vector;
         /// </summary>
         /// <param name="translation">the translation vector.</param>
-        public void Translate(ref Vector3 translation)
+        public void Translate(ref Float3 translation)
         {
             Transformation.Translation += translation;
         }
@@ -222,7 +217,7 @@ namespace SE
         /// Translates the <see cref="OrientedBoundingBox" /> to a new position using a translation vector;
         /// </summary>
         /// <param name="translation">the translation vector.</param>
-        public void Translate(Vector3 translation)
+        public void Translate(Float3 translation)
         {
             Transformation.Translation += translation;
         }
@@ -231,47 +226,47 @@ namespace SE
         /// The size of the <see cref="OrientedBoundingBox" /> if no scaling is applied to the transformation matrix.
         /// </summary>
         /// <remarks>The property will return the actual size even if the scaling is applied using Scale method, but if the scaling is applied to transformation matrix, use GetSize Function instead.</remarks>
-        public Vector3 Size => Extents * 2;
+        public Float3 Size => Extents * 2;
 
         /// <summary>
         /// Returns the size of the <see cref="OrientedBoundingBox" /> taking into consideration the scaling applied to the transformation matrix.
         /// </summary>
         /// <returns>The size of the consideration</returns>
         /// <remarks>This method is computationally expensive, so if no scale is applied to the transformation matrix use <see cref="OrientedBoundingBox.Size" /> property instead.</remarks>
-        public Vector3 GetSize()
+        public Float3 GetSize()
         {
-            Vector3 xv = Transformation.LocalToWorldVector(new Vector3(Extents.X * 2, 0, 0));
-            Vector3 yv = Transformation.LocalToWorldVector(new Vector3(0, Extents.Y * 2, 0));
-            Vector3 zv = Transformation.LocalToWorldVector(new Vector3(0, 0, Extents.Z * 2));
-            return new Vector3(xv.Length, yv.Length, zv.Length);
+            Float3 xv = Transformation.LocalToWorldVector(new Float3(Extents.X * 2, 0, 0));
+            Float3 yv = Transformation.LocalToWorldVector(new Float3(0, Extents.Y * 2, 0));
+            Float3 zv = Transformation.LocalToWorldVector(new Float3(0, 0, Extents.Z * 2));
+            return new Float3(xv.Length, yv.Length, zv.Length);
         }
 
         /// <summary>
         /// Returns the square size of the <see cref="OrientedBoundingBox" /> taking into consideration the scaling applied to the transformation matrix.
         /// </summary>
         /// <returns>The size of the consideration</returns>
-        public Vector3 GetSizeSquared()
+        public Float3 GetSizeSquared()
         {
-            Vector3 xv = Transformation.LocalToWorldVector(new Vector3(Extents.X * 2, 0, 0));
-            Vector3 yv = Transformation.LocalToWorldVector(new Vector3(0, Extents.Y * 2, 0));
-            Vector3 zv = Transformation.LocalToWorldVector(new Vector3(0, 0, Extents.Z * 2));
-            return new Vector3(xv.LengthSquared, yv.LengthSquared, zv.LengthSquared);
+            Float3 xv = Transformation.LocalToWorldVector(new Float3(Extents.X * 2, 0, 0));
+            Float3 yv = Transformation.LocalToWorldVector(new Float3(0, Extents.Y * 2, 0));
+            Float3 zv = Transformation.LocalToWorldVector(new Float3(0, 0, Extents.Z * 2));
+            return new Float3(xv.LengthSquared, yv.LengthSquared, zv.LengthSquared);
         }
 
         /// <summary>
         /// Returns the center of the <see cref="OrientedBoundingBox" />.
         /// </summary>
-        public Vector3 Center => Transformation.Translation;
+        public Float3 Center => Transformation.Translation;
 
         /// <summary>
         /// Determines whether a <see cref="OrientedBoundingBox" /> contains a point.
         /// </summary>
         /// <param name="point">The point to test.</param>
         /// <returns>The type of containment the two objects have.</returns>
-        public ContainmentType Contains(ref Vector3 point)
+        public ContainmentType Contains(ref Float3 point)
         {
             // Transform the point into the obb coordinates
-            Transformation.WorldToLocal(ref point, out Vector3 locPoint);
+            Transformation.WorldToLocal(ref point, out Float3 locPoint);
             locPoint.X = Math.Abs(locPoint.X);
             locPoint.Y = Math.Abs(locPoint.Y);
             locPoint.Z = Math.Abs(locPoint.Z);
@@ -289,7 +284,7 @@ namespace SE
         /// </summary>
         /// <param name="point">The point to test.</param>
         /// <returns>The type of containment the two objects have.</returns>
-        public ContainmentType Contains(Vector3 point)
+        public ContainmentType Contains(Float3 point)
         {
             return Contains(ref point);
         }
@@ -304,23 +299,23 @@ namespace SE
         public ContainmentType Contains(BoundingSphere sphere, bool ignoreScale = false)
         {
             // Transform sphere center into the obb coordinates
-            Transformation.WorldToLocal(ref sphere.Center, out Vector3 locCenter);
+            Transformation.WorldToLocal(ref sphere.Center, out Float3 locCenter);
 
-            Real locRadius;
+            float locRadius;
             if (ignoreScale)
                 locRadius = sphere.Radius;
             else
             {
                 // Transform sphere radius into the obb coordinates
-                Vector3 vRadius = Vector3.UnitX * sphere.Radius;
+                Float3 vRadius = Float3.UnitX * sphere.Radius;
                 Transformation.LocalToWorldVector(ref vRadius, out vRadius);
                 locRadius = vRadius.Length;
             }
 
             // Perform regular BoundingBox to BoundingSphere containment check
-            Vector3 minusExtens = -Extents;
-            Vector3.Clamp(ref locCenter, ref minusExtens, ref Extents, out Vector3 vector);
-            Real distance = Vector3.DistanceSquared(ref locCenter, ref vector);
+            Float3 minusExtens = -Extents;
+            Float3.Clamp(ref locCenter, ref minusExtens, ref Extents, out Float3 vector);
+            float distance = Float3.DistanceSquared(ref locCenter, ref vector);
 
             if (distance > locRadius * locRadius)
                 return ContainmentType.Disjoint;
@@ -333,9 +328,9 @@ namespace SE
         /// Determines whether there is an intersection between a <see cref="Ray" /> and a <see cref="OrientedBoundingBox" />.
         /// </summary>
         /// <param name="ray">The ray to test.</param>
-        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Vector3.Zero" /> if there was no intersection.</param>
+        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Float3.Zero" /> if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Ray ray, out Vector3 point)
+        public bool Intersects(ref Ray ray, out Float3 point)
         {
             // Put ray in box space
             Ray bRay;
@@ -359,11 +354,11 @@ namespace SE
         /// <param name="ray">The ray to test.</param>
         /// <param name="distance">When the method completes, contains the distance of intersection from the ray start, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Ray ray, out Real distance)
+        public bool Intersects(ref Ray ray, out float distance)
         {
-            if (Intersects(ref ray, out Vector3 point))
+            if (Intersects(ref ray, out Float3 point))
             {
-                Vector3.Distance(ref ray.Position, ref point, out distance);
+                Float3.Distance(ref ray.Position, ref point, out distance);
                 return true;
             }
             distance = 0;
@@ -377,7 +372,7 @@ namespace SE
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray)
         {
-            return Intersects(ref ray, out Vector3 _);
+            return Intersects(ref ray, out Float3 _);
         }
 
         /// <summary>
@@ -390,10 +385,10 @@ namespace SE
         }
 
         /// <summary>
-        /// Determines whether the specified <see cref="Vector4" /> is equal to this instance.
+        /// Determines whether the specified <see cref="Float4" /> is equal to this instance.
         /// </summary>
-        /// <param name="value">The <see cref="Vector4" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <param name="value">The <see cref="Float4" /> to compare with this instance.</param>
+        /// <returns><c>true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref OrientedBoundingBox value)
         {
@@ -401,10 +396,10 @@ namespace SE
         }
 
         /// <summary>
-        /// Determines whether the specified <see cref="Vector4" /> is equal to this instance.
+        /// Determines whether the specified <see cref="Float4" /> is equal to this instance.
         /// </summary>
-        /// <param name="value">The <see cref="Vector4" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <param name="value">The <see cref="Float4" /> to compare with this instance.</param>
+        /// <returns><c>true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(OrientedBoundingBox value)
         {

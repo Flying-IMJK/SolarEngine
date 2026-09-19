@@ -1,10 +1,5 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-#if USE_LARGE_WORLDS
-using Real = System.Double;
-#else
-using Real = System.Single;
-#endif
 
 using System;
 using System.Globalization;
@@ -28,13 +23,13 @@ namespace SE
         /// <summary>
         /// A identity <see cref="Transform" /> with all default values
         /// </summary>
-        public static readonly Transform Identity = new Transform(Vector3.Zero);
+        public static readonly Transform Identity = new Transform(Float3.Zero);
 
         /// <summary>
         /// Init
         /// </summary>
         /// <param name="position">Position in 3D space</param>
-        public Transform(Vector3 position)
+        public Transform(Float3 position)
         {
             Translation = position;
             Orientation = Quaternion.Identity;
@@ -46,7 +41,7 @@ namespace SE
         /// </summary>
         /// <param name="position">Position in 3D space</param>
         /// <param name="rotation">Rotation in 3D space</param>
-        public Transform(Vector3 position, Quaternion rotation)
+        public Transform(Float3 position, Quaternion rotation)
         {
             Translation = position;
             Orientation = rotation;
@@ -59,7 +54,7 @@ namespace SE
         /// <param name="position">Position in 3D space</param>
         /// <param name="rotation">Rotation in 3D space</param>
         /// <param name="scale">Transform scale</param>
-        public Transform(Vector3 position, Quaternion rotation, Float3 scale)
+        public Transform(Float3 position, Quaternion rotation, Float3 scale)
         {
             Translation = position;
             Orientation = rotation;
@@ -192,7 +187,7 @@ namespace SE
             Transform result;
             Quaternion.Multiply(ref left.Orientation, ref right.Orientation, out result.Orientation);
             Float3.Multiply(ref left.Scale, ref right.Scale, out result.Scale);
-            Vector3.Add(ref left.Translation, ref right.Translation, out result.Translation);
+            Float3.Add(ref left.Translation, ref right.Translation, out result.Translation);
             return result;
         }
 
@@ -205,7 +200,7 @@ namespace SE
         public static Transform Subtract(Transform left, Transform right)
         {
             Transform result;
-            Vector3.Subtract(ref left.Translation, ref right.Translation, out result.Translation);
+            Float3.Subtract(ref left.Translation, ref right.Translation, out result.Translation);
             Quaternion invRotation = right.Orientation.Conjugated();
             Quaternion.Multiply(ref left.Orientation, ref invRotation, out result.Orientation);
             Float3.Divide(ref left.Scale, ref right.Scale, out result.Scale);
@@ -231,10 +226,10 @@ namespace SE
         /// </summary>
         /// <param name="point">Local space point</param>
         /// <returns>World space point</returns>
-        public Vector3 LocalToWorld(Vector3 point)
+        public Float3 LocalToWorld(Float3 point)
         {
             point *= Scale;
-            Vector3.Transform(ref point, ref Orientation, out point);
+            Float3.Transform(ref point, ref Orientation, out point);
             return point + Translation;
         }
 
@@ -243,10 +238,10 @@ namespace SE
         /// </summary>
         /// <param name="vector">The local space vector.</param>
         /// <returns>The world space vector.</returns>
-        public Vector3 LocalToWorldVector(Vector3 vector)
+        public Float3 LocalToWorldVector(Float3 vector)
         {
             vector *= Scale;
-            Vector3.Transform(ref vector, ref Orientation, out vector);
+            Float3.Transform(ref vector, ref Orientation, out vector);
             return vector;
         }
 
@@ -267,10 +262,10 @@ namespace SE
         /// </summary>
         /// <param name="point">Local space point</param>
         /// <param name="result">World space point</param>
-        public void LocalToWorld(ref Vector3 point, out Vector3 result)
+        public void LocalToWorld(ref Float3 point, out Float3 result)
         {
-            Vector3 tmp = point * Scale;
-            Vector3.Transform(ref tmp, ref Orientation, out result);
+            Float3 tmp = point * Scale;
+            Float3.Transform(ref tmp, ref Orientation, out result);
             result += Translation;
         }
 
@@ -279,10 +274,10 @@ namespace SE
         /// </summary>
         /// <param name="vector">The local space vector.</param>
         /// <param name="result">World space vector</param>
-        public void LocalToWorldVector(ref Vector3 vector, out Vector3 result)
+        public void LocalToWorldVector(ref Float3 vector, out Float3 result)
         {
-            Vector3 tmp = vector * Scale;
-            Vector3.Transform(ref tmp, ref Orientation, out result);
+            Float3 tmp = vector * Scale;
+            Float3.Transform(ref tmp, ref Orientation, out result);
         }
 
         /// <summary>
@@ -290,11 +285,11 @@ namespace SE
         /// </summary>
         /// <param name="points">Local space points</param>
         /// <param name="result">World space points</param>
-        public void LocalToWorld(Vector3[] points, Vector3[] result)
+        public void LocalToWorld(Float3[] points, Float3[] result)
         {
             for (int i = 0; i < points.Length; i++)
             {
-                result[i] = Vector3.Transform(points[i] * Scale, Orientation) + Translation;
+                result[i] = Float3.Transform(points[i] * Scale, Orientation) + Translation;
             }
         }
 
@@ -326,7 +321,7 @@ namespace SE
         /// </summary>
         /// <param name="point">World space point</param>
         /// <returns>Local space point</returns>
-        public Vector3 WorldToLocal(Vector3 point)
+        public Float3 WorldToLocal(Float3 point)
         {
             var invScale = Scale;
             if (invScale.X != 0.0f)
@@ -336,8 +331,8 @@ namespace SE
             if (invScale.Z != 0.0f)
                 invScale.Z = 1.0f / invScale.Z;
             Quaternion invRotation = Orientation.Conjugated();
-            Vector3 result = point - Translation;
-            Vector3.Transform(ref result, ref invRotation, out result);
+            Float3 result = point - Translation;
+            Float3.Transform(ref result, ref invRotation, out result);
             return result * invScale;
         }
 
@@ -346,7 +341,7 @@ namespace SE
         /// </summary>
         /// <param name="vector">World space vector</param>
         /// <returns>Local space vector</returns>
-        public Vector3 WorldToLocalVector(Vector3 vector)
+        public Float3 WorldToLocalVector(Float3 vector)
         {
             var invScale = Scale;
             if (invScale.X != 0.0f)
@@ -356,7 +351,7 @@ namespace SE
             if (invScale.Z != 0.0f)
                 invScale.Z = 1.0f / invScale.Z;
             Quaternion invRotation = Orientation.Conjugated();
-            Vector3.Transform(ref vector, ref invRotation, out var result);
+            Float3.Transform(ref vector, ref invRotation, out var result);
             return result * invScale;
         }
 
@@ -366,7 +361,7 @@ namespace SE
         /// <param name="point">World space point</param>
         /// <param name="result">When the method completes, contains the local space point.</param>
         /// <returns>Local space point</returns>
-        public void WorldToLocal(ref Vector3 point, out Vector3 result)
+        public void WorldToLocal(ref Float3 point, out Float3 result)
         {
             var invScale = Scale;
             if (invScale.X != 0.0f)
@@ -376,8 +371,8 @@ namespace SE
             if (invScale.Z != 0.0f)
                 invScale.Z = 1.0f / invScale.Z;
             Quaternion invRotation = Orientation.Conjugated();
-            Vector3 tmp = point - Translation;
-            Vector3.Transform(ref tmp, ref invRotation, out result);
+            Float3 tmp = point - Translation;
+            Float3.Transform(ref tmp, ref invRotation, out result);
             result *= invScale;
         }
 
@@ -386,7 +381,7 @@ namespace SE
         /// </summary>
         /// <param name="vector">World space vector</param>
         /// <param name="result">Local space vector</param>
-        public void WorldToLocalVector(ref Vector3 vector, out Vector3 result)
+        public void WorldToLocalVector(ref Float3 vector, out Float3 result)
         {
             var invScale = Scale;
             if (invScale.X != 0.0f)
@@ -396,7 +391,7 @@ namespace SE
             if (invScale.Z != 0.0f)
                 invScale.Z = 1.0f / invScale.Z;
             Quaternion invRotation = Orientation.Conjugated();
-            Vector3.Transform(ref vector, ref invRotation, out result);
+            Float3.Transform(ref vector, ref invRotation, out result);
             result *= invScale;
         }
 
@@ -405,7 +400,7 @@ namespace SE
         /// </summary>
         /// <param name="points">World space points</param>
         /// <param name="result">Local space points</param>
-        public void WorldToLocal(Vector3[] points, Vector3[] result)
+        public void WorldToLocal(Float3[] points, Float3[] result)
         {
             var invScale = Scale;
             if (invScale.X != 0.0f)
@@ -418,7 +413,7 @@ namespace SE
             for (int i = 0; i < points.Length; i++)
             {
                 result[i] = points[i] - Translation;
-                Vector3.Transform(ref result[i], ref invRotation, out result[i]);
+                Float3.Transform(ref result[i], ref invRotation, out result[i]);
                 result[i] *= invScale;
             }
         }
@@ -429,9 +424,9 @@ namespace SE
         /// <remarks>This operation is not affected by scale or position of the transform. The returned vector has the same length as direction. Use <see cref="TransformPoint"/> for the conversion if the vector represents a position rather than a direction.</remarks>
         /// <param name="direction">The direction.</param>
         /// <returns>The transformed direction vector.</returns>
-        public Vector3 TransformDirection(Vector3 direction)
+        public Float3 TransformDirection(Float3 direction)
         {
-            Vector3.Transform(ref direction, ref Orientation, out var result);
+            Float3.Transform(ref direction, ref Orientation, out var result);
             return result;
         }
 
@@ -441,7 +436,7 @@ namespace SE
         /// <remarks>Use <see cref="TransformDirection"/> for the conversion if the vector represents a direction rather than a position.</remarks>
         /// <param name="position">The position.</param>
         /// <returns>The transformed position.</returns>
-        public Vector3 TransformPoint(Vector3 position)
+        public Float3 TransformPoint(Float3 position)
         {
             return LocalToWorld(position);
         }
@@ -457,7 +452,7 @@ namespace SE
         public static Transform Lerp(Transform start, Transform end, float amount)
         {
             Transform result;
-            Vector3.Lerp(ref start.Translation, ref end.Translation, amount, out result.Translation);
+            Float3.Lerp(ref start.Translation, ref end.Translation, amount, out result.Translation);
             Quaternion.Slerp(ref start.Orientation, ref end.Orientation, amount, out result.Orientation);
             Float3.Lerp(ref start.Scale, ref end.Scale, amount, out result.Scale);
             return result;
@@ -473,7 +468,7 @@ namespace SE
         /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static void Lerp(ref Transform start, ref Transform end, float amount, out Transform result)
         {
-            Vector3.Lerp(ref start.Translation, ref end.Translation, amount, out result.Translation);
+            Float3.Lerp(ref start.Translation, ref end.Translation, amount, out result.Translation);
             Quaternion.Slerp(ref start.Orientation, ref end.Orientation, amount, out result.Orientation);
             Float3.Lerp(ref start.Scale, ref end.Scale, amount, out result.Scale);
         }
@@ -604,7 +599,7 @@ namespace SE
         /// <returns><c>true</c> if left and right are near another, <c>false</c> otherwise</returns>
         public static bool NearEqual(ref Transform left, ref Transform right, float epsilon = Mathf.Epsilon)
         {
-            return Vector3.NearEqual(ref left.Translation, ref right.Translation, epsilon) && Quaternion.NearEqual(ref left.Orientation, ref right.Orientation, epsilon) && Float3.NearEqual(ref left.Scale, ref right.Scale, epsilon);
+            return Float3.NearEqual(ref left.Translation, ref right.Translation, epsilon) && Quaternion.NearEqual(ref left.Orientation, ref right.Orientation, epsilon) && Float3.NearEqual(ref left.Scale, ref right.Scale, epsilon);
         }
 
         /// <summary>

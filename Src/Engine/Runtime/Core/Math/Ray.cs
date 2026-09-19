@@ -1,10 +1,5 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-#if USE_LARGE_WORLDS
-using Real = System.Double;
-#else
-using Real = System.Single;
-#endif
 
 // -----------------------------------------------------------------------------
 // Original code from SharpDX project. https://github.com/sharpdx/SharpDX/
@@ -66,14 +61,14 @@ namespace SE
         /// <summary>
         /// Identity ray (at zero origin pointing forwards).
         /// </summary>
-        public static readonly Ray Identity = new Ray(new Vector3(0.0f, 0.0f, 0.0f), new Vector3(0.0f, 0.0f, 1.0f));
+        public static readonly Ray Identity = new Ray(new Float3(0.0f, 0.0f, 0.0f), new Float3(0.0f, 0.0f, 1.0f));
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Ray" /> struct.
         /// </summary>
         /// <param name="position">The position in three dimensional space of the origin of the ray.</param>
         /// <param name="direction">The normalized direction of the ray.</param>
-        public Ray(Vector3 position, Vector3 direction)
+        public Ray(Float3 position, Float3 direction)
         {
             Position = position;
             Direction = direction;
@@ -84,7 +79,7 @@ namespace SE
         /// </summary>
         /// <param name="distance">The distance from ray origin.</param>
         /// <returns>The calculated point.</returns>
-        public Vector3 GetPoint(Real distance)
+        public Float3 GetPoint(float distance)
         {
             return Position + Direction * distance;
         }
@@ -94,7 +89,7 @@ namespace SE
         /// </summary>
         /// <param name="point">The point to test.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Vector3 point)
+        public bool Intersects(ref Float3 point)
         {
             return CollisionsHelper.RayIntersectsPoint(ref this, ref point);
         }
@@ -113,9 +108,9 @@ namespace SE
         /// Determines if there is an intersection between the current object and a <see cref="Ray" />.
         /// </summary>
         /// <param name="ray">The ray to test.</param>
-        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Vector3.Zero" /> if there was no intersection.</param>
+        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Float3.Zero" /> if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Ray ray, out Vector3 point)
+        public bool Intersects(ref Ray ray, out Float3 point)
         {
             return CollisionsHelper.RayIntersectsRay(ref this, ref ray, out point);
         }
@@ -127,7 +122,7 @@ namespace SE
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Plane plane)
         {
-            return CollisionsHelper.RayIntersectsPlane(ref this, ref plane, out Real _);
+            return CollisionsHelper.RayIntersectsPlane(ref this, ref plane, out float _);
         }
 
         /// <summary>
@@ -136,7 +131,7 @@ namespace SE
         /// <param name="plane">The plane to test.</param>
         /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Plane plane, out Real distance)
+        public bool Intersects(ref Plane plane, out float distance)
         {
             return CollisionsHelper.RayIntersectsPlane(ref this, ref plane, out distance);
         }
@@ -160,9 +155,9 @@ namespace SE
         /// Determines if there is an intersection between the current object and a <see cref="Plane" />.
         /// </summary>
         /// <param name="plane">The plane to test.</param>
-        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Vector3.Zero" /> if there was no intersection.</param>
+        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Float3.Zero" /> if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Plane plane, out Vector3 point)
+        public bool Intersects(ref Plane plane, out Float3 point)
         {
             return CollisionsHelper.RayIntersectsPlane(ref this, ref plane, out point);
         }
@@ -174,9 +169,9 @@ namespace SE
         /// <param name="vertex2">The second vertex of the triangle to test.</param>
         /// <param name="vertex3">The third vertex of the triangle to test.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Vector3 vertex1, ref Vector3 vertex2, ref Vector3 vertex3)
+        public bool Intersects(ref Float3 vertex1, ref Float3 vertex2, ref Float3 vertex3)
         {
-            return CollisionsHelper.RayIntersectsTriangle(ref this, ref vertex1, ref vertex2, ref vertex3, out Real _);
+            return CollisionsHelper.RayIntersectsTriangle(ref this, ref vertex1, ref vertex2, ref vertex3, out float _);
         }
 
         /// <summary>
@@ -187,7 +182,7 @@ namespace SE
         /// <param name="vertex3">The third vertex of the triangle to test.</param>
         /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Vector3 vertex1, ref Vector3 vertex2, ref Vector3 vertex3, out Real distance)
+        public bool Intersects(ref Float3 vertex1, ref Float3 vertex2, ref Float3 vertex3, out float distance)
         {
             return CollisionsHelper.RayIntersectsTriangle(ref this, ref vertex1, ref vertex2, ref vertex3, out distance);
         }
@@ -203,9 +198,9 @@ namespace SE
         /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
         [Obsolete("Deprecated in 1.4")]
-        public bool Intersects(ref Vector3 vertex1, ref Vector3 vertex2, ref Vector3 vertex3, out float distance)
+        public bool Intersects(ref Float3 vertex1, ref Float3 vertex2, ref Float3 vertex3, out float distance)
         {
-            var result = CollisionsHelper.RayIntersectsTriangle(ref this, ref vertex1, ref vertex2, ref vertex3, out Real dst);
+            var result = CollisionsHelper.RayIntersectsTriangle(ref this, ref vertex1, ref vertex2, ref vertex3, out float dst);
             distance = (float)dst;
             return result;
         }
@@ -217,9 +212,9 @@ namespace SE
         /// <param name="vertex1">The first vertex of the triangle to test.</param>
         /// <param name="vertex2">The second vertex of the triangle to test.</param>
         /// <param name="vertex3">The third vertex of the triangle to test.</param>
-        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Vector3.Zero" /> if there was no intersection.</param>
+        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Float3.Zero" /> if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Vector3 vertex1, ref Vector3 vertex2, ref Vector3 vertex3, out Vector3 point)
+        public bool Intersects(ref Float3 vertex1, ref Float3 vertex2, ref Float3 vertex3, out Float3 point)
         {
             return CollisionsHelper.RayIntersectsTriangle(ref this, ref vertex1, ref vertex2, ref vertex3, out point);
         }
@@ -231,7 +226,7 @@ namespace SE
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref BoundingBox box)
         {
-            return CollisionsHelper.RayIntersectsBox(ref this, ref box, out Real _);
+            return CollisionsHelper.RayIntersectsBox(ref this, ref box, out float _);
         }
 
         /// <summary>
@@ -250,7 +245,7 @@ namespace SE
         /// <param name="box">The box to test.</param>
         /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref BoundingBox box, out Real distance)
+        public bool Intersects(ref BoundingBox box, out float distance)
         {
             return CollisionsHelper.RayIntersectsBox(ref this, ref box, out distance);
         }
@@ -259,9 +254,9 @@ namespace SE
         /// Determines if there is an intersection between the current object and a <see cref="BoundingBox" />.
         /// </summary>
         /// <param name="box">The box to test.</param>
-        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Vector3.Zero" /> if there was no intersection.</param>
+        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Float3.Zero" /> if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref BoundingBox box, out Vector3 point)
+        public bool Intersects(ref BoundingBox box, out Float3 point)
         {
             return CollisionsHelper.RayIntersectsBox(ref this, ref box, out point);
         }
@@ -273,7 +268,7 @@ namespace SE
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref BoundingSphere sphere)
         {
-            return CollisionsHelper.RayIntersectsSphere(ref this, ref sphere, out Real _);
+            return CollisionsHelper.RayIntersectsSphere(ref this, ref sphere, out float _);
         }
 
         /// <summary>
@@ -292,7 +287,7 @@ namespace SE
         /// <param name="sphere">The sphere to test.</param>
         /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref BoundingSphere sphere, out Real distance)
+        public bool Intersects(ref BoundingSphere sphere, out float distance)
         {
             return CollisionsHelper.RayIntersectsSphere(ref this, ref sphere, out distance);
         }
@@ -308,7 +303,7 @@ namespace SE
         [Obsolete("Deprecated in 1.4")]
         public bool Intersects(ref BoundingSphere sphere, out float distance)
         {
-            var result = CollisionsHelper.RayIntersectsSphere(ref this, ref sphere, out Real dst);
+            var result = CollisionsHelper.RayIntersectsSphere(ref this, ref sphere, out float dst);
             distance = (float)dst;
             return result;
         }
@@ -318,9 +313,9 @@ namespace SE
         /// Determines if there is an intersection between the current object and a <see cref="BoundingSphere" />.
         /// </summary>
         /// <param name="sphere">The sphere to test.</param>
-        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Vector3.Zero" /> if there was no intersection.</param>
+        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Float3.Zero" /> if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref BoundingSphere sphere, out Vector3 point)
+        public bool Intersects(ref BoundingSphere sphere, out Float3 point)
         {
             return CollisionsHelper.RayIntersectsSphere(ref this, ref sphere, out point);
         }
@@ -335,13 +330,13 @@ namespace SE
         /// <returns>The resulting ray.</returns>
         public static Ray GetPickRay(float x, float y, ref Viewport viewport, ref Matrix vp)
         {
-            Vector3 nearPoint = new Vector3(x, y, 0.0f);
-            Vector3 farPoint = new Vector3(x, y, 1.0f);
+            Float3 nearPoint = new Float3(x, y, 0.0f);
+            Float3 farPoint = new Float3(x, y, 1.0f);
 
-            nearPoint = Vector3.Unproject(nearPoint, viewport.X, viewport.Y, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth, vp);
-            farPoint = Vector3.Unproject(farPoint, viewport.X, viewport.Y, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth, vp);
+            nearPoint = Float3.Unproject(nearPoint, viewport.X, viewport.Y, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth, vp);
+            farPoint = Float3.Unproject(farPoint, viewport.X, viewport.Y, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth, vp);
 
-            Vector3 direction = farPoint - nearPoint;
+            Float3 direction = farPoint - nearPoint;
             direction.Normalize();
 
             return new Ray(nearPoint, direction);
@@ -424,10 +419,10 @@ namespace SE
         }
 
         /// <summary>
-        /// Determines whether the specified <see cref="Vector4" /> is equal to this instance.
+        /// Determines whether the specified <see cref="Float4" /> is equal to this instance.
         /// </summary>
-        /// <param name="value">The <see cref="Vector4" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <param name="value">The <see cref="Float4" /> to compare with this instance.</param>
+        /// <returns><c>true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Ray value)
         {
@@ -435,10 +430,10 @@ namespace SE
         }
 
         /// <summary>
-        /// Determines whether the specified <see cref="Vector4" /> is equal to this instance.
+        /// Determines whether the specified <see cref="Float4" /> is equal to this instance.
         /// </summary>
-        /// <param name="value">The <see cref="Vector4" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <param name="value">The <see cref="Float4" /> to compare with this instance.</param>
+        /// <returns><c>true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Ray value)
         {

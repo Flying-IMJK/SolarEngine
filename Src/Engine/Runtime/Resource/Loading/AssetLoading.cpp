@@ -229,7 +229,7 @@ namespace SE
 
 	String AssetTask::ToString() const
 	{
-		return String::Format(SE_TEXT("Content Load Task ({0})"), Types::GetEnumString(GetState()));
+		return String::Format(SE_TEXT("Content Load Task ({0})"), GetTaskStateName(GetState()));
 	}
 
 	void AssetTask::Enqueue()

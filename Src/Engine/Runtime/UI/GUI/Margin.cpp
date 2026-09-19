@@ -44,18 +44,18 @@ namespace SE
 
 	void Margin::ShrinkRectangle(Rectangle rect) const
 	{
-		rect.Location.x += Left;
-		rect.Location.y += Top;
-		rect.Size.x -= Left + Right;
-		rect.Size.y -= Top + Bottom;
+		rect.Location.X += Left;
+		rect.Location.Y += Top;
+		rect.Size.X -= Left + Right;
+		rect.Size.Y -= Top + Bottom;
 	}
 
 	void Margin::ExpandRectangle(Rectangle rect) const
 	{
-		rect.Location.x -= Left;
-		rect.Location.y -= Top;
-		rect.Size.x += Left + Right;
-		rect.Size.y += Top + Bottom;
+		rect.Location.X -= Left;
+		rect.Location.Y -= Top;
+		rect.Size.X += Left + Right;
+		rect.Size.Y += Top + Bottom;
 	}
 	Margin Margin::operator+(const Margin& value) const
 	{

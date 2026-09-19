@@ -73,7 +73,7 @@ namespace SE
 		}
 
 #if SE_EDITOR
-		if (view.Pass.IsFlag(DrawPass::GBuffer) && category == SceneDraw)
+		if (EnumHasAnyFlags(view.Pass, DrawPass::GBuffer) && category == SceneDraw)
 		{
 			// Draw physics shapes
 			/*if (EnumHasAnyFlags(view.Flags, ViewFlags::PhysicsDebug) || view.Mode == ViewMode::PhysicsColliders)
@@ -218,7 +218,7 @@ namespace SE
 				}
 				auto e = m_DrawListData[index];
 				e.Bounds.Center -= view.Origin;
-				if (CHECK_ACTOR && !view.StaticFlagsMask.Is(StaticMask::None) && e.render->RenderGetStaticFlags() == view.StaticFlagsMask)
+				if (CHECK_ACTOR && view.StaticFlagsMask != StaticMask::None && e.render->RenderGetStaticFlags() == view.StaticFlagsMask)
 				{
 					e.render->RenderDraw(*m_DrawBatch);
 				}

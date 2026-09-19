@@ -7,6 +7,7 @@ namespace SE
     /// <summary>
     /// The objects drawing pass types. Used as a flags for objects drawing masking.
     /// </summary>
+    SE_ENUM(API(Attributes="Flags"))
     enum class DrawPass : int32
     {
         /// <summary>
@@ -65,7 +66,10 @@ namespace SE
         All = Depth | GBuffer | Forward | Distortion | MotionVectors | GlobalSDF | GlobalSurfaceAtlas,
     };
 
+    SE_ENUM_OPERATORS(DrawPass);
+
     /// Describes frame rendering modes.
+    SE_ENUM(API())
     enum class ViewMode
     {
         /// <summary>
@@ -235,6 +239,7 @@ namespace SE
     /// <summary>
     /// Static flags for the actor object.
     /// </summary>
+    SE_ENUM(API(Attributes="Flags"))
     enum class StaticMask
     {
         /// <summary>
@@ -273,6 +278,7 @@ namespace SE
         MAX = 1 << 31,
     };
 
+    SE_ENUM_OPERATORS(StaticMask);
 
     /// <summary>
     /// The mesh buffer types.
@@ -303,6 +309,7 @@ namespace SE
     /// <summary>
     /// Shadows casting modes by visual elements.
     /// </summary>
+    SE_ENUM(API(Attributes="Flags"))
     enum class ShadowsCastingMode
     {
         /// <summary>
@@ -326,9 +333,12 @@ namespace SE
         All = StaticOnly | DynamicOnly,
     };
 
+    SE_ENUM_OPERATORS(ShadowsCastingMode)
+
     /// <summary>
     /// The partitioning mode for shadow cascades.
     /// </summary>
+    SE_ENUM(API())
     enum class PartitionMode
     {
         /// <summary>

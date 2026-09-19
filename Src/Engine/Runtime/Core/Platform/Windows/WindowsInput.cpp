@@ -61,7 +61,7 @@ namespace SE
 		// [Mouse]
 		void SetMousePosition(const Float2& newPosition) final override
 		{
-			::SetCursorPos(static_cast<int32>(newPosition.x), static_cast<int32>(newPosition.y));
+			::SetCursorPos(static_cast<int32>(newPosition.X), static_cast<int32>(newPosition.Y));
 
 			OnMouseMoved(newPosition);
 		}

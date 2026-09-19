@@ -142,7 +142,7 @@ namespace SE
 			{
 				slidePosition += panel->GetViewOffset(); // Hardcoded fix
 			}
-			float mousePosition = _orientation == Orientation::Vertical ? slidePosition.y : slidePosition.x;
+			float mousePosition = _orientation == Orientation::Vertical ? slidePosition.Y : slidePosition.X;
 
 			float percentage = (mousePosition - _mouseOffset - _thumbSize / 2) / (TrackSize() - _thumbSize);
 			SetTargetValue(_minimum + percentage * (_maximum - _minimum));
@@ -170,7 +170,7 @@ namespace SE
 				root->GetFocusedControl()->Defocus();
 			}
 
-			float mousePosition = _orientation == Orientation::Vertical ? location.y : location.x;
+			float mousePosition = _orientation == Orientation::Vertical ? location.Y : location.X;
 
 			if (_thumbRect.Contains(location))
 			{

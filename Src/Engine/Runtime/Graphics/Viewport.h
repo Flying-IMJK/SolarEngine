@@ -8,6 +8,7 @@ namespace SE
 {
 	struct Rectangle;
 
+	SE_STRUCT(API(InBuild("SE.Viewport")))
 	struct SE_API_RUNTIME Viewport
 	{
 	public:
@@ -16,14 +17,14 @@ namespace SE
 			struct
 			{
 				// Position of the pixel coordinate of the upper-left corner of the viewport.
-				float x;
+				float X;
 
 				// Position of the pixel coordinate of the upper-left corner of the viewport.
-				float y;
+				float Y;
 			};
 
 			// Upper left corner location.
-			Float2 location;
+			Float2 Location;
 		};
 
 		union
@@ -31,21 +32,21 @@ namespace SE
 			struct
 			{
 				// Width dimension of the viewport.
-				float width;
+				float Width;
 
 				// Height dimension of the viewport.
-				float height;
+				float Height;
 			};
 
 			// Size
-			Float2 size;
+			Float2 Size;
 		};
 
 		// Minimum depth of the clip volume.
-		float minDepth;
+		float MinDepth;
 
 		// Maximum depth of the clip volume.
-		float maxDepth;
+		float MaxDepth;
 
 	public:
 		/// <summary>
@@ -59,7 +60,7 @@ namespace SE
 		// @param width The width of the viewport in pixels
 		// @param height The height of the viewport in pixels
 		Viewport(float x, float y, float width, float height)
-			: x(x), y(y), width(width), height(height), minDepth(0.0f), maxDepth(1.0f)
+			: X(x), Y(y), Width(width), Height(height), MinDepth(0.0f), MaxDepth(1.0f)
 		{
 		}
 
@@ -71,7 +72,7 @@ namespace SE
 		// @param minDepth The minimum depth of the clip volume
 		// @param maxDepth The maximum depth of the clip volume
 		Viewport(float x, float y, float width, float height, float minDepth, float maxDepth)
-			: x(x), y(y), width(width), height(height), minDepth(minDepth), maxDepth(maxDepth)
+			: X(x), Y(y), Width(width), Height(height), MinDepth(minDepth), MaxDepth(maxDepth)
 		{
 		}
 
@@ -80,7 +81,7 @@ namespace SE
 		/// </summary>
 		/// <param name="size">The viewport size.</param>
 		explicit Viewport(const Float2& size)
-			: x(0), y(0), width(size.x), height(size.y), minDepth(0.0f), maxDepth(1.0f)
+			: X(0), Y(0), Width(size.X), Height(size.Y), MinDepth(0.0f), MaxDepth(1.0f)
 		{
 		}
 
@@ -96,9 +97,9 @@ namespace SE
 		// @returns The aspect ratio
 		float GetAspectRatio() const
 		{
-			if (height != 0.0f)
+			if (Height != 0.0f)
 			{
-				return width / height;
+				return Width / Height;
 			}
 			return 0.0f;
 		}
@@ -126,14 +127,14 @@ namespace SE
 	public:
 		bool operator==(const Viewport& other) const
 		{
-			return x == other.x && y == other.y && width == other.width && height == other.height
-				&& minDepth == other.minDepth && maxDepth == other.maxDepth;
+			return X == other.X && Y == other.Y && Width == other.Width && Height == other.Height
+				&& MinDepth == other.MinDepth && MaxDepth == other.MaxDepth;
 		}
 
 		bool operator!=(const Viewport& other) const
 		{
-			return x != other.x || y != other.y || width != other.width || height != other.height
-				|| minDepth != other.minDepth || maxDepth != other.maxDepth;
+			return X != other.X || Y != other.Y || Width != other.Width || Height != other.Height
+				|| MinDepth != other.MinDepth || MaxDepth != other.MaxDepth;
 		}
 	};
 

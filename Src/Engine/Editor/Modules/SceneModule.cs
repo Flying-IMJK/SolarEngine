@@ -276,7 +276,7 @@ namespace SE.Editor
         private void SynchronizeSceneGraph()
         {
             HashSet<Guid> seenActors = new();
-            int sceneCount = SE.Level.GetScenesCount();
+            int sceneCount = SE.Level.ScenesCount;
             for (int index = 0; index < sceneCount; index++)
                 SynchronizeSceneActors(SE.Level.GetScene(index), seenActors);
 
@@ -351,7 +351,7 @@ namespace SE.Editor
 
         private void RefreshScenes()
         {
-            int count = SE.Level.GetScenesCount();
+            int count = SE.Level.ScenesCount;
             bool changed = count != m_Scenes.Count;
             List<SceneEntry> refreshed = new List<SceneEntry>(count);
             for (int index = 0; index < count; index++)

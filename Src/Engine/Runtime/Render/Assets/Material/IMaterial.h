@@ -51,7 +51,7 @@ namespace SE
         /// Gets the mask of render passes supported by this material.
         /// </summary>
         /// <returns>The draw passes supported by this material.</returns>
-        virtual EnumFlags<DrawPass> GetDrawModes() const
+        virtual DrawPass GetDrawModes() const
         {
             return DrawPass::None;
         }

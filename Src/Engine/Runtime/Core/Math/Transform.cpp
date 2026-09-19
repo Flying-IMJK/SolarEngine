@@ -91,52 +91,52 @@ namespace SE
     void Transform::LocalToWorld(const Transform& other, Transform& result) const
     {
         //Quaternion::Multiply(Orientation, other.Orientation, result.Orientation);
-        const float a = Orientation.y * other.Orientation.z - Orientation.z * other.Orientation.y;
-        const float b = Orientation.z * other.Orientation.x - Orientation.x * other.Orientation.z;
-        const float c = Orientation.x * other.Orientation.y - Orientation.y * other.Orientation.x;
-        const float d = Orientation.x * other.Orientation.x + Orientation.y * other.Orientation.y + Orientation.z * other.Orientation.z;
-        result.Orientation.x = Orientation.x * other.Orientation.w + other.Orientation.x * Orientation.w + a;
-        result.Orientation.y = Orientation.y * other.Orientation.w + other.Orientation.y * Orientation.w + b;
-        result.Orientation.z = Orientation.z * other.Orientation.w + other.Orientation.z * Orientation.w + c;
-        result.Orientation.w = Orientation.w * other.Orientation.w - d;
+        const float a = Orientation.Y * other.Orientation.Z - Orientation.Z * other.Orientation.Y;
+        const float b = Orientation.Z * other.Orientation.X - Orientation.X * other.Orientation.Z;
+        const float c = Orientation.X * other.Orientation.Y - Orientation.Y * other.Orientation.X;
+        const float d = Orientation.X * other.Orientation.X + Orientation.Y * other.Orientation.Y + Orientation.Z * other.Orientation.Z;
+        result.Orientation.X = Orientation.X * other.Orientation.W + other.Orientation.X * Orientation.W + a;
+        result.Orientation.Y = Orientation.Y * other.Orientation.W + other.Orientation.Y * Orientation.W + b;
+        result.Orientation.Z = Orientation.Z * other.Orientation.W + other.Orientation.Z * Orientation.W + c;
+        result.Orientation.W = Orientation.W * other.Orientation.W - d;
 
         //result.Orientation.Normalize();
         const float length = result.Orientation.Length();
         if (length > Math::ZeroTolerance)
         {
             const float inv = 1.0f / length;
-            result.Orientation.x *= inv;
-            result.Orientation.y *= inv;
-            result.Orientation.z *= inv;
-            result.Orientation.w *= inv;
+            result.Orientation.X *= inv;
+            result.Orientation.Y *= inv;
+            result.Orientation.Z *= inv;
+            result.Orientation.W *= inv;
         }
 
         //Float3::Multiply(Scale, other.Scale, result.Scale);
-        result.Scale = Float3(Scale.x * other.Scale.x, Scale.y * other.Scale.y, Scale.z * other.Scale.z);
+        result.Scale = Float3(Scale.X * other.Scale.X, Scale.Y * other.Scale.Y, Scale.Z * other.Scale.Z);
 
         //Float3 tmp; Float3::Multiply(other.Translation, Scale, tmp);
-        Float3 tmp = Float3(other.Translation.x * Scale.x, other.Translation.y * Scale.y, other.Translation.z * Scale.z);
+        Float3 tmp = Float3(other.Translation.X * Scale.X, other.Translation.Y * Scale.Y, other.Translation.Z * Scale.Z);
 
         //Float3::Transform(tmp, Orientation, tmp);
-        const float x = Orientation.x + Orientation.x;
-        const float y = Orientation.y + Orientation.y;
-        const float z = Orientation.z + Orientation.z;
-        const float wx = Orientation.w * x;
-        const float wy = Orientation.w * y;
-        const float wz = Orientation.w * z;
-        const float xx = Orientation.x * x;
-        const float xy = Orientation.x * y;
-        const float xz = Orientation.x * z;
-        const float yy = Orientation.y * y;
-        const float yz = Orientation.y * z;
-        const float zz = Orientation.z * z;
+        const float x = Orientation.X + Orientation.X;
+        const float y = Orientation.Y + Orientation.Y;
+        const float z = Orientation.Z + Orientation.Z;
+        const float wx = Orientation.W * x;
+        const float wy = Orientation.W * y;
+        const float wz = Orientation.W * z;
+        const float xx = Orientation.X * x;
+        const float xy = Orientation.X * y;
+        const float xz = Orientation.X * z;
+        const float yy = Orientation.Y * y;
+        const float yz = Orientation.Y * z;
+        const float zz = Orientation.Z * z;
         tmp = Float3(
-            tmp.x * (1.0f - yy - zz) + tmp.y * (xy - wz) + tmp.z * (xz + wy),
-            tmp.x * (xy + wz) + tmp.y * (1.0f - xx - zz) + tmp.z * (yz - wx),
-            tmp.x * (xz - wy) + tmp.y * (yz + wx) + tmp.z * (1.0f - xx - yy));
+            tmp.X * (1.0f - yy - zz) + tmp.Y * (xy - wz) + tmp.Z * (xz + wy),
+            tmp.X * (xy + wz) + tmp.Y * (1.0f - xx - zz) + tmp.Z * (yz - wx),
+            tmp.X * (xz - wy) + tmp.Y * (yz + wx) + tmp.Z * (1.0f - xx - yy));
 
         //Float3::Add(tmp, Translation, result.Translation);
-        result.Translation = Float3(tmp.x + Translation.x, tmp.y + Translation.y, tmp.z + Translation.z);
+        result.Translation = Float3(tmp.X + Translation.X, tmp.Y + Translation.Y, tmp.Z + Translation.Z);
     }
 
     void Transform::LocalToWorldVector(const Float3& vector, Float3& result) const
@@ -155,12 +155,12 @@ namespace SE
     void Transform::WorldToLocal(const Transform& other, Transform& result) const
     {
         Float3 invScale = Scale;
-        if (invScale.x != 0.0f)
-            invScale.x = 1.0f / invScale.x;
-        if (invScale.y != 0.0f)
-            invScale.y = 1.0f / invScale.y;
-        if (invScale.z != 0.0f)
-            invScale.z = 1.0f / invScale.z;
+        if (invScale.X != 0.0f)
+            invScale.X = 1.0f / invScale.X;
+        if (invScale.Y != 0.0f)
+            invScale.Y = 1.0f / invScale.Y;
+        if (invScale.Z != 0.0f)
+            invScale.Z = 1.0f / invScale.Z;
         const Quaternion invRotation = Orientation.Conjugated();
         Quaternion::Multiply(invRotation, other.Orientation, result.Orientation);
         result.Orientation.Normalize();
@@ -173,12 +173,12 @@ namespace SE
     void Transform::WorldToLocal(const Float3& point, Float3& result) const
     {
         Float3 invScale = Scale;
-        if (invScale.x != 0.0f)
-            invScale.x = 1.0f / invScale.x;
-        if (invScale.y != 0.0f)
-            invScale.y = 1.0f / invScale.y;
-        if (invScale.z != 0.0f)
-            invScale.z = 1.0f / invScale.z;
+        if (invScale.X != 0.0f)
+            invScale.X = 1.0f / invScale.X;
+        if (invScale.Y != 0.0f)
+            invScale.Y = 1.0f / invScale.Y;
+        if (invScale.Z != 0.0f)
+            invScale.Z = 1.0f / invScale.Z;
         const Quaternion invRotation = Orientation.Conjugated();
         result = point - Translation;
         Float3::Transform(result, invRotation, result);
@@ -188,12 +188,12 @@ namespace SE
     void Transform::WorldToLocalVector(const Float3& vector, Float3& result) const
     {
         Float3 invScale = Scale;
-        if (invScale.x != 0.0f)
-            invScale.x = 1.0f / invScale.x;
-        if (invScale.y != 0.0f)
-            invScale.y = 1.0f / invScale.y;
-        if (invScale.z != 0.0f)
-            invScale.z = 1.0f / invScale.z;
+        if (invScale.X != 0.0f)
+            invScale.X = 1.0f / invScale.X;
+        if (invScale.Y != 0.0f)
+            invScale.Y = 1.0f / invScale.Y;
+        if (invScale.Z != 0.0f)
+            invScale.Z = 1.0f / invScale.Z;
         const Quaternion invRotation = Orientation.Conjugated();
         Float3::Transform(vector, invRotation, result);
         result *= invScale;

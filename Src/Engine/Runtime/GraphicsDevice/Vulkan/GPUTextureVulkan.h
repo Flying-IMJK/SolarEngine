@@ -156,7 +156,7 @@ namespace SE
 
 		GPUTextureView* ViewReadOnlyDepth() const override
 		{
-			ENGINE_ASSERT(m_Desc.Flags.IsFlag(GPUTextureFlags::ReadOnlyDepthView));
+			ENGINE_ASSERT(EnumHasAnyFlags(m_Desc.Flags, GPUTextureFlags::ReadOnlyDepthView));
 			return (GPUTextureView*)&m_HandleReadOnlyDepth;
 		}
 

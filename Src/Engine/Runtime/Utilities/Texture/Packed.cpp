@@ -28,12 +28,12 @@ namespace SE
 	}
 
 	FloatR10G10B10A2::FloatR10G10B10A2(const Float3& v, float alpha)
-		: FloatR10G10B10A2(v.x, v.y, v.z, alpha)
+		: FloatR10G10B10A2(v.X, v.Y, v.Z, alpha)
 	{
 	}
 
 	FloatR10G10B10A2::FloatR10G10B10A2(const Float4& v)
-		: FloatR10G10B10A2(v.x, v.y, v.z, v.w)
+		: FloatR10G10B10A2(v.X, v.Y, v.Z, v.W)
 	{
 	}
 
@@ -57,11 +57,11 @@ namespace SE
 		Float3 vectorOut;
 		uint32 tmp;
 		tmp = value & 0x3FF;
-		vectorOut.x = (float)tmp / 1023.f;
+		vectorOut.X = (float)tmp / 1023.f;
 		tmp = (value >> 10) & 0x3FF;
-		vectorOut.y = (float)tmp / 1023.f;
+		vectorOut.Y = (float)tmp / 1023.f;
 		tmp = (value >> 20) & 0x3FF;
-		vectorOut.z = (float)tmp / 1023.f;
+		vectorOut.Z = (float)tmp / 1023.f;
 		return vectorOut;
 	}
 
@@ -70,12 +70,12 @@ namespace SE
 		Float4 vectorOut;
 		uint32 tmp;
 		tmp = value & 0x3FF;
-		vectorOut.x = (float)tmp / 1023.f;
+		vectorOut.X = (float)tmp / 1023.f;
 		tmp = (value >> 10) & 0x3FF;
-		vectorOut.y = (float)tmp / 1023.f;
+		vectorOut.Y = (float)tmp / 1023.f;
 		tmp = (value >> 20) & 0x3FF;
-		vectorOut.z = (float)tmp / 1023.f;
-		vectorOut.w = (float)(value >> 30) / 3.f;
+		vectorOut.Z = (float)tmp / 1023.f;
+		vectorOut.W = (float)(value >> 30) / 3.f;
 		return vectorOut;
 	}
 
@@ -191,17 +191,17 @@ namespace SE
 	}
 
 	FloatR11G11B10::FloatR11G11B10(const Float3& v)
-		: FloatR11G11B10(v.x, v.y, v.z)
+		: FloatR11G11B10(v.X, v.Y, v.Z)
 	{
 	}
 
 	FloatR11G11B10::FloatR11G11B10(const Float4& v)
-		: FloatR11G11B10(v.x, v.y, v.z)
+		: FloatR11G11B10(v.X, v.Y, v.Z)
 	{
 	}
 
 	FloatR11G11B10::FloatR11G11B10(const Color& v)
-		: FloatR11G11B10(v.r, v.g, v.b)
+		: FloatR11G11B10(v.R, v.G, v.B)
 	{
 	}
 

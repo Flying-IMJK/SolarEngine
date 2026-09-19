@@ -291,9 +291,9 @@ namespace SE
 
 		static VkImageAspectFlags ConvertImageAspect(RHIImageAspect value);
 
-		static VkPipelineStageFlags2 ConvertPipelineStage(EnumFlags<RHIResourceStateFlag> value);
+		static VkPipelineStageFlags2 ConvertPipelineStage(RHIResourceStateFlag value);
 
-		static VkAccessFlags2 ParseResourceState(EnumFlags<RHIResourceStateFlag> value);
+		static VkAccessFlags2 ParseResourceState(RHIResourceStateFlag value);
 
 		static VkComponentSwizzle ConvertComponentSwizzle(ComponentSwizzle value);
 

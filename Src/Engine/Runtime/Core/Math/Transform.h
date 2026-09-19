@@ -7,21 +7,26 @@ namespace SE
 	/// <summary>
 	/// Describes transformation in a 3D space.
 	/// </summary>
+	SE_STRUCT(API())
 	struct SE_API_RUNTIME Transform
 	{
+		SCRIPTING_TYPE_MIN(Transform)
 		/// <summary>
 		/// The translation vector of the transform.
 		/// </summary>
+		SE_FIELD(API())
 		Float3 Translation;
 
 		/// <summary>
 		/// The rotation of the transform.
 		/// </summary>
+		SE_FIELD(API())
 		Quaternion Orientation;
 
 		/// <summary>
 		/// The scale vector of the transform.
 		/// </summary>
+		SE_FIELD(API())
 		Float3 Scale;
 
 	public:
@@ -93,7 +98,7 @@ namespace SE
 		/// </summary>
 		FORCE_INLINE float GetDeterminant() const
 		{
-			return Scale.x * Scale.y * Scale.z;
+			return Scale.X * Scale.Y * Scale.Z;
 		}
 
 	public:

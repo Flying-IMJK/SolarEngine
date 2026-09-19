@@ -172,7 +172,7 @@ namespace SE
         const Viewport viewport = GetViewport();
         ProjectPoint(newWorldLocation, windowSpace, viewport);
 
-        return windowSpace.x >= 0 && windowSpace.x <= viewport.size.x && windowSpace.y >= 0 && windowSpace.y <= viewport.size.y;
+        return windowSpace.X >= 0 && windowSpace.X <= viewport.Size.X && windowSpace.Y >= 0 && windowSpace.Y <= viewport.Size.Y;
     }
 
     Ray Camera::ConvertMouseToRay(const Float2& mousePosition) const
@@ -222,9 +222,9 @@ namespace SE
         Viewport result = _viewport;
 
         // Fallback to the default value
-        if (result.size.MinValue() <= Math::ZeroTolerance)
+        if (result.Size.MinValue() <= Math::ZeroTolerance)
         {
-            result.size = Float2(1280, 720);
+            result.Size = Float2(1280, 720);
         }
 
         return _viewport;
@@ -279,7 +279,7 @@ namespace SE
         }
         else
         {
-            Matrix::Ortho(viewport.width * _orthoScale, viewport.height * _orthoScale, _near, _far, projection);
+            Matrix::Ortho(viewport.Width * _orthoScale, viewport.Height * _orthoScale, _near, _far, projection);
         }
 
         // Create view matrix
@@ -345,7 +345,7 @@ namespace SE
             draw.LightmapUVs = nullptr;
             draw.Flags = StaticMask::Transform;
             draw.DrawModes = renderContext.view.Pass;
-            draw.DrawModes.SetMultipleFlags(DrawPass::Depth, DrawPass::GBuffer, DrawPass::Forward);
+            draw.DrawModes = EnumCombineFlags(draw.DrawModes, DrawPass::Depth, DrawPass::GBuffer, DrawPass::Forward);
 
             BoundingSphere::FromBox(_previewModelBox, draw.Bounds);
             draw.Bounds.Center -= renderContext.view.Origin;
@@ -354,7 +354,7 @@ namespace SE
             draw.ForcedLOD = -1;
             draw.SortOrder = 0;
             draw.VertexColors = nullptr;
-            if (!draw.DrawModes.Is(DrawPass::None))
+            if (draw.DrawModes != DrawPass::None)
             {
                 _previewModel->Draw(renderContext, draw);
             }

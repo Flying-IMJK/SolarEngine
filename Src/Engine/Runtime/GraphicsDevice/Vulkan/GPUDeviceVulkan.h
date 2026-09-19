@@ -90,7 +90,7 @@ namespace SE
 		/// <param name="flags">The texture usage flags.</param>
 		/// <param name="optimalTiling">If set to <c>true</c> the optimal tiling should be used, otherwise use linear tiling.</param>
 		/// <returns>The output format.</returns>
-		PixelFormat GetClosestSupportedPixelFormat(PixelFormat format, EnumFlags<GPUTextureFlags> flags, bool optimalTiling);
+	PixelFormat GetClosestSupportedPixelFormat(PixelFormat format, GPUTextureFlags flags, bool optimalTiling);
 	private:
 		bool IsVkFormatSupported(VkFormat vkFormat, VkFormatFeatureFlags wantedFeatureFlags, bool optimalTiling) const;
 

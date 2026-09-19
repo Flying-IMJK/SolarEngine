@@ -20,7 +20,7 @@ namespace SE
 		Size = size;
 
 		GPUBufferDescription description = owner->GetDescription();
-		if ((description.IsShaderResource() && !description.Flags.IsFlag(GPUBufferFlags::Structured)) ||
+		if ((description.IsShaderResource() && !EnumHasAnyFlags(description.Flags, GPUBufferFlags::Structured)) ||
 			(usage & VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT) == VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT)
 		{
 			VkBufferViewCreateInfo viewInfo;
@@ -96,21 +96,21 @@ namespace SE
 		bufferInfo.size = m_Desc.Size;
 		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-		if (useSRV && !m_Desc.Flags.IsFlag(GPUBufferFlags::Structured))
+		if (useSRV && !EnumHasAnyFlags(m_Desc.Flags, GPUBufferFlags::Structured))
 			bufferInfo.usage |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
-		if (useUAV || m_Desc.Flags.IsFlag(GPUBufferFlags::RawBuffer) || m_Desc.Flags.IsFlag(GPUBufferFlags::Structured))
+		if (useUAV || EnumHasAnyFlags(m_Desc.Flags, GPUBufferFlags::RawBuffer) || EnumHasAnyFlags(m_Desc.Flags, GPUBufferFlags::Structured))
 			bufferInfo.usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 		if (useUAV && useSRV)
 			bufferInfo.usage |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
-		if (m_Desc.Flags.IsFlag(GPUBufferFlags::Argument))
+		if (EnumHasAnyFlags(m_Desc.Flags, GPUBufferFlags::Argument))
 			bufferInfo.usage |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
-		if (m_Desc.Flags.IsFlag(GPUBufferFlags::Argument) && useUAV)
+		if (EnumHasAnyFlags(m_Desc.Flags, GPUBufferFlags::Argument) && useUAV)
 			bufferInfo.usage |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT; // For some reason, glslang marks indirect uav buffers (UpdateProbesInitArgs, IndirectArgsBuffer) as Storage Texel Buffers
-		if (m_Desc.Flags.IsFlag(GPUBufferFlags::VertexBuffer))
+		if (EnumHasAnyFlags(m_Desc.Flags, GPUBufferFlags::VertexBuffer))
 			bufferInfo.usage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-		if (m_Desc.Flags.IsFlag(GPUBufferFlags::IndexBuffer))
+		if (EnumHasAnyFlags(m_Desc.Flags, GPUBufferFlags::IndexBuffer))
 			bufferInfo.usage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-		if (IsStaging() || m_Desc.Flags.IsFlag(GPUBufferFlags::UnorderedAccess))
+		if (IsStaging() || EnumHasAnyFlags(m_Desc.Flags, GPUBufferFlags::UnorderedAccess))
 			bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
 		// Create buffer
@@ -161,7 +161,7 @@ namespace SE
 		}
 
 		// Check if need to use a counter
-		if (m_Desc.Flags.IsFlag(GPUBufferFlags::Counter) && m_Desc.Flags.IsFlag(GPUBufferFlags::Append))
+		if (EnumHasAnyFlags(m_Desc.Flags, GPUBufferFlags::Counter) && EnumHasAnyFlags(m_Desc.Flags, GPUBufferFlags::Append))
 		{
 #if GPU_ENABLE_RESOURCE_NAMING
 			String name = String(GetName()) + SE_TEXT(".Counter");

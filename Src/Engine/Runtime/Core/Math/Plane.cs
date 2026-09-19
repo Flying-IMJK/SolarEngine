@@ -1,12 +1,5 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-#if USE_LARGE_WORLDS
-using Real = System.Double;
-using Mathr = SE.Mathd;
-#else
-using Real = System.Single;
-using Mathr = SE.Mathf;
-#endif
 
 // -----------------------------------------------------------------------------
 // Original code from SharpDX project. https://github.com/sharpdx/SharpDX/
@@ -66,24 +59,14 @@ namespace SE
     public partial struct Plane : IEquatable<Plane>, IFormattable
     {
         /// <summary>
-        /// The normal vector of the plane.
-        /// </summary>
-        public Vector3 Normal;
-
-        /// <summary>
-        /// The distance of the plane along its normal from the origin.
-        /// </summary>
-        public Real D;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="T:SE.Plane" /> class.
         /// </summary>
         /// <param name="point">Any point that lies along the plane.</param>
         /// <param name="normal">The normal vector to the plane.</param>
-        public Plane(Vector3 point, Vector3 normal)
+        public Plane(Float3 point, Float3 normal)
         {
             Normal = normal;
-            D = -Vector3.Dot(normal, point);
+            D = -Float3.Dot(normal, point);
         }
 
         /// <summary>
@@ -91,7 +74,7 @@ namespace SE
         /// </summary>
         /// <param name="value">The normal of the plane.</param>
         /// <param name="d">The distance of the plane along its normal from the origin</param>
-        public Plane(Vector3 value, Real d)
+        public Plane(Float3 value, float d)
         {
             Normal = value;
             D = d;
@@ -103,18 +86,18 @@ namespace SE
         /// <param name="point1">First point of a triangle defining the plane.</param>
         /// <param name="point2">Second point of a triangle defining the plane.</param>
         /// <param name="point3">Third point of a triangle defining the plane.</param>
-        public Plane(Vector3 point1, Vector3 point2, Vector3 point3)
+        public Plane(Float3 point1, Float3 point2, Float3 point3)
         {
-            Real x1 = point2.X - point1.X;
-            Real y1 = point2.Y - point1.Y;
-            Real z1 = point2.Z - point1.Z;
-            Real x2 = point3.X - point1.X;
-            Real y2 = point3.Y - point1.Y;
-            Real z2 = point3.Z - point1.Z;
-            Real yz = y1 * z2 - z1 * y2;
-            Real xz = z1 * x2 - x1 * z2;
-            Real xy = x1 * y2 - y1 * x2;
-            Real invPyth = 1.0f / (Real)Math.Sqrt(yz * yz + xz * xz + xy * xy);
+            float x1 = point2.X - point1.X;
+            float y1 = point2.Y - point1.Y;
+            float z1 = point2.Z - point1.Z;
+            float x2 = point3.X - point1.X;
+            float y2 = point3.Y - point1.Y;
+            float z2 = point3.Z - point1.Z;
+            float yz = y1 * z2 - z1 * y2;
+            float xz = z1 * x2 - x1 * z2;
+            float xy = x1 * y2 - y1 * x2;
+            float invPyth = 1.0f / (float)Math.Sqrt(yz * yz + xz * xz + xy * xy);
 
             Normal.X = yz * invPyth;
             Normal.Y = xz * invPyth;
@@ -128,7 +111,7 @@ namespace SE
         /// <param name="values">The values to assign to the A, B, C, and D components of the plane. This must be an array with four elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="values" /> contains more or less than four elements.</exception>
-        public Plane(Real[] values)
+        public Plane(float[] values)
         {
             if (values == null)
                 throw new ArgumentNullException(nameof(values));
@@ -147,7 +130,7 @@ namespace SE
         /// <param name="index">The index of the component to access. Use 0 for the A component, 1 for the B component, 2 for the C component, and 3 for the D component.</param>
         /// <returns>The value of the component at the specified index.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="index" /> is out of the range [0,3].</exception>
-        public Real this[int index]
+        public float this[int index]
         {
             get
             {
@@ -186,10 +169,10 @@ namespace SE
         /// </summary>
         public void Normalize()
         {
-            Real length = Normal.Length;
-            if (length >= Mathr.Epsilon)
+            float length = Normal.Length;
+            if (length >= Mathf.Epsilon)
             {
-                Real rcp = 1.0f / length;
+                float rcp = 1.0f / length;
                 Normal.X *= rcp;
                 Normal.Y *= rcp;
                 Normal.Z *= rcp;
@@ -201,7 +184,7 @@ namespace SE
         /// Creates an array containing the elements of the plane.
         /// </summary>
         /// <returns>A four-element array containing the components of the plane.</returns>
-        public Real[] ToArray()
+        public float[] ToArray()
         {
             return new[] { Normal.X, Normal.Y, Normal.Z, D };
         }
@@ -211,7 +194,7 @@ namespace SE
         /// </summary>
         /// <param name="point">The point to test.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public PlaneIntersectionType Intersects(ref Vector3 point)
+        public PlaneIntersectionType Intersects(ref Float3 point)
         {
             return CollisionsHelper.PlaneIntersectsPoint(ref this, ref point);
         }
@@ -223,7 +206,7 @@ namespace SE
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray)
         {
-            return CollisionsHelper.RayIntersectsPlane(ref ray, ref this, out Real _);
+            return CollisionsHelper.RayIntersectsPlane(ref ray, ref this, out float _);
         }
 
         /// <summary>
@@ -232,7 +215,7 @@ namespace SE
         /// <param name="ray">The ray to test.</param>
         /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Ray ray, out Real distance)
+        public bool Intersects(ref Ray ray, out float distance)
         {
             return CollisionsHelper.RayIntersectsPlane(ref ray, ref this, out distance);
         }
@@ -241,9 +224,9 @@ namespace SE
         /// Determines if there is an intersection between the current object and a <see cref="Ray" />.
         /// </summary>
         /// <param name="ray">The ray to test.</param>
-        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Vector3.Zero" /> if there was no intersection.</param>
+        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Float3.Zero" /> if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Ray ray, out Vector3 point)
+        public bool Intersects(ref Ray ray, out Float3 point)
         {
             return CollisionsHelper.RayIntersectsPlane(ref ray, ref this, out point);
         }
@@ -276,7 +259,7 @@ namespace SE
         /// <param name="vertex2">The second vertex of the triangle to test.</param>
         /// <param name="vertex3">The third vertex of the triangle to test.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public PlaneIntersectionType Intersects(ref Vector3 vertex1, ref Vector3 vertex2, ref Vector3 vertex3)
+        public PlaneIntersectionType Intersects(ref Float3 vertex1, ref Float3 vertex2, ref Float3 vertex3)
         {
             return CollisionsHelper.PlaneIntersectsTriangle(ref this, ref vertex1, ref vertex2, ref vertex3);
         }
@@ -307,7 +290,7 @@ namespace SE
         /// <param name="value">The plane to scale.</param>
         /// <param name="scale">The amount by which to scale the plane.</param>
         /// <param name="result">When the method completes, contains the scaled plane.</param>
-        public static void Multiply(ref Plane value, Real scale, out Plane result)
+        public static void Multiply(ref Plane value, float scale, out Plane result)
         {
             result.Normal.X = value.Normal.X * scale;
             result.Normal.Y = value.Normal.Y * scale;
@@ -321,7 +304,7 @@ namespace SE
         /// <param name="value">The plane to scale.</param>
         /// <param name="scale">The amount by which to scale the plane.</param>
         /// <returns>The scaled plane.</returns>
-        public static Plane Multiply(Plane value, Real scale)
+        public static Plane Multiply(Plane value, float scale)
         {
             return new Plane(value.Normal * scale, value.D * scale);
         }
@@ -332,7 +315,7 @@ namespace SE
         /// <param name="left">The source plane.</param>
         /// <param name="right">The source vector.</param>
         /// <param name="result">When the method completes, contains the dot product of the specified plane and vector.</param>
-        public static void Dot(ref Plane left, ref Vector4 right, out Real result)
+        public static void Dot(ref Plane left, ref Float4 right, out float result)
         {
             result = left.Normal.X * right.X + left.Normal.Y * right.Y + left.Normal.Z * right.Z + left.D * right.W;
         }
@@ -343,7 +326,7 @@ namespace SE
         /// <param name="left">The source plane.</param>
         /// <param name="right">The source vector.</param>
         /// <returns>The dot product of the specified plane and vector.</returns>
-        public static Real Dot(Plane left, Vector4 right)
+        public static float Dot(Plane left, Float4 right)
         {
             return left.Normal.X * right.X + left.Normal.Y * right.Y + left.Normal.Z * right.Z + left.D * right.W;
         }
@@ -354,7 +337,7 @@ namespace SE
         /// <param name="left">The source plane.</param>
         /// <param name="right">The source vector.</param>
         /// <param name="result">When the method completes, contains the dot product of a specified vector and the normal of the Plane plus the distance value of the plane.</param>
-        public static void DotCoordinate(ref Plane left, ref Vector3 right, out Real result)
+        public static void DotCoordinate(ref Plane left, ref Float3 right, out float result)
         {
             result = left.Normal.X * right.X + left.Normal.Y * right.Y + left.Normal.Z * right.Z + left.D;
         }
@@ -365,7 +348,7 @@ namespace SE
         /// <param name="left">The source plane.</param>
         /// <param name="right">The source vector.</param>
         /// <returns>The dot product of a specified vector and the normal of the Plane plus the distance value of the plane.</returns>
-        public static Real DotCoordinate(Plane left, Vector3 right)
+        public static float DotCoordinate(Plane left, Float3 right)
         {
             return left.Normal.X * right.X + left.Normal.Y * right.Y + left.Normal.Z * right.Z + left.D;
         }
@@ -376,7 +359,7 @@ namespace SE
         /// <param name="left">The source plane.</param>
         /// <param name="right">The source vector.</param>
         /// <param name="result">When the method completes, contains the dot product of the specified vector and the normal of the plane.</param>
-        public static void DotNormal(ref Plane left, ref Vector3 right, out Real result)
+        public static void DotNormal(ref Plane left, ref Float3 right, out float result)
         {
             result = left.Normal.X * right.X + left.Normal.Y * right.Y + left.Normal.Z * right.Z;
         }
@@ -387,7 +370,7 @@ namespace SE
         /// <param name="left">The source plane.</param>
         /// <param name="right">The source vector.</param>
         /// <returns>The dot product of the specified vector and the normal of the plane.</returns>
-        public static Real DotNormal(Plane left, Vector3 right)
+        public static float DotNormal(Plane left, Float3 right)
         {
             return left.Normal.X * right.X + left.Normal.Y * right.Y + left.Normal.Z * right.Z;
         }
@@ -399,7 +382,7 @@ namespace SE
         /// <param name="result">When the method completes, contains the normalized plane.</param>
         public static void Normalize(ref Plane plane, out Plane result)
         {
-            Real magnitude = 1.0f / (Real)Math.Sqrt(plane.Normal.X * plane.Normal.X + plane.Normal.Y * plane.Normal.Y + plane.Normal.Z * plane.Normal.Z);
+            float magnitude = 1.0f / (float)Math.Sqrt(plane.Normal.X * plane.Normal.X + plane.Normal.Y * plane.Normal.Y + plane.Normal.Z * plane.Normal.Z);
             result.Normal.X = plane.Normal.X * magnitude;
             result.Normal.Y = plane.Normal.Y * magnitude;
             result.Normal.Z = plane.Normal.Z * magnitude;
@@ -413,7 +396,7 @@ namespace SE
         /// <returns>The normalized plane.</returns>
         public static Plane Normalize(Plane plane)
         {
-            Real magnitude = 1.0f / (Real)Math.Sqrt(plane.Normal.X * plane.Normal.X + plane.Normal.Y * plane.Normal.Y + plane.Normal.Z * plane.Normal.Z);
+            float magnitude = 1.0f / (float)Math.Sqrt(plane.Normal.X * plane.Normal.X + plane.Normal.Y * plane.Normal.Y + plane.Normal.Z * plane.Normal.Z);
             return new Plane(plane.Normal * magnitude, plane.D * magnitude);
         }
 
@@ -425,22 +408,22 @@ namespace SE
         /// <param name="result">When the method completes, contains the transformed plane.</param>
         public static void Transform(ref Plane plane, ref Quaternion rotation, out Plane result)
         {
-            Real x2 = rotation.X + rotation.X;
-            Real y2 = rotation.Y + rotation.Y;
-            Real z2 = rotation.Z + rotation.Z;
-            Real wx = rotation.W * x2;
-            Real wy = rotation.W * y2;
-            Real wz = rotation.W * z2;
-            Real xx = rotation.X * x2;
-            Real xy = rotation.X * y2;
-            Real xz = rotation.X * z2;
-            Real yy = rotation.Y * y2;
-            Real yz = rotation.Y * z2;
-            Real zz = rotation.Z * z2;
+            float x2 = rotation.X + rotation.X;
+            float y2 = rotation.Y + rotation.Y;
+            float z2 = rotation.Z + rotation.Z;
+            float wx = rotation.W * x2;
+            float wy = rotation.W * y2;
+            float wz = rotation.W * z2;
+            float xx = rotation.X * x2;
+            float xy = rotation.X * y2;
+            float xz = rotation.X * z2;
+            float yy = rotation.Y * y2;
+            float yz = rotation.Y * z2;
+            float zz = rotation.Z * z2;
 
-            Real x = plane.Normal.X;
-            Real y = plane.Normal.Y;
-            Real z = plane.Normal.Z;
+            float x = plane.Normal.X;
+            float y = plane.Normal.Y;
+            float z = plane.Normal.Z;
 
             result.Normal.X = x * (1.0f - yy - zz) + y * (xy - wz) + z * (xz + wy);
             result.Normal.Y = x * (xy + wz) + y * (1.0f - xx - zz) + z * (yz - wx);
@@ -468,10 +451,10 @@ namespace SE
         /// <param name="result">When the method completes, contains the transformed plane.</param>
         public static void Transform(ref Plane plane, ref Matrix transformation, out Plane result)
         {
-            Real x = plane.Normal.X;
-            Real y = plane.Normal.Y;
-            Real z = plane.Normal.Z;
-            Real d = plane.D;
+            float x = plane.Normal.X;
+            float y = plane.Normal.Y;
+            float z = plane.Normal.Z;
+            float d = plane.D;
             Matrix.Invert(ref transformation, out Matrix inverse);
             result.Normal.X = x * inverse.M11 + y * inverse.M12 + z * inverse.M13 + d * inverse.M14;
             result.Normal.Y = x * inverse.M21 + y * inverse.M22 + z * inverse.M23 + d * inverse.M24;
@@ -497,7 +480,7 @@ namespace SE
         /// <param name="scale">The amount by which to scale the plane.</param>
         /// <param name="plane">The plane to scale.</param>
         /// <returns>The scaled plane.</returns>
-        public static Plane operator *(Real scale, Plane plane)
+        public static Plane operator *(float scale, Plane plane)
         {
             return new Plane(plane.Normal * scale, plane.D * scale);
         }
@@ -508,7 +491,7 @@ namespace SE
         /// <param name="plane">The plane to scale.</param>
         /// <param name="scale">The amount by which to scale the plane.</param>
         /// <returns>The scaled plane.</returns>
-        public static Plane operator *(Plane plane, Real scale)
+        public static Plane operator *(Plane plane, float scale)
         {
             return new Plane(plane.Normal * scale, plane.D * scale);
         }
@@ -590,10 +573,10 @@ namespace SE
         }
 
         /// <summary>
-        /// Determines whether the specified <see cref="Vector4" /> is equal to this instance.
+        /// Determines whether the specified <see cref="Float4" /> is equal to this instance.
         /// </summary>
-        /// <param name="value">The <see cref="Vector4" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <param name="value">The <see cref="Float4" /> to compare with this instance.</param>
+        /// <returns><c>true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Plane value)
         {
@@ -601,10 +584,10 @@ namespace SE
         }
 
         /// <summary>
-        /// Determines whether the specified <see cref="Vector4" /> is equal to this instance.
+        /// Determines whether the specified <see cref="Float4" /> is equal to this instance.
         /// </summary>
-        /// <param name="value">The <see cref="Vector4" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <param name="value">The <see cref="Float4" /> to compare with this instance.</param>
+        /// <returns><c>true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Plane value)
         {

@@ -6,8 +6,10 @@
 
 namespace SE
 {
+	SE_STRUCT(API())
 	struct SE_API_RUNTIME Matrix
 	{
+		SCRIPTING_TYPE_MIN(Matrix)
 	public:
 		union
 		{
@@ -139,9 +141,9 @@ namespace SE
 		// Sets Float3 of the matrix; that is M21, M22, and M23.
 		void SetUp(const Float3& value)
 		{
-			M21 = value.x;
-			M22 = value.y;
-			M23 = value.z;
+			M21 = value.X;
+			M22 = value.Y;
+			M23 = value.Z;
 		}
 
 		// Gets the down Float3 of the matrix; that is -M21, -M22, and -M23.
@@ -153,9 +155,9 @@ namespace SE
 		// Sets the down Float3 of the matrix; that is -M21, -M22, and -M23.
 		void SetDown(const Float3& value)
 		{
-			M21 = -value.x;
-			M22 = -value.y;
-			M23 = -value.z;
+			M21 = -value.X;
+			M22 = -value.Y;
+			M23 = -value.Z;
 		}
 
 		// Gets the right Float3 of the matrix; that is M11, M12, and M13.
@@ -167,9 +169,9 @@ namespace SE
 		// Sets the right Float3 of the matrix; that is M11, M12, and M13.
 		void SetRight(const Float3& value)
 		{
-			M11 = value.x;
-			M12 = value.y;
-			M13 = value.z;
+			M11 = value.X;
+			M12 = value.Y;
+			M13 = value.Z;
 		}
 
 		// Gets the left Float3 of the matrix; that is -M11, -M12, and -M13.
@@ -181,9 +183,9 @@ namespace SE
 		// Sets the left Float3 of the matrix; that is -M11, -M12, and -M13.
 		void SetLeft(const Float3& value)
 		{
-			M11 = -value.x;
-			M12 = -value.y;
-			M13 = -value.z;
+			M11 = -value.X;
+			M12 = -value.Y;
+			M13 = -value.Z;
 		}
 
 		// Gets the forward Float3 of the matrix; that is -M31, -M32, and -M33.
@@ -195,9 +197,9 @@ namespace SE
 		// Sets the forward Float3 of the matrix; that is -M31, -M32, and -M33.
 		void SetForward(const Float3& value)
 		{
-			M31 = -value.x;
-			M32 = -value.y;
-			M33 = -value.z;
+			M31 = -value.X;
+			M32 = -value.Y;
+			M33 = -value.Z;
 		}
 
 		// Gets the backward Float3 of the matrix; that is M31, M32, and M33.
@@ -209,9 +211,9 @@ namespace SE
 		// Sets the backward Float3 of the matrix; that is M31, M32, and M33.
 		void SetBackward(const Float3& value)
 		{
-			M31 = value.x;
-			M32 = value.y;
-			M33 = value.z;
+			M31 = value.X;
+			M32 = value.Y;
+			M33 = value.Z;
 		}
 
 		// Gets row in the matrix
@@ -225,10 +227,10 @@ namespace SE
 		void SetRow(int row, const Float4& value)
 		{
 			const int offset = row * 4;
-			Raw[offset] = value.x;
-			Raw[offset + 1] = value.y;
-			Raw[offset + 2] = value.z;
-			Raw[offset + 3] = value.w;
+			Raw[offset] = value.X;
+			Raw[offset + 1] = value.Y;
+			Raw[offset + 2] = value.Z;
+			Raw[offset + 3] = value.W;
 		}
 
 		// Gets column in the matrix;
@@ -240,34 +242,34 @@ namespace SE
 		// Sets column in the matrix;
 		void SetColumn(int column, const Float4& value)
 		{
-			Raw[column] = value.x;
-			Raw[4 + column] = value.y;
-			Raw[8 + column] = value.z;
-			Raw[12 + column] = value.w;
+			Raw[column] = value.X;
+			Raw[4 + column] = value.Y;
+			Raw[8 + column] = value.Z;
+			Raw[12 + column] = value.W;
 		}
 
 		// Sets part of the first row in the matrix; that is M11, M12, M13.
 		void SetX(const Float3& value)
 		{
-			M11 = value.x;
-			M12 = value.y;
-			M13 = value.z;
+			M11 = value.X;
+			M12 = value.Y;
+			M13 = value.Z;
 		}
 
 		// Sets part of the second row in the matrix; that is M21, M22, M23.
 		void SetY(const Float3& value)
 		{
-			M21 = value.x;
-			M22 = value.y;
-			M23 = value.z;
+			M21 = value.X;
+			M22 = value.Y;
+			M23 = value.Z;
 		}
 
 		// Sets part of the third row in the matrix; that is M31, M32, M33.
 		void SetZ(const Float3& value)
 		{
-			M31 = value.x;
-			M32 = value.y;
-			M33 = value.z;
+			M31 = value.X;
+			M32 = value.Y;
+			M33 = value.Z;
 		}
 
 		// Gets the translation of the matrix; that is M41, M42, and M43.
@@ -279,9 +281,9 @@ namespace SE
 		// Sets the translation of the matrix; that is M41, M42, and M43.
 		void SetTranslation(const Float3& value)
 		{
-			M41 = value.x;
-			M42 = value.y;
-			M43 = value.z;
+			M41 = value.X;
+			M42 = value.Y;
+			M43 = value.Z;
 		}
 
 		// Gets the scale of the matrix; that is M11, M22, and M33.
@@ -293,9 +295,9 @@ namespace SE
 		// Sets the scale of the matrix; that is M11, M22, and M33.
 		void SetScaleVector(const Float3& value)
 		{
-			M11 = value.x;
-			M22 = value.y;
-			M33 = value.z;
+			M11 = value.X;
+			M22 = value.Y;
+			M33 = value.Z;
 		}
 
 		// Gets a value indicating whether this instance is an identity matrix.
@@ -594,7 +596,7 @@ namespace SE
 		// @param result The created scaling matrix.
 		static Matrix Scaling(const Float3& scale)
 		{
-			return Scaling(scale.x, scale.y, scale.z);
+			return Scaling(scale.X, scale.Y, scale.Z);
 		}
 
 		// Creates a matrix that scales along the x-axis, y-axis, and y-axis.
@@ -602,7 +604,7 @@ namespace SE
 		// @param result When the method completes, contains the created scaling matrix.
 		static void Scaling(const Float3& scale, Matrix& result)
 		{
-			Scaling(scale.x, scale.y, scale.z, result);
+			Scaling(scale.X, scale.Y, scale.Z, result);
 		}
 
 		// Creates a matrix that scales along the x-axis, y-axis, and y-axis.

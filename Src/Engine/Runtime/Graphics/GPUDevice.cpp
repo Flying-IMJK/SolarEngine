@@ -35,7 +35,7 @@ namespace SE
 		return instance != nullptr;
 	}
 
-	GPUDevice::GPUDevice(GPUGlobalSettings settings) :
+	GPUDevice::GPUDevice(GPUGlobalSettings settings) : ScriptingObject(ScriptingObjectSpawnParams(UID::New(), TypeInitializer)),
 		m_GPUSetting(settings),
 		m_RenderType(settings.type),
 		m_ShaderProfile(settings.shaderProfile)

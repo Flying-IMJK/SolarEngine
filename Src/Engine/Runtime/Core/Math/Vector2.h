@@ -11,7 +11,7 @@ namespace SE
 	/// <summary>
 	/// Represents a two dimensional mathematical vector.
 	/// </summary>
-    SE_STRUCT(Template)
+    SE_STRUCT(Template, API())
 	template<typename T>
 	struct Vector2Base
 	{
@@ -26,13 +26,13 @@ namespace SE
 				/// The X component of the vector.
 				/// </summary>
                 SE_FIELD(API())
-				T x;
+				T X;
 
 				/// <summary>
 				/// The Y component of the vector.
 				/// </summary>
                 SE_FIELD(API())
-				T y;
+				T Y;
 			};
 
 			/// <summary>
@@ -70,27 +70,27 @@ namespace SE
 		Vector2Base() = default;
 
 		inline Vector2Base(T xy)
-			: x(xy)
-			, y(xy)
+			: X(xy)
+			, Y(xy)
 		{
 		}
 
 		inline explicit Vector2Base(const T* xy)
-			: x(xy[0])
-			, y(xy[1])
+			: X(xy[0])
+			, Y(xy[1])
 		{
 		}
 
 		inline Vector2Base(T x, T y)
-			: x(x)
-			, y(y)
+			: X(x)
+			, Y(y)
 		{
 		}
 
 		template<typename U = T, typename TEnableIf<TNot<TIsTheSame<T, U>>::Value>::Type...>
 		inline Vector2Base(const Vector2Base<U>& xy)
-			: x((T)xy.x)
-			, y((T)xy.y)
+			: X((T)xy.X)
+			, Y((T)xy.Y)
 		{
 		}
 
@@ -109,37 +109,37 @@ namespace SE
 		// Gets a value indicting whether this instance is normalized.
 		bool IsNormalized() const
 		{
-			return Math::IsOne(x * x + y * y);
+			return Math::IsOne(X * X + Y * Y);
 		}
 
 		// Gets a value indicting whether this vector is zero.
 		bool IsZero() const
 		{
-			return Math::IsZero(x) && Math::IsZero(y);
+			return Math::IsZero(X) && Math::IsZero(Y);
 		}
 
 		// Gets a value indicting whether any vector component is zero.
 		bool IsAnyZero() const
 		{
-			return Math::IsZero(x) || Math::IsZero(y);
+			return Math::IsZero(X) || Math::IsZero(Y);
 		}
 
 		// Gets a value indicting whether this vector is zero.
 		bool IsOne() const
 		{
-			return Math::IsOne(x) && Math::IsOne(y);
+			return Math::IsOne(X) && Math::IsOne(Y);
 		}
 
 		// Calculates the length of the vector.
 		T Length() const
 		{
-			return Math::Sqrt(x * x + y * y);
+			return Math::Sqrt(X * X + Y * Y);
 		}
 
 		// Calculates the squared length of the vector.
 		T LengthSquared() const
 		{
-			return x * x + y * y;
+			return X * X + Y * Y;
 		}
 
 		// Calculates inverted length of the vector (1 / length).
@@ -153,7 +153,7 @@ namespace SE
 		/// </summary>
 		T AverageArithmetic() const
 		{
-			return (x + y) * 0.5f;
+			return (X + Y) * 0.5f;
 		}
 
 		/// <summary>
@@ -161,7 +161,7 @@ namespace SE
 		/// </summary>
 		T SumValues() const
 		{
-			return x + y;
+			return X + Y;
 		}
 
 		/// <summary>
@@ -169,7 +169,7 @@ namespace SE
 		/// </summary>
 		T MulValues() const
 		{
-			return x * y;
+			return X * Y;
 		}
 
 		/// <summary>
@@ -177,7 +177,7 @@ namespace SE
 		/// </summary>
 		T MinValue() const
 		{
-			return Math::Min(x, y);
+			return Math::Min(X, Y);
 		}
 
 		/// <summary>
@@ -185,7 +185,7 @@ namespace SE
 		/// </summary>
 		T MaxValue() const
 		{
-			return Math::Max(x, y);
+			return Math::Max(X, Y);
 		}
 
 		/// <summary>
@@ -193,7 +193,7 @@ namespace SE
 		/// </summary>
 		bool IsNaN() const
 		{
-			return isnan(x) || isnan(y);
+			return isnan(X) || isnan(Y);
 		}
 
 		/// <summary>
@@ -201,7 +201,7 @@ namespace SE
 		/// </summary>
 		bool IsInfinity() const
 		{
-			return isinf(x) || isinf(y);
+			return isinf(X) || isinf(Y);
 		}
 
 		/// <summary>
@@ -217,7 +217,7 @@ namespace SE
 		/// </summary>
 		Vector2Base GetAbsolute() const
 		{
-			return Vector2Base(Math::Abs(x), Math::Abs(y));
+			return Vector2Base(Math::Abs(X), Math::Abs(Y));
 		}
 
 		/// <summary>
@@ -225,7 +225,7 @@ namespace SE
 		/// </summary>
 		Vector2Base GetNegative() const
 		{
-			return Vector2Base(-x, -y);
+			return Vector2Base(-X, -Y);
 		}
 
 		/// <summary>
@@ -233,7 +233,7 @@ namespace SE
 		/// </summary>
 		Vector2Base GetNormalized() const
 		{
-			Vector2Base result(x, y);
+			Vector2Base result(X, Y);
 			result.Normalize();
 			return result;
 		}
@@ -244,262 +244,262 @@ namespace SE
 		/// </summary>
 		void Normalize()
 		{
-			const T length = Math::Sqrt(x * x + y * y);
+			const T length = Math::Sqrt(X * X + Y * Y);
 			if (length >= Math::ZeroTolerance)
 			{
 				const T invLength = (T)1.0f / length;
-				x *= invLength;
-				y *= invLength;
+				X *= invLength;
+				Y *= invLength;
 			}
 		}
 
 	public:
 		Vector2Base operator+(const Vector2Base& b) const
 		{
-			return Vector2Base(x + b.x, y + b.y);
+			return Vector2Base(X + b.X, Y + b.Y);
 		}
 
 		Vector2Base operator-(const Vector2Base& b) const
 		{
-			return Vector2Base(x - b.x, y - b.y);
+			return Vector2Base(X - b.X, Y - b.Y);
 		}
 
 		Vector2Base operator*(const Vector2Base& b) const
 		{
-			return Vector2Base(x * b.x, y * b.y);
+			return Vector2Base(X * b.X, Y * b.Y);
 		}
 
 		Vector2Base operator/(const Vector2Base& b) const
 		{
-			return Vector2Base(x / b.x, y / b.y);
+			return Vector2Base(X / b.X, Y / b.Y);
 		}
 
 		Vector2Base operator-() const
 		{
-			return Vector2Base(-x, -y);
+			return Vector2Base(-X, -Y);
 		}
 
 		Vector2Base operator+(T b) const
 		{
-			return Vector2Base(x + b, y + b);
+			return Vector2Base(X + b, Y + b);
 		}
 
 		Vector2Base operator-(T b) const
 		{
-			return Vector2Base(x - b, y - b);
+			return Vector2Base(X - b, Y - b);
 		}
 
 		Vector2Base operator*(T b) const
 		{
-			return Vector2Base(x * b, y * b);
+			return Vector2Base(X * b, Y * b);
 		}
 
 		Vector2Base operator/(T b) const
 		{
-			return Vector2Base(x / b, y / b);
+			return Vector2Base(X / b, Y / b);
 		}
 
 		Vector2Base operator+(typename TOtherFloat<T>::Type a) const
 		{
 			T b = (T)a;
-			return Vector2Base(x + b, y + b);
+			return Vector2Base(X + b, Y + b);
 		}
 
 		Vector2Base operator-(typename TOtherFloat<T>::Type a) const
 		{
 			T b = (T)a;
-			return Vector2Base(x - b, y - b);
+			return Vector2Base(X - b, Y - b);
 		}
 
 		Vector2Base operator*(typename TOtherFloat<T>::Type a) const
 		{
 			T b = (T)a;
-			return Vector2Base(x * b, y * b);
+			return Vector2Base(X * b, Y * b);
 		}
 
 		Vector2Base operator/(typename TOtherFloat<T>::Type a) const
 		{
 			T b = (T)a;
-			return Vector2Base(x / b, y / b);
+			return Vector2Base(X / b, Y / b);
 		}
 
 		Vector2Base& operator+=(const Vector2Base& b)
 		{
-			x += b.x;
-			y += b.y;
+			X += b.X;
+			Y += b.Y;
 			return *this;
 		}
 
 		Vector2Base& operator-=(const Vector2Base& b)
 		{
-			x -= b.x;
-			y -= b.y;
+			X -= b.X;
+			Y -= b.Y;
 			return *this;
 		}
 
 		Vector2Base& operator*=(const Vector2Base& b)
 		{
-			x *= b.x;
-			y *= b.y;
+			X *= b.X;
+			Y *= b.Y;
 			return *this;
 		}
 
 		Vector2Base& operator/=(const Vector2Base& b)
 		{
-			x /= b.x;
-			y /= b.y;
+			X /= b.X;
+			Y /= b.Y;
 			return *this;
 		}
 
 		Vector2Base& operator+=(T b)
 		{
-			x += b;
-			y += b;
+			X += b;
+			Y += b;
 			return *this;
 		}
 
 		Vector2Base& operator-=(T b)
 		{
-			x -= b;
-			y -= b;
+			X -= b;
+			Y -= b;
 			return *this;
 		}
 
 		Vector2Base& operator*=(T b)
 		{
-			x *= b;
-			y *= b;
+			X *= b;
+			Y *= b;
 			return *this;
 		}
 
 		Vector2Base& operator/=(T b)
 		{
-			x /= b;
-			y /= b;
+			X /= b;
+			Y /= b;
 			return *this;
 		}
 
 		bool operator==(const Vector2Base& b) const
 		{
-			return x == b.x && y == b.y;
+			return X == b.X && Y == b.Y;
 		}
 
 		bool operator!=(const Vector2Base& b) const
 		{
-			return x != b.x || y != b.y;
+			return X != b.X || Y != b.Y;
 		}
 
 		bool operator>(const Vector2Base& b) const
 		{
-			return x > b.x && y > b.y;
+			return X > b.X && Y > b.Y;
 		}
 
 		bool operator>=(const Vector2Base& b) const
 		{
-			return x >= b.x && y >= b.y;
+			return X >= b.X && Y >= b.Y;
 		}
 
 		bool operator<(const Vector2Base& b) const
 		{
-			return x < b.x && y < b.y;
+			return X < b.X && Y < b.Y;
 		}
 
 		bool operator<=(const Vector2Base& b) const
 		{
-			return x <= b.x && y <= b.y;
+			return X <= b.X && Y <= b.Y;
 		}
 
 	public:
 		static bool NearEqual(const Vector2Base& a, const Vector2Base& b)
 		{
-			return Math::IsNearEqual(a.x, b.x) && Math::IsNearEqual(a.y, b.y);
+			return Math::IsNearEqual(a.X, b.X) && Math::IsNearEqual(a.Y, b.Y);
 		}
 
 		static bool NearEqual(const Vector2Base& a, const Vector2Base& b, T epsilon)
 		{
-			return Math::IsNearEqual(a.x, b.x, epsilon) && Math::IsNearEqual(a.y, b.y, epsilon);
+			return Math::IsNearEqual(a.X, b.X, epsilon) && Math::IsNearEqual(a.Y, b.Y, epsilon);
 		}
 
 	public:
 		static T Dot(const Vector2Base& a, const Vector2Base& b)
 		{
-			return a.x * b.x + a.y * b.y;
+			return a.X * b.X + a.Y * b.Y;
 		}
 
 		static T Cross(const Vector2Base& a, const Vector2Base& b)
 		{
-			return a.x * b.y - a.y * b.x;
+			return a.X * b.Y - a.Y * b.X;
 		}
 
 		static void Add(const Vector2Base& a, const Vector2Base& b, Vector2Base& result)
 		{
-			result = Vector2Base(a.x + b.x, a.y + b.y);
+			result = Vector2Base(a.X + b.X, a.Y + b.Y);
 		}
 
 		static void Subtract(const Vector2Base& a, const Vector2Base& b, Vector2Base& result)
 		{
-			result = Vector2Base(a.x - b.x, a.y - b.y);
+			result = Vector2Base(a.X - b.X, a.Y - b.Y);
 		}
 
 		static void Multiply(const Vector2Base& a, const Vector2Base& b, Vector2Base& result)
 		{
-			result = Vector2Base(a.x * b.x, a.y * b.y);
+			result = Vector2Base(a.X * b.X, a.Y * b.Y);
 		}
 
 		static void Divide(const Vector2Base& a, const Vector2Base& b, Vector2Base& result)
 		{
-			result = Vector2Base(a.x / b.x, a.y / b.y);
+			result = Vector2Base(a.X / b.X, a.Y / b.Y);
 		}
 
 		static void Min(const Vector2Base& a, const Vector2Base& b, Vector2Base& result)
 		{
-			result = Vector2Base(a.x < b.x ? a.x : b.x, a.y < b.y ? a.y : b.y);
+			result = Vector2Base(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y);
 		}
 
 		static void Max(const Vector2Base& a, const Vector2Base& b, Vector2Base& result)
 		{
-			result = Vector2Base(a.x > b.x ? a.x : b.x, a.y > b.y ? a.y : b.y);
+			result = Vector2Base(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y);
 		}
 
 	public:
 		static Vector2Base Min(const Vector2Base& a, const Vector2Base& b)
 		{
-			return Vector2Base(a.x < b.x ? a.x : b.x, a.y < b.y ? a.y : b.y);
+			return Vector2Base(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y);
 		}
 
 		static Vector2Base Max(const Vector2Base& a, const Vector2Base& b)
 		{
-			return Vector2Base(a.x > b.x ? a.x : b.x, a.y > b.y ? a.y : b.y);
+			return Vector2Base(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y);
 		}
 
 		static Vector2Base Mod(const Vector2Base& a, const Vector2Base& b)
 		{
-			return Vector2Base(Math::FMod(a.x, b.x), Math::FMod(a.y, b.y));
+			return Vector2Base(Math::FMod(a.X, b.X), Math::FMod(a.Y, b.Y));
 		}
 
 		static Vector2Base Floor(const Vector2Base& v)
 		{
-			return Vector2Base(Math::Floor(v.x), Math::Floor(v.y));
+			return Vector2Base(Math::Floor(v.X), Math::Floor(v.Y));
 		}
 
 		static Vector2Base Frac(const Vector2Base& v)
 		{
-			return Vector2Base(v.x - (int32)v.x, v.y - (int32)v.y);
+			return Vector2Base(v.X - (int32)v.X, v.Y - (int32)v.Y);
 		}
 
 		static Vector2Base Round(const Vector2Base& v)
 		{
-			return Vector2Base(Math::Round(v.x), Math::Round(v.y));
+			return Vector2Base(Math::Round(v.X), Math::Round(v.Y));
 		}
 
 		static Vector2Base Ceil(const Vector2Base& v)
 		{
-			return Vector2Base(Math::Ceil(v.x), Math::Ceil(v.y));
+			return Vector2Base(Math::Ceil(v.X), Math::Ceil(v.Y));
 		}
 
 		static Vector2Base Abs(const Vector2Base& v)
 		{
-			return Vector2Base(Math::Abs(v.x), Math::Abs(v.y));
+			return Vector2Base(Math::Abs(v.X), Math::Abs(v.Y));
 		}
 
 	public:
@@ -522,7 +522,7 @@ namespace SE
 		// @param result When the method completes, contains the clamped value
 		static void Clamp(const Vector2Base& v, const Vector2Base& min, const Vector2Base& max, Vector2Base& result)
 		{
-			result = Vector2Base(Math::Clamp(v.x, min.x, max.x), Math::Clamp(v.y, min.y, max.y));
+			result = Vector2Base(Math::Clamp(v.X, min.X, max.X), Math::Clamp(v.Y, min.Y, max.Y));
 		}
 
 		// Calculates distance between two points in 2D
@@ -531,8 +531,8 @@ namespace SE
 		// @returns Distance
 		static T Distance(const Vector2Base& a, const Vector2Base& b)
 		{
-			const T x = a.x - b.x;
-			const T y = a.y - b.y;
+			const T x = a.X - b.X;
+			const T y = a.Y - b.Y;
 			return Math::Sqrt(x * x + y * y);
 		}
 
@@ -542,8 +542,8 @@ namespace SE
 		// @returns Distance
 		static T DistanceSquared(const Vector2Base& a, const Vector2Base& b)
 		{
-			const T x = a.x - b.x;
-			const T y = a.y - b.y;
+			const T x = a.X - b.X;
+			const T y = a.Y - b.Y;
 			return x * x + y * y;
 		}
 
@@ -551,12 +551,12 @@ namespace SE
 		static Vector2Base Normalize(const Vector2Base& v)
 		{
 			Vector2Base r = v;
-			const T length = Math::Sqrt(r.x * r.x + r.y * r.y);
+			const T length = Math::Sqrt(r.X * r.X + r.Y * r.Y);
 			if (length >= Math::ZeroTolerance)
 			{
 				const T inv = (T)1.0f / length;
-				r.x *= inv;
-				r.y *= inv;
+				r.X *= inv;
+				r.Y *= inv;
 			}
 			return r;
 		}
@@ -568,8 +568,8 @@ namespace SE
 		// @param result When the method completes, contains the linear interpolation of the two vectors
 		static void Lerp(const Vector2Base& start, const Vector2Base& end, T amount, Vector2Base& result)
 		{
-			result.x = Math::Lerp(start.x, end.x, amount);
-			result.y = Math::Lerp(start.y, end.y, amount);
+			result.X = Math::Lerp(start.X, end.X, amount);
+			result.Y = Math::Lerp(start.Y, end.Y, amount);
 		}
 
 		// <summary>
@@ -657,7 +657,7 @@ namespace SE
 	template<typename T>
 	inline uint32 GetHash(const Vector2Base<T>& key)
 	{
-		return (*(uint32*)&key.x * 397) ^ *(uint32*)&key.y;
+		return (*(uint32*)&key.X * 397) ^ *(uint32*)&key.Y;
 	}
 
 }
@@ -668,7 +668,7 @@ struct TIsPODType<SE::Float2>
     enum { Value = true };
 };
 
-DEFINE_DEFAULT_FORMATTING(SE::Float2, "X:{0} Y:{1}", v.x, v.y)
+DEFINE_DEFAULT_FORMATTING(SE::Float2, "X:{0} Y:{1}", v.X, v.Y)
 
 template<>
 struct TIsPODType<SE::Double2>
@@ -676,7 +676,7 @@ struct TIsPODType<SE::Double2>
     enum { Value = true };
 };
 
-DEFINE_DEFAULT_FORMATTING(SE::Double2, "X:{0} Y:{1}", v.x, v.y)
+DEFINE_DEFAULT_FORMATTING(SE::Double2, "X:{0} Y:{1}", v.X, v.Y)
 
 template<>
 struct TIsPODType<SE::Int2>
@@ -684,7 +684,7 @@ struct TIsPODType<SE::Int2>
     enum { Value = true };
 };
 
-DEFINE_DEFAULT_FORMATTING(SE::Int2, "X:{0} Y:{1}", v.x, v.y)
+DEFINE_DEFAULT_FORMATTING(SE::Int2, "X:{0} Y:{1}", v.X, v.Y)
 
 #if !defined(_MSC_VER) || defined(__clang__)
 // Forward specializations for Clang

@@ -11,11 +11,14 @@ namespace SE
     /// <summary>
     /// The objects layers selection mask (from layers and tags settings). Uses 1 bit per layer (up to 32 layers).
     /// </summary>
+    SE_STRUCT(API())
     struct SE_API_RUNTIME LayersMask
     {
+        SCRIPTING_TYPE_MIN(LayersMask)
         /// <summary>
         /// The layers selection mask.
         /// </summary>
+        SE_FIELD(API())
         uint32 Mask = Max_uint32;
 
     public:

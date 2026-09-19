@@ -462,57 +462,57 @@ namespace SE
 		}
 	}
 
-	VkPipelineStageFlags2 VulkanTool::ConvertPipelineStage(EnumFlags<RHIResourceStateFlag> value)
+	VkPipelineStageFlags2 VulkanTool::ConvertPipelineStage(RHIResourceStateFlag value)
 	{
 		VkPipelineStageFlags2 flags = VK_PIPELINE_STAGE_2_NONE;
 
-		if (value.IsFlag(RHIResourceStateFlag::ShaderResource) ||
-			value.IsFlag(RHIResourceStateFlag::ShaderResourceCompute) ||
-			value.IsFlag(RHIResourceStateFlag::UnorderedAccess) ||
-			value.IsFlag(RHIResourceStateFlag::ConstantBuffer))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::ShaderResource) ||
+			EnumHasAnyFlags(value, RHIResourceStateFlag::ShaderResourceCompute) ||
+			EnumHasAnyFlags(value, RHIResourceStateFlag::UnorderedAccess) ||
+			EnumHasAnyFlags(value, RHIResourceStateFlag::ConstantBuffer))
 		{
 			flags |= VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::CopySrc) ||
-			value.IsFlag(RHIResourceStateFlag::CopyDst))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::CopySrc) ||
+			EnumHasAnyFlags(value, RHIResourceStateFlag::CopyDst))
 		{
 			flags |= VK_PIPELINE_STAGE_2_TRANSFER_BIT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::Rendertarget))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::Rendertarget))
 		{
 			flags |= VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::DepthStencil) ||
-			value.IsFlag(RHIResourceStateFlag::DepthStencilReadonly))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::DepthStencil) ||
+			EnumHasAnyFlags(value, RHIResourceStateFlag::DepthStencilReadonly))
 		{
 			flags |= VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::ShadingRateSource))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::ShadingRateSource))
 		{
 			flags |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::VertexBuffer))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::VertexBuffer))
 		{
 			flags |= VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::IndexBuffer))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::IndexBuffer))
 		{
 			flags |= VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::IndirectArgument))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::IndirectArgument))
 		{
 			flags |= VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::RaytracingAccelerationStructure))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::RaytracingAccelerationStructure))
 		{
 			flags |= VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR | VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::Predication))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::Predication))
 		{
 			flags |= VK_PIPELINE_STAGE_2_CONDITIONAL_RENDERING_BIT_EXT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::VideoDecodeSrc) ||
-			value.IsFlag(RHIResourceStateFlag::VideoDecodeDst))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::VideoDecodeSrc) ||
+			EnumHasAnyFlags(value, RHIResourceStateFlag::VideoDecodeDst))
 		{
 			flags |= VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR;
 		}
@@ -520,74 +520,74 @@ namespace SE
 		return flags;
 	}
 
-	VkAccessFlags2 VulkanTool::ParseResourceState(EnumFlags<RHIResourceStateFlag> value)
+	VkAccessFlags2 VulkanTool::ParseResourceState(RHIResourceStateFlag value)
 	{
 		VkAccessFlags2 flags = 0;
 
-		if (value.IsFlag(RHIResourceStateFlag::ShaderResource))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::ShaderResource))
 		{
 			flags |= VK_ACCESS_2_SHADER_READ_BIT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::ShaderResourceCompute))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::ShaderResourceCompute))
 		{
 			flags |= VK_ACCESS_2_SHADER_READ_BIT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::UnorderedAccess))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::UnorderedAccess))
 		{
 			flags |= VK_ACCESS_2_SHADER_READ_BIT;
 			flags |= VK_ACCESS_2_SHADER_WRITE_BIT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::CopySrc))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::CopySrc))
 		{
 			flags |= VK_ACCESS_2_TRANSFER_READ_BIT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::CopyDst))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::CopyDst))
 		{
 			flags |= VK_ACCESS_2_TRANSFER_WRITE_BIT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::Rendertarget))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::Rendertarget))
 		{
 			flags |= VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT;
 			flags |= VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::DepthStencil))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::DepthStencil))
 		{
 			flags |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
 			flags |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::DepthStencilReadonly))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::DepthStencilReadonly))
 		{
 			flags |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::VertexBuffer))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::VertexBuffer))
 		{
 			flags |= VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::IndexBuffer))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::IndexBuffer))
 		{
 			flags |= VK_ACCESS_2_INDEX_READ_BIT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::ConstantBuffer))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::ConstantBuffer))
 		{
 			flags |= VK_ACCESS_2_UNIFORM_READ_BIT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::IndirectArgument))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::IndirectArgument))
 		{
 			flags |= VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::Predication))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::Predication))
 		{
 			flags |= VK_ACCESS_2_CONDITIONAL_RENDERING_READ_BIT_EXT;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::ShadingRateSource))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::ShadingRateSource))
 		{
 			flags |= VK_ACCESS_2_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::VideoDecodeDst))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::VideoDecodeDst))
 		{
 			flags |= VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR;
 		}
-		if (value.IsFlag(RHIResourceStateFlag::VideoDecodeSrc))
+		if (EnumHasAnyFlags(value, RHIResourceStateFlag::VideoDecodeSrc))
 		{
 			flags |= VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR;
 		}

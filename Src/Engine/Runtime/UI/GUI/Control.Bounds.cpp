@@ -24,10 +24,10 @@ namespace SE
 			Rectangle parentBounds = m_Parent->GetDesireClientArea();
 			anchors = Margin
 			(
-			 m_AnchorMin.x * parentBounds.Size.x + parentBounds.Location.x,
-			 m_AnchorMax.x * parentBounds.Size.x,
-			 m_AnchorMin.y * parentBounds.Size.y + parentBounds.Location.y,
-			 m_AnchorMax.y * parentBounds.Size.y
+			 m_AnchorMin.X * parentBounds.Size.X + parentBounds.Location.X,
+			 m_AnchorMax.X * parentBounds.Size.X,
+			 m_AnchorMin.Y * parentBounds.Size.Y + parentBounds.Location.Y,
+			 m_AnchorMax.Y * parentBounds.Size.Y
 			);
 		}
 		else
@@ -36,25 +36,25 @@ namespace SE
 		}
 
 		// Calculate offsets on X axis
-		m_Offsets.Left = value.Location.x - anchors.Left;
-		if (m_AnchorMin.x != m_AnchorMax.x)
+		m_Offsets.Left = value.Location.X - anchors.Left;
+		if (m_AnchorMin.X != m_AnchorMax.X)
 		{
-			m_Offsets.Right = anchors.Right - value.Location.x - value.Size.x;
+			m_Offsets.Right = anchors.Right - value.Location.X - value.Size.X;
 		}
 		else
 		{
-			m_Offsets.Right = value.Size.x;
+			m_Offsets.Right = value.Size.X;
 		}
 
 		// Calculate offsets on Y axis
-		m_Offsets.Top = value.Location.y - anchors.Top;
-		if (m_AnchorMin.y != m_AnchorMax.y)
+		m_Offsets.Top = value.Location.Y - anchors.Top;
+		if (m_AnchorMin.Y != m_AnchorMax.Y)
 		{
-			m_Offsets.Bottom = anchors.Bottom - value.Location.y - value.Size.y;
+			m_Offsets.Bottom = anchors.Bottom - value.Location.Y - value.Size.Y;
 		}
 		else
 		{
-			m_Offsets.Bottom = value.Size.y;
+			m_Offsets.Bottom = value.Size.Y;
 		}
 
 		// Flush the control bounds
@@ -105,10 +105,10 @@ namespace SE
 			Rectangle parentBounds = m_Parent->GetDesireClientArea();
 			anchors = Margin
 			(
-			 m_AnchorMin.x * parentBounds.Size.x,
-			 m_AnchorMax.x * parentBounds.Size.x,
-			 m_AnchorMin.y * parentBounds.Size.y,
-			 m_AnchorMax.y * parentBounds.Size.y
+			 m_AnchorMin.X * parentBounds.Size.X,
+			 m_AnchorMax.X * parentBounds.Size.X,
+			 m_AnchorMin.Y * parentBounds.Size.Y,
+			 m_AnchorMax.Y * parentBounds.Size.Y
 			);
 			offset = parentBounds.Location;
 		}
@@ -119,25 +119,25 @@ namespace SE
 		}
 
 		// Calculate position and size on X axis
-		m_Bounds.Location.x = anchors.Left + m_Offsets.Left;
-		if (m_AnchorMin.x != m_AnchorMax.x)
+		m_Bounds.Location.X = anchors.Left + m_Offsets.Left;
+		if (m_AnchorMin.X != m_AnchorMax.X)
 		{
-			m_Bounds.Size.x = anchors.Right - m_Bounds.Location.x - m_Offsets.Right;
+			m_Bounds.Size.X = anchors.Right - m_Bounds.Location.X - m_Offsets.Right;
 		}
 		else
 		{
-			m_Bounds.Size.x = m_Offsets.Right;
+			m_Bounds.Size.X = m_Offsets.Right;
 		}
 
 		// Calculate position and size on Y axis
-		m_Bounds.Location.y = anchors.Top + m_Offsets.Top;
-		if (m_AnchorMin.y != m_AnchorMax.y)
+		m_Bounds.Location.Y = anchors.Top + m_Offsets.Top;
+		if (m_AnchorMin.Y != m_AnchorMax.Y)
 		{
-			m_Bounds.Size.y = anchors.Bottom - m_Bounds.Location.y - m_Offsets.Bottom;
+			m_Bounds.Size.Y = anchors.Bottom - m_Bounds.Location.Y - m_Offsets.Bottom;
 		}
 		else
 		{
-			m_Bounds.Size.y = m_Offsets.Bottom;
+			m_Bounds.Size.Y = m_Offsets.Bottom;
 		}
 
 		// Apply the offset
@@ -203,11 +203,11 @@ namespace SE
 		// Scale and Shear
 		Matrix3x3 m1 = Matrix3x3
 		(
-			m_Scale.x,
-			m_Scale.x * (m_Shear.y == 0 ? 0 : (1.0f / Math::Tan(Math::DegreesToRadians * (90 - Math::Clamp(m_Shear.y, -89.0f, 89.0f))))),
+			m_Scale.X,
+			m_Scale.X * (m_Shear.Y == 0 ? 0 : (1.0f / Math::Tan(Math::DegreesToRadians * (90 - Math::Clamp(m_Shear.Y, -89.0f, 89.0f))))),
 			0,
-			m_Scale.y * (m_Shear.x == 0 ? 0 : (1.0f / Math::Tan(Math::DegreesToRadians * (90 - Math::Clamp(m_Shear.x, -89.0f, 89.0f))))),
-			m_Scale.y,
+			m_Scale.Y * (m_Shear.X == 0 ? 0 : (1.0f / Math::Tan(Math::DegreesToRadians * (90 - Math::Clamp(m_Shear.X, -89.0f, 89.0f))))),
+			m_Scale.Y,
 			0, 0, 0, 1
 		);
 
@@ -217,10 +217,10 @@ namespace SE
 		float cos = Math::Cos(Math::DegreesToRadians * m_Rotation);
 
 		//Matrix2x2.Multiply(ref m1, ref m2, out m1);
-		m1.M11 = (m_Scale.x * cos) + (m1.M12 * -sin);
-		m1.M12 = (m_Scale.x * sin) + (m1.M12 * cos);
-		float m21 = (m1.M21 * cos) + (m_Scale.y * -sin);
-		m1.M22 = (m1.M21 * sin) + (m_Scale.y * cos);
+		m1.M11 = (m_Scale.X * cos) + (m1.M12 * -sin);
+		m1.M12 = (m_Scale.X * sin) + (m1.M12 * cos);
+		float m21 = (m1.M21 * cos) + (m_Scale.Y * -sin);
+		m1.M22 = (m1.M21 * sin) + (m_Scale.Y * cos);
 		m1.M21 = m21;
 		// Mix all the stuff
 		//Matrix3x3.Translation2D(ref v2, out Matrix3x3 m3);
@@ -228,8 +228,8 @@ namespace SE
 		//Matrix3x3.Multiply(ref m3, ref m4, out m3);
 		//Matrix3x3.Translation2D(ref v1, out m4);
 		//Matrix3x3.Multiply(ref m3, ref m4, out _cachedTransform);
-		m1.M31 = (v2.x * m1.M11) + (v2.y * m1.M21) + v1.x;
-		m1.M32 = (v2.x * m1.M12) + (v2.y * m1.M22) + v1.y;
+		m1.M31 = (v2.X * m1.M11) + (v2.Y * m1.M21) + v1.X;
+		m1.M32 = (v2.X * m1.M12) + (v2.Y * m1.M22) + v1.Y;
 		m_CachedTransform = m1;
 
 		// Cache inverted transform
@@ -248,7 +248,7 @@ namespace SE
 
 	void Control::__SetX(float value)
 	{
-		Bounds = Rectangle(value, Y, m_Bounds.Size.x, m_Bounds.Size.y);
+		Bounds = Rectangle(value, Y, m_Bounds.Size.X, m_Bounds.Size.Y);
 	}
 
 	float Control::__GetY()
@@ -258,28 +258,28 @@ namespace SE
 
 	void Control::__SetY(float value)
 	{
-		Bounds = Rectangle(X, value, m_Bounds.Size.x, m_Bounds.Size.y);
+		Bounds = Rectangle(X, value, m_Bounds.Size.X, m_Bounds.Size.Y);
 	}
 
 	float Control::__GetLocalX()
 	{
-		return __GetLocalLocation().x;
+		return __GetLocalLocation().X;
 	}
 
 	void Control::__SetLocalX(float value)
 	{
-		Float2 t = Float2(value, __GetLocalLocation().y);
+		Float2 t = Float2(value, __GetLocalLocation().Y);
 		__SetLocalLocation(t);
 	}
 
 	float Control::__GetLocalY()
 	{
-		return __GetLocalLocation().y;
+		return __GetLocalLocation().Y;
 	}
 
 	void Control::__SetLocalY(float value)
 	{
-		__SetLocalLocation({LocalLocation.Get().x, value});
+		__SetLocalLocation({LocalLocation.Get().X, value});
 	}
 
 	Float2& Control::__GetAnchorMin()
@@ -375,40 +375,40 @@ namespace SE
 
 	float Control::__GetWidth()
 	{
-		return m_Bounds.Size.x;
+		return m_Bounds.Size.X;
 	}
 
 	void Control::__SetWidth(float value)
 	{
-		if (Math::IsNearEqual(m_Bounds.Size.x, value))
+		if (Math::IsNearEqual(m_Bounds.Size.X, value))
 		{
 			return;
 		}
-		Rectangle bounds = Rectangle(m_Bounds.Location.x, m_Bounds.Location.y, value, m_Bounds.Size.y);
+		Rectangle bounds = Rectangle(m_Bounds.Location.X, m_Bounds.Location.Y, value, m_Bounds.Size.Y);
 		if (_pivotRelativeSizing)
 		{
-			float delta = m_Bounds.Size.x - value;
-			bounds.Location.x += delta * Pivot.Get().x;
+			float delta = m_Bounds.Size.X - value;
+			bounds.Location.X += delta * Pivot.Get().X;
 		}
 		Bounds = bounds;
 	}
 
 	float Control::__GetHeight()
 	{
-		return m_Bounds.Size.y;
+		return m_Bounds.Size.Y;
 	}
 
 	void Control::__SetHeight(float value)
 	{
-		if (Math::IsNearEqual(m_Bounds.Size.y, value))
+		if (Math::IsNearEqual(m_Bounds.Size.Y, value))
 		{
 			return;
 		}
-		Rectangle bounds = Rectangle(m_Bounds.Location.x, m_Bounds.Location.y, m_Bounds.Size.x, value);
+		Rectangle bounds = Rectangle(m_Bounds.Location.X, m_Bounds.Location.Y, m_Bounds.Size.X, value);
 		if (_pivotRelativeSizing)
 		{
-			float delta = m_Bounds.Size.y - value;
-			bounds.Location.y += delta * Pivot.Get().y;
+			float delta = m_Bounds.Size.Y - value;
+			bounds.Location.Y += delta * Pivot.Get().Y;
 		}
 		Bounds = bounds;
 	}

@@ -136,7 +136,7 @@ namespace SE
         /// <param name="drawModes">The draw passes to use for rendering this object.</param>
         /// <param name="perInstanceRandom">The random per-instance value (normalized to range 0-1).</param>
         /// <param name="sortOrder">Object sorting key.</param>
-        void Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, EnumFlags<StaticMask> flags = StaticMask::None,
+        void Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticMask flags = StaticMask::None,
             bool receiveDecals = true, DrawPass drawModes = DrawPass::Default, float perInstanceRandom = 0.0f, int16 sortOrder = 0) const;
 
         /// <summary>

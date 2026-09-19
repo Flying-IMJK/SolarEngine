@@ -12,7 +12,7 @@ namespace SE
 	/// <summary>
 	/// Represents a three dimensional mathematical vector.
 	/// </summary>
-    SE_STRUCT(Template)
+    SE_STRUCT(Template, API())
 	template<typename T>
 	struct Vector3Base
 	{
@@ -25,19 +25,19 @@ namespace SE
 				/// The X component.
 				/// </summary>
 				SE_FIELD(API())
-				T x;
+				T X;
 
 				/// <summary>
 				/// The Y component.
 				/// </summary>
                 SE_FIELD(API())
-				T y;
+				T Y;
 
 				/// <summary>
 				/// The Z component.
 				/// </summary>
                 SE_FIELD(API())
-				T z;
+				T Z;
 			};
 
 			/// <summary>
@@ -96,31 +96,31 @@ namespace SE
 		Vector3Base() = default;
 
 	    Vector3Base(T xyz)
-			: x(xyz)
-			, y(xyz)
-			, z(xyz)
+			: X(xyz)
+			, Y(xyz)
+			, Z(xyz)
 		{
 		}
 
 		explicit Vector3Base(const T* xyz)
-			: x(xyz[0])
-			, y(xyz[1])
-			, z(xyz[2])
+			: X(xyz[0])
+			, Y(xyz[1])
+			, Z(xyz[2])
 		{
 		}
 
 		Vector3Base(T x, T y, T z)
-			: x(x)
-			, y(y)
-			, z(z)
+			: X(x)
+			, Y(y)
+			, Z(z)
 		{
 		}
 
 		template<typename U = T, typename TEnableIf<TNot<TIsTheSame<T, U>>::Value>::Type...>
 		Vector3Base(const Vector3Base<U>& xyz)
-			: x((T)xyz.x)
-			, y((T)xyz.y)
-			, z((T)xyz.z)
+			: X((T)xyz.X)
+			, Y((T)xyz.Y)
+			, Z((T)xyz.Z)
 		{
 		}
 
@@ -140,37 +140,37 @@ namespace SE
 		// Gets a value indicting whether this instance is normalized.
 		bool IsNormalized() const
 		{
-			return Math::IsOne(x * x + y * y + z * z);
+			return Math::IsOne(X * X + Y * Y + Z * Z);
 		}
 
 		// Gets a value indicting whether this vector is zero.
 		bool IsZero() const
 		{
-			return Math::IsZero(x) && Math::IsZero(y) && Math::IsZero(z);
+			return Math::IsZero(X) && Math::IsZero(Y) && Math::IsZero(Z);
 		}
 
 		// Gets a value indicting whether any vector component is zero.
 		bool IsAnyZero() const
 		{
-			return Math::IsZero(x) || Math::IsZero(y) || Math::IsZero(z);
+			return Math::IsZero(X) || Math::IsZero(Y) || Math::IsZero(Z);
 		}
 
 		// Gets a value indicting whether this vector is one.
 		bool IsOne() const
 		{
-			return Math::IsOne(x) && Math::IsOne(y) && Math::IsOne(z);
+			return Math::IsOne(X) && Math::IsOne(Y) && Math::IsOne(Z);
 		}
 
 		// Calculates the length of the vector.
 		T Length() const
 		{
-			return Math::Sqrt(x * x + y * y + z * z);
+			return Math::Sqrt(X * X + Y * Y + Z * Z);
 		}
 
 		// Calculates the squared length of the vector.
 		T LengthSquared() const
 		{
-			return x * x + y * y + z * z;
+			return X * X + Y * Y + Z * Z;
 		}
 
 		// Calculates inverted length of the vector (1 / length).
@@ -184,7 +184,7 @@ namespace SE
 		/// </summary>
 		T AverageArithmetic() const
 		{
-			return (x + y + z) * 0.333333334f;
+			return (X + Y + Z) * 0.333333334f;
 		}
 
 		/// <summary>
@@ -192,7 +192,7 @@ namespace SE
 		/// </summary>
 		T SumValues() const
 		{
-			return x + y + z;
+			return X + Y + Z;
 		}
 
 		/// <summary>
@@ -200,7 +200,7 @@ namespace SE
 		/// </summary>
 		T MinValue() const
 		{
-			return Math::Min(x, y, z);
+			return Math::Min(X, Y, Z);
 		}
 
 		/// <summary>
@@ -208,7 +208,7 @@ namespace SE
 		/// </summary>
 		T MaxValue() const
 		{
-			return Math::Max(x, y, z);
+			return Math::Max(X, Y, Z);
 		}
 
 		/// <summary>
@@ -216,7 +216,7 @@ namespace SE
 		/// </summary>
 		bool IsNaN() const
 		{
-			return isnan(x) || isnan(y) || isnan(z);
+			return isnan(X) || isnan(Y) || isnan(Z);
 		}
 
 		/// <summary>
@@ -224,7 +224,7 @@ namespace SE
 		/// </summary>
 		bool IsInfinity() const
 		{
-			return isinf(x) || isinf(y) || isinf(z);
+			return isinf(X) || isinf(Y) || isinf(Z);
 		}
 
 		/// <summary>
@@ -240,7 +240,7 @@ namespace SE
 		/// </summary>
 		Vector3Base GetAbsolute() const
 		{
-			return Vector3Base(Math::Abs(x), Math::Abs(y), Math::Abs(z));
+			return Vector3Base(Math::Abs(X), Math::Abs(Y), Math::Abs(Z));
 		}
 
 		/// <summary>
@@ -248,7 +248,7 @@ namespace SE
 		/// </summary>
 		Vector3Base GetNegative() const
 		{
-			return Vector3Base(-x, -y, -z);
+			return Vector3Base(-X, -Y, -Z);
 		}
 
 		/// <summary>
@@ -256,7 +256,7 @@ namespace SE
 		/// </summary>
 		Vector3Base GetNormalized() const
 		{
-			Vector3Base result(x, y, z);
+			Vector3Base result(X, Y, Z);
 			result.Normalize();
 			return result;
 		}
@@ -267,13 +267,13 @@ namespace SE
 		/// </summary>
 		void Normalize()
 		{
-			const T length = Math::Sqrt(x * x + y * y + z * z);
+			const T length = Math::Sqrt(X * X + Y * Y + Z * Z);
 			if (length >= Math::ZeroTolerance)
 			{
 				const T inv = (T)1.0f / length;
-				x *= inv;
-				y *= inv;
-				z *= inv;
+				X *= inv;
+				Y *= inv;
+				Z *= inv;
 			}
 		}
 
@@ -282,80 +282,80 @@ namespace SE
 		/// </summary>
 		void NormalizeFast()
 		{
-			const T inv = 1.0f / Math::Sqrt(x * x + y * y + z * z);
-			x *= inv;
-			y *= inv;
-			z *= inv;
+			const T inv = 1.0f / Math::Sqrt(X * X + Y * Y + Z * Z);
+			X *= inv;
+			Y *= inv;
+			Z *= inv;
 		}
 
 	public:
 		Vector3Base operator+(const Vector3Base& b) const
 		{
-			return Vector3Base(x + b.x, y + b.y, z + b.z);
+			return Vector3Base(X + b.X, Y + b.Y, Z + b.Z);
 		}
 
 		Vector3Base operator-(const Vector3Base& b) const
 		{
-			return Vector3Base(x - b.x, y - b.y, z - b.z);
+			return Vector3Base(X - b.X, Y - b.Y, Z - b.Z);
 		}
 
 		Vector3Base operator*(const Vector3Base& b) const
 		{
-			return Vector3Base(x * b.x, y * b.y, z * b.z);
+			return Vector3Base(X * b.X, Y * b.Y, Z * b.Z);
 		}
 
 		Vector3Base operator/(const Vector3Base& b) const
 		{
-			return Vector3Base(x / b.x, y / b.y, z / b.z);
+			return Vector3Base(X / b.X, Y / b.Y, Z / b.Z);
 		}
 
 		Vector3Base operator-() const
 		{
-			return Vector3Base(-x, -y, -z);
+			return Vector3Base(-X, -Y, -Z);
 		}
 
 		Vector3Base operator+(T b) const
 		{
-			return Vector3Base(x + b, y + b, z + b);
+			return Vector3Base(X + b, Y + b, Z + b);
 		}
 
 		Vector3Base operator-(T b) const
 		{
-			return Vector3Base(x - b, y - b, z - b);
+			return Vector3Base(X - b, Y - b, Z - b);
 		}
 
 		Vector3Base operator*(T b) const
 		{
-			return Vector3Base(x * b, y * b, z * b);
+			return Vector3Base(X * b, Y * b, Z * b);
 		}
 
 		Vector3Base operator/(T b) const
 		{
-			return Vector3Base(x / b, y / b, z / b);
+			return Vector3Base(X / b, Y / b, Z / b);
 		}
 
 		Vector3Base operator+(typename TOtherFloat<T>::Type a) const
 		{
 			T b = (T)a;
-			return Vector3Base(x + b, y + b, z + b);
+			return Vector3Base(X + b, Y + b, Z + b);
 		}
 
 		Vector3Base operator-(typename TOtherFloat<T>::Type a) const
 		{
 			T b = (T)a;
-			return Vector3Base(x - b, y - b, z - b);
+			return Vector3Base(X - b, Y - b, Z - b);
 		}
 
 		Vector3Base operator*(typename TOtherFloat<T>::Type a) const
 		{
 			T b = (T)a;
-			return Vector3Base(x * (T)b, y * b, z * b);
+			return Vector3Base(X * (T)b, Y * b, Z * b);
 		}
 
 		Vector3Base operator/(typename TOtherFloat<T>::Type a) const
 		{
 			T b = (T)a;
-			return Vector3Base(x / b, y / b, z / b);
+			return Vector3Base(X / b, Y / b, Z / b);
 		}
 
 		Vector3Base operator^(const Vector3Base& b) const
@@ -370,179 +370,179 @@ namespace SE
 
 		Vector3Base& operator+=(const Vector3Base& b)
 		{
-			x += b.x;
-			y += b.y;
-			z += b.z;
+			X += b.X;
+			Y += b.Y;
+			Z += b.Z;
 			return *this;
 		}
 
 		Vector3Base& operator-=(const Vector3Base& b)
 		{
-			x -= b.x;
-			y -= b.y;
-			z -= b.z;
+			X -= b.X;
+			Y -= b.Y;
+			Z -= b.Z;
 			return *this;
 		}
 
 		Vector3Base& operator*=(const Vector3Base& b)
 		{
-			x *= b.x;
-			y *= b.y;
-			z *= b.z;
+			X *= b.X;
+			Y *= b.Y;
+			Z *= b.Z;
 			return *this;
 		}
 
 		Vector3Base& operator/=(const Vector3Base& b)
 		{
-			x /= b.x;
-			y /= b.y;
-			z /= b.z;
+			X /= b.X;
+			Y /= b.Y;
+			Z /= b.Z;
 			return *this;
 		}
 
 		Vector3Base& operator+=(T b)
 		{
-			x += b;
-			y += b;
-			z += b;
+			X += b;
+			Y += b;
+			Z += b;
 			return *this;
 		}
 
 		Vector3Base& operator-=(T b)
 		{
-			x -= b;
-			y -= b;
-			z -= b;
+			X -= b;
+			Y -= b;
+			Z -= b;
 			return *this;
 		}
 
 		Vector3Base& operator*=(T b)
 		{
-			x *= b;
-			y *= b;
-			z *= b;
+			X *= b;
+			Y *= b;
+			Z *= b;
 			return *this;
 		}
 
 		Vector3Base& operator/=(T b)
 		{
-			x /= b;
-			y /= b;
-			z /= b;
+			X /= b;
+			Y /= b;
+			Z /= b;
 			return *this;
 		}
 
 		bool operator==(const Vector3Base& b) const
 		{
-			return x == b.x && y == b.y && z == b.z;
+			return X == b.X && Y == b.Y && Z == b.Z;
 		}
 
 		bool operator!=(const Vector3Base& b) const
 		{
-			return x != b.x || y != b.y || z != b.z;
+			return X != b.X || Y != b.Y || Z != b.Z;
 		}
 
 		bool operator>(const Vector3Base& b) const
 		{
-			return x > b.x && y > b.y && z > b.z;
+			return X > b.X && Y > b.Y && Z > b.Z;
 		}
 
 		bool operator>=(const Vector3Base& b) const
 		{
-			return x >= b.x && y >= b.y && z >= b.z;
+			return X >= b.X && Y >= b.Y && Z >= b.Z;
 		}
 
 		bool operator<(const Vector3Base& b) const
 		{
-			return x < b.x && y < b.y && z < b.z;
+			return X < b.X && Y < b.Y && Z < b.Z;
 		}
 
 		bool operator<=(const Vector3Base& b) const
 		{
-			return x <= b.x && y <= b.y && z <= b.z;
+			return X <= b.X && Y <= b.Y && Z <= b.Z;
 		}
 
 	public:
 		static bool NearEqual(const Vector3Base& a, const Vector3Base& b)
 		{
-			return Math::IsNearEqual(a.x, b.x) && Math::IsNearEqual(a.y, b.y) && Math::IsNearEqual(a.z, b.z);
+			return Math::IsNearEqual(a.X, b.X) && Math::IsNearEqual(a.Y, b.Y) && Math::IsNearEqual(a.Z, b.Z);
 		}
 
 		static bool NearEqual(const Vector3Base& a, const Vector3Base& b, T epsilon)
 		{
-			return Math::IsNearEqual(a.x, b.x, epsilon) && Math::IsNearEqual(a.y, b.y, epsilon) && Math::IsNearEqual(a.z, b.z, epsilon);
+			return Math::IsNearEqual(a.X, b.X, epsilon) && Math::IsNearEqual(a.Y, b.Y, epsilon) && Math::IsNearEqual(a.Z, b.Z, epsilon);
 		}
 
 	public:
 		static void Add(const Vector3Base& a, const Vector3Base& b, Vector3Base& result)
 		{
-			result = Vector3Base(a.x + b.x, a.y + b.y, a.z + b.z);
+			result = Vector3Base(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
 		}
 
 		static void Subtract(const Vector3Base& a, const Vector3Base& b, Vector3Base& result)
 		{
-			result = Vector3Base(a.x - b.x, a.y - b.y, a.z - b.z);
+			result = Vector3Base(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
 		}
 
 		static void Multiply(const Vector3Base& a, const Vector3Base& b, Vector3Base& result)
 		{
-			result = Vector3Base(a.x * b.x, a.y * b.y, a.z * b.z);
+			result = Vector3Base(a.X * b.X, a.Y * b.Y, a.Z * b.Z);
 		}
 
 		static void Divide(const Vector3Base& a, const Vector3Base& b, Vector3Base& result)
 		{
-			result = Vector3Base(a.x / b.x, a.y / b.y, a.z / b.z);
+			result = Vector3Base(a.X / b.X, a.Y / b.Y, a.Z / b.Z);
 		}
 
 		static void Min(const Vector3Base& a, const Vector3Base& b, Vector3Base& result)
 		{
-			result = Vector3Base(a.x < b.x ? a.x : b.x, a.y < b.y ? a.y : b.y, a.z < b.z ? a.z : b.z);
+			result = Vector3Base(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y, a.Z < b.Z ? a.Z : b.Z);
 		}
 
 		static void Max(const Vector3Base& a, const Vector3Base& b, Vector3Base& result)
 		{
-			result = Vector3Base(a.x > b.x ? a.x : b.x, a.y > b.y ? a.y : b.y, a.z > b.z ? a.z : b.z);
+			result = Vector3Base(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y, a.Z > b.Z ? a.Z : b.Z);
 		}
 
 	public:
 		static Vector3Base Min(const Vector3Base& a, const Vector3Base& b)
 		{
-			return Vector3Base(a.x < b.x ? a.x : b.x, a.y < b.y ? a.y : b.y, a.z < b.z ? a.z : b.z);
+			return Vector3Base(a.X < b.X ? a.X : b.X, a.Y < b.Y ? a.Y : b.Y, a.Z < b.Z ? a.Z : b.Z);
 		}
 
 		static Vector3Base Max(const Vector3Base& a, const Vector3Base& b)
 		{
-			return Vector3Base(a.x > b.x ? a.x : b.x, a.y > b.y ? a.y : b.y, a.z > b.z ? a.z : b.z);
+			return Vector3Base(a.X > b.X ? a.X : b.X, a.Y > b.Y ? a.Y : b.Y, a.Z > b.Z ? a.Z : b.Z);
 		}
 
 		static Vector3Base Mod(const Vector3Base& a, const Vector3Base& b)
 		{
-			return Vector3Base(Math::FMod(a.x, b.x), Math::FMod(a.y, b.y), Math::FMod(a.z, b.z));
+			return Vector3Base(Math::FMod(a.X, b.X), Math::FMod(a.Y, b.Y), Math::FMod(a.Z, b.Z));
 		}
 
 		static Vector3Base Floor(const Vector3Base& v)
 		{
-			return Vector3Base(Math::Floor(v.x), Math::Floor(v.y), Math::Floor(v.z));
+			return Vector3Base(Math::Floor(v.X), Math::Floor(v.Y), Math::Floor(v.Z));
 		}
 
 		static Vector3Base Frac(const Vector3Base& v)
 		{
-			return Vector3Base(v.x - (int32)v.x, v.y - (int32)v.y, v.z - (int32)v.z);
+			return Vector3Base(v.X - (int32)v.X, v.Y - (int32)v.Y, v.Z - (int32)v.Z);
 		}
 
 		static Vector3Base Round(const Vector3Base& v)
 		{
-			return Vector3Base(Math::Round(v.x), Math::Round(v.y), Math::Round(v.z));
+			return Vector3Base(Math::Round(v.X), Math::Round(v.Y), Math::Round(v.Z));
 		}
 
 		static Vector3Base Ceil(const Vector3Base& v)
 		{
-			return Vector3Base(Math::Ceil(v.x), Math::Ceil(v.y), Math::Ceil(v.z));
+			return Vector3Base(Math::Ceil(v.X), Math::Ceil(v.Y), Math::Ceil(v.Z));
 		}
 
 		static Vector3Base Abs(const Vector3Base& v)
 		{
-			return Vector3Base(Math::Abs(v.x), Math::Abs(v.y), Math::Abs(v.z));
+			return Vector3Base(Math::Abs(v.X), Math::Abs(v.Y), Math::Abs(v.Z));
 		}
 
 	public:
@@ -565,7 +565,7 @@ namespace SE
 		// @param result When the method completes, contains the clamped value
 		static void Clamp(const Vector3Base& v, const Vector3Base& min, const Vector3Base& max, Vector3Base& result)
 		{
-			result = Vector3Base(Math::Clamp(v.x, min.x, max.x), Math::Clamp(v.y, min.y, max.y), Math::Clamp(v.z, min.z, max.z));
+			result = Vector3Base(Math::Clamp(v.X, min.X, max.X), Math::Clamp(v.Y, min.Y, max.Y), Math::Clamp(v.Z, min.Z, max.Z));
 		}
 
 		/// <summary>
@@ -605,16 +605,16 @@ namespace SE
 			if (lenSq > max * max)
 			{
 				T scaleFactor = max / (T)Math::Sqrt(lenSq);
-				result.x *= scaleFactor;
-				result.y *= scaleFactor;
-				result.z *= scaleFactor;
+				result.X *= scaleFactor;
+				result.Y *= scaleFactor;
+				result.Z *= scaleFactor;
 			}
 			if (lenSq < min * min)
 			{
 				T scaleFactor = min / (T)Math::Sqrt(lenSq);
-				result.x *= scaleFactor;
-				result.y *= scaleFactor;
-				result.z *= scaleFactor;
+				result.X *= scaleFactor;
+				result.Y *= scaleFactor;
+				result.Z *= scaleFactor;
 			}
 		}
 
@@ -624,9 +624,9 @@ namespace SE
 		// @returns The distance between the two vectors
 		static T Distance(const Vector3Base& a, const Vector3Base& b)
 		{
-			const T x = a.x - b.x;
-			const T y = a.y - b.y;
-			const T z = a.z - b.z;
+			const T x = a.X - b.X;
+			const T y = a.Y - b.Y;
+			const T z = a.Z - b.Z;
 			return Math::Sqrt(x * x + y * y + z * z);
 		}
 
@@ -636,9 +636,9 @@ namespace SE
 		// @returns The squared distance between the two vectors
 		static T DistanceSquared(const Vector3Base& a, const Vector3Base& b)
 		{
-			const T x = a.x - b.x;
-			const T y = a.y - b.y;
-			const T z = a.z - b.z;
+			const T x = a.X - b.X;
+			const T y = a.Y - b.Y;
+			const T z = a.Z - b.Z;
 			return x * x + y * y + z * z;
 		}
 
@@ -646,13 +646,13 @@ namespace SE
 		static Vector3Base Normalize(const Vector3Base& v)
 		{
 			Vector3Base r = v;
-			const T length = Math::Sqrt(r.x * r.x + r.y * r.y + r.z * r.z);
+			const T length = Math::Sqrt(r.X * r.X + r.Y * r.Y + r.Z * r.Z);
 			if (length >= Math::ZeroTolerance)
 			{
 				const T inv = (T)1.0f / length;
-				r.x *= inv;
-				r.y *= inv;
-				r.z *= inv;
+				r.X *= inv;
+				r.Y *= inv;
+				r.Z *= inv;
 			}
 			return r;
 		}
@@ -663,7 +663,7 @@ namespace SE
 		static Vector3Base NormalizeFast(const Vector3Base& v)
 		{
 			const T inv = 1.0f / v.Length();
-			return Vector3Base(v.x * inv, v.y * inv, v.z * inv);
+			return Vector3Base(v.X * inv, v.Y * inv, v.Z * inv);
 		}
 
 		// Performs vector normalization (scales vector up to unit length)
@@ -677,7 +677,7 @@ namespace SE
 		// dot product with another vector
 		inline static T Dot(const Vector3Base& a, const Vector3Base& b)
 		{
-			return a.x * b.x + a.y * b.y + a.z * b.z;
+			return a.X * b.X + a.Y * b.Y + a.Z * b.Z;
 		}
 
 		// Calculates the cross product of two vectors
@@ -686,7 +686,7 @@ namespace SE
 		// @param result When the method completes, contains the cross product of the two vectors
 		static void Cross(const Vector3Base& a, const Vector3Base& b, Vector3Base& result)
 		{
-			result = Vector3Base(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+			result = Vector3Base(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);
 		}
 
 		// Calculates the cross product of two vectors
@@ -695,7 +695,7 @@ namespace SE
 		// @returns Cross product of the two vectors
 		static Vector3Base Cross(const Vector3Base& a, const Vector3Base& b)
 		{
-			return Vector3Base(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+			return Vector3Base(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);
 		}
 
 		// Performs a linear interpolation between two vectors
@@ -705,9 +705,9 @@ namespace SE
 		// @param result When the method completes, contains the linear interpolation of the two vectors
 		static void Lerp(const Vector3Base& start, const Vector3Base& end, T amount, Vector3Base& result)
 		{
-			result.x = Math::Lerp(start.x, end.x, amount);
-			result.y = Math::Lerp(start.y, end.y, amount);
-			result.z = Math::Lerp(start.z, end.z, amount);
+			result.X = Math::Lerp(start.X, end.X, amount);
+			result.Y = Math::Lerp(start.Y, end.Y, amount);
+			result.Z = Math::Lerp(start.Z, end.Z, amount);
 		}
 
 		// <summary>
@@ -745,7 +745,7 @@ namespace SE
 			if (distanceSq == 0 || (maxDistanceDelta >= 0 && distanceSq <= maxDistanceDelta * maxDistanceDelta))
 				return target;
 			const T scale = maxDistanceDelta / Math::Sqrt(distanceSq);
-			return Vector3Base(current.x + to.x * scale, current.y + to.y * scale, current.z + to.z * scale);
+			return Vector3Base(current.X + to.X * scale, current.Y + to.Y * scale, current.Z + to.Z * scale);
 		}
 
 		// Performs a Hermite spline interpolation.
@@ -984,7 +984,7 @@ namespace SE
 	template<typename T>
 	inline uint32 GetHash(const Vector3Base<T>& key)
 	{
-		return (((*(uint32*)&key.x * 397) ^ *(uint32*)&key.y) * 397) ^ *(uint32*)&key.z;
+		return (((*(uint32*)&key.X * 397) ^ *(uint32*)&key.Y) * 397) ^ *(uint32*)&key.Z;
 	}
 }
 
@@ -999,7 +999,7 @@ namespace SE::Math
     template<typename T>
     inline static Vector3Base<T> UnwindDegrees(const Vector3Base<T>& v)
     {
-        return Vector3Base<T>(UnwindDegrees(v.x), UnwindDegrees(v.y), UnwindDegrees(v.z));
+        return Vector3Base<T>(UnwindDegrees(v.X), UnwindDegrees(v.Y), UnwindDegrees(v.Z));
     }
 }
 
@@ -1009,7 +1009,7 @@ struct TIsPODType<SE::Float3>
     enum { Value = true };
 };
 
-DEFINE_DEFAULT_FORMATTING(SE::Float3, "X:{0} Y:{1} Z:{2}", v.x, v.y, v.z);
+DEFINE_DEFAULT_FORMATTING(SE::Float3, "X:{0} Y:{1} Z:{2}", v.X, v.Y, v.Z);
 
 template<>
 struct TIsPODType<SE::Double3>
@@ -1017,7 +1017,7 @@ struct TIsPODType<SE::Double3>
     enum { Value = true };
 };
 
-DEFINE_DEFAULT_FORMATTING(SE::Double3, "X:{0} Y:{1} Z:{2}", v.x, v.y, v.z);
+DEFINE_DEFAULT_FORMATTING(SE::Double3, "X:{0} Y:{1} Z:{2}", v.X, v.Y, v.Z);
 
 template<>
 struct TIsPODType<SE::Int3>
@@ -1025,7 +1025,7 @@ struct TIsPODType<SE::Int3>
     enum { Value = true };
 };
 
-DEFINE_DEFAULT_FORMATTING(SE::Int3, "X:{0} Y:{1} Z:{2}", v.x, v.y, v.z);
+DEFINE_DEFAULT_FORMATTING(SE::Int3, "X:{0} Y:{1} Z:{2}", v.X, v.Y, v.Z);
 
 #if !defined(_MSC_VER) || defined(__clang__)
 // Forward specializations for Clang

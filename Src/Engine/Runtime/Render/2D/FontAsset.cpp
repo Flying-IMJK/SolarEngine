@@ -87,13 +87,13 @@ namespace SE
         return error;
     }
 
-    EnumFlags<FontFlags> FontAsset::GetStyle() const
+    FontFlags FontAsset::GetStyle() const
     {
-        EnumFlags<FontFlags> flags = FontFlags::None;
+        FontFlags flags = FontFlags::None;
         if ((m_Face->style_flags & FT_STYLE_FLAG_ITALIC) != 0)
-            flags.SetFlag(FontFlags::Italic);
+            flags = EnumAddFlags(flags, FontFlags::Italic);
         if ((m_Face->style_flags & FT_STYLE_FLAG_BOLD) != 0)
-            flags.SetFlag(FontFlags::Bold);
+            flags = EnumAddFlags(flags, FontFlags::Bold);
         return flags;
     }
 
@@ -128,14 +128,14 @@ namespace SE
     FontAsset* FontAsset::GetBold()
     {
         Threading::ScopeLock lock(Locker);
-        if (m_Options.Flags.IsFlag(FontFlags::Bold))
+        if (EnumHasAnyFlags(m_Options.Flags, FontFlags::Bold))
             return this;
         if (!m_VirtualBold)
         {
             m_VirtualBold = AssetContent::CreateVirtualAsset<FontAsset>();
             m_VirtualBold->Init(m_FontFile);
             auto options = m_Options;
-            options.Flags.SetFlag(FontFlags::Bold);
+            options.Flags = EnumAddFlags(options.Flags, FontFlags::Bold);
             m_VirtualBold->SetOptions(options);
         }
         return m_VirtualBold;
@@ -144,14 +144,14 @@ namespace SE
     FontAsset* FontAsset::GetItalic()
     {
         Threading::ScopeLock lock(Locker);
-        if (m_Options.Flags.IsFlag(FontFlags::Italic))
+        if (EnumHasAnyFlags(m_Options.Flags, FontFlags::Italic))
             return this;
         if (!m_VirtualItalic)
         {
             m_VirtualItalic = AssetContent::CreateVirtualAsset<FontAsset>();
             m_VirtualItalic->Init(m_FontFile);
             auto options = m_Options;
-            options.Flags.SetFlag(FontFlags::Italic);
+            options.Flags = EnumAddFlags(options.Flags, FontFlags::Italic);
             m_VirtualItalic->SetOptions(options);
         }
         return m_VirtualItalic;

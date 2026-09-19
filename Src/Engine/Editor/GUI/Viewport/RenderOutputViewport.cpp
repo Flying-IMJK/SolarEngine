@@ -37,7 +37,7 @@ namespace SE::Editor
 
 		// Draw background
 		Color backgroundColor = BackgroundColor;
-		if (backgroundColor.a > 0.0f)
+		if (backgroundColor.A > 0.0f)
 		{
 			Render2D::FillRectangle(bounds, backgroundColor);
 		}
@@ -81,8 +81,8 @@ namespace SE::Editor
 		int height = Math::CeilToInt(Height * scale);
 		if (_customResolution != Float2::Zero)
 		{
-			width = _customResolution.x;
-			height = _customResolution.y;
+			width = _customResolution.X;
+			height = _customResolution.Y;
 		}
 		if (m_BackBuffer == nullptr || m_BackBuffer->Width() == width && m_BackBuffer->Height() == height)
 		{

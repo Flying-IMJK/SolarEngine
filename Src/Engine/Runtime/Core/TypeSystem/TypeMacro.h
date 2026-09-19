@@ -110,6 +110,7 @@ namespace SE
 
 
 	// Method annotation. Parameters: API(NoProxy, Deprecated, Propertie, Attributes="...").
+	// NoProxy keeps the internal interop declaration and native export, but omits the public C# facade.
 	// Static binding is inferred from the C++ method declaration.
 	#define SE_FUNCTION(...)
 

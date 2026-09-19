@@ -167,9 +167,9 @@ namespace SE
 		SetIsLayoutLocked(true);
 
 		if (hScrollBar != nullptr)
-			hScrollBar->SetValue(-value.x);
+			hScrollBar->SetValue(-value.X);
 		if (vScrollBar != nullptr)
-			vScrollBar->SetValue(-value.y);
+			vScrollBar->SetValue(-value.Y);
 
 		SetIsLayoutLocked(wasLocked);
 		ScrollableControl::SetViewOffset(value);
@@ -228,9 +228,9 @@ namespace SE
 	void Panel::SetViewOffset(Orientation orientation, float value)
 	{
 		if (orientation == Orientation::Vertical)
-			_viewOffset.y = -value;
+			_viewOffset.Y = -value;
 		else
-			_viewOffset.x = -value;
+			_viewOffset.X = -value;
 		OnViewOffsetChanged();
 		PerformLayout();
 	}
@@ -330,7 +330,7 @@ namespace SE
 
 	bool Panel::ContainsPoint(Float2& location, bool precise)
 	{
-		if (precise && BackgroundColor.a <= 0.0f) // Go through transparency
+		if (precise && BackgroundColor.A <= 0.0f) // Go through transparency
 			return false;
 		return ScrollableControl::ContainsPoint(location, precise);
 	}
@@ -404,12 +404,12 @@ namespace SE
 
 		if (vScrollBar != nullptr && vScrollBar->Visible)
 		{
-			rect.Size.x -= vScrollBar->Width;
+			rect.Size.X -= vScrollBar->Width;
 		}
 
 		if (hScrollBar != nullptr && hScrollBar->Visible)
 		{
-			rect.Size.y -= hScrollBar->Height;
+			rect.Size.Y -= hScrollBar->Height;
 		}
 
 		return rect;
@@ -430,30 +430,30 @@ namespace SE
 		{
 			if (Rectangle(0, 0, width, AreaSize).Contains(location))
 			{
-				viewOffset.y -= MoveScale;
+				viewOffset.Y -= MoveScale;
 			}
 			else if (Rectangle(0, height - AreaSize, width, AreaSize).Contains(location))
 			{
-				viewOffset.y += MoveScale;
+				viewOffset.Y += MoveScale;
 			}
 
-			viewOffset.y = Math::Clamp(viewOffset.y, vScrollBar->GetMinimum(), vScrollBar->GetMaximum());
-			vScrollBar->SetValue(viewOffset.y);
+			viewOffset.Y = Math::Clamp(viewOffset.Y, vScrollBar->GetMinimum(), vScrollBar->GetMaximum());
+			vScrollBar->SetValue(viewOffset.Y);
 		}
 
 		if (hScrollBar != nullptr && hScrollBar->Enabled && width > MinSize)
 		{
 			if (Rectangle(0, 0, AreaSize, height).Contains(location))
 			{
-				viewOffset.x -= MoveScale;
+				viewOffset.X -= MoveScale;
 			}
 			else if (Rectangle(width - AreaSize, 0, AreaSize, height).Contains(location))
 			{
-				viewOffset.x += MoveScale;
+				viewOffset.X += MoveScale;
 			}
 
-			viewOffset.x = Math::Clamp(viewOffset.x, hScrollBar->GetMinimum(), hScrollBar->GetMaximum());
-			hScrollBar->SetValue(viewOffset.x);
+			viewOffset.X = Math::Clamp(viewOffset.X, hScrollBar->GetMinimum(), hScrollBar->GetMaximum());
+			hScrollBar->SetValue(viewOffset.X);
 		}
 
 		viewOffset *= -1;
@@ -491,7 +491,7 @@ namespace SE
 
 				// Clear scroll state
 				vScrollBar->Reset();
-				_viewOffset.y = 0;
+				_viewOffset.Y = 0;
 				OnViewOffsetChanged();
 
 				// Get the new bounds after changing scroll
@@ -518,7 +518,7 @@ namespace SE
 
 				// Clear scroll state
 				hScrollBar->Reset();
-				_viewOffset.x = 0;
+				_viewOffset.X = 0;
 				OnViewOffsetChanged();
 
 				// Get the new bounds after changing scroll

@@ -98,8 +98,8 @@ namespace SE
     
     void RendererDirectionalLightData::SetupLightData(LightData* data, bool useShadow) const
     {
-        data->SpotAngles.x = -2.0f;
-        data->SpotAngles.y = 1.0f;
+        data->SpotAngles.X = -2.0f;
+        data->SpotAngles.Y = 1.0f;
         data->SourceRadius = 0;
         data->SourceLength = 0;
         data->Color = Color;
@@ -115,8 +115,8 @@ namespace SE
 
     void RendererSpotLightData::SetupLightData(LightData* data, bool useShadow) const
     {
-        data->SpotAngles.x = CosOuterCone;
-        data->SpotAngles.y = InvCosConeDifference;
+        data->SpotAngles.X = CosOuterCone;
+        data->SpotAngles.Y = InvCosConeDifference;
         data->SourceRadius = SourceRadius;
         data->SourceLength = 0.0f;
         data->Color = Color;
@@ -132,8 +132,8 @@ namespace SE
 
     void RendererPointLightData::SetupLightData(LightData* data, bool useShadow) const
     {
-        data->SpotAngles.x = -2.0f;
-        data->SpotAngles.y = 1.0f;
+        data->SpotAngles.X = -2.0f;
+        data->SpotAngles.Y = 1.0f;
         data->SourceRadius = SourceRadius;
         data->SourceLength = SourceLength;
         data->Color = Color;
@@ -149,9 +149,9 @@ namespace SE
 
     void RendererSkyLightData::SetupLightData(LightData* data, bool useShadow) const
     {
-        data->SpotAngles.x = AdditiveColor.x;
-        data->SpotAngles.y = AdditiveColor.y;
-        data->SourceRadius = AdditiveColor.z;
+        data->SpotAngles.X = AdditiveColor.X;
+        data->SpotAngles.Y = AdditiveColor.Y;
+        data->SourceRadius = AdditiveColor.Z;
         // data->SourceLength = Image ? Image->StreamingTexture()->TotalMipLevels() - 2.0f : 0.0f;
         data->Color = Color;
         data->MinRoughness = MIN_ROUGHNESS;
@@ -303,7 +303,7 @@ namespace SE
         drawCall.SortKey = key.Data;
     }
 
-    void RenderList::AddDrawCall(const RenderContext& renderContext, EnumFlags<DrawPass> drawModes, EnumFlags<StaticMask> staticFlags, DrawCall& drawCall, bool receivesDecals, int16 sortOrder)
+    void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticMask staticFlags, DrawCall& drawCall, bool receivesDecals, int16 sortOrder)
     {
 #if ENABLE_ASSERTION_LOW_LAYERS
         // Ensure that draw modes are non-empty and in conjunction with material draw modes
@@ -316,33 +316,33 @@ namespace SE
         const int32 index = DrawCalls.Add(drawCall);
 
         // Add draw call to proper draw lists
-        if (drawModes.IsFlag(DrawPass::Depth))
+        if (EnumHasAllFlags(drawModes, DrawPass::Depth))
         {
             DrawCallsLists[(int32)DrawCallsListType::Depth].Indices.Add(index);
         }
-        if (drawModes.IsFlag(DrawPass::GBuffer) && drawModes.IsFlag(DrawPass::GlobalSurfaceAtlas))
+        if (EnumHasAllFlags(drawModes, DrawPass::GBuffer) && EnumHasAllFlags(drawModes, DrawPass::GlobalSurfaceAtlas))
         {
             if (receivesDecals)
                 DrawCallsLists[(int32)DrawCallsListType::GBuffer].Indices.Add(index);
             else
                 DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals].Indices.Add(index);
         }
-        if (drawModes.IsFlag(DrawPass::Forward))
+        if (EnumHasAllFlags(drawModes, DrawPass::Forward))
         {
             DrawCallsLists[(int32)DrawCallsListType::Forward].Indices.Add(index);
         }
-        if (drawModes.IsFlag(DrawPass::Distortion))
+        if (EnumHasAllFlags(drawModes, DrawPass::Distortion))
         {
             DrawCallsLists[(int32)DrawCallsListType::Distortion].Indices.Add(index);
         }
-        if (drawModes.IsFlag(DrawPass::MotionVectors) && !staticFlags.IsFlag(StaticMask::Transform))
+        if (EnumHasAllFlags(drawModes, DrawPass::MotionVectors) && !EnumHasAllFlags(staticFlags, StaticMask::Transform))
         {
             DrawCallsLists[(int32)DrawCallsListType::MotionVectors].Indices.Add(index);
         }
     }
 
-    void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, EnumFlags<DrawPass> drawModes, EnumFlags<StaticMask> staticFlags,
-        EnumFlags<ShadowsCastingMode> shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals, int16 sortOrder)
+    void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticMask staticFlags,
+        ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals, int16 sortOrder)
     {
 #if ENABLE_ASSERTION_LOW_LAYERS
         // Ensure that draw modes are non-empty and in conjunction with material draw modes
@@ -356,33 +356,33 @@ namespace SE
         const int32 index = DrawCalls.Add(drawCall);
 
         // Add draw call to proper draw lists
-        EnumFlags<DrawPass> modes = drawModes;
-        modes.Marge(mainRenderContext.view.GetShadowsDrawPassMask(shadowsMode));
+        DrawPass modes = drawModes;
+        modes = EnumAddFlags(modes, mainRenderContext.view.GetShadowsDrawPassMask(shadowsMode));
 
         drawModes = modes;
-        drawModes.Marge(mainRenderContext.view.Pass);
-        if (!drawModes.Is(DrawPass::None) && mainRenderContext.view.cullingFrustum.Intersects(bounds))
+        modes = EnumAddFlags(drawModes, mainRenderContext.view.Pass);
+        if (drawModes != DrawPass::None && mainRenderContext.view.cullingFrustum.Intersects(bounds))
         {
-            if (drawModes.IsFlag(DrawPass::Depth))
+            if (EnumHasAllFlags(drawModes, DrawPass::Depth))
             {
                 DrawCallsLists[(int32)DrawCallsListType::Depth].Indices.Add(index);
             }
-            if (drawModes.IsFlag(DrawPass::GBuffer) && drawModes.IsFlag(DrawPass::GlobalSurfaceAtlas))
+            if (EnumHasAllFlags(drawModes, DrawPass::GBuffer) && EnumHasAllFlags(drawModes, DrawPass::GlobalSurfaceAtlas))
             {
                 if (receivesDecals)
                     DrawCallsLists[(int32)DrawCallsListType::GBuffer].Indices.Add(index);
                 else
                     DrawCallsLists[(int32)DrawCallsListType::GBufferNoDecals].Indices.Add(index);
             }
-            if (drawModes.IsFlag(DrawPass::Forward))
+            if (EnumHasAllFlags(drawModes, DrawPass::Forward))
             {
                 DrawCallsLists[(int32)DrawCallsListType::Forward].Indices.Add(index);
             }
-            if (drawModes.IsFlag(DrawPass::Distortion))
+            if (EnumHasAllFlags(drawModes, DrawPass::Distortion))
             {
                 DrawCallsLists[(int32)DrawCallsListType::Distortion].Indices.Add(index);
             }
-            if (drawModes.IsFlag(DrawPass::MotionVectors) && !staticFlags.IsFlag(StaticMask::Transform))
+            if (EnumHasAllFlags(drawModes, DrawPass::MotionVectors) && !EnumHasAllFlags(staticFlags, StaticMask::Transform))
             {
                 DrawCallsLists[(int32)DrawCallsListType::MotionVectors].Indices.Add(index);
             }
@@ -392,8 +392,8 @@ namespace SE
             const RenderContext& renderContext = renderContextBatch.Contexts.Get()[i];
             ASSERT_LOW_LAYER(renderContext.view.Pass == DrawPass::Depth);
             drawModes = modes;
-            drawModes.Marge(renderContext.view.Pass);
-            if (!drawModes.Is(DrawPass::None) && renderContext.view.cullingFrustum.Intersects(bounds))
+            drawModes = EnumAddFlags(drawModes, renderContext.view.Pass);
+            if (drawModes != DrawPass::None && renderContext.view.cullingFrustum.Intersects(bounds))
             {
                 renderContext.list->ShadowDepthDrawCallsList.Indices.Add(index);
             }
@@ -502,9 +502,9 @@ namespace SE
         }
     }
 
-    FORCE_INLINE bool CanUseInstancing(EnumFlags<DrawPass> pass)
+    FORCE_INLINE bool CanUseInstancing(DrawPass pass)
     {
-        return pass.Is(DrawPass::GBuffer) || pass.Is(DrawPass::Depth);
+        return pass == DrawPass::GBuffer || pass == DrawPass::Depth;
     }
 
     void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, GPUTextureView* input)

@@ -27,7 +27,7 @@ namespace SE
 
     public:
 
-        Win32Application( HINSTANCE hInstance, char const* applicationName, int32 iconResourceID, EnumFlags<InitOptions> options = EnumFlags<InitOptions>() );
+        Win32Application( HINSTANCE hInstance, char const* applicationName, int32 iconResourceID, InitOptions options = static_cast<InitOptions>(0) );
         virtual ~Win32Application();
 
         int32 Run( int32 argc, char** argv );

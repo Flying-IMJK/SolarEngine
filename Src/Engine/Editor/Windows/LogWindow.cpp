@@ -472,7 +472,7 @@ namespace SE::Editor
                     newEntry->Visible = _groupButtons[(int)newEntry->Group]->Checked;
                     anyVisible |= newEntry->Visible;
                     newEntry->Parent = _entriesPanel;
-                    newEntry->Bounds = Rectangle(margin.Left + offset.x, top + offset.y, width, newEntry->Height);
+                    newEntry->Bounds = Rectangle(margin.Left + offset.X, top + offset.Y, width, newEntry->Height);
                     top = newEntry->Bottom + spacing;
                     _logCountPerGroup[(int)newEntry->Group]++;
                 }

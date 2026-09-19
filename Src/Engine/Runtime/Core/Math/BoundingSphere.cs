@@ -1,10 +1,5 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-#if USE_LARGE_WORLDS
-using Real = System.Double;
-#else
-using Real = System.Single;
-#endif
 
 // -----------------------------------------------------------------------------
 // Original code from SharpDX project. https://github.com/sharpdx/SharpDX/
@@ -67,24 +62,24 @@ namespace SE
         /// <summary>
         /// The center point of the sphere.
         /// </summary>
-        public Vector3 Center;
+        public Float3 Center;
 
         /// <summary>
         /// The radius of the sphere.
         /// </summary>
-        public Real Radius;
+        public float Radius;
 
         /// <summary>
         /// A <see cref="BoundingSphere"/> which represents an empty space.
         /// </summary>
-        public static readonly BoundingSphere Empty = new BoundingSphere(Vector3.Zero, 0.0f);
+        public static readonly BoundingSphere Empty = new BoundingSphere(Float3.Zero, 0.0f);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BoundingBox" /> struct.
         /// </summary>
         /// <param name="center">The center of the sphere in three dimensional space.</param>
         /// <param name="radius">The radius of the sphere.</param>
-        public BoundingSphere(Vector3 center, Real radius)
+        public BoundingSphere(Float3 center, float radius)
         {
             Center = center;
             Radius = radius;
@@ -97,7 +92,7 @@ namespace SE
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray)
         {
-            return CollisionsHelper.RayIntersectsSphere(ref ray, ref this, out Real _);
+            return CollisionsHelper.RayIntersectsSphere(ref ray, ref this, out float _);
         }
 
         /// <summary>
@@ -106,7 +101,7 @@ namespace SE
         /// <param name="ray">The ray to test.</param>
         /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Ray ray, out Real distance)
+        public bool Intersects(ref Ray ray, out float distance)
         {
             return CollisionsHelper.RayIntersectsSphere(ref ray, ref this, out distance);
         }
@@ -115,9 +110,9 @@ namespace SE
         /// Determines if there is an intersection between the current object and a <see cref="Ray" />.
         /// </summary>
         /// <param name="ray">The ray to test.</param>
-        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Vector3.Zero" /> if there was no intersection.</param>
+        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Float3.Zero" /> if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Ray ray, out Vector3 point)
+        public bool Intersects(ref Ray ray, out Float3 point)
         {
             return CollisionsHelper.RayIntersectsSphere(ref ray, ref this, out point);
         }
@@ -139,7 +134,7 @@ namespace SE
         /// <param name="vertex2">The second vertex of the triangle to test.</param>
         /// <param name="vertex3">The third vertex of the triangle to test.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public bool Intersects(ref Vector3 vertex1, ref Vector3 vertex2, ref Vector3 vertex3)
+        public bool Intersects(ref Float3 vertex1, ref Float3 vertex2, ref Float3 vertex3)
         {
             return CollisionsHelper.SphereIntersectsTriangle(ref this, ref vertex1, ref vertex2, ref vertex3);
         }
@@ -189,7 +184,7 @@ namespace SE
         /// </summary>
         /// <param name="point">The point to test.</param>
         /// <returns>The type of containment the two objects have.</returns>
-        public ContainmentType Contains(ref Vector3 point)
+        public ContainmentType Contains(ref Float3 point)
         {
             return CollisionsHelper.SphereContainsPoint(ref this, ref point);
         }
@@ -201,7 +196,7 @@ namespace SE
         /// <param name="vertex2">The second vertex of the triangle to test.</param>
         /// <param name="vertex3">The third vertex of the triangle to test.</param>
         /// <returns>The type of containment the two objects have.</returns>
-        public ContainmentType Contains(ref Vector3 vertex1, ref Vector3 vertex2, ref Vector3 vertex3)
+        public ContainmentType Contains(ref Float3 vertex1, ref Float3 vertex2, ref Float3 vertex3)
         {
             return CollisionsHelper.SphereContainsTriangle(ref this, ref vertex1, ref vertex2, ref vertex3);
         }
@@ -235,7 +230,7 @@ namespace SE
         /// <param name="result">When the method completes, contains the newly constructed bounding sphere.</param>
         /// <exception cref="System.ArgumentNullException">points</exception>
         /// <exception cref="System.ArgumentOutOfRangeException">start or count</exception>
-        public static void FromPoints(Vector3[] points, int start, int count, out BoundingSphere result)
+        public static void FromPoints(Float3[] points, int start, int count, out BoundingSphere result)
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
@@ -247,17 +242,17 @@ namespace SE
             int upperEnd = start + count;
 
             // Find the center of all points
-            Vector3 center = Vector3.Zero;
+            Float3 center = Float3.Zero;
             for (int i = start; i < upperEnd; ++i)
-                Vector3.Add(ref points[i], ref center, out center);
-            center /= (Real)count;
+                Float3.Add(ref points[i], ref center, out center);
+            center /= (float)count;
 
             // Find the radius of the sphere
-            Real radius = 0f;
+            float radius = 0f;
             for (int i = start; i < upperEnd; ++i)
             {
                 // We are doing a relative distance comparison to find the maximum distance from the center of our sphere
-                Vector3.DistanceSquared(ref center, ref points[i], out Real distance);
+                Float3.DistanceSquared(ref center, ref points[i], out float distance);
                 if (distance > radius)
                     radius = distance;
             }
@@ -272,7 +267,7 @@ namespace SE
         /// </summary>
         /// <param name="points">The points that will be contained by the sphere.</param>
         /// <param name="result">When the method completes, contains the newly constructed bounding sphere.</param>
-        public static void FromPoints(Vector3[] points, out BoundingSphere result)
+        public static void FromPoints(Float3[] points, out BoundingSphere result)
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
@@ -284,7 +279,7 @@ namespace SE
         /// </summary>
         /// <param name="points">The points that will be contained by the sphere.</param>
         /// <returns>The newly constructed bounding sphere.</returns>
-        public static BoundingSphere FromPoints(Vector3[] points)
+        public static BoundingSphere FromPoints(Float3[] points)
         {
             FromPoints(points, out var result);
             return result;
@@ -303,7 +298,7 @@ namespace SE
             result.Center.X = box.Minimum.X + x * 0.5f;
             result.Center.Y = box.Minimum.Y + y * 0.5f;
             result.Center.Z = box.Minimum.Z + z * 0.5f;
-            result.Radius = (Real)Math.Sqrt(x * x + y * y + z * z) * 0.5f;
+            result.Radius = (float)Math.Sqrt(x * x + y * y + z * z) * 0.5f;
         }
 
         /// <summary>
@@ -338,10 +333,10 @@ namespace SE
                 return;
             }
 
-            Vector3 difference = value2.Center - value1.Center;
-            Real length = difference.Length;
-            Real radius = value1.Radius;
-            Real radius2 = value2.Radius;
+            Float3 difference = value2.Center - value1.Center;
+            float length = difference.Length;
+            float radius = value1.Radius;
+            float radius2 = value2.Radius;
 
             if (radius + radius2 >= length)
             {
@@ -358,7 +353,7 @@ namespace SE
                 }
             }
 
-            Vector3 vector = difference * (1.0f / length);
+            Float3 vector = difference * (1.0f / length);
             var min = Mathf.Min(-radius, length - radius2);
             var max = (Mathf.Max(radius, length + radius2) - min) * 0.5f;
 
@@ -399,7 +394,7 @@ namespace SE
         /// <param name="result">The result transformed sphere.</param>
         public static void Transform(ref BoundingSphere sphere, ref Matrix matrix, out BoundingSphere result)
         {
-            Vector3.Transform(ref sphere.Center, ref matrix, out result.Center);
+            Float3.Transform(ref sphere.Center, ref matrix, out result.Center);
             result.Radius = sphere.Radius * matrix.ScaleVector.Absolute.MaxValue;
         }
 
@@ -495,10 +490,10 @@ namespace SE
         }
 
         /// <summary>
-        /// Determines whether the specified <see cref="Vector4" /> is equal to this instance.
+        /// Determines whether the specified <see cref="Float4" /> is equal to this instance.
         /// </summary>
-        /// <param name="value">The <see cref="Vector4" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <param name="value">The <see cref="Float4" /> to compare with this instance.</param>
+        /// <returns><c>true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref BoundingSphere value)
         {
@@ -506,10 +501,10 @@ namespace SE
         }
 
         /// <summary>
-        /// Determines whether the specified <see cref="Vector4" /> is equal to this instance.
+        /// Determines whether the specified <see cref="Float4" /> is equal to this instance.
         /// </summary>
-        /// <param name="value">The <see cref="Vector4" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <param name="value">The <see cref="Float4" /> to compare with this instance.</param>
+        /// <returns><c>true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(BoundingSphere value)
         {

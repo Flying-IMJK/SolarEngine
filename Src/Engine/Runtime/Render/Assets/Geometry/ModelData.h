@@ -313,7 +313,7 @@ namespace SE
         /// <summary>
         /// Gets or sets shadows casting mode by this visual element
         /// </summary>
-        EnumFlags<ShadowsCastingMode> ShadowsMode = ShadowsCastingMode::All;
+        ShadowsCastingMode ShadowsMode = ShadowsCastingMode::All;
 
         /// <summary>
         /// The material asset identifier (material or material instance).

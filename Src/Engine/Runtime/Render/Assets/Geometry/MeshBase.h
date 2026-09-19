@@ -219,12 +219,12 @@ namespace SE
             /// <summary>
             /// The object static flags.
             /// </summary>
-            EnumFlags<StaticMask> Flags;
+            StaticMask Flags;
 
             /// <summary>
             /// The object draw modes.
             /// </summary>
-            EnumFlags<DrawPass> DrawModes;
+            DrawPass DrawModes;
 
             /// <summary>
             /// The bounds of the model (used to select a proper LOD during rendering).

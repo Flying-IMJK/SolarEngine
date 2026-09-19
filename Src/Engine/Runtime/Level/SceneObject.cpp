@@ -52,7 +52,7 @@ namespace SE
 		m_PrefabObjectID = UID::Empty;
 	}
 
-	String SceneObject::GetNamePath(Char separatorChar) const
+	String SceneObject::GetNamePath(StringView separatorChar) const
 	{
 		return String::Empty;
 	}

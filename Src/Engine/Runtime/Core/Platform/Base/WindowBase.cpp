@@ -424,8 +424,8 @@ namespace SE
 	void WindowBase::Show()
 	{
 		const auto clientSize = GetClientSize();
-		const auto width = static_cast<int32>(clientSize.x);
-		const auto height = static_cast<int32>(clientSize.y);
+		const auto width = static_cast<int32>(clientSize.X);
+		const auto height = static_cast<int32>(clientSize.Y);
 		m_Visible = true;
 
 		InitSwapChain();

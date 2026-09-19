@@ -90,8 +90,8 @@ namespace SE
         {
             const auto formatFeaturesDepth = GPUDevice::instance->GetPixelFormatFeatures(format);
             const auto formatFeaturesTexture = GPUDevice::instance->GetPixelFormatFeatures(format);
-            if (formatFeaturesDepth.Support.AllFlagsSet(FormatSupport::DepthStencil, FormatSupport::Texture2D, FormatSupport::TextureCube) &&
-                formatFeaturesTexture.Support.AllFlagsSet(FormatSupport::ShaderSample, FormatSupport::ShaderSampleComparison))
+            if (EnumHasAllFlags(formatFeaturesDepth.Support, EnumCombineFlags<FormatSupport>(FormatSupport::DepthStencil, FormatSupport::Texture2D, FormatSupport::TextureCube)) &&
+                EnumHasAllFlags(formatFeaturesTexture.Support, EnumCombineFlags<FormatSupport>(FormatSupport::ShaderSample, FormatSupport::ShaderSampleComparison)))
             {
                 _shadowMapFormat = format;
                 break;
@@ -188,7 +188,7 @@ namespace SE
         // Check if size will change
         if (newSizeCSM > 0 && newSizeCSM != _shadowMapsSizeCSM)
         {
-            if (!_shadowMapCSM->Init(GPUTextureDescription::New2D(newSizeCSM, newSizeCSM, _shadowMapFormat, {GPUTextureFlags::ShaderResource, GPUTextureFlags::DepthStencil}, 1, MAX_CSM_CASCADES)))
+            if (!_shadowMapCSM->Init(GPUTextureDescription::New2D(newSizeCSM, newSizeCSM, _shadowMapFormat, EnumCombineFlags<GPUTextureFlags>(GPUTextureFlags::ShaderResource, GPUTextureFlags::DepthStencil), 1, MAX_CSM_CASCADES)))
             {
                 LOG_FATAL("Render", "Cannot setup shadow map '{0}' Size: {1}, format: {2}.", SE_TEXT("CSM"), newSizeCSM, Types::GetEnumString(_shadowMapFormat));
                 return;
@@ -197,7 +197,7 @@ namespace SE
         }
         if (newSizeCube > 0 && newSizeCube != _shadowMapsSizeCube)
         {
-            if (!_shadowMapCube->Init(GPUTextureDescription::NewCube(newSizeCube, _shadowMapFormat, {GPUTextureFlags::ShaderResource, GPUTextureFlags::DepthStencil})))
+            if (!_shadowMapCube->Init(GPUTextureDescription::NewCube(newSizeCube, _shadowMapFormat, EnumCombineFlags<GPUTextureFlags>(GPUTextureFlags::ShaderResource, GPUTextureFlags::DepthStencil))))
             {
                 LOG_FATAL("Render", "Cannot setup shadow map '{0}' Size: {1}, format: {2}.", SE_TEXT("Cube"), newSizeCube, Types::GetEnumString(_shadowMapFormat));
                 return;
@@ -403,21 +403,21 @@ namespace SE
             }
 
             const auto nearClip = 0.0f;
-            const auto farClip = cascadeMaxBoundLS.z - cascadeMinBoundLS.z;
+            const auto farClip = cascadeMaxBoundLS.Z - cascadeMinBoundLS.Z;
 
             // Create shadow view matrix
-            Matrix::LookAt(target - lightDirection * cascadeMaxBoundLS.z, target, upDirection, shadowView);
+            Matrix::LookAt(target - lightDirection * cascadeMaxBoundLS.Z, target, upDirection, shadowView);
 
             // Create viewport for culling with extended near/far planes due to culling issues
             Matrix cullingVP;
             {
                 const float cullRangeExtent = 100000.0f;
-                Matrix::OrthoOffCenter(cascadeMinBoundLS.x, cascadeMaxBoundLS.x, cascadeMinBoundLS.y, cascadeMaxBoundLS.y, -cullRangeExtent, farClip + cullRangeExtent, shadowProjection);
+                Matrix::OrthoOffCenter(cascadeMinBoundLS.X, cascadeMaxBoundLS.X, cascadeMinBoundLS.Y, cascadeMaxBoundLS.Y, -cullRangeExtent, farClip + cullRangeExtent, shadowProjection);
                 Matrix::Multiply(shadowView, shadowProjection, cullingVP);
             }
 
             // Create shadow projection matrix
-            Matrix::OrthoOffCenter(cascadeMinBoundLS.x, cascadeMaxBoundLS.x, cascadeMinBoundLS.y, cascadeMaxBoundLS.y, nearClip, farClip, shadowProjection);
+            Matrix::OrthoOffCenter(cascadeMinBoundLS.X, cascadeMaxBoundLS.X, cascadeMinBoundLS.Y, cascadeMaxBoundLS.Y, nearClip, farClip, shadowProjection);
 
             // Construct shadow matrix (View * Projection)
             Matrix::Multiply(shadowView, shadowProjection, shadowVP);
@@ -426,8 +426,8 @@ namespace SE
             if (stabilization == ProjectionSnapping)
             {
                 Float3 shadowPixelPosition = shadowVP.GetTranslation() * (shadowMapsSizeCSM * 0.5f);
-                shadowPixelPosition.z = 0;
-                const Float3 shadowPixelPositionRounded(Math::Round(shadowPixelPosition.x), Math::Round(shadowPixelPosition.y), 0.0f);
+                shadowPixelPosition.Z = 0;
+                const Float3 shadowPixelPositionRounded(Math::Round(shadowPixelPosition.X), Math::Round(shadowPixelPosition.Y), 0.0f);
                 const Float4 shadowPixelOffset((shadowPixelPositionRounded - shadowPixelPosition) * (2.0f / shadowMapsSizeCSM), 0.0f);
                 shadowProjection.SetRow(4, shadowProjection.GetRow(4) + shadowPixelOffset);
                 Matrix::Multiply(shadowView, shadowProjection, shadowVP);
@@ -677,7 +677,7 @@ namespace SE
         context->ResetRenderTarget(); 
         const Viewport viewport = renderContext.task->GetViewport();
         GPUTexture* depthBuffer = renderContext.buffers->DepthBuffer;
-        GPUTextureView* depthBufferSRV = depthBuffer->Flags().IsFlag(GPUTextureFlags::ReadOnlyDepthView) ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
+        GPUTextureView* depthBufferSRV = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView) ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
         context->SetViewportAndScissors(viewport);
         context->BindSR(0, renderContext.buffers->GBuffer0);
         context->BindSR(1, renderContext.buffers->GBuffer1);
@@ -752,7 +752,7 @@ namespace SE
         context->ResetRenderTarget();
         const Viewport viewport = renderContext.task->GetViewport();
         GPUTexture* depthBuffer = renderContext.buffers->DepthBuffer;
-        GPUTextureView* depthBufferSRV =depthBuffer->Flags().IsFlag(GPUTextureFlags::ReadOnlyDepthView) ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
+        GPUTextureView* depthBufferSRV = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView) ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
         context->SetViewportAndScissors(viewport);
         context->BindSR(0, renderContext.buffers->GBuffer0);
         context->BindSR(1, renderContext.buffers->GBuffer1);
@@ -821,7 +821,7 @@ namespace SE
         context->ResetSR();
         context->ResetRenderTarget();
         GPUTexture* depthBuffer = renderContext.buffers->DepthBuffer;
-        GPUTextureView* depthBufferSRV = depthBuffer->Flags().IsFlag(GPUTextureFlags::ReadOnlyDepthView) ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
+        GPUTextureView* depthBufferSRV = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView) ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
         context->SetViewportAndScissors(renderContext.task->GetViewport());
         context->BindSR(0, renderContext.buffers->GBuffer0);
         context->BindSR(1, renderContext.buffers->GBuffer1);

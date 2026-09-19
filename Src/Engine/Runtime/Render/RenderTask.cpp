@@ -280,7 +280,7 @@ namespace SE
 		}
 
 		// Draw actors (collect draw calls)
-		if (ActorsSource.IsFlag(ActorsSources::CustomActors))
+		if (EnumHasAnyFlags(ActorsSource, ActorsSources::CustomActors))
 		{
 			/*if (category == SceneRendering::DrawCategory::PreRender)
 			{
@@ -295,7 +295,7 @@ namespace SE
 			_customActorsScene->Draw(renderContextBatch, category);*/
 		}
 
-		if (ActorsSource.IsFlag(ActorsSources::CustomScenes))
+		if (EnumHasAnyFlags(ActorsSource, ActorsSources::CustomScenes))
 		{
 			/*for (Scene* scene : CustomScenes)
 			{
@@ -304,7 +304,7 @@ namespace SE
 			}*/
 		}
 
-		if (ActorsSource.IsFlag(ActorsSources::Scenes))
+		if (EnumHasAnyFlags(ActorsSource, ActorsSources::Scenes))
 		{
 			Level::DrawActors(renderContextBatch, category);
 		}
@@ -348,8 +348,8 @@ namespace SE
 			viewport = Buffers->GetViewport();
 		else
 			viewport = Viewport(0, 0, 1280, 720);
-		viewport.width *= RenderingPercentage;
-		viewport.height *= RenderingPercentage;
+		viewport.Width *= RenderingPercentage;
+		viewport.Height *= RenderingPercentage;
 		return viewport;
 	}
 

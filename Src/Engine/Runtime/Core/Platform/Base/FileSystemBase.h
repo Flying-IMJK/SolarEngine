@@ -3,6 +3,7 @@
 #include "Runtime/API.h"
 #include "Runtime/Core/Types/Variable.h"
 #include "Runtime/Core/Platform/Types.h"
+#include <Runtime/Core/Scripting/ScriptingTypeDefine.h>
 
 namespace SE
 {
@@ -36,12 +37,16 @@ namespace SE
 		Temporary,
 	};
 
+	SE_INJECT_CODE(cpp, "#include \"Runtime/Core/Platform/FileSystem.h\"");
+
 	/// <summary>
 	/// Platform implementation of filesystem service.
 	/// </summary>
+	SE_CLASS(API(Static, Name = "FileSystem", Tag = "NativeInvokeUseName"))
 	class SE_API_RUNTIME FileSystemBase
 	{
-
+		SCRIPTING_TYPE_MIN(FileSystemBase);
+        
 		/// <summary>
 		/// Displays a standard dialog box that prompts the user to open a file(s).
 		/// </summary>
@@ -121,6 +126,7 @@ namespace SE
 		/// </summary>
 		/// <param name="path">The path.</param>
 		/// <returns>True if failed, otherwise false.</returns>
+		SE_FUNCTION(API())
 		static bool ShowFileExplorer(const StringView& path);
 
 	public:

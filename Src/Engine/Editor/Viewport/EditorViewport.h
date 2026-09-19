@@ -719,19 +719,19 @@ namespace SE::Editor
 	    float __GetPitch() { return _pitch; }
 	    void __SetPitch(float value)
 	    {
-	        _pitch = Math::Clamp(value, CamPitchAngles.x, CamPitchAngles.y);
+	        _pitch = Math::Clamp(value, CamPitchAngles.X, CamPitchAngles.Y);
 	    }
 	    Float2 __GetYawPitch() { return Float2(_yaw, _pitch); }
 	    void __SetYawPitch(Float2 value)
 	    {
-	        Yaw = value.x;
-	        Pitch = value.y;
+	        Yaw = value.X;
+	        Pitch = value.Y;
 	    }
 	    Float3 __GetEulerAngles() { return Float3(_pitch, _yaw, 0); }
 	    void __SetEulerAngles(Float3 value)
 	    {
-	        Pitch = value.x;
-	        Yaw = value.y;
+	        Pitch = value.X;
+	        Yaw = value.Y;
 	    }
 
         ::SE::Editor::ViewportCamera* __GetViewportCamera() { return m_Camera; }

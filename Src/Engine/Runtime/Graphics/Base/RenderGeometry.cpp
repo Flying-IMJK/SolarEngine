@@ -43,7 +43,7 @@ namespace SE
                 LOG_ERROR("Graphics", "RenderGeometry vertex buffer slot {0} is null or unallocated.", vertexBuffer.Slot);
 				return false;
 			}
-			if (!vertexBuffer.Buffer->GetFlags().IsFlag(GPUBufferFlags::VertexBuffer))
+			if (!EnumHasAllFlags(vertexBuffer.Buffer->GetFlags(), GPUBufferFlags::VertexBuffer))
 			{
                 LOG_ERROR("Graphics", "RenderGeometry buffer at slot {0} is not a vertex buffer.", vertexBuffer.Slot);
 				return false;
@@ -84,7 +84,7 @@ namespace SE
 		}
 
 		// 即使当前 Draw 非索引，只要携带了 IndexBuffer，它也必须形成自洽描述。
-		if (!IndexBuffer->IsAllocated() || !IndexBuffer->GetFlags().IsFlag(GPUBufferFlags::IndexBuffer))
+		if (!IndexBuffer->IsAllocated() || !EnumHasAllFlags(IndexBuffer->GetFlags(), GPUBufferFlags::IndexBuffer))
 		{
             LOG_ERROR("Graphics", "RenderGeometry index buffer is unallocated or lacks the index-buffer flag.");
 			return false;

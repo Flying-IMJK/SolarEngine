@@ -98,29 +98,29 @@ namespace SE
 			alpha *= alpha;
 			Color selectionColor = SelectionColor * alpha;
 			//
-			int selectedLinesCount = 1 + Math::FloorToInt((rightEdge.y - leftEdge.y) / textHeight);
+			int selectedLinesCount = 1 + Math::FloorToInt((rightEdge.Y - leftEdge.Y) / textHeight);
 			if (selectedLinesCount == 1)
 			{
 				// Selected is part of single line
-				Rectangle r1 = Rectangle(leftEdge.x, leftEdge.y, rightEdge.x - leftEdge.x, fontHeight);
+				Rectangle r1 = Rectangle(leftEdge.X, leftEdge.Y, rightEdge.X - leftEdge.X, fontHeight);
 				Render2D::FillRectangle(r1, selectionColor);
 			}
 			else
 			{
-				float leftMargin = _layout.Bounds.Location.x;
+				float leftMargin = _layout.Bounds.Location.X;
 
 				// Selected is more than one line
-				Rectangle r1 =  Rectangle(leftEdge.x, leftEdge.y, 1000000000, fontHeight);
+				Rectangle r1 =  Rectangle(leftEdge.X, leftEdge.Y, 1000000000, fontHeight);
 				Render2D::FillRectangle(r1, selectionColor);
 				//
 				for (int i = 3; i <= selectedLinesCount; i++)
 				{
-					leftEdge.y += textHeight;
-					Rectangle r =  Rectangle(leftMargin, leftEdge.y, 1000000000, fontHeight);
+					leftEdge.Y += textHeight;
+					Rectangle r =  Rectangle(leftMargin, leftEdge.Y, 1000000000, fontHeight);
 					Render2D::FillRectangle(r, selectionColor);
 				}
 				//
-				Rectangle r2 = Rectangle(leftMargin, rightEdge.y, rightEdge.x - leftMargin, fontHeight);
+				Rectangle r2 = Rectangle(leftMargin, rightEdge.Y, rightEdge.X - leftMargin, fontHeight);
 				Render2D::FillRectangle(r2, selectionColor);
 			}
 		}

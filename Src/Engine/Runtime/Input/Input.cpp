@@ -246,7 +246,7 @@ namespace SE
 	}
 
 	Keyboard::Keyboard()
-		: InputDevice(SE_TEXT("Keyboard"))
+		: InputDevice(SpawnParams(UID::New(), TypeInitializer), SE_TEXT("Keyboard"))
 	{
 		_state.Clear();
 		_prevState.Clear();
@@ -871,10 +871,10 @@ namespace SE
             switch (config.Axis)
             {
                 case InputAxisType::MouseX:
-                    axisRawValue = Input::GetMousePositionDelta().x * config.Sensitivity;
+                    axisRawValue = Input::GetMousePositionDelta().X * config.Sensitivity;
                     break;
                 case InputAxisType::MouseY:
-                    axisRawValue = Input::GetMousePositionDelta().y * config.Sensitivity;
+                    axisRawValue = Input::GetMousePositionDelta().Y * config.Sensitivity;
                     break;
                 case InputAxisType::MouseWheel:
                     axisRawValue = Input::GetMouseScrollDelta() * config.Sensitivity;

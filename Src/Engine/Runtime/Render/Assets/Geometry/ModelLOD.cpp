@@ -169,7 +169,7 @@ namespace SE
 			Meshes.Get()[i].Render(context);
 	}
 
-	void ModelLOD::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, EnumFlags<StaticMask> flags,
+	void ModelLOD::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticMask flags,
 		bool receiveDecals, DrawPass drawModes, float perInstanceRandom, int16 sortOrder) const
 	{
 		for (int32 i = 0; i < Meshes.Count(); i++)

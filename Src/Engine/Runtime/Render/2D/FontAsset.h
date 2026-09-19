@@ -13,6 +13,7 @@ namespace SE
     /// <summary>
     /// The font hinting used when rendering characters.
     /// </summary>
+    SE_ENUM(API())
     enum class FontHinting : byte
     {
         /// <summary>
@@ -44,6 +45,7 @@ namespace SE
     /// <summary>
     /// The font flags used when rendering characters.
     /// </summary>
+    SE_ENUM(API())
     enum class FontFlags : byte
     {
         /// <summary>
@@ -70,17 +72,21 @@ namespace SE
     /// <summary>
     /// The font asset options.
     /// </summary>
+    SE_STRUCT(API())
     struct FontOptions
     {
+        SCRIPTING_TYPE_MIN(FontOptions);
         /// <summary>
         /// The hinting.
         /// </summary>
+        SE_FIELD(API())
         FontHinting Hinting;
 
         /// <summary>
         /// The flags.
         /// </summary>
-        EnumFlags<FontFlags> Flags;
+        SE_FIELD(API())
+        FontFlags Flags;
     };
 
     #define ASSET_VERSION_FONT 0
@@ -133,7 +139,7 @@ namespace SE
         /// <summary>
         /// Gets the font style flags.
         /// </summary>
-        EnumFlags<FontFlags> GetStyle() const;
+        FontFlags GetStyle() const;
 
         /// <summary>
         /// Sets the font options.
@@ -153,12 +159,14 @@ namespace SE
         /// Gets the font with bold style. Returns itself or creates a new virtual font asset using this font but with bold option enabled.
         /// </summary>
         /// <returns>The virtual font or this.</returns>
+        SE_FUNCTION(API())
         FontAsset* GetBold();
 
         /// <summary>
         /// Gets the font with italic style. Returns itself or creates a new virtual font asset using this font but with italic option enabled.
         /// </summary>
         /// <returns>The virtual font or this.</returns>
+        SE_FUNCTION(API())
         FontAsset* GetItalic();
 
         /// <summary>

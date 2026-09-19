@@ -47,7 +47,7 @@ namespace SE
 
 
 		auto format = PixelFormat::R8G8_UNorm;
-		if (!GPUDevice::instance->GetPixelFormatFeatures(format).Support.AllFlagsSet(FormatSupport::RenderTarget, FormatSupport::ShaderSample, FormatSupport::Texture2D))
+		if (!EnumHasAllFlags(GPUDevice::instance->GetPixelFormatFeatures(format).Support, EnumCombineFlags<FormatSupport>(FormatSupport::RenderTarget, FormatSupport::ShaderSample, FormatSupport::Texture2D)))
 		{
 			format = PixelFormat::B8G8R8A8_UNorm;
 		}
@@ -144,7 +144,7 @@ namespace SE
 
 		// Bind output
 		GPUTexture* depthBuffer = renderContext.buffers->DepthBuffer;
-		const bool depthBufferReadOnly = depthBuffer->Flags().IsFlag(GPUTextureFlags::ReadOnlyDepthView);
+		const bool depthBufferReadOnly = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView);
 		GPUTextureView* depthBufferRTV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : nullptr;
 		GPUTextureView* depthBufferSRV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
 		context->SetRenderTarget(lightBuffer, depthBufferRTV);

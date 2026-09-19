@@ -664,7 +664,7 @@ for (int32 i = 0; i < Positions.Count(); i++) item.Add(defautValue)
             auto& slot = Materials[materialSlotIndex];
 
             stream->Write(slot.AssetID);
-            stream->WriteByte(slot.ShadowsMode.Get());
+            stream->WriteByte(static_cast<byte>(slot.ShadowsMode));
             stream->WriteString(slot.Name, 11);
         }
 
@@ -752,7 +752,7 @@ for (int32 i = 0; i < Positions.Count(); i++) item.Add(defautValue)
         {
             auto& slot = Materials[materialSlotIndex];
             stream->Write(slot.AssetID);
-            stream->WriteByte(slot.ShadowsMode.Get());
+            stream->WriteByte(static_cast<byte>(slot.ShadowsMode));
             stream->WriteString(slot.Name, 11);
         }
 

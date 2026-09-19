@@ -307,7 +307,7 @@ namespace SE::Editor
 			SpriteAtlasPacker::Rect rectangle = atlasPacker.GetRectangle(i);
 
 			Sprite sprite;
-			sprite.Area = Rectangle(rectangle.x / atlasSize.x, rectangle.y / atlasSize.y, rectangle.width / atlasSize.x, rectangle.height / atlasSize.y);
+			sprite.Area = Rectangle(rectangle.x / atlasSize.X, rectangle.y / atlasSize.Y, rectangle.width / atlasSize.X, rectangle.height / atlasSize.Y);
 			sprite.Name = iconPack->name;
 			SpriteHandle handle = m_IconAtlas->AddSprite(sprite);
 
@@ -339,7 +339,7 @@ namespace SE::Editor
 		for (int i = 0; i < m_LoadedIcons.Count(); i++)
 		{
 			IconPack* iconPack = m_LoadedIcons[i];
-			gpuContext->CopyTexture(m_IconAtlas->GetTexture(), 0, iconPack->position.x, iconPack->position.y, 0,
+			gpuContext->CopyTexture(m_IconAtlas->GetTexture(), 0, iconPack->position.X, iconPack->position.Y, 0,
 				iconPack->texture->GetTexture(), 0);
 		}
     }

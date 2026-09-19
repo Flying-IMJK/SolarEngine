@@ -69,10 +69,10 @@ namespace SE
         ViewInfo = Float4(1.0f / Projection.M11, 1.0f / Projection.M22, Far / (Far - Near), (-Far * Near) / (Far - Near) / Far);
         ScreenSize = Float4(width, height, 1.0f / width, 1.0f / height);
 
-        TemporalAAJitter.z = TemporalAAJitter.x;
-        TemporalAAJitter.w = TemporalAAJitter.y;
-        TemporalAAJitter.x = temporalAAJitter.x;
-        TemporalAAJitter.y = temporalAAJitter.y;
+        TemporalAAJitter.Z = TemporalAAJitter.X;
+        TemporalAAJitter.W = TemporalAAJitter.Y;
+        TemporalAAJitter.X = temporalAAJitter.X;
+        TemporalAAJitter.Y = temporalAAJitter.Y;
 
         WorldPosition = Origin + Position;
 

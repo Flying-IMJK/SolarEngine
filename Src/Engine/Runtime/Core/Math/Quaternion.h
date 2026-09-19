@@ -14,8 +14,10 @@ namespace SE
 	/// <summary>
 	/// Represents a four dimensional mathematical quaternion. Euler angles are stored in: pitch, yaw, roll order (x, y, z).
 	/// </summary>
+	SE_STRUCT(API())
 	struct SE_API_RUNTIME Quaternion
 	{
+		SCRIPTING_TYPE_MIN(Quaternion)
 	public:
 		union
 		{
@@ -24,22 +26,26 @@ namespace SE
 				/// <summary>
 				/// The x component of the quaternion.
 				/// </summary>
-				float x;
+				SE_FIELD(API())
+				float X;
 
 				/// <summary>
 				/// The y component of the quaternion.
 				/// </summary>
-				float y;
+				SE_FIELD(API())
+				float Y;
 
 				/// <summary>
 				/// The z component of the quaternion.
 				/// </summary>
-				float z;
+				SE_FIELD(API())
+				float Z;
 
 				/// <summary>
 				/// The w component of the quaternion.
 				/// </summary>
-				float w;
+				SE_FIELD(API())
+				float W;
 			};
 
 			/// <summary>
@@ -78,7 +84,7 @@ namespace SE
 		/// <param name="z">z component value.</param>
 		/// <param name="w">w component value.</param>
 		Quaternion(const float x, const float y, const float z, const float w)
-			: x(x), y(y), z(z), w(w)
+			: X(x), Y(y), Z(z), W(w)
 		{
 		}
 
@@ -97,7 +103,7 @@ namespace SE
 		/// </summary>
 		bool IsIdentity() const
 		{
-			return Math::IsZero(x) && Math::IsZero(y) && Math::IsZero(z) && Math::IsOne(w);
+			return Math::IsZero(X) && Math::IsZero(Y) && Math::IsZero(Z) && Math::IsOne(W);
 		}
 
 		/// <summary>
@@ -105,7 +111,7 @@ namespace SE
 		/// </summary>
 		bool IsNormalized() const
 		{
-			return Math::IsOne(x * x + y * y + z * z + w * w);
+			return Math::IsOne(X * X + Y * Y + Z * Z + W * W);
 		}
 
 		/// <summary>
@@ -113,7 +119,7 @@ namespace SE
 		/// </summary>
 		bool IsNaN() const
 		{
-			return isnan(x) || isnan(y) || isnan(z) || isnan(w);
+			return isnan(X) || isnan(Y) || isnan(Z) || isnan(W);
 		}
 
 		/// <summary>
@@ -121,7 +127,7 @@ namespace SE
 		/// </summary>
 		bool IsInfinity() const
 		{
-			return isinf(x) || isinf(y) || isinf(z) || isinf(w);
+			return isinf(X) || isinf(Y) || isinf(Z) || isinf(W);
 		}
 
 		/// <summary>
@@ -147,7 +153,7 @@ namespace SE
 		/// </summary>
 		float Length() const
 		{
-			return Math::Sqrt(x * x + y * y + z * z + w * w);
+			return Math::Sqrt(X * X + Y * Y + Z * Z + W * W);
 		}
 
 		/// <summary>
@@ -155,7 +161,7 @@ namespace SE
 		/// </summary>
 		float LengthSquared() const
 		{
-			return x * x + y * y + z * z + w * w;
+			return X * X + Y * Y + Z * Z + W * W;
 		}
 
 		/// <summary>
@@ -168,9 +174,9 @@ namespace SE
 		/// </summary>
 		void Conjugate()
 		{
-			x = -x;
-			y = -y;
-			z = -z;
+			X = -X;
+			Y = -Y;
+			Z = -Z;
 		}
 
 		/// <summary>
@@ -178,7 +184,7 @@ namespace SE
 		/// </summary>
 		Quaternion Conjugated() const
 		{
-			return { -x, -y, -z, w };
+			return { -X, -Y, -Z, W };
 		}
 
 		/// <summary>
@@ -186,14 +192,14 @@ namespace SE
 		/// </summary>
 		void Invert()
 		{
-			float lengthSq = Math::Sqrt(x * x + y * y + z * z + w * w);
+			float lengthSq = Math::Sqrt(X * X + Y * Y + Z * Z + W * W);
 			if (!Math::IsZero(lengthSq))
 			{
 				lengthSq = 1.0f / lengthSq;
-				x = -x * lengthSq;
-				y = -y * lengthSq;
-				z = -z * lengthSq;
-				w = w * lengthSq;
+				X = -X * lengthSq;
+				Y = -Y * lengthSq;
+				Z = -Z * lengthSq;
+				W = W * lengthSq;
 			}
 		}
 
@@ -202,14 +208,14 @@ namespace SE
 		/// </summary>
 		void Normalize()
 		{
-			const float length = Math::Sqrt(x * x + y * y + z * z + w * w);
+			const float length = Math::Sqrt(X * X + Y * Y + Z * Z + W * W);
 			if (!Math::IsZero(length))
 			{
 				const float inv = 1.0f / length;
-				x *= inv;
-				y *= inv;
-				z *= inv;
-				w *= inv;
+				X *= inv;
+				Y *= inv;
+				Z *= inv;
+				W *= inv;
 			}
 		}
 
@@ -219,10 +225,10 @@ namespace SE
 		/// <param name="scale">The amount by which to scale the quaternion.</param>
 		void Multiply(float scale)
 		{
-			x *= scale;
-			y *= scale;
-			z *= scale;
-			w *= scale;
+			X *= scale;
+			Y *= scale;
+			Z *= scale;
+			W *= scale;
 		}
 
 		/// <summary>
@@ -239,7 +245,7 @@ namespace SE
 		/// <returns>The sum of the two quaternions.</returns>
 		inline Quaternion operator+(const Quaternion& b) const
 		{
-			return Quaternion(x + b.x, y + b.y, z + b.z, w + b.w);
+			return Quaternion(X + b.X, Y + b.Y, Z + b.Z, W + b.W);
 		}
 
 		/// <summary>
@@ -249,7 +255,7 @@ namespace SE
 		/// <returns>The difference of the two quaternions.</returns>
 		inline Quaternion operator-(const Quaternion& b) const
 		{
-			return Quaternion(x - b.x, y - b.y, z - b.z, w - b.w);
+			return Quaternion(X - b.X, Y - b.Y, Z - b.Z, W - b.W);
 		}
 
 		/// <summary>
@@ -271,10 +277,10 @@ namespace SE
 		/// <returns>The sum of the two quaternions.</returns>
 		inline Quaternion& operator+=(const Quaternion& b)
 		{
-			x += b.x;
-			y += b.y;
-			z += b.z;
-			w += b.w;
+			X += b.X;
+			Y += b.Y;
+			Z += b.Z;
+			W += b.W;
 			return *this;
 		}
 
@@ -285,10 +291,10 @@ namespace SE
 		/// <returns>The difference of the two quaternions.</returns>
 		inline Quaternion& operator-=(const Quaternion& b)
 		{
-			x -= b.x;
-			y -= b.y;
-			z -= b.z;
-			w -= b.w;
+			X -= b.X;
+			Y -= b.Y;
+			Z -= b.Z;
+			W -= b.W;
 			return *this;
 		}
 
@@ -409,7 +415,7 @@ namespace SE
 		/// <returns>The dot product of the two quaternions.</returns>
 		static float Dot(const Quaternion& left, const Quaternion& right)
 		{
-			return left.x * right.x + left.y * right.y + left.z * right.z + left.w * right.w;
+			return left.X * right.X + left.Y * right.Y + left.Z * right.Z + left.W * right.W;
 		}
 
 		/// <summary>
@@ -430,10 +436,10 @@ namespace SE
 		// @param result when the method completes, contains the sum of the two quaternions
 		static void Add(const Quaternion& left, const Quaternion& right, Quaternion& result)
 		{
-			result.x = left.x + right.x;
-			result.y = left.y + right.y;
-			result.z = left.z + right.z;
-			result.w = left.w + right.w;
+			result.X = left.X + right.X;
+			result.Y = left.Y + right.Y;
+			result.Z = left.Z + right.Z;
+			result.W = left.W + right.W;
 		}
 
 		// Subtracts two quaternions
@@ -442,10 +448,10 @@ namespace SE
 		// @param result when the method completes, contains the difference of the two quaternions
 		static void Subtract(const Quaternion& left, const Quaternion& right, Quaternion& result)
 		{
-			result.x = left.x - right.x;
-			result.y = left.y - right.y;
-			result.z = left.z - right.z;
-			result.w = left.w - right.w;
+			result.X = left.X - right.X;
+			result.Y = left.Y - right.Y;
+			result.Z = left.Z - right.Z;
+			result.W = left.W - right.W;
 		}
 
 		// Scales a quaternion by the given value
@@ -454,10 +460,10 @@ namespace SE
 		// @param result when the method completes, contains the scaled quaternion
 		static void Multiply(const Quaternion& value, float scale, Quaternion& result)
 		{
-			result.x = value.x * scale;
-			result.y = value.y * scale;
-			result.z = value.z * scale;
-			result.w = value.w * scale;
+			result.X = value.X * scale;
+			result.Y = value.Y * scale;
+			result.Z = value.Z * scale;
+			result.W = value.W * scale;
 		}
 
 		// Multiplies a quaternion by another
@@ -471,10 +477,10 @@ namespace SE
 		// @param result when the method completes, contains a quaternion facing in the opposite direction
 		static void Negate(const Quaternion& value, Quaternion& result)
 		{
-			result.x = -value.x;
-			result.y = -value.y;
-			result.z = -value.z;
-			result.w = -value.w;
+			result.X = -value.X;
+			result.Y = -value.Y;
+			result.Z = -value.Z;
+			result.W = -value.W;
 		}
 
 		// Performs a linear interpolation between two quaternions
@@ -686,4 +692,4 @@ struct TIsPODType<SE::Quaternion>
 	enum { Value = true };
 };
 
-DEFINE_DEFAULT_FORMATTING(SE::Quaternion, "x:{0} y:{1} z:{2} w:{3}", v.x, v.y, v.z, v.w);
+DEFINE_DEFAULT_FORMATTING(SE::Quaternion, "x:{0} y:{1} z:{2} w:{3}", v.X, v.Y, v.Z, v.W);

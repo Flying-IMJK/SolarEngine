@@ -341,7 +341,7 @@ namespace SE
                 ADD_FEATURE(LightmapFeature);
             if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
                 ADD_FEATURE(DeferredShadingFeature);
-            if (materialInfo.BlendMode != MaterialBlendMode::Opaque && materialInfo.FeaturesFlags.IsNotFlag(MaterialFeatures::DisableDistortion))
+            if (materialInfo.BlendMode != MaterialBlendMode::Opaque && EnumHasNoneFlags(materialInfo.FeaturesFlags, MaterialFeatures::DisableDistortion))
                 ADD_FEATURE(DistortionFeature);
             /*if (materialInfo.BlendMode != MaterialBlendMode::Opaque && materialInfo.FeaturesFlags.IsFlagSet(MaterialFeatures::GlobalIllumination))
                 ADD_FEATURE(GlobalIlluminationFeature);*/
@@ -355,7 +355,7 @@ namespace SE
             ADD_FEATURE(DeferredShadingFeature);
             break;
         case MaterialDomain::Particle:
-            if (materialInfo.BlendMode != MaterialBlendMode::Opaque && materialInfo.FeaturesFlags.IsNotFlag(MaterialFeatures::DisableDistortion))
+            if (materialInfo.BlendMode != MaterialBlendMode::Opaque && EnumHasNoneFlags(materialInfo.FeaturesFlags, MaterialFeatures::DisableDistortion))
                 ADD_FEATURE(DistortionFeature);
             /*if (materialInfo.BlendMode != MaterialBlendMode::Opaque && materialInfo.FeaturesFlags.IsFlagSet(MaterialFeatures::GlobalIllumination))
                 ADD_FEATURE(GlobalIlluminationFeature);*/
@@ -476,7 +476,7 @@ namespace SE
 
             // Normalize and transform to world space if need to
             _writer.Write(SE_TEXT("\t{0}.TangentNormal = normalize({0}.TangentNormal);\n"), materialVarPS.Value);
-            if (baseLayer->FeaturesFlags.IsFlag(MaterialFeatures::InputWorldSpaceNormal))
+            if (EnumHasAnyFlags(baseLayer->FeaturesFlags, MaterialFeatures::InputWorldSpaceNormal))
             {
                 _writer.Write(SE_TEXT("\t{0}.WorldNormal = {0}.TangentNormal;\n"), materialVarPS.Value);
                 _writer.Write(SE_TEXT("\t{0}.TangentNormal = normalize(TransformWorldVectorToTangent(input, {0}.WorldNormal));\n"), materialVarPS.Value);
@@ -568,8 +568,8 @@ namespace SE
             _writer.Write(SE_TEXT("#define CUSTOM_VERTEX_INTERPOLATORS_COUNT ({0})\n"), _vsToPsInterpolants.Count());
             _writer.Write(SE_TEXT("#define MATERIAL_OPACITY_THRESHOLD ({0})\n"), baseLayer->OpacityThreshold);
             if (materialInfo.BlendMode != MaterialBlendMode::Opaque &&
-                materialInfo.FeaturesFlags.IsNotFlag(MaterialFeatures::DisableReflections) &&
-                materialInfo.FeaturesFlags.IsFlag(MaterialFeatures::ScreenSpaceReflections))
+                EnumHasNoneFlags(materialInfo.FeaturesFlags, MaterialFeatures::DisableReflections) &&
+                EnumHasAnyFlags(materialInfo.FeaturesFlags, MaterialFeatures::ScreenSpaceReflections))
             {
                 // Inject depth and color buffers for Screen Space Reflections used by transparent material
                 /*auto sceneDepthTexture = findOrAddSceneTexture(MaterialSceneTextures::SceneDepth);

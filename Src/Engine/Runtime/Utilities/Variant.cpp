@@ -14,15 +14,17 @@
 #include "Runtime/Core/Platform/Platform.h"
 #include "Runtime/Core/Platform/StringUtils.h"
 #include "Runtime/Core/Serialization/WriteStream.h"
+#include "Runtime/Core/Scripting/Scripting.h"
 #include "Runtime/Core/Types/Strings/StringView.h"
-#include "Runtime/Resource/Storage/AssetStorages.h"
 #include "Runtime/Core/Scripting/ManagedCLR/CLRClass.h"
+#include "Runtime/Core/Scripting/Scripting.h"
+#include "Runtime/Resource/Storage/AssetStorages.h"
 
 namespace SE
 {
     namespace
     {
-        const char* InBuiltTypesTypeNames[40] =
+        const char* InBuiltTypesTypeNames[(int)VariantTypes::MAX] =
         {
             // @formatter:off
             "",// Null
@@ -45,7 +47,6 @@ namespace SE
             "SE.Float3",// Float3
             "SE.Float4",// Float4
             "SE.Color",// Color
-            "System.Guid",// Guid
             "SE.BoundingBox",// BoundingBox
             "SE.BoundingSphere",// BoundingSphere
             "SE.Quaternion",// Quaternion
@@ -65,6 +66,8 @@ namespace SE
             "SE.Double2",// Double2
             "SE.Double3",// Double3
             "SE.Double4",// Double4
+            "System.Guid",// UID
+            "SE.Color32",// Color32
             // @formatter:on
         };
     }
@@ -121,24 +124,6 @@ namespace SE
                 return;
             }
         }
-        {
-            // Aliases
-            if (typeName == "SE.Vector2")
-            {
-                new(this) VariantTypeHandle(VariantTypes::Vector2);
-                return;
-            }
-            if (typeName == "SE.Float3")
-            {
-                new(this) VariantTypeHandle(VariantTypes::Float3);
-                return;
-            }
-            if (typeName == "SE.Vector4")
-            {
-                new(this) VariantTypeHandle(VariantTypes::Vector4);
-                return;
-            }
-        }
 
         // Check case for array
         if (typeName.EndsWith(StringAnsiView("[]"), StringSearchCase::CaseSensitive))
@@ -148,7 +133,7 @@ namespace SE
         }
 
         // Try using scripting type
-        /*const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeName);
+/*        const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeName);
         if (typeHandle)
         {
             const ScriptingType& type = typeHandle.GetType();
@@ -368,6 +353,9 @@ namespace SE
             break;
         case VariantTypes::Color:
             result = SE_TEXT("Color");
+            break;
+        case VariantTypes::Color32:
+            result = SE_TEXT("Color32");
             break;
         case VariantTypes::BoundingBox:
             result = SE_TEXT("BoundingBox");
@@ -709,6 +697,12 @@ namespace SE
         *(Color*)AsData = v;
     }
 
+    Variant::Variant(const Color32& v)
+        : Type(VariantTypes::Color32)
+    {
+        *(Color32*)AsData = v;
+    }
+
     Variant::Variant(const Quaternion& v)
         : Type(VariantTypes::Quaternion)
     {
@@ -1046,6 +1040,8 @@ namespace SE
                 return *(Double3*)AsData == *(Double3*)other.AsData;
             case VariantTypes::Color:
                 return *(Color*)AsData == *(Color*)other.AsData;
+            case VariantTypes::Color32:
+                return *(Color32*)AsData == *(Color32*)other.AsData;
             case VariantTypes::Quaternion:
                 return *(Quaternion*)AsData == *(Quaternion*)other.AsData;
             case VariantTypes::Rectangle:
@@ -1254,23 +1250,23 @@ namespace SE
         case VariantTypes::Pointer:
             return (int64)AsPointer;
         case VariantTypes::Float2:
-            return (int64)AsFloat2().x;
+            return (int64)AsFloat2().X;
         case VariantTypes::Float3:
-            return (int64)AsFloat3().x;
+            return (int64)AsFloat3().X;
         case VariantTypes::Float4:
-            return (int64)AsFloat4().x;
+            return (int64)AsFloat4().X;
         case VariantTypes::Double2:
-            return (int64)AsDouble2().x;
+            return (int64)AsDouble2().X;
         case VariantTypes::Double3:
-            return (int64)AsDouble3().x;
+            return (int64)AsDouble3().X;
         case VariantTypes::Double4:
-            return (int64)AsDouble4().x;
+            return (int64)AsDouble4().X;
         case VariantTypes::Int2:
-            return (int64)AsInt2().x;
+            return (int64)AsInt2().X;
         case VariantTypes::Int3:
-            return (int64)AsInt3().x;
+            return (int64)AsInt3().X;
         case VariantTypes::Int4:
-            return (int64)AsInt4().x;
+            return (int64)AsInt4().X;
         default:
             return 0;
         }
@@ -1317,23 +1313,23 @@ namespace SE
         case VariantTypes::Pointer:
             return (uint64)AsPointer;
         case VariantTypes::Float2:
-            return (uint64)AsFloat2().x;
+            return (uint64)AsFloat2().X;
         case VariantTypes::Float3:
-            return (uint64)AsFloat3().x;
+            return (uint64)AsFloat3().X;
         case VariantTypes::Float4:
-            return (uint64)AsFloat4().x;
+            return (uint64)AsFloat4().X;
         case VariantTypes::Double2:
-            return (uint64)AsDouble2().x;
+            return (uint64)AsDouble2().X;
         case VariantTypes::Double3:
-            return (uint64)AsDouble3().x;
+            return (uint64)AsDouble3().X;
         case VariantTypes::Double4:
-            return (uint64)AsDouble4().x;
+            return (uint64)AsDouble4().X;
         case VariantTypes::Int2:
-            return (uint64)AsInt2().x;
+            return (uint64)AsInt2().X;
         case VariantTypes::Int3:
-            return (uint64)AsInt3().x;
+            return (uint64)AsInt3().X;
         case VariantTypes::Int4:
-            return (uint64)AsInt4().x;
+            return (uint64)AsInt4().X;
         default:
             return 0;
         }
@@ -1363,24 +1359,26 @@ namespace SE
         case VariantTypes::Double:
             return (float)AsDouble;
         case VariantTypes::Float2:
-            return AsFloat2().x;
+            return AsFloat2().X;
         case VariantTypes::Float3:
-            return AsFloat3().x;
+            return AsFloat3().X;
         case VariantTypes::Float4:
         case VariantTypes::Color:
-            return AsFloat4().x;
+            return AsFloat4().X;
+        case VariantTypes::Color32:
+            return AsColor32().r / 255.0f;
         case VariantTypes::Double2:
-            return (float)AsDouble2().x;
+            return (float)AsDouble2().X;
         case VariantTypes::Double3:
-            return (float)AsDouble3().x;
+            return (float)AsDouble3().X;
         case VariantTypes::Double4:
-            return (float)AsDouble4().x;
+            return (float)AsDouble4().X;
         case VariantTypes::Int2:
-            return (float)AsInt2().x;
+            return (float)AsInt2().X;
         case VariantTypes::Int3:
-            return (float)AsInt3().x;
+            return (float)AsInt3().X;
         case VariantTypes::Int4:
-            return (float)AsInt4().x;
+            return (float)AsInt4().X;
         case VariantTypes::Pointer:
             return AsPointer ? 1.0f : 0.0f;
         case VariantTypes::Object:
@@ -1418,23 +1416,23 @@ namespace SE
         case VariantTypes::Double:
             return AsDouble;
         case VariantTypes::Float2:
-            return (double)AsFloat2().x;
+            return (double)AsFloat2().X;
         case VariantTypes::Float3:
-            return (double)AsFloat3().x;
+            return (double)AsFloat3().X;
         case VariantTypes::Float4:
-            return (double)AsFloat4().x;
+            return (double)AsFloat4().X;
         case VariantTypes::Double2:
-            return (double)AsDouble2().x;
+            return (double)AsDouble2().X;
         case VariantTypes::Double3:
-            return (double)AsDouble3().x;
+            return (double)AsDouble3().X;
         case VariantTypes::Double4:
-            return (double)AsDouble4().x;
+            return (double)AsDouble4().X;
         case VariantTypes::Int2:
-            return (double)AsInt2().x;
+            return (double)AsInt2().X;
         case VariantTypes::Int3:
-            return (double)AsInt3().x;
+            return (double)AsInt3().X;
         case VariantTypes::Int4:
-            return (double)AsInt4().x;
+            return (double)AsInt4().X;
         default:
             return 0;
         }
@@ -1547,6 +1545,8 @@ namespace SE
         case VariantTypes::Float4:
         case VariantTypes::Color:
             return Float2(*(Float4*)AsData);
+        case VariantTypes::Color32:
+            return Float2(AsColor32().ToFloat4());
         case VariantTypes::Double2:
             return Float2(AsDouble2());
         case VariantTypes::Double3:
@@ -1599,6 +1599,8 @@ namespace SE
         case VariantTypes::Float4:
         case VariantTypes::Color:
             return Float3(*(Float4*)AsData);
+        case VariantTypes::Color32:
+            return Float3(AsColor32().ToFloat4());
         case VariantTypes::Double2:
             return Float3(AsDouble2());
         case VariantTypes::Double3:
@@ -1651,6 +1653,8 @@ namespace SE
         case VariantTypes::Float4:
         case VariantTypes::Color:
             return *(Float4*)AsData;
+        case VariantTypes::Color32:
+            return AsColor32().ToFloat4();
         case VariantTypes::Double2:
             return Float4(AsDouble2(), 0.0f, 0.0f);
         case VariantTypes::Double3:
@@ -1708,6 +1712,8 @@ namespace SE
         case VariantTypes::Float4:
         case VariantTypes::Color:
             return Double3(AsFloat4());
+        case VariantTypes::Color32:
+            return Double3(AsColor32().ToFloat4());
         case VariantTypes::Double2:
             return Double3(AsDouble2());
         case VariantTypes::Double3:
@@ -1760,6 +1766,8 @@ namespace SE
         case VariantTypes::Float4:
         case VariantTypes::Color:
             return Double4(*(const Float4*)AsData);
+        case VariantTypes::Color32:
+            return Double4(AsColor32().ToFloat4());
         case VariantTypes::Double2:
             return Double4(AsDouble2(), 0.0, 0.0);
         case VariantTypes::Double3:
@@ -1822,6 +1830,8 @@ namespace SE
         case VariantTypes::Float4:
         case VariantTypes::Color:
             return Int4(*(Float4*)AsData);
+        case VariantTypes::Color32:
+            return Int4(AsColor32().ToFloat4());
         case VariantTypes::Int2:
             return Int4(*(Int2*)AsData, 0, 0);
         case VariantTypes::Int3:
@@ -1868,18 +1878,27 @@ namespace SE
         case VariantTypes::Pointer:
             return Color((float)(intptr)AsPointer);
         case VariantTypes::Float2:
-            return Color((*(Float2*)AsData).x, (*(Float2*)AsData).y, 0.0f, 1.0f);
+            return Color((*(Float2*)AsData).X, (*(Float2*)AsData).Y, 0.0f, 1.0f);
         case VariantTypes::Float3:
             return Color(*(Float3*)AsData, 1.0f);
         case VariantTypes::Float4:
         case VariantTypes::Color:
             return *(Color*)AsData;
+        case VariantTypes::Color32:
+            return Color(AsColor32());
             /*case MaterialVariantType::VariantTypes::Structure:
                 if (StringUtils::Compare(Type.TypeName, Color::TypeInitializer.GetType().Fullname.Get()) == 0)
                     return *(Color*)AsBlob.Data;*/
         default:
             return Colors::Black;
         }
+    }
+
+    Variant::operator Color32() const
+    {
+        if (Type.Type == VariantTypes::Color32)
+            return AsColor32();
+        return Color32(operator Color());
     }
 
     Variant::operator Quaternion() const
@@ -2071,6 +2090,11 @@ namespace SE
     const Color& Variant::AsColor() const
     {
         return *(const Color*)AsData;
+    }
+
+    const Color32& Variant::AsColor32() const
+    {
+        return *(const Color32*)AsData;
     }
 
     const Quaternion& Variant::AsQuaternion() const
@@ -2566,6 +2590,8 @@ namespace SE
             return AsInt4().ToString();
         case VariantTypes::Color:
             return AsColor().ToString();
+        case VariantTypes::Color32:
+            return Color(AsColor32()).ToString();
         case VariantTypes::BoundingSphere:
             return AsBoundingSphere().ToString();
         case VariantTypes::Quaternion:
@@ -2604,12 +2630,8 @@ namespace SE
             if (type == VariantTypes::Null)
             {
                 // Aliases
-                if (StringUtils::Compare(Type.TypeName, "FlaxEngine.Vector2") == 0)
-                    type = VariantTypes::Vector2;
-                else if (StringUtils::Compare(Type.TypeName, "FlaxEngine.Float3") == 0)
+                if (StringUtils::Compare(Type.TypeName, "SE.Float3") == 0)
                     type = VariantTypes::Float3;
-                else if (StringUtils::Compare(Type.TypeName, "FlaxEngine.Vector4") == 0)
-                    type = VariantTypes::Vector4;
             }
             if (type != VariantTypes::Null)
             {
@@ -2653,6 +2675,9 @@ namespace SE
                 break;
             case VariantTypes::Color:
                 *this = *(Color*)data;
+                break;
+            case VariantTypes::Color32:
+                *this = *(Color32*)data;
                 break;
             case VariantTypes::BoundingBox:
                 *this = Variant(*(BoundingBox*)data);
@@ -2721,6 +2746,7 @@ namespace SE
         case VariantTypes::Float3:
         case VariantTypes::Float4:
         case VariantTypes::Color:
+        case VariantTypes::Color32:
     #if !USE_LARGE_WORLDS
         case VariantTypes::BoundingSphere:
         case VariantTypes::BoundingBox:
@@ -2838,6 +2864,10 @@ namespace SE
     {
         if (v.Type == to)
             return true;
+        if (v.Type.Type == VariantTypes::Color32)
+            return CanCast(Variant(Color(v.AsColor32())), to);
+        if (to.Type == VariantTypes::Color32)
+            return CanCast(v, VariantTypeHandle(VariantTypes::Color));
         switch (v.Type.Type)
         {
         case VariantTypes::Bool:
@@ -3131,6 +3161,10 @@ namespace SE
     {
         if (v.Type == to)
             return v;
+        if (to.Type == VariantTypes::Color32 && CanCast(v, VariantTypeHandle(VariantTypes::Color)))
+            return Variant((Color32)v);
+        if (v.Type.Type == VariantTypes::Color32)
+            return Cast(Variant(Color(v.AsColor32())), to);
         switch (v.Type.Type)
         {
         case VariantTypes::Bool:
@@ -3455,29 +3489,29 @@ namespace SE
             switch (to.Type)
             {
         case VariantTypes::Bool:
-            return Variant(Math::Abs(((Float2*)v.AsData)->x) > Math::ZeroTolerance);
+            return Variant(Math::Abs(((Float2*)v.AsData)->X) > Math::ZeroTolerance);
         case VariantTypes::Int16:
-            return Variant((int16)((Float2*)v.AsData)->x);
+            return Variant((int16)((Float2*)v.AsData)->X);
         case VariantTypes::Int:
-            return Variant((int32)((Float2*)v.AsData)->x);
+            return Variant((int32)((Float2*)v.AsData)->X);
         case VariantTypes::Uint16:
-            return Variant((uint16)((Float2*)v.AsData)->x);
+            return Variant((uint16)((Float2*)v.AsData)->X);
         case VariantTypes::Uint:
-            return Variant((uint32)((Float2*)v.AsData)->x);
+            return Variant((uint32)((Float2*)v.AsData)->X);
         case VariantTypes::Int64:
-            return Variant((int64)((Float2*)v.AsData)->x);
+            return Variant((int64)((Float2*)v.AsData)->X);
         case VariantTypes::Uint64:
-            return Variant((uint64)((Float2*)v.AsData)->x);
+            return Variant((uint64)((Float2*)v.AsData)->X);
         case VariantTypes::Float:
-            return Variant((float)((Float2*)v.AsData)->x);
+            return Variant((float)((Float2*)v.AsData)->X);
         case VariantTypes::Double:
-            return Variant((double)((Float2*)v.AsData)->x);
+            return Variant((double)((Float2*)v.AsData)->X);
         case VariantTypes::Float3:
             return Variant(Float3(*(Float2*)v.AsData, 0.0f));
         case VariantTypes::Float4:
             return Variant(Float4(*(Float2*)v.AsData, 0.0f, 0.0f));
         case VariantTypes::Color:
-            return Variant(Color(((Float2*)v.AsData)->x, ((Float2*)v.AsData)->y, 0.0f, 0.0f));
+            return Variant(Color(((Float2*)v.AsData)->X, ((Float2*)v.AsData)->Y, 0.0f, 0.0f));
         case VariantTypes::Double2:
             return Variant(Double2(*(Float2*)v.AsData));
         case VariantTypes::Double3:
@@ -3491,29 +3525,29 @@ namespace SE
             switch (to.Type)
             {
         case VariantTypes::Bool:
-            return Variant(Math::Abs(((Float3*)v.AsData)->x) > Math::ZeroTolerance);
+            return Variant(Math::Abs(((Float3*)v.AsData)->X) > Math::ZeroTolerance);
         case VariantTypes::Int16:
-            return Variant((int16)((Float3*)v.AsData)->x);
+            return Variant((int16)((Float3*)v.AsData)->X);
         case VariantTypes::Int:
-            return Variant((int32)((Float3*)v.AsData)->x);
+            return Variant((int32)((Float3*)v.AsData)->X);
         case VariantTypes::Uint16:
-            return Variant((uint16)((Float3*)v.AsData)->x);
+            return Variant((uint16)((Float3*)v.AsData)->X);
         case VariantTypes::Uint:
-            return Variant((uint32)((Float3*)v.AsData)->x);
+            return Variant((uint32)((Float3*)v.AsData)->X);
         case VariantTypes::Int64:
-            return Variant((int64)((Float3*)v.AsData)->x);
+            return Variant((int64)((Float3*)v.AsData)->X);
         case VariantTypes::Uint64:
-            return Variant((uint64)((Float3*)v.AsData)->x);
+            return Variant((uint64)((Float3*)v.AsData)->X);
         case VariantTypes::Float:
-            return Variant((float)((Float3*)v.AsData)->x);
+            return Variant((float)((Float3*)v.AsData)->X);
         case VariantTypes::Double:
-            return Variant((double)((Float3*)v.AsData)->x);
+            return Variant((double)((Float3*)v.AsData)->X);
         case VariantTypes::Float2:
             return Variant(Float2(*(Float3*)v.AsData));
         case VariantTypes::Float4:
             return Variant(Float4(*(Float3*)v.AsData, 0.0f));
         case VariantTypes::Color:
-            return Variant(Color(((Float3*)v.AsData)->x, ((Float3*)v.AsData)->y, ((Float3*)v.AsData)->z, 0.0f));
+            return Variant(Color(((Float3*)v.AsData)->X, ((Float3*)v.AsData)->Y, ((Float3*)v.AsData)->Z, 0.0f));
         case VariantTypes::Double2:
             return Variant(Double2(*(Float3*)v.AsData));
         case VariantTypes::Double3:
@@ -3527,23 +3561,23 @@ namespace SE
             switch (to.Type)
             {
         case VariantTypes::Bool:
-            return Variant(Math::Abs(((Float4*)v.AsData)->x) > Math::ZeroTolerance);
+            return Variant(Math::Abs(((Float4*)v.AsData)->X) > Math::ZeroTolerance);
         case VariantTypes::Int16:
-            return Variant((int16)((Float4*)v.AsData)->x);
+            return Variant((int16)((Float4*)v.AsData)->X);
         case VariantTypes::Int:
-            return Variant((int32)((Float4*)v.AsData)->x);
+            return Variant((int32)((Float4*)v.AsData)->X);
         case VariantTypes::Uint16:
-            return Variant((uint16)((Float4*)v.AsData)->x);
+            return Variant((uint16)((Float4*)v.AsData)->X);
         case VariantTypes::Uint:
-            return Variant((uint32)((Float4*)v.AsData)->x);
+            return Variant((uint32)((Float4*)v.AsData)->X);
         case VariantTypes::Int64:
-            return Variant((int64)((Float4*)v.AsData)->x);
+            return Variant((int64)((Float4*)v.AsData)->X);
         case VariantTypes::Uint64:
-            return Variant((uint64)((Float4*)v.AsData)->x);
+            return Variant((uint64)((Float4*)v.AsData)->X);
         case VariantTypes::Float:
-            return Variant((float)((Float4*)v.AsData)->x);
+            return Variant((float)((Float4*)v.AsData)->X);
         case VariantTypes::Double:
-            return Variant((double)((Float4*)v.AsData)->x);
+            return Variant((double)((Float4*)v.AsData)->X);
         case VariantTypes::Float2:
             return Variant(Float2(*(Float4*)v.AsData));
         case VariantTypes::Float3:
@@ -3563,23 +3597,23 @@ namespace SE
             switch (to.Type)
             {
         case VariantTypes::Bool:
-            return Variant(Math::Abs(((Color*)v.AsData)->r) > Math::ZeroTolerance);
+            return Variant(Math::Abs(((Color*)v.AsData)->R) > Math::ZeroTolerance);
         case VariantTypes::Int16:
-            return Variant((int16)((Color*)v.AsData)->r);
+            return Variant((int16)((Color*)v.AsData)->R);
         case VariantTypes::Int:
-            return Variant((int32)((Color*)v.AsData)->r);
+            return Variant((int32)((Color*)v.AsData)->R);
         case VariantTypes::Uint16:
-            return Variant((uint16)((Color*)v.AsData)->r);
+            return Variant((uint16)((Color*)v.AsData)->R);
         case VariantTypes::Uint:
-            return Variant((uint32)((Color*)v.AsData)->r);
+            return Variant((uint32)((Color*)v.AsData)->R);
         case VariantTypes::Int64:
-            return Variant((int64)((Color*)v.AsData)->r);
+            return Variant((int64)((Color*)v.AsData)->R);
         case VariantTypes::Uint64:
-            return Variant((uint64)((Color*)v.AsData)->r);
+            return Variant((uint64)((Color*)v.AsData)->R);
         case VariantTypes::Float:
-            return Variant((float)((Color*)v.AsData)->r);
+            return Variant((float)((Color*)v.AsData)->R);
         case VariantTypes::Double:
-            return Variant((double)((Color*)v.AsData)->r);
+            return Variant((double)((Color*)v.AsData)->R);
         case VariantTypes::Float2:
             return Variant(Float2(*(Color*)v.AsData));
         case VariantTypes::Float3:
@@ -3631,6 +3665,8 @@ namespace SE
             return Double4::NearEqual(*(Double4*)a.AsBlob.Data, *(Double4*)b.AsBlob.Data, epsilon);
         case VariantTypes::Color:
             return Color::NearEqual(*(Color*)a.AsData, *(Color*)b.AsData, epsilon);
+        case VariantTypes::Color32:
+            return a.AsColor32() == b.AsColor32();
         case VariantTypes::BoundingSphere:
             return BoundingSphere::NearEqual(a.AsBoundingSphere(), b.AsBoundingSphere(), epsilon);
         case VariantTypes::Quaternion:
@@ -3684,6 +3720,8 @@ namespace SE
             return Double4::Lerp(*(Double4*)a.AsBlob.Data, *(Double4*)b.AsBlob.Data, alpha);
         case VariantTypes::Color:
             return Color::Lerp(*(Color*)a.AsData, *(Color*)b.AsData, alpha);
+        case VariantTypes::Color32:
+            return Color32(Color::Lerp(Color(a.AsColor32()), Color(b.AsColor32()), alpha));
         case VariantTypes::Quaternion:
             return Quaternion::Lerp(*(Quaternion*)a.AsData, *(Quaternion*)b.AsData, alpha);
         case VariantTypes::BoundingSphere:
@@ -3713,106 +3751,57 @@ namespace SE
 
     void Variant::AllocStructure()
     {
-        /*const StringAnsiView typeName(Type.TypeName);
+        AsBlob.Data = nullptr;
+        AsBlob.Length = 0;
+
+        const StringAnsiView typeName(Type.TypeName);
         const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeName);
-        if (typeHandle)
+        if (typeHandle && typeHandle.GetType().Type == ScriptingTypes::Structure)
         {
             const ScriptingType& type = typeHandle.GetType();
             AsBlob.Length = type.Size;
             AsBlob.Data = PlatformAllocator::Allocate(AsBlob.Length);
             Platform::MemoryClear(AsBlob.Data, AsBlob.Length);
-            type.Struct.Ctor(AsBlob.Data);
+            if (type.Struct.Ctor)
+                type.Struct.Ctor(AsBlob.Data);
         }
-        else if (typeName == "System.Int16" || typeName == "System.UInt16")
+        else if (typeName.HasChars())
         {
-            // [Deprecated on 10.05.2021, expires on 10.05.2023]
-            // Hack for 16bit int
-            AsBlob.Length = 2;
-            AsBlob.Data = PlatformAllocator::Allocate(AsBlob.Length);
-            *((int16*)AsBlob.Data) = 0;
+            LOG_WARNING("Scripting", "Missing native structure type '{0}'", String(typeName));
         }
-#if USE_CSHARP
-        else if (const auto mclass = Scripting::FindClass(typeName))
-        {
-            // Fallback to C#-only types
-            MCore::Thread::Attach();
-            MObject* instance = mclass->CreateInstance();
-            if (instance)
-            {
-#if 0
-                void* data = MCore::Object::Unbox(instance);
-                int32 instanceSize = mclass->GetInstanceSize();
-                AsBlob.Length = instanceSize - (int32)((uintptr)data - (uintptr)instance);
-                AsBlob.Data = PlatformAllocator::Allocate(AsBlob.Length);
-                Platform::MemoryCopy(AsBlob.Data, data, AsBlob.Length);
-#else
-                Type.Type = VariantType::VariantTypes::ManagedObject;
-                MANAGED_GC_HANDLE = MCore::GCHandle::New(instance);
-#endif
-            }
-            else
-            {
-                AsBlob.Data = nullptr;
-                AsBlob.Length = 0;
-            }
-        }
-#endif
-        else
-        {
-            if (typeName.Length() != 0)
-            {
-                LOG_WARNING("Render", "Missing scripting type \'{0}\'", String(typeName));
-            }
-            AsBlob.Data = nullptr;
-            AsBlob.Length = 0;
-        }*/
     }
 
     void Variant::CopyStructure(void* src)
     {
-        /*if (AsBlob.Data && src)
+        if (AsBlob.Data && src)
         {
             const StringAnsiView typeName(Type.TypeName);
             const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeName);
-            if (typeHandle)
+            if (typeHandle && typeHandle.GetType().Type == ScriptingTypes::Structure)
             {
-                auto& type = typeHandle.GetType();
-                type.Struct.Copy(AsBlob.Data, src);
+                const ScriptingType& type = typeHandle.GetType();
+                if (type.Struct.Copy)
+                    type.Struct.Copy(AsBlob.Data, src);
+                else
+                    Platform::MemoryCopy(AsBlob.Data, src, AsBlob.Length);
             }
-#if USE_CSHARP
-            else if (const auto mclass = Scripting::FindClass(typeName))
-            {
-                // Fallback to C#-only types
-                MCore::Thread::Attach();
-                if (MANAGED_GC_HANDLE && mclass->IsValueType())
-                {
-                    MObject* instance = MCore::GCHandle::GetTarget(MANAGED_GC_HANDLE);
-                    void* data = MCore::Object::Unbox(instance);
-                    Platform::MemoryCopy(data, src, mclass->GetInstanceSize());
-                }
-            }
-#endif
-            else
-            {
-                if (typeName.Length() != 0)
-                {
-                    LOG_WARNING("Render", "Missing scripting type \'{0}\'", String(typeName));
-                }
-            }
-        }*/
+        }
     }
 
     void Variant::FreeStructure()
     {
-        /*if (!AsBlob.Data)
+        if (!AsBlob.Data)
             return;
         const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(StringAnsiView(Type.TypeName));
-        if (typeHandle)
+        if (typeHandle && typeHandle.GetType().Type == ScriptingTypes::Structure)
         {
             const ScriptingType& type = typeHandle.GetType();
-            type.Struct.Dtor(AsBlob.Data);
+            if (type.Struct.Dtor)
+                type.Struct.Dtor(AsBlob.Data);
         }
-        PlatformAllocator::Free(AsBlob.Data);*/
+        PlatformAllocator::Free(AsBlob.Data);
+        AsBlob.Data = nullptr;
+        AsBlob.Length = 0;
     }
 
     uint32 GetHash(const Variant& key)
@@ -3851,6 +3840,8 @@ namespace SE
             return GetHash((void*)key.AsAsset);
         case VariantTypes::Color:
             return GetHash(*(Color*)key.AsData);
+        case VariantTypes::Color32:
+            return GetHash(key.AsColor32());
         case VariantTypes::Typename:
             return GetHash((const char*)key.AsBlob.Data);
 
@@ -4051,6 +4042,9 @@ namespace SE
         case VariantTypes::Color:
             stream->ReadBytes(&data.AsData, sizeof(Color));
             break;
+        case VariantTypes::Color32:
+            stream->ReadBytes(&data.AsData, sizeof(Color32));
+            break;
         case VariantTypes::UID:
             stream->ReadBytes(&data.AsData, sizeof(UID));
             break;
@@ -4223,6 +4217,9 @@ namespace SE
             break;
         case VariantTypes::Color:
             stream->WriteBytes(data.AsData, sizeof(Color));
+            break;
+        case VariantTypes::Color32:
+            stream->WriteBytes(data.AsData, sizeof(Color32));
             break;
         case VariantTypes::UID:
             stream->WriteBytes(data.AsData, sizeof(UID));

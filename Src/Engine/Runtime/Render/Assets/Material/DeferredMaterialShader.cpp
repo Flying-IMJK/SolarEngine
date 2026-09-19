@@ -22,9 +22,9 @@ namespace SE
     float WorldDeterminantSign;
     });
 
-    EnumFlags<DrawPass> DeferredMaterialShader::GetDrawModes() const
+    DrawPass DeferredMaterialShader::GetDrawModes() const
     {
-        return {DrawPass::Depth, DrawPass::GBuffer, DrawPass::GlobalSurfaceAtlas, DrawPass::MotionVectors, DrawPass::QuadOverdraw};
+        return EnumCombineFlags(DrawPass::Depth, DrawPass::GBuffer, DrawPass::GlobalSurfaceAtlas, DrawPass::MotionVectors, DrawPass::QuadOverdraw);
     }
 
     bool DeferredMaterialShader::CanUseLightmap() const
@@ -97,8 +97,8 @@ namespace SE
         }
 
         // Select pipeline state based on current pass and render mode
-        const bool wireframe = m_Info.FeaturesFlags.IsFlag(MaterialFeatures::Wireframe) || view.Mode == ViewMode::Wireframe;
-        CullMode cullMode = view.Pass.IsFlag(DrawPass::Depth) ? CullMode::TwoSided : m_Info.CullMode;
+        const bool wireframe = EnumHasAnyFlags(m_Info.FeaturesFlags, MaterialFeatures::Wireframe) || view.Mode == ViewMode::Wireframe;
+        CullMode cullMode = EnumHasAnyFlags(view.Pass, DrawPass::Depth) ? CullMode::TwoSided : m_Info.CullMode;
 #if SE_EDITOR
         /*if (IsRunningRadiancePass)
             cullMode = CullMode::TwoSided;*/
@@ -138,8 +138,8 @@ namespace SE
     {
         bool failed = false;
         auto psDesc = GPUPipelineState::Description::Default;
-        psDesc.DepthWriteEnable = m_Info.FeaturesFlags.IsNotFlag(MaterialFeatures::DisableDepthWrite);
-        if (m_Info.FeaturesFlags.IsFlag(MaterialFeatures::DisableDepthTest))
+        psDesc.DepthWriteEnable = EnumHasNoneFlags(m_Info.FeaturesFlags, MaterialFeatures::DisableDepthWrite);
+        if (EnumHasAnyFlags(m_Info.FeaturesFlags, MaterialFeatures::DisableDepthTest))
         {
             psDesc.DepthFunc = ComparisonFunc::Always;
             if (!psDesc.DepthWriteEnable)
@@ -217,7 +217,7 @@ namespace SE
         psDesc.HS = nullptr;
         psDesc.DS = nullptr;
         GPUShaderProgramVS* instancedDepthPassVS;
-        if (m_Info.UsageFlags.AllFlagsSet(MaterialUsage::UseMask, MaterialUsage::UsePositionOffset))
+        if (EnumHasAllFlags(m_Info.UsageFlags, EnumCombineFlags(MaterialUsage::UseMask, MaterialUsage::UsePositionOffset)))
         {
             // Materials with masking need full vertex buffer to get texcoord used to sample textures for per pixel masking.
             // Materials with world pos offset need full VB to apply offset using texcoord etc.

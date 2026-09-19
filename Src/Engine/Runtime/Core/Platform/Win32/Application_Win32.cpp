@@ -76,12 +76,12 @@ namespace SE
 
     //-------------------------------------------------------------------------
 
-    Win32Application::Win32Application(HINSTANCE hInstance, char const *applicationName, int32 iconResourceID, EnumFlags<InitOptions> options)
+    Win32Application::Win32Application(HINSTANCE hInstance, char const *applicationName, int32 iconResourceID, InitOptions options)
         : m_applicationName(applicationName), 
         m_applicationNameNoWhitespace(applicationName),
         m_applicationIconResourceID(iconResourceID), m_pInstance(hInstance), 
-        m_startMinimized(options.IsFlag(InitOptions::StartMinimized)),
-        m_isBorderLess(options.IsFlag(InitOptions::Borderless))
+        m_startMinimized(EnumHasAnyFlags(options, InitOptions::StartMinimized)),
+        m_isBorderLess(EnumHasAnyFlags(options, InitOptions::Borderless))
     {
 
     }
@@ -288,7 +288,7 @@ namespace SE
             if (IsInitialized())
             {
                 Int2 const newWindowSize(LOWORD(lParam), HIWORD(lParam));
-                if (newWindowSize.x > 0 && newWindowSize.y > 0)
+                if (newWindowSize.X > 0 && newWindowSize.Y > 0)
                 {
                     ProcessWindowResizeMessage(newWindowSize);
                 }
@@ -498,10 +498,10 @@ namespace SE
 
             if (!isAnyInteractibleWidgetHovered)
             {
-                int32 const titleBarTop = window.top + (int32)titleBarRect.Location.y;
-                int32 const titleBarLeft = window.left + (int32)titleBarRect.Location.x;
-                int32 const titleBarBottom = titleBarTop + (int32)titleBarRect.Size.y;
-                int32 const titleBarRight = titleBarLeft + (int32)titleBarRect.Size.x;
+                int32 const titleBarTop = window.top + (int32)titleBarRect.Location.Y;
+                int32 const titleBarLeft = window.left + (int32)titleBarRect.Location.X;
+                int32 const titleBarBottom = titleBarTop + (int32)titleBarRect.Size.Y;
+                int32 const titleBarRight = titleBarLeft + (int32)titleBarRect.Size.X;
 
                 bool const isCursorWithinTitleBarX = cursor.x > titleBarLeft + borderSize.x && cursor.x < titleBarRight + borderSize.x;
                 bool const isCursorWithinTitleBarY = cursor.y > titleBarTop && cursor.y < titleBarBottom;

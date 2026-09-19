@@ -283,7 +283,7 @@ namespace SE
 	void Control::Draw()
 	{
 		// Paint Background
-		if (BackgroundColor.a > 0.0f)
+		if (BackgroundColor.A > 0.0f)
 		{
 			Render2D::FillRectangle(Rectangle(Float2::Zero, Size), BackgroundColor);
 		}
@@ -354,10 +354,10 @@ namespace SE
 		Float2 size = Size;
 		switch (direction)
 		{
-		case NavDirection::Up: return Float2(size.x * 0.5f, 0);
-		case NavDirection::Down: return Float2(size.x * 0.5f, size.y);
-		case NavDirection::Left: return Float2(0, size.y * 0.5f);
-		case NavDirection::Right: return Float2(size.y, size.y * 0.5f);
+		case NavDirection::Up: return Float2(size.X * 0.5f, 0);
+		case NavDirection::Down: return Float2(size.X * 0.5f, size.Y);
+		case NavDirection::Left: return Float2(0, size.Y * 0.5f);
+		case NavDirection::Right: return Float2(size.Y, size.Y * 0.5f);
 		case NavDirection::Next: return Float2::Zero;
 		case NavDirection::Previous: return size;
 		default: return size * 0.5f;
@@ -535,10 +535,10 @@ namespace SE
 
 	bool Control::ContainsPoint(Float2& location, bool precise)
 	{
-		return location.x >= 0 &&
-			   location.y >= 0 &&
-			   location.x <= m_Bounds.Size.x &&
-			   location.y <= m_Bounds.Size.y;
+		return location.X >= 0 &&
+			   location.Y >= 0 &&
+			   location.X <= m_Bounds.Size.X &&
+			   location.Y <= m_Bounds.Size.Y;
 	}
 
 	Float2 Control::PointToParent(ContainerControl* parent, Float2 location)

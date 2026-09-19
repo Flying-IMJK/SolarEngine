@@ -162,8 +162,8 @@ void PostProcessingPass::GB_ComputeKernel(float sigma, float width, float height
     // Normalize weights
     for (int32 i = 0; i < GB_KERNEL_SIZE; i++)
     {
-        GaussianBlurCacheH[i].x /= total;
-        GaussianBlurCacheV[i].x /= total;
+        GaussianBlurCacheH[i].X /= total;
+        GaussianBlurCacheV[i].X /= total;
     }
 
     // Assign size

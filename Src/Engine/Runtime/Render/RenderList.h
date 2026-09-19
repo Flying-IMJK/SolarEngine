@@ -81,7 +81,7 @@ namespace SE
         float ShadowsSharpness;
         float VolumetricScatteringIntensity;
 
-        EnumFlags<StaticMask> StaticFlags;
+        StaticMask StaticFlags;
         float IndirectLightingIntensity;
         int16 ShadowDataIndex = -1;
         uint8 CastVolumetricShadow : 1;
@@ -133,7 +133,7 @@ namespace SE
         float IndirectLightingIntensity;
         ShadowsCastingMode ShadowsMode;
 
-        EnumFlags<StaticMask> StaticFlags;
+        StaticMask StaticFlags;
         int16 ShadowDataIndex = -1;
         uint8 CastVolumetricShadow : 1;
         uint8 RenderedVolumetricFog : 1;
@@ -171,7 +171,7 @@ namespace SE
         float IndirectLightingIntensity;
         ShadowsCastingMode ShadowsMode;
 
-        EnumFlags<StaticMask> StaticFlags;
+        StaticMask StaticFlags;
         int16 ShadowDataIndex = -1;
         uint8 CastVolumetricShadow : 1;
         uint8 RenderedVolumetricFog : 1;
@@ -194,7 +194,7 @@ namespace SE
         Float3 AdditiveColor;
         float IndirectLightingIntensity;
 
-        EnumFlags<StaticMask> StaticFlags;
+        StaticMask StaticFlags;
         uint8 CastVolumetricShadow : 1;
         uint8 RenderedVolumetricFog : 1;
 
@@ -544,7 +544,7 @@ namespace SE
         /// <param name="drawCall">The draw call data.</param>
         /// <param name="receivesDecals">True if the rendered mesh can receive decals.</param>
         /// <param name="sortOrder">Object sorting key.</param>
-        void AddDrawCall(const RenderContext& renderContext, EnumFlags<DrawPass> drawModes, EnumFlags<StaticMask> staticFlags, DrawCall& drawCall, bool receivesDecals = true, int16 sortOrder = 0);
+        void AddDrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticMask staticFlags, DrawCall& drawCall, bool receivesDecals = true, int16 sortOrder = 0);
 
         /// <summary>
         /// Adds the draw call to the draw lists and references it in other render contexts. Performs additional per-context frustum culling.
@@ -557,7 +557,7 @@ namespace SE
         /// <param name="drawCall">The draw call data.</param>
         /// <param name="receivesDecals">True if the rendered mesh can receive decals.</param>
         /// <param name="sortOrder">Object sorting key.</param>
-        void AddDrawCall(const RenderContextBatch& renderContextBatch, EnumFlags<DrawPass> drawModes, EnumFlags<StaticMask> staticFlags, EnumFlags<ShadowsCastingMode> shadowsMode,
+        void AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticMask staticFlags, ShadowsCastingMode shadowsMode,
             const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals = true, int16 sortOrder = 0);
 
         /// <summary>

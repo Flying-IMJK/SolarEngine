@@ -3,6 +3,7 @@
 
 #include "Runtime/Core/Math/Vector2.h"
 #include "Runtime/Core/Types/Collections/List.h"
+#include <Runtime/Core/Scripting/ScriptingObject.h>
 #include "Enums.h"
 #include "KeyboardKeys.h"
 #include "Input.h"
@@ -14,8 +15,10 @@ namespace SE
 	/// <summary>
 	/// Base class for all input device objects.
 	/// </summary>
-	class SE_API_RUNTIME InputDevice// : public ScriptingObject
+	SE_CLASS(API(Abstract, NoSpawn))
+	class SE_API_RUNTIME InputDevice : public ScriptingObject
 	{
+		SCRIPTING_TYPE_NO_SPAWN(InputDevice)
 	public:
 		friend class InputSystem;
 
@@ -23,8 +26,9 @@ namespace SE
 		String _name;
 		InputEventQueue _queue;
 
-		explicit InputDevice(const StringView& name)
-			: _name(name)
+		explicit InputDevice(const SpawnParams& params, const StringView& name)
+			: ScriptingObject(params)
+			, _name(name)
 		{
 		}
 
@@ -32,6 +36,7 @@ namespace SE
 		/// <summary>
 		/// Gets the name.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE const String& GetName() const
 		{
 			return _name;

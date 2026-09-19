@@ -62,17 +62,17 @@ namespace SE
 		// Pick a proper LUT pixels format
 		m_LutFormat = PixelFormat::R10G10B10A2_UNorm;
 		const auto formatSupport = device->GetPixelFormatFeatures(m_LutFormat).Support;
-		EnumFlags<FormatSupport> formatSupportFlags = {FormatSupport::ShaderSample, FormatSupport::RenderTarget};
+		FormatSupport formatSupportFlags = EnumCombineFlags<FormatSupport>(FormatSupport::ShaderSample, FormatSupport::RenderTarget);
 		if (m_UseVolumeTexture)
 		{
-			formatSupportFlags.SetFlag(FormatSupport::Texture3D);
+			formatSupportFlags = EnumAddFlags(formatSupportFlags, FormatSupport::Texture3D);
 		}
 		else
 		{
-			formatSupportFlags.SetFlag(FormatSupport::Texture2D);
+			formatSupportFlags = EnumAddFlags(formatSupportFlags, FormatSupport::Texture2D);
 		}
 
-		if (formatSupport.IsNotFlag(formatSupportFlags))
+		if (EnumHasNoneFlags(formatSupport, formatSupportFlags))
 		{
 			// Fallback to format that is supported on every washing machine
 			m_LutFormat = PixelFormat::R8G8B8A8_UNorm;

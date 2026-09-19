@@ -15,7 +15,7 @@ namespace SE
 	}
 
 	Gamepad::Gamepad(const UID& productId, const String& name)
-		: InputDevice(name), _productId(productId)
+		: InputDevice(SpawnParams(UID::New(), TypeInitializer), name), _productId(productId)
 	{
 		_state.Clear();
 		_mappedState.Clear();
@@ -61,7 +61,7 @@ namespace SE
 		{
 			auto e = Layout.Axis[i];
 			float value = _state.Axis[i];
-			value = Layout.AxisMap[i].x * value + Layout.AxisMap[i].y;
+			value = Layout.AxisMap[i].X * value + Layout.AxisMap[i].Y;
 			_mappedState.Axis[static_cast<int32>(e)] = value;
 		}
 

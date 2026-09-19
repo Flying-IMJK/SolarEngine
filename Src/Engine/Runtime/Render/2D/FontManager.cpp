@@ -134,7 +134,7 @@ namespace SE
 
         // Set load flags
         uint32 glyphFlags = FT_LOAD_NO_BITMAP;
-        const bool useAA = options.Flags.IsFlag(FontFlags::AntiAliasing);
+        const bool useAA = EnumHasAnyFlags(options.Flags, FontFlags::AntiAliasing);
         if (useAA)
         {
             switch (options.Hinting)
@@ -186,11 +186,11 @@ namespace SE
         }
 
         // Handle special effects
-        if (options.Flags.IsFlag(FontFlags::Bold))
+        if (EnumHasAnyFlags(options.Flags, FontFlags::Bold))
         {
             FT_GlyphSlot_Embolden(face->glyph);
         }
-        if (options.Flags.IsFlag(FontFlags::Italic))
+        if (EnumHasAnyFlags(options.Flags, FontFlags::Italic))
         {
             FT_GlyphSlot_Oblique(face->glyph);
         }
@@ -261,7 +261,7 @@ namespace SE
 
         // Find atlas for the character texture
         int32 atlasIndex = 0;
-        const FontTextureAtlasSlot* slot = nullptr;
+        FontTextureAtlasSlot* slot = nullptr;
         for (; atlasIndex < fontData->Atlases.Count(); atlasIndex++)
         {
             // Add the character to the texture
@@ -299,10 +299,10 @@ namespace SE
         // Fill with atlas dependant data
         const uint32 padding = fontData->Atlases[atlasIndex]->GetPaddingAmount();
         entry.TextureIndex = atlasIndex;
-        entry.UV.x = static_cast<float>(slot->X + padding);
-        entry.UV.y = static_cast<float>(slot->Y + padding);
-        entry.UVSize.x = static_cast<float>(slot->Width - 2 * padding);
-        entry.UVSize.y = static_cast<float>(slot->Height - 2 * padding);
+        entry.UV.X = static_cast<float>(slot->X + padding);
+        entry.UV.Y = static_cast<float>(slot->Y + padding);
+        entry.UVSize.X = static_cast<float>(slot->Width - 2 * padding);
+        entry.UVSize.Y = static_cast<float>(slot->Height - 2 * padding);
         entry.Slot = slot;
 
         return false;
@@ -314,10 +314,10 @@ namespace SE
             return;
         auto atlas = fontData->Atlases[entry.TextureIndex];
         const uint32 padding = atlas->GetPaddingAmount();
-        const uint32 slotX = static_cast<uint32>(entry.UV.x - padding);
-        const uint32 slotY = static_cast<uint32>(entry.UV.y - padding);
-        const uint32 slotSizeX = static_cast<uint32>(entry.UVSize.x + 2 * padding);
-        const uint32 slotSizeY = static_cast<uint32>(entry.UVSize.y + 2 * padding);
+        const uint32 slotX = static_cast<uint32>(entry.UV.X - padding);
+        const uint32 slotY = static_cast<uint32>(entry.UV.Y - padding);
+        const uint32 slotSizeX = static_cast<uint32>(entry.UVSize.X + 2 * padding);
+        const uint32 slotSizeY = static_cast<uint32>(entry.UVSize.Y + 2 * padding);
         atlas->Invalidate(slotX, slotY, slotSizeX, slotSizeY);
     }
 

@@ -115,12 +115,12 @@ namespace SE::Editor
             float borderMargin = 4.0f;
             float hintWindowsSize = Proxy::HintWindowsSize * Platform::GetDpiScale();
             float hintWindowsSize2 = hintWindowsSize * 0.5f;
-            float centerX = size.x * 0.5f;
-            float centerY = size.y * 0.5f;
+            float centerX = size.X * 0.5f;
+            float centerY = size.Y * 0.5f;
             _rUpper = Rectangle(centerX - hintWindowsSize2, borderMargin, hintWindowsSize, hintWindowsSize) + offset;
-            _rBottom = Rectangle(centerX - hintWindowsSize2, size.y - hintWindowsSize - borderMargin, hintWindowsSize, hintWindowsSize) + offset;
+            _rBottom = Rectangle(centerX - hintWindowsSize2, size.Y - hintWindowsSize - borderMargin, hintWindowsSize, hintWindowsSize) + offset;
             _rLeft = Rectangle(borderMargin, centerY - hintWindowsSize2, hintWindowsSize, hintWindowsSize) + offset;
-            _rRight = Rectangle(size.x - hintWindowsSize - borderMargin, centerY - hintWindowsSize2, hintWindowsSize, hintWindowsSize) + offset;
+            _rRight = Rectangle(size.X - hintWindowsSize - borderMargin, centerY - hintWindowsSize2, hintWindowsSize, hintWindowsSize) + offset;
             _rCenter = Rectangle(centerX - hintWindowsSize2, centerY - hintWindowsSize2, hintWindowsSize, hintWindowsSize) + offset;
 
             // Hit test
@@ -331,22 +331,22 @@ namespace SE::Editor
 		switch (state)
 		{
 		case DockState::DockFill:
-			result.Location.y += DockPanel::DefaultHeaderHeight;
-			result.Size.y -= DockPanel::DefaultHeaderHeight;
+			result.Location.Y += DockPanel::DefaultHeaderHeight;
+			result.Size.Y -= DockPanel::DefaultHeaderHeight;
 			break;
 		case DockState::DockTop:
-			result.Size.y *= DockPanel::DefaultSplitterValue;
+			result.Size.Y *= DockPanel::DefaultSplitterValue;
 			break;
 		case DockState::DockLeft:
-			result.Size.x *= DockPanel::DefaultSplitterValue;
+			result.Size.X *= DockPanel::DefaultSplitterValue;
 			break;
 		case DockState::DockBottom:
-			result.Location.y += result.Size.y * (1 - DockPanel::DefaultSplitterValue);
-			result.Size.y *= DockPanel::DefaultSplitterValue;
+			result.Location.Y += result.Size.Y * (1 - DockPanel::DefaultSplitterValue);
+			result.Size.Y *= DockPanel::DefaultSplitterValue;
 			break;
 		case DockState::DockRight:
-			result.Location.x += result.Size.x * (1 - DockPanel::DefaultSplitterValue);
-			result.Size.x *= DockPanel::DefaultSplitterValue;
+			result.Location.X += result.Size.X * (1 - DockPanel::DefaultSplitterValue);
+			result.Size.X *= DockPanel::DefaultSplitterValue;
 			break;
 		}
 		return result;

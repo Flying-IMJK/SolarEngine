@@ -217,7 +217,7 @@ namespace SE
 			if (resultFormat != PixelFormat::Undefined)
 			{
 				bool found = false;
-				if (m_Device->FeaturesPerFormat[(int32)resultFormat].Support.IsFlag(FormatSupport::RenderTarget))
+				if (EnumHasAnyFlags(m_Device->FeaturesPerFormat[(int32)resultFormat].Support, FormatSupport::RenderTarget))
 				{
 					const VkFormat requested = VulkanTool::ToVulkanFormat(resultFormat);
 					for (int32 i = 0; i < surfaceFormats.Count(); i++)

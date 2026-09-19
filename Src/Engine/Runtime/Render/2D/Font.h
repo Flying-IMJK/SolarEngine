@@ -219,13 +219,13 @@ namespace SE
         /// The slot in texture atlas, containing the pixel data of the glyph.
         /// </summary>
         SE_FIELD(API())
-        const FontTextureAtlasSlot* Slot;
+        FontTextureAtlasSlot* Slot;
 
         /// <summary>
         /// The owner font.
         /// </summary>
         SE_FIELD(API())
-        const class Font* Font;
+        class Font* Font;
     };
 
 

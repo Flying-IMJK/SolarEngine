@@ -1,11 +1,5 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-#if USE_LARGE_WORLDS
-using Real = System.Double;
-#else
-using Real = System.Single;
-#endif
-
 // -----------------------------------------------------------------------------
 // Original code from SharpDX project. https://github.com/sharpdx/SharpDX/
 // Greetings to Alexandre Mutel. Original code published with the following license:
@@ -134,7 +128,7 @@ namespace SE
         /// Initializes a new instance of the <see cref="Double2" /> struct.
         /// </summary>
         /// <param name="value">A vector containing the values with which to initialize the X and Y components.</param>
-        public Double2(Vector3 value)
+        public Double2(Float3 value)
         {
             X = value.X;
             Y = value.Y;
@@ -1505,17 +1499,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Performs an implicit conversion from <see cref="Double2" /> to <see cref="Vector2" />.
-        /// </summary>
-        /// <param name="value">The value.</param>
-        /// <returns>The result of the conversion.</returns>
-        public static implicit operator Vector2(Double2 value)
-        {
-            return new Vector2((Real)value.X, (Real)value.Y);
-        }
-
-        /// <summary>
-        /// Performs an explicit conversion from <see cref="Double2" /> to <see cref="Vector3" />.
+        /// Performs an explicit conversion from <see cref="Double2" /> to <see cref="Double3" />.
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>The result of the conversion.</returns>
@@ -1749,17 +1733,6 @@ namespace SE
             X = value.X;
             Y = value.Y;
             Z = z;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Double3" /> struct.
-        /// </summary>
-        /// <param name="value">A vector containing the values with which to initialize the X, Y and Z components.</param>
-        public Double3(Vector3 value)
-        {
-            X = value.X;
-            Y = value.Y;
-            Z = value.Z;
         }
 
         /// <summary>
@@ -3382,16 +3355,6 @@ namespace SE
         }
 
         /// <summary>
-        /// Performs an implicit conversion from <see cref="Double3" /> to <see cref="Vector3" />.
-        /// </summary>
-        /// <param name="value">The value.</param>
-        /// <returns>The result of the conversion.</returns>
-        public static implicit operator Vector3(Double3 value)
-        {
-            return new Vector3((Real)value.X, (Real)value.Y, (Real)value.Z);
-        }
-
-        /// <summary>
         /// Performs an explicit conversion from <see cref="Double3" /> to <see cref="Double2" />.
         /// </summary>
         /// <param name="value">The value.</param>
@@ -3595,7 +3558,7 @@ namespace SE
         /// Initializes a new instance of the <see cref="Double4" /> struct.
         /// </summary>
         /// <param name="value">A vector containing the values with which to initialize the X, Y, Z, and W components.</param>
-        public Double4(Vector4 value)
+        public Double4(Float4 value)
         {
             X = value.X;
             Y = value.Y;
@@ -4756,17 +4719,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Performs an implicit conversion from <see cref="Double3" /> to <see cref="Vector4" />.
-        /// </summary>
-        /// <param name="value">The value.</param>
-        /// <returns>The result of the conversion.</returns>
-        public static implicit operator Vector4(Double4 value)
-        {
-            return new Vector4((Real)value.X, (Real)value.Y, (Real)value.Z, (Real)value.W);
-        }
-
-        /// <summary>
-        /// Performs an explicit conversion from <see cref="Double4" /> to <see cref="Vector2" />.
+        /// Performs an explicit conversion from <see cref="Double4" /> to <see cref="Double2" />.
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>The result of the conversion.</returns>
@@ -4776,7 +4729,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Performs an explicit conversion from <see cref="Double4" /> to <see cref="Vector3" />.
+        /// Performs an explicit conversion from <see cref="Double4" /> to <see cref="Double3" />.
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>The result of the conversion.</returns>

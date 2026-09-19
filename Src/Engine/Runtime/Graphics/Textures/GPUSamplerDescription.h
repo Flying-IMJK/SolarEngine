@@ -8,7 +8,7 @@ namespace SE
 	/// <summary>
 	/// GPU sampler filter modes.
 	/// </summary>
-	SE_ENUM(Reflect)
+	SE_ENUM(Reflect, API())
 	enum class GPUSamplerFilter
 	{
 		/// <summary>Filter using the nearest found pixel. Texture appears pixelated.</summary>
@@ -26,7 +26,7 @@ namespace SE
 	/// <summary>
 	/// GPU sampler address modes.
 	/// </summary>
-	SE_ENUM(Reflect)
+	SE_ENUM(Reflect, API())
 	enum class GPUSamplerAddressMode
 	{
 		/// <summary>Texture coordinates wrap back to the valid range.</summary>
@@ -44,7 +44,7 @@ namespace SE
 	/// <summary>
 	/// GPU sampler comparision function types.
 	/// </summary>
-	SE_ENUM(Reflect)
+	SE_ENUM(Reflect, API())
 	enum class GPUSamplerCompareFunction
 	{
 		/// <summary>Never pass the comparison.</summary>
@@ -58,7 +58,7 @@ namespace SE
 	/// <summary>
 	/// GPU sampler border color types.
 	/// </summary>
-	SE_ENUM(Reflect)
+	SE_ENUM(Reflect, API())
 	enum class GPUSamplerBorderColor
 	{
 		/// <summary>
@@ -82,56 +82,68 @@ namespace SE
 	/// <summary>
 	/// A common description for all samplers.
 	/// </summary>
+	SE_STRUCT(API())
 	struct SE_API_RUNTIME GPUSamplerDescription
 	{
+		SCRIPTING_TYPE_MIN(GPUSamplerDescription)
 		/// <summary>
 		/// The filtering method to use when sampling a texture.
 		/// </summary>
+		SE_FIELD(API())
 		GPUSamplerFilter Filter;
 
 		/// <summary>
 		/// The addressing mode for outside [0..1] range for U coordinate.
 		/// </summary>
+		SE_FIELD(API())
 		GPUSamplerAddressMode AddressU;
 
 		/// <summary>
 		/// The addressing mode for outside [0..1] range for V coordinate.
 		/// </summary>
+		SE_FIELD(API())
 		GPUSamplerAddressMode AddressV;
 
 		/// <summary>
 		/// The addressing mode for outside [0..1] range for W coordinate.
 		/// </summary>
+		SE_FIELD(API())
 		GPUSamplerAddressMode AddressW;
 
 		/// <summary>
 		/// The mip bias to be added to mipmap LOD calculation.
 		/// </summary>
+		SE_FIELD(API())
 		float MipBias;
 
 		/// <summary>
 		/// The minimum mip map level that will be used, where 0 is the highest resolution mip level.
 		/// </summary>
+		SE_FIELD(API())
 		float MinMipLevel;
 
 		/// <summary>
 		/// The maximum mip map level that will be used, where 0 is the highest resolution mip level. To have no upper limit on LOD set this to a large value such as MAX_float.
 		/// </summary>
+		SE_FIELD(API())
 		float MaxMipLevel;
 
 		/// <summary>
 		/// The maximum number of samples that can be used to improve the quality of sample footprints that are anisotropic.
 		/// </summary>
+		SE_FIELD(API())
 		int32 MaxAnisotropy;
 
 		/// <summary>
 		/// The border color to use if Border is specified for AddressU, AddressV, or AddressW.
 		/// </summary>
+		SE_FIELD(API())
 		GPUSamplerBorderColor BorderColor;
 
 		/// <summary>
 		/// A function that compares sampled data against existing sampled data.
 		/// </summary>
+		SE_FIELD(API())
 		GPUSamplerCompareFunction ComparisonFunction;
 
 	public:

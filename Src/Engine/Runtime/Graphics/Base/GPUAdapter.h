@@ -2,6 +2,8 @@
 
 #include "Runtime/Core/Types/Strings/String.h"
 #include "Runtime/API.h"
+#include <Runtime/Core/Scripting/ScriptingObject.h>
+#include <Runtime/Core/Scripting/ScriptingTypeDefine.h>
 
 namespace SE
 {
@@ -13,16 +15,18 @@ namespace SE
 	#define GPU_VENDOR_ID_APPLE 0x106B
 
 
-	class SE_API_RUNTIME GPUAdapter
+	SE_CLASS(API(Abstract, NoSpawn, Attributes = "HideInEditor"))
+	class SE_API_RUNTIME GPUAdapter : public ScriptingObject
 	{
+		SCRIPTING_TYPE_NO_SPAWN(GPUAdapter);
 	public:
-		GPUAdapter(const GPUAdapter& other)
+		GPUAdapter() : ScriptingObject(SpawnParams(UID::New(), TypeInitializer))
 		{
-			*this = other;
 		}
 
-		GPUAdapter()
+		GPUAdapter(const GPUAdapter& other) : GPUAdapter()
 		{
+			*this = other;
 		}
 
 		GPUAdapter& operator=(const GPUAdapter& other)
@@ -45,33 +49,39 @@ namespace SE
 		/// <summary>
 		/// Gets the GPU vendor identifier.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		virtual uint32 GetVendorId() const = 0;
 
 		/// <summary>
 		/// Gets a string that contains the adapter description. Used for presentation to the user.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		virtual String GetDescription() const = 0;
 
 	public:
 		// Returns true if adapter's vendor is AMD.
+		SE_FUNCTION(API(Prop, ReadOnly))
 		inline bool IsAMD() const
 		{
 			return GetVendorId() == GPU_VENDOR_ID_AMD;
 		}
 
 		// Returns true if adapter's vendor is Intel.
+		SE_FUNCTION(API(Prop, ReadOnly))
 		inline bool IsIntel() const
 		{
 			return GetVendorId() == GPU_VENDOR_ID_INTEL;
 		}
 
 		// Returns true if adapter's vendor is Nvidia.
+		SE_FUNCTION(API(Prop, ReadOnly))
 		inline bool IsNVIDIA() const
 		{
 			return GetVendorId() == GPU_VENDOR_ID_NVIDIA;
 		}
 
 		// Returns true if adapter's vendor is Microsoft.
+		SE_FUNCTION(API(Prop, ReadOnly))
 		inline bool IsMicrosoft() const
 		{
 			return GetVendorId() == GPU_VENDOR_ID_MICROSOFT;

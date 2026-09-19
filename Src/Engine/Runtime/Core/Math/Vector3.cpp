@@ -45,65 +45,65 @@ namespace SE
 
 	template<>
 	Float3::Vector3Base(const Float2& xy, float z)
-		: x(xy.x)
-		, y(xy.y)
-		, z(z)
+		: X(xy.X)
+		, Y(xy.Y)
+		, Z(z)
 	{
 	}
 
 	template<>
 	Float3::Vector3Base(const Double2& xy, float z)
-		: x((float)xy.x)
-		, y((float)xy.y)
-		, z(0)
+		: X((float)xy.X)
+		, Y((float)xy.Y)
+		, Z(0)
 	{
 	}
 
 	template<>
 	Float3::Vector3Base(const Int2& xy, float z)
-		: x((float)xy.x)
-		, y((float)xy.y)
-		, z(z)
+		: X((float)xy.X)
+		, Y((float)xy.Y)
+		, Z(z)
 	{
 	}
 
 	template<>
 	Float3::Vector3Base(const Int3& xyz)
-		: x((float)xyz.x)
-		, y((float)xyz.y)
-		, z((float)xyz.z)
+		: X((float)xyz.X)
+		, Y((float)xyz.Y)
+		, Z((float)xyz.Z)
 	{
 	}
 
 	template<>
 	Float3::Vector3Base(const Int4& xyz)
-		: x((float)xyz.x)
-		, y((float)xyz.y)
-		, z((float)xyz.z)
+		: X((float)xyz.X)
+		, Y((float)xyz.Y)
+		, Z((float)xyz.Z)
 	{
 	}
 
 	template<>
 	Float3::Vector3Base(const Float4& xyz)
-		: x((float)xyz.x)
-		, y((float)xyz.y)
-		, z((float)xyz.z)
+		: X((float)xyz.X)
+		, Y((float)xyz.Y)
+		, Z((float)xyz.Z)
 	{
 	}
 
 	template<>
 	Float3::Vector3Base(const Double4& xyz)
-		: x((float)xyz.x)
-		, y((float)xyz.y)
-		, z((float)xyz.z)
+		: X((float)xyz.X)
+		, Y((float)xyz.Y)
+		, Z((float)xyz.Z)
 	{
 	}
 
 	template<>
 	Float3::Vector3Base(const Color& color)
-		: x(color.r)
-		, y(color.g)
-		, z(color.b)
+		: X(color.R)
+		, Y(color.G)
+		, Z(color.B)
 	{
 	}
 
@@ -122,9 +122,9 @@ namespace SE
 		const float part2 = -2.0f * cubed + 3.0f * squared;
 		const float part3 = cubed - 2.0f * squared + amount;
 		const float part4 = cubed - squared;
-		result.x = value1.x * part1 + value2.x * part2 + tangent1.x * part3 + tangent2.x * part4;
-		result.y = value1.y * part1 + value2.y * part2 + tangent1.y * part3 + tangent2.y * part4;
-		result.z = value1.z * part1 + value2.z * part2 + tangent1.z * part3 + tangent2.z * part4;
+		result.X = value1.X * part1 + value2.X * part2 + tangent1.X * part3 + tangent2.X * part4;
+		result.Y = value1.Y * part1 + value2.Y * part2 + tangent1.Y * part3 + tangent2.Y * part4;
+		result.Z = value1.Z * part1 + value2.Z * part2 + tangent1.Z * part3 + tangent2.Z * part4;
 	}
 
 	template<>
@@ -139,71 +139,71 @@ namespace SE
 	template<>
 	void Float3::Transform(const Float3& vector, const Quaternion& rotation, Float3& result)
 	{
-		const float x = rotation.x + rotation.x;
-		const float y = rotation.y + rotation.y;
-		const float z = rotation.z + rotation.z;
-		const float wx = rotation.w * x;
-		const float wy = rotation.w * y;
-		const float wz = rotation.w * z;
-		const float xx = rotation.x * x;
-		const float xy = rotation.x * y;
-		const float xz = rotation.x * z;
-		const float yy = rotation.y * y;
-		const float yz = rotation.y * z;
-		const float zz = rotation.z * z;
+		const float x = rotation.X + rotation.X;
+		const float y = rotation.Y + rotation.Y;
+		const float z = rotation.Z + rotation.Z;
+		const float wx = rotation.W * x;
+		const float wy = rotation.W * y;
+		const float wz = rotation.W * z;
+		const float xx = rotation.X * x;
+		const float xy = rotation.X * y;
+		const float xz = rotation.X * z;
+		const float yy = rotation.Y * y;
+		const float yz = rotation.Y * z;
+		const float zz = rotation.Z * z;
 		result = Float3(
-			vector.x * (1.0f - yy - zz) + vector.y * (xy - wz) + vector.z * (xz + wy),
-			vector.x * (xy + wz) + vector.y * (1.0f - xx - zz) + vector.z * (yz - wx),
-			vector.x * (xz - wy) + vector.y * (yz + wx) + vector.z * (1.0f - xx - yy));
+			vector.X * (1.0f - yy - zz) + vector.Y * (xy - wz) + vector.Z * (xz + wy),
+			vector.X * (xy + wz) + vector.Y * (1.0f - xx - zz) + vector.Z * (yz - wx),
+			vector.X * (xz - wy) + vector.Y * (yz + wx) + vector.Z * (1.0f - xx - yy));
 	}
 
 	template<>
 	Float3 Float3::Transform(const Float3& vector, const Quaternion& rotation)
 	{
-		const float x = rotation.x + rotation.x;
-		const float y = rotation.y + rotation.y;
-		const float z = rotation.z + rotation.z;
-		const float wx = rotation.w * x;
-		const float wy = rotation.w * y;
-		const float wz = rotation.w * z;
-		const float xx = rotation.x * x;
-		const float xy = rotation.x * y;
-		const float xz = rotation.x * z;
-		const float yy = rotation.y * y;
-		const float yz = rotation.y * z;
-		const float zz = rotation.z * z;
+		const float x = rotation.X + rotation.X;
+		const float y = rotation.Y + rotation.Y;
+		const float z = rotation.Z + rotation.Z;
+		const float wx = rotation.W * x;
+		const float wy = rotation.W * y;
+		const float wz = rotation.W * z;
+		const float xx = rotation.X * x;
+		const float xy = rotation.X * y;
+		const float xz = rotation.X * z;
+		const float yy = rotation.Y * y;
+		const float yz = rotation.Y * z;
+		const float zz = rotation.Z * z;
 		return Float3(
-			vector.x * (1.0f - yy - zz) + vector.y * (xy - wz) + vector.z * (xz + wy),
-			vector.x * (xy + wz) + vector.y * (1.0f - xx - zz) + vector.z * (yz - wx),
-			vector.x * (xz - wy) + vector.y * (yz + wx) + vector.z * (1.0f - xx - yy));
+			vector.X * (1.0f - yy - zz) + vector.Y * (xy - wz) + vector.Z * (xz + wy),
+			vector.X * (xy + wz) + vector.Y * (1.0f - xx - zz) + vector.Z * (yz - wx),
+			vector.X * (xz - wy) + vector.Y * (yz + wx) + vector.Z * (1.0f - xx - yy));
 	}
 
 	template<>
 	void Float3::Transform(const Float3& vector, const Matrix& transform, Float4& result)
 	{
 		result = Float4(
-			vector.x * transform.M11 + vector.y * transform.M21 + vector.z * transform.M31 + transform.M41,
-			vector.x * transform.M12 + vector.y * transform.M22 + vector.z * transform.M32 + transform.M42,
-			vector.x * transform.M13 + vector.y * transform.M23 + vector.z * transform.M33 + transform.M43,
-			vector.x * transform.M14 + vector.y * transform.M24 + vector.z * transform.M34 + transform.M44);
+			vector.X * transform.M11 + vector.Y * transform.M21 + vector.Z * transform.M31 + transform.M41,
+			vector.X * transform.M12 + vector.Y * transform.M22 + vector.Z * transform.M32 + transform.M42,
+			vector.X * transform.M13 + vector.Y * transform.M23 + vector.Z * transform.M33 + transform.M43,
+			vector.X * transform.M14 + vector.Y * transform.M24 + vector.Z * transform.M34 + transform.M44);
 	}
 
 	template<>
 	void Float3::Transform(const Float3& vector, const Matrix& transform, Float3& result)
 	{
 		result = Float3(
-			vector.x * transform.M11 + vector.y * transform.M21 + vector.z * transform.M31 + transform.M41,
-			vector.x * transform.M12 + vector.y * transform.M22 + vector.z * transform.M32 + transform.M42,
-			vector.x * transform.M13 + vector.y * transform.M23 + vector.z * transform.M33 + transform.M43);
+			vector.X * transform.M11 + vector.Y * transform.M21 + vector.Z * transform.M31 + transform.M41,
+			vector.X * transform.M12 + vector.Y * transform.M22 + vector.Z * transform.M32 + transform.M42,
+			vector.X * transform.M13 + vector.Y * transform.M23 + vector.Z * transform.M33 + transform.M43);
 	}
 
 	template<>
 	void Float3::Transform(const Float3& vector, const Matrix3x3& transform, Float3& result)
 	{
 		result = Float3(
-			vector.x * transform.M11 + vector.y * transform.M21 + vector.z * transform.M31,
-			vector.x * transform.M12 + vector.y * transform.M22 + vector.z * transform.M32,
-			vector.x * transform.M13 + vector.y * transform.M23 + vector.z * transform.M33);
+			vector.X * transform.M11 + vector.Y * transform.M21 + vector.Z * transform.M31,
+			vector.X * transform.M12 + vector.Y * transform.M22 + vector.Z * transform.M32,
+			vector.X * transform.M13 + vector.Y * transform.M23 + vector.Z * transform.M33);
 	}
 
 	template<>
@@ -222,9 +222,9 @@ namespace SE
 	Float3 Float3::Transform(const Float3& vector, const Matrix& transform)
 	{
 		return Float3(
-			vector.x * transform.M11 + vector.y * transform.M21 + vector.z * transform.M31 + transform.M41,
-			vector.x * transform.M12 + vector.y * transform.M22 + vector.z * transform.M32 + transform.M42,
-			vector.x * transform.M13 + vector.y * transform.M23 + vector.z * transform.M33 + transform.M43);
+			vector.X * transform.M11 + vector.Y * transform.M21 + vector.Z * transform.M31 + transform.M41,
+			vector.X * transform.M12 + vector.Y * transform.M22 + vector.Z * transform.M32 + transform.M42,
+			vector.X * transform.M13 + vector.Y * transform.M23 + vector.Z * transform.M33 + transform.M43);
 		return Float3::Zero;
 	}
 
@@ -240,20 +240,20 @@ namespace SE
 	void Float3::TransformCoordinate(const Float3& coordinate, const Matrix& transform, Float3& result)
 	{
 		Float4 v;
-		v.x = coordinate.x * transform.M11 + coordinate.y * transform.M21 + coordinate.z * transform.M31 + transform.M41;
-		v.y = coordinate.x * transform.M12 + coordinate.y * transform.M22 + coordinate.z * transform.M32 + transform.M42;
-		v.z = coordinate.x * transform.M13 + coordinate.y * transform.M23 + coordinate.z * transform.M33 + transform.M43;
-		v.w = 1.0f / (coordinate.x * transform.M14 + coordinate.y * transform.M24 + coordinate.z * transform.M34 + transform.M44);
-		result = Float3(v.x * v.w, v.y * v.w, v.z * v.w);
+		v.X = coordinate.X * transform.M11 + coordinate.Y * transform.M21 + coordinate.Z * transform.M31 + transform.M41;
+		v.Y = coordinate.X * transform.M12 + coordinate.Y * transform.M22 + coordinate.Z * transform.M32 + transform.M42;
+		v.Z = coordinate.X * transform.M13 + coordinate.Y * transform.M23 + coordinate.Z * transform.M33 + transform.M43;
+		v.W = 1.0f / (coordinate.X * transform.M14 + coordinate.Y * transform.M24 + coordinate.Z * transform.M34 + transform.M44);
+		result = Float3(v.X * v.W, v.Y * v.W, v.Z * v.W);
 	}
 
 	template<>
 	void Float3::TransformNormal(const Float3& normal, const Matrix& transform, Float3& result)
 	{
 		result = Float3(
-			normal.x * transform.M11 + normal.y * transform.M21 + normal.z * transform.M31,
-			normal.x * transform.M12 + normal.y * transform.M22 + normal.z * transform.M32,
-			normal.x * transform.M13 + normal.y * transform.M23 + normal.z * transform.M33);
+			normal.X * transform.M11 + normal.Y * transform.M21 + normal.Z * transform.M31,
+			normal.X * transform.M12 + normal.Y * transform.M22 + normal.Z * transform.M32,
+			normal.X * transform.M13 + normal.Y * transform.M23 + normal.Z * transform.M33);
 	}
 
 	template<>
@@ -270,7 +270,7 @@ namespace SE
 	{
 		Float3 v;
 		TransformCoordinate(vector, worldViewProjection, v);
-		result = Float3((1.0f + v.x) * 0.5f * width + x, (1.0f - v.y) * 0.5f * height + y, v.z * (maxZ - minZ) + minZ);
+		result = Float3((1.0f + v.X) * 0.5f * width + x, (1.0f - v.Y) * 0.5f * height + y, v.Z * (maxZ - minZ) + minZ);
 	}
 
 	template<>
@@ -278,7 +278,7 @@ namespace SE
 	{
 		Matrix matrix;
 		Matrix::Invert(worldViewProjection, matrix);
-		const Float3 v((vector.x - x) / width * 2.0f - 1.0f, -((vector.y - y) / height * 2.0f - 1.0f), (vector.z - minZ) / (maxZ - minZ));
+		const Float3 v((vector.X - x) / width * 2.0f - 1.0f, -((vector.Y - y) / height * 2.0f - 1.0f), (vector.Z - minZ) / (maxZ - minZ));
 		TransformCoordinate(v, matrix, result);
 	}
 
@@ -299,9 +299,9 @@ namespace SE
 	template<>
 	void Float3::FindBestAxisVectors(Float3& firstAxis, Float3& secondAxis) const
 	{
-		const float absX = Math::Abs(x);
-		const float absY = Math::Abs(y);
-		const float absZ = Math::Abs(z);
+		const float absX = Math::Abs(X);
+		const float absY = Math::Abs(Y);
+		const float absZ = Math::Abs(Z);
 		if (absZ > absX && absZ > absY)
 			firstAxis = Float3(1, 0, 0);
 		else
@@ -360,65 +360,65 @@ namespace SE
 
 	template<>
 	Double3::Vector3Base(const Float2& xy, double z)
-		: x((double)xy.x)
-		, y((double)xy.y)
-		, z(z)
+		: X((double)xy.X)
+		, Y((double)xy.Y)
+		, Z(z)
 	{
 	}
 
 	template<>
 	Double3::Vector3Base(const Double2& xy, double z)
-		: x(xy.x)
-		, y(xy.y)
-		, z(0)
+		: X(xy.X)
+		, Y(xy.Y)
+		, Z(0)
 	{
 	}
 
 	template<>
 	Double3::Vector3Base(const Int2& xy, double z)
-		: x((double)xy.x)
-		, y((double)xy.y)
-		, z(z)
+		: X((double)xy.X)
+		, Y((double)xy.Y)
+		, Z(z)
 	{
 	}
 
 	template<>
 	Double3::Vector3Base(const Int3& xyz)
-		: x((double)xyz.x)
-		, y((double)xyz.y)
-		, z((double)xyz.z)
+		: X((double)xyz.X)
+		, Y((double)xyz.Y)
+		, Z((double)xyz.Z)
 	{
 	}
 
 	template<>
 	Double3::Vector3Base(const Int4& xyz)
-		: x((double)xyz.x)
-		, y((double)xyz.y)
-		, z((double)xyz.z)
+		: X((double)xyz.X)
+		, Y((double)xyz.Y)
+		, Z((double)xyz.Z)
 	{
 	}
 
 	template<>
 	Double3::Vector3Base(const Float4& xyz)
-		: x((double)xyz.x)
-		, y((double)xyz.y)
-		, z((double)xyz.z)
+		: X((double)xyz.X)
+		, Y((double)xyz.Y)
+		, Z((double)xyz.Z)
 	{
 	}
 
 	template<>
 	Double3::Vector3Base(const Double4& xyz)
-		: x(xyz.x)
-		, y(xyz.y)
-		, z(xyz.z)
+		: X(xyz.X)
+		, Y(xyz.Y)
+		, Z(xyz.Z)
 	{
 	}
 
 	template<>
 	Double3::Vector3Base(const Color& color)
-		: x((double)color.r)
-		, y((double)color.g)
-		, z((double)color.b)
+		: X((double)color.R)
+		, Y((double)color.G)
+		, Z((double)color.B)
 	{
 	}
 
@@ -437,60 +437,60 @@ namespace SE
 		const double part2 = -2.0 * cubed + 3.0 * squared;
 		const double part3 = cubed - 2.0 * squared + amount;
 		const double part4 = cubed - squared;
-		result.x = value1.x * part1 + value2.x * part2 + tangent1.x * part3 + tangent2.x * part4;
-		result.y = value1.y * part1 + value2.y * part2 + tangent1.y * part3 + tangent2.y * part4;
-		result.z = value1.z * part1 + value2.z * part2 + tangent1.z * part3 + tangent2.z * part4;
+		result.X = value1.X * part1 + value2.X * part2 + tangent1.X * part3 + tangent2.X * part4;
+		result.Y = value1.Y * part1 + value2.Y * part2 + tangent1.Y * part3 + tangent2.Y * part4;
+		result.Z = value1.Z * part1 + value2.Z * part2 + tangent1.Z * part3 + tangent2.Z * part4;
 	}
 
 	template<>
 	void Double3::Reflect(const Double3& vector, const Double3& normal, Double3& result)
 	{
-		const double dot = vector.x * normal.x + vector.y * normal.y + vector.z * normal.z;
-		result.x = vector.x - 2.0 * dot * normal.x;
-		result.y = vector.y - 2.0 * dot * normal.y;
-		result.z = vector.z - 2.0 * dot * normal.z;
+		const double dot = vector.X * normal.X + vector.Y * normal.Y + vector.Z * normal.Z;
+		result.X = vector.X - 2.0 * dot * normal.X;
+		result.Y = vector.Y - 2.0 * dot * normal.Y;
+		result.Z = vector.Z - 2.0 * dot * normal.Z;
 	}
 
 	template<>
 	void Double3::Transform(const Double3& vector, const Quaternion& rotation, Double3& result)
 	{
-		const float x = rotation.x + rotation.x;
-		const float y = rotation.y + rotation.y;
-		const float z = rotation.z + rotation.z;
-		const float wx = rotation.w * x;
-		const float wy = rotation.w * y;
-		const float wz = rotation.w * z;
-		const float xx = rotation.x * x;
-		const float xy = rotation.x * y;
-		const float xz = rotation.x * z;
-		const float yy = rotation.y * y;
-		const float yz = rotation.y * z;
-		const float zz = rotation.z * z;
+		const float x = rotation.X + rotation.X;
+		const float y = rotation.Y + rotation.Y;
+		const float z = rotation.Z + rotation.Z;
+		const float wx = rotation.W * x;
+		const float wy = rotation.W * y;
+		const float wz = rotation.W * z;
+		const float xx = rotation.X * x;
+		const float xy = rotation.X * y;
+		const float xz = rotation.X * z;
+		const float yy = rotation.Y * y;
+		const float yz = rotation.Y * z;
+		const float zz = rotation.Z * z;
 		result = Double3(
-			vector.x * (1.0f - yy - zz) + vector.y * (xy - wz) + vector.z * (xz + wy),
-			vector.x * (xy + wz) + vector.y * (1.0f - xx - zz) + vector.z * (yz - wx),
-			vector.x * (xz - wy) + vector.y * (yz + wx) + vector.z * (1.0f - xx - yy));
+			vector.X * (1.0f - yy - zz) + vector.Y * (xy - wz) + vector.Z * (xz + wy),
+			vector.X * (xy + wz) + vector.Y * (1.0f - xx - zz) + vector.Z * (yz - wx),
+			vector.X * (xz - wy) + vector.Y * (yz + wx) + vector.Z * (1.0f - xx - yy));
 	}
 
 	template<>
 	Double3 Double3::Transform(const Double3& vector, const Quaternion& rotation)
 	{
-		const float x = rotation.x + rotation.x;
-		const float y = rotation.y + rotation.y;
-		const float z = rotation.z + rotation.z;
-		const float wx = rotation.w * x;
-		const float wy = rotation.w * y;
-		const float wz = rotation.w * z;
-		const float xx = rotation.x * x;
-		const float xy = rotation.x * y;
-		const float xz = rotation.x * z;
-		const float yy = rotation.y * y;
-		const float yz = rotation.y * z;
-		const float zz = rotation.z * z;
+		const float x = rotation.X + rotation.X;
+		const float y = rotation.Y + rotation.Y;
+		const float z = rotation.Z + rotation.Z;
+		const float wx = rotation.W * x;
+		const float wy = rotation.W * y;
+		const float wz = rotation.W * z;
+		const float xx = rotation.X * x;
+		const float xy = rotation.X * y;
+		const float xz = rotation.X * z;
+		const float yy = rotation.Y * y;
+		const float yz = rotation.Y * z;
+		const float zz = rotation.Z * z;
 		return Double3(
-			vector.x * double(1.0f - yy - zz) + vector.y * double(xy - wz) + vector.z * double(xz + wy),
-			vector.x * double(xy + wz) + vector.y * double(1.0f - xx - zz) + vector.z * double(yz - wx),
-			vector.x * double(xz - wy) + vector.y * double(yz + wx) + vector.z * double(1.0f - xx - yy));
+			vector.X * double(1.0f - yy - zz) + vector.Y * double(xy - wz) + vector.Z * double(xz + wy),
+			vector.X * double(xy + wz) + vector.Y * double(1.0f - xx - zz) + vector.Z * double(yz - wx),
+			vector.X * double(xz - wy) + vector.Y * double(yz + wx) + vector.Z * double(1.0f - xx - yy));
 		return Double3::Zero;
 	}
 
@@ -498,28 +498,28 @@ namespace SE
 	void Double3::Transform(const Double3& vector, const Matrix& transform, Double4& result)
 	{
 		result = Double4(
-			vector.x * transform.M11 + vector.y * transform.M21 + vector.z * transform.M31 + transform.M41,
-			vector.x * transform.M12 + vector.y * transform.M22 + vector.z * transform.M32 + transform.M42,
-			vector.x * transform.M13 + vector.y * transform.M23 + vector.z * transform.M33 + transform.M43,
-			vector.x * transform.M14 + vector.y * transform.M24 + vector.z * transform.M34 + transform.M44);
+			vector.X * transform.M11 + vector.Y * transform.M21 + vector.Z * transform.M31 + transform.M41,
+			vector.X * transform.M12 + vector.Y * transform.M22 + vector.Z * transform.M32 + transform.M42,
+			vector.X * transform.M13 + vector.Y * transform.M23 + vector.Z * transform.M33 + transform.M43,
+			vector.X * transform.M14 + vector.Y * transform.M24 + vector.Z * transform.M34 + transform.M44);
 	}
 
 	template<>
 	void Double3::Transform(const Double3& vector, const Matrix& transform, Double3& result)
 	{
 		result = Double3(
-			vector.x * transform.M11 + vector.y * transform.M21 + vector.z * transform.M31 + transform.M41,
-			vector.x * transform.M12 + vector.y * transform.M22 + vector.z * transform.M32 + transform.M42,
-			vector.x * transform.M13 + vector.y * transform.M23 + vector.z * transform.M33 + transform.M43);
+			vector.X * transform.M11 + vector.Y * transform.M21 + vector.Z * transform.M31 + transform.M41,
+			vector.X * transform.M12 + vector.Y * transform.M22 + vector.Z * transform.M32 + transform.M42,
+			vector.X * transform.M13 + vector.Y * transform.M23 + vector.Z * transform.M33 + transform.M43);
 	}
 
 	template<>
 	void Double3::Transform(const Double3& vector, const Matrix3x3& transform, Double3& result)
 	{
 		result = Double3(
-			vector.x * transform.M11 + vector.y * transform.M21 + vector.z * transform.M31,
-			vector.x * transform.M12 + vector.y * transform.M22 + vector.z * transform.M32,
-			vector.x * transform.M13 + vector.y * transform.M23 + vector.z * transform.M33);
+			vector.X * transform.M11 + vector.Y * transform.M21 + vector.Z * transform.M31,
+			vector.X * transform.M12 + vector.Y * transform.M22 + vector.Z * transform.M32,
+			vector.X * transform.M13 + vector.Y * transform.M23 + vector.Z * transform.M33);
 	}
 
 	template<>
@@ -538,9 +538,9 @@ namespace SE
 	Double3 Double3::Transform(const Double3& vector, const Matrix& transform)
 	{
 		return Double3(
-			vector.x * transform.M11 + vector.y * transform.M21 + vector.z * transform.M31 + transform.M41,
-			vector.x * transform.M12 + vector.y * transform.M22 + vector.z * transform.M32 + transform.M42,
-			vector.x * transform.M13 + vector.y * transform.M23 + vector.z * transform.M33 + transform.M43);
+			vector.X * transform.M11 + vector.Y * transform.M21 + vector.Z * transform.M31 + transform.M41,
+			vector.X * transform.M12 + vector.Y * transform.M22 + vector.Z * transform.M32 + transform.M42,
+			vector.X * transform.M13 + vector.Y * transform.M23 + vector.Z * transform.M33 + transform.M43);
 		return Double3::Zero;
 	}
 
@@ -556,20 +556,20 @@ namespace SE
 	void Double3::TransformCoordinate(const Double3& coordinate, const Matrix& transform, Double3& result)
 	{
 		Double4 v = Double4::Zero;
-		v.x = coordinate.x * transform.M11 + coordinate.y * transform.M21 + coordinate.z * transform.M31 + transform.M41;
-		v.y = coordinate.x * transform.M12 + coordinate.y * transform.M22 + coordinate.z * transform.M32 + transform.M42;
-		v.z = coordinate.x * transform.M13 + coordinate.y * transform.M23 + coordinate.z * transform.M33 + transform.M43;
-		v.w = 1.0 / (coordinate.x * transform.M14 + coordinate.y * transform.M24 + coordinate.z * transform.M34 + transform.M44);
-		result = Double3(v.x * v.w, v.y * v.w, v.z * v.w);
+		v.X = coordinate.X * transform.M11 + coordinate.Y * transform.M21 + coordinate.Z * transform.M31 + transform.M41;
+		v.Y = coordinate.X * transform.M12 + coordinate.Y * transform.M22 + coordinate.Z * transform.M32 + transform.M42;
+		v.Z = coordinate.X * transform.M13 + coordinate.Y * transform.M23 + coordinate.Z * transform.M33 + transform.M43;
+		v.W = 1.0 / (coordinate.X * transform.M14 + coordinate.Y * transform.M24 + coordinate.Z * transform.M34 + transform.M44);
+		result = Double3(v.X * v.W, v.Y * v.W, v.Z * v.W);
 	}
 
 	template<>
 	void Double3::TransformNormal(const Double3& normal, const Matrix& transform, Double3& result)
 	{
 		result = Double3(
-			normal.x * transform.M11 + normal.y * transform.M21 + normal.z * transform.M31,
-			normal.x * transform.M12 + normal.y * transform.M22 + normal.z * transform.M32,
-			normal.x * transform.M13 + normal.y * transform.M23 + normal.z * transform.M33);
+			normal.X * transform.M11 + normal.Y * transform.M21 + normal.Z * transform.M31,
+			normal.X * transform.M12 + normal.Y * transform.M22 + normal.Z * transform.M32,
+			normal.X * transform.M13 + normal.Y * transform.M23 + normal.Z * transform.M33);
 	}
 
 	template<>
@@ -586,7 +586,7 @@ namespace SE
 	{
 		Double3 v;
 		TransformCoordinate(vector, worldViewProjection, v);
-		result = Double3((1.0f + v.x) * 0.5f * width + x, (1.0f - v.y) * 0.5f * height + y, v.z * (maxZ - minZ) + minZ);
+		result = Double3((1.0f + v.X) * 0.5f * width + x, (1.0f - v.Y) * 0.5f * height + y, v.Z * (maxZ - minZ) + minZ);
 	}
 
 	template<>
@@ -594,7 +594,7 @@ namespace SE
 	{
 		Matrix matrix;
 		Matrix::Invert(worldViewProjection, matrix);
-		const Double3 v((vector.x - x) / width * 2.0f - 1.0f, -((vector.y - y) / height * 2.0f - 1.0f), (vector.z - minZ) / (maxZ - minZ));
+		const Double3 v((vector.X - x) / width * 2.0f - 1.0f, -((vector.Y - y) / height * 2.0f - 1.0f), (vector.Z - minZ) / (maxZ - minZ));
 		TransformCoordinate(v, matrix, result);
 	}
 
@@ -615,9 +615,9 @@ namespace SE
 	template<>
 	void Double3::FindBestAxisVectors(Double3& firstAxis, Double3& secondAxis) const
 	{
-		const double absX = Math::Abs(x);
-		const double absY = Math::Abs(y);
-		const double absZ = Math::Abs(z);
+		const double absX = Math::Abs(X);
+		const double absY = Math::Abs(Y);
+		const double absZ = Math::Abs(Z);
 		if (absZ > absX && absZ > absY)
 			firstAxis = Double3(1, 0, 0);
 		else
@@ -676,65 +676,65 @@ namespace SE
 
 	template<>
 	Int3::Vector3Base(const Float2& xy, int32 z)
-		: x((int32)xy.x)
-		, y((int32)xy.y)
-		, z(z)
+		: X((int32)xy.X)
+		, Y((int32)xy.Y)
+		, Z(z)
 	{
 	}
 
 	template<>
 	Int3::Vector3Base(const Double2& xy, int32 z)
-		: x((int32)xy.x)
-		, y((int32)xy.y)
-		, z(0)
+		: X((int32)xy.X)
+		, Y((int32)xy.Y)
+		, Z(0)
 	{
 	}
 
 	template<>
 	Int3::Vector3Base(const Int2& xy, int32 z)
-		: x(xy.x)
-		, y(xy.y)
-		, z(z)
+		: X(xy.X)
+		, Y(xy.Y)
+		, Z(z)
 	{
 	}
 
 	template<>
 	Int3::Vector3Base(const Int3& xyz)
-		: x(xyz.x)
-		, y(xyz.y)
-		, z(xyz.z)
+		: X(xyz.X)
+		, Y(xyz.Y)
+		, Z(xyz.Z)
 	{
 	}
 
 	template<>
 	Int3::Vector3Base(const Int4& xyz)
-		: x(xyz.x)
-		, y(xyz.y)
-		, z(xyz.z)
+		: X(xyz.X)
+		, Y(xyz.Y)
+		, Z(xyz.Z)
 	{
 	}
 
 	template<>
 	Int3::Vector3Base(const Float4& xyz)
-		: x((int32)xyz.x)
-		, y((int32)xyz.y)
-		, z((int32)xyz.z)
+		: X((int32)xyz.X)
+		, Y((int32)xyz.Y)
+		, Z((int32)xyz.Z)
 	{
 	}
 
 	template<>
 	Int3::Vector3Base(const Double4& xyz)
-		: x((int32)xyz.x)
-		, y((int32)xyz.y)
-		, z((int32)xyz.z)
+		: X((int32)xyz.X)
+		, Y((int32)xyz.Y)
+		, Z((int32)xyz.Z)
 	{
 	}
 
 	template<>
 	Int3::Vector3Base(const Color& color)
-		: x((int32)color.r)
-		, y((int32)color.g)
-		, z((int32)color.b)
+		: X((int32)color.R)
+		, Y((int32)color.G)
+		, Z((int32)color.B)
 	{
 	}
 

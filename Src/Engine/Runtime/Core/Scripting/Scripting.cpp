@@ -1060,9 +1060,6 @@ public:
         CLRCore::TypeCache::Activator = nullptr;
         CLRCore::TypeCache::Type = nullptr;
 
-        CLRCore::TypeCache::Vector2 = nullptr;
-        CLRCore::TypeCache::Vector3 = nullptr;
-        CLRCore::TypeCache::Vector4 = nullptr;
         CLRCore::TypeCache::Color = nullptr;
         CLRCore::TypeCache::Transform = nullptr;
         CLRCore::TypeCache::Quaternion = nullptr;
@@ -1110,9 +1107,6 @@ public:
         GET_CLASS(Corlib, CLRCore::TypeCache::Activator, "System.Activator");
         GET_CLASS(Corlib, CLRCore::TypeCache::Type, "System.Type");
 
-        GET_CLASS(SERuntime, CLRCore::TypeCache::Vector2, "SE.Vector2");
-        GET_CLASS(SERuntime, CLRCore::TypeCache::Vector3, "SE.Vector3");
-        GET_CLASS(SERuntime, CLRCore::TypeCache::Vector4, "SE.Vector4");
         GET_CLASS(SERuntime, CLRCore::TypeCache::Color, "SE.Color");
         GET_CLASS(SERuntime, CLRCore::TypeCache::Transform, "SE.Transform");
         GET_CLASS(SERuntime, CLRCore::TypeCache::Quaternion, "SE.Quaternion");

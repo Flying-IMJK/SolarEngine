@@ -119,41 +119,6 @@ namespace SE
             return Create(settings);
         }
 
-        /// <summary>
-        /// Gets or sets whether the native window is visible.
-        /// </summary>
-        public bool Visible
-        {
-            get => IsVisible();
-            set => SetIsVisible(value);
-        }
-
-        /// <summary>
-        /// Gets or sets the client-area size in physical pixels.
-        /// </summary>
-        public Float2 ClientSize
-        {
-            get => GetClientSize();
-            set
-            {
-                var clientSize = value;
-                SetClientSize(clientSize);
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the window title.
-        /// </summary>
-        public string Title
-        {
-            get => GetTitle();
-            set => SetTitle(value);
-        }
-
-        /// <summary>
-        /// Gets the scale that converts physical window coordinates to logical GUI coordinates.
-        /// </summary>
-        public float DpiScale => GetDpiScale();
 
         internal void Internal_InitializeGui(Float2 logicalSize, float dpiScale)
         {

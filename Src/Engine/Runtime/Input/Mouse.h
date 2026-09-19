@@ -1,6 +1,7 @@
 #pragma once
 
 #include "InputDevice.h"
+#include <Runtime/Core/Scripting/ScriptingType.h>
 
 namespace SE
 {
@@ -10,8 +11,10 @@ namespace SE
 	/// <remarks>
 	/// The mouse device position is in screen-space (not game client window space).
 	/// </remarks>
+	SE_CLASS(API(NoSpawn))
 	class SE_API_RUNTIME Mouse : public InputDevice
 	{
+		SCRIPTING_TYPE_NO_SPAWN(Mouse)
 	public:
 		/// <summary>
 		/// The mouse state.
@@ -46,7 +49,7 @@ namespace SE
 		State _state;
 		State _prevState;
 	
-		explicit Mouse() : InputDevice(SE_TEXT("Mouse"))
+		explicit Mouse() : InputDevice(SpawnParams(UID::New(), TypeInitializer), SE_TEXT("Mouse"))
 		{
 			_state.Clear();
 			_prevState.Clear();
@@ -56,6 +59,7 @@ namespace SE
 		/// <summary>
 		/// Gets the position of the mouse in the screen-space coordinates.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE Float2 GetPosition() const
 		{
 			return _state.MousePosition;
@@ -64,11 +68,13 @@ namespace SE
 		/// <summary>
 		/// Checks if any mouse button is currently pressed.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		bool IsAnyButtonDown() const;
 	
 		/// <summary>
 		/// Gets the delta position of the mouse in the screen-space coordinates.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE Float2 GetPositionDelta() const
 		{
 			return _state.MousePosition - _prevState.MousePosition;
@@ -77,6 +83,7 @@ namespace SE
 		/// <summary>
 		/// Gets the mouse wheel change during the last frame.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE float GetScrollDelta() const
 		{
 			return _state.MouseWheelDelta;
@@ -87,6 +94,7 @@ namespace SE
 		/// </summary>
 		/// <param name="button">Mouse button to check</param>
 		/// <returns>True if user holds down the button, otherwise false.</returns>
+		SE_FUNCTION(API())
 		FORCE_INLINE bool GetButton(MouseButton button) const
 		{
 			return _state.MouseButtons[static_cast<int32>(button)];
@@ -97,6 +105,7 @@ namespace SE
 		/// </summary>
 		/// <param name="button">Mouse button to check</param>
 		/// <returns>True if user starts pressing down the button, otherwise false.</returns>
+		SE_FUNCTION(API())
 		FORCE_INLINE bool GetButtonDown(MouseButton button) const
 		{
 			return _state.MouseButtons[static_cast<int32>(button)] && !_prevState.MouseButtons[static_cast<int32>(button)];
@@ -107,6 +116,7 @@ namespace SE
 		/// </summary>
 		/// <param name="button">Mouse button to check</param>
 		/// <returns>True if user releases the button, otherwise false.</returns>
+		SE_FUNCTION(API())
 		FORCE_INLINE bool GetButtonUp(MouseButton button) const
 		{
 			return !_state.MouseButtons[static_cast<int32>(button)] && _prevState.MouseButtons[static_cast<int32>(button)];

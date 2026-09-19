@@ -24,24 +24,24 @@ namespace SE
             PipelineStateCache QuadOverdrawSkinned;
 #endif
 
-            FORCE_INLINE PipelineStateCache* GetPS(const EnumFlags<DrawPass> pass, const bool useLightmap, const bool useSkinning, const bool perBoneMotionBlur)
+            FORCE_INLINE PipelineStateCache* GetPS(const DrawPass pass, const bool useLightmap, const bool useSkinning, const bool perBoneMotionBlur)
             {
-                if (pass.Is(DrawPass::Depth))
+                if (pass == DrawPass::Depth)
                 {
                     return useSkinning ? &DepthSkinned : &Depth;
                 }
-                else if (pass.Is(DrawPass::GBuffer) ||
-                    pass == EnumFlags<DrawPass>{DrawPass::GBuffer, DrawPass::GlobalSurfaceAtlas} ||
-                    pass.Is(DrawPass::GlobalSurfaceAtlas))
+                else if (pass == DrawPass::GBuffer ||
+                    pass == EnumCombineFlags(DrawPass::GBuffer, DrawPass::GlobalSurfaceAtlas) ||
+                    pass == DrawPass::GlobalSurfaceAtlas)
                 {
                     return useLightmap ? &DefaultLightmap : (useSkinning ? &DefaultSkinned : &Default);
                 }
-                else if (pass.Is(DrawPass::MotionVectors))
+                else if (pass == DrawPass::MotionVectors)
                 {
                     return useSkinning ? (perBoneMotionBlur ? &MotionVectorsSkinnedPerBone : &MotionVectorsSkinned) : &MotionVectors;
                 }
 #if SE_EDITOR
-                else if (pass.Is(DrawPass::QuadOverdraw))
+                else if (pass == DrawPass::QuadOverdraw)
                 {
                     return useSkinning ? &QuadOverdrawSkinned : &QuadOverdraw;
                 }
@@ -78,7 +78,7 @@ namespace SE
 
     public:
         // [MaterialShader]
-        EnumFlags<DrawPass> GetDrawModes() const override;
+        DrawPass GetDrawModes() const override;
         bool CanUseLightmap() const override;
         bool CanUseInstancing(InstancingHandler& handler) const override;
         void Bind(BindParameters& params) override;

@@ -12,10 +12,10 @@ namespace SE
 	Quaternion Quaternion::Identity(0, 0, 0, 1);
 
 	Quaternion::Quaternion(const Float4& value)
-		: x(value.x)
-		, y(value.y)
-		, z(value.z)
-		, w(value.w)
+		: X(value.X)
+		, Y(value.Y)
+		, Z(value.Z)
+		, W(value.W)
 	{
 	}
 
@@ -26,56 +26,56 @@ namespace SE
 
 	float Quaternion::GetAngle() const
 	{
-		const float length = x * x + y * y + z * z;
+		const float length = X * X + Y * Y + Z * Z;
 		if (Math::IsZero(length))
 			return 0.0f;
-		return 2.0f * acosf(Math::Clamp(w, -1.0f, 1.0f));
+		return 2.0f * acosf(Math::Clamp(W, -1.0f, 1.0f));
 	}
 
 	Float3 Quaternion::GetAxis() const
 	{
-		const float length = x * x + y * y + z * z;
+		const float length = X * X + Y * Y + Z * Z;
 		if (Math::IsZero(length))
 			return Float3::UnitX;
 		const float inv = 1.0f / Math::Sqrt(length);
-		return Float3(x * inv, y * inv, z * inv);
+		return Float3(X * inv, Y * inv, Z * inv);
 	}
 
 	Float3 Quaternion::GetEuler() const
 	{
 		Float3 result;
-		const float sqw = w * w;
-		const float sqx = x * x;
-		const float sqy = y * y;
-		const float sqz = z * z;
+		const float sqw = W * W;
+		const float sqx = X * X;
+		const float sqy = Y * Y;
+		const float sqz = Z * Z;
 		const float unit = sqx + sqy + sqz + sqw; // if normalised is one, otherwise is correction factor
-		const float test = x * w - y * z;
+		const float test = X * W - Y * Z;
 
 		if (test > 0.499995f * unit)
 		{
 			// singularity at north pole
 
 			// yaw pitch roll
-			result.y = 2.0f * Math::ATan2(y, x);
-			result.x = Math::PiDivTwo;
-			result.z = 0;
+			result.Y = 2.0f * Math::ATan2(Y, X);
+			result.X = Math::PiDivTwo;
+			result.Z = 0;
 		}
 		else if (test < -0.499995f * unit)
 		{
 			// singularity at south pole
 
 			// yaw pitch roll
-			result.y = -2.0f * Math::ATan2(y, x);
-			result.x = -Math::PiDivTwo;
-			result.z = 0;
+			result.Y = -2.0f * Math::ATan2(Y, X);
+			result.X = -Math::PiDivTwo;
+			result.Z = 0;
 		}
 		else
 		{
 			// yaw pitch roll
-			const Quaternion q = Quaternion(w, z, x, y);
-			result.y = Math::ATan2(2.0f * q.x * q.w + 2.0f * q.y * q.z, 1 - 2.0f * (q.z * q.z + q.w * q.w));
-			result.x = Math::ASin(2.0f * (q.x * q.z - q.w * q.y));
-			result.z = Math::ATan2(2.0f * q.x * q.y + 2.0f * q.z * q.w, 1 - 2.0f * (q.y * q.y + q.z * q.z));
+			const Quaternion q = Quaternion(W, Z, X, Y);
+			result.Y = Math::ATan2(2.0f * q.X * q.W + 2.0f * q.Y * q.Z, 1 - 2.0f * (q.Z * q.Z + q.W * q.W));
+			result.X = Math::ASin(2.0f * (q.X * q.Z - q.W * q.Y));
+			result.Z = Math::ATan2(2.0f * q.X * q.Y + 2.0f * q.Z * q.W, 1 - 2.0f * (q.Y * q.Y + q.Z * q.Z));
 		}
 
 		return Math::UnwindDegrees(result * Math::RadiansToDegrees);
@@ -83,14 +83,14 @@ namespace SE
 
 	void Quaternion::Multiply(const Quaternion& other)
 	{
-		const float a = y * other.z - z * other.y;
-		const float b = z * other.x - x * other.z;
-		const float c = x * other.y - y * other.x;
-		const float d = x * other.x + y * other.y + z * other.z;
-		x = x * other.w + other.x * w + a;
-		y = y * other.w + other.y * w + b;
-		z = z * other.w + other.z * w + c;
-		w = w * other.w - d;
+		const float a = Y * other.Z - Z * other.Y;
+		const float b = Z * other.X - X * other.Z;
+		const float c = X * other.Y - Y * other.X;
+		const float d = X * other.X + Y * other.Y + Z * other.Z;
+		X = X * other.W + other.X * W + a;
+		Y = Y * other.W + other.Y * W + b;
+		Z = Z * other.W + other.Z * W + c;
+		W = W * other.W - d;
 	}
 
 	Float3 Quaternion::operator*(const Float3& vector) const
@@ -100,14 +100,14 @@ namespace SE
 
 	void Quaternion::Multiply(const Quaternion& left, const Quaternion& right, Quaternion& result)
 	{
-		const float a = left.y * right.z - left.z * right.y;
-		const float b = left.z * right.x - left.x * right.z;
-		const float c = left.x * right.y - left.y * right.x;
-		const float d = left.x * right.x + left.y * right.y + left.z * right.z;
-		result.x = left.x * right.w + right.x * left.w + a;
-		result.y = left.y * right.w + right.y * left.w + b;
-		result.z = left.z * right.w + right.z * left.w + c;
-		result.w = left.w * right.w - d;
+		const float a = left.Y * right.Z - left.Z * right.Y;
+		const float b = left.Z * right.X - left.X * right.Z;
+		const float c = left.X * right.Y - left.Y * right.X;
+		const float d = left.X * right.X + left.Y * right.Y + left.Z * right.Z;
+		result.X = left.X * right.W + right.X * left.W + a;
+		result.Y = left.Y * right.W + right.Y * left.W + b;
+		result.Z = left.Z * right.W + right.Z * left.W + c;
+		result.W = left.W * right.W - d;
 	}
 
 	void Quaternion::Lerp(const Quaternion& start, const Quaternion& end, float amount, Quaternion& result)
@@ -115,17 +115,17 @@ namespace SE
 		const float inverse = 1.0f - amount;
 		if (Dot(start, end) >= 0.0f)
 		{
-			result.x = inverse * start.x + amount * end.x;
-			result.y = inverse * start.y + amount * end.y;
-			result.z = inverse * start.z + amount * end.z;
-			result.w = inverse * start.w + amount * end.w;
+			result.X = inverse * start.X + amount * end.X;
+			result.Y = inverse * start.Y + amount * end.Y;
+			result.Z = inverse * start.Z + amount * end.Z;
+			result.W = inverse * start.W + amount * end.W;
 		}
 		else
 		{
-			result.x = inverse * start.x - amount * end.x;
-			result.y = inverse * start.y - amount * end.y;
-			result.z = inverse * start.z - amount * end.z;
-			result.w = inverse * start.w - amount * end.w;
+			result.X = inverse * start.X - amount * end.X;
+			result.Y = inverse * start.Y - amount * end.Y;
+			result.Z = inverse * start.Z - amount * end.Z;
+			result.W = inverse * start.W - amount * end.W;
 		}
 		result.Normalize();
 	}
@@ -139,10 +139,10 @@ namespace SE
 		const float sinHalf = Math::Sin(half);
 		const float cosHalf = Math::Cos(half);
 
-		result.x = normalized.x * sinHalf;
-		result.y = normalized.y * sinHalf;
-		result.z = normalized.z * sinHalf;
-		result.w = cosHalf;
+		result.X = normalized.X * sinHalf;
+		result.Y = normalized.Y * sinHalf;
+		result.Z = normalized.Z * sinHalf;
+		result.W = cosHalf;
 	}
 
 	void Quaternion::RotationCosAxis(const Float3& axis, float cos, Quaternion& result)
@@ -155,10 +155,10 @@ namespace SE
 		const float cosHalf = Math::Sqrt(cosHalf2);
 		const float sinHalf = Math::Sqrt(sinHalf2);
 
-		result.x = normalized.x * sinHalf;
-		result.y = normalized.y * sinHalf;
-		result.z = normalized.z * sinHalf;
-		result.w = cosHalf;
+		result.X = normalized.X * sinHalf;
+		result.Y = normalized.Y * sinHalf;
+		result.Z = normalized.Z * sinHalf;
+		result.W = cosHalf;
 	}
 
 	void Quaternion::RotationMatrix(const Matrix& matrix, Quaternion& result)
@@ -170,12 +170,12 @@ namespace SE
 		if (scale > 0.0f)
 		{
 			sqrtV = Math::Sqrt(scale + 1.0f);
-			result.w = sqrtV * 0.5f;
+			result.W = sqrtV * 0.5f;
 			sqrtV = 0.5f / sqrtV;
 
-			result.x = (matrix.M23 - matrix.M32) * sqrtV;
-			result.y = (matrix.M31 - matrix.M13) * sqrtV;
-			result.z = (matrix.M12 - matrix.M21) * sqrtV;
+			result.X = (matrix.M23 - matrix.M32) * sqrtV;
+			result.Y = (matrix.M31 - matrix.M13) * sqrtV;
+			result.Z = (matrix.M12 - matrix.M21) * sqrtV;
 		}
 		else if (matrix.M11 >= matrix.M22 && matrix.M11 >= matrix.M33)
 		{
@@ -223,12 +223,12 @@ namespace SE
 		if (scale > 0.0f)
 		{
 			sqrtV = Math::Sqrt(scale + 1.0f);
-			result.w = sqrtV * 0.5f;
+			result.W = sqrtV * 0.5f;
 			sqrtV = 0.5f / sqrtV;
 
-			result.x = (matrix.M23 - matrix.M32) * sqrtV;
-			result.y = (matrix.M31 - matrix.M13) * sqrtV;
-			result.z = (matrix.M12 - matrix.M21) * sqrtV;
+			result.X = (matrix.M23 - matrix.M32) * sqrtV;
+			result.Y = (matrix.M31 - matrix.M13) * sqrtV;
+			result.Z = (matrix.M12 - matrix.M21) * sqrtV;
 		}
 		else if (matrix.M11 >= matrix.M22 && matrix.M11 >= matrix.M33)
 		{
@@ -313,52 +313,52 @@ namespace SE
 		Float3 upNorm;
 		Float3::Cross(forwardNorm, rightNorm, upNorm);
 
-		#define m00 rightNorm.x
-		#define m01 rightNorm.y
-		#define m02 rightNorm.z
-		#define m10 upNorm.x
-		#define m11 upNorm.y
-		#define m12 upNorm.z
-		#define m20 forwardNorm.x
-		#define m21 forwardNorm.y
-		#define m22 forwardNorm.z
+		#define m00 rightNorm.X
+		#define m01 rightNorm.Y
+		#define m02 rightNorm.Z
+		#define m10 upNorm.X
+		#define m11 upNorm.Y
+		#define m12 upNorm.Z
+		#define m20 forwardNorm.X
+		#define m21 forwardNorm.Y
+		#define m22 forwardNorm.Z
 
 		const float sum = m00 + m11 + m22;
 		if (sum > 0)
 		{
 			const float num = Math::Sqrt(sum + 1);
 			const float invNumHalf = 0.5f / num;
-			result.x = (m12 - m21) * invNumHalf;
-			result.y = (m20 - m02) * invNumHalf;
-			result.z = (m01 - m10) * invNumHalf;
-			result.w = num * 0.5f;
+			result.X = (m12 - m21) * invNumHalf;
+			result.Y = (m20 - m02) * invNumHalf;
+			result.Z = (m01 - m10) * invNumHalf;
+			result.W = num * 0.5f;
 		}
 		else if (m00 >= m11 && m00 >= m22)
 		{
 			const float num = Math::Sqrt(1 + m00 - m11 - m22);
 			const float invNumHalf = 0.5f / num;
-			result.x = 0.5f * num;
-			result.y = (m01 + m10) * invNumHalf;
-			result.z = (m02 + m20) * invNumHalf;
-			result.w = (m12 - m21) * invNumHalf;
+			result.X = 0.5f * num;
+			result.Y = (m01 + m10) * invNumHalf;
+			result.Z = (m02 + m20) * invNumHalf;
+			result.W = (m12 - m21) * invNumHalf;
 		}
 		else if (m11 > m22)
 		{
 			const float num = Math::Sqrt(1 + m11 - m00 - m22);
 			const float invNumHalf = 0.5f / num;
-			result.x = (m10 + m01) * invNumHalf;
-			result.y = 0.5f * num;
-			result.z = (m21 + m12) * invNumHalf;
-			result.w = (m20 - m02) * invNumHalf;
+			result.X = (m10 + m01) * invNumHalf;
+			result.Y = 0.5f * num;
+			result.Z = (m21 + m12) * invNumHalf;
+			result.W = (m20 - m02) * invNumHalf;
 		}
 		else
 		{
 			const float num = Math::Sqrt(1 + m22 - m00 - m11);
 			const float invNumHalf = 0.5f / num;
-			result.x = (m20 + m02) * invNumHalf;
-			result.y = (m21 + m12) * invNumHalf;
-			result.z = 0.5f * num;
-			result.w = (m01 - m10) * invNumHalf;
+			result.X = (m20 + m02) * invNumHalf;
+			result.Y = (m21 + m12) * invNumHalf;
+			result.Z = 0.5f * num;
+			result.W = (m01 - m10) * invNumHalf;
 		}
 
 #undef m00
@@ -414,10 +414,10 @@ namespace SE
 			Float3 c;
 			Float3::Cross(v0, v1, c);
 
-			result.x = c.x * invS;
-			result.y = c.y * invS;
-			result.z = c.z * invS;
-			result.w = s * 0.5f;
+			result.X = c.X * invS;
+			result.Y = c.Y * invS;
+			result.Z = c.Z * invS;
+			result.W = s * 0.5f;
 			result.Normalize();
 		}
 	}
@@ -434,14 +434,14 @@ namespace SE
 		const float w = normFromNormTo + Float3::Dot(from, to);
 		if (w < 1.e-6f * normFromNormTo)
 		{
-			result = Math::Abs(from.x) > Math::Abs(from.z)
-					 ? Quaternion(-from.y, from.x, 0.0f, 0.0f)
-					 : Quaternion(0.0f, -from.z, from.y, 0.0f);
+			result = Math::Abs(from.X) > Math::Abs(from.Z)
+					 ? Quaternion(-from.Y, from.X, 0.0f, 0.0f)
+					 : Quaternion(0.0f, -from.Z, from.Y, 0.0f);
 		}
 		else
 		{
 			const Float3 cross = Float3::Cross(from, to);
-			result = Quaternion(cross.x, cross.y, cross.z, w);
+			result = Quaternion(cross.X, cross.Y, cross.Z, w);
 		}
 		result.Normalize();
 	}
@@ -465,10 +465,10 @@ namespace SE
 			opposite = Math::Sin(amount * acos1) * invSin * Math::Sign(dot);
 		}
 
-		result.x = inverse * start.x + opposite * end.x;
-		result.y = inverse * start.y + opposite * end.y;
-		result.z = inverse * start.z + opposite * end.z;
-		result.w = inverse * start.w + opposite * end.w;
+		result.X = inverse * start.X + opposite * end.X;
+		result.Y = inverse * start.Y + opposite * end.Y;
+		result.Z = inverse * start.Z + opposite * end.Z;
+		result.W = inverse * start.W + opposite * end.W;
 	}
 
 	Quaternion Quaternion::Euler(float x, float y, float z)
@@ -494,7 +494,7 @@ namespace SE
 
 	Quaternion Quaternion::Euler(const Float3& euler)
 	{
-		return Euler(euler.x, euler.y, euler.z);
+		return Euler(euler.X, euler.Y, euler.Z);
 	}
 
 	void Quaternion::RotationYawPitchRoll(float yaw, float pitch, float roll, Quaternion& result)
@@ -510,11 +510,10 @@ namespace SE
 		const float sinyawOver2 = Math::Sin(halfyaw);
 		const float cosyawOver2 = Math::Cos(halfyaw);
 
-		result.w = cosyawOver2 * cosPitchOver2 * cosRollOver2 + sinyawOver2 * sinPitchOver2 * sinRollOver2;
-		result.x = cosyawOver2 * sinPitchOver2 * cosRollOver2 + sinyawOver2 * cosPitchOver2 * sinRollOver2;
-		result.y = sinyawOver2 * cosPitchOver2 * cosRollOver2 - cosyawOver2 * sinPitchOver2 * sinRollOver2;
-		result.z = cosyawOver2 * cosPitchOver2 * sinRollOver2 - sinyawOver2 * sinPitchOver2 * cosRollOver2;
+		result.W = cosyawOver2 * cosPitchOver2 * cosRollOver2 + sinyawOver2 * sinPitchOver2 * sinRollOver2;
+		result.X = cosyawOver2 * sinPitchOver2 * cosRollOver2 + sinyawOver2 * cosPitchOver2 * sinRollOver2;
+		result.Y = sinyawOver2 * cosPitchOver2 * cosRollOver2 - cosyawOver2 * sinPitchOver2 * sinRollOver2;
+		result.Z = cosyawOver2 * cosPitchOver2 * sinRollOver2 - sinyawOver2 * sinPitchOver2 * cosRollOver2;
 	}
 
 }
-

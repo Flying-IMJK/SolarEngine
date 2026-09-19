@@ -49,7 +49,7 @@ namespace SE
         return m_MaterialShader && m_MaterialShader->IsReady();
     }
 
-    EnumFlags<DrawPass> Material::GetDrawModes() const
+    DrawPass Material::GetDrawModes() const
     {
         if (m_MaterialShader)
             return m_MaterialShader->GetDrawModes();
@@ -411,8 +411,8 @@ namespace SE
         const bool useDistortion =
                 (info.Domain == MaterialDomain::Surface || info.Domain == MaterialDomain::Deformable || info.Domain == MaterialDomain::Particle) &&
                 info.BlendMode != MaterialBlendMode::Opaque &&
-                info.UsageFlags.IsFlag(MaterialUsage::UseRefraction) &&
-                !info.FeaturesFlags.IsFlag(MaterialFeatures::DisableDistortion);
+                EnumHasAnyFlags(info.UsageFlags, MaterialUsage::UseRefraction) &&
+                EnumHasNoneFlags(info.FeaturesFlags, MaterialFeatures::DisableDistortion);
 
         // @formatter:off
         static const char* Numbers[] =
@@ -432,22 +432,22 @@ namespace SE
         options.Macros.Add({ "MATERIAL_DOMAIN", Numbers[(int32)info.Domain] });
         options.Macros.Add({ "MATERIAL_BLEND", Numbers[(int32)info.BlendMode] });
         options.Macros.Add({ "MATERIAL_SHADING_MODEL", Numbers[(int32)info.ShadingModel] });
-        options.Macros.Add({ "MATERIAL_MASKED", Numbers[info.UsageFlags.IsFlag(MaterialUsage::UseMask) ? 1 : 0] });
+        options.Macros.Add({ "MATERIAL_MASKED", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsage::UseMask) ? 1 : 0] });
         options.Macros.Add({ "DECAL_BLEND_MODE", Numbers[(int32)info.DecalBlendingMode] });
-        options.Macros.Add({ "USE_EMISSIVE", Numbers[info.UsageFlags.IsFlag(MaterialUsage::UseEmissive) ? 1 : 0] });
-        options.Macros.Add({ "USE_NORMAL", Numbers[info.UsageFlags.IsFlag( MaterialUsage::UseNormal) ? 1 : 0] });
-        options.Macros.Add({ "USE_POSITION_OFFSET", Numbers[info.UsageFlags.IsFlag( MaterialUsage::UsePositionOffset) ? 1 : 0] });
-        options.Macros.Add({ "USE_VERTEX_COLOR", Numbers[info.UsageFlags.IsFlag( MaterialUsage::UseVertexColor) ? 1 : 0] });
-        options.Macros.Add({ "USE_DISPLACEMENT", Numbers[info.UsageFlags.IsFlag( MaterialUsage::UseDisplacement) ? 1 : 0] });
-        options.Macros.Add({ "USE_DITHERED_LOD_TRANSITION", Numbers[info.FeaturesFlags.IsFlag(MaterialFeatures::DitheredLODTransition) ? 1 : 0] });
+        options.Macros.Add({ "USE_EMISSIVE", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsage::UseEmissive) ? 1 : 0] });
+        options.Macros.Add({ "USE_NORMAL", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsage::UseNormal) ? 1 : 0] });
+        options.Macros.Add({ "USE_POSITION_OFFSET", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsage::UsePositionOffset) ? 1 : 0] });
+        options.Macros.Add({ "USE_VERTEX_COLOR", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsage::UseVertexColor) ? 1 : 0] });
+        options.Macros.Add({ "USE_DISPLACEMENT", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsage::UseDisplacement) ? 1 : 0] });
+        options.Macros.Add({ "USE_DITHERED_LOD_TRANSITION", Numbers[EnumHasAnyFlags(info.FeaturesFlags, MaterialFeatures::DitheredLODTransition) ? 1 : 0] });
         options.Macros.Add({ "USE_GBUFFER_CUSTOM_DATA", Numbers[useCustomData ? 1 : 0] });
-        options.Macros.Add({ "USE_REFLECTIONS", Numbers[info.FeaturesFlags.IsFlag(MaterialFeatures::DisableReflections) ? 0 : 1] });
-        if (!info.FeaturesFlags.IsFlag(MaterialFeatures::DisableReflections) && info.FeaturesFlags.IsFlag(MaterialFeatures::ScreenSpaceReflections))
+        options.Macros.Add({ "USE_REFLECTIONS", Numbers[EnumHasAnyFlags(info.FeaturesFlags, MaterialFeatures::DisableReflections) ? 0 : 1] });
+        if (!EnumHasAnyFlags(info.FeaturesFlags, MaterialFeatures::DisableReflections) && EnumHasAnyFlags(info.FeaturesFlags, MaterialFeatures::ScreenSpaceReflections))
             options.Macros.Add({ "MATERIAL_REFLECTIONS", Numbers[1] });
-        options.Macros.Add({ "USE_FOG", Numbers[info.FeaturesFlags.IsFlag(MaterialFeatures::DisableFog) ? 0 : 1] });
+        options.Macros.Add({ "USE_FOG", Numbers[EnumHasAnyFlags(info.FeaturesFlags, MaterialFeatures::DisableFog) ? 0 : 1] });
         if (useForward)
         {
-            options.Macros.Add({ "USE_PIXEL_NORMAL_OFFSET_REFRACTION", Numbers[info.FeaturesFlags.IsFlag(MaterialFeatures::PixelNormalOffsetRefraction) ? 1 : 0] });
+            options.Macros.Add({ "USE_PIXEL_NORMAL_OFFSET_REFRACTION", Numbers[EnumHasAnyFlags(info.FeaturesFlags, MaterialFeatures::PixelNormalOffsetRefraction) ? 1 : 0] });
             switch (info.TransparentLightingMode)
             {
             case MaterialTransparentLightingMode::Surface:

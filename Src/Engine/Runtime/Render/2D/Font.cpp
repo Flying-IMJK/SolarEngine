@@ -238,13 +238,13 @@ namespace SE
             if (moveLine)
             {
                 // Add line
-                tmpLine.Size.x = cursorX;
-                tmpLine.Size.y = baseLinesDistance;
+                tmpLine.Size.X = cursorX;
+                tmpLine.Size.Y = baseLinesDistance;
                 tmpLine.LastCharIndex = Math::Max(tmpLine.LastCharIndex, tmpLine.FirstCharIndex);
                 outputLines.Add(tmpLine);
 
                 // Reset line
-                tmpLine.Location.y += baseLinesDistance;
+                tmpLine.Location.Y += baseLinesDistance;
                 tmpLine.FirstCharIndex = currentIndex;
                 tmpLine.LastCharIndex = currentIndex - 1;
                 cursorX = 0;
@@ -261,28 +261,28 @@ namespace SE
         if (tmpLine.LastCharIndex >= tmpLine.FirstCharIndex || text[textLength - 1] == '\n')
         {
             // Add line
-            tmpLine.Size.x = cursorX;
-            tmpLine.Size.y = baseLinesDistance;
+            tmpLine.Size.X = cursorX;
+            tmpLine.Size.Y = baseLinesDistance;
             tmpLine.LastCharIndex = textLength - 1;
             outputLines.Add(tmpLine);
 
-            tmpLine.Location.y += baseLinesDistance;
+            tmpLine.Location.Y += baseLinesDistance;
         }
 
         // Check amount of lines
         if (outputLines.IsEmpty())
             return;
 
-        float totalHeight = tmpLine.Location.y;
+        float totalHeight = tmpLine.Location.Y;
 
         Float2 offset = Float2::Zero;
         if (layout.VerticalAlignment == TextAlignment::Center)
         {
-            offset.y += (layout.Bounds.GetHeight() - totalHeight) * 0.5f;
+            offset.Y += (layout.Bounds.GetHeight() - totalHeight) * 0.5f;
         }
         else if (layout.VerticalAlignment == TextAlignment::Far)
         {
-            offset.y += layout.Bounds.GetHeight() - totalHeight;
+            offset.Y += layout.Bounds.GetHeight() - totalHeight;
         }
         for (int32 i = 0; i < outputLines.Count(); i++)
         {
@@ -292,11 +292,11 @@ namespace SE
             // Fix upper left line corner to match desire text alignment
             if (layout.HorizontalAlignment == TextAlignment::Center)
             {
-                rootPos.x += (layout.Bounds.GetWidth() - line.Size.x) * 0.5f;
+                rootPos.X += (layout.Bounds.GetWidth() - line.Size.X) * 0.5f;
             }
             else if (layout.HorizontalAlignment == TextAlignment::Far)
             {
-                rootPos.x += layout.Bounds.GetWidth() - line.Size.x;
+                rootPos.X += layout.Bounds.GetWidth() - line.Size.X;
             }
 
             line.Location = rootPos;
@@ -342,9 +342,9 @@ namespace SE
         Float2 testPoint = location - rootOffset;
 
         // Get line which may intersect with the position (it's possible because lines have fixed height)
-        int32 lineIndex = Math::Clamp(Math::FloorToInt(testPoint.y / baseLinesDistance), 0, lines.Count() - 1);
+        int32 lineIndex = Math::Clamp(Math::FloorToInt(testPoint.Y / baseLinesDistance), 0, lines.Count() - 1);
         const FontLineCache& line = lines[lineIndex];
-        float x = line.Location.x;
+        float x = line.Location.X;
 
         // Check all characters in the line to find hit point
         FontCharacterEntry previous;
@@ -366,7 +366,7 @@ namespace SE
             previous = entry;
 
             // Test
-            dst = Math::Abs(testPoint.x - x);
+            dst = Math::Abs(testPoint.X - x);
             if (dst < smallestDst)
             {
                 // Found closer character
@@ -384,7 +384,7 @@ namespace SE
         }
 
         // Test line end edge
-        dst = Math::Abs(testPoint.x - x);
+        dst = Math::Abs(testPoint.X - x);
         if (dst < smallestDst)
         {
             // Pointer is behind the last character in the line
@@ -422,7 +422,7 @@ namespace SE
             // Check if desire position is somewhere inside characters in line range
             if (Math::RangeInclusive(index, line.FirstCharIndex, line.LastCharIndex))
             {
-                float x = line.Location.x;
+                float x = line.Location.X;
 
                 // Check all characters in the line
                 for (int32 currentIndex = line.FirstCharIndex; currentIndex < index; currentIndex++)
@@ -449,7 +449,7 @@ namespace SE
         }
 
         // Position after last character in the last line
-        return rootOffset + Float2(lines.Last().Size.x, static_cast<float>((lines.Count() - 1) * baseLinesDistance));
+        return rootOffset + Float2(lines.Last().Size.X, static_cast<float>((lines.Count() - 1) * baseLinesDistance));
     }
 
     void Font::FlushFaceSize() const

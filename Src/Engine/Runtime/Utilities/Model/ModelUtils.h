@@ -50,7 +50,7 @@ namespace SE
         Textures = 1 << 5,
     };
 
-    typedef EnumFlags<ImportDataTypes> ImportDataTypeFlags;
+    typedef ImportDataTypes ImportDataTypeFlags;
 
     class ModelUtils
     {

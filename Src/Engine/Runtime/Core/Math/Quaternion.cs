@@ -99,18 +99,6 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Quaternion" /> struct.
         /// </summary>
-        /// <param name="value">A vector containing the values with which to initialize the components.</param>
-        public Quaternion(Vector4 value)
-        {
-            X = (float)value.X;
-            Y = (float)value.Y;
-            Z = (float)value.Z;
-            W = (float)value.W;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Quaternion" /> struct.
-        /// </summary>
         /// <param name="value">A vector containing the values with which to initialize the X, Y, and Z components.</param>
         /// <param name="w">Initial value for the W component of the quaternion.</param>
         public Quaternion(Float3 value, float w)

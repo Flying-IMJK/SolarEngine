@@ -183,15 +183,15 @@ namespace SE
 
 	void Matrix3x3::RotationQuaternion(const Quaternion& rotation, Matrix3x3& result)
 	{
-		const float xx = rotation.x * rotation.x;
-		const float yy = rotation.y * rotation.y;
-		const float zz = rotation.z * rotation.z;
-		const float xy = rotation.x * rotation.y;
-		const float zw = rotation.z * rotation.w;
-		const float zx = rotation.z * rotation.x;
-		const float yw = rotation.y * rotation.w;
-		const float yz = rotation.y * rotation.z;
-		const float xw = rotation.x * rotation.w;
+		const float xx = rotation.X * rotation.X;
+		const float yy = rotation.Y * rotation.Y;
+		const float zz = rotation.Z * rotation.Z;
+		const float xy = rotation.X * rotation.Y;
+		const float zw = rotation.Z * rotation.W;
+		const float zx = rotation.Z * rotation.X;
+		const float yw = rotation.Y * rotation.W;
+		const float yz = rotation.Y * rotation.Z;
+		const float xw = rotation.X * rotation.W;
 
 		result.M11 = 1.0f - 2.0f * (yy + zz);
 		result.M12 = 2.0f * (xy + zw);
@@ -220,17 +220,17 @@ namespace SE
 			return;
 
 		// Calculate an perfect orthonormal matrix (no reflections)
-		const auto at = Float3(M31 / scale.z, M32 / scale.z, M33 / scale.z);
-		const auto up = Float3::Cross(at, Float3(M11 / scale.x, M12 / scale.x, M13 / scale.x));
+		const auto at = Float3(M31 / scale.Z, M32 / scale.Z, M33 / scale.Z);
+		const auto up = Float3::Cross(at, Float3(M11 / scale.X, M12 / scale.X, M13 / scale.X));
 		const auto right = Float3::Cross(up, at);
 		rotation.SetRight(right);
 		rotation.SetUp(up);
 		rotation.SetBackward(at);
 
 		// In case of reflexions
-		scale.x = Float3::Dot(right, GetRight()) > 0.0f ? scale.x : -scale.x;
-		scale.y = Float3::Dot(up, GetUp()) > 0.0f ? scale.y : -scale.y;
-		scale.z = Float3::Dot(at, GetBackward()) > 0.0f ? scale.z : -scale.z;
+		scale.X = Float3::Dot(right, GetRight()) > 0.0f ? scale.X : -scale.X;
+		scale.Y = Float3::Dot(up, GetUp()) > 0.0f ? scale.Y : -scale.Y;
+		scale.Z = Float3::Dot(at, GetBackward()) > 0.0f ? scale.Z : -scale.Z;
 	}
 
 	void Matrix3x3::Decompose(Float3& scale, Quaternion& rotation) const

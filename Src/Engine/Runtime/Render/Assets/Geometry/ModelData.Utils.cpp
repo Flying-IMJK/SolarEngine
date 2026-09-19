@@ -347,8 +347,8 @@ namespace SE
             Float3 v = v1 - v0, w = v2 - v0;
 
             // Texture offset p1->p2 and p1->p3
-            float sx = meshTex[p1].x - meshTex[p0].x, sy = meshTex[p1].y - meshTex[p0].y;
-            float tx = meshTex[p2].x - meshTex[p0].x, ty = meshTex[p2].y - meshTex[p0].y;
+            float sx = meshTex[p1].X - meshTex[p0].X, sy = meshTex[p1].Y - meshTex[p0].Y;
+            float tx = meshTex[p2].X - meshTex[p0].X, ty = meshTex[p2].Y - meshTex[p0].Y;
             const float dir = (tx * sy - ty * sx) < 0.0f ? -1.0f : 1.0f;
             if (sx * ty == sy * tx)
             {
@@ -362,12 +362,12 @@ namespace SE
             // Tangent points in the direction where to positive X axis of the texture coord's would point in model space
             // Bitangent's points along the positive Y axis of the texture coord's, respectively
             Float3 tangent, bitangent;
-            tangent.x = (w.x * sy - v.x * ty) * dir;
-            tangent.y = (w.y * sy - v.y * ty) * dir;
-            tangent.z = (w.z * sy - v.z * ty) * dir;
-            bitangent.x = (w.x * sx - v.x * tx) * dir;
-            bitangent.y = (w.y * sx - v.y * tx) * dir;
-            bitangent.z = (w.z * sx - v.z * tx) * dir;
+            tangent.X = (w.X * sy - v.X * ty) * dir;
+            tangent.Y = (w.Y * sy - v.Y * ty) * dir;
+            tangent.Z = (w.Z * sy - v.Z * ty) * dir;
+            bitangent.X = (w.X * sx - v.X * tx) * dir;
+            bitangent.Y = (w.Y * sx - v.Y * tx) * dir;
+            bitangent.Z = (w.Z * sx - v.Z * tx) * dir;
 
             // Set tangent frame for every vertex in that triangle
             for (int32 b = 0; b < 3; b++)

@@ -191,7 +191,7 @@ namespace SE
         /// <param name="flags">The object static flags.</param>
         /// <param name="receiveDecals">True if rendered geometry can receive decals, otherwise false.</param>
         /// <param name="sortOrder">Object sorting key.</param>
-        void Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, EnumFlags<StaticMask> flags = StaticMask::None, bool receiveDecals = true, int16 sortOrder = 0) const;
+        void Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticMask flags = StaticMask::None, bool receiveDecals = true, int16 sortOrder = 0) const;
 
         /// <summary>
         /// Draws the model.

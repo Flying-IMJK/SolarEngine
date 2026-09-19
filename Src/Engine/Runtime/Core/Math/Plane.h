@@ -13,8 +13,10 @@ namespace SE
     /// <summary>
     /// Represents a plane in three dimensional space.
     /// </summary>
+    SE_STRUCT(API())
     struct SE_API_RUNTIME Plane
     {
+		SCRIPTING_TYPE_MIN(Plane)
     public:
         static const float DistanceEpsilon;
         static const float NormalEpsilon;
@@ -23,11 +25,13 @@ namespace SE
         /// <summary>
         /// The normal vector of the plane.
         /// </summary>
+        SE_FIELD(API())
         Float3 Normal;
 
         /// <summary>
         /// The distance of the plane along its normal from the origin.
         /// </summary>
+        SE_FIELD(API())
         float D;
 
     public:

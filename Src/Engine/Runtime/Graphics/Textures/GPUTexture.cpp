@@ -16,6 +16,8 @@
 #include "Runtime/Graphics/Async/Tasks/GPUUploadTextureMipTask.h"
 #include "Runtime/Graphics/Base/GPUUtils.h"
 
+#include <array>
+
 namespace SE
 {
 	class GPUUploadTextureMipTask;
@@ -64,7 +66,7 @@ namespace SE
 
 	GPUTextureDescription GPUTextureDescription::New1D(int32 width,
 		PixelFormat format,
-		GPUTextureBitFlags textureFlags,
+		GPUTextureFlags textureFlags,
 		int32 mipCount,
 		int32 arraySize)
 	{
@@ -86,7 +88,7 @@ namespace SE
 	GPUTextureDescription GPUTextureDescription::New2D(int32 width,
 		int32 height,
 		PixelFormat format,
-		GPUTextureBitFlags textureFlags,
+		GPUTextureFlags textureFlags,
 		int32 mipCount,
 		int32 arraySize,
 		MSAALevel msaaLevel)
@@ -108,16 +110,16 @@ namespace SE
 
 	GPUTextureDescription GPUTextureDescription::New3D(const Float3& size,
 		PixelFormat format,
-		GPUTextureBitFlags textureFlags)
+		GPUTextureFlags textureFlags)
 	{
-		return New3D((int32)size.x, (int32)size.y, (int32)size.z, 1, format, textureFlags);
+		return New3D((int32)size.X, (int32)size.Y, (int32)size.Z, 1, format, textureFlags);
 	}
 
 	GPUTextureDescription GPUTextureDescription::New3D(int32 width,
 		int32 height,
 		int32 depth,
 		PixelFormat format,
-		GPUTextureBitFlags textureFlags,
+		GPUTextureFlags textureFlags,
 		int32 mipCount)
 	{
 		GPUTextureDescription desc;
@@ -137,7 +139,7 @@ namespace SE
 
 	GPUTextureDescription GPUTextureDescription::NewCube(int32 size,
 		PixelFormat format,
-		GPUTextureBitFlags textureFlags,
+		GPUTextureFlags textureFlags,
 		int32 mipCount)
 	{
 		auto desc = New2D(size, size, format, textureFlags, mipCount, 6, MSAALevel::None);
@@ -194,11 +196,48 @@ namespace SE
 			MipLevels,
 			Types::GetEnumString<PixelFormat>(Format),
 			Types::GetEnumString<MSAALevel>(MultiSampleLevel),
-			TBFlagsUtility::ToString(Flags),
+			::SE::ToString(Flags),
 			(int32)Usage);
 	}
 
-	uint32 GetHash(const GPUTextureDescription& key)
+	String ToString(GPUTextureFlags flags)
+	{
+		StringBuilder s;
+
+		if (EnumHasAllFlags(flags, GPUTextureFlags::ShaderResource))
+        {
+			s.Append(SE_TEXT("ShaderResource |"));
+        }
+
+		if (EnumHasAllFlags(flags, GPUTextureFlags::UnorderedAccess))
+        {
+			s.Append(SE_TEXT("UnorderedAccess |"));
+        }
+
+		if (EnumHasAllFlags(flags, GPUTextureFlags::DepthStencil))
+        {
+			s.Append(SE_TEXT("DepthStencil |"));
+        }
+
+		if (EnumHasAllFlags(flags, GPUTextureFlags::PerMipViews))
+        {
+			s.Append(SE_TEXT("PerMipViews |"));
+        }
+
+		if (EnumHasAllFlags(flags, GPUTextureFlags::ReadOnlyDepthView))
+        {
+			s.Append(SE_TEXT("ReadOnlyDepthView |"));
+        }
+		
+		if (EnumHasAllFlags(flags, GPUTextureFlags::BackBuffer))
+        {
+			s.Append(SE_TEXT("BackBuffer |"));
+        }
+
+		return s.ToString();
+	}
+
+    uint32 GetHash(const GPUTextureDescription& key)
 	{
 		uint32 hashCode = key.Width;
 		hashCode = HashCombine(hashCode, key.Height);
@@ -208,7 +247,7 @@ namespace SE
 		hashCode = HashCombine(hashCode, key.MipLevels);
 		hashCode = HashCombine(hashCode, (uint32)key.Format);
 		hashCode = HashCombine(hashCode, (uint32)key.MultiSampleLevel);
-		hashCode = HashCombine(hashCode, (uint32)key.Flags.Get());
+		hashCode = HashCombine(hashCode, static_cast<uint32>(key.Flags));
 		hashCode = HashCombine(hashCode, (uint32)key.Usage);
 		hashCode = HashCombine(hashCode, GetHash(key.DefaultClearColor));
 		return hashCode;
@@ -412,7 +451,7 @@ namespace SE
 					desc.ToString());
 				return false;
 			}
-			if (desc.Flags.IsFlag(GPUTextureFlags::ReadOnlyDepthView) && !gpuLimits.HasReadOnlyDepth)
+			if (EnumHasAnyFlags(desc.Flags, GPUTextureFlags::ReadOnlyDepthView) && !gpuLimits.HasReadOnlyDepth)
 			{
 				LOG_WARNING("Graphic", "GPUTexture Cannot create texture. The current graphics platform does not support read-only Depth Stencil texture. Description: {0}",
 					desc.ToString());
@@ -421,7 +460,7 @@ namespace SE
 		}
 		else
 		{
-			if (desc.Flags.IsFlag(GPUTextureFlags::ReadOnlyDepthView))
+			if (EnumHasAnyFlags(desc.Flags, GPUTextureFlags::ReadOnlyDepthView))
 			{
 				LOG_WARNING("Graphic", "GPUTexture Cannot create texture. Cannot create read-only Depth Stencil texture that is not a Depth Stencil texture. Add DepthStencil flag. Description: {0}",
 					desc.ToString());

@@ -33,7 +33,7 @@ namespace SE
 		uint16 m_DrawNoCulling : 1;
 		uint16 m_DrawCategory : 4;
 		byte m_Layer;
-		EnumFlags<StaticMask> m_StaticFlags;
+		StaticMask m_StaticFlags;
 		Transform m_LocalTransform;
 		Transform m_Transform;
 		BoundingSphere m_Sphere;
@@ -70,6 +70,7 @@ namespace SE
 		}
 
 
+		SE_FUNCTION(API(Prop))
 		FORCE_INLINE int32 GetLayer() const
 		{
 			return m_Layer;
@@ -87,31 +88,36 @@ namespace SE
 		/// Sets the layer.
 		/// </summary>
 		/// <param name="layerIndex">The index of the layer.</param>
+		SE_FUNCTION(API(Prop))
 		void SetLayer(int32 layerIndex);
 
 		/// <summary>
 		/// Sets the layer recursively for all underlying children.
 		/// </summary>
 		/// <param name="layerIndex">The index of the layer.</param>
+		SE_FUNCTION(API())
 		void SetLayerRecursive(int32 layerIndex);
 
 		/// <summary>
 		/// Gets the name of the layer.
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		const String& GetLayerName() const;
 
 		/// <summary>
 		/// Sets the name of the layer.
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		void SetLayerName(const StringView& value);
 
 		/// <summary>
 		/// Sets the name of the layer recursively for actor and for all underlying child actors.
 		/// </summary>
+		SE_FUNCTION(API())
 		void SetLayerNameRecursive(const StringView& value);
 
 
-		SE_FUNCTION(API(ReadOnly, Prop))
+		SE_FUNCTION(API(Prop))
 		FORCE_INLINE const String& GetName() const
 		{
 			return m_Name;
@@ -133,6 +139,7 @@ namespace SE
 			return m_Scene;
 		}
 
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE float GetPerInstanceRandom() const
 		{
 			return GetInstanceID().C * (1.0f / (float)Max_uint32);
@@ -145,6 +152,7 @@ namespace SE
 		/// <param name="value">New parent</param>
 		/// <param name="worldPositionsStays">Should actor world positions remain the same after parent change?</param>
 		/// <param name="canBreakPrefabLink">True if can break prefab link on changing the parent.</param>
+		SE_FUNCTION(API())
 		void SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefabLink);
 
 		/// <summary>
@@ -169,6 +177,7 @@ namespace SE
 		/// </summary>
 		/// <param name="name">The child actor name.</param>
 		/// <returns>The child actor or null.</returns>
+		SE_FUNCTION(API())
 		Actor* GetChild(const StringView& name) const;
 
 		/*/// <summary>
@@ -230,13 +239,14 @@ namespace SE
 		/// Destroys the children. Calls Object.Destroy on every child actor and unlinks them for this actor.
 		/// </summary>
 		/// <param name="timeLeft">The time left to destroy object (in seconds).</param>
+		SE_FUNCTION(API(Attributes="NoAnimate"))
 		void DestroyChildren(float timeLeft = 0.0f);
 
 	public:
 		/// <summary>
 		/// Gets value indicating if actor is active in the scene.
 		/// </summary>
-        SE_FUNCTION(API(ReadOnly, Prop))
+		SE_FUNCTION(API(Prop))
 		FORCE_INLINE bool GetIsActive() const
 		{
 			return m_IsActive != 0;
@@ -246,11 +256,13 @@ namespace SE
 		/// Sets value indicating if actor is active in the scene.
 		/// </summary>
 		/// <param name="value">The value to set.</param>
+		SE_FUNCTION(API(Prop))
 		virtual void SetIsActive(bool value);
 
 		/// <summary>
 		/// Gets value indicating if actor is active in the scene graph. It must be active as well as that of all it's parents.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE bool IsActiveInHierarchy() const
 		{
 			return m_IsActiveInHierarchy != 0;
@@ -259,6 +271,7 @@ namespace SE
 		/// <summary>
 		/// Gets value indicating if actor is in a scene.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE bool HasScene() const
 		{
 			return m_Scene != nullptr;
@@ -267,23 +280,26 @@ namespace SE
 		/// <summary>
 		/// Returns true if object is fully static on the scene, otherwise false.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE bool IsStatic() const
 		{
-			return m_StaticFlags.IsFlag(StaticMask::FullyStatic);
+			return EnumHasAnyFlags(m_StaticFlags, StaticMask::FullyStatic);
 		}
 
 		/// <summary>
 		/// Returns true if object has static transform.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE bool IsTransformStatic() const
 		{
-			return m_StaticFlags.IsFlag(StaticMask::Transform);
+			return EnumHasAnyFlags(m_StaticFlags, StaticMask::Transform);
 		}
 
 		/// <summary>
 		/// Gets the actor static flags.
 		/// </summary>
-		FORCE_INLINE EnumFlags<StaticMask> GetStaticFlags() const
+		SE_FUNCTION(API(Prop, ReadOnly))
+		FORCE_INLINE StaticMask GetStaticFlags() const
 		{
 			return m_StaticFlags;
 		}
@@ -293,7 +309,7 @@ namespace SE
 		/// </summary>
 		FORCE_INLINE bool HasStaticFlag(StaticMask flag) const
 		{
-			return m_StaticFlags.IsFlag(flag);
+			return EnumHasAllFlags(m_StaticFlags, flag);
 		}
 
 		/// <summary>
@@ -301,6 +317,7 @@ namespace SE
 		/// </summary>
 		/// <param name="flag">The flag to change.</param>
 		/// <param name="value">The target value of the flag.</param>
+		SE_FUNCTION(API())
 		void SetStaticFlag(StaticMask flag, bool value);
 
 	public:
@@ -312,6 +329,7 @@ namespace SE
 			return m_Transform;
 		}
 
+		SE_FUNCTION(API(Prop))
 		FORCE_INLINE const Transform& GetTransform() const
 		{
 			return m_Transform;
@@ -321,11 +339,13 @@ namespace SE
 		/// Sets the actor's world transformation.
 		/// </summary>
 		/// <param name="value">The value to set.</param>
+		SE_FUNCTION(API(Prop))
 		void SetTransform(const Transform& value);
 
 		/// <summary>
 		/// Gets the actor's world transform position.
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		FORCE_INLINE Float3 GetPosition() const
 		{
 			return m_Transform.Translation;
@@ -335,11 +355,13 @@ namespace SE
 		/// Sets the actor's world transform position.
 		/// </summary>
 		/// <param name="value">The value to set.</param>
+		SE_FUNCTION(API(Prop))
 		void SetPosition(const Float3& value);
 
 		/// <summary>
 		/// Gets actor summary> in 3D space
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		FORCE_INLINE Quaternion GetOrientation() const
 		{
 			return m_Transform.Orientation;
@@ -349,11 +371,13 @@ namespace SE
 		/// Sets actor quaternion in 3D space.
 		/// </summary>
 		/// <param name="value">The value to set.</param>
+		SE_FUNCTION(API(Prop))
 		void SetOrientation(const Quaternion& value);
 
 		/// <summary>
 		/// Gets actor scale in 3D space.
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		FORCE_INLINE Float3 GetScale() const
 		{
 			return m_Transform.Scale;
@@ -363,22 +387,26 @@ namespace SE
 		/// Sets actor scale in 3D space
 		/// </summary>
 		/// <param name="value">The value to set.</param>
+		SE_FUNCTION(API(Prop))
 		void SetScale(const Float3& value);
 
 		/// <summary>
 		/// Gets actor rotation matrix.
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		Matrix GetRotation() const;
 
 		/// <summary>
 		/// Sets actor rotation matrix.
 		/// </summary>
 		/// <param name="value">The value to set.</param>
+		SE_FUNCTION(API(Prop))
 		void SetRotation(const Matrix& value);
 
 		/// <summary>
 		/// Gets actor direction vector (forward vector).
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		FORCE_INLINE Float3 GetForward() const
 		{
 			return Float3::Transform(Float3::Forward, GetOrientation());
@@ -388,6 +416,7 @@ namespace SE
 		/// Sets actor direction vector (forward)
 		/// </summary>
 		/// <param name="value">The value to set.</param>
+		SE_FUNCTION(API(Prop))
 		void SetForward(const Float3& value);
 
 		virtual bool IntersectsItself(const Ray& ray, float& distance, Float3& normal);
@@ -400,6 +429,7 @@ namespace SE
 		/// <summary>
 		/// Gets local transform of the actor in parent actor space.
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		FORCE_INLINE Transform GetLocalTransform() const
 		{
 			return m_LocalTransform;
@@ -409,11 +439,13 @@ namespace SE
 		/// Sets local transform of the actor in parent actor space.
 		/// </summary>
 		/// <param name="value">The value to set.</param>
+		SE_FUNCTION(API(Prop))
 		void SetLocalTransform(const Transform& value);
 
 		/// <summary>
 		/// Gets local position of the actor in parent actor space.
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		FORCE_INLINE Float3 GetLocalPosition() const
 		{
 			return m_LocalTransform.Translation;
@@ -423,12 +455,14 @@ namespace SE
 		/// Sets local position of the actor in parent actor space.
 		/// </summary>
 		/// <param name="value">The value to set.</param>
+		SE_FUNCTION(API(Prop))
 		void SetLocalPosition(const Float3& value);
 
 		/// <summary>
 		/// Gets local rotation of the actor in parent actor space.
 		/// </summary>
 		/// <code>Actor.LocalOrientation *= Quaternion.Euler(0, 10 * Time.DeltaTime, 0)</code>
+		SE_FUNCTION(API(Prop))
 		FORCE_INLINE Quaternion GetLocalQuaternion() const
 		{
 			return m_LocalTransform.Orientation;
@@ -438,11 +472,13 @@ namespace SE
 		/// Sets local rotation of the actor in parent actor space.
 		/// </summary>
 		/// <param name="value">The value to set.</param>
+		SE_FUNCTION(API(Prop))
 		void SetLocalQuaternion(const Quaternion& value);
 
 		/// <summary>
 		/// Gets local scale vector of the actor in parent actor space.
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		FORCE_INLINE Float3 GetLocalScale() const
 		{
 			return m_LocalTransform.Scale;
@@ -452,6 +488,7 @@ namespace SE
 		/// Sets local scale vector of the actor in parent actor space.
 		/// </summary>
 		/// <param name="value">The value to set.</param>
+		SE_FUNCTION(API(Prop))
 		void SetLocalScale(const Float3& value);
 
 
@@ -459,12 +496,14 @@ namespace SE
 		/// Gets the matrix that transforms a point from the world space to local space of the actor.
 		/// </summary>
 		/// <param name="worldToLocal">The world to local matrix.</param>
+		SE_FUNCTION(API())
 		void GetWorldToLocalMatrix(Matrix& worldToLocal) const;
 
 		/// <summary>
 		/// Gets the matrix that transforms a point from the local space of the actor to world space.
 		/// </summary>
 		/// <param name="localToWorld">The world to local matrix.</param>
+		SE_FUNCTION(API())
 		void GetLocalToWorldMatrix(Matrix& localToWorld) const;
 	public:
 
@@ -476,11 +515,13 @@ namespace SE
 		/// <summary>
 		/// Called when actor gets added to game systems. Occurs on BeginPlay event or when actor gets activated in hierarchy. Use this event to register object to other game system (eg. audio).
 		/// </summary>
+		SE_FUNCTION(API())
 		virtual void OnEnable();
 
 		/// <summary>
 		/// Called when actor gets removed from game systems. Occurs on EndPlay event or when actor gets inactivated in hierarchy. Use this event to unregister object from other game system (eg. audio).
 		/// </summary>
+		SE_FUNCTION(API())
 		virtual void OnDisable();
 
 	private:
@@ -518,6 +559,7 @@ namespace SE
 		/// <summary>
 		/// Called when adding object to the game.
 		/// </summary>
+		SE_FUNCTION(API(Attributes="NoAnimate"))
 		virtual void OnBeginPlay()
 		{
 		}
@@ -525,6 +567,7 @@ namespace SE
 		/// <summary>
 		/// Called when removing object from the game.
 		/// </summary>
+		SE_FUNCTION(API(Attributes="NoAnimate"))
 		virtual void OnEndPlay()
 		{
 		}
@@ -586,7 +629,7 @@ namespace SE
 		int RenderGetDrawCategory() override { return m_DrawCategory; }
 		int32 RenderGetLayerMask() override { return 1 << static_cast<int32>(m_Layer); };
 		BoundingSphere RenderGetSphere() override { return m_Sphere;}
-		EnumFlags<StaticMask> RenderGetStaticFlags() override { return m_StaticFlags; }
+		StaticMask RenderGetStaticFlags() override { return m_StaticFlags; }
 		void RenderDraw(RenderContext& context) override { }
 		void RenderDraw(RenderContextBatch& contextBatch) override { }
 	};

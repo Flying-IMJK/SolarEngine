@@ -17,7 +17,7 @@ namespace SE::Editor
 			return;
 		ToolStripButton* lastToolstripButton = toolstrip->LastButton;
 		Float2 parentSize = Parent->Size;
-		Bounds = Rectangle(lastToolstripButton->Right + 8.0f, 0, parentSize.x - X - 8.0f, toolstrip->Height);
+		Bounds = Rectangle(lastToolstripButton->Right + 8.0f, 0, parentSize.X - X - 8.0f, toolstrip->Height);
 	}
 
 	void NavigationBar::Arrange()

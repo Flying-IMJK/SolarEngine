@@ -103,8 +103,8 @@ namespace SE
 		Float3 nearPoint(x, y, 0.0f);
 		Float3 farPoint(x, y, 1.0f);
 
-		nearPoint = Float3::Unproject(nearPoint, viewport.x, viewport.y, viewport.width, viewport.height, viewport.minDepth, viewport.maxDepth, vp);
-		farPoint = Float3::Unproject(farPoint, viewport.x, viewport.y, viewport.width, viewport.height, viewport.minDepth, viewport.maxDepth, vp);
+		nearPoint = Float3::Unproject(nearPoint, viewport.X, viewport.Y, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth, vp);
+		farPoint = Float3::Unproject(farPoint, viewport.X, viewport.Y, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth, vp);
 
 		Float3 direction = farPoint - nearPoint;
 		direction.Normalize();

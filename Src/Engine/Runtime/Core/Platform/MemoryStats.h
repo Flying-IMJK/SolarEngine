@@ -14,21 +14,25 @@ namespace SE
 		/// <summary>
 		/// Total amount of physical memory in bytes.
 		/// </summary>
+		SE_FIELD(API())
 		uint64 TotalPhysicalMemory;
 
 		/// <summary>
 		/// Amount of used physical memory in bytes.
 		/// </summary>
+		SE_FIELD(API())
 		uint64 UsedPhysicalMemory;
 
 		/// <summary>
 		/// Total amount of virtual memory in bytes.
 		/// </summary>
+		SE_FIELD(API())
 		uint64 TotalVirtualMemory;
 
 		/// <summary>
 		/// Amount of used virtual memory in bytes.
 		/// </summary>
+		SE_FIELD(API())
 		uint64 UsedVirtualMemory;
 	};
 
@@ -42,11 +46,13 @@ namespace SE
 		/// <summary>
 		/// Amount of used physical memory in bytes.
 		/// </summary>
+		SE_FIELD(API())
 		uint64 UsedPhysicalMemory;
 
 		/// <summary>
 		/// Amount of used virtual memory in bytes.
 		/// </summary>
+		SE_FIELD(API())
 		uint64 UsedVirtualMemory;
 	};
 }

@@ -837,7 +837,7 @@ namespace SE
 
 	void WindowsPlatform::SetMousePosition(const Float2& pos)
 	{
-		::SetCursorPos((int)pos.x, (int)pos.y);
+		::SetCursorPos((int)pos.X, (int)pos.Y);
 	}
 
 	struct GetMonitorBoundsData
@@ -892,7 +892,7 @@ namespace SE
 
 	Rectangle WindowsPlatform::GetVirtualDesktopBounds()
 	{
-		if (VirtualScreenBounds.Size.x == 0)
+		if (VirtualScreenBounds.Size.X == 0)
 		{
 			RECT screenRect = {};
 			EnumDisplayMonitors(nullptr, nullptr, EnumMonitorTotalBounds, reinterpret_cast<LPARAM>(&screenRect));

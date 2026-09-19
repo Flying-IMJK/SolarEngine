@@ -89,7 +89,7 @@ namespace SE
         // Try to use read-only depth if supported
         GPUTexture* depthBuffer = renderContext.buffers->DepthBuffer;
         GPUTextureView* depthBufferHandle = depthBuffer->View();
-        if (depthBuffer->Flags().IsFlag(GPUTextureFlags::ReadOnlyDepthView))
+        if (EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView))
         {
             depthBufferHandle = depthBuffer->ViewReadOnlyDepth();
         }

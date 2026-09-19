@@ -95,8 +95,8 @@ namespace SE::Editor
 
 			const Char* largestText = SE_TEXT("Relative Panning");
 			Float2 textSize = Style::Current->FontMedium->MeasureText(largestText);
-			float xLocationForExtras = textSize.x + 5;
-			float cameraSpeedTextWidth = Style::Current->FontMedium->MeasureText(SE_TEXT("0.00")).x;
+			float xLocationForExtras = textSize.X + 5;
+			float cameraSpeedTextWidth = Style::Current->FontMedium->MeasureText(SE_TEXT("0.00")).X;
 
 			// Camera Settings Widget
 			_cameraWidget = New<ViewportWidgetsContainer>(ViewportWidgetLocation::UpperRight);
@@ -379,7 +379,7 @@ namespace SE::Editor
 
 				largestText = SE_TEXT("Brightness");
 				textSize = Style::Current->FontMedium->MeasureText(largestText);
-				xLocationForExtras = textSize.x + 5;
+				xLocationForExtras = textSize.X + 5;
 
 				/*var viewMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperLeft);
 				ViewWidgetButtonMenu = new ContextMenu();
@@ -736,7 +736,7 @@ namespace SE::Editor
 					EndMouseCapture();
 			}
 			bool useMouse = GetIsControllingMouse() || m_PrevInput.GetIsControllingMouse() ||
-				(Math::RangeInclusive(m_ViewMousePos.x, 0.0f, Width.Get()) && Math::RangeInclusive(m_ViewMousePos.y, 0.0f, Height.Get()));
+				(Math::RangeInclusive(m_ViewMousePos.X, 0.0f, Width.Get()) && Math::RangeInclusive(m_ViewMousePos.Y, 0.0f, Height.Get()));
 			m_PrevInput = m_Input;
 
 			Control* hit = GetChildAt(m_ViewMousePos, [](Control* c)
@@ -874,8 +874,8 @@ namespace SE::Editor
 			Float2 mouseDelta = Float2::Zero;
 			if (m_UseMouseFiltering)
 			{
-				offset.x = offset.x > 0 ? Math::Floor(offset.x) : Math::Ceil(offset.x);
-				offset.y = offset.y > 0 ? Math::Floor(offset.y) : Math::Ceil(offset.y);
+				offset.X = offset.X > 0 ? Math::Floor(offset.X) : Math::Ceil(offset.X);
+				offset.Y = offset.Y > 0 ? Math::Floor(offset.Y) : Math::Ceil(offset.Y);
 				m_MouseDelta = offset;
 
 				// Update delta filtering buffer
@@ -929,8 +929,8 @@ namespace SE::Editor
 			{
 				// Calculate smooth mouse delta not dependant on viewport size
 				Float2 offset = m_ViewMousePos - m_LastViewMousePos;
-				offset.x = offset.x > 0 ? Math::Floor(offset.x) : Math::Ceil(offset.x);
-				offset.y = offset.y > 0 ? Math::Floor(offset.y) : Math::Ceil(offset.y);
+				offset.X = offset.X > 0 ? Math::Floor(offset.X) : Math::Ceil(offset.X);
+				offset.Y = offset.Y > 0 ? Math::Floor(offset.Y) : Math::Ceil(offset.Y);
 				m_MouseDelta = offset;
 				m_LastViewMousePos = m_ViewMousePos;
 			}
@@ -1138,7 +1138,7 @@ namespace SE::Editor
 		// Center mouse position if it's too close to the edge
 		Float2 size = Size;
 		Float2 center = Float2::Round(size * 0.5f);
-		if (Math::Abs(m_ViewMousePos.x - center.x) > center.x * 0.8f || Math::Abs(m_ViewMousePos.y - center.y) > center.y * 0.8f)
+		if (Math::Abs(m_ViewMousePos.X - center.X) > center.X * 0.8f || Math::Abs(m_ViewMousePos.Y - center.Y) > center.Y * 0.8f)
 		{
 			m_StartPos = center;
 			m_ViewMousePos = center;

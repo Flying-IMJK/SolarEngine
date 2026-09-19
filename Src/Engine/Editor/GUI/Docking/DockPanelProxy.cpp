@@ -40,7 +40,7 @@ namespace SE::Editor
             String tabTitle = tab->Title.operator->();
             Float2 tabTitleSize = style->FontMedium->MeasureText(tabTitle);
             float iconWidth = tab->Icon.IsValid() ? Math::Max(DockPanel::DefaultButtonsSize, headerRect.GetHeight() - DockPanel::DefaultButtonsMargin) : 0;
-            float tabSize = iconWidth + DockPanel::DefaultTextMargin + tabTitleSize.x + DockPanel::DefaultButtonsSize * 2 + DockPanel::DefaultButtonsMargin;
+            float tabSize = iconWidth + DockPanel::DefaultTextMargin + tabTitleSize.X + DockPanel::DefaultButtonsSize * 2 + DockPanel::DefaultButtonsMargin;
 
             // Draw header
             Rectangle tabRect = Rectangle(headerRect.GetLeft(), headerRect.GetY(), tabSize, headerRect.GetHeight());
@@ -60,7 +60,7 @@ namespace SE::Editor
 
             // Draw text
             Rectangle textRect = Rectangle(tabRect.GetLeft() + iconWidth + DockPanel::DefaultTextMargin, tabRect.GetY() + DockPanel::DefaultTextMargin,
-                    tabTitleSize.x, tabRect.GetHeight() - DockPanel::DefaultTextMargin);
+                    tabTitleSize.X, tabRect.GetHeight() - DockPanel::DefaultTextMargin);
 
             Render2D::RenderText(style->FontMedium,
                 tabTitle,
@@ -95,7 +95,7 @@ namespace SE::Editor
                 Color tabColor = Colors::Black;
                 Float2 titleSize = tab->TitleSize;
                 float iconWidth = tab->Icon.IsValid() ? DockPanel::DefaultButtonsSize + DockPanel::DefaultTextMargin : 0;
-                float width = titleSize.x + DockPanel::DefaultButtonsSize + 2 * DockPanel::DefaultButtonsMargin + DockPanel::DefaultTextMargin + DockPanel::DefaultTextMargin + iconWidth;
+                float width = titleSize.X + DockPanel::DefaultButtonsSize + 2 * DockPanel::DefaultButtonsMargin + DockPanel::DefaultTextMargin + DockPanel::DefaultTextMargin + iconWidth;
                 Rectangle tabRect = Rectangle(x, 0, width, DockPanel::DefaultHeaderHeight);
                 bool isMouseOver = tabRect.Contains(MousePosition);
                 bool isSelected = _panel->SelectedTab == tab;
@@ -296,7 +296,7 @@ namespace SE::Editor
                     int index = _panel->GetTabIndex(MouseDownWindow);
 
                     // Check if move right or left
-                    if (location.x < currWinRect.GetX())
+                    if (location.X < currWinRect.GetX())
                     {
                         // Move left
                         _panel->MoveTabLeft(index);
@@ -399,7 +399,7 @@ namespace SE::Editor
                 auto tab = _panel->GetTab(i);
                 Float2 titleSize = tab->TitleSize;
                 float iconWidth = tab->Icon.IsValid() ? DockPanel::DefaultButtonsSize + DockPanel::DefaultTextMargin : 0;
-                float width = titleSize.x + DockPanel::DefaultButtonsSize + 2 * DockPanel::DefaultButtonsMargin + DockPanel::DefaultTextMargin + DockPanel::DefaultTextMargin + iconWidth;
+                float width = titleSize.X + DockPanel::DefaultButtonsSize + 2 * DockPanel::DefaultButtonsMargin + DockPanel::DefaultTextMargin + DockPanel::DefaultTextMargin + iconWidth;
                 Rectangle tabRect = Rectangle(x, 0, width, DockPanel::DefaultHeaderHeight);
                 auto isMouseOver = tabRect.Contains(position);
                 if (isMouseOver)
@@ -432,7 +432,7 @@ namespace SE::Editor
             {
                 DockWindow* tab = _panel->GetTab(i);
                 Float2 titleSize = tab->TitleSize;
-                float width = titleSize.x + DockPanel::DefaultButtonsSize + 2 * DockPanel::DefaultButtonsMargin + DockPanel::DefaultTextMargin + DockPanel::DefaultTextMargin;
+                float width = titleSize.X + DockPanel::DefaultButtonsSize + 2 * DockPanel::DefaultButtonsMargin + DockPanel::DefaultTextMargin + DockPanel::DefaultTextMargin;
                 if (tab == win)
                 {
                     return Rectangle(x, 0, width, DockPanel::DefaultHeaderHeight);

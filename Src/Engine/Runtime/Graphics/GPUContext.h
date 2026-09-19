@@ -102,6 +102,7 @@ namespace SE
 		/// Sets the render target to the output.
 		/// </summary>
 		/// <param name="rt">The render target.</param>
+		SE_FUNCTION(API())
 		virtual void SetRenderTarget(GPUTextureView* rt) = 0;
 
 		/**
@@ -109,6 +110,7 @@ namespace SE
 		 * @param depthBuffer
 		 * @param rt
 		 */
+		SE_FUNCTION(API())
 		virtual void SetRenderTarget(GPUTextureView* rt, GPUTextureView* depthBuffer) = 0;
 
 		/**
@@ -122,12 +124,14 @@ namespace SE
 		/// Sets the blend factor that modulate values for a pixel shader, render target, or both.
 		/// </summary>
 		/// <param name="value">Blend factors, one for each RGBA component.</param>
+		SE_FUNCTION(API())
 		virtual void SetBlendFactor(const Float4& value) = 0;
 
 		/// <summary>
 		/// Sets the reference value for depth stencil tests.
 		/// </summary>
 		/// <param name="value">Reference value to perform against when doing a depth-stencil test.</param>
+		SE_FUNCTION(API())
 		virtual void SetStencilRef(uint32 value) = 0;
 	public:
 		/// <summary>
@@ -135,12 +139,14 @@ namespace SE
 		/// </summary>
 		/// <param name="width">The width (in pixels).</param>
 		/// <param name="height">The height (in pixels).</param>
+		SE_FUNCTION(API())
 		void SetViewportAndScissors(float width, float height);
 
 		/// <summary>
 		/// Sets the rendering viewport and scissor rectangle.
 		/// </summary>
 		/// <param name="viewport">The viewport (in pixels).</param>
+		SE_FUNCTION(API())
 		void SetViewportAndScissors(const Viewport& viewport);
 
 		/// <summary>
@@ -148,18 +154,21 @@ namespace SE
 		/// </summary>
 		/// <param name="width">The width (in pixels).</param>
 		/// <param name="height">The height (in pixels).</param>
+		SE_FUNCTION(API())
 		void SetViewport(float width, float height);
 
 		/// <summary>
 		/// Sets the rendering viewport.
 		/// </summary>
 		/// <param name="viewport">The viewport (in pixels).</param>
+		SE_FUNCTION(API())
 		virtual void SetViewport(const Viewport& viewport) = 0;
 
 		/// <summary>
 		/// Sets the scissor rectangle.
 		/// </summary>
 		/// <param name="scissorRect">The scissor rectangle (in pixels).</param>
+		SE_FUNCTION(API())
 		virtual void SetScissor(const Rectangle& scissorRect) = 0;
 	public:
 
@@ -214,6 +223,7 @@ namespace SE
 		 * Draws the fullscreen triangle (using single triangle). Use instance count parameter to render more than one instance of the triangle.
 		 * @param instanceCount The instance count. Use SV_InstanceID in vertex shader to detect volume slice plane index.
 		 */
+		SE_FUNCTION(API())
 		void DrawFullscreenTriangle();
 
 		/**
@@ -221,18 +231,21 @@ namespace SE
 		 * @param dst The destination texture.
 		 * @param src The source texture.
 		 */
+		SE_FUNCTION(API())
 		void Draw(GPUTexture* dst, GPUTexture* src);
 
 		/**
 		 * Draws the specified texture to render target (using fullscreen triangle). Copies contents with resizing and format conversion support. Uses linear texture sampling.
 		 * @param rt The texture.
 		 */
+		SE_FUNCTION(API())
 		void Draw(GPUTexture* rt);
 
 		/**
 		 * Draws the specified texture to render target (using fullscreen triangle). Copies contents with resizing and format conversion support. Uses linear texture sampling.
 		 * @param rt The texture view.
 		 */
+		SE_FUNCTION(API())
 		void Draw(GPUTextureView* rt);
 
 		/**
@@ -240,6 +253,7 @@ namespace SE
 		 * @param startVertex A value added to each index before reading a vertex from the vertex buffer.
 		 * @param verticesCount The vertices count.
 		 */
+		SE_FUNCTION(API())
 		inline void Draw(uint32 startVertex, uint32 verticesCount)
 		{
 			DrawInstanced(verticesCount, 1, 0, startVertex);
@@ -252,6 +266,7 @@ namespace SE
 		 * @param startInstance A value added to each index before reading per-instance data from a vertex buffer.
 		 * @param startVertex A value added to each index before reading a vertex from the vertex buffer.
 		 */
+		SE_FUNCTION(API())
 		virtual void DrawInstanced(uint32 verticesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0) = 0;
 
 		/**
@@ -270,6 +285,7 @@ namespace SE
 		 * @param startVertex A value added to each index before reading a vertex from the vertex buffer.
 		 * @param startIndex The location of the first index read by the GPU from the index buffer.
 		 */
+		SE_FUNCTION(API())
 		inline void DrawIndexed(uint32 indicesCount, int32 startVertex = 0, int32 startIndex = 0)
 		{
 			DrawIndexedInstanced(indicesCount, 1, 0, startVertex, startIndex);
@@ -283,6 +299,7 @@ namespace SE
 		 * @param startVertex A value added to each index before reading a vertex from the vertex buffer.
 		 * @param startIndex The location of the first index read by the GPU from the index buffer.
 		 */
+		SE_FUNCTION(API())
 		virtual void DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0, int32 startIndex = 0) = 0;
 
 		/**
@@ -301,6 +318,7 @@ namespace SE
 		 * @param bufferForArgs The buffer with drawing arguments.
 		 * @param offsetForArgs The aligned byte offset for arguments.
 		 */
+		SE_FUNCTION(API())
 		virtual void DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) = 0;
 
 		/**
@@ -308,22 +326,26 @@ namespace SE
 		 * @param bufferForArgs The buffer with drawing arguments.
 		 * @param offsetForArgs The aligned byte offset for arguments.
 		 */
+		SE_FUNCTION(API())
 		virtual void DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) = 0;
 
 	public:
 		/**
 		 * 取消绑定的所有着色器资，并将更改与驱动程序刷新（用于防止驱动程序检测到资源危害，例如，在缩小纹理时）。
 		 */
+		SE_FUNCTION(API())
 		virtual void ResetSR() = 0;
 
 		/**
 		 * 取消绑定的所有无序访问资，并将更改与驱动程序刷新（用于防止驱动程序检测到资源危害，例如，在缩小纹理时）。
 		 */
+		SE_FUNCTION(API())
 		virtual void ResetUA() = 0;
 
 		/**
 		 * 取消绑定的所有常量缓冲区，并使用驱动程序刷新更改（用于防止驱动程序检测到资源危害，例如，在缩小纹理时）。
 		 */
+		SE_FUNCTION(API())
 		virtual void ResetCB() = 0;
 
 		/**
@@ -358,6 +380,7 @@ namespace SE
 		 * @param slot 绑定位置
 		 * @param texture 纹理
 		 */
+		SE_FUNCTION(API())
 		void BindSR(int32 slot, GPUTexture* texture);
 
 		/**
@@ -365,6 +388,7 @@ namespace SE
 		 * @param slot 绑定位置
 		 * @param view 资源view
 		 */
+		SE_FUNCTION(API())
 		virtual void BindSR(int32 slot, GPUResourceView* view) = 0;
 
 		/**
@@ -372,6 +396,7 @@ namespace SE
 		 * @param slot 绑定位置
 		 * @param view 资源view
 		 */
+		SE_FUNCTION(API())
 		virtual void BindUA(int32 slot, GPUResourceView* view) = 0;
 
 		/**
@@ -400,6 +425,7 @@ namespace SE
 		 * 绑定顶点buffer
 		 * @param indexBuffer 顶点buffer
 		 */
+		SE_FUNCTION(API())
 		virtual void BindIB(GPUBuffer* indexBuffer) = 0;
 
 		/**
@@ -413,6 +439,7 @@ namespace SE
 		 * @param slot 绑定位置
 		 * @param sampler 采样器
 		 */
+		SE_FUNCTION(API())
 		virtual void BindSampler(int32 slot, GPUSampler* sampler) = 0;
 	public:
 		/// <summary>
@@ -420,6 +447,7 @@ namespace SE
 		/// </summary>
 		/// <param name="rt">The target surface.</param>
 		/// <param name="color">The clear color.</param>
+		SE_FUNCTION(API())
 		virtual void Clear(GPUTextureView* rt, const Color& color) = 0;
 
 		/// <summary>
@@ -427,6 +455,7 @@ namespace SE
 		/// </summary>
 		/// <param name="depthBuffer">The depth buffer to clear.</param>
 		/// <param name="depthValue">The clear depth value.</param>
+		SE_FUNCTION(API())
 		virtual void ClearDepth(GPUTextureView* depthBuffer, float depthValue = 1.0f) = 0;
 
 		/// <summary>
@@ -434,6 +463,7 @@ namespace SE
 		/// </summary>
 		/// <param name="buf">The buffer to clear.</param>
 		/// <param name="value">The clear value.</param>
+		SE_FUNCTION(API())
 		virtual void ClearUA(GPUBuffer* buf, const Float4& value) = 0;
 
 		/// <summary>
@@ -455,18 +485,21 @@ namespace SE
 		/// </summary>
 		/// <param name="texture">The texture to clear.</param>
 		/// <param name="value">The clear value.</param>
+		SE_FUNCTION(API())
 		virtual void ClearUA(GPUTexture* texture, const Float4& value) = 0;
 
 		/// <summary>
 		/// Sets the graphics pipeline state.
 		/// </summary>
 		/// <param name="state">The state to bind.</param>
+		SE_FUNCTION(API())
 		virtual void SetState(GPUPipelineState* state) = 0;
 
 		/// <summary>
 		/// Gets the current pipeline state binded to the graphics pipeline.
 		/// </summary>
 		/// <returns>The current state.</returns>
+		SE_FUNCTION(API())
 		virtual GPUPipelineState* GetState() const = 0;
 
 		/// <summary>
@@ -485,16 +518,19 @@ namespace SE
 		/// <summary>
 		/// Clears the context state.
 		/// </summary>
+		SE_FUNCTION(API())
 		virtual void ClearState() = 0;
 
 		/// <summary>
 		/// Flushes the internal cached context state with a command buffer.
 		/// </summary>
+		SE_FUNCTION(API())
 		virtual void FlushState() = 0;
 
 		/// <summary>
 		/// Flushes the command buffer (calls GPU execution).
 		/// </summary>
+		SE_FUNCTION(API())
 		virtual void Flush() = 0;
 
 	public:
@@ -515,6 +551,7 @@ namespace SE
 		/// <param name="size">The size of data to copy (in bytes).</param>
 		/// <param name="dstOffset">The offset (in bytes) from the destination buffer start to copy data to.</param>
 		/// <param name="srcOffset">The offset (in bytes) from the source buffer start to copy data from.</param>
+		SE_FUNCTION(API())
 		virtual void CopyBuffer(GPUBuffer* dstBuffer, GPUBuffer* srcBuffer, uint32 size, uint32 dstOffset = 0, uint32 srcOffset = 0) = 0;
 
 		/// <summary>
@@ -538,12 +575,14 @@ namespace SE
 		/// <param name="dstZ">The z-coordinate of the upper left corner of the destination region.</param>
 		/// <param name="srcResource">The source resource.</param>
 		/// <param name="srcSubresource">The source subresource index.</param>
+		SE_FUNCTION(API())
 		virtual void CopyTexture(GPUTexture* dstResource, uint32 dstSubresource, uint32 dstX, uint32 dstY, uint32 dstZ, GPUTexture* srcResource, uint32 srcSubresource) = 0;
 
 		/// <summary>
 		/// Resets the counter buffer to zero (hidden by the driver).
 		/// </summary>
 		/// <param name="buffer">The buffer.</param>
+		SE_FUNCTION(API())
 		virtual void ResetCounter(GPUBuffer* buffer) = 0;
 
 		/// <summary>
@@ -552,6 +591,7 @@ namespace SE
 		/// <param name="dstBuffer">The destination buffer.</param>
 		/// <param name="dstOffset">The destination aligned byte offset.</param>
 		/// <param name="srcBuffer">The source buffer.</param>
+		SE_FUNCTION(API())
 		virtual void CopyCounter(GPUBuffer* dstBuffer, uint32 dstOffset, GPUBuffer* srcBuffer) = 0;
 
 		/// <summary>
@@ -559,6 +599,7 @@ namespace SE
 		/// </summary>
 		/// <param name="dstResource">The destination resource.</param>
 		/// <param name="srcResource">The source resource.</param>
+		SE_FUNCTION(API())
 		virtual void CopyResource(GPUResource* dstResource, GPUResource* srcResource) = 0;
 
 		/// <summary>
@@ -568,6 +609,7 @@ namespace SE
 		/// <param name="dstSubresource">The destination subresource index.</param>
 		/// <param name="srcResource">The source resource.</param>
 		/// <param name="srcSubresource">The source subresource index.</param>
+		SE_FUNCTION(API())
 		virtual void CopySubresource(GPUResource* dstResource, uint32 dstSubresource, GPUResource* srcResource, uint32 srcSubresource) = 0;
 
 		/// <summary>

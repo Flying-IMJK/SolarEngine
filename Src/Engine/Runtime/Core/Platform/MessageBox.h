@@ -1,11 +1,13 @@
 #pragma once
 #include "Runtime/Core/Types/Strings/StringView.h"
+#include <Runtime/Core/Scripting/ScriptingType.h>
 
 namespace SE
 {
     /// <summary>
     /// Specifies identifiers to indicate the return value of a dialog box.
     /// </summary>
+    SE_ENUM(API())
     enum class DialogResult
     {
         /// <summary>
@@ -52,6 +54,7 @@ namespace SE
     /// <summary>
     /// Specifies constants defining which information to display.
     /// </summary>
+    SE_ENUM(API())
     enum class MessageBoxIcon
     {
         /// <summary>
@@ -103,6 +106,7 @@ namespace SE
     /// <summary>
     /// Specifies constants defining which buttons to display on a Message Box.
     /// </summary>
+    SE_ENUM(API())
     enum class MessageBoxButtons
     {
         /// <summary>
@@ -139,14 +143,17 @@ namespace SE
     /// <summary>
     /// Message dialogs utility (native platform).
     /// </summary>
+    SE_CLASS(API(Static))
     class SE_API_RUNTIME MessageBox
     {
+        SCRIPTING_TYPE_NO_SPAWN(MessageBox);
     public:
         /// <summary>
         /// Displays a message box with specified text.
         /// </summary>
         /// <param name="text">The text to display in the message box.</param>
         /// <returns>The message box dialog result.</returns>
+        SE_FUNCTION(API())
         static DialogResult Show(StringView text)
         {
             return Show(nullptr, text, SE_TEXT("Info"), MessageBoxButtons::OK, MessageBoxIcon::None);
@@ -158,6 +165,7 @@ namespace SE
         /// <param name="text">The text to display in the message box.</param>
         /// <param name="caption">The text to display in the title bar of the message box.</param>
         /// <returns>The message box dialog result.</returns>
+        SE_FUNCTION(API())
         static DialogResult Show(StringView text, StringView caption)
         {
             return Show(nullptr, text, caption, MessageBoxButtons::OK, MessageBoxIcon::None);
@@ -170,6 +178,7 @@ namespace SE
         /// <param name="caption">The text to display in the title bar of the message box.</param>
         /// <param name="buttons">One of the MessageBoxButtons values that specifies which buttons to display in the message box.</param>
         /// <returns>The message box dialog result.</returns>
+        SE_FUNCTION(API())
         static DialogResult Show(StringView text, StringView caption, MessageBoxButtons buttons)
         {
             return Show(nullptr, text, caption, buttons, MessageBoxIcon::None);
@@ -183,6 +192,7 @@ namespace SE
         /// <param name="buttons">One of the MessageBoxButtons values that specifies which buttons to display in the message box.</param>
         /// <param name="icon">One of the MessageBoxIcon values that specifies which icon to display in the message box.</param>
         /// <returns>The message box dialog result.</returns>
+        SE_FUNCTION(API())
         static DialogResult Show(StringView text, StringView caption, MessageBoxButtons buttons, MessageBoxIcon icon)
         {
             return Show(nullptr, text, caption, buttons, icon);

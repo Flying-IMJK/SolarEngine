@@ -99,9 +99,9 @@ namespace SE::Editor
 		auto localPos = PointFromWindow(clientPos);
 
 		// Early out
-		if (localPos.x < 0 || localPos.y < 0)
+		if (localPos.X < 0 || localPos.Y < 0)
 			return nullptr;
-		if (localPos.x > Width || localPos.y > Height)
+		if (localPos.X > Width || localPos.Y > Height)
 			return nullptr;
 
 		// Test all docked controls (find the smallest one)

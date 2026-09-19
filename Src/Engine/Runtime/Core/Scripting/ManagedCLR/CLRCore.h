@@ -203,9 +203,6 @@ namespace SE
             static CLRClass* Activator;
             static CLRClass* Type;
 
-            static CLRClass* Vector2;
-            static CLRClass* Vector3;
-            static CLRClass* Vector4;
             static CLRClass* Color;
             static CLRClass* Transform;
             static CLRClass* Quaternion;

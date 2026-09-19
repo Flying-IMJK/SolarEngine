@@ -834,7 +834,7 @@ namespace SE
 			const auto vkFormat = VulkanTool::ToVulkanFormat(format);
 
 			MSAALevel msaa = MSAALevel::None;
-			EnumFlags<FormatSupport> support = FormatSupport::None;
+			FormatSupport support = FormatSupport::None;
 
 			if (vkFormat != VK_FORMAT_UNDEFINED)
 			{
@@ -843,13 +843,14 @@ namespace SE
 				vkGetPhysicalDeviceFormatProperties(gpu, vkFormat, &properties);
 
 				// Query image format features support flags
-#define CHECK_IMAGE_FORMAT(bit, feature) if (((properties.linearTilingFeatures & bit) == bit) || ((properties.optimalTilingFeatures & bit) == bit)) support.SetFlag(feature)
+#define CHECK_IMAGE_FORMAT(bit, feature) if (((properties.linearTilingFeatures & bit) == bit) || ((properties.optimalTilingFeatures & bit) == bit)) support = EnumAddFlags(support, feature)
+
 				if (properties.linearTilingFeatures != 0 || properties.optimalTilingFeatures != 0)
 				{
-					support.SetFlag(FormatSupport::Texture1D);
-					support.SetFlag(FormatSupport::Texture2D);
-					support.SetFlag(FormatSupport::Texture3D);
-					support.SetFlag(FormatSupport::TextureCube);
+                    support = EnumAddFlags(support, FormatSupport::Texture1D);
+					support = EnumAddFlags(support, FormatSupport::Texture2D);
+					support = EnumAddFlags(support, FormatSupport::Texture3D);
+					support = EnumAddFlags(support, FormatSupport::TextureCube);
 				}
 				CHECK_IMAGE_FORMAT(VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT, FormatSupport::ShaderLoad);
 				//VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,
@@ -864,10 +865,11 @@ namespace SE
 #undef CHECK_IMAGE_FORMAT
 
 				// Query buffer format features support flags
-#define CHECK_BUFFER_FORMAT(bit, feature) if ((properties.bufferFeatures & bit) == bit) support.SetFlag(feature)
+#define CHECK_BUFFER_FORMAT(bit, feature) if ((properties.bufferFeatures & bit) == bit) support = EnumAddFlags(support, feature)
+
 				if (properties.bufferFeatures != 0)
 				{
-					support.SetFlag(FormatSupport::Buffer);
+					support = EnumAddFlags(support, FormatSupport::Buffer);
 				}
 				//VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
 				//VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
@@ -889,7 +891,7 @@ namespace SE
 				//VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT
 
 				// Multi-sampling support
-				if (support.IsFlag(FormatSupport::Texture2D))
+				if (EnumHasAllFlags(support, FormatSupport::Texture2D))
 				{
 					msaa = maxMsaa;
 				}
@@ -1219,23 +1221,23 @@ namespace SE
 		presentQueue = graphicsQueue;
 	}
 
-	PixelFormat GPUDeviceVulkan::GetClosestSupportedPixelFormat(PixelFormat format, EnumFlags<GPUTextureFlags> flags, bool optimalTiling)
+	PixelFormat GPUDeviceVulkan::GetClosestSupportedPixelFormat(PixelFormat format, GPUTextureFlags flags, bool optimalTiling)
 	{
 		// Collect features to use
 		VkFormatFeatureFlags wantedFeatureFlags = 0;
-		if (flags.IsFlag(GPUTextureFlags::ShaderResource))
+		if (EnumHasAnyFlags(flags, GPUTextureFlags::ShaderResource))
 			wantedFeatureFlags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
-		if (flags.IsFlag(GPUTextureFlags::RenderTarget))
+		if (EnumHasAnyFlags(flags, GPUTextureFlags::RenderTarget))
 			wantedFeatureFlags |= VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT;
-		if (flags.IsFlag(GPUTextureFlags::DepthStencil))
+		if (EnumHasAnyFlags(flags, GPUTextureFlags::DepthStencil))
 			wantedFeatureFlags |= VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
-		if (flags.IsFlag(GPUTextureFlags::UnorderedAccess))
+		if (EnumHasAnyFlags(flags, GPUTextureFlags::UnorderedAccess))
 			wantedFeatureFlags |= VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
 
 		if (!IsVkFormatSupported(VulkanTool::ToVulkanFormat(format), wantedFeatureFlags, optimalTiling))
 		{
 			// Special case for depth-stencil formats
-			if (flags.IsFlag(GPUTextureFlags::DepthStencil))
+			if (EnumHasAnyFlags(flags, GPUTextureFlags::DepthStencil))
 			{
 				const bool hasStencil = PixelFormatIsStencilSupport(format);
 

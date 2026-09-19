@@ -63,28 +63,28 @@ namespace SE::Editor
 			// Distance from which the mouse is considered to be on the border/corner
 			float distance = 5.0f * dpiScale;
 
-			if (pos.y > winSize.y - distance && pos.x < distance)
+			if (pos.Y > winSize.Y - distance && pos.X < distance)
 				return WindowHitCodes::BottomLeft;
 
-			if (pos.x > winSize.x - distance && pos.y > winSize.y - distance)
+			if (pos.X > winSize.X - distance && pos.Y > winSize.Y - distance)
 				return WindowHitCodes::BottomRight;
 
-			if (pos.y < distance && pos.x < distance)
+			if (pos.Y < distance && pos.X < distance)
 				return WindowHitCodes::TopLeft;
 
-			if (pos.y < distance && pos.x > winSize.x - distance)
+			if (pos.Y < distance && pos.X > winSize.X - distance)
 				return WindowHitCodes::TopRight;
 
-			if (pos.x > winSize.x - distance)
+			if (pos.X > winSize.X - distance)
 				return WindowHitCodes::Right;
 
-			if (pos.x < distance)
+			if (pos.X < distance)
 				return WindowHitCodes::Left;
 
-			if (pos.y < distance)
+			if (pos.Y < distance)
 				return WindowHitCodes::Top;
 
-			if (pos.y > winSize.y - distance)
+			if (pos.Y > winSize.Y - distance)
 				return WindowHitCodes::Bottom;
 		}
 
@@ -96,7 +96,7 @@ namespace SE::Editor
 		if (rb == nullptr)
 		{
 			Float2 upperLeft = _title->UpperLeft;
-			Rectangle rectangle = Rectangle(upperLeft, {_minimizeButton->BottomLeft.operator->().x - upperLeft.x, _title->Height} );
+			Rectangle rectangle = Rectangle(upperLeft, {_minimizeButton->BottomLeft.operator->().X - upperLeft.X, _title->Height} );
 			if (rectangle.Contains(mousePos) && !isMouseOverSth)
 			{
 				return WindowHitCodes::Caption;

@@ -2,11 +2,13 @@
 
 #include "Runtime/Core/Thread/Threading.h"
 #include "Runtime/Core/Types/Strings/StringView.h"
+#include <Runtime/Core/Scripting/ScriptingObject.h>
+#include <Runtime/Core/Scripting/ManagedCLR/CLRClass.h>
 
 #include "Runtime/API.h"
 #include "Runtime/Graphics/Base/GPUEnums.h"
-#include "GlobalSettings_GPU.h"
 #include "Runtime/Graphics/Base/GPULimits.h"
+#include "GlobalSettings_GPU.h"
 
 namespace SE
 {
@@ -27,13 +29,16 @@ namespace SE
 	class GPUTasksContext;
 	class GPUTasksExecutor;
 
-	class SE_API_RUNTIME GPUDevice
+	SE_CLASS(API(Sealed, NoSpawn))
+	class SE_API_RUNTIME GPUDevice : public ScriptingObject
 	{
+		SCRIPTING_TYPE_NO_SPAWN(GPUDevice);
 	public:
 
 		/// <summary>
 		/// Graphics Device states that describe its lifetime.
 		/// </summary>
+		SE_ENUM(API()) 
 		enum class DeviceState
 		{
 			Missing = 0,
@@ -44,6 +49,7 @@ namespace SE
 			Disposed
 		};
 
+		SE_FIELD(API(ReadOnly))
 		static GPUDevice* instance;
 		static bool Create(GPUGlobalSettings settings);
 
@@ -76,6 +82,7 @@ namespace SE
 		/// <summary>
 		/// Returns true if device is during rendering state, otherwise false.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		inline bool IsRendering() const
 		{
 			return m_IsRendering;
@@ -94,6 +101,7 @@ namespace SE
 		/// <summary>
 		/// Gets the device renderer type.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE GPURendererType GetRendererType() const
 		{
 			return m_RenderType;
@@ -102,6 +110,7 @@ namespace SE
 		/// <summary>
 		/// Gets device shader profile type.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE ShaderProfile GetShaderProfile() const
 		{
 			return m_ShaderProfile;
@@ -110,6 +119,7 @@ namespace SE
 		/// <summary>
 		/// Gets device feature level type.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE FeatureLevel GetFeatureLevel() const
 		{
 			return _featureLevel;
@@ -122,6 +132,7 @@ namespace SE
 
 		virtual SLC2GPUPipelineState* CreateSLC2PipelineState() = 0;
 
+		SE_FUNCTION(API())
 		virtual GPUTexture* CreateTexture(const StringView& name = StringView::Empty) = 0;
 
 		virtual GPUShader* CreateShader(const StringView& name = StringView::Empty) = 0;
@@ -130,14 +141,17 @@ namespace SE
 
 //		virtual GPUTimerQuery* CreateTimerQuery() = 0;
 
+		SE_FUNCTION(API())
 		virtual GPUBuffer* CreateBuffer(const StringView& name = StringView::Empty) = 0;
 
+		SE_FUNCTION(API())
 		virtual GPUSampler* CreateSampler() = 0;
 
 		virtual GPUTimerQuery* CreateTimerQuery() = 0;
 
 		virtual GPUConstantBuffer* CreateConstantBuffer(uint32 size, const StringView& name = StringView::Empty) = 0;
 
+		SE_FUNCTION(API(Prop, ReadOnly))
 		virtual GPUContext* GetMainContext() = 0;
 
 		/// <summary>
@@ -153,7 +167,9 @@ namespace SE
 
 		GPUTasksExecutor* CreateTasksExecutor();
 
+		SE_FUNCTION(API(Prop, ReadOnly))
 		uint64 GetMemoryUsage() const;
+		SE_FUNCTION(API(Prop, ReadOnly))
 		uint64 GetTotalGraphicsMemory() const
 		{
 			return m_TotalGraphicsMemory;
@@ -162,12 +178,14 @@ namespace SE
 		void AddResource(GPUResource* resource);
 		void RemoveResource(GPUResource* resource);
 
+		SE_FUNCTION(API())
 		FormatFeatures GetPixelFormatFeatures(const PixelFormat format) const
 		{
 			return FeaturesPerFormat[(int32)format];
 		}
 
 
+		SE_FUNCTION(API(Prop, ReadOnly))
 		GPULimits GetGPULimits() const
 		{
 			return limits;

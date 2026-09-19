@@ -121,9 +121,9 @@ namespace SE
 
 #define CHECK_BOX_AS_FEATURE(box, feature) \
 if (Root->GetBox(static_cast<int32>(MaterialGraphBoxes::box))->HasConnection()) \
-UsageFlags.SetFlag(MaterialUsage::feature); \
+UsageFlags = EnumAddFlags(UsageFlags, MaterialUsage::feature); \
 else \
-UsageFlags.RemoveFlag(MaterialUsage::feature);
+UsageFlags = EnumRemoveFlags(UsageFlags, MaterialUsage::feature);
         CHECK_BOX_AS_FEATURE(Emissive, UseEmissive);
         CHECK_BOX_AS_FEATURE(Normal, UseNormal);
         CHECK_BOX_AS_FEATURE(Mask, UseMask);

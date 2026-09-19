@@ -120,25 +120,25 @@ namespace SE
 		template<typename T>
 		void WriteVector2(const Vector2Base<T>& data)
 		{
-			WriteBytes(&data.x, sizeof(T));
-			WriteBytes(&data.y, sizeof(T));
+			WriteBytes(&data.X, sizeof(T));
+			WriteBytes(&data.Y, sizeof(T));
 		}
 
 		template<typename T>
 		void WriteVector3(const Vector3Base<T>& data)
 		{
-			WriteBytes(&data.x, sizeof(T));
-			WriteBytes(&data.y, sizeof(T));
-			WriteBytes(&data.z, sizeof(T));
+			WriteBytes(&data.X, sizeof(T));
+			WriteBytes(&data.Y, sizeof(T));
+			WriteBytes(&data.Z, sizeof(T));
 		}
 
 		template<typename T>
 		void WriteVector4(const Vector4Base<T>& data)
 		{
-			WriteBytes(&data.x, sizeof(T));
-			WriteBytes(&data.y, sizeof(T));
-			WriteBytes(&data.z, sizeof(T));
-			WriteBytes(&data.w, sizeof(T));
+			WriteBytes(&data.X, sizeof(T));
+			WriteBytes(&data.Y, sizeof(T));
+			WriteBytes(&data.Z, sizeof(T));
+			WriteBytes(&data.W, sizeof(T));
 		}
 
 	public:

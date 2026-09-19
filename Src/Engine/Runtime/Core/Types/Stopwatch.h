@@ -9,6 +9,7 @@ namespace SE
 	/// <summary>
 	/// High-resolution performance counter based on Platform::GetTimeSeconds.
 	/// </summary>
+	SE_STRUCT(API(InBuild("System.Diagnostics.Stopwatch")))
 	struct Stopwatch
 	{
 	private:

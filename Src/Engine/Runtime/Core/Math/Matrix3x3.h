@@ -10,8 +10,10 @@ namespace SE
 	/// <summary>
 	/// Represents a 3x3 mathematical matrix.
 	/// </summary>
+	SE_STRUCT(API())
 	struct SE_API_RUNTIME Matrix3x3
 	{
+		SCRIPTING_TYPE_MIN(Matrix3x3)
 	public:
 		union
 		{
@@ -120,9 +122,9 @@ namespace SE
 		// Sets Float3 of the matrix; that is M21, M22, and M23.
 		void SetUp(const Float3& value)
 		{
-			M21 = value.x;
-			M22 = value.y;
-			M23 = value.z;
+			M21 = value.X;
+			M22 = value.Y;
+			M23 = value.Z;
 		}
 
 		// Gets the down Float3 of the matrix; that is -M21, -M22, and -M23.
@@ -134,9 +136,9 @@ namespace SE
 		// Sets the down Float3 of the matrix; that is -M21, -M22, and -M23.
 		void SetDown(const Float3& value)
 		{
-			M21 = -value.x;
-			M22 = -value.y;
-			M23 = -value.z;
+			M21 = -value.X;
+			M22 = -value.Y;
+			M23 = -value.Z;
 		}
 
 		// Gets the right Float3 of the matrix; that is M11, M12, and M13.
@@ -148,9 +150,9 @@ namespace SE
 		// Sets the right Float3 of the matrix; that is M11, M12, and M13.
 		void SetRight(const Float3& value)
 		{
-			M11 = value.x;
-			M12 = value.y;
-			M13 = value.z;
+			M11 = value.X;
+			M12 = value.Y;
+			M13 = value.Z;
 		}
 
 		// Gets the left Float3 of the matrix; that is -M11, -M12, and -M13.
@@ -162,9 +164,9 @@ namespace SE
 		// Sets the left Float3 of the matrix; that is -M11, -M12, and -M13.
 		void SetLeft(const Float3& value)
 		{
-			M11 = -value.x;
-			M12 = -value.y;
-			M13 = -value.z;
+			M11 = -value.X;
+			M12 = -value.Y;
+			M13 = -value.Z;
 		}
 
 		// Gets the forward Float3 of the matrix; that is -M31, -M32, and -M33.
@@ -176,9 +178,9 @@ namespace SE
 		// Sets the forward Float3 of the matrix; that is -M31, -M32, and -M33.
 		void SetForward(const Float3& value)
 		{
-			M31 = -value.x;
-			M32 = -value.y;
-			M33 = -value.z;
+			M31 = -value.X;
+			M32 = -value.Y;
+			M33 = -value.Z;
 		}
 
 		// Gets the backward Float3 of the matrix; that is M31, M32, and M33.
@@ -190,9 +192,9 @@ namespace SE
 		// Sets the backward Float3 of the matrix; that is M31, M32, and M33.
 		void SetBackward(const Float3& value)
 		{
-			M31 = value.x;
-			M32 = value.y;
-			M33 = value.z;
+			M31 = value.X;
+			M32 = value.Y;
+			M33 = value.Z;
 		}
 
 		// Gets row in the matrix
@@ -206,9 +208,9 @@ namespace SE
 		void SetRow(int row, const Float3& value)
 		{
 			const int offset = row * 3;
-			Raw[offset] = value.x;
-			Raw[offset + 1] = value.y;
-			Raw[offset + 2] = value.z;
+			Raw[offset] = value.X;
+			Raw[offset + 1] = value.Y;
+			Raw[offset + 2] = value.Z;
 		}
 
 		// Gets column in the matrix;
@@ -220,9 +222,9 @@ namespace SE
 		// Sets column in the matrix;
 		void SetColumn(int column, const Float3& value)
 		{
-			Raw[column] = value.x;
-			Raw[4 + column] = value.y;
-			Raw[8 + column] = value.z;
+			Raw[column] = value.X;
+			Raw[4 + column] = value.Y;
+			Raw[8 + column] = value.Z;
 		}
 
 		// Gets the scale of the matrix; that is M11, M22, and M33.
@@ -234,9 +236,9 @@ namespace SE
 		// Sets the scale of the matrix; that is M11, M22, and M33.
 		void SetScaleVector(const Float3& value)
 		{
-			M11 = value.x;
-			M22 = value.y;
-			M33 = value.z;
+			M11 = value.X;
+			M22 = value.Y;
+			M33 = value.Z;
 		}
 
 		/// <summary>
@@ -451,7 +453,7 @@ namespace SE
 			result = Matrix3x3(
 				1, 0, 0,
 				0, 1, 0,
-				translation.x, translation.y, 1
+				translation.X, translation.Y, 1
 			);
 		}
 
@@ -477,8 +479,8 @@ namespace SE
 		static void Transform2DPoint(const Float2& point, const Matrix3x3& transform, Float2& result)
 		{
 			result = Float2(
-				point.x * transform.M11 + point.y * transform.M21 + transform.M31,
-				point.x * transform.M12 + point.y * transform.M22 + transform.M32);
+				point.X * transform.M11 + point.Y * transform.M21 + transform.M31,
+				point.X * transform.M12 + point.Y * transform.M22 + transform.M32);
 		}
 
 		/// <summary>
@@ -491,8 +493,8 @@ namespace SE
 		static void Transform2DVector(const Float2& vector, const Matrix3x3& transform, Float2& result)
 		{
 			result = Float2(
-				vector.x * transform.M11 + vector.y * transform.M21,
-				vector.x * transform.M12 + vector.y * transform.M22);
+				vector.X * transform.M11 + vector.Y * transform.M21,
+				vector.X * transform.M12 + vector.Y * transform.M22);
 		}
 
 		static void Scaling(float x, float y, float z, Matrix3x3& result)

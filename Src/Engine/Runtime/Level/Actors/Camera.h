@@ -64,71 +64,84 @@ public:
     /// Gets the value indicating if camera should use perspective rendering mode, otherwise it will use orthographic projection.
     /// </summary>
     // SE_PROPERTY(API(Attributes="EditorOrder(10), DefaultValue(true), EditorDisplay(\"Camera\")"))
+    SE_FUNCTION(API(Prop, Attributes="EditorOrder(10), DefaultValue(true), EditorDisplay(\"Camera\")"))
     bool GetUsePerspective() const;
 
     /// <summary>
     /// Sets the value indicating if camera should use perspective rendering mode, otherwise it will use orthographic projection.
     /// </summary>
+    SE_FUNCTION(API(Prop))
     void SetUsePerspective(bool value);
 
     /// <summary>
     /// Gets the camera's field of view (in degrees).
     /// </summary>
     // SE_PROPERTY(API(Attributes="EditorOrder(20), DefaultValue(60.0f), Limit(0, 179), EditorDisplay(\"Camera\", \"Field Of View\"), VisibleIf(nameof(UsePerspective)), ValueCategory(Utils.ValueCategory.Angle)"))
+    SE_FUNCTION(API(Prop, Attributes="EditorOrder(20), DefaultValue(60.0f), Limit(0, 179), EditorDisplay(\"Camera\", \"Field Of View\")"))
     float GetFieldOfView() const;
 
     /// <summary>
     /// Sets camera's field of view (in degrees).
     /// </summary>
+    SE_FUNCTION(API(Prop))
     void SetFieldOfView(float value);
 
     /// <summary>
     /// Gets the custom aspect ratio. 0 if not use custom value.
     /// </summary>
     // SE_PROPERTY(API(Attributes="EditorOrder(50), DefaultValue(0.0f), Limit(0, 10, 0.01f), EditorDisplay(\"Camera\"), VisibleIf(nameof(UsePerspective))"))
+    SE_FUNCTION(API(Prop, Attributes="EditorOrder(50), DefaultValue(0.0f), Limit(0, 10, 0.01f), EditorDisplay(\"Camera\")"))
     float GetCustomAspectRatio() const;
 
     /// <summary>
     /// Sets the custom aspect ratio. 0 if not use custom value.
     /// </summary>
+    SE_FUNCTION(API(Prop))
     void SetCustomAspectRatio(float value);
 
     /// <summary>
     /// Gets camera's near plane distance.
     /// </summary>
     // SE_PROPERTY(API(Attributes="EditorOrder(30), DefaultValue(10.0f), Limit(0, 1000, 0.05f), EditorDisplay(\"Camera\"), ValueCategory(Utils.ValueCategory.Distance)"))
+    SE_FUNCTION(API(Prop, Attributes="EditorOrder(30), DefaultValue(10.0f), Limit(0, 1000, 0.05f), EditorDisplay(\"Camera\")"))
     float GetNearPlane() const;
 
     /// <summary>
     /// Sets camera's near plane distance.
     /// </summary>
+    SE_FUNCTION(API(Prop))
     void SetNearPlane(float value);
 
     /// <summary>
     /// Gets camera's far plane distance.
     /// </summary>
     // SE_PROPERTY(API(Attributes="EditorOrder(40), DefaultValue(40000.0f), Limit(0, float.MaxValue, 5), EditorDisplay(\"Camera\"), ValueCategory(Utils.ValueCategory.Distance)"))
+    SE_FUNCTION(API(Prop, Attributes="EditorOrder(40), DefaultValue(40000.0f), Limit(0, float.MaxValue, 5), EditorDisplay(\"Camera\")"))
     float GetFarPlane() const;
 
     /// <summary>
     /// Sets camera's far plane distance.
     /// </summary>
+    SE_FUNCTION(API(Prop))
     void SetFarPlane(float value);
 
     /// <summary>
     /// Gets the orthographic projection scale.
     /// </summary>
     // SE_PROPERTY(API(Attributes="EditorOrder(60), DefaultValue(1.0f), Limit(0.0001f, 1000, 0.01f), EditorDisplay(\"Camera\"), VisibleIf(nameof(UsePerspective), true)"))
+    SE_FUNCTION(API(Prop, Attributes="EditorOrder(60), DefaultValue(1.0f), Limit(0.0001f, 1000, 0.01f), EditorDisplay(\"Camera\")"))
     float GetOrthographicScale() const;
 
     /// <summary>
     /// Sets the orthographic projection scale.
     /// </summary>
+    SE_FUNCTION(API(Prop))
     void SetOrthographicScale(float value);
 
     /// <summary>
     /// The layers mask used for rendering using this camera. Can be used to include or exclude specific actor layers from the drawing.
     /// </summary>
+    SE_FIELD(API(Attributes="EditorOrder(100), EditorDisplay(\"Camera\")"))
     LayersMask RenderLayersMask;
 
     /// <summary>
@@ -141,6 +154,7 @@ public:
     /// Describes frame rendering modes for this camera.
     /// </summary>
     // SE_PROPERTY(API(Attributes = "EditorOrder(120), EditorDisplay(\"Camera\")"))
+    SE_FIELD(API(Attributes="EditorOrder(120), EditorDisplay(\"Camera\")"))
     ViewMode RenderMode = ViewMode::Default;
 
 public:
@@ -149,6 +163,7 @@ public:
     /// </summary>
     /// <param name="worldSpaceLocation">The input world-space location (XYZ in world).</param>
     /// <param name="gameWindowSpaceLocation">The output game window coordinates (XY in screen pixels).</param>
+    SE_FUNCTION(API())
     void ProjectPoint(const Float3& worldSpaceLocation, Float2& gameWindowSpaceLocation) const;
 
     /// <summary>
@@ -157,6 +172,7 @@ public:
     /// <param name="worldSpaceLocation">The input world-space location (XYZ in world).</param>
     /// <param name="cameraViewportSpaceLocation">The output camera viewport-space location (XY in screen pixels).</param>
     /// <param name="viewport">The viewport.</param>
+    SE_FUNCTION(API())
     void ProjectPoint(const Float3& worldSpaceLocation, Float2& cameraViewportSpaceLocation, const Viewport& viewport) const;
 
     /// <summary>
@@ -165,6 +181,7 @@ public:
     /// <param name="gameWindowSpaceLocation">The input game window coordinates (XY in screen pixels).</param>
     /// <param name="depth">The input camera-relative depth position (eg. clipping plane).</param>
     /// <param name="worldSpaceLocation">The output world-space location (XYZ in world).</param>
+    SE_FUNCTION(API())
     void UnProjectPoint(const Float2& gameWindowSpaceLocation, float depth, Float3& worldSpaceLocation) const;
 
     /// <summary>
@@ -174,6 +191,7 @@ public:
     /// <param name="depth">The input camera-relative depth position (eg. clipping plane).</param>
     /// <param name="worldSpaceLocation">The output world-space location (XYZ in world).</param>
     /// <param name="viewport">The viewport.</param>
+    SE_FUNCTION(API())
     void UnProjectPoint(const Float2& cameraViewportSpaceLocation, float depth, Float3& worldSpaceLocation, const Viewport& viewport) const;
 
     /// <summary>
@@ -181,6 +199,7 @@ public:
     /// </summary>
     /// <param name="worldSpaceLocation">World Position (XYZ).</param>
     /// <returns>Returns true if the point is within the field of view.</returns>
+    SE_FUNCTION(API())
     bool IsPointOnView(const Float3& worldSpaceLocation) const;
 
     /// <summary>
@@ -201,6 +220,7 @@ public:
     /// <summary>
     /// Gets the camera viewport.
     /// </summary>
+    SE_FUNCTION(API(Prop, ReadOnly))
     Viewport GetViewport() const;
 
     void SetViewport(Viewport v);
@@ -210,6 +230,7 @@ public:
     /// </summary>
     /// <param name="view">The result camera view matrix.</param>
     /// <param name="projection">The result camera projection matrix.</param>
+    SE_FUNCTION(API())
     void GetMatrices(Matrix& view,Matrix& projection) const;
 
     /// <summary>
@@ -218,6 +239,7 @@ public:
     /// <param name="view">The result camera view matrix.</param>
     /// <param name="projection">The result camera projection matrix.</param>
     /// <param name="viewport">The custom output viewport.</param>
+    SE_FUNCTION(API())
     void GetMatrices(Matrix& view,Matrix& projection, const Viewport& viewport) const;
 
     /// <summary>
@@ -227,6 +249,7 @@ public:
     /// <param name="projection">The result camera projection matrix.</param>
     /// <param name="viewport">The custom output viewport.</param>
     /// <param name="origin">The rendering view origin (for relative-to-camera rendering).</param>
+    SE_FUNCTION(API())
     void GetMatrices(Matrix& view,Matrix& projection, const Viewport& viewport, const Float3& origin) const;
 
 #if SE_EDITOR

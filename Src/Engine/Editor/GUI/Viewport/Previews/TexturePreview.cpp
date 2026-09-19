@@ -131,18 +131,18 @@ namespace SE::Editor
 	void TexturePreviewBase::CalculateTextureRect(Float2 textureSize, Float2 viewSize, Rectangle& result)
 	{
 		Float2 size = Float2::Max(textureSize, Float2::One);
-		float aspectRatio = size.x / size.y;
-		float h = viewSize.x / aspectRatio;
-		float w = viewSize.y * aspectRatio;
+		float aspectRatio = size.X / size.Y;
+		float h = viewSize.X / aspectRatio;
+		float w = viewSize.Y * aspectRatio;
 		if (w > h)
 		{
-			float diff = (viewSize.y - h) * 0.5f;
-			result = Rectangle(0, diff, viewSize.x, h);
+			float diff = (viewSize.Y - h) * 0.5f;
+			result = Rectangle(0, diff, viewSize.X, h);
 		}
 		else
 		{
-			float diff = (viewSize.x - w) * 0.5f;
-			result = Rectangle(diff, 0, w, viewSize.y);
+			float diff = (viewSize.X - w) * 0.5f;
+			result = Rectangle(diff, 0, w, viewSize.Y);
 		}
 	}
 

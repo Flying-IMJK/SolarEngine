@@ -47,8 +47,8 @@ namespace SE::Editor
 			Render2D::DrawSprite(Icon, iconRect, style->ForegroundViewport);
 
 			// Update text rectangle
-			textRect.Location.x += iconSize;
-			textRect.Size.x -= iconSize;
+			textRect.Location.X += iconSize;
+			textRect.Size.X -= iconSize;
 		}
 
 		// Draw text
@@ -98,7 +98,7 @@ namespace SE::Editor
 		Style* style = Style::Current;
 
 		if (style != nullptr && style->FontMedium)
-			Width = CalculateButtonWidth(_forcedTextWidth > 0.0f ? _forcedTextWidth : style->FontMedium->MeasureText(_text).x, Icon.IsValid());
+			Width = CalculateButtonWidth(_forcedTextWidth > 0.0f ? _forcedTextWidth : style->FontMedium->MeasureText(_text).X, Icon.IsValid());
 	}
 
 	void ViewportWidgetButton::CmOnVisibleChanged(Control* control)

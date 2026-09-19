@@ -383,7 +383,7 @@ namespace SE::Editor
 		if (button == MouseButton::Left)
 		{
 			_mousePressLocation = location;
-			_rubberBandRectangle = Rectangle(_mousePressLocation.x, _mousePressLocation.y, 0.0, 0.0);
+			_rubberBandRectangle = Rectangle(_mousePressLocation.X, _mousePressLocation.Y, 0.0, 0.0);
 			_isRubberBandSpanning = true;
 			StartMouseCapture();
 			return true;
@@ -396,8 +396,8 @@ namespace SE::Editor
 	{
 		if (_isRubberBandSpanning)
 		{
-			_rubberBandRectangle.SetWidth(location.x - _mousePressLocation.x);
-			_rubberBandRectangle.SetHeight(location.y - _mousePressLocation.y);
+			_rubberBandRectangle.SetWidth(location.X - _mousePressLocation.X);
+			_rubberBandRectangle.SetHeight(location.Y - _mousePressLocation.Y);
 		}
 
 		ContainerControl::OnMouseMove(location);
@@ -415,8 +415,8 @@ namespace SE::Editor
 				Float2 size = _rubberBandRectangle.Size;
 				_rubberBandRectangle.SetX(Math::Min(_rubberBandRectangle.GetX(), _rubberBandRectangle.GetX() + _rubberBandRectangle.GetWidth()));
 				_rubberBandRectangle.SetY(Math::Min(_rubberBandRectangle.GetY(), _rubberBandRectangle.GetY() + _rubberBandRectangle.GetHeight()));
-				size.x = Math::Abs(size.x);
-				size.y = Math::Abs(size.y);
+				size.X = Math::Abs(size.X);
+				size.Y = Math::Abs(size.Y);
 				_rubberBandRectangle.Size = size;
 			}
 			List<ContentItem*> itemsInRectangle;
@@ -481,19 +481,19 @@ namespace SE::Editor
 				ContentItem* item = nullptr;
 				if (key == KeyboardKeys::ArrowUp)
 				{
-					offset = Float2(0, -size.y);
+					offset = Float2(0, -size.Y);
 				}
 				else if (key == KeyboardKeys::ArrowDown)
 				{
-					offset = Float2(0, size.y);
+					offset = Float2(0, size.Y);
 				}
 				else if (key == KeyboardKeys::ArrowRight)
 				{
-					offset = Float2(size.x, 0);
+					offset = Float2(size.X, 0);
 				}
 				else if (key == KeyboardKeys::ArrowLeft)
 				{
-					offset = Float2(-size.x, 0);
+					offset = Float2(-size.X, 0);
 				}
 				if (offset != Float2::Minimum)
 				{

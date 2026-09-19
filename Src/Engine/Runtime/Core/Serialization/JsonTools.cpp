@@ -87,8 +87,8 @@ namespace SE
 		Float2 result;
 		const auto mX = value.FindMember("X");
 		const auto mY = value.FindMember("Y");
-		result.x = mX != value.MemberEnd() ? mX->value.GetFloat() : 0.0f;
-		result.y = mY != value.MemberEnd() ? mY->value.GetFloat() : 0.0f;
+		result.X = mX != value.MemberEnd() ? mX->value.GetFloat() : 0.0f;
+		result.Y = mY != value.MemberEnd() ? mY->value.GetFloat() : 0.0f;
 		return result;
 	}
 
@@ -98,9 +98,9 @@ namespace SE
 		const auto mX = value.FindMember("X");
 		const auto mY = value.FindMember("Y");
 		const auto mZ = value.FindMember("Z");
-		result.x = mX != value.MemberEnd() ? mX->value.GetFloat() : 0.0f;
-		result.y = mY != value.MemberEnd() ? mY->value.GetFloat() : 0.0f;
-		result.z = mZ != value.MemberEnd() ? mZ->value.GetFloat() : 0.0f;
+		result.X = mX != value.MemberEnd() ? mX->value.GetFloat() : 0.0f;
+		result.Y = mY != value.MemberEnd() ? mY->value.GetFloat() : 0.0f;
+		result.Z = mZ != value.MemberEnd() ? mZ->value.GetFloat() : 0.0f;
 		return result;
 	}
 
@@ -111,10 +111,10 @@ namespace SE
 		const auto mY = value.FindMember("Y");
 		const auto mZ = value.FindMember("Z");
 		const auto mW = value.FindMember("W");
-		result.x = mX != value.MemberEnd() ? mX->value.GetFloat() : 0.0f;
-		result.y = mY != value.MemberEnd() ? mY->value.GetFloat() : 0.0f;
-		result.z = mZ != value.MemberEnd() ? mZ->value.GetFloat() : 0.0f;
-		result.w = mW != value.MemberEnd() ? mW->value.GetFloat() : 0.0f;
+		result.X = mX != value.MemberEnd() ? mX->value.GetFloat() : 0.0f;
+		result.Y = mY != value.MemberEnd() ? mY->value.GetFloat() : 0.0f;
+		result.Z = mZ != value.MemberEnd() ? mZ->value.GetFloat() : 0.0f;
+		result.W = mW != value.MemberEnd() ? mW->value.GetFloat() : 0.0f;
 		return result;
 	}
 
@@ -123,8 +123,8 @@ namespace SE
 		Double2 result;
 		const auto mX = value.FindMember("X");
 		const auto mY = value.FindMember("Y");
-		result.x = mX != value.MemberEnd() ? mX->value.GetDouble() : 0.0;
-		result.y = mY != value.MemberEnd() ? mY->value.GetDouble() : 0.0;
+		result.X = mX != value.MemberEnd() ? mX->value.GetDouble() : 0.0;
+		result.Y = mY != value.MemberEnd() ? mY->value.GetDouble() : 0.0;
 		return result;
 	}
 
@@ -134,9 +134,9 @@ namespace SE
 		const auto mX = value.FindMember("X");
 		const auto mY = value.FindMember("Y");
 		const auto mZ = value.FindMember("Z");
-		result.x = mX != value.MemberEnd() ? mX->value.GetDouble() : 0.0;
-		result.y = mY != value.MemberEnd() ? mY->value.GetDouble() : 0.0;
-		result.z = mZ != value.MemberEnd() ? mZ->value.GetDouble() : 0.0;
+		result.X = mX != value.MemberEnd() ? mX->value.GetDouble() : 0.0;
+		result.Y = mY != value.MemberEnd() ? mY->value.GetDouble() : 0.0;
+		result.Z = mZ != value.MemberEnd() ? mZ->value.GetDouble() : 0.0;
 		return result;
 	}
 
@@ -147,10 +147,10 @@ namespace SE
 		const auto mY = value.FindMember("Y");
 		const auto mZ = value.FindMember("Z");
 		const auto mW = value.FindMember("W");
-		result.x = mX != value.MemberEnd() ? mX->value.GetDouble() : 0.0;
-		result.y = mY != value.MemberEnd() ? mY->value.GetDouble() : 0.0;
-		result.z = mZ != value.MemberEnd() ? mZ->value.GetDouble() : 0.0;
-		result.w = mW != value.MemberEnd() ? mW->value.GetDouble() : 0.0;
+		result.X = mX != value.MemberEnd() ? mX->value.GetDouble() : 0.0;
+		result.Y = mY != value.MemberEnd() ? mY->value.GetDouble() : 0.0;
+		result.Z = mZ != value.MemberEnd() ? mZ->value.GetDouble() : 0.0;
+		result.W = mW != value.MemberEnd() ? mW->value.GetDouble() : 0.0;
 		return result;
 	}
 
@@ -161,10 +161,10 @@ namespace SE
 		const auto mG = value.FindMember("G");
 		const auto mB = value.FindMember("B");
 		const auto mA = value.FindMember("A");
-		result.r = mR != value.MemberEnd() ? mR->value.GetFloat() : 0.0f;
-		result.g = mG != value.MemberEnd() ? mG->value.GetFloat() : 0.0f;
-		result.b = mB != value.MemberEnd() ? mB->value.GetFloat() : 0.0f;
-		result.a = mA != value.MemberEnd() ? mA->value.GetFloat() : 0.0f;
+		result.R = mR != value.MemberEnd() ? mR->value.GetFloat() : 0.0f;
+		result.G = mG != value.MemberEnd() ? mG->value.GetFloat() : 0.0f;
+		result.B = mB != value.MemberEnd() ? mB->value.GetFloat() : 0.0f;
+		result.A = mA != value.MemberEnd() ? mA->value.GetFloat() : 0.0f;
 		return result;
 	}
 
@@ -176,10 +176,10 @@ namespace SE
 		const auto mZ = value.FindMember("Z");
 		const auto mW = value.FindMember("W");
 		Float4 v;
-		v.x = mX != value.MemberEnd() ? mX->value.GetFloat() : 0.0f;
-		v.y = mY != value.MemberEnd() ? mY->value.GetFloat() : 0.0f;
-		v.z = mZ != value.MemberEnd() ? mZ->value.GetFloat() : 0.0f;
-		v.w = mW != value.MemberEnd() ? mW->value.GetFloat() : 0.0f;
+		v.X = mX != value.MemberEnd() ? mX->value.GetFloat() : 0.0f;
+		v.Y = mY != value.MemberEnd() ? mY->value.GetFloat() : 0.0f;
+		v.Z = mZ != value.MemberEnd() ? mZ->value.GetFloat() : 0.0f;
+		v.W = mW != value.MemberEnd() ? mW->value.GetFloat() : 0.0f;
 
 		return Quaternion(v);
 	}

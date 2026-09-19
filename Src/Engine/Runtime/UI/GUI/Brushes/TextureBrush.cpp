@@ -44,10 +44,10 @@ namespace SE
 		if (ShowBorders)
 		{
 			Rectangle bordersRect = rect;
-			bordersRect.Location.x += borderSize.x;
-			bordersRect.Location.y += borderSize.z;
-			bordersRect.Size.x -= borderSize.x + borderSize.y;
-			bordersRect.Size.y -= borderSize.z + borderSize.w;
+			bordersRect.Location.X += borderSize.X;
+			bordersRect.Location.Y += borderSize.Z;
+			bordersRect.Size.X -= borderSize.X + borderSize.Y;
+			bordersRect.Size.Y -= borderSize.Z + borderSize.W;
 			Render2D::DrawRectangle(bordersRect, Colors::YellowGreen, 2.0f);
 		}
 #endif

@@ -129,14 +129,6 @@ namespace SE
         CLRClass* variantClass = CLRUtils::GetClass(type);
         if (variantClass != mClass)
         {
-            // Hack for Vector2/3/4 which alias with Float2/3/4 or Double2/3/4 (depending on USE_LARGE_WORLDS)
-            if (mClass == CLRCore::TypeCache::Vector2 && (type.Type == VariantTypes::Float2 || type.Type == VariantTypes::Double2))
-                return true;
-            if (mClass == CLRCore::TypeCache::Vector3 && (type.Type == VariantTypes::Float3 || type.Type == VariantTypes::Double3))
-                return true;
-            if (mClass == CLRCore::TypeCache::Vector4 && (type.Type == VariantTypes::Float4 || type.Type == VariantTypes::Double4))
-                return true;
-
             return false;
         }
         return true;

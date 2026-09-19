@@ -33,7 +33,7 @@ namespace SE::Editor
 
 		ContextMenuBase* popup = New<ContextMenuBase>();
 		popup->Size = size;
-		popup->Show(control, area.Location + Float2(0, (size.y - popup->Height) * 0.5f));
+		popup->Show(control, area.Location + Float2(0, (size.Y - popup->Height) * 0.5f));
 		return popup;
 	}
 	
@@ -76,29 +76,29 @@ namespace SE::Editor
 		if (UseAutomaticDirectionFix())
 		{
 			ContextMenu* parentMenu = TypeTryCast<ContextMenu>(parent);
-			if (monitorBounds.GetBottom() < rightBottomLocationSS.y)
+			if (monitorBounds.GetBottom() < rightBottomLocationSS.Y)
 			{
 				isUp = true;
-				locationSS.y -= dpiSize.y;
+				locationSS.Y -= dpiSize.Y;
 				if (parentMenu != nullptr && parentMenu->_childCM != nullptr)
-					locationSS.y += 30.0f * dpiScale;
+					locationSS.Y += 30.0f * dpiScale;
 			}
 			if (parentMenu == nullptr)
 			{
-				if (monitorBounds.GetRight() < rightBottomLocationSS.x)
+				if (monitorBounds.GetRight() < rightBottomLocationSS.X)
 				{
 					isLeft = true;
-					locationSS.x -= dpiSize.x;
+					locationSS.X -= dpiSize.X;
 				}
 			}
-			else if (monitorBounds.GetRight() < rightBottomLocationSS.x ||
+			else if (monitorBounds.GetRight() < rightBottomLocationSS.X ||
 				(_parentCM != nullptr && (_parentCM->Direction == ContextMenuDirection::LeftDown || _parentCM->Direction == ContextMenuDirection::LeftUp)))
 			{
 				isLeft = true;
 				if (IsSubMenu && _parentCM != nullptr)
-					locationSS.x -= _parentCM->Width + dpiSize.x;
+					locationSS.X -= _parentCM->Width + dpiSize.X;
 				else
-					locationSS.x -= dpiSize.x;
+					locationSS.X -= dpiSize.X;
 			}
 		}
 

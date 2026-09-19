@@ -270,20 +270,20 @@ namespace SE
 
         float distance = 0.0f;
 
-        if (point.x < box.Minimum.x)
-            distance += (box.Minimum.x - point.x) * (box.Minimum.x - point.x);
-        if (point.x > box.Maximum.x)
-            distance += (point.x - box.Maximum.x) * (point.x - box.Maximum.x);
+        if (point.X < box.Minimum.X)
+            distance += (box.Minimum.X - point.X) * (box.Minimum.X - point.X);
+        if (point.X > box.Maximum.X)
+            distance += (point.X - box.Maximum.X) * (point.X - box.Maximum.X);
 
-        if (point.y < box.Minimum.y)
-            distance += (box.Minimum.y - point.y) * (box.Minimum.y - point.y);
-        if (point.y > box.Maximum.y)
-            distance += (point.y - box.Maximum.y) * (point.y - box.Maximum.y);
+        if (point.Y < box.Minimum.Y)
+            distance += (box.Minimum.Y - point.Y) * (box.Minimum.Y - point.Y);
+        if (point.Y > box.Maximum.Y)
+            distance += (point.Y - box.Maximum.Y) * (point.Y - box.Maximum.Y);
 
-        if (point.z < box.Minimum.z)
-            distance += (box.Minimum.z - point.z) * (box.Minimum.z - point.z);
-        if (point.z > box.Maximum.z)
-            distance += (point.z - box.Maximum.z) * (point.z - box.Maximum.z);
+        if (point.Z < box.Minimum.Z)
+            distance += (box.Minimum.Z - point.Z) * (box.Minimum.Z - point.Z);
+        if (point.Z > box.Maximum.Z)
+            distance += (point.Z - box.Maximum.Z) * (point.Z - box.Maximum.Z);
 
         return Math::Sqrt(distance);
     }
@@ -296,38 +296,38 @@ namespace SE
         float distance = 0.0f;
 
         // Distance for X
-        if (box1.Minimum.x > box2.Maximum.x)
+        if (box1.Minimum.X > box2.Maximum.X)
         {
-            const float delta = box2.Maximum.x - box1.Minimum.x;
+            const float delta = box2.Maximum.X - box1.Minimum.X;
             distance += delta * delta;
         }
-        else if (box2.Minimum.x > box1.Maximum.x)
+        else if (box2.Minimum.X > box1.Maximum.X)
         {
-            const float delta = box1.Maximum.x - box2.Minimum.x;
+            const float delta = box1.Maximum.X - box2.Minimum.X;
             distance += delta * delta;
         }
 
         // Distance for Y
-        if (box1.Minimum.y > box2.Maximum.y)
+        if (box1.Minimum.Y > box2.Maximum.Y)
         {
-            const float delta = box2.Maximum.y - box1.Minimum.y;
+            const float delta = box2.Maximum.Y - box1.Minimum.Y;
             distance += delta * delta;
         }
-        else if (box2.Minimum.y > box1.Maximum.y)
+        else if (box2.Minimum.Y > box1.Maximum.Y)
         {
-            const float delta = box1.Maximum.y - box2.Minimum.y;
+            const float delta = box1.Maximum.Y - box2.Minimum.Y;
             distance += delta * delta;
         }
 
         // Distance for Z
-        if (box1.Minimum.z > box2.Maximum.z)
+        if (box1.Minimum.Z > box2.Maximum.Z)
         {
-            const float delta = box2.Maximum.z - box1.Minimum.z;
+            const float delta = box2.Maximum.Z - box1.Minimum.Z;
             distance += delta * delta;
         }
-        else if (box2.Minimum.z > box1.Maximum.z)
+        else if (box2.Minimum.Z > box1.Maximum.Z)
         {
-            const float delta = box1.Maximum.z - box2.Minimum.z;
+            const float delta = box1.Maximum.Z - box2.Minimum.Z;
             distance += delta * delta;
         }
 
@@ -390,9 +390,9 @@ namespace SE
         if (Math::IsZero(denominator))
         {
             // Lines are parallel and on top of each other
-            if (Math::IsNearEqual(ray2.Position.x, ray1.Position.x) &&
-                Math::IsNearEqual(ray2.Position.y, ray1.Position.y) &&
-                Math::IsNearEqual(ray2.Position.z, ray1.Position.z))
+            if (Math::IsNearEqual(ray2.Position.X, ray1.Position.X) &&
+                Math::IsNearEqual(ray2.Position.Y, ray1.Position.Y) &&
+                Math::IsNearEqual(ray2.Position.Z, ray1.Position.Z))
             {
                 point = Float3::Zero;
                 return true;
@@ -402,15 +402,15 @@ namespace SE
         denominator = denominator * denominator;
 
         // 3x3 matrix for the first ray
-        const float m11 = ray2.Position.x - ray1.Position.x;
-        const float m12 = ray2.Position.y - ray1.Position.y;
-        const float m13 = ray2.Position.z - ray1.Position.z;
-        float m21 = ray2.Direction.x;
-        float m22 = ray2.Direction.y;
-        float m23 = ray2.Direction.z;
-        const float m31 = cross.x;
-        const float m32 = cross.y;
-        const float m33 = cross.z;
+        const float m11 = ray2.Position.X - ray1.Position.X;
+        const float m12 = ray2.Position.Y - ray1.Position.Y;
+        const float m13 = ray2.Position.Z - ray1.Position.Z;
+        float m21 = ray2.Direction.X;
+        float m22 = ray2.Direction.Y;
+        float m23 = ray2.Direction.Z;
+        const float m31 = cross.X;
+        const float m32 = cross.Y;
+        const float m33 = cross.Z;
 
         // Determinant of first matrix
         const float dets =
@@ -422,9 +422,9 @@ namespace SE
                 m13 * m22 * m31;
 
         // 3x3 matrix for the second ray
-        m21 = ray1.Direction.x;
-        m22 = ray1.Direction.y;
-        m23 = ray1.Direction.z;
+        m21 = ray1.Direction.X;
+        m22 = ray1.Direction.Y;
+        m23 = ray1.Direction.Z;
 
         // Determinant of the second matrix
         const float dett =
@@ -444,9 +444,9 @@ namespace SE
         const Float3 point2 = ray2.Position + t * ray2.Direction;
 
         // If the points are not equal, no intersection has occurred
-        if (!Math::IsNearEqual(point2.x, point1.x) ||
-            !Math::IsNearEqual(point2.y, point1.y) ||
-            !Math::IsNearEqual(point2.z, point1.z))
+        if (!Math::IsNearEqual(point2.X, point1.X) ||
+            !Math::IsNearEqual(point2.Y, point1.Y) ||
+            !Math::IsNearEqual(point2.Z, point1.Z))
         {
             point = Float3::Zero;
             return false;
@@ -559,23 +559,23 @@ namespace SE
         Float3 edge1, edge2;
 
         // Edge 1
-        edge1.x = vertex2.x - vertex1.x;
-        edge1.y = vertex2.y - vertex1.y;
-        edge1.z = vertex2.z - vertex1.z;
+        edge1.X = vertex2.X - vertex1.X;
+        edge1.Y = vertex2.Y - vertex1.Y;
+        edge1.Z = vertex2.Z - vertex1.Z;
 
         // Edge2
-        edge2.x = vertex3.x - vertex1.x;
-        edge2.y = vertex3.y - vertex1.y;
-        edge2.z = vertex3.z - vertex1.z;
+        edge2.X = vertex3.X - vertex1.X;
+        edge2.Y = vertex3.Y - vertex1.Y;
+        edge2.Z = vertex3.Z - vertex1.Z;
 
         // Cross product of ray direction and edge2 - first part of determinant
         Float3 directionCrossEdge2;
-        directionCrossEdge2.x = ray.Direction.y * edge2.z - ray.Direction.z * edge2.y;
-        directionCrossEdge2.y = ray.Direction.z * edge2.x - ray.Direction.x * edge2.z;
-        directionCrossEdge2.z = ray.Direction.x * edge2.y - ray.Direction.y * edge2.x;
+        directionCrossEdge2.X = ray.Direction.Y * edge2.Z - ray.Direction.Z * edge2.Y;
+        directionCrossEdge2.Y = ray.Direction.Z * edge2.X - ray.Direction.X * edge2.Z;
+        directionCrossEdge2.Z = ray.Direction.X * edge2.Y - ray.Direction.Y * edge2.X;
 
         // Compute the determinant (dot product of edge1 and the first part of determinant)
-        const float determinant = edge1.x * directionCrossEdge2.x + edge1.y * directionCrossEdge2.y + edge1.z * directionCrossEdge2.z;
+        const float determinant = edge1.X * directionCrossEdge2.X + edge1.Y * directionCrossEdge2.Y + edge1.Z * directionCrossEdge2.Z;
 
         // If the ray is parallel to the triangle plane, there is no collision
         // This also means that we are not culling, the ray may hit both the
@@ -589,11 +589,11 @@ namespace SE
 
         // Calculate the U parameter of the intersection point
         Float3 distanceVector;
-        distanceVector.x = ray.Position.x - vertex1.x;
-        distanceVector.y = ray.Position.y - vertex1.y;
-        distanceVector.z = ray.Position.z - vertex1.z;
+        distanceVector.X = ray.Position.X - vertex1.X;
+        distanceVector.Y = ray.Position.Y - vertex1.Y;
+        distanceVector.Z = ray.Position.Z - vertex1.Z;
 
-        float triangleU = distanceVector.x * directionCrossEdge2.x + distanceVector.y * directionCrossEdge2.y + distanceVector.z * directionCrossEdge2.z;
+        float triangleU = distanceVector.X * directionCrossEdge2.X + distanceVector.Y * directionCrossEdge2.Y + distanceVector.Z * directionCrossEdge2.Z;
         triangleU *= inverseDeterminant;
 
         // Make sure it is inside the triangle
@@ -604,11 +604,11 @@ namespace SE
 
         // Calculate the V parameter of the intersection point
         Float3 distanceCrossEdge1;
-        distanceCrossEdge1.x = distanceVector.y * edge1.z - distanceVector.z * edge1.y;
-        distanceCrossEdge1.y = distanceVector.z * edge1.x - distanceVector.x * edge1.z;
-        distanceCrossEdge1.z = distanceVector.x * edge1.y - distanceVector.y * edge1.x;
+        distanceCrossEdge1.X = distanceVector.Y * edge1.Z - distanceVector.Z * edge1.Y;
+        distanceCrossEdge1.Y = distanceVector.Z * edge1.X - distanceVector.X * edge1.Z;
+        distanceCrossEdge1.Z = distanceVector.X * edge1.Y - distanceVector.Y * edge1.X;
 
-        float triangleV = ray.Direction.x * distanceCrossEdge1.x + ray.Direction.y * distanceCrossEdge1.y + ray.Direction.z * distanceCrossEdge1.z;
+        float triangleV = ray.Direction.X * distanceCrossEdge1.X + ray.Direction.Y * distanceCrossEdge1.Y + ray.Direction.Z * distanceCrossEdge1.Z;
         triangleV *= inverseDeterminant;
 
         // Make sure it is inside the triangle
@@ -618,7 +618,7 @@ namespace SE
         }
 
         // Compute the distance along the ray to the triangle
-        float rayDistance = edge2.x * distanceCrossEdge1.x + edge2.y * distanceCrossEdge1.y + edge2.z * distanceCrossEdge1.z;
+        float rayDistance = edge2.X * distanceCrossEdge1.X + edge2.Y * distanceCrossEdge1.Y + edge2.Z * distanceCrossEdge1.Z;
         rayDistance *= inverseDeterminant;
 
         // Check if the triangle is behind the ray origin
@@ -643,23 +643,23 @@ namespace SE
         Float3 edge1, edge2;
 
         // Edge 1
-        edge1.x = vertex2.x - vertex1.x;
-        edge1.y = vertex2.y - vertex1.y;
-        edge1.z = vertex2.z - vertex1.z;
+        edge1.X = vertex2.X - vertex1.X;
+        edge1.Y = vertex2.Y - vertex1.Y;
+        edge1.Z = vertex2.Z - vertex1.Z;
 
         // Edge2
-        edge2.x = vertex3.x - vertex1.x;
-        edge2.y = vertex3.y - vertex1.y;
-        edge2.z = vertex3.z - vertex1.z;
+        edge2.X = vertex3.X - vertex1.X;
+        edge2.Y = vertex3.Y - vertex1.Y;
+        edge2.Z = vertex3.Z - vertex1.Z;
 
         // Cross product of ray direction and edge2 - first part of determinant
         Float3 directionCrossEdge2;
-        directionCrossEdge2.x = ray.Direction.y * edge2.z - ray.Direction.z * edge2.y;
-        directionCrossEdge2.y = ray.Direction.z * edge2.x - ray.Direction.x * edge2.z;
-        directionCrossEdge2.z = ray.Direction.x * edge2.y - ray.Direction.y * edge2.x;
+        directionCrossEdge2.X = ray.Direction.Y * edge2.Z - ray.Direction.Z * edge2.Y;
+        directionCrossEdge2.Y = ray.Direction.Z * edge2.X - ray.Direction.X * edge2.Z;
+        directionCrossEdge2.Z = ray.Direction.X * edge2.Y - ray.Direction.Y * edge2.X;
 
         // Compute the determinant (dot product of edge1 and the first part of determinant)
-        const float determinant = edge1.x * directionCrossEdge2.x + edge1.y * directionCrossEdge2.y + edge1.z * directionCrossEdge2.z;
+        const float determinant = edge1.X * directionCrossEdge2.X + edge1.Y * directionCrossEdge2.Y + edge1.Z * directionCrossEdge2.Z;
 
         // If the ray is parallel to the triangle plane, there is no collision
         // This also means that we are not culling, the ray may hit both the
@@ -673,11 +673,11 @@ namespace SE
 
         // Calculate the U parameter of the intersection point
         Float3 distanceVector;
-        distanceVector.x = ray.Position.x - vertex1.x;
-        distanceVector.y = ray.Position.y - vertex1.y;
-        distanceVector.z = ray.Position.z - vertex1.z;
+        distanceVector.X = ray.Position.X - vertex1.X;
+        distanceVector.Y = ray.Position.Y - vertex1.Y;
+        distanceVector.Z = ray.Position.Z - vertex1.Z;
 
-        float triangleU = distanceVector.x * directionCrossEdge2.x + distanceVector.y * directionCrossEdge2.y + distanceVector.z * directionCrossEdge2.z;
+        float triangleU = distanceVector.X * directionCrossEdge2.X + distanceVector.Y * directionCrossEdge2.Y + distanceVector.Z * directionCrossEdge2.Z;
         triangleU *= inverseDeterminant;
 
         // Make sure it is inside the triangle
@@ -688,11 +688,11 @@ namespace SE
 
         // Calculate the V parameter of the intersection point
         Float3 distanceCrossEdge1;
-        distanceCrossEdge1.x = distanceVector.y * edge1.z - distanceVector.z * edge1.y;
-        distanceCrossEdge1.y = distanceVector.z * edge1.x - distanceVector.x * edge1.z;
-        distanceCrossEdge1.z = distanceVector.x * edge1.y - distanceVector.y * edge1.x;
+        distanceCrossEdge1.X = distanceVector.Y * edge1.Z - distanceVector.Z * edge1.Y;
+        distanceCrossEdge1.Y = distanceVector.Z * edge1.X - distanceVector.X * edge1.Z;
+        distanceCrossEdge1.Z = distanceVector.X * edge1.Y - distanceVector.Y * edge1.X;
 
-        float triangleV = ray.Direction.x * distanceCrossEdge1.x + ray.Direction.y * distanceCrossEdge1.y + ray.Direction.z * distanceCrossEdge1.z;
+        float triangleV = ray.Direction.X * distanceCrossEdge1.X + ray.Direction.Y * distanceCrossEdge1.Y + ray.Direction.Z * distanceCrossEdge1.Z;
         triangleV *= inverseDeterminant;
 
         // Make sure it is inside the triangle
@@ -702,7 +702,7 @@ namespace SE
         }
 
         // Compute the distance along the ray to the triangle
-        float rayDistance = edge2.x * distanceCrossEdge1.x + edge2.y * distanceCrossEdge1.y + edge2.z * distanceCrossEdge1.z;
+        float rayDistance = edge2.X * distanceCrossEdge1.X + edge2.Y * distanceCrossEdge1.Y + edge2.Z * distanceCrossEdge1.Z;
         rayDistance *= inverseDeterminant;
 
         // Check if the triangle is behind the ray origin
@@ -750,9 +750,9 @@ namespace SE
         distance = 0.0f;
         float tmax = Max_float;
 
-        if (Math::IsZero(ray.Direction.x))
+        if (Math::IsZero(ray.Direction.X))
         {
-            if (ray.Position.x < box.Minimum.x || ray.Position.x > box.Maximum.x)
+            if (ray.Position.X < box.Minimum.X || ray.Position.X > box.Maximum.X)
             {
                 distance = 0.0f;
                 return false;
@@ -760,9 +760,9 @@ namespace SE
         }
         else
         {
-            const float inverse = 1.0f / ray.Direction.x;
-            float t1 = (box.Minimum.x - ray.Position.x) * inverse;
-            float t2 = (box.Maximum.x - ray.Position.x) * inverse;
+            const float inverse = 1.0f / ray.Direction.X;
+            float t1 = (box.Minimum.X - ray.Position.X) * inverse;
+            float t2 = (box.Maximum.X - ray.Position.X) * inverse;
 
             if (t1 > t2)
             {
@@ -781,9 +781,9 @@ namespace SE
             }
         }
 
-        if (Math::IsZero(ray.Direction.y))
+        if (Math::IsZero(ray.Direction.Y))
         {
-            if (ray.Position.y < box.Minimum.y || ray.Position.y > box.Maximum.y)
+            if (ray.Position.Y < box.Minimum.Y || ray.Position.Y > box.Maximum.Y)
             {
                 distance = 0.0f;
                 return false;
@@ -791,9 +791,9 @@ namespace SE
         }
         else
         {
-            const float inverse = 1.0f / ray.Direction.y;
-            float t1 = (box.Minimum.y - ray.Position.y) * inverse;
-            float t2 = (box.Maximum.y - ray.Position.y) * inverse;
+            const float inverse = 1.0f / ray.Direction.Y;
+            float t1 = (box.Minimum.Y - ray.Position.Y) * inverse;
+            float t2 = (box.Maximum.Y - ray.Position.Y) * inverse;
 
             if (t1 > t2)
             {
@@ -812,9 +812,9 @@ namespace SE
             }
         }
 
-        if (Math::IsZero(ray.Direction.z))
+        if (Math::IsZero(ray.Direction.Z))
         {
-            if (ray.Position.z < box.Minimum.z || ray.Position.z > box.Maximum.z)
+            if (ray.Position.Z < box.Minimum.Z || ray.Position.Z > box.Maximum.Z)
             {
                 distance = 0.0f;
                 return false;
@@ -822,9 +822,9 @@ namespace SE
         }
         else
         {
-            const float inverse = 1.0f / ray.Direction.z;
-            float t1 = (box.Minimum.z - ray.Position.z) * inverse;
-            float t2 = (box.Maximum.z - ray.Position.z) * inverse;
+            const float inverse = 1.0f / ray.Direction.Z;
+            float t1 = (box.Minimum.Z - ray.Position.Z) * inverse;
+            float t2 = (box.Maximum.Z - ray.Position.Z) * inverse;
 
             if (t1 > t2)
             {
@@ -864,24 +864,24 @@ namespace SE
 
         float dMin = Max_float;
 
-        float d = Math::Abs(size.x - Math::Abs(localPoint.x));
+        float d = Math::Abs(size.X - Math::Abs(localPoint.X));
         if (d < dMin)
         {
             dMin = d;
-            normal = Float3(Math::Sign(localPoint.x), 0, 0);
+            normal = Float3(Math::Sign(localPoint.X), 0, 0);
         }
 
-        d = Math::Abs(size.y - Math::Abs(localPoint.y));
+        d = Math::Abs(size.Y - Math::Abs(localPoint.Y));
         if (d < dMin)
         {
             dMin = d;
-            normal = Float3(0, Math::Sign(localPoint.y), 0);
+            normal = Float3(0, Math::Sign(localPoint.Y), 0);
         }
 
-        d = Math::Abs(size.z - Math::Abs(localPoint.z));
+        d = Math::Abs(size.Z - Math::Abs(localPoint.Z));
         if (d < dMin)
         {
-            normal = Float3(0, 0, Math::Sign(localPoint.z));
+            normal = Float3(0, 0, Math::Sign(localPoint.Z));
         }
 
         return true;
@@ -1035,12 +1035,12 @@ namespace SE
         Float3 min;
         Float3 max;
 
-        max.x = plane.Normal.x >= 0.0f ? box.Minimum.x : box.Maximum.x;
-        max.y = plane.Normal.y >= 0.0f ? box.Minimum.y : box.Maximum.y;
-        max.z = plane.Normal.z >= 0.0f ? box.Minimum.z : box.Maximum.z;
-        min.x = plane.Normal.x >= 0.0f ? box.Maximum.x : box.Minimum.x;
-        min.y = plane.Normal.y >= 0.0f ? box.Maximum.y : box.Minimum.y;
-        min.z = plane.Normal.z >= 0.0f ? box.Maximum.z : box.Minimum.z;
+        max.X = plane.Normal.X >= 0.0f ? box.Minimum.X : box.Maximum.X;
+        max.Y = plane.Normal.Y >= 0.0f ? box.Minimum.Y : box.Maximum.Y;
+        max.Z = plane.Normal.Z >= 0.0f ? box.Minimum.Z : box.Maximum.Z;
+        min.X = plane.Normal.X >= 0.0f ? box.Maximum.X : box.Minimum.X;
+        min.Y = plane.Normal.Y >= 0.0f ? box.Maximum.Y : box.Minimum.Y;
+        min.Z = plane.Normal.Z >= 0.0f ? box.Maximum.Z : box.Minimum.Z;
 
         float distance = Float3::Dot(plane.Normal, max);
         if (distance + plane.D > Plane::DistanceEpsilon)
@@ -1068,11 +1068,11 @@ namespace SE
 
     bool CollisionsHelper::BoxIntersectsBox(const BoundingBox& box1, const BoundingBox& box2)
     {
-        if (box1.Minimum.x > box2.Maximum.x || box2.Minimum.x > box1.Maximum.x)
+        if (box1.Minimum.X > box2.Maximum.X || box2.Minimum.X > box1.Maximum.X)
             return false;
-        if (box1.Minimum.y > box2.Maximum.y || box2.Minimum.y > box1.Maximum.y)
+        if (box1.Minimum.Y > box2.Maximum.Y || box2.Minimum.Y > box1.Maximum.Y)
             return false;
-        if (box1.Minimum.z > box2.Maximum.z || box2.Minimum.z > box1.Maximum.z)
+        if (box1.Minimum.Z > box2.Maximum.Z || box2.Minimum.Z > box1.Maximum.Z)
             return false;
         return true;
     }
@@ -1110,9 +1110,9 @@ namespace SE
 
     ContainmentType CollisionsHelper::BoxContainsPoint(const BoundingBox& box, const Float3& point)
     {
-        if (box.Minimum.x <= point.x && box.Maximum.x >= point.x &&
-            box.Minimum.y <= point.y && box.Maximum.y >= point.y &&
-            box.Minimum.z <= point.z && box.Maximum.z >= point.z)
+        if (box.Minimum.X <= point.X && box.Maximum.X >= point.X &&
+            box.Minimum.Y <= point.Y && box.Maximum.Y >= point.Y &&
+            box.Minimum.Z <= point.Z && box.Maximum.Z >= point.Z)
         {
             return ContainmentType::Contains;
         }
@@ -1122,18 +1122,18 @@ namespace SE
 
     ContainmentType CollisionsHelper::BoxContainsBox(const BoundingBox& box1, const BoundingBox& box2)
     {
-        if (box1.Maximum.x < box2.Minimum.x || box1.Minimum.x > box2.Maximum.x)
+        if (box1.Maximum.X < box2.Minimum.X || box1.Minimum.X > box2.Maximum.X)
             return ContainmentType::Disjoint;
 
-        if (box1.Maximum.y < box2.Minimum.y || box1.Minimum.y > box2.Maximum.y)
+        if (box1.Maximum.Y < box2.Minimum.Y || box1.Minimum.Y > box2.Maximum.Y)
             return ContainmentType::Disjoint;
 
-        if (box1.Maximum.z < box2.Minimum.z || box1.Minimum.z > box2.Maximum.z)
+        if (box1.Maximum.Z < box2.Minimum.Z || box1.Minimum.Z > box2.Maximum.Z)
             return ContainmentType::Disjoint;
 
-        if (box1.Minimum.x <= box2.Minimum.x && (box2.Maximum.x <= box1.Maximum.x &&
-                box1.Minimum.y <= box2.Minimum.y && box2.Maximum.y <= box1.Maximum.y) &&
-            box1.Minimum.z <= box2.Minimum.z && box2.Maximum.z <= box1.Maximum.z)
+        if (box1.Minimum.X <= box2.Minimum.X && (box2.Maximum.X <= box1.Maximum.X &&
+                box1.Minimum.Y <= box2.Minimum.Y && box2.Maximum.Y <= box1.Maximum.Y) &&
+            box1.Minimum.Z <= box2.Minimum.Z && box2.Maximum.Z <= box1.Maximum.Z)
         {
             return ContainmentType::Contains;
         }
@@ -1150,9 +1150,9 @@ namespace SE
         if (distance > sphere.Radius * sphere.Radius)
             return ContainmentType::Disjoint;
 
-        if (box.Minimum.x + sphere.Radius <= sphere.Center.x && sphere.Center.x <= box.Maximum.x - sphere.Radius && (box.Maximum.x - box.Minimum.x > sphere.Radius &&
-            box.Minimum.y + sphere.Radius <= sphere.Center.y) && (sphere.Center.y <= box.Maximum.y - sphere.Radius && box.Maximum.y - box.Minimum.y > sphere.Radius &&
-            (box.Minimum.z + sphere.Radius <= sphere.Center.z && sphere.Center.z <= box.Maximum.z - sphere.Radius && box.Maximum.z - box.Minimum.z > sphere.Radius)))
+        if (box.Minimum.X + sphere.Radius <= sphere.Center.X && sphere.Center.X <= box.Maximum.X - sphere.Radius && (box.Maximum.X - box.Minimum.X > sphere.Radius &&
+            box.Minimum.Y + sphere.Radius <= sphere.Center.Y) && (sphere.Center.Y <= box.Maximum.Y - sphere.Radius && box.Maximum.Y - box.Minimum.Y > sphere.Radius &&
+            (box.Minimum.Z + sphere.Radius <= sphere.Center.Z && sphere.Center.Z <= box.Maximum.Z - sphere.Radius && box.Maximum.Z - box.Minimum.Z > sphere.Radius)))
         {
             return ContainmentType::Contains;
         }
@@ -1194,51 +1194,51 @@ namespace SE
 
         const float radiusSquared = sphere.Radius * sphere.Radius;
 
-        vector.x = sphere.Center.x - box.Minimum.x;
-        vector.y = sphere.Center.y - box.Maximum.y;
-        vector.z = sphere.Center.z - box.Maximum.z;
+        vector.X = sphere.Center.X - box.Minimum.X;
+        vector.Y = sphere.Center.Y - box.Maximum.Y;
+        vector.Z = sphere.Center.Z - box.Maximum.Z;
         if (vector.LengthSquared() > radiusSquared)
             return ContainmentType::Intersects;
 
-        vector.x = sphere.Center.x - box.Maximum.x;
-        vector.y = sphere.Center.y - box.Maximum.y;
-        vector.z = sphere.Center.z - box.Maximum.z;
+        vector.X = sphere.Center.X - box.Maximum.X;
+        vector.Y = sphere.Center.Y - box.Maximum.Y;
+        vector.Z = sphere.Center.Z - box.Maximum.Z;
         if (vector.LengthSquared() > radiusSquared)
             return ContainmentType::Intersects;
 
-        vector.x = sphere.Center.x - box.Maximum.x;
-        vector.y = sphere.Center.y - box.Minimum.y;
-        vector.z = sphere.Center.z - box.Maximum.z;
+        vector.X = sphere.Center.X - box.Maximum.X;
+        vector.Y = sphere.Center.Y - box.Minimum.Y;
+        vector.Z = sphere.Center.Z - box.Maximum.Z;
         if (vector.LengthSquared() > radiusSquared)
             return ContainmentType::Intersects;
 
-        vector.x = sphere.Center.x - box.Minimum.x;
-        vector.y = sphere.Center.y - box.Minimum.y;
-        vector.z = sphere.Center.z - box.Maximum.z;
+        vector.X = sphere.Center.X - box.Minimum.X;
+        vector.Y = sphere.Center.Y - box.Minimum.Y;
+        vector.Z = sphere.Center.Z - box.Maximum.Z;
         if (vector.LengthSquared() > radiusSquared)
             return ContainmentType::Intersects;
 
-        vector.x = sphere.Center.x - box.Minimum.x;
-        vector.y = sphere.Center.y - box.Maximum.y;
-        vector.z = sphere.Center.z - box.Minimum.z;
+        vector.X = sphere.Center.X - box.Minimum.X;
+        vector.Y = sphere.Center.Y - box.Maximum.Y;
+        vector.Z = sphere.Center.Z - box.Minimum.Z;
         if (vector.LengthSquared() > radiusSquared)
             return ContainmentType::Intersects;
 
-        vector.x = sphere.Center.x - box.Maximum.x;
-        vector.y = sphere.Center.y - box.Maximum.y;
-        vector.z = sphere.Center.z - box.Minimum.z;
+        vector.X = sphere.Center.X - box.Maximum.X;
+        vector.Y = sphere.Center.Y - box.Maximum.Y;
+        vector.Z = sphere.Center.Z - box.Minimum.Z;
         if (vector.LengthSquared() > radiusSquared)
             return ContainmentType::Intersects;
 
-        vector.x = sphere.Center.x - box.Maximum.x;
-        vector.y = sphere.Center.y - box.Minimum.y;
-        vector.z = sphere.Center.z - box.Minimum.z;
+        vector.X = sphere.Center.X - box.Maximum.X;
+        vector.Y = sphere.Center.Y - box.Minimum.Y;
+        vector.Z = sphere.Center.Z - box.Minimum.Z;
         if (vector.LengthSquared() > radiusSquared)
             return ContainmentType::Intersects;
 
-        vector.x = sphere.Center.x - box.Minimum.x;
-        vector.y = sphere.Center.y - box.Minimum.y;
-        vector.z = sphere.Center.z - box.Minimum.z;
+        vector.X = sphere.Center.X - box.Minimum.X;
+        vector.Y = sphere.Center.Y - box.Minimum.Y;
+        vector.Z = sphere.Center.Z - box.Minimum.Z;
         if (vector.LengthSquared() > radiusSquared)
             return ContainmentType::Intersects;
 
@@ -1268,22 +1268,22 @@ namespace SE
             Plane plane = frustum._planes[i];
 
             Float3 p = box.Minimum;
-            if (plane.Normal.x >= 0)
-                p.x = box.Maximum.x;
-            if (plane.Normal.y >= 0)
-                p.y = box.Maximum.y;
-            if (plane.Normal.z >= 0)
-                p.z = box.Maximum.z;
+            if (plane.Normal.X >= 0)
+                p.X = box.Maximum.X;
+            if (plane.Normal.Y >= 0)
+                p.Y = box.Maximum.Y;
+            if (plane.Normal.Z >= 0)
+                p.Z = box.Maximum.Z;
             if (Float3::Dot(plane.Normal, p) + plane.D < Plane::DistanceEpsilon)
                 return ContainmentType::Disjoint;
 
             p = box.Maximum;
-            if (plane.Normal.x >= 0)
-                p.x = box.Minimum.x;
-            if (plane.Normal.y >= 0)
-                p.y = box.Minimum.y;
-            if (plane.Normal.z >= 0)
-                p.z = box.Minimum.z;
+            if (plane.Normal.X >= 0)
+                p.X = box.Minimum.X;
+            if (plane.Normal.Y >= 0)
+                p.Y = box.Minimum.Y;
+            if (plane.Normal.Z >= 0)
+                p.Z = box.Minimum.Z;
             if (Float3::Dot(plane.Normal, p) + plane.D < Plane::DistanceEpsilon)
                 result = ContainmentType::Intersects;
         }
@@ -1292,14 +1292,14 @@ namespace SE
 
     bool CollisionsHelper::LineIntersectsLine(const Float2& l1p1, const Float2& l1p2, const Float2& l2p1, const Float2& l2p2)
     {
-        float q = (l1p1.y - l2p1.y) * (l2p2.x - l2p1.x) - (l1p1.x - l2p1.x) * (l2p2.y - l2p1.y);
-        const float d = (l1p2.x - l1p1.x) * (l2p2.y - l2p1.y) - (l1p2.y - l1p1.y) * (l2p2.x - l2p1.x);
+        float q = (l1p1.Y - l2p1.Y) * (l2p2.X - l2p1.X) - (l1p1.X - l2p1.X) * (l2p2.Y - l2p1.Y);
+        const float d = (l1p2.X - l1p1.X) * (l2p2.Y - l2p1.Y) - (l1p2.Y - l1p1.Y) * (l2p2.X - l2p1.X);
 
         if (Math::IsZero(d))
             return false;
 
         const float r = q / d;
-        q = (l1p1.y - l2p1.y) * (l1p2.x - l1p1.x) - (l1p1.x - l2p1.x) * (l1p2.y - l1p1.y);
+        q = (l1p1.Y - l2p1.Y) * (l1p2.X - l1p1.X) - (l1p1.X - l2p1.X) * (l1p2.Y - l1p1.Y);
         const float s = q / d;
 
         return !(r < 0 || r > 1 || s < 0 || s > 1);

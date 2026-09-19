@@ -197,12 +197,6 @@ VariantTypeHandle CLRUtils::UnboxVariantType(CLRType* type)
     case CLRTypes::ValueType:
         if (klass == CLRCore::TypeCache::UID)
             return VariantTypeHandle(VariantTypes::UID);
-        if (klass == CLRCore::TypeCache::Vector2)
-            return VariantTypeHandle(VariantTypes::Vector2);
-        if (klass == CLRCore::TypeCache::Vector3)
-            return VariantTypeHandle(VariantTypes::Vector3);
-        if (klass == CLRCore::TypeCache::Vector4)
-            return VariantTypeHandle(VariantTypes::Vector4);
         if (klass == CLRCore::TypeCache::Int2)
             return VariantTypeHandle(VariantTypes::Int2);
         if (klass == CLRCore::TypeCache::Int3)
@@ -342,12 +336,6 @@ Variant CLRUtils::UnboxVariant(CLRObject* value)
     case CLRTypes::ValueType:
         if (klass == CLRCore::TypeCache::UID)
             return Variant(*static_cast<UID*>(unboxed));
-        if (klass == CLRCore::TypeCache::Vector2)
-            return *static_cast<Float2*>(unboxed);
-        if (klass == CLRCore::TypeCache::Vector3)
-            return *static_cast<Float3*>(unboxed);
-        if (klass == CLRCore::TypeCache::Vector4)
-            return *static_cast<Float4*>(unboxed);
         if (klass == CLRCore::TypeCache::Int2)
             return *static_cast<Int2*>(unboxed);
         if (klass == CLRCore::TypeCache::Int3)

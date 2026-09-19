@@ -42,6 +42,7 @@ namespace SE
 		/// <summary>
 		/// Gets parent GPU resource owning that view.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE GPUResource *GetParent() const
 		{
 			return m_Parent;
@@ -51,6 +52,7 @@ namespace SE
 		/// Gets the view format.
 		/// </summary>
 
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE PixelFormat GetFormat() const
 		{
 			return m_Format;
@@ -60,6 +62,7 @@ namespace SE
 		/// Gets view MSAA level.
 		/// </summary>
 
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE MSAALevel GetMSAA() const
 		{
 			return m_Msaa;
@@ -88,6 +91,7 @@ namespace SE
 		/// <summary>
 		/// Gets a value indicating whether this texture has any resided mip (data already uploaded to the GPU).
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE bool HasResidentMip() const
 		{
 			return m_ResidentMipLevels != 0;
@@ -96,6 +100,7 @@ namespace SE
 		/// <summary>
 		/// Gets a value indicating whether this texture has been allocated.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE bool IsAllocated() const
 		{
 			return m_Desc.MipLevels > 0;
@@ -104,6 +109,7 @@ namespace SE
 		/// <summary>
 		/// Gets texture width (in texels).
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE int32 Width() const
 		{
 			return m_Desc.Width;
@@ -112,6 +118,7 @@ namespace SE
 		/// <summary>
 		/// Gets texture height (in texels).
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE int32 Height() const
 		{
 			return m_Desc.Height;
@@ -120,6 +127,7 @@ namespace SE
 		/// <summary>
 		/// Gets texture depth (in texels).
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE int32 Depth() const
 		{
 			return m_Desc.Depth;
@@ -128,6 +136,7 @@ namespace SE
 		/// <summary>
 		/// Gets number of textures in the array.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE int32 ArraySize() const
 		{
 			return m_Desc.ArraySize;
@@ -136,6 +145,7 @@ namespace SE
 		/// <summary>
 		/// Gets multi-sampling parameters for the texture.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE MSAALevel MultiSampleLevel() const
 		{
 			return m_Desc.MultiSampleLevel;
@@ -144,6 +154,7 @@ namespace SE
 		/// <summary>
 		/// Gets number of mipmap levels in the texture.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE int32 MipLevels() const
 		{
 			return m_Desc.MipLevels;
@@ -152,6 +163,7 @@ namespace SE
 		/// <summary>
 		/// Gets the number of resident mipmap levels in the texture (already uploaded to the GPU).
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		FORCE_INLINE int32 ResidentMipLevels() const
 		{
 			return m_ResidentMipLevels;
@@ -160,6 +172,7 @@ namespace SE
 		/// <summary>
 		/// Gets the index of the highest resident mip map (may be equal to MipLevels if no mip has been uploaded). Note: mip=0 is the highest (top quality).
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE int32 HighestResidentMipIndex() const
 		{
 			return MipLevels() - ResidentMipLevels();
@@ -168,6 +181,7 @@ namespace SE
 		/// <summary>
 		/// Gets texture data format.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE PixelFormat Format() const
 		{
 			return m_Desc.Format;
@@ -176,7 +190,8 @@ namespace SE
 		/// <summary>
 		/// Gets flags of the texture.
 		/// </summary>
-		FORCE_INLINE GPUTextureBitFlags Flags() const
+		SE_FUNCTION(API(Prop, ReadOnly))
+		FORCE_INLINE GPUTextureFlags Flags() const
 		{
 			return m_Desc.Flags;
 		}
@@ -184,6 +199,7 @@ namespace SE
 		/// <summary>
 		/// Gets texture dimensions.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE TextureDimensions Dimensions() const
 		{
 			return m_Desc.Dimensions;
@@ -192,6 +208,7 @@ namespace SE
 		/// <summary>
 		/// Gets texture description structure.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE const GPUTextureDescription& GetDescription() const
 		{
 			return m_Desc;
@@ -291,7 +308,7 @@ namespace SE
 		/// </summary>
 		FORCE_INLINE bool IsRegularTexture() const
 		{
-			return m_Desc.Flags.Is(GPUTextureFlags::ShaderResource);
+			return EnumHasAnyFlags(m_Desc.Flags, GPUTextureFlags::ShaderResource);
 		}
 
 		/// <summary>
@@ -314,17 +331,20 @@ namespace SE
 		/// <summary>
 		/// Gets the texture total size in pixels.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		Float2 Size() const;
 
 		/// <summary>
 		/// Gets the texture total size in pixels (with depth).
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		Float3 Size3() const;
 
 		/// <summary>
 		/// Returns true if texture has size that is power of two.
 		/// </summary>
 		/// <returns>True if texture has size that is power of two.</returns>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		bool IsPowerOfTwo() const;
 
 		/// <summary>
@@ -333,6 +353,7 @@ namespace SE
 		/// <param name="mipLevelIndex">Mip level index (zero-based where 0 is top texture surface).</param>
 		/// <param name="mipWidth">The calculated mip level width (in pixels).</param>
 		/// <param name="mipHeight">The calculated mip level height (in pixels).</param>
+		SE_FUNCTION(API())
 		void GetMipSize(int32 mipLevelIndex, int32& mipWidth, int32& mipHeight) const;
 
 		/// <summary>
@@ -342,6 +363,7 @@ namespace SE
 		/// <param name="mipWidth">The calculated mip level width (in pixels).</param>
 		/// <param name="mipHeight">The calculated mip level height (in pixels).</param>
 		/// <param name="mipDepth">The calculated mip level depth (in pixels).</param>
+		SE_FUNCTION(API())
 		void GetMipSize(int32 mipLevelIndex, int32& mipWidth, int32& mipHeight, int32& mipDepth) const;
 
 		/// <summary>
@@ -402,6 +424,7 @@ namespace SE
 		/// Gets the view to the first surface (only for 2D textures).
 		/// </summary>
 		/// <returns>The view to the main texture surface.</returns>
+		SE_FUNCTION(API())
 		FORCE_INLINE GPUTextureView* View() const
 		{
 			return View(0);
@@ -415,6 +438,7 @@ namespace SE
 		/// </remarks>
 		/// <param name="arrayOrDepthIndex">The index of the surface in an array (or depth slice index).</param>
 		/// <returns>The view to the surface at index in an array.</returns>
+		SE_FUNCTION(API())
 		virtual GPUTextureView* View(int32 arrayOrDepthIndex) const = 0;
 
 		/// <summary>
@@ -426,6 +450,7 @@ namespace SE
 		/// <param name="arrayOrDepthIndex">The index of the surface in an array (or depth slice index).</param>
 		/// <param name="mipMapIndex">Index of the mip level.</param>
 		/// <returns>The view to the surface at index in an array.</returns>
+		SE_FUNCTION(API())
 		virtual GPUTextureView* View(int32 arrayOrDepthIndex, int32 mipMapIndex) const = 0;
 
 		/// <summary>
@@ -435,6 +460,7 @@ namespace SE
 		/// To use array texture view you need to create render target as an array.
 		/// </remarks>
 		/// <returns>The view to the array of surfaces.</returns>
+		SE_FUNCTION(API())
 		virtual GPUTextureView* ViewArray() const = 0;
 
 		/// <summary>
@@ -444,12 +470,14 @@ namespace SE
 		/// To use volume texture view you need to create render target as a volume resource (3D texture with Depth > 1).
 		/// </remarks>
 		/// <returns>The view to the volume texture.</returns>
+		SE_FUNCTION(API())
 		virtual GPUTextureView* ViewVolume() const = 0;
 
 		/// <summary>
 		/// Gets the view to the texture as read-only depth/stencil buffer. Valid only if graphics device supports it and the texture uses depth/stencil.
 		/// </summary>
 		/// <returns>The view to the depth-stencil resource descriptor as read-only depth.</returns>
+		SE_FUNCTION(API())
 		virtual GPUTextureView* ViewReadOnlyDepth() const = 0;
 
 		/// <summary>
@@ -467,6 +495,7 @@ namespace SE
 		/// </summary>
 		/// <param name="desc">The texture description.</param>
 		/// <returns>True if cannot create texture, otherwise false.</returns>
+		SE_FUNCTION(API())
 		bool Init(const GPUTextureDescription& desc);
 
 		/// <summary>
@@ -488,6 +517,7 @@ namespace SE
 		/// <param name="height">The height.</param>
 		/// <param name="format">The new texture format. Use Unknown to remain texture format unchanged.</param>
 		/// <returns>True if fails, otherwise false.</returns>
+		SE_FUNCTION(API())
 		bool Resize(int32 width, int32 height, PixelFormat format = PixelFormat::Undefined)
 		{
 			const auto depth = IsAllocated() ? Depth() : 1;
@@ -502,6 +532,7 @@ namespace SE
 		/// <param name="depth">The depth.</param>
 		/// <param name="format">The new texture format. Use Unknown to remain texture format unchanged.</param>
 		/// <returns>True if fails, otherwise false.</returns>
+		SE_FUNCTION(API())
 		bool Resize(int32 width, int32 height, int32 depth, PixelFormat format = PixelFormat::Undefined);
 
 	public:
@@ -560,6 +591,7 @@ namespace SE
 		/// <summary>
 		/// Sets the number of resident mipmap levels in the texture (already uploaded to the GPU).
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		void SetResidentMipLevels(int32 count);
 
 		/// <summary>

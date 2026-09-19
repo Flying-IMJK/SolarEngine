@@ -13,7 +13,7 @@ namespace SE
 		for (int i = 0; i < m_Children.Count(); i++)
 		{
 			Control* c = m_Children[i];
-			if (c->Visible && Math::IsZero(c->AnchorMin.operator->().x) && Math::IsZero(c->AnchorMax.operator->().x))
+			if (c->Visible && Math::IsZero(c->AnchorMin.operator->().X) && Math::IsZero(c->AnchorMax.operator->().X))
 			{
 				c->Width = w;
 			}
@@ -33,16 +33,16 @@ namespace SE
 			if (c->Visible)
 			{
 				float h = c->Height;
-				if (Math::IsZero(c->AnchorMin.operator->().y) && Math::IsZero(c->AnchorMax.operator->().y))
+				if (Math::IsZero(c->AnchorMin.operator->().Y) && Math::IsZero(c->AnchorMax.operator->().Y))
 				{
-					c->Bounds = Rectangle(_margin.Left + _offset.x, top + _offset.y, w, h);
+					c->Bounds = Rectangle(_margin.Left + _offset.X, top + _offset.Y, w, h);
 					top = c->Bottom + _spacing;
 					hasAnyTop = true;
 				}
-				else if (Math::IsOne(c->AnchorMin.operator->().y) && Math::IsOne(c->AnchorMax.operator->().y))
+				else if (Math::IsOne(c->AnchorMin.operator->().Y) && Math::IsOne(c->AnchorMax.operator->().Y))
 				{
 					bottom += h + _spacing;
-					c->Bounds = Rectangle(_margin.Left + _offset.x, Height - bottom + _offset.y, w, h);
+					c->Bounds = Rectangle(_margin.Left + _offset.X, Height - bottom + _offset.Y, w, h);
 					hasAnyBottom = true;
 				}
 			}

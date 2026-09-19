@@ -134,25 +134,25 @@ namespace SE
 		template<typename T>
 		void ReadVector2(Vector2Base<T>* data)
 		{
-			ReadBytes(&data->x, sizeof(T));
-			ReadBytes(&data->y, sizeof(T));
+			ReadBytes(&data->X, sizeof(T));
+			ReadBytes(&data->Y, sizeof(T));
 		}
 
 		template<typename T>
 		void ReadVector3(Vector3Base<T>* data)
 		{
-			ReadBytes(&data->x, sizeof(T));
-			ReadBytes(&data->y, sizeof(T));
-			ReadBytes(&data->z, sizeof(T));
+			ReadBytes(&data->X, sizeof(T));
+			ReadBytes(&data->Y, sizeof(T));
+			ReadBytes(&data->Z, sizeof(T));
 		}
 
 		template<typename T>
 		void ReadVector4(Vector4Base<T>* data)
 		{
-			ReadBytes(&data->x, sizeof(T));
-			ReadBytes(&data->y, sizeof(T));
-			ReadBytes(&data->z, sizeof(T));
-			ReadBytes(&data->w, sizeof(T));
+			ReadBytes(&data->X, sizeof(T));
+			ReadBytes(&data->Y, sizeof(T));
+			ReadBytes(&data->Z, sizeof(T));
+			ReadBytes(&data->W, sizeof(T));
 		}
 
 	public:

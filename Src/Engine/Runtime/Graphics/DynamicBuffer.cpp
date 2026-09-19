@@ -106,10 +106,10 @@ namespace SE
 
 	void DynamicTypedBuffer::InitDesc(GPUBufferDescription& desc, int32 numElements)
 	{
-		EnumFlags<GPUBufferFlags> bufferFlags = GPUBufferFlags::ShaderResource;
+		GPUBufferFlags bufferFlags = GPUBufferFlags::ShaderResource;
 		if (m_IsUnorderedAccess)
 		{
-			bufferFlags.SetFlag(GPUBufferFlags::UnorderedAccess);
+			bufferFlags = EnumAddFlags(bufferFlags, GPUBufferFlags::UnorderedAccess);
 		}
 		desc = GPUBufferDescription::Buffer(numElements * m_Stride, bufferFlags, _format, nullptr, m_Stride, GPUResourceUsage::Dynamic);
 	}

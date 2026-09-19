@@ -182,7 +182,7 @@ namespace SE
         Rectangle Bounds;
     };
 
-    EnumFlags<Render2D::RenderingFeatures> Render2D::Features = { RenderingFeatures::VertexSnapping, RenderingFeatures::FallbackFonts };
+    Render2D::RenderingFeatures Render2D::Features = EnumCombineFlags(RenderingFeatures::VertexSnapping, RenderingFeatures::FallbackFonts);
 
     struct Render2DData
     {
@@ -258,7 +258,7 @@ namespace SE
             point,
             Half2(uv),
             color * render2DData->TintLayersStack.Peek(),
-            { 0.0f, (float)Render2D::Features.Get() },
+            { 0.0f, static_cast<float>(static_cast<uint32>(Render2D::Features)) },
             render2DData->ClipLayersStack.Peek().Mask
         };
     }
@@ -322,9 +322,9 @@ namespace SE
 
         Render2DVertex quad[4];
         quad[0] = MakeVertex(rect.GetBottomRight(), uvBottomRight, color3);
-        quad[1] = MakeVertex(rect.GetBottomLeft(), Float2(uvUpperLeft.x, uvBottomRight.y), color4);
+        quad[1] = MakeVertex(rect.GetBottomLeft(), Float2(uvUpperLeft.X, uvBottomRight.Y), color4);
         quad[2] = MakeVertex(rect.GetUpperLeft(), uvUpperLeft, color1);
-        quad[3] = MakeVertex(rect.GetUpperRight(), Float2(uvBottomRight.x, uvUpperLeft.y), color2);
+        quad[3] = MakeVertex(rect.GetUpperRight(), Float2(uvBottomRight.X, uvUpperLeft.Y), color2);
         render2DData->VB.Write(quad, sizeof(quad));
 
         uint32 indices[6];
@@ -338,9 +338,9 @@ namespace SE
     {
         Render2DVertex quad[4];
         quad[0] = MakeVertex(rect.GetBottomRight(), uvBottomRight, color);
-        quad[1] = MakeVertex(rect.GetBottomLeft(), Float2(uvUpperLeft.x, uvBottomRight.y), color);
+        quad[1] = MakeVertex(rect.GetBottomLeft(), Float2(uvUpperLeft.X, uvBottomRight.Y), color);
         quad[2] = MakeVertex(rect.GetUpperLeft(), uvUpperLeft, color);
-        quad[3] = MakeVertex(rect.GetUpperRight(), Float2(uvBottomRight.x, uvUpperLeft.y), color);
+        quad[3] = MakeVertex(rect.GetUpperRight(), Float2(uvBottomRight.X, uvUpperLeft.Y), color);
         render2DData->VB.Write(quad, sizeof(quad));
 
         uint32 indices[6];
@@ -357,51 +357,51 @@ namespace SE
 
     void Write9SlicingRect(const Rectangle& rect, const Color& color, const Float4& border, const Float4& borderUVs)
     {
-        const Rectangle upperLeft(rect.Location.x, rect.Location.y, border.x, border.z);
-        const Rectangle upperRight(rect.Location.x + rect.Size.x - border.y, rect.Location.y, border.y, border.z);
-        const Rectangle bottomLeft(rect.Location.x, rect.Location.y + rect.Size.y - border.w, border.x, border.w);
-        const Rectangle bottomRight(rect.Location.x + rect.Size.x - border.y, rect.Location.y + rect.Size.y - border.w, border.y, border.w);
+        const Rectangle upperLeft(rect.Location.X, rect.Location.Y, border.X, border.Z);
+        const Rectangle upperRight(rect.Location.X + rect.Size.X - border.Y, rect.Location.Y, border.Y, border.Z);
+        const Rectangle bottomLeft(rect.Location.X, rect.Location.Y + rect.Size.Y - border.W, border.X, border.W);
+        const Rectangle bottomRight(rect.Location.X + rect.Size.X - border.Y, rect.Location.Y + rect.Size.Y - border.W, border.Y, border.W);
 
-        const Float2 upperLeftUV(borderUVs.x, borderUVs.z);
-        const Float2 upperRightUV(1.0f - borderUVs.y, borderUVs.z);
-        const Float2 bottomLeftUV(borderUVs.x, 1.0f - borderUVs.w);
-        const Float2 bottomRightUV(1.0f - borderUVs.y, 1.0f - borderUVs.w);
+        const Float2 upperLeftUV(borderUVs.X, borderUVs.Z);
+        const Float2 upperRightUV(1.0f - borderUVs.Y, borderUVs.Z);
+        const Float2 bottomLeftUV(borderUVs.X, 1.0f - borderUVs.W);
+        const Float2 bottomRightUV(1.0f - borderUVs.Y, 1.0f - borderUVs.W);
 
         WriteRect(upperLeft, color, Float2::Zero, upperLeftUV);
-        WriteRect(upperRight, color, Float2(upperRightUV.x, 0), Float2(1, upperLeftUV.y));
-        WriteRect(bottomLeft, color, Float2(0, bottomLeftUV.y), Float2(bottomLeftUV.x, 1));
+        WriteRect(upperRight, color, Float2(upperRightUV.X, 0), Float2(1, upperLeftUV.Y));
+        WriteRect(bottomLeft, color, Float2(0, bottomLeftUV.Y), Float2(bottomLeftUV.X, 1));
         WriteRect(bottomRight, color, bottomRightUV, Float2::One);
 
-        WriteRect(Rectangle(upperLeft.GetUpperRight(), upperRight.GetBottomLeft() - upperLeft.GetUpperRight()), color, Float2(upperLeftUV.x, 0), upperRightUV);
-        WriteRect(Rectangle(upperLeft.GetBottomLeft(), bottomLeft.GetUpperRight() - upperLeft.GetBottomLeft()), color, Float2(0, upperLeftUV.y), bottomLeftUV);
-        WriteRect(Rectangle(bottomLeft.GetUpperRight(), bottomRight.GetBottomLeft() - bottomLeft.GetUpperRight()), color, bottomLeftUV, Float2(bottomRightUV.x, 1));
-        WriteRect(Rectangle(upperRight.GetBottomLeft(), bottomRight.GetUpperRight() - upperRight.GetBottomLeft()), color, upperRightUV, Float2(1, bottomRightUV.y));
+        WriteRect(Rectangle(upperLeft.GetUpperRight(), upperRight.GetBottomLeft() - upperLeft.GetUpperRight()), color, Float2(upperLeftUV.X, 0), upperRightUV);
+        WriteRect(Rectangle(upperLeft.GetBottomLeft(), bottomLeft.GetUpperRight() - upperLeft.GetBottomLeft()), color, Float2(0, upperLeftUV.Y), bottomLeftUV);
+        WriteRect(Rectangle(bottomLeft.GetUpperRight(), bottomRight.GetBottomLeft() - bottomLeft.GetUpperRight()), color, bottomLeftUV, Float2(bottomRightUV.X, 1));
+        WriteRect(Rectangle(upperRight.GetBottomLeft(), bottomRight.GetUpperRight() - upperRight.GetBottomLeft()), color, upperRightUV, Float2(1, bottomRightUV.Y));
 
         WriteRect(Rectangle(upperLeft.GetBottomRight(), bottomRight.GetUpperLeft() - upperLeft.GetBottomRight()), color, upperRightUV, bottomRightUV);
     }
 
     void Write9SlicingRect(const Rectangle& rect, const Color& color, const Float4& border, const Float4& borderUVs, const Float2& uvLocation, const Float2& uvSize)
     {
-        const Rectangle upperLeft(rect.Location.x, rect.Location.y, border.x, border.z);
-        const Rectangle upperRight(rect.Location.x + rect.Size.x - border.y, rect.Location.y, border.y, border.z);
-        const Rectangle bottomLeft(rect.Location.x, rect.Location.y + rect.Size.y - border.w, border.x, border.w);
-        const Rectangle bottomRight(rect.Location.x + rect.Size.x - border.y, rect.Location.y + rect.Size.y - border.w, border.y, border.w);
+        const Rectangle upperLeft(rect.Location.X, rect.Location.Y, border.X, border.Z);
+        const Rectangle upperRight(rect.Location.X + rect.Size.X - border.Y, rect.Location.Y, border.Y, border.Z);
+        const Rectangle bottomLeft(rect.Location.X, rect.Location.Y + rect.Size.Y - border.W, border.X, border.W);
+        const Rectangle bottomRight(rect.Location.X + rect.Size.X - border.Y, rect.Location.Y + rect.Size.Y - border.W, border.Y, border.W);
 
-        const Float2 upperLeftUV = Float2(borderUVs.x, borderUVs.z) * uvSize + uvLocation;
-        const Float2 upperRightUV = Float2(1.0f - borderUVs.y, borderUVs.z) * uvSize + uvLocation;
-        const Float2 bottomLeftUV = Float2(borderUVs.x, 1.0f - borderUVs.w) * uvSize + uvLocation;
-        const Float2 bottomRightUV = Float2(1.0f - borderUVs.y, 1.0f - borderUVs.w) * uvSize + uvLocation;
+        const Float2 upperLeftUV = Float2(borderUVs.X, borderUVs.Z) * uvSize + uvLocation;
+        const Float2 upperRightUV = Float2(1.0f - borderUVs.Y, borderUVs.Z) * uvSize + uvLocation;
+        const Float2 bottomLeftUV = Float2(borderUVs.X, 1.0f - borderUVs.W) * uvSize + uvLocation;
+        const Float2 bottomRightUV = Float2(1.0f - borderUVs.Y, 1.0f - borderUVs.W) * uvSize + uvLocation;
         const Float2 uvEnd = uvLocation + uvSize;
 
         WriteRect(upperLeft, color, uvLocation, upperLeftUV);
-        WriteRect(upperRight, color, Float2(upperRightUV.x, uvLocation.y), Float2(uvEnd.x, upperLeftUV.y));
-        WriteRect(bottomLeft, color, Float2(uvLocation.x, bottomLeftUV.y), Float2(bottomLeftUV.x, uvEnd.y));
+        WriteRect(upperRight, color, Float2(upperRightUV.X, uvLocation.Y), Float2(uvEnd.X, upperLeftUV.Y));
+        WriteRect(bottomLeft, color, Float2(uvLocation.X, bottomLeftUV.Y), Float2(bottomLeftUV.X, uvEnd.Y));
         WriteRect(bottomRight, color, bottomRightUV, uvEnd);
 
-        WriteRect(Rectangle(upperLeft.GetUpperRight(), upperRight.GetBottomLeft() - upperLeft.GetUpperRight()), color, Float2(upperLeftUV.x, uvLocation.y), upperRightUV);
-        WriteRect(Rectangle(upperLeft.GetBottomLeft(), bottomLeft.GetUpperRight() - upperLeft.GetBottomLeft()), color, Float2(uvLocation.x, upperLeftUV.y), bottomLeftUV);
-        WriteRect(Rectangle(bottomLeft.GetUpperRight(), bottomRight.GetBottomLeft() - bottomLeft.GetUpperRight()), color, bottomLeftUV, Float2(bottomRightUV.x, uvEnd.y));
-        WriteRect(Rectangle(upperRight.GetBottomLeft(), bottomRight.GetUpperRight() - upperRight.GetBottomLeft()), color, upperRightUV, Float2(uvEnd.x, bottomRightUV.y));
+        WriteRect(Rectangle(upperLeft.GetUpperRight(), upperRight.GetBottomLeft() - upperLeft.GetUpperRight()), color, Float2(upperLeftUV.X, uvLocation.Y), upperRightUV);
+        WriteRect(Rectangle(upperLeft.GetBottomLeft(), bottomLeft.GetUpperRight() - upperLeft.GetBottomLeft()), color, Float2(uvLocation.X, upperLeftUV.Y), bottomLeftUV);
+        WriteRect(Rectangle(bottomLeft.GetUpperRight(), bottomRight.GetBottomLeft() - bottomLeft.GetUpperRight()), color, bottomLeftUV, Float2(bottomRightUV.X, uvEnd.Y));
+        WriteRect(Rectangle(upperRight.GetBottomLeft(), bottomRight.GetUpperRight() - upperRight.GetBottomLeft()), color, upperRightUV, Float2(uvEnd.X, bottomRightUV.Y));
 
         WriteRect(Rectangle(upperLeft.GetBottomRight(), bottomRight.GetUpperLeft() - upperLeft.GetBottomRight()), color, upperRightUV, bottomRightUV);
     }
@@ -654,8 +654,8 @@ namespace SE
     void Render2D::Begin(GPUContext* context, GPUTextureView* output, GPUTextureView* depthBuffer, const Viewport& viewport)
     {
         Matrix view, projection, viewProjection;
-        const float halfWidth = viewport.width * 0.5f;
-        const float halfHeight = viewport.height * 0.5f;
+        const float halfWidth = viewport.Width * 0.5f;
+        const float halfHeight = viewport.Height * 0.5f;
         const float zNear = 0.0f;
         const float zFar = 1.0f;
         Matrix::OrthoOffCenter(-halfWidth, halfWidth, halfHeight, -halfHeight, zNear, zFar, projection);
@@ -687,7 +687,7 @@ namespace SE
         render2DData->TransformCached = defaultTransform;
 
         // Initialize default clip mask
-        const Rectangle defaultBounds(viewport.location, viewport.size);
+        const Rectangle defaultBounds(viewport.Location, viewport.Size);
         const RotatedRectangle defaultMask(defaultBounds);
         render2DData->ClipLayersStack.Clear();
         render2DData->ClipLayersStack.Add({ defaultMask, defaultBounds });
@@ -1091,12 +1091,12 @@ namespace SE
 
             // Prepare blur data
             BlurData data;
-            data.Bounds.x = bounds.x;
-            data.Bounds.y = bounds.y;
-            data.Bounds.z = bounds.z - bounds.x;
-            data.Bounds.w = bounds.w - bounds.y;
-            data.InvBufferSize.x = 1.0f / (float)renderTargetWidth;
-            data.InvBufferSize.y = 1.0f / (float)renderTargetHeight;
+            data.Bounds.X = bounds.X;
+            data.Bounds.Y = bounds.Y;
+            data.Bounds.Z = bounds.Z - bounds.X;
+            data.Bounds.W = bounds.W - bounds.Y;
+            data.InvBufferSize.X = 1.0f / (float)renderTargetWidth;
+            data.InvBufferSize.Y = 1.0f / (float)renderTargetHeight;
             data.SampleCount = ComputeBlurWeights(kernelSize, blurStrength, data.WeightAndOffsets);
             const auto cb = render2DData->GUIShader->GetShader()->GetCB(1);
             render2DData->Context->UpdateCB(cb, &data);
@@ -1204,7 +1204,7 @@ namespace SE
         FontCharacterEntry previous;
         int32 kerning;
         float scale = 1.0f / FontManager::FontScale;
-        const bool enableFallbackFonts = Features.IsFlag(RenderingFeatures::FallbackFonts);
+        const bool enableFallbackFonts = EnumHasAnyFlags(Features, RenderingFeatures::FallbackFonts);
 
         // Render all characters
         FontCharacterEntry entry;
@@ -1262,17 +1262,17 @@ namespace SE
                 {
                     kerning = 0;
                 }
-                pointer.x += kerning * scale;
+                pointer.X += kerning * scale;
                 previous = entry;
 
                 // Omit whitespace characters
                 if (!isWhitespace)
                 {
                     // Calculate character size and atlas coordinates
-                    const float x = pointer.x + entry.OffsetX * scale;
-                    const float y = pointer.y + (font->GetHeight() + font->GetDescender() - entry.OffsetY) * scale;
+                    const float x = pointer.X + entry.OffsetX * scale;
+                    const float y = pointer.Y + (font->GetHeight() + font->GetDescender() - entry.OffsetY) * scale;
 
-                    Rectangle charRect(x, y, entry.UVSize.x * scale, entry.UVSize.y * scale);
+                    Rectangle charRect(x, y, entry.UVSize.X * scale, entry.UVSize.Y * scale);
 
                     Float2 upperLeftUV = entry.UV * invAtlasSize;
                     Float2 rightBottomUV = (entry.UV + entry.UVSize) * invAtlasSize;
@@ -1285,13 +1285,13 @@ namespace SE
                 }
 
                 // Move
-                pointer.x += entry.AdvanceX * scale;
+                pointer.X += entry.AdvanceX * scale;
             }
             else
             {
                 // Move
-                pointer.x = location.x;
-                pointer.y += font->GetHeight() * scale;
+                pointer.X = location.X;
+                pointer.Y += font->GetHeight() * scale;
             }
         }
     }
@@ -1319,7 +1319,7 @@ namespace SE
         FontCharacterEntry previous;
         int32 kerning;
         float scale = layout.Scale / FontManager::FontScale;
-        const bool enableFallbackFonts = Features.IsFlag(RenderingFeatures::FallbackFonts);
+        const bool enableFallbackFonts = EnumHasAnyFlags(Features, RenderingFeatures::FallbackFonts);
 
         // Process text to get lines
         render2DData->Lines.Clear();
@@ -1384,17 +1384,17 @@ namespace SE
                     {
                         kerning = 0;
                     }
-                    pointer.x += (float)kerning * scale;
+                    pointer.X += (float)kerning * scale;
                     previous = entry;
 
                     // Omit whitespace characters
                     if (!isWhitespace)
                     {
                         // Calculate character size and atlas coordinates
-                        const float x = pointer.x + entry.OffsetX * scale;
-                        const float y = pointer.y - entry.OffsetY * scale + Math::Ceil((font->GetHeight() + font->GetDescender()) * scale);
+                        const float x = pointer.X + entry.OffsetX * scale;
+                        const float y = pointer.Y - entry.OffsetY * scale + Math::Ceil((font->GetHeight() + font->GetDescender()) * scale);
 
-                        Rectangle charRect(x, y, entry.UVSize.x * scale, entry.UVSize.y * scale);
+                        Rectangle charRect(x, y, entry.UVSize.X * scale, entry.UVSize.Y * scale);
                         charRect.Offset(layout.Bounds.Location);
 
                         Float2 upperLeftUV = entry.UV * invAtlasSize;
@@ -1408,7 +1408,7 @@ namespace SE
                     }
 
                     // Move
-                    pointer.x += entry.AdvanceX * scale;
+                    pointer.X += entry.AdvanceX * scale;
                 }
             }
         }
@@ -1421,22 +1421,22 @@ namespace SE
 
     FORCE_INLINE bool NeedAlphaWithTint(const Color& color)
     {
-        return (color.a * render2DData->TintLayersStack.Peek().a) < 1.0f;
+        return (color.A * render2DData->TintLayersStack.Peek().A) < 1.0f;
     }
 
     FORCE_INLINE bool NeedAlphaWithTint(const Color& color1, const Color& color2)
     {
-        return (color1.a * render2DData->TintLayersStack.Peek().a) < 1.0f || (color2.a * render2DData->TintLayersStack.Peek().a) < 1.0f;
+        return (color1.A * render2DData->TintLayersStack.Peek().A) < 1.0f || (color2.A * render2DData->TintLayersStack.Peek().A) < 1.0f;
     }
 
     FORCE_INLINE bool NeedAlphaWithTint(const Color& color1, const Color& color2, const Color& color3)
     {
-        return (color1.a * render2DData->TintLayersStack.Peek().a) < 1.0f || (color2.a * render2DData->TintLayersStack.Peek().a) < 1.0f || (color3.a * render2DData->TintLayersStack.Peek().a) < 1.0f;
+        return (color1.A * render2DData->TintLayersStack.Peek().A) < 1.0f || (color2.A * render2DData->TintLayersStack.Peek().A) < 1.0f || (color3.A * render2DData->TintLayersStack.Peek().A) < 1.0f;
     }
 
     FORCE_INLINE bool NeedAlphaWithTint(const Color& color1, const Color& color2, const Color& color3, const Color& color4)
     {
-        return (color1.a * render2DData->TintLayersStack.Peek().a) < 1.0f || (color2.a * render2DData->TintLayersStack.Peek().a) < 1.0f || (color3.a * render2DData->TintLayersStack.Peek().a) < 1.0f || (color4.a * render2DData->TintLayersStack.Peek().a) < 1.0f;
+        return (color1.A * render2DData->TintLayersStack.Peek().A) < 1.0f || (color2.A * render2DData->TintLayersStack.Peek().A) < 1.0f || (color3.A * render2DData->TintLayersStack.Peek().A) < 1.0f || (color4.A * render2DData->TintLayersStack.Peek().A) < 1.0f;
     }
 
     void Render2D::FillRectangle(const Rectangle& rect, const Color& color)
@@ -1506,7 +1506,7 @@ namespace SE
             c2t = colors[i];
 
             Float2 line = p2t - p1t;
-            Float2 up = thicknessHalf * Float2::Normalize(Float2(-line.y, line.x));
+            Float2 up = thicknessHalf * Float2::Normalize(Float2(-line.Y, line.X));
             Float2 right = thicknessHalf * Float2::Normalize(line);
 
             // Line
@@ -1562,15 +1562,15 @@ namespace SE
             c2t = colors[i];
 
             Float2 line = p2t - p1t;
-            Float2 up = thicknessHalf * Float2::Normalize(Float2(-line.y, line.x));
+            Float2 up = thicknessHalf * Float2::Normalize(Float2(-line.Y, line.X));
             Float2 right = thicknessHalf * Float2::Normalize(line);
 
             // Line
 
-            v[0] = MakeVertex(p2t + up, Float2::UnitX, c2t, mask, { 0.0f, (float)Features.Get() });
-            v[1] = MakeVertex(p1t + up, Float2::UnitX, c1t, mask, { 0.0f, (float)Features.Get() });
-            v[2] = MakeVertex(p1t - up, Float2::Zero, c1t, mask, { 0.0f, (float)Features.Get() });
-            v[3] = MakeVertex(p2t - up, Float2::Zero, c2t, mask, { 0.0f, (float)Features.Get() });
+            v[0] = MakeVertex(p2t + up, Float2::UnitX, c2t, mask, { 0.0f, static_cast<float>(static_cast<uint32>(Features)) });
+            v[1] = MakeVertex(p1t + up, Float2::UnitX, c1t, mask, { 0.0f, static_cast<float>(static_cast<uint32>(Features)) });
+            v[2] = MakeVertex(p1t - up, Float2::Zero, c1t, mask, { 0.0f, static_cast<float>(static_cast<uint32>(Features)) });
+            v[3] = MakeVertex(p2t - up, Float2::Zero, c2t, mask, { 0.0f, static_cast<float>(static_cast<uint32>(Features)) });
             render2DData->VB.Write(v, sizeof(Render2DVertex) * 4);
 
             indices[0] = render2DData->VBIndex + 0;
@@ -1586,9 +1586,9 @@ namespace SE
 
             // Corner cap
 
-            v[0] = MakeVertex(p2t - up, Float2::Zero, c2t, mask, { 0.0f, (float)Features.Get() });
-            v[1] = MakeVertex(p2t + right, Float2::Zero, c2t, mask, { 0.0f, (float)Features.Get() });
-            v[2] = MakeVertex(p2t, Float2(0.5f, 0.0f), c2t, mask, { 0.0f, (float)Features.Get() });
+            v[0] = MakeVertex(p2t - up, Float2::Zero, c2t, mask, { 0.0f, static_cast<float>(static_cast<uint32>(Features)) });
+            v[1] = MakeVertex(p2t + right, Float2::Zero, c2t, mask, { 0.0f, static_cast<float>(static_cast<uint32>(Features)) });
+            v[2] = MakeVertex(p2t, Float2(0.5f, 0.0f), c2t, mask, { 0.0f, static_cast<float>(static_cast<uint32>(Features)) });
             render2DData->VB.Write(v, sizeof(Render2DVertex) * 4);
 
             indices[0] = render2DData->VBIndex + 1;
@@ -1885,12 +1885,12 @@ namespace SE
 
             const Float2 line = p2t - p1t;
             const Float2 direction = thicknessHalf * Float2::Normalize(p2t - p1t);
-            const Float2 normal = Float2::Normalize(Float2(-line.y, line.x));
+            const Float2 normal = Float2::Normalize(Float2(-line.Y, line.X));
 
-            v[0] = MakeVertex(p2t + thicknessHalf * normal + direction, Float2::Zero, color2, mask, { 0.0f, (float)Render2D::Features.Get() });
-            v[1] = MakeVertex(p1t + thicknessHalf * normal - direction, Float2::Zero, color1, mask, { 0.0f, (float)Render2D::Features.Get() });
-            v[2] = MakeVertex(p1t - thicknessHalf * normal - direction, Float2::Zero, color1, mask, { 0.0f, (float)Render2D::Features.Get() });
-            v[3] = MakeVertex(p2t - thicknessHalf * normal + direction, Float2::Zero, color2, mask, { 0.0f, (float)Render2D::Features.Get() });
+            v[0] = MakeVertex(p2t + thicknessHalf * normal + direction, Float2::Zero, color2, mask, { 0.0f, static_cast<float>(static_cast<uint32>(Render2D::Features)) });
+            v[1] = MakeVertex(p1t + thicknessHalf * normal - direction, Float2::Zero, color1, mask, { 0.0f, static_cast<float>(static_cast<uint32>(Render2D::Features)) });
+            v[2] = MakeVertex(p1t - thicknessHalf * normal - direction, Float2::Zero, color1, mask, { 0.0f, static_cast<float>(static_cast<uint32>(Render2D::Features)) });
+            v[3] = MakeVertex(p2t - thicknessHalf * normal + direction, Float2::Zero, color2, mask, { 0.0f, static_cast<float>(static_cast<uint32>(Render2D::Features)) });
             render2DData->VB.Write(v, sizeof(Render2DVertex) * 4);
 
             indices[0] = render2DData->VBIndex + 0;
@@ -1976,11 +1976,11 @@ namespace SE
         drawCall.AsBlur.Width = rect.GetWidth();
         drawCall.AsBlur.Height = rect.GetHeight();
         ApplyTransform(rect.GetUpperLeft(), p);
-        drawCall.AsBlur.UpperLeftX = p.x;
-        drawCall.AsBlur.UpperLeftY = p.y;
+        drawCall.AsBlur.UpperLeftX = p.X;
+        drawCall.AsBlur.UpperLeftY = p.Y;
         ApplyTransform(rect.GetBottomRight(), p);
-        drawCall.AsBlur.BottomRightX = p.x;
-        drawCall.AsBlur.BottomRightY = p.y;
+        drawCall.AsBlur.BottomRightX = p.X;
+        drawCall.AsBlur.BottomRightY = p.Y;
         WriteRect(rect, Colors::White);
     }
 

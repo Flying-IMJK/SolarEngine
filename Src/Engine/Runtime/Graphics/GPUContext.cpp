@@ -284,7 +284,7 @@ namespace SE
 	void GPUContext::SetViewportAndScissors(const Viewport& viewport)
 	{
 		SetViewport(viewport);
-		const Rectangle rect(viewport.location.x, viewport.location.y, viewport.width, viewport.height);
+		const Rectangle rect(viewport.Location.X, viewport.Location.Y, viewport.Width, viewport.Height);
 		SetScissor(rect);
 	}
 

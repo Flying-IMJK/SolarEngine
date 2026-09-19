@@ -10,7 +10,7 @@
 
 namespace SE
 {
-	SE_ENUM(Reflect)
+	SE_ENUM(Reflect, API())
 	enum class GPUResourceUsage
 	{
 		/// <summary>
@@ -64,7 +64,7 @@ namespace SE
 	/// <summary>
 	/// Describes how a mapped GPU resource will be accessed.
 	/// </summary>
-	SE_ENUM(Reflect)
+	SE_ENUM(Reflect, API(Attributes = "Flags"))
 	enum class GPUResourceMapMode
 	{
 		/// <summary>
@@ -87,8 +87,8 @@ namespace SE
 	/// <summary>
     /// Stencil operation modes.
     /// </summary>
-    SE_ENUM(Reflect)
-    enum class StencilOperation
+	SE_ENUM(Reflect, API())
+	enum class StencilOperation
     {
         // Keep the existing stencil data.
         Keep,
@@ -113,6 +113,7 @@ namespace SE
 	/// <summary>
 	/// Comparison function modes
 	/// </summary>
+	SE_ENUM(Reflect, API())
 	enum class ComparisonFunc : byte
 	{
 		// Never pass the comparison.
@@ -138,6 +139,7 @@ namespace SE
 	/// <summary>
 	/// Primitives types.
 	/// </summary>
+	SE_ENUM(Reflect, API())
 	enum class PrimitiveTopologyType
 	{
 		/// <summary>
@@ -164,6 +166,7 @@ namespace SE
 	/// <summary>
 	/// Primitives culling mode.
 	/// </summary>
+	SE_ENUM(Reflect, API())
 	enum class CullMode : byte
 	{
 		/// <summary>
@@ -185,12 +188,15 @@ namespace SE
 	/// <summary>
 	/// Render target blending mode descriptor.
 	/// </summary>
+	SE_STRUCT(API())
 	struct SE_API_RUNTIME BlendingMode
 	{
+		SCRIPTING_TYPE_MIN(BlendingMode)
 	public:
 		/// <summary>
 		/// Blending mode.
 		/// </summary>
+		SE_ENUM(Reflect, API())
 		enum class Blend
 		{
 			// The blend factor is (0, 0, 0, 0). No pre-blend operation.
@@ -234,6 +240,7 @@ namespace SE
 		/// <summary>
 		/// Blending operation.
 		/// </summary>
+		SE_ENUM(Reflect, API())
 		enum class Operation
 		{
 			// Add source 1 and source 2.
@@ -253,6 +260,7 @@ namespace SE
 		/// <summary>
 		/// Render target write mask
 		/// </summary>
+		SE_ENUM(Reflect, API(Attributes = "Flags"))
 		enum class ColorWrite
 		{
 			// No color writing.
@@ -358,7 +366,7 @@ namespace SE
 	/// <summary>
 	/// 多样本采样等级
 	/// </summary>
-	SE_ENUM(Reflect)
+	SE_ENUM(Reflect, API())
 	enum class MSAALevel : int32
 	{
 		/// <summary>
@@ -388,6 +396,7 @@ namespace SE
 	/// <summary>
 	/// Shader profile types define the version and type of the shading language used by the graphics backend.
 	/// </summary>
+	SE_ENUM(Reflect, API())
 	enum class ShaderProfile
 	{
 		/// <summary>
@@ -445,6 +454,7 @@ namespace SE
 	/// They are named after the graphics API to indicate the minimum level of the features set to support.
 	/// Feature levels are ordered from the lowest to the most high-end so feature level enum can be used to switch between feature levels (e.g. don't use geometry shader if not supported).
 	/// </summary>
+	SE_ENUM(Reflect, API())
 	enum class FeatureLevel
 	{
 		/// <summary>
@@ -485,7 +495,8 @@ namespace SE
 	/**
      * GPU 程序 阶段
      */
-    enum class ShaderStage : int32
+	SE_ENUM(Reflect, API())
+	enum class ShaderStage : int32
     {
         Vertex,
         Hull,
@@ -504,6 +515,7 @@ namespace SE
 	/// <summary>
 	/// Describes the shader function flags used for shader compilation.
 	/// </summary>
+	SE_ENUM(Reflect, API(Attributes = "Flags"))
 	enum class ShaderFlags : uint32
 	{
 		/// <summary>
@@ -531,6 +543,7 @@ namespace SE
 	/// <summary>
 	/// Describes the different tessellation methods supported by the graphics system.
 	/// </summary>
+	SE_ENUM(Reflect, API())
 	enum class TessellationMethod
 	{
 		/// <summary>
@@ -554,7 +567,7 @@ namespace SE
 		Phong = 3,
 	};
 
-	SE_ENUM(Reflect)
+	SE_ENUM(Reflect, API())
 	enum class GPURendererType
 	{
 		Vulkan,

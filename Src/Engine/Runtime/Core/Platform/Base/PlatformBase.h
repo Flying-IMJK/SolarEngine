@@ -434,7 +434,7 @@ namespace SE
 		/// <summary>
 		/// The custom DPI scale factor to apply globally. Can be used to adjust the User Interface scale (resolution).
 		/// </summary>
-        SE_FIELD(API(Prop))
+		SE_FIELD(API())
 		static float CustomDpiScale;
 
 		/// <summary>
@@ -508,24 +508,28 @@ namespace SE
 		/// Shows the fatal error message to the user.
 		/// </summary>
 		/// <param name="msg">The message content.</param>
+		SE_FUNCTION(API())
 		static void Fatal(const StringView& msg);
 
 		/// <summary>
 		/// Shows the error message to the user.
 		/// </summary>
 		/// <param name="msg">The message content.</param>
+		SE_FUNCTION(API())
 		static void Error(const StringView& msg);
 
 		/// <summary>
 		/// Shows the warning message to the user.
 		/// </summary>
 		/// <param name="msg">The message content.</param>
+		SE_FUNCTION(API())
 		static void Warning(const StringView& msg);
 
 		/// <summary>
 		/// Shows the information message to the user.
 		/// </summary>
 		/// <param name="msg">The message content.</param>
+		SE_FUNCTION(API())
 		static void Info(const StringView& msg);
 
 	public:
@@ -549,14 +553,14 @@ namespace SE
 		/// Gets the mouse cursor position in screen-space coordinates.
 		/// </summary>
 		/// <returns>Mouse cursor coordinates.</returns>
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop))
 		static Float2 GetMousePosition();
 
 		/// <summary>
 		/// Sets the mouse cursor position in screen-space coordinates.
 		/// </summary>
 		/// <param name="position">Cursor position to set.</param>
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop))
 		static void SetMousePosition(const Float2& position);
 
 		/// <summary>
@@ -571,20 +575,20 @@ namespace SE
 		/// Gets size of the primary desktop.
 		/// </summary>
 		/// <returns>Desktop size.</returns>
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop, ReadOnly))
 		static Float2 GetDesktopSize() = delete;
 
 		/// <summary>
 		/// Gets virtual bounds of the desktop made of all the monitors outputs attached.
 		/// </summary>
 		/// <returns>Whole desktop size.</returns>
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop, ReadOnly))
 		static Rectangle GetVirtualDesktopBounds();
 
 		/// <summary>
 		/// Gets virtual size of the desktop made of all the monitors outputs attached.
 		/// </summary>
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop, ReadOnly))
 		static Float2 GetVirtualDesktopSize();
 
 	public:
@@ -592,28 +596,28 @@ namespace SE
 		/// Gets full path of the main engine directory.
 		/// </summary>
 		/// <returns>Main engine directory path</returns>
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop, ReadOnly))
 		static String GetMainDirectory() = delete;
 
 		/// <summary>
 		/// Gets full path of the main engine executable file.
 		/// </summary>
 		/// <returns>The main engine executable file path.</returns>
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop, ReadOnly))
 		static String GetExecutableFilePath() = delete;
 
 		/// <summary>
 		/// Gets the (almost) unique ID of the current user device.
 		/// </summary>
 		/// <returns>ID of the current user device</returns>
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop, ReadOnly))
 		static UID GetUniqueDeviceId() = delete;
 
 		/// <summary>
 		/// Gets the current working directory of the process.
 		/// </summary>
 		/// <returns>The workspace directory path.</returns>
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop, ReadOnly))
 		static String GetWorkingDirectory() = delete;
 
 		/// <summary>
@@ -657,6 +661,7 @@ namespace SE
 		/// <param name="hiddenWindow">True if start process with hidden window</param>
 		/// <param name="waitForEnd">True if wait for process competition</param>
 		/// <returns>Retrieves the termination status of the specified process. Valid only if processed ended.</returns>
+		SE_FUNCTION(API())
 		static int32 StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow = false, bool waitForEnd = false);
 
 		/// <summary>
@@ -667,6 +672,7 @@ namespace SE
 		/// <param name="workingDir">The custom path of the working directory.</param>
 		/// <param name="hiddenWindow">True if start process with hidden window.</param>
 		/// <returns>Retrieves the termination status of the specified process. Valid only if processed ended.</returns>
+		SE_FUNCTION(API())
 		static int32 RunProcess(const StringView& cmdLine, const StringView& workingDir, bool hiddenWindow = true);
 
 		/// <summary>
@@ -685,6 +691,7 @@ namespace SE
 		/// </summary>
 		/// <param name="settings">The process settings.</param>
 		/// <returns>Retrieves the termination status of the specified process. Valid only if processed ended.</returns>
+		SE_FUNCTION(API())
 		static int32 CreateProcess(CreateProcessSettings& settings);
 
 		/// <summary>

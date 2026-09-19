@@ -47,7 +47,7 @@ namespace SE
 		/// <summary>
 		/// Function flags.
 		/// </summary>
-		EnumFlags<ShaderFlags> Flags;
+		ShaderFlags Flags;
 
 		/// <summary>
 		/// The minimum graphics platform feature level to support this shader.

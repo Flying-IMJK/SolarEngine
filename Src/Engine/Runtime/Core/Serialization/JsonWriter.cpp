@@ -41,9 +41,9 @@ namespace SE
 	{
 		StartObject();
 		JKEY("X");
-		Float(value.x);
+		Float(value.X);
 		JKEY("Y");
-		Float(value.y);
+		Float(value.Y);
 		EndObject();
 	}
 
@@ -51,11 +51,11 @@ namespace SE
 	{
 		StartObject();
 		JKEY("X");
-		Float(value.x);
+		Float(value.X);
 		JKEY("Y");
-		Float(value.y);
+		Float(value.Y);
 		JKEY("Z");
-		Float(value.z);
+		Float(value.Z);
 		EndObject();
 	}
 
@@ -63,13 +63,13 @@ namespace SE
 	{
 		StartObject();
 		JKEY("X");
-		Float(value.x);
+		Float(value.X);
 		JKEY("Y");
-		Float(value.y);
+		Float(value.Y);
 		JKEY("Z");
-		Float(value.z);
+		Float(value.Z);
 		JKEY("W");
-		Float(value.w);
+		Float(value.W);
 		EndObject();
 	}
 
@@ -77,9 +77,9 @@ namespace SE
 	{
 		StartObject();
 		JKEY("X");
-		Int(value.x);
+		Int(value.X);
 		JKEY("Y");
-		Int(value.y);
+		Int(value.Y);
 		EndObject();
 	}
 
@@ -87,13 +87,13 @@ namespace SE
 	{
 		StartObject();
 		JKEY("X");
-		Int(value.x);
+		Int(value.X);
 		JKEY("Y");
-		Int(value.y);
+		Int(value.Y);
 		JKEY("Z");
-		Int(value.z);
+		Int(value.Z);
 		JKEY("W");
-		Int(value.w);
+		Int(value.W);
 		EndObject();
 	}
 
@@ -101,13 +101,13 @@ namespace SE
 	{
 		StartObject();
 		JKEY("R");
-		Float(value.r);
+		Float(value.R);
 		JKEY("G");
-		Float(value.g);
+		Float(value.G);
 		JKEY("B");
-		Float(value.b);
+		Float(value.B);
 		JKEY("A");
-		Float(value.a);
+		Float(value.A);
 		EndObject();
 	}
 
@@ -115,13 +115,13 @@ namespace SE
 	{
 		StartObject();
 		JKEY("X");
-		Float(value.x);
+		Float(value.X);
 		JKEY("Y");
-		Float(value.y);
+		Float(value.Y);
 		JKEY("Z");
-		Float(value.z);
+		Float(value.Z);
 		JKEY("W");
-		Float(value.w);
+		Float(value.W);
 		EndObject();
 	}
 /*

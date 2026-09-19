@@ -31,33 +31,39 @@ namespace SE
 		GPUBuffer();
 
 	public:
+		SE_FUNCTION(API(Prop, ReadOnly))
 		inline bool IsAllocated() const
 		{
 			return m_Desc.Size > 0;
 		}
 
+		SE_FUNCTION(API(Prop, ReadOnly))
 		inline uint32 GetSize() const
 		{
 			return m_Desc.Size;
 		}
 
+		SE_FUNCTION(API(Prop, ReadOnly))
 		inline uint32 GetStride() const
 		{
 			return m_Desc.Stride;
 		}
 
+		SE_FUNCTION(API(Prop, ReadOnly))
 		inline PixelFormat GetFormat() const
 		{
 			return m_Desc.Format;
 		}
 
+		SE_FUNCTION(API(Prop, ReadOnly))
 		inline uint32 GetElementsCount() const
 		{
 			ENGINE_ASSERT(m_Desc.Stride > 0);
 			return m_Desc.Size / m_Desc.Stride;
 		}
 
-		inline EnumFlags<GPUBufferFlags> GetFlags() const
+		SE_FUNCTION(API(Prop, ReadOnly))
+		inline GPUBufferFlags GetFlags() const
 		{
 			return m_Desc.Flags;
 		}
@@ -65,6 +71,7 @@ namespace SE
 		/// <summary>
 		/// Checks if buffer is a staging buffer (supports CPU readback).
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		inline bool IsStaging() const
 		{
 			return m_Desc.Usage == GPUResourceUsage::StagingReadback || m_Desc.Usage == GPUResourceUsage::StagingUpload;
@@ -73,6 +80,7 @@ namespace SE
 		/// <summary>
 		/// Checks if buffer is a staging buffer (supports CPU readback).
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		inline bool IsDynamic() const
 		{
 			return m_Desc.Usage == GPUResourceUsage::Dynamic;
@@ -81,6 +89,7 @@ namespace SE
 		/// <summary>
 		/// Gets a value indicating whether this buffer is a shader resource.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		inline bool IsShaderResource() const
 		{
 			return m_Desc.IsShaderResource();
@@ -89,11 +98,13 @@ namespace SE
 		/// <summary>
 		/// Gets a value indicating whether this buffer is a unordered access.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		inline bool IsUnorderedAccess() const
 		{
 			return m_Desc.IsUnorderedAccess();
 		}
 		
+		SE_FUNCTION(API(Prop, ReadOnly))
 		const GPUBufferDescription& GetDescription() const
 		{
 			return m_Desc;
@@ -101,6 +112,7 @@ namespace SE
 
 	public:
 
+		SE_FUNCTION(API())
 		bool Init(const GPUBufferDescription& desc);
 
 		/// <summary>
@@ -108,6 +120,7 @@ namespace SE
 		/// </summary>
 		/// <param name="newSize">The new size (in bytes).</param>
 		/// <returns>True if cannot resize buffer, otherwise false.</returns>
+		SE_FUNCTION(API())
 		bool Resize(uint32 newSize);
 
 		/// <summary>
@@ -129,6 +142,7 @@ namespace SE
 		/// <param name="size">数据大小 (字节).</param>
 		void SetData(const void* data, uint32 size);
 
+		SE_FUNCTION(API())
 		bool GetData(BytesContainer& output);
 
 		/// <summary>
@@ -136,6 +150,7 @@ namespace SE
 		/// </summary>
 		/// <param name="result">The result data.</param>
 		/// <returns>True if cannot download data, otherwise false.</returns>
+		SE_FUNCTION(API())
 		bool DownloadData(BytesContainer& result);
 
 		/// <summary>
@@ -148,6 +163,7 @@ namespace SE
 		/// <summary>
 		/// Gets the view for the whole buffer.
 		/// </summary>
+		SE_FUNCTION(API())
 		virtual GPUBufferView* View() const = 0;
 
 		/// <summary>
@@ -161,6 +177,7 @@ namespace SE
 		/// <summary>
 		/// 使指向资源的映射指针失效，并恢复GPU对该资源的访问。
 		/// </summary>
+		SE_FUNCTION(API())
 		virtual void Unmap() = 0;
 
 	public:

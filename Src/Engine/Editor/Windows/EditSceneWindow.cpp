@@ -16,7 +16,7 @@ namespace SE::Editor
 
 		// Copy camera view parameters for the scene rendering
 		RenderView view = sceneTask->View;
-		::SE::Viewport viewport = ::SE::Viewport(0, 0, sceneTask->Buffers->GetSize().x, sceneTask->Buffers->GetSize().y);
+		::SE::Viewport viewport = ::SE::Viewport(0, 0, sceneTask->Buffers->GetSize().X, sceneTask->Buffers->GetSize().Y);
 		view.CopyFrom(Camera, &viewport);
 		sceneTask->View = view;
 	}

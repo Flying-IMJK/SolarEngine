@@ -18,23 +18,23 @@ namespace SE
 			PipelineStateCache QuadOverdraw;
 #endif
 
-			FORCE_INLINE PipelineStateCache* GetPS(const EnumFlags<DrawPass> pass)
+			FORCE_INLINE PipelineStateCache* GetPS(const DrawPass pass)
 			{
-				if (pass.Is(DrawPass::Depth))
+				if (pass == DrawPass::Depth)
 				{
 					return &Depth;
 				}
 
-				if (pass.Is(DrawPass::GBuffer) ||
-					pass == EnumFlags<DrawPass>{DrawPass::GBuffer, DrawPass::GlobalSurfaceAtlas} ||
-					pass.Is(DrawPass::GlobalSurfaceAtlas) ||
-					pass.Is(DrawPass::Forward))
+				if (pass == DrawPass::GBuffer ||
+					pass == EnumCombineFlags(DrawPass::GBuffer, DrawPass::GlobalSurfaceAtlas) ||
+					pass == DrawPass::GlobalSurfaceAtlas ||
+					pass == DrawPass::Forward)
 				{
 					return &Default;
 				}
 
 #if SE_EDITOR
-				if (pass.Is(DrawPass::QuadOverdraw))
+				if (pass == DrawPass::QuadOverdraw)
 				{
 					return &QuadOverdraw;
 				}
@@ -55,7 +55,7 @@ namespace SE
 
 	private:
 		Cache m_Cache;
-		EnumFlags<DrawPass> m_DrawModes = DrawPass::None;
+        DrawPass m_DrawModes = DrawPass::None;
 
 	public:
 		DeformableMaterialShader(const StringView& name)
@@ -65,7 +65,7 @@ namespace SE
 
 	public:
 		// [MaterialShader]
-		EnumFlags<DrawPass> GetDrawModes() const override;
+		DrawPass GetDrawModes() const override;
 		void Bind(BindParameters& params) override;
 		void Unload() override;
 

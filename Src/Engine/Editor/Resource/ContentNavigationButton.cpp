@@ -130,7 +130,7 @@ namespace SE::Editor
 		Rectangle rect = Rectangle(Float2::Zero, Size);
 		Color color = IsDragOver() ? Colors::Transparent : (_mouseDown ? style->BackgroundSelected : (IsMouseOver ? style->BackgroundHighlighted : Colors::Transparent));
 		Render2D::FillRectangle(rect, color);
-		Render2D::DrawSprite(EditorIcons::ArrowRight12, Rectangle(rect.Location.x, rect.GetY() + rect.Size.y * 0.25f, rect.Size.x, rect.Size.x), EnabledInHierarchy() ? style->Foreground : style->ForegroundDisabled);
+		Render2D::DrawSprite(EditorIcons::ArrowRight12, Rectangle(rect.Location.X, rect.GetY() + rect.Size.Y * 0.25f, rect.Size.X, rect.Size.X), EnabledInHierarchy() ? style->Foreground : style->ForegroundDisabled);
 	}
 
 	ContextMenu* ContentNavigationSeparator::OnCreatePopup()

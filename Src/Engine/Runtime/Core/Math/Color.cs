@@ -713,7 +713,7 @@ namespace SE
         /// <returns>The result of the conversion.</returns>
         public static implicit operator Float3(Color c)
         {
-            return new Vector3(c.R, c.G, c.B);
+            return new Float3(c.R, c.G, c.B);
         }
 
         /// <summary>
@@ -744,46 +744,6 @@ namespace SE
         public static implicit operator Color(Float3 v)
         {
             return new Color(v.X, v.Y, v.Z);
-        }
-
-        /// <summary>
-        /// Performs an implicit conversion from <see cref="Color"/> to <see cref="Vector3"/>.
-        /// </summary>
-        /// <param name="c">The color.</param>
-        /// <returns>The result of the conversion.</returns>
-        public static implicit operator Vector3(Color c)
-        {
-            return new Vector3(c.R, c.G, c.B);
-        }
-
-        /// <summary>
-        /// Performs an implicit conversion from <see cref="Color"/> to <see cref="Vector4"/>.
-        /// </summary>
-        /// <param name="c">The color.</param>
-        /// <returns>The result of the conversion.</returns>
-        public static implicit operator Vector4(Color c)
-        {
-            return new Vector4(c.R, c.G, c.B, c.A);
-        }
-
-        /// <summary>
-        /// Performs an implicit conversion from <see cref="Vector4"/> to <see cref="Color"/>.
-        /// </summary>
-        /// <param name="v">The vector.</param>
-        /// <returns>The result of the conversion.</returns>
-        public static implicit operator Color(Vector4 v)
-        {
-            return new Color((float)v.X, (float)v.Y, (float)v.Z, (float)v.W);
-        }
-
-        /// <summary>
-        /// Performs an implicit conversion from <see cref="Vector3"/> to <see cref="Color"/>.
-        /// </summary>
-        /// <param name="v">The vector.</param>
-        /// <returns>The result of the conversion.</returns>
-        public static implicit operator Color(Vector3 v)
-        {
-            return new Color((float)v.X, (float)v.Y, (float)v.Z);
         }
 
         /// <summary>

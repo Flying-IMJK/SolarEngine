@@ -28,6 +28,7 @@ namespace SE
 		/// <summary>
 		/// Gets sampler description structure.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		const GPUSamplerDescription& GetDescription() const
 		{
 			return m_Desc;
@@ -39,6 +40,7 @@ namespace SE
 		/// </summary>
 		/// <param name="desc">The sampler description.</param>
 		/// <returns>True if cannot create sampler, otherwise false.</returns>
+		SE_FUNCTION(API())
 		bool Init(const GPUSamplerDescription& desc);
 
 		// [GPUResource]

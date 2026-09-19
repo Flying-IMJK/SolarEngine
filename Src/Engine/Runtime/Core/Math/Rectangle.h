@@ -13,8 +13,10 @@ namespace SE
 	/// <summary>
 	/// Describes rectangle in 2D space defines by location of its upper-left corner and the size.
 	/// </summary>
+	SE_STRUCT(API())
 	struct SE_API_RUNTIME Rectangle
 	{
+		SCRIPTING_TYPE_MIN(Rectangle)
 		/// <summary>
 		/// The empty rectangle.
 		/// </summary>
@@ -24,11 +26,13 @@ namespace SE
 		/// <summary>
 		/// Rectangle location (coordinates of the upper-left corner)
 		/// </summary>
+		SE_FIELD(API())
 		Float2 Location;
 
 		/// <summary>
 		/// Rectangle size
 		/// </summary>
+		SE_FIELD(API())
 		Float2 Size;
 
 	public:
@@ -62,69 +66,69 @@ namespace SE
 		// Returns width of the rectangle
 		float GetWidth() const
 		{
-			return Size.x;
+			return Size.X;
 		}
 
 		void SetWidth(float value)
 		{
-			Size.x = value;
+			Size.X = value;
 		}
 
 		// Returns height of the rectangle
 		float GetHeight() const
 		{
-			return Size.y;
+			return Size.Y;
 		}
 
 		void SetHeight(float value)
 		{
-			Size.y = value;
+			Size.Y = value;
 		}
 
 		// Gets Y coordinate of the top edge of the rectangle
 		float GetY() const
 		{
-			return Location.y;
+			return Location.Y;
 		}
 
 		void SetY(float value)
 		{
-			Location.y = value;
+			Location.Y = value;
 		}
 
 		// Gets Y coordinate of the top edge of the rectangle
 		float GetTop() const
 		{
-			return Location.y;
+			return Location.Y;
 		}
 
 		// Gets Y coordinate of the bottom edge of the rectangle
 		float GetBottom() const
 		{
-			return Location.y + Size.y;
+			return Location.Y + Size.Y;
 		}
 
 		// Gets X coordinate of the left edge of the rectangle
 		float GetX() const
 		{
-			return Location.x;
+			return Location.X;
 		}
 
 		void SetX(float value)
 		{
-			Location.x = value;
+			Location.X = value;
 		}
 
 		// Gets X coordinate of the left edge of the rectangle
 		float GetLeft() const
 		{
-			return Location.x;
+			return Location.X;
 		}
 
 		// Gets X coordinate of the right edge of the rectangle
 		float GetRight() const
 		{
-			return Location.x + Size.x;
+			return Location.X + Size.X;
 		}
 
 		// Gets position of the upper left corner of the rectangle
@@ -136,7 +140,7 @@ namespace SE
 		// Gets position of the upper right corner of the rectangle
 		Float2 GetUpperRight() const
 		{
-			return Location + Float2(Size.x, 0);
+			return Location + Float2(Size.X, 0);
 		}
 
 		// Gets position of the bottom right corner of the rectangle
@@ -148,7 +152,7 @@ namespace SE
 		// Gets position of the bottom left corner of the rectangle
 		Float2 GetBottomLeft() const
 		{
-			return Location + Float2(0, Size.y);
+			return Location + Float2(0, Size.Y);
 		}
 
 		/// <summary>
@@ -321,4 +325,4 @@ struct TIsPODType<SE::Rectangle>
 	enum { Value = true };
 };
 
-DEFINE_DEFAULT_FORMATTING(SE::Rectangle, "X:{0} Y:{1} Width:{2} Height:{3}", v.Location.x, v.Location.y, v.Size.x, v.Size.y);
+DEFINE_DEFAULT_FORMATTING(SE::Rectangle, "X:{0} Y:{1} Width:{2} Height:{3}", v.Location.X, v.Location.Y, v.Size.X, v.Size.Y);

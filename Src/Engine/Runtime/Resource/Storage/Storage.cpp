@@ -345,7 +345,7 @@ namespace SE
 
 			// Load data
 			auto size = chunk->LocationInFile.Size;
-			if (chunk->Flags.IsFlag(AssetChunkFlags::CompressedLZ4))
+			if (EnumHasAnyFlags(chunk->Flags, AssetChunkFlags::CompressedLZ4))
 			{
 				// Compressed
 				size -= sizeof(int32); // Don't count original size int
@@ -563,7 +563,7 @@ namespace SE
 		for (int32 i = 0; i < chunksCount; i++)
 		{
 			const StorageChunk* chunk = chunks[i];
-			if (chunk->Flags.IsFlag(AssetChunkFlags::CompressedLZ4))
+			if (EnumHasAnyFlags(chunk->Flags, AssetChunkFlags::CompressedLZ4))
 			{
 				PROFILE_CPU_NAMED("CompressLZ4");
 				const int32 srcSize = chunk->Data.Length();
@@ -618,7 +618,7 @@ namespace SE
 		{
 			StorageChunk* chunk = chunks[i];
 			stream->WriteBytes(&chunk->LocationInFile, sizeof(chunk->LocationInFile));
-			stream->WriteInt32(chunk->Flags.Get());
+			stream->WriteInt32(static_cast<int32>(chunk->Flags));
 		}
 
 #if ASSETS_LOADING_EXTRA_VERIFICATION

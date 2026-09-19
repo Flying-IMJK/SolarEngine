@@ -3,12 +3,14 @@
 #include "Variable.h"
 #include "Runtime/Core/Templates.h"
 #include "Runtime/API.h"
+#include "Runtime/Core/Formatting.h"
 
 namespace SE
 {
 	/// <summary>
 	/// Represents the difference between two dates and times.
 	/// </summary>
+	SE_STRUCT(API(InBuild("System.TimeSpan")))
 	struct SE_API_RUNTIME TimeSpan
 	{
 	public:
@@ -319,4 +321,4 @@ struct TIsPODType<SE::TimeSpan>
 	};
 };
 
-//DEFINE_DEFAULT_FORMATTING(SE::TimeSpan, "{:0>2}:{:0>2}:{:0>2}.{:0>7}", v.GetHours(), v.GetMinutes(), v.GetSeconds(), v.Ticks % 10000000);
+DEFINE_DEFAULT_FORMATTING(SE::TimeSpan, "{:0>2}:{:0>2}:{:0>2}.{:0>7}", v.GetHours(), v.GetMinutes(), v.GetSeconds(), v.Ticks % 10000000);

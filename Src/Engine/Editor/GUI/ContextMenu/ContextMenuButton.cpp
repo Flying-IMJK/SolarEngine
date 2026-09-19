@@ -175,9 +175,9 @@ namespace SE::Editor
 		float width = 20;
 		if (style->FontMedium)
 		{
-			width += style->FontMedium->MeasureText(Text).x;
+			width += style->FontMedium->MeasureText(Text).X;
 			if (ShortKeys.Length() > 0)
-				width += 40 + style->FontMedium->MeasureText(ShortKeys).x;
+				width += 40 + style->FontMedium->MeasureText(ShortKeys).X;
 		}
 
 		return Math::Max(width, ContextMenuItem::__GetMinimumWidth());

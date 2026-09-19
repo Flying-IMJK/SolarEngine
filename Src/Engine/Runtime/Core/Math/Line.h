@@ -2,10 +2,6 @@
 
 #include "Matrix.h"
 
-//-------------------------------------------------------------------------
-// Line Helpers
-//-------------------------------------------------------------------------
-
 namespace SE
 {
     struct BoundingSphere;
@@ -125,7 +121,9 @@ namespace SE
         Float3 m_startPoint;
         Float3 m_direction;
     };
+    */
 
+    /*
     // Line Segment - a line with a fixed start and end points
     //-------------------------------------------------------------------------
 
@@ -221,17 +219,21 @@ namespace SE
     /// <summary>
     /// Represents a three dimensional line based on a point in space and a direction.
     /// </summary>
+    SE_STRUCT(API()) 
     struct SE_API_RUNTIME Ray
     {
+        SCRIPTING_TYPE_MIN(Ray);
     public:
         /// <summary>
         /// The position in three dimensional space where the ray starts.
         /// </summary>
+        SE_FIELD(API())
         Float3 Position;
 
         /// <summary>
         /// The normalized direction in which the ray points.
         /// </summary>
+        SE_FIELD(API())
         Float3 Direction;
 
     public:
@@ -365,14 +367,14 @@ namespace SE
         bool Intersects(const Float3& vertex1, const Float3& vertex2, const Float3& vertex3, Float3& point) const;
 
         /// <summary>
-        /// Determines if there is an intersection between the current object and a <see cref="AABB" />.
+        /// Determines if there is an intersection between the current object and a <see cref="BoundingBox" />.
         /// </summary>
         /// <param name="box">The box to test.</param>
         /// <returns>Whether the two objects intersected.</returns>
         bool Intersects(const BoundingBox& box) const;
 
         /// <summary>
-        /// Determines if there is an intersection between the current object and a <see cref="AABB" />.
+        /// Determines if there is an intersection between the current object and a <see cref="BoundingBox" />.
         /// </summary>
         /// <param name="box">The box to test.</param>
         /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
@@ -380,7 +382,7 @@ namespace SE
         bool Intersects(const BoundingBox& box, float& distance) const;
 
         /// <summary>
-        /// Determines if there is an intersection between the current object and a <see cref="AABB" />.
+        /// Determines if there is an intersection between the current object and a <see cref="BoundingBox" />.
         /// </summary>
         /// <param name="box">The box to test.</param>
         /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Float3.Zero" /> if there was no intersection.</param>
@@ -388,14 +390,14 @@ namespace SE
         bool Intersects(const BoundingBox& box, Float3& point) const;
 
         /// <summary>
-        /// Determines if there is an intersection between the current object and a <see cref="Sphere" />.
+        /// Determines if there is an intersection between the current object and a <see cref="BoundingSphere" />.
         /// </summary>
         /// <param name="sphere">The sphere to test.</param>
         /// <returns>Whether the two objects intersected.</returns>
         bool Intersects(const BoundingSphere& sphere) const;
 
         /// <summary>
-        /// Determines if there is an intersection between the current object and a <see cref="Sphere" />.
+        /// Determines if there is an intersection between the current object and a <see cref="BoundingSphere" />.
         /// </summary>
         /// <param name="sphere">The sphere to test.</param>
         /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
@@ -403,12 +405,13 @@ namespace SE
         bool Intersects(const BoundingSphere& sphere, float& distance) const;
 
         /// <summary>
-        /// Determines if there is an intersection between the current object and a <see cref="Sphere" />.
+        /// Determines if there is an intersection between the current object and a <see cref="BoundingSphere" />.
         /// </summary>
         /// <param name="sphere">The sphere to test.</param>
         /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Float3.Zero" /> if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
         bool Intersects(const BoundingSphere& sphere, Float3& point) const;
+
     public:
         /// <summary>
         /// Calculates a world space ray from 2d screen coordinates.

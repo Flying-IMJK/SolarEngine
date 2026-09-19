@@ -25,7 +25,7 @@ namespace SE
 		/// <summary>
 		/// The shadows casting mode.
 		/// </summary>
-		EnumFlags<ShadowsCastingMode> ShadowsMode = ShadowsCastingMode::All;
+		ShadowsCastingMode ShadowsMode = ShadowsCastingMode::All;
 
 		/// <summary>
 		/// Determines whenever this mesh is visible.

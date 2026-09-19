@@ -12,12 +12,12 @@ namespace SE::Editor
 	RenamePopup::RenamePopup(String& value, Float2 size, bool isMultiline)
 	{
 		if (!isMultiline)
-			size.y = TextBox::DefaultHeight;
+			size.Y = TextBox::DefaultHeight;
 		Size = size;
 
 		InitialValue = value;
 
-		_inputField = new TextBox(isMultiline, 0, 0, size.y);
+		_inputField = new TextBox(isMultiline, 0, 0, size.Y);
 		_inputField->TextChanged.Bind<RenamePopup, &RenamePopup::OnTextChanged>(this);
 		_inputField->AnchorPreset = AnchorPresets::StretchAll;
 		_inputField->Offsets = Margin::Zero;
@@ -46,7 +46,7 @@ namespace SE::Editor
 		Float2 size = bottomRight - upperLeft;
 
 		RenamePopup* rename = New<RenamePopup>(value, size, isMultiline);
-		Float2 pos = area.Location + Float2(0, (size.y - rename->Height) * 0.5f);
+		Float2 pos = area.Location + Float2(0, (size.Y - rename->Height) * 0.5f);
 		rename->Show(control, pos);
 		return rename;
 	}

@@ -11,8 +11,10 @@ namespace SE
 	/// <summary>
 	/// Utility for pooling render target resources with reusing and sharing resources during rendering.
 	/// </summary>
+	SE_CLASS(API(Static))
 	class SE_API_RUNTIME RenderTargetPool
 	{
+		SCRIPTING_TYPE_NO_SPAWN(RenderTargetPool)
 	public:
 		/// <summary>
 		/// Flushes the temporary render targets.
@@ -26,12 +28,14 @@ namespace SE
 		/// </summary>
 		/// <param name="desc">The texture description.</param>
 		/// <returns>The allocated render target or reused one.</returns>
+		SE_FUNCTION(API())
 		static GPUTexture* Get(const GPUTextureDescription& desc);
 
 		/// <summary>
 		/// Releases a temporary render target.
 		/// </summary>
 		/// <param name="rt">The reference to temporary target to release.</param>
+		SE_FUNCTION(API())
 		static void Release(GPUTexture* rt);
 	};
 

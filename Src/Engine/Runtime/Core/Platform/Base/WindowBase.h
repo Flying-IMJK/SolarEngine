@@ -377,12 +377,14 @@ namespace SE
 		/// <summary>
 		/// Gets a value that indicates whether a window is in a fullscreen mode.
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		bool IsFullscreen() const;
 
 		/// <summary>
 		/// Sets a value that indicates whether a window is in a fullscreen mode.
 		/// </summary>
 		/// <param name="isFullscreen">If set to <c>true</c> window will enter fullscreen mode, otherwise windowed mode.</param>
+		SE_FUNCTION(API(Prop))
 		virtual void SetIsFullscreen(bool isFullscreen);
 
 		/// <summary>
@@ -393,6 +395,7 @@ namespace SE
 		/// <summary>
 		/// Gets a value that indicates whether a window is not in a fullscreen mode.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		inline bool IsWindowed() const
 		{
 			return !IsFullscreen();
@@ -401,19 +404,20 @@ namespace SE
 		/// <summary>
 		/// Gets a value that indicates whether a window is visible (hidden or shown).
 		/// </summary>
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop))
 		bool IsVisible() const;
 
 		/// <summary>
 		/// Sets a value that indicates whether a window is visible (hidden or shown).
 		/// </summary>
 		/// <param name="isVisible">True if show window, otherwise false if hide it.</param>
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop))
 		void SetIsVisible(bool isVisible);
 
 		/// <summary>
 		/// Gets a value that indicates whether a window is minimized.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		inline bool IsMinimized() const
 		{
 			return _minimized;
@@ -422,6 +426,7 @@ namespace SE
 		/// <summary>
 		/// Gets a value that indicates whether a window is maximized.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		inline bool IsMaximized() const
 		{
 			return _maximized;
@@ -480,6 +485,7 @@ namespace SE
 		/// </summary>
 		/// <param name="isBorderless">Whether or not to have borders on window.</param>
 		/// <param name="maximized">Whether or not to make the borderless window fullscreen (maximize to cover whole screen).</param>
+		SE_FUNCTION(API())
 		virtual void SetBorderless(bool isBorderless, bool maximized = false)
 		{
 		}
@@ -502,6 +508,7 @@ namespace SE
 		/// <summary>
 		/// Checks if window is closed.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		virtual bool IsClosed() const
 		{
 			return m_IsClosing;
@@ -510,12 +517,14 @@ namespace SE
 		/// <summary>
 		/// Checks if window is foreground (the window with which the user is currently working).
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		virtual bool IsForegroundWindow() const;
 
 	public:
 		/// <summary>
 		/// Gets the client bounds of the window (client area not including border).
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		inline Rectangle GetClientBounds() const
 		{
 			return Rectangle(GetClientPosition(), GetClientSize());
@@ -525,6 +534,7 @@ namespace SE
 		/// Sets the client bounds of the window (client area not including border).
 		/// </summary>
 		/// <param name="clientArea">The client area.</param>
+		SE_FUNCTION(API(Prop))
 		virtual void SetClientBounds(const Rectangle& clientArea)
 		{
 		}
@@ -532,7 +542,7 @@ namespace SE
 		/// <summary>
 		/// Gets the window position (in screen coordinates).
 		/// </summary>
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop))
 		virtual Float2 GetPosition() const
 		{
 			return Float2::Zero;
@@ -542,7 +552,7 @@ namespace SE
 		/// Sets the window position (in screen coordinates).
 		/// </summary>
 		/// <param name="position">The position.</param>
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop))
 		virtual void SetPosition(const Float2& position)
 		{
 		}
@@ -550,6 +560,7 @@ namespace SE
 		/// <summary>
 		/// Gets the client position of the window (client area not including border).
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		inline Float2 GetClientPosition() const
 		{
 			return ClientToScreen(Float2::Zero);
@@ -559,6 +570,7 @@ namespace SE
 		/// Sets the client position of the window (client area not including border)
 		/// </summary>
 		/// <param name="position">The client area position.</param>
+		SE_FUNCTION(API(Prop))
 		virtual void SetClientPosition(const Float2& position)
 		{
 			SetClientBounds(Rectangle(position, GetClientSize()));
@@ -567,6 +579,7 @@ namespace SE
 		/// <summary>
 		/// Gets the window size (including border).
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		virtual Float2 GetSize() const
 		{
 			return m_ClientSize;
@@ -575,7 +588,7 @@ namespace SE
 		/// <summary>
 		/// Gets the size of the client area of the window (not including border).
 		/// </summary>
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop))
 		virtual Float2 GetClientSize() const
 		{
 			return m_ClientSize;
@@ -585,7 +598,7 @@ namespace SE
 		/// Sets the size of the client area of the window (not including border).
 		/// </summary>
 		/// <param name="size">The window client area size.</param>
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop))
 		void SetClientSize(const Float2& size)
 		{
 			SetClientBounds(Rectangle(GetClientPosition(), size));
@@ -596,6 +609,7 @@ namespace SE
 		/// </summary>
 		/// <param name="screenPos">The screen position.</param>
 		/// <returns>The client space position.</returns>
+		SE_FUNCTION(API())
 		virtual Float2 ScreenToClient(const Float2& screenPos) const
 		{
 			return screenPos;
@@ -606,6 +620,7 @@ namespace SE
 		/// </summary>
 		/// <param name="clientPos">The client position.</param>
 		/// <returns>The screen space position.</returns>
+		SE_FUNCTION(API())
 		virtual Float2 ClientToScreen(const Float2& clientPos) const
 		{
 			return clientPos;
@@ -614,6 +629,7 @@ namespace SE
 		/// <summary>
 		/// Gets the window DPI setting.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		int GetDpi() const
 		{
 			return m_Dpi;
@@ -622,7 +638,7 @@ namespace SE
 		/// <summary>
 		/// Gets the window DPI scale factor (1 is default). Includes custom DPI scale
 		/// </summary>
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop, ReadOnly))
 		float GetDpiScale() const
 		{
 			return Platform::CustomDpiScale * m_DpiScale;
@@ -633,7 +649,7 @@ namespace SE
 		/// Gets the window title.
 		/// </summary>
 		/// <returns>The window title.</returns>
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop))
 		virtual String GetTitle() const
 		{
 			return m_Title;
@@ -643,7 +659,7 @@ namespace SE
 		/// Sets the window title.
 		/// </summary>
 		/// <param name="title">The title.</param>
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop))
 		virtual void SetTitle(const StringView& title)
 		{
 			m_Title = title;
@@ -652,6 +668,7 @@ namespace SE
 		/// <summary>
 		/// Gets window opacity value (valid only for windows created with SupportsTransparency flag). Opacity values are normalized to range [0;1].
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		virtual float GetOpacity() const
 		{
 			return 1.0f;
@@ -661,6 +678,7 @@ namespace SE
 		/// Sets window opacity value (valid only for windows created with SupportsTransparency flag). Opacity values are normalized to range [0;1].
 		/// </summary>
 		/// <param name="opacity">The opacity.</param>
+		SE_FUNCTION(API(Prop))
 		virtual void SetOpacity(float opacity)
 		{
 		}
@@ -668,6 +686,7 @@ namespace SE
 		/// <summary>
 		/// Determines whether this window is focused.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		inline bool IsFocused() const
 		{
 			return m_Focused;
@@ -685,6 +704,7 @@ namespace SE
 		/// Brings window to the front of the Z order.
 		/// </summary>
 		/// <param name="force">True if move to the front by force, otherwise false.</param>
+		SE_FUNCTION(API())
 		virtual void BringToFront(bool force = false)
 		{
 		}
@@ -692,6 +712,7 @@ namespace SE
 		/// <summary>
 		/// Flashes the window to bring use attention.
 		/// </summary>
+		SE_FUNCTION(API())
 		virtual void FlashWindow()
 		{
 		}
@@ -702,6 +723,7 @@ namespace SE
 		/// </summary>
 		/// <param name="data">The data.</param>
 		/// <returns>The result.</returns>
+		SE_FUNCTION(API())
 		virtual DragDropEffect DoDragDrop(const StringView& data)
 		{
 			return DragDropEffect::None;
@@ -711,6 +733,7 @@ namespace SE
 		/// Starts the mouse tracking.
 		/// </summary>
 		/// <param name="useMouseScreenOffset">If set to <c>true</c> will use mouse screen offset.</param>
+		SE_FUNCTION(API())
 		virtual void StartTrackingMouse(bool useMouseScreenOffset)
 		{
 		}
@@ -718,6 +741,7 @@ namespace SE
 		/// <summary>
 		/// Gets the mouse tracking offset.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		Float2 GetTrackingMouseOffset() const
 		{
 			return m_TrackingMouseOffset;
@@ -726,6 +750,7 @@ namespace SE
 		/// <summary>
 		/// Gets the value indicating whenever mouse input is tracked by this window.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		bool IsMouseTracking() const
 		{
 			return m_IsTrackingMouse;
@@ -734,6 +759,7 @@ namespace SE
 		/// <summary>
 		/// Gets the value indicating if the mouse flipped to the other screen edge horizontally
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		bool IsMouseFlippingHorizontally() const
 		{
 			return m_IsHorizontalFlippingMouse;
@@ -742,6 +768,7 @@ namespace SE
 		/// <summary>
 		/// Gets the value indicating if the mouse flipped to the other screen edge vertically
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		bool IsMouseFlippingVertically() const
 		{
 			return m_IsVerticalFlippingMouse;
@@ -750,6 +777,7 @@ namespace SE
 		/// <summary>
 		/// Ends the mouse tracking.
 		/// </summary>
+		SE_FUNCTION(API())
 		virtual void EndTrackingMouse()
 		{
 		}
@@ -758,6 +786,7 @@ namespace SE
 		/// Starts the cursor clipping.
 		/// </summary>
 		/// <param name="bounds">The screen-space bounds that the cursor will be confined to.</param>
+		SE_FUNCTION(API())
 		virtual void StartClippingCursor(const Rectangle& bounds)
 		{
 		}
@@ -765,6 +794,7 @@ namespace SE
 		/// <summary>
 		/// Gets the value indicating whenever the cursor is being clipped.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		bool IsCursorClipping() const
 		{
 			return m_IsClippingCursor;
@@ -773,6 +803,7 @@ namespace SE
 		/// <summary>
 		/// Ends the cursor clipping.
 		/// </summary>
+		SE_FUNCTION(API())
 		virtual void EndClippingCursor()
 		{
 		}
@@ -780,6 +811,7 @@ namespace SE
 		/// <summary>
 		/// Gets the mouse cursor.
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		inline CursorType GetCursor() const
 		{
 			return m_Cursor;
@@ -789,6 +821,7 @@ namespace SE
 		/// Sets the mouse cursor.
 		/// </summary>
 		/// <param name="type">The cursor type.</param>
+		SE_FUNCTION(API(Prop))
 		virtual void SetCursor(CursorType type)
 		{
 			m_Cursor = type;
@@ -963,23 +996,27 @@ namespace SE
 		/// <summary>
 		/// Gets the mouse position in window coordinates.
 		/// </summary>
+		SE_FUNCTION(API(Prop))
 		Float2 GetMousePosition() const;
 
 		/// <summary>
 		/// Sets the mouse position in window coordinates.
 		/// </summary>
 		/// <param name="position">Mouse position to set on</param>
+		SE_FUNCTION(API(Prop))
 		void SetMousePosition(const Float2& position) const;
 
 		/// <summary>
 		/// Gets the mouse position change during the last frame.
 		/// </summary>
 		/// <returns>Mouse cursor position delta</returns>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		Float2 GetMousePositionDelta() const;
 
 		/// <summary>
 		/// Gets the mouse wheel change during the last frame.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		float GetMouseScrollDelta() const;
 
 		/// <summary>
@@ -987,6 +1024,7 @@ namespace SE
 		/// </summary>
 		/// <param name="button">Mouse button to check</param>
 		/// <returns>True while the user holds down the button</returns>
+		SE_FUNCTION(API())
 		bool GetMouseButton(MouseButton button) const;
 
 		/// <summary>
@@ -994,6 +1032,7 @@ namespace SE
 		/// </summary>
 		/// <param name="button">Mouse button to check</param>
 		/// <returns>True during the frame the user starts pressing down the button</returns>
+		SE_FUNCTION(API())
 		bool GetMouseButtonDown(MouseButton button) const;
 
 		/// <summary>
@@ -1001,6 +1040,7 @@ namespace SE
 		/// </summary>
 		/// <param name="button">Mouse button to check</param>
 		/// <returns>True during the frame the user releases the button</returns>
+		SE_FUNCTION(API())
 		bool GetMouseButtonUp(MouseButton button) const;
 
 	public:

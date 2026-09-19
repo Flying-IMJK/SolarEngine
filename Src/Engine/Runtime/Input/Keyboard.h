@@ -8,8 +8,10 @@ namespace SE
 	/// <summary>
 	/// Represents a single hardware keyboard device. Used by the Input to report raw keyboard input events.
 	/// </summary>
+	SE_CLASS(API(NoSpawn))
 	class SE_API_RUNTIME Keyboard : public InputDevice
 	{
+        SCRIPTING_TYPE_NO_SPAWN(Keyboard);
 	public:
 		friend class InputSystem;
 
@@ -41,6 +43,7 @@ namespace SE
 		/// </summary>
 		/// <param name="key">Key ID to check.</param>
 		/// <returns>True if user holds down the key identified by id, otherwise false.</returns>
+		SE_FUNCTION(API())
 		FORCE_INLINE bool GetKey(KeyboardKeys key) const
 		{
 			return _state.Keys[static_cast<int32>(key)];
@@ -51,6 +54,7 @@ namespace SE
 		/// </summary>
 		/// <param name="key">Key ID to check</param>
 		/// <returns>True if user starts pressing down the key, otherwise false.</returns>
+		SE_FUNCTION(API())
 		FORCE_INLINE bool GetKeyDown(KeyboardKeys key) const
 		{
 			return _state.Keys[static_cast<int32>(key)] && !_prevState.Keys[static_cast<int32>(key)];
@@ -61,6 +65,7 @@ namespace SE
 		/// </summary>
 		/// <param name="key">Key ID to check</param>
 		/// <returns>True if user releases the key, otherwise false.</returns>
+		SE_FUNCTION(API())
 		FORCE_INLINE bool GetKeyUp(KeyboardKeys key) const
 		{
 			return !_state.Keys[static_cast<int32>(key)] && _prevState.Keys[static_cast<int32>(key)];
@@ -69,6 +74,7 @@ namespace SE
 		/// <summary>
 		/// Checks if any keyboard key is currently pressed.
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		bool IsAnyKeyDown() const;
 
 	public:
