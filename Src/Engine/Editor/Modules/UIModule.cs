@@ -27,7 +27,7 @@ namespace SE.Editor
         public override void OnInit()
         {
             m_Root = Editor.MainWindow.GUI;
-            MainMenu = m_Root.AddChild(new MainMenu(Math.Max(m_Root.Width, 1.0f)));
+            MainMenu = m_Root.AddChild(new MainMenu(Editor.MainWindow, Math.Max(m_Root.Width, 1.0f)));
             ToolStrip = m_Root.AddChild(new ToolStrip(ToolStrip.DefaultMarginV * 2.0f + 26.0f, MainMenu.DefaultHeight, Math.Max(m_Root.Width, 1.0f)));
             StatusBar = m_Root.AddChild(new StatusBar(0.0f, Math.Max(m_Root.Width, 1.0f)));
             MasterDockPanel = m_Root.AddChild(new MasterDockPanel());

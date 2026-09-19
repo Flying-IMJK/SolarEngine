@@ -102,10 +102,19 @@ namespace SE
 		UpdateGraph = New<Threading::TaskGraph>();
 		Systems::Initialize();
 
+#if SE_EDITOR
+		// The editor creates its managed window and GUI during BeforeRun. Let that
+		// complete before showing the native window so the first resize callback
+		// reaches an already initialized managed UI tree.
+		Platform::BeforeRun();
+		application->BeforeRun();
+		EngineImpl::InitMainWindow(application);
+#else
 		EngineImpl::InitMainWindow(application);
 
 		Platform::BeforeRun();
 		application->BeforeRun();
+#endif
 
 		Time::Synchronize();
 		EngineImpl::IsReady = true;

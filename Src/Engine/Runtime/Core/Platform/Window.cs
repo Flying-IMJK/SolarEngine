@@ -149,7 +149,7 @@ namespace SE
             Render2D.PushTransform(scale);
             GUI.Draw();
             Render2D.PopTransform();
-        }
+        } 
 
         internal void Internal_OnCharInput(char character)
         {

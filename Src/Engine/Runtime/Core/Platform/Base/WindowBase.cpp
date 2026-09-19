@@ -20,9 +20,9 @@
 #define INVOKE_EVENT(name, paramsCount, param0, param1, param2) \
 	do \
 	{ \
-		if (Scripting::IsEveryAssemblyLoaded()) \
+		CLRObject* managedInstance = GetManagedInstance(); \
+		if (managedInstance) \
 		{ \
-			CLRObject* managedInstance = GetManagedInstance(); \
 			CLRClass* managedClass = GetClass(); \
 			CLRMethod* method = managedClass ? managedClass->GetMethod("Internal_" #name, paramsCount) : nullptr; \
 			if (managedInstance && method) \
@@ -46,7 +46,7 @@
 #define INVOKE_DRAG_EVENT(name) \
 	do \
 	{ \
-		if (result != DragDropEffect::None || !data || !Scripting::IsEveryAssemblyLoaded()) \
+		if (result != DragDropEffect::None || !data) \
 			break; \
 		CLRObject* managedInstance = GetManagedInstance(); \
 		CLRClass* managedClass = GetClass(); \
