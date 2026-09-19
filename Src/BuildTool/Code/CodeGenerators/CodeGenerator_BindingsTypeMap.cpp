@@ -633,8 +633,12 @@ namespace SE::BuildTool
                 function.returnType.ToString() + "': " +
                 (!returnSemantics.IsSupported() ? returnSemantics.diagnostic : returnCSharp.diagnostic));
 
+        const AbiValueKind returnAbiKind = GetAbiValueKind(returnSemantics);
+
         plan.usesHiddenResult = returnSemantics.kind == BindingTypeKind::InteropStruct ||
+            returnAbiKind == AbiValueKind::BlittableStruct ||
             (function.returnType.isRef && returnSemantics.kind == BindingTypeKind::Blittable);
+
         if (function.isVirtual && function.returnType.isRef)
             plan.diagnostics.push_back("SEBIND008 " + owner.name + "::" + function.name +
                 " virtual reference returns are not supported in P0");
