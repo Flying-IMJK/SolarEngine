@@ -85,6 +85,7 @@ namespace SE::BuildTool
         std::string GetCSharpFullTypeName(const TypeID& typeID) const;
         std::string GetCSharpFromInterop(const TypeInfo& cppType, const std::string& expression, std::string_view marshalAs = {}) const;
         std::string GetCSharpToInterop(const TypeInfo& cppType, const std::string& expression, std::string_view marshalAs = {}) const;
+        bool UseCustomMarshalling(const TypeInfoStruct& cls) const;
         bool UsePassByReference(const TypeInfo& cppType, std::string_view marshalAs = {}) const;
         std::string GetCSharpParamMarshalAttribute(const TypeInfo& cppType, const std::string& paramName,
                                                    std::string_view marshalAs = {},

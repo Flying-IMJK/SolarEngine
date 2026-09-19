@@ -47,7 +47,7 @@ namespace SE
 
 
 		auto format = PixelFormat::R8G8_UNorm;
-		if (!EnumHasAllFlags(GPUDevice::instance->GetPixelFormatFeatures(format).Support, EnumCombineFlags<FormatSupport>(FormatSupport::RenderTarget, FormatSupport::ShaderSample, FormatSupport::Texture2D)))
+		if (!EnumHasAllFlags(GPUDevice::instance->GetPixelFormatFeatures(format).Support, FormatSupport::RenderTarget | FormatSupport::ShaderSample | FormatSupport::Texture2D))
 		{
 			format = PixelFormat::B8G8R8A8_UNorm;
 		}

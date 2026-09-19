@@ -259,7 +259,7 @@ namespace SE
 		/// </remarks>
 		static GPUBufferDescription Structured(int32 elementCount, int32 elementSize, bool isUnorderedAccess = false)
 		{
-			GPUBufferFlags bufferFlags = EnumCombineFlags(GPUBufferFlags::Structured, GPUBufferFlags::ShaderResource);
+			GPUBufferFlags bufferFlags = GPUBufferFlags::Structured | GPUBufferFlags::ShaderResource;
 			if (isUnorderedAccess)
 				bufferFlags = EnumAddFlags(bufferFlags, GPUBufferFlags::UnorderedAccess);
 

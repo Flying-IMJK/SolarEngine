@@ -26,28 +26,23 @@ namespace SE
 
             FORCE_INLINE PipelineStateCache* GetPS(const DrawPass pass, const bool useLightmap, const bool useSkinning, const bool perBoneMotionBlur)
             {
-                if (pass == DrawPass::Depth)
+                switch (pass)
                 {
+                case DrawPass::Depth:
                     return useSkinning ? &DepthSkinned : &Depth;
-                }
-                else if (pass == DrawPass::GBuffer ||
-                    pass == EnumCombineFlags(DrawPass::GBuffer, DrawPass::GlobalSurfaceAtlas) ||
-                    pass == DrawPass::GlobalSurfaceAtlas)
-                {
+                case DrawPass::GBuffer:
+                case DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas:
+                case DrawPass::GlobalSurfaceAtlas:
                     return useLightmap ? &DefaultLightmap : (useSkinning ? &DefaultSkinned : &Default);
-                }
-                else if (pass == DrawPass::MotionVectors)
-                {
+                case DrawPass::MotionVectors:
                     return useSkinning ? (perBoneMotionBlur ? &MotionVectorsSkinnedPerBone : &MotionVectorsSkinned) : &MotionVectors;
-                }
-#if SE_EDITOR
-                else if (pass == DrawPass::QuadOverdraw)
-                {
+    #if USE_EDITOR
+                case DrawPass::QuadOverdraw:
                     return useSkinning ? &QuadOverdrawSkinned : &QuadOverdraw;
+    #endif
+                default:
+                    return nullptr;
                 }
-#endif
-
-                return nullptr;
             }
 
             FORCE_INLINE void Release()

@@ -94,6 +94,12 @@ namespace SE::BuildTool
         }
     }
 
+    bool BindingsCSharpGenerator::UseCustomMarshalling(const TypeInfoStruct& cls) const
+    {
+        const BindingTypeSemantics semantics = ResolveBindingTypeSemantics(m_Database, TypeInfo(cls.typeID), cls.APIMarshalAs);
+        return semantics.kind == BindingTypeKind::InteropStruct;
+    }
+
     bool BindingsCSharpGenerator::UsePassByReference(const TypeInfo& cppType, std::string_view marshalAs) const
     {
         const CSharpTypeConversion conversion = ResolveConversion(cppType, marshalAs);
@@ -1467,13 +1473,20 @@ namespace SE::BuildTool
 
         OpenCSharpContainingTypeScopes(cls, output);
 
-        // Marshaller (must come before the struct for CustomMarshaller attribute)
-        GenerateCSharpStructMarshaller(cls, output);
+        const bool useCustomMarshalling = UseCustomMarshalling(cls);
+        if (useCustomMarshalling)
+        {
+            // Marshaller must come before the struct for the NativeMarshalling attribute.
+            GenerateCSharpStructMarshaller(cls, output);
+        }
 
         // Struct declaration
         AppendCSharpComment(output, "    ", cls.comment);
         output += Utils::String::Format("    [StructLayout(LayoutKind.Sequential)]\n");
-        output += Utils::String::Format("    [NativeMarshalling(typeof({0}Marshaller))]\n", MakeCSharpIdentifier(cls.name));
+        if (useCustomMarshalling)
+        {
+            output += Utils::String::Format("    [NativeMarshalling(typeof({0}Marshaller))]\n", MakeCSharpIdentifier(cls.name));
+        }
         if (IsValidCSharpAttributeList(cls.APIAttributes))
         {
             output += Utils::String::Format("    {0}\n", cls.APIAttributes);

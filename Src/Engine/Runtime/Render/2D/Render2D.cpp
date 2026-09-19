@@ -182,7 +182,7 @@ namespace SE
         Rectangle Bounds;
     };
 
-    Render2D::RenderingFeatures Render2D::Features = EnumCombineFlags(RenderingFeatures::VertexSnapping, RenderingFeatures::FallbackFonts);
+    Render2D::RenderingFeatures Render2D::Features = RenderingFeatures::VertexSnapping | RenderingFeatures::FallbackFonts;
 
     struct Render2DData
     {

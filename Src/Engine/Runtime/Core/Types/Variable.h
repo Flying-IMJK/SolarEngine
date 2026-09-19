@@ -123,15 +123,6 @@ public:												\
 		return (T)((__underlying_type(T))value & ~(__underlying_type(T))flags);
 	}
 
-	// Returns enum value with additional enum flags set
-	template<typename T, typename... Args>
-	constexpr T EnumCombineFlags(T value, Args... values)
-	{
-		static_assert(std::is_enum_v<T>, "T must be an enum type");
-		static_assert((std::is_same_v<T, Args> && ...), "All flags must have the same enum type");
-		return static_cast<T>(((__underlying_type(T))value | ... | (__underlying_type(T))values));
-	}
-
 
 	class String;
 	class StringAnsi;

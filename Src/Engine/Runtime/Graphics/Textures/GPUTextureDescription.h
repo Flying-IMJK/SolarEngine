@@ -341,7 +341,7 @@ namespace SE
 		/// <param name="arraySize">Size of the texture 2D array, default to 1.</param>
 		/// <returns>A new instance of 1D <see cref="GPUTextureDescription" /> class.</returns>
 		static GPUTextureDescription New1D(int32 width, PixelFormat format,
-			GPUTextureFlags textureFlags = EnumCombineFlags<GPUTextureFlags>(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget),
+			GPUTextureFlags textureFlags = GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget,
 			int32 arraySize = 1)
 		{
 			return New1D(width, format, textureFlags, 1, arraySize);
@@ -357,7 +357,7 @@ namespace SE
 		/// <param name="arraySize">Size of the texture 2D array, default to 1.</param>
 		/// <returns>A new instance of 1D <see cref="GPUTextureDescription" /> class.</returns>
 		static GPUTextureDescription New1D(int32 width, int32 mipCount, PixelFormat format,
-			GPUTextureFlags textureFlags = EnumCombineFlags<GPUTextureFlags>(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget),
+			GPUTextureFlags textureFlags = GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget,
 			int32 arraySize = 1)
 		{
 			return New1D(width, format, textureFlags, mipCount, arraySize);
@@ -391,7 +391,7 @@ namespace SE
 		static GPUTextureDescription New2D(int32 width,
 			int32 height,
 			PixelFormat format,
-			GPUTextureFlags textureFlags = EnumCombineFlags(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget),
+			GPUTextureFlags textureFlags = GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget,
 			int32 arraySize = 1)
 		{
 			return New2D(width, height, 1, format, textureFlags, arraySize);
@@ -412,7 +412,7 @@ namespace SE
 			int32 height,
 			int32 mipCount,
 			PixelFormat format,
-			GPUTextureFlags textureFlags = EnumCombineFlags(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget),
+			GPUTextureFlags textureFlags = GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget,
 			int32 arraySize = 1,
 			MSAALevel msaaLevel = MSAALevel::None)
 		{
@@ -447,7 +447,7 @@ namespace SE
 		/// <param name="textureFlags">true if the texture needs to support unordered read write.</param>
 		/// <returns>A new instance of <see cref="GPUTextureDescription" /> class.</returns>
 		static GPUTextureDescription New3D(const Float3& size, PixelFormat format,
-			GPUTextureFlags textureFlags = EnumCombineFlags<GPUTextureFlags>(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget));
+			GPUTextureFlags textureFlags = GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
 
 		/// <summary>
 		/// Creates a new <see cref="GPUTextureDescription" /> with a single mipmap.
@@ -462,7 +462,7 @@ namespace SE
 			int32 height,
 			int32 depth,
 			PixelFormat format,
-			GPUTextureFlags textureFlags = EnumCombineFlags<GPUTextureFlags>(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget))
+			GPUTextureFlags textureFlags = GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget)
 		{
 			return New3D(width, height, depth, 1, format, textureFlags);
 		}
@@ -482,7 +482,7 @@ namespace SE
 			int32 depth,
 			int32 mipCount,
 			PixelFormat format,
-			GPUTextureFlags textureFlags = EnumCombineFlags<GPUTextureFlags>(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget))
+			GPUTextureFlags textureFlags = GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget)
 		{
 			return New3D(width, height, depth, format, textureFlags, mipCount);
 		}
@@ -514,7 +514,7 @@ namespace SE
 		/// <returns>A new instance of <see cref="GPUTextureDescription" /> class.</returns>
 		static GPUTextureDescription NewCube(int32 size,
 			PixelFormat format,
-			GPUTextureFlags textureFlags = EnumCombineFlags<GPUTextureFlags>(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget))
+			GPUTextureFlags textureFlags = GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget)
 		{
 			return NewCube(size, 1, format, textureFlags);
 		}
@@ -530,7 +530,7 @@ namespace SE
 		static GPUTextureDescription NewCube(int32 size,
 			int32 mipCount,
 			PixelFormat format,
-			GPUTextureFlags textureFlags = EnumCombineFlags<GPUTextureFlags>(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget))
+			GPUTextureFlags textureFlags = GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget)
 		{
 			return NewCube(size, format, textureFlags, mipCount);
 		}

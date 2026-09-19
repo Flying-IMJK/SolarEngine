@@ -308,7 +308,7 @@ namespace SE
 		/// </summary>
 		FORCE_INLINE bool IsRegularTexture() const
 		{
-			return EnumHasAnyFlags(m_Desc.Flags, GPUTextureFlags::ShaderResource);
+			return m_Desc.Flags == GPUTextureFlags::ShaderResource;
 		}
 
 		/// <summary>

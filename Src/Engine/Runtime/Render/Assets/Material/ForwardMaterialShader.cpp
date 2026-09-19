@@ -123,7 +123,7 @@ void ForwardMaterialShader::Unload()
 
 bool ForwardMaterialShader::OnLoad()
 {
-    _drawModes = EnumCombineFlags(DrawPass::Depth, DrawPass::Forward, DrawPass::QuadOverdraw);
+    _drawModes = DrawPass::Depth | DrawPass::Forward | DrawPass::QuadOverdraw;
 
     auto psDesc = GPUPipelineState::Description::Default;
     psDesc.DepthEnable = EnumHasNoneFlags(m_Info.FeaturesFlags, MaterialFeatures::DisableDepthTest);

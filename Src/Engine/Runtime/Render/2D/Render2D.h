@@ -30,7 +30,7 @@ namespace SE
         /// <summary>
         /// The rendering features and options flags.
         /// </summary>
-        SE_ENUM(API())
+        SE_ENUM(API(Attributes="Flags"))
         enum class RenderingFeatures
         {
             /// <summary>
@@ -555,5 +555,5 @@ namespace SE
         static void CallDrawing(Function<void()> drawableElement, GPUContext* context, GPUTexture* output, GPUTexture* depthBuffer, Matrix &viewProjection);
     };
 
-
+    SE_ENUM_OPERATORS(Render2D::RenderingFeatures);
 } // SE

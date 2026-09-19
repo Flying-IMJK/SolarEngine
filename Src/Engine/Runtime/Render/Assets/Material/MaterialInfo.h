@@ -153,6 +153,7 @@ namespace SE
     /// <summary>
     /// Material features flags.
     /// </summary>
+    SE_ENUM(API(Attributes="Flags"))
     enum class MaterialFeatures : uint32
     {
         /// <summary>
@@ -216,9 +217,12 @@ namespace SE
         GlobalIllumination = 1 << 11,
     };
 
+    SE_ENUM_OPERATORS(MaterialFeatures);
+
     /// <summary>
     /// Material features usage flags. Detected by the material generator to help graphics pipeline optimize rendering of material shaders.
     /// </summary>
+    SE_ENUM(API(Attributes="Flags"))
     enum class MaterialUsage : uint32
     {
         /// <summary>
@@ -262,6 +266,7 @@ namespace SE
         UseRefraction = 1 << 6,
     };
 
+    SE_ENUM_OPERATORS(MaterialUsage)
 
     /// <summary>
     /// Material input scene textures. Special inputs from the graphics pipeline.

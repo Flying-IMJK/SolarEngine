@@ -108,7 +108,7 @@ void DeformableMaterialShader::Unload()
 
 bool DeformableMaterialShader::OnLoad()
 {
-    m_DrawModes = EnumCombineFlags(DrawPass::Depth, DrawPass::QuadOverdraw);
+    m_DrawModes = DrawPass::Depth | DrawPass::QuadOverdraw;
     auto psDesc = GPUPipelineState::Description::Default;
     psDesc.DepthEnable = EnumHasNoneFlags(m_Info.FeaturesFlags, MaterialFeatures::DisableDepthTest);
     psDesc.DepthWriteEnable = EnumHasNoneFlags(m_Info.FeaturesFlags, MaterialFeatures::DisableDepthWrite);
@@ -133,7 +133,7 @@ bool DeformableMaterialShader::OnLoad()
 
     if (m_Info.BlendMode == MaterialBlendMode::Opaque)
     {
-        m_DrawModes = EnumCombineFlags(m_DrawModes, DrawPass::GBuffer, DrawPass::GlobalSurfaceAtlas);
+        m_DrawModes |= DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas;
 
         // GBuffer Pass
         psDesc.VS = m_Shader->GetVS(SE_TEXT("VS_SplineModel"));

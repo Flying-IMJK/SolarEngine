@@ -445,14 +445,14 @@ namespace SE
         switch (options.Type)
         {
         case ModelType::Model:
-            options.ImportTypes = EnumCombineFlags(options.ImportTypes, ImportDataTypes::Geometry, ImportDataTypes::Nodes);
+            options.ImportTypes = ImportDataTypes::Geometry | ImportDataTypes::Nodes;
             if (options.ImportMaterials)
                 options.ImportTypes = EnumAddFlags(options.ImportTypes, ImportDataTypes::Materials);
             if (options.ImportTextures)
                 options.ImportTypes = EnumAddFlags(options.ImportTypes, ImportDataTypes::Textures);
             break;
         case ModelType::SkinnedModel:
-            options.ImportTypes = EnumCombineFlags(options.ImportTypes, ImportDataTypes::Geometry, ImportDataTypes::Nodes, ImportDataTypes::Skeleton);
+            options.ImportTypes = ImportDataTypes::Geometry | ImportDataTypes::Nodes | ImportDataTypes::Skeleton;
             if (options.ImportMaterials)
                 options.ImportTypes = EnumAddFlags(options.ImportTypes, ImportDataTypes::Materials);
             if (options.ImportTextures)
@@ -464,7 +464,7 @@ namespace SE
                 options.ImportTypes = EnumAddFlags(options.ImportTypes, ImportDataTypes::Skeleton);
             break;
         case ModelType::Prefab:
-            options.ImportTypes = EnumCombineFlags(options.ImportTypes, ImportDataTypes::Geometry, ImportDataTypes::Nodes, ImportDataTypes::Animations);
+            options.ImportTypes = ImportDataTypes::Geometry | ImportDataTypes::Nodes | ImportDataTypes::Animations;
             if (options.ImportMaterials)
                 options.ImportTypes = EnumAddFlags(options.ImportTypes, ImportDataTypes::Materials);
             if (options.ImportTextures)

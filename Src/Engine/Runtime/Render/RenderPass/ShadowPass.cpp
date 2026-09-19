@@ -90,8 +90,8 @@ namespace SE
         {
             const auto formatFeaturesDepth = GPUDevice::instance->GetPixelFormatFeatures(format);
             const auto formatFeaturesTexture = GPUDevice::instance->GetPixelFormatFeatures(format);
-            if (EnumHasAllFlags(formatFeaturesDepth.Support, EnumCombineFlags<FormatSupport>(FormatSupport::DepthStencil, FormatSupport::Texture2D, FormatSupport::TextureCube)) &&
-                EnumHasAllFlags(formatFeaturesTexture.Support, EnumCombineFlags<FormatSupport>(FormatSupport::ShaderSample, FormatSupport::ShaderSampleComparison)))
+            if (EnumHasAllFlags(formatFeaturesDepth.Support, FormatSupport::DepthStencil | FormatSupport::Texture2D | FormatSupport::TextureCube) &&
+                EnumHasAllFlags(formatFeaturesTexture.Support, FormatSupport::ShaderSample | FormatSupport::ShaderSampleComparison))
             {
                 _shadowMapFormat = format;
                 break;
@@ -188,7 +188,7 @@ namespace SE
         // Check if size will change
         if (newSizeCSM > 0 && newSizeCSM != _shadowMapsSizeCSM)
         {
-            if (!_shadowMapCSM->Init(GPUTextureDescription::New2D(newSizeCSM, newSizeCSM, _shadowMapFormat, EnumCombineFlags<GPUTextureFlags>(GPUTextureFlags::ShaderResource, GPUTextureFlags::DepthStencil), 1, MAX_CSM_CASCADES)))
+            if (!_shadowMapCSM->Init(GPUTextureDescription::New2D(newSizeCSM, newSizeCSM, _shadowMapFormat, GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil, 1, MAX_CSM_CASCADES)))
             {
                 LOG_FATAL("Render", "Cannot setup shadow map '{0}' Size: {1}, format: {2}.", SE_TEXT("CSM"), newSizeCSM, Types::GetEnumString(_shadowMapFormat));
                 return;
@@ -197,7 +197,7 @@ namespace SE
         }
         if (newSizeCube > 0 && newSizeCube != _shadowMapsSizeCube)
         {
-            if (!_shadowMapCube->Init(GPUTextureDescription::NewCube(newSizeCube, _shadowMapFormat, EnumCombineFlags<GPUTextureFlags>(GPUTextureFlags::ShaderResource, GPUTextureFlags::DepthStencil))))
+            if (!_shadowMapCube->Init(GPUTextureDescription::NewCube(newSizeCube, _shadowMapFormat, GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil)))
             {
                 LOG_FATAL("Render", "Cannot setup shadow map '{0}' Size: {1}, format: {2}.", SE_TEXT("Cube"), newSizeCube, Types::GetEnumString(_shadowMapFormat));
                 return;

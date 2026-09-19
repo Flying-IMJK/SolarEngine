@@ -20,27 +20,24 @@ namespace SE
 
 			FORCE_INLINE PipelineStateCache* GetPS(const DrawPass pass)
 			{
-				if (pass == DrawPass::Depth)
+				switch (pass)
 				{
+				case DrawPass::Depth:
 					return &Depth;
-				}
-
-				if (pass == DrawPass::GBuffer ||
-					pass == EnumCombineFlags(DrawPass::GBuffer, DrawPass::GlobalSurfaceAtlas) ||
-					pass == DrawPass::GlobalSurfaceAtlas ||
-					pass == DrawPass::Forward)
-				{
+				case DrawPass::GBuffer:
+				case DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas:
+				case DrawPass::GlobalSurfaceAtlas:
+				case DrawPass::Forward:
 					return &Default;
-				}
-
-#if SE_EDITOR
-				if (pass == DrawPass::QuadOverdraw)
-				{
+/*				case DrawPass::Distortion:
+					return &Distortion;*/
+	#if USE_EDITOR
+				case DrawPass::QuadOverdraw:
 					return &QuadOverdraw;
+	#endif
+				default:
+					return nullptr;
 				}
-#endif
-
-				return nullptr;
 			}
 
 			FORCE_INLINE void Release()

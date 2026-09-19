@@ -62,7 +62,7 @@ namespace SE
 		// Pick a proper LUT pixels format
 		m_LutFormat = PixelFormat::R10G10B10A2_UNorm;
 		const auto formatSupport = device->GetPixelFormatFeatures(m_LutFormat).Support;
-		FormatSupport formatSupportFlags = EnumCombineFlags<FormatSupport>(FormatSupport::ShaderSample, FormatSupport::RenderTarget);
+		FormatSupport formatSupportFlags = FormatSupport::ShaderSample | FormatSupport::RenderTarget;
 		if (m_UseVolumeTexture)
 		{
 			formatSupportFlags = EnumAddFlags(formatSupportFlags, FormatSupport::Texture3D);

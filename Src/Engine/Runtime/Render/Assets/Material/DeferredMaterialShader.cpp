@@ -24,7 +24,7 @@ namespace SE
 
     DrawPass DeferredMaterialShader::GetDrawModes() const
     {
-        return EnumCombineFlags(DrawPass::Depth, DrawPass::GBuffer, DrawPass::GlobalSurfaceAtlas, DrawPass::MotionVectors, DrawPass::QuadOverdraw);
+        return DrawPass::Depth | DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas | DrawPass::MotionVectors | DrawPass::QuadOverdraw;
     }
 
     bool DeferredMaterialShader::CanUseLightmap() const
@@ -217,7 +217,7 @@ namespace SE
         psDesc.HS = nullptr;
         psDesc.DS = nullptr;
         GPUShaderProgramVS* instancedDepthPassVS;
-        if (EnumHasAllFlags(m_Info.UsageFlags, EnumCombineFlags(MaterialUsage::UseMask, MaterialUsage::UsePositionOffset)))
+        if (EnumHasAllFlags(m_Info.UsageFlags, MaterialUsage::UseMask | MaterialUsage::UsePositionOffset))
         {
             // Materials with masking need full vertex buffer to get texcoord used to sample textures for per pixel masking.
             // Materials with world pos offset need full VB to apply offset using texcoord etc.

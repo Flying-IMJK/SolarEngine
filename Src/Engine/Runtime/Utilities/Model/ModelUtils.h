@@ -52,6 +52,9 @@ namespace SE
 
     typedef ImportDataTypes ImportDataTypeFlags;
 
+    SE_ENUM_OPERATORS(ImportDataTypeFlags);
+
+
     class ModelUtils
     {
         // Optional: inputModel or modelData
@@ -306,7 +309,8 @@ namespace SE
         // static void CalculateBoneOffsetMatrix(const List<SkeletonNode>& nodes, Matrix& offsetMatrix, int32 nodeIndex);
 
         static bool ImportDataAssimp(const String& path, ModelData& data, Options& options, String& errorMsg);
-    };
 #endif
+    };
+
 
 } // SE

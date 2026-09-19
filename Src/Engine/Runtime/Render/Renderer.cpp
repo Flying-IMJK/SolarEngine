@@ -183,7 +183,7 @@ namespace SE
 
 		// Get the light accumulation buffer
 		auto outputFormat = renderContext.buffers->GetOutputFormat();
-		GPUTextureFlags tempFlags = EnumCombineFlags(GPUTextureFlags::ShaderResource, GPUTextureFlags::RenderTarget);
+		GPUTextureFlags tempFlags = GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget;
 		if (GPUDevice::instance->GetGPULimits().HasCompute)
 		{
 			tempFlags = EnumAddFlags(tempFlags, GPUTextureFlags::UnorderedAccess);
