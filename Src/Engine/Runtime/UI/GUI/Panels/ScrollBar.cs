@@ -33,7 +33,7 @@ namespace SE.GUI
             float trackLength = Orientation == Orientation.Horizontal ? Width : Height;
             float thumbLength = ContentSize <= 0.0f
                 ? trackLength
-                : Math.Clamp(trackLength * ViewportSize / ContentSize, 12.0f, trackLength);
+                : Math.Clamp(trackLength * ViewportSize / ContentSize, MathF.Min(12.0f, trackLength), trackLength);
             ThumbSize = Orientation == Orientation.Horizontal
                 ? new Float2(thumbLength, Height)
                 : new Float2(Width, thumbLength);

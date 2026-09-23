@@ -107,7 +107,7 @@ namespace SE
 
 	void GraphicWindow::Bind()
 	{
-		DrawEvent.BindUnique<GraphicWindow, &GraphicWindow::DrawInternal>(this);
+		/*DrawEvent.BindUnique<GraphicWindow, &GraphicWindow::DrawInternal>(this);
 		UpdateEvent.BindUnique<GraphicWindow, &GraphicWindow::UpdateInternal>(this);
 		ResizedEvent.BindUnique<GraphicWindow, &GraphicWindow::ResizeInternal>(this);
 		CharInputEvent.BindUnique<GraphicWindow, &GraphicWindow::CharInputInternal>(this);
@@ -129,7 +129,7 @@ namespace SE
 		ClosedEvent.BindUnique<GraphicWindow, &GraphicWindow::ClosedInternal>(this);
 		ShownEvent.BindUnique<GraphicWindow, &GraphicWindow::ShowInternal>(this);
 		GetFocusEvent.BindUnique<GraphicWindow, &GraphicWindow::GotFocus>(this);
-		LostFocusEvent.BindUnique<GraphicWindow, &GraphicWindow::LostFocus>(this);
+		LostFocusEvent.BindUnique<GraphicWindow, &GraphicWindow::LostFocus>(this);*/
 	}
 
 	void GraphicWindow::DrawInternal()

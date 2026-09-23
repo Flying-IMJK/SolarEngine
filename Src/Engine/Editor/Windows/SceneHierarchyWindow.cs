@@ -12,7 +12,7 @@ namespace SE.Editor.GUI
         public SceneHierarchyWindow(Editor editor)
             : base(editor, "SceneHierarchy", "Scene Hierarchy", ScrollBars.None)
         {
-            m_HierarchyView = AddChild(new SceneHierarchyView(editor.Scene));
+            //m_HierarchyView = AddChild(new SceneHierarchyView(editor.Scene));
         }
 
         public SceneHierarchyView HierarchyView => m_HierarchyView;
@@ -20,6 +20,12 @@ namespace SE.Editor.GUI
         protected override void OnLayoutChildren()
         {
             base.OnLayoutChildren();
+
+            if (m_HierarchyView == null)
+            {
+                return;
+            }
+
             m_HierarchyView.SetBounds(0.0f, 0.0f, Width, Height);
         }
     }

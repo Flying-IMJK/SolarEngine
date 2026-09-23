@@ -14,19 +14,24 @@ namespace SE.Editor.GUI
         public ContentWindow(Editor editor)
             : base(editor, "Content", "Content")
         {
-            m_Browser = AddChild(new ManagedContentBrowser(Environment.CurrentDirectory));
+            //m_Browser = AddChild(new ManagedContentBrowser(Environment.CurrentDirectory));
         }
 
         public ManagedContentBrowser Browser => m_Browser;
 
         public void Refresh()
         {
-            m_Browser.Refresh();
+            //m_Browser.Refresh();
         }
 
         protected override void OnLayoutChildren()
         {
             base.OnLayoutChildren();
+
+            if (m_Browser == null)
+            {
+                return;
+            }
             m_Browser.SetBounds(0.0f, 0.0f, Width, Height);
         }
     }

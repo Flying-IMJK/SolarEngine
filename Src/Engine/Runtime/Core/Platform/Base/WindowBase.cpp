@@ -418,7 +418,7 @@ namespace SE
 	{
 		PROFILE_CPU_NAMED("GUI.OnDraw");
 		INVOKE_EVENT_PARAMS_0(OnDraw);
-		DrawEvent();
+ 		DrawEvent();
 	}
 
 	void WindowBase::Show()

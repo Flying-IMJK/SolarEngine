@@ -1,3 +1,4 @@
+
 using System;
 using System.Collections.Generic;
 
@@ -149,6 +150,7 @@ namespace SE.Editor
             m_MainWindow = Window.Create(settings) ?? throw new InvalidOperationException("Failed to create the editor main window.");
             return m_MainWindow;
         }
+
     }
 }
 
