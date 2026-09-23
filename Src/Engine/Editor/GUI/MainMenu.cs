@@ -11,13 +11,6 @@ namespace SE.Editor.GUI
 
         private const float WindowButtonWidth = 46.0f;
         private const float ResizeBorderThickness = 5.0f;
-        private const string WindowIconPath = "Assets/Icon/Engine_Icon";
-        private const string WindowIconsFontPath = "Assets/Fonts/SegMDL2";
-        private const string ChromeMinimize = "\uE921";
-        private const string ChromeMaximize = "\uE922";
-        private const string ChromeRestore = "\uE923";
-        private const string ChromeClose = "\uE8BB";
-
         private readonly List<MainMenuButton> m_Buttons = new List<MainMenuButton>();
         private readonly Window m_Window;
         private readonly Window.HitTestDelegate m_HitTestDelegate;
@@ -39,8 +32,8 @@ namespace SE.Editor.GUI
             IsScrollable = false;
             BackgroundColor = Style.Current.LightBackground;
 
-            Texture? windowIcon = AssetContent.LoadInternal<Texture>(WindowIconPath);
-            FontAsset? windowIconsFont = AssetContent.LoadInternal<FontAsset>(WindowIconsFontPath);
+            Texture? windowIcon = AssetContent.LoadInternal<Texture>(EditorAssets.WindowIcon);
+            FontAsset? windowIconsFont = AssetContent.LoadInternal<FontAsset>(EditorAssets.WindowIconsFont);
             Font? iconFont = windowIconsFont?.CreateFont(9.0f);
 
             m_Icon = new Image(new Rectangle(0, 0, DefaultHeight, DefaultHeight))
@@ -58,9 +51,9 @@ namespace SE.Editor.GUI
                 TextColor = Style.Current.ForegroundGrey,
             };
 
-            m_MinimizeButton = CreateWindowButton(ChromeMinimize, iconFont);
-            m_MaximizeButton = CreateWindowButton(m_Window.IsMaximized ? ChromeRestore : ChromeMaximize, iconFont);
-            m_CloseButton = CreateWindowButton(ChromeClose, iconFont);
+            m_MinimizeButton = CreateWindowButton(EditorAssets.SegMDL2Icons.ChromeMinimize, iconFont);
+            m_MaximizeButton = CreateWindowButton(m_Window.IsMaximized ? EditorAssets.SegMDL2Icons.ChromeRestore : EditorAssets.SegMDL2Icons.ChromeMaximize, iconFont);
+            m_CloseButton = CreateWindowButton(EditorAssets.SegMDL2Icons.ChromeClose, iconFont);
             m_CloseButton.BackgroundColorHighlighted = Color.Red;
             m_CloseButton.BackgroundColorPressed = Color.Red.RGBMultiplied(1.3f);
 
@@ -137,7 +130,7 @@ namespace SE.Editor.GUI
                 return;
 
             m_Title.Text = m_Window.Title;
-            m_MaximizeButton.Text = m_Window.IsMaximized ? ChromeRestore : ChromeMaximize;
+            m_MaximizeButton.Text = m_Window.IsMaximized ? EditorAssets.SegMDL2Icons.ChromeRestore : EditorAssets.SegMDL2Icons.ChromeMaximize;
         }
 
         public override bool OnMouseDoubleClick(Float2 location, MouseButton button)

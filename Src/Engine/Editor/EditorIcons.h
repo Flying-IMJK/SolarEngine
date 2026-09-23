@@ -1,11 +1,6 @@
 #pragma once
 #include "Runtime/Render/2D/SpriteAtlas.h"
 
-namespace SE
-{
-    class Texture;
-}
-
 namespace SE::Editor
 {
     SE_CLASS(API(Static))

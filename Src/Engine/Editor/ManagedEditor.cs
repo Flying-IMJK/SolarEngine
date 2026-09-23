@@ -24,6 +24,7 @@ namespace SE.Editor
         /// </summary>
         public Window MainWindow => EnsureMainWindow();
 
+        public SettingModule Settings { get; private set; }
         public UIModule UI { get; private set; }
         public SceneModule Scene { get; private set; }
         public WindowsModule Windows { get; private set; }
@@ -50,6 +51,7 @@ namespace SE.Editor
             EnsureMainWindow();
 
             m_Modules.Clear();
+            m_Modules.Add(Settings = new SettingModule(this));
             m_Modules.Add(UI = new UIModule(this));
             m_Modules.Add(Scene = new SceneModule(this));
             m_Modules.Add(Windows = new WindowsModule(this));
