@@ -20,10 +20,6 @@ namespace SE::BuildTool
         bool Generate(const BindingsHeaderInfo& headerInfo,
                       const std::string& solutionRoot);
 
-        /// Generate minimal C# placeholders for native types referenced by API
-        /// signatures but not generated as first-class binding types yet.
-        bool GenerateNativeTypeStubs(const std::vector<BindingsHeaderInfo>& headers);
-
         /// Normalizes a C++ default-value expression (namespaces, nullptr) to C#.
         static std::string NormalizeCSharpDefaultValue(const TypeInfoParam& param);
 

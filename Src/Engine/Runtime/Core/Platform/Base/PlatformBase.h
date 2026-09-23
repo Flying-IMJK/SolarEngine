@@ -16,6 +16,7 @@ namespace SE
 	/// <summary>
 	/// The device screen orientation types (eg. portrait, landscape, etc.).
 	/// </summary>
+    SE_ENUM(API())
 	enum class ScreenOrientationType
 	{
 		/// <summary>
@@ -49,6 +50,7 @@ namespace SE
 	/// <summary>
 	/// Thread priority levels.
 	/// </summary>
+	SE_ENUM(API())
 	enum class ThreadPriority
 	{
 		/// <summary>

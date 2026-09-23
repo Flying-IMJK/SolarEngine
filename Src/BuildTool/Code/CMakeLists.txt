@@ -42,7 +42,6 @@ set("SOURCES"
     CodeGenerators/CodeGenerator_BindingsDataTypes.h
     CodeGenerators/CodeGenerator_BindingsModel.h
     CodeGenerators/CodeGenerator_BindingsModel.cpp
-    CodeGenerators/CodeGenerator_BindingsNativeStubs.cpp
     CodeGenerators/CodeGenerator_BindingsTypeMap.h
     CodeGenerators/CodeGenerator_BindingsTypeMap.cpp
     CodeGenerators/CodeGenerator_BindingsCpp.h

@@ -1181,12 +1181,16 @@ namespace SE::BuildTool
         output += Utils::String::Format("        [CustomMarshaller(typeof({0}), MarshalMode.ManagedToUnmanagedRef, typeof({0}Marshaller.Bidirectional))]\n", cls.name);
         output += Utils::String::Format("        [CustomMarshaller(typeof({0}), MarshalMode.UnmanagedToManagedRef, typeof({0}Marshaller.Bidirectional))]\n", cls.name);
         output += Utils::String::Format("        [CustomMarshaller(typeof({0}), MarshalMode.ElementRef, typeof({0}Marshaller))]\n", cls.name);
-        output += Utils::String::Format("        internal static partial class {0}Marshaller\n        {{\n", cls.name);
+        // API structs can be consumed by generated bindings in another C# assembly
+        // (for example, the editor references runtime SpriteHandle). Keep the
+        // marshaller visible together with its public managed struct so the
+        // source-generated LibraryImport code can name the ABI representation.
+        output += Utils::String::Format("        public static partial class {0}Marshaller\n        {{\n", cls.name);
 
         // ABI representation. It intentionally never embeds native C++ String
         // objects; strings are managed CLR handles (IntPtr) at this boundary.
         output += "            [StructLayout(LayoutKind.Sequential)]\n";
-        output += Utils::String::Format("            internal unsafe struct {0}Internal\n            {{\n", cls.name);
+        output += Utils::String::Format("            public unsafe struct {0}Internal\n            {{\n", cls.name);
         for (auto& field : cls.fields)
         {
             if (field.isStatic) continue;

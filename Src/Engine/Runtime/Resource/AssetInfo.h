@@ -10,27 +10,28 @@ namespace SE
 	/// <summary>
 	/// 包含有关资源的简短信息
 	/// </summary>
-	SE_STRUCT(Reflect)
+	SE_STRUCT(Reflect, API())
 	struct SE_API_RUNTIME AssetInfo : public IType
 	{
+        SCRIPTING_TYPE_MIN(AssetInfo)
 		SE_DEFINE_CLASS_DEFAULT(AssetInfo, IType);
 
 		/// <summary>
 		/// Unique ID.
 		/// </summary>
- 		SE_FIELD(Reflect)
+ 		SE_FIELD(Reflect, API())
 		UID id = UID::Empty;
 
 		/// <summary>
 		/// The stored data typeID. Used to recognize asset type.
 		/// </summary>
-		SE_FIELD(Reflect)
+		//SE_FIELD(Reflect, API())
 		TypeID typeID = TypeID::Invalid;
 
 		/// <summary>
 		/// Cached path.
 		/// </summary>
-		SE_FIELD(Reflect)
+		SE_FIELD(Reflect, API())
 		String path = String::Empty;
 
 	public:

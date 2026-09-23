@@ -754,7 +754,6 @@ namespace SE::BuildTool
 
                     // Generate C# files per header
                     std::vector<TypeInfoBase*> typesInHeader;
-                    std::vector<BindingsHeaderInfo> projectBindingHeaders;
 
                     for (auto const& headerID : apiHeaderIDs)
                     {
@@ -773,16 +772,10 @@ namespace SE::BuildTool
 
                         BindingsHeaderInfo hdrInfo;
                         BuildBindingsHeaderInfoFromTypes(database, *pHdr, typesInHeader, hdrInfo);
-                        projectBindingHeaders.push_back(hdrInfo);
                         if (!csharpGen.Generate(hdrInfo, solution.path))
                         {
                             return LogError("C# bindings generation failed for header: {0}", hdrInfo.filePath);
                         }
-                    }
-
-                    if (!csharpGen.GenerateNativeTypeStubs(projectBindingHeaders))
-                    {
-                        return LogError("C# native type stub generation failed for project: {0}", pProjectDesc->name);
                     }
 
                 }
