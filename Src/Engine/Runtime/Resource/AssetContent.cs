@@ -117,7 +117,7 @@ namespace SE
         public static T Load<T>(Guid id, double timeoutInMilliseconds = 30000.0) where T : Asset
         {
             var asset = LoadAsync<T>(id);
-            if (asset && asset.WaitForLoaded(timeoutInMilliseconds) == false)
+            if (asset && asset.WaitForLoaded(timeoutInMilliseconds))
             {
                 return asset;
             }
@@ -134,7 +134,7 @@ namespace SE
         public static T Load<T>(string path, double timeoutInMilliseconds = 30000.0) where T : Asset
         {
             var asset = LoadAsync<T>(path);
-            if (asset && asset.WaitForLoaded(timeoutInMilliseconds) == false)
+            if (asset && asset.WaitForLoaded(timeoutInMilliseconds))
             {
                 return asset;
             }
@@ -151,7 +151,7 @@ namespace SE
         public static T LoadInternal<T>(string internalPath, double timeoutInMilliseconds = 30000.0) where T : Asset
         {
             var asset = LoadAsyncInternal<T>(internalPath);
-            if (asset && asset.WaitForLoaded(timeoutInMilliseconds) == false)
+            if (asset && asset.WaitForLoaded(timeoutInMilliseconds))
             {
                 return asset;
             }
