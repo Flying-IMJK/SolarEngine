@@ -1,66 +1,142 @@
 using System;
 using System.Collections.Generic;
 
-namespace SE.Editor.GUI
+namespace SE.Editor.SceneGraph
 {
     /// <summary>
-    /// Owns the managed scene-graph node registry. Runtime object lookup and
-    /// event subscription are deliberately supplied by generated bindings only.
+    /// Owns node registration and all actor-to-node construction rules.
     /// </summary>
     public sealed class SceneGraphFactory : IDisposable
     {
-        private readonly Dictionary<Guid, SceneGraphNode> m_Nodes = new();
+        public sealed class NodeFactory
+        {
+            public NodeFactory(Type nodeType, Func<SE.Actor, ActorGraphNode> create)
+            {
+                NodeType = nodeType;
+                Create = create;
+            }
+
+            public Type NodeType { get; }
+            public Func<SE.Actor, ActorGraphNode> Create { get; }
+        }
+
+        private readonly Dictionary<Type, NodeFactory> m_CustomNodeTypes = new();
+        private readonly Dictionary<Guid, ScenesGraphNode> m_Nodes = new();
+        private RootGraphNode? m_Root;
+        private bool m_IsDisposed;
 
         public SceneGraphFactory()
         {
-            Root = new ScenesRootNode();
+            RegisterActorNode<SE.Scene, SceneGraphNode>(actor => new SceneGraphNode(this, (SE.Scene)actor));
+            RegisterActorNode<SE.Camera, CameraGraphNode>(actor => new CameraGraphNode(this, actor));
+            RegisterActorNode<SE.StaticModel, StaticModelGraphNode>(actor => new StaticModelGraphNode(this, actor));
+            RegisterActorNode<SE.Sky, SkyGraphNode>(actor => new SkyGraphNode(this, actor));
+            RegisterActorNode<SE.DirectionalLight, DirectionalLightGraphNode>(actor => new DirectionalLightGraphNode(this, actor));
+            RegisterActorNode<SE.PointLight, PointLightGraphNode>(actor => new PointLightGraphNode(this, actor));
         }
 
-        public ScenesRootNode Root { get; }
-        public IReadOnlyDictionary<Guid, SceneGraphNode> Nodes => m_Nodes;
+        public IReadOnlyDictionary<Guid, ScenesGraphNode> Nodes => m_Nodes;
+        public IReadOnlyDictionary<Type, NodeFactory> CustomNodeTypes => m_CustomNodeTypes;
+        public RootGraphNode Root => m_Root ?? throw new InvalidOperationException("The scene graph root has not been assigned.");
 
-        public SceneGraphNode? FindNode(Guid id)
+        public void SetRoot(RootGraphNode root)
         {
-            return m_Nodes.TryGetValue(id, out SceneGraphNode? node) ? node : null;
+            ArgumentNullException.ThrowIfNull(root);
+            if (m_Root != null && !ReferenceEquals(m_Root, root))
+                throw new InvalidOperationException("The scene graph root can only be assigned once.");
+            if (!ReferenceEquals(root.Factory, this))
+                throw new ArgumentException("The root belongs to another scene graph factory.", nameof(root));
+
+            m_Root = root;
         }
 
-        public T Register<T>(T node, SceneGraphNode? parent = null) where T : SceneGraphNode
+        public void RegisterActorNode<TActor, TNode>(Func<SE.Actor, TNode> create)
+            where TActor : SE.Actor
+            where TNode : ActorGraphNode
         {
-            if (node == null)
-                throw new ArgumentNullException(nameof(node));
-            if (node.Id == Guid.Empty)
-                throw new ArgumentException("Only the root node may use an empty ID.", nameof(node));
-            if (m_Nodes.ContainsKey(node.Id))
-                throw new InvalidOperationException($"A scene graph node is already registered for {node.Id}.");
+            ArgumentNullException.ThrowIfNull(create);
+            m_CustomNodeTypes[typeof(TActor)] = new NodeFactory(typeof(TNode), actor => create(actor));
+        }
 
-            m_Nodes.Add(node.Id, node);
-            node.SetParent(parent ?? Root);
-            return node;
+        public ScenesGraphNode? FindNode(Guid id)
+        {
+            if (id == Guid.Empty)
+                return null;
+            return m_Nodes.TryGetValue(id, out ScenesGraphNode? node) ? node : null;
+        }
+
+        public ScenesGraphNode? GetNode(Guid id)
+        {
+            return FindNode(id);
+        }
+
+        public SceneGraphNode BuildSceneTree(SE.Scene scene)
+        {
+            ArgumentNullException.ThrowIfNull(scene);
+            return (SceneGraphNode)BuildActorNode(scene);
+        }
+
+        public ActorGraphNode BuildActorNode(SE.Actor actor)
+        {
+            ArgumentNullException.ThrowIfNull(actor);
+
+            ActorGraphNode result = m_CustomNodeTypes.TryGetValue(actor.GetType(), out NodeFactory? nodeFactory)
+                ? nodeFactory.Create(actor)
+                : new ActorGraphNode(this, actor);
+
+            result.LinkTreeNode();
+            for (int index = 0; index < actor.ChildrenCount; index++)
+            {
+                SE.Actor child = actor.GetChild(index);
+                if (child == null)
+                    continue;
+
+                ActorGraphNode childNode = BuildActorNode(child);
+                childNode.ParentNode = result;
+            }
+
+            return result;
         }
 
         public bool Remove(Guid id)
         {
-            if (!m_Nodes.Remove(id, out SceneGraphNode? node))
+            if (!m_Nodes.TryGetValue(id, out ScenesGraphNode? node))
                 return false;
 
-            RemoveDescendants(node);
             node.Dispose();
             return true;
         }
 
         public void Dispose()
         {
-            Root.Dispose();
+            if (m_IsDisposed)
+                return;
+
+            m_IsDisposed = true;
+            m_Root?.Dispose();
             m_Nodes.Clear();
+            m_CustomNodeTypes.Clear();
+            m_Root = null;
         }
 
-        private void RemoveDescendants(SceneGraphNode node)
+        internal void RegisterNode(ScenesGraphNode node)
         {
-            foreach (SceneGraphNode child in node.Children)
+            if (m_IsDisposed)
+                throw new ObjectDisposedException(nameof(SceneGraphFactory));
+
+            if (m_Nodes.TryGetValue(node.ID, out ScenesGraphNode? duplicate) && duplicate != null)
             {
-                m_Nodes.Remove(child.Id);
-                RemoveDescendants(child);
+                SE.Debug.LogWarning(
+                    $"Duplicated Scene Graph node with ID {node.ID} of type '{duplicate.GetType().FullName}'.");
             }
+
+            m_Nodes[node.ID] = node;
+        }
+
+        internal void UnregisterNode(ScenesGraphNode node)
+        {
+            if (m_Nodes.TryGetValue(node.ID, out ScenesGraphNode? registered) && ReferenceEquals(registered, node))
+                m_Nodes.Remove(node.ID);
         }
     }
 }

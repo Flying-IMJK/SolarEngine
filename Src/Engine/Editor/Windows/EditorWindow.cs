@@ -1,47 +1,59 @@
 using System;
 using SE.GUI;
 
-namespace SE.Editor.GUI
+namespace SE.Editor
 {
     /// <summary>
     /// Base class for managed editor tool windows. It mirrors Flax EditorWindow:
     /// the window owns a focused editor feature and registers itself with the
     /// managed WindowsModule for lifecycle and docking management.
     /// </summary>
-    public abstract class EditorWindow : DockWindow
+    public abstract class EditorWindow : GUI.DockWindow
     {
-        private bool m_IsRegistered;
-
-        protected EditorWindow(Editor editor, string id, string title, ScrollBars scrollBars = ScrollBars.None)
-            : base((editor ?? throw new ArgumentNullException(nameof(editor))).UI.MasterDockPanel, hideOnClose: true, scrollBars)
+        protected EditorWindow(Editor editor, bool hideOnClose, ScrollBars scrollBars = ScrollBars.None)
+            : base(editor.UI.MasterDockPanel, hideOnClose, scrollBars)
         {
             Editor = editor;
-            Id = id ?? throw new ArgumentNullException(nameof(id));
-            Title = title ?? string.Empty;
             AutoFocus = true;
 
-            m_IsRegistered = true;
             Editor.Windows.RegisterWindow(this);
         }
 
         /// <summary>
         /// Gets the managed editor root that owns this window.
         /// </summary>
-        public Editor Editor { get; }
+        protected Editor Editor { get; }
 
-        /// <summary>
-        /// Gets the stable layout and registration identifier.
-        /// </summary>
-        public string Id { get; }
 
         /// <summary>
         /// Determines whether this window is editing a given content item.
         /// </summary>
         public virtual bool IsEditingItem(ContentItem item)
         {
-            _ = item;
             return false;
         }
+
+        /// <summary>
+        /// Called before Editor will enter play mode.
+        /// </summary>
+        public virtual void OnPlayBeginning()
+        {
+        }
+
+        /// <summary>
+        /// Called when Editor is entering play mode.
+        /// </summary>
+        public virtual void OnPlayBegin()
+        {
+        }
+
+        /// <summary>
+        /// Called when Editor leaves the play mode.
+        /// </summary>
+        public virtual void OnPlayEnd()
+        {
+        }
+
 
         /// <summary>
         /// Called once after all default editor windows have been constructed.
@@ -64,62 +76,59 @@ namespace SE.Editor.GUI
         {
         }
 
-        public virtual void OnSceneSaving(SE.Scene scene, Guid sceneId)
+        /// <summary>
+        /// Called when Editor state gets changed.
+        /// </summary>
+        public virtual void OnEditorStateChanged()
         {
-            _ = scene;
-            _ = sceneId;
         }
 
-        public virtual void OnSceneSaved(SE.Scene scene, Guid sceneId)
-        {
-            _ = scene;
-            _ = sceneId;
-        }
 
-        public virtual void OnSceneSaveError(SE.Scene scene, Guid sceneId)
+        public override bool OnKeyDown(KeyboardKeys key)
         {
-            _ = scene;
-            _ = sceneId;
-        }
+            /*// Prevent closing the editor window when using RMB + Ctrl + W to slow down the camera flight
+		    if (Editor.Options.Options.Input.CloseTab.Process(this, key))
+		    {
+			    if (Root->GetMouseButton(MouseButton::Right))
+				    return true;
+		    }*/
 
-        public virtual void OnSceneLoading(SE.Scene scene, Guid sceneId)
-        {
-            _ = scene;
-            _ = sceneId;
-        }
+            if (base.OnKeyDown(key))
+            {
+                return true;
+            }
 
-        public virtual void OnSceneLoaded(SE.Scene scene, Guid sceneId)
-        {
-            _ = scene;
-            _ = sceneId;
-        }
-
-        public virtual void OnSceneLoadError(SE.Scene scene, Guid sceneId)
-        {
-            _ = scene;
-            _ = sceneId;
-        }
-
-        public virtual void OnSceneUnloading(SE.Scene scene, Guid sceneId)
-        {
-            _ = scene;
-            _ = sceneId;
-        }
-
-        public virtual void OnSceneUnloaded(SE.Scene scene, Guid sceneId)
-        {
-            _ = scene;
-            _ = sceneId;
+/*            switch (key)
+            {
+                case KeyboardKeys.Return:
+                    if (CanUseNavigation() && Root != null && Root->GetFocusedControl() != null)
+                    {
+                        Root->SubmitFocused();
+                        return true;
+                    }
+                    break;
+                case KeyboardKeys.Tab:
+                    if (CanUseNavigation() && Root != null)
+                    {
+                        bool shiftDown = Root->GetKey(KeyboardKeys::Shift);
+                        Root.Navigate(shiftDown ? NavDirection.Previous : NavDirection.Next);
+                        return true;
+                    }
+                    break;
+            }*/
+            return false;
         }
 
         protected override void OnDispose()
         {
-            OnExit();
-            if (m_IsRegistered)
+            if (IsDisposing)
             {
-                m_IsRegistered = false;
-                Editor.Windows.UnregisterWindow(this);
+                return;
             }
+
+            OnExit();
+
+            Editor.Windows.UnregisterWindow(this);
             base.OnDispose();
         }
     }

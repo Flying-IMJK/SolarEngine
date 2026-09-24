@@ -18,6 +18,16 @@ namespace SE.GUI
         {
         }
 
+        public Panel(ScrollBars scrollBars, bool autoFocus)
+        {
+             AutoFocus = autoFocus;
+		    // var style = Style.Current;
+		    // _scrollbarTrackColor = style.BackgroundHighlighted;
+		    // _scrollbarThumbColor = style.BackgroundNormal;
+		    // _scrollbarThumbSelectedColor = style.BackgroundSelected;
+		    SetScrollBars(scrollBars);
+	    }
+
         public Panel(Rectangle bounds)
             : base(bounds)
         {

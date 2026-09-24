@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using SE.GUI;
 using SE.Editor.GUI;
 
 namespace SE.Editor
@@ -38,9 +39,9 @@ namespace SE.Editor
             bool noFilter = string.IsNullOrWhiteSpace(filterText);
             bool ownMatch = noFilter || Text.Contains(filterText, StringComparison.OrdinalIgnoreCase);
             bool childMatch = false;
-            foreach (TreeNode node in Nodes)
+            foreach (Control childControl in Children)
             {
-                if (node is not ContentTreeNode child)
+                if (childControl is not ContentTreeNode child)
                     continue;
                 child.UpdateFilter(filterText);
                 childMatch |= child.Visible;
@@ -54,7 +55,7 @@ namespace SE.Editor
         public ContentTreeNode AddFolder(ContentFolder folder)
         {
             ContentTreeNode node = new(folder);
-            AddNode(node);
+            node.Parent = this;
             return node;
         }
 

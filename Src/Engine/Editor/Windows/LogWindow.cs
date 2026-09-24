@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using SE.Editor.GUI;
 using SE.GUI;
 using SE.Log;
 
-namespace SE.Editor.GUI
+namespace SE.Editor
 {
     /// <summary>
     /// Managed editor log window. It follows Flax DebugLogWindow's ownership
@@ -51,8 +52,12 @@ namespace SE.Editor.GUI
         private LogEntry? m_Selected;
 
         public LogWindow(Editor editor)
-            : base(editor, "Log", "Log", ScrollBars.None)
+            : base(editor, true, ScrollBars.None)
         {
+            Title = "Log";
+            Icon = EditorIcons.LogWindow32;
+
+
             m_ToolStrip = new ToolStrip(ToolStripHeight, 0.0f, Width);
             AddChild(m_ToolStrip);
             m_ToolStrip.AddButton("Clear", Clear).TooltipText = "Clears all log entries";

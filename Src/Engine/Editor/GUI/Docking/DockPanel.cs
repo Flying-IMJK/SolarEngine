@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using SE.Editor.GUI;
+using System.Linq;
 using SE.GUI;
 
 namespace SE.Editor.GUI
@@ -17,21 +17,35 @@ namespace SE.Editor.GUI
         private readonly List<DockWindow> m_Tabs = new List<DockWindow>();
         private DockWindow? m_SelectedTab;
         private DockPanelProxy? m_TabsProxy;
-        private DockState m_DockStateInParent = DockState.DockFill;
-        private float m_SplitterValue = DefaultSplitterValue;
-        private Rectangle m_TabAreaBounds;
 
         public DockPanel(DockPanel? parentPanel = null)
             : base(new Rectangle(0, 0, 300, 200))
         {
+            AutoFocus = false;
+            AnchorMin = Float2.Zero;
+            AnchorMax = Float2.One;
+            Offsets = Margin.Zero;
             ParentDockPanel = parentPanel;
             parentPanel?.m_ChildPanels.Add(this);
-            SetBounds(0, 0, 300, 200);
         }
 
         public virtual bool IsMaster => false;
         public virtual bool IsFloating => false;
-        public Rectangle DockAreaBounds => m_TabAreaBounds;
+        public Rectangle DockAreaBounds
+        {
+            get
+            {
+                Control control = m_TabsProxy ?? this;
+                Rectangle bounds = control.ScreenBounds;
+                if (Root is WindowRootControl root)
+                {
+                    return new Rectangle(
+                        root.Window.ClientToScreen(bounds.Location * root.DpiScale),
+                        bounds.Size * root.DpiScale);
+                }
+                return bounds;
+            }
+        }
         public IReadOnlyList<DockPanel> ChildPanels => m_ChildPanels;
         public int ChildPanelsCount => m_ChildPanels.Count;
         public IReadOnlyList<DockWindow> Tabs => m_Tabs;
@@ -40,7 +54,7 @@ namespace SE.Editor.GUI
         public DockWindow? FirstTab => m_Tabs.Count > 0 ? m_Tabs[0] : null;
         public DockWindow? LastTab => m_Tabs.Count > 0 ? m_Tabs[m_Tabs.Count - 1] : null;
         public DockPanel? ParentDockPanel { get; }
-        public DockPanelProxy TabsProxy => m_TabsProxy ??= CreateTabsProxy();
+        public DockPanelProxy? TabsProxy => m_TabsProxy;
 
         public int SelectedTabIndex
         {
@@ -50,186 +64,245 @@ namespace SE.Editor.GUI
 
         public bool CloseAll(ClosingReason reason = ClosingReason.CloseEvent)
         {
-            bool cancelled = false;
-            for (int i = m_Tabs.Count - 1; i >= 0; i--)
+            // Deliberately follows the native active control flow and return-value contract.
+            while (m_Tabs.Count > 0)
             {
-                cancelled |= m_Tabs[i].Close(reason);
+                if (!m_Tabs[0].Close(reason))
+                    return false;
             }
-
-            return cancelled;
+            return true;
         }
 
-        public DockWindow GetTab(int tabIndex)
-        {
-            return m_Tabs[tabIndex];
-        }
-
-        public int GetTabIndex(DockWindow tab)
-        {
-            return m_Tabs.IndexOf(tab);
-        }
-
-        public bool ContainsTab(DockWindow tab)
-        {
-            return m_Tabs.Contains(tab);
-        }
+        public DockWindow GetTab(int tabIndex) => m_Tabs[tabIndex];
+        public int GetTabIndex(DockWindow tab) => m_Tabs.IndexOf(tab);
+        public bool ContainsTab(DockWindow tab) => m_Tabs.Contains(tab);
 
         public void SelectTab(int tabIndex)
         {
-            if (tabIndex < 0 || tabIndex >= m_Tabs.Count)
-                return;
-
-            SelectTab(m_Tabs[tabIndex]);
+            DockWindow? tab = tabIndex >= 0 && tabIndex < m_Tabs.Count ? m_Tabs[tabIndex] : null;
+            SelectTab(tab);
         }
 
-        public void SelectTab(DockWindow tab, bool autoFocus = true)
+        public void SelectTab(DockWindow? tab, bool autoFocus = true)
         {
-            if (!m_Tabs.Contains(tab))
-                return;
+            if (!ReferenceEquals(m_SelectedTab, tab))
+            {
+                ContainerControl proxy;
+                if (m_SelectedTab != null)
+                {
+                    proxy = m_SelectedTab.Parent!;
+                    proxy.RemoveChild(m_SelectedTab);
+                }
+                else
+                {
+                    proxy = CreateTabsProxy();
+                }
 
-            if (m_SelectedTab == tab)
-                return;
-
-            if (m_SelectedTab != null)
-                m_SelectedTab.Visible = false;
-
-            m_SelectedTab = tab;
-            m_SelectedTab.Visible = true;
-            PerformLayout();
-            OnSelectedTabChanged();
-
-            if (autoFocus)
-                tab.Focus();
+                m_SelectedTab = tab;
+                if (m_SelectedTab != null)
+                {
+                    m_SelectedTab.UnlockChildrenRecursive();
+                    proxy.AddChild(m_SelectedTab);
+                    if (autoFocus)
+                        m_SelectedTab.Focus();
+                }
+                OnSelectedTabChanged();
+            }
+            else if (autoFocus && m_SelectedTab != null && !m_SelectedTab.ContainsFocus)
+            {
+                m_SelectedTab.Focus();
+            }
         }
 
         public override DockPanel? HitTest(Float2 position)
         {
-            for (int i = m_ChildPanels.Count - 1; i >= 0; i--)
-            {
-                DockPanel? hit = m_ChildPanels[i].HitTest(position);
-                if (hit != null)
-                    return hit;
-            }
+            Float2 rootPosition = position;
+            if (Root is WindowRootControl root)
+                rootPosition = root.Window.ScreenToClient(position) / Math.Max(root.DpiScale, 0.001f);
+            if (!ScreenBounds.Contains(rootPosition))
+                return null;
 
-            Float2 screenPosition = ScreenPos;
-            Float2 localPosition = new Float2(position.X - screenPosition.X, position.Y - screenPosition.Y);
-            return DockAreaBounds.Contains(localPosition) ? this : null;
+            DockPanel? result = null;
+            float smallestSize = float.MaxValue;
+            foreach (DockPanel child in m_ChildPanels)
+            {
+                DockPanel? hit = child.HitTest(position);
+                if (hit == null)
+                    continue;
+                float size = hit.Width * hit.Width + hit.Height * hit.Height;
+                if (size < smallestSize)
+                {
+                    smallestSize = size;
+                    result = hit;
+                }
+            }
+            return result ?? this;
         }
 
         public virtual DockState TryGetDockState(out float splitterValue)
         {
             splitterValue = DefaultSplitterValue;
-            return IsFloating ? DockState.Float : DockState.DockFill;
+            if (Parent is Panel host && host.Parent is SplitPanel splitter)
+            {
+                splitterValue = splitter.SplitterValue;
+                if (ReferenceEquals(host, splitter.Panel1))
+                    return splitter.Orientation == Orientation.Horizontal ? DockState.DockLeft : DockState.DockTop;
+
+                splitterValue = 1.0f - splitterValue;
+                return splitter.Orientation == Orientation.Horizontal ? DockState.DockRight : DockState.DockBottom;
+            }
+            return DockState.Unknown;
         }
 
         public DockPanel CreateChildPanel(DockState state, float splitterValue)
         {
+            DockPanelProxy tabsProxy = CreateTabsProxy();
+            ContainerControl parent = tabsProxy.Parent ?? this;
             DockPanel child = new DockPanel(this);
-            child.SetDockPlacement(state, splitterValue);
-            AddChild(child);
-            PerformLayout();
+            Control first;
+            Control second;
+            Orientation orientation;
+
+            switch (state)
+            {
+            case DockState.DockTop:
+                orientation = Orientation.Vertical;
+                first = child;
+                second = tabsProxy;
+                break;
+            case DockState.DockBottom:
+                splitterValue = 1.0f - splitterValue;
+                orientation = Orientation.Vertical;
+                first = tabsProxy;
+                second = child;
+                break;
+            case DockState.DockLeft:
+                orientation = Orientation.Horizontal;
+                first = child;
+                second = tabsProxy;
+                break;
+            case DockState.DockRight:
+                splitterValue = 1.0f - splitterValue;
+                orientation = Orientation.Horizontal;
+                first = tabsProxy;
+                second = child;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(state));
+            }
+
+            SplitPanel splitter = new SplitPanel(orientation) { SplitterValue = splitterValue };
+            splitter.AnchorMin = Float2.Zero;
+            splitter.AnchorMax = Float2.One;
+            splitter.Offsets = Margin.Zero;
+            splitter.Panel1.AddChild(first);
+            splitter.Panel2.AddChild(second);
+            parent.AddChild(splitter);
+            splitter.UnlockChildrenRecursive();
+            splitter.PerformLayout();
             return child;
         }
 
         public virtual void DockWindowInternal(DockState state, DockWindow window, bool autoSelect = true, float splitterValue = 0)
-        {
-            DockWindow(state, window, autoSelect, splitterValue);
-        }
-
-        public void RemoveIt()
-        {
-            OnLastTabRemoved();
-        }
-
-        public void UndockWindowInternal(DockWindow window)
-        {
-            UndockWindow(window);
-        }
+            => DockWindow(state, window, autoSelect, splitterValue);
+        public void RemoveIt() => OnLastTabRemoved();
+        public void UndockWindowInternal(DockWindow window) => UndockWindow(window);
 
         public void MoveTabLeft(int index)
         {
             if (index <= 0 || index >= m_Tabs.Count)
                 return;
-
             DockWindow tab = m_Tabs[index];
             m_Tabs.RemoveAt(index);
             m_Tabs.Insert(index - 1, tab);
-            PerformLayout();
         }
 
         public void MoveTabRight(int index)
         {
-            if (index < 0 || index >= m_Tabs.Count - 1)
+            // Native currently stops one slot before the final tab; preserve that active behavior.
+            if (index < 0 || index >= m_Tabs.Count - 2)
                 return;
-
             DockWindow tab = m_Tabs[index];
             m_Tabs.RemoveAt(index);
             m_Tabs.Insert(index + 1, tab);
-            PerformLayout();
         }
 
         protected virtual void OnLastTabRemoved()
         {
-            if (ParentDockPanel != null)
+            if (Parent is not Panel host || host.Parent is not SplitPanel splitter)
+                return;
+
+            if (m_ChildPanels.Count > 0)
             {
-                ParentDockPanel.m_ChildPanels.Remove(this);
-                Dispose();
+                DockWindow? selected = null;
+                foreach (DockPanel child in m_ChildPanels.ToArray())
+                {
+                    // Native code walks the live list forward while UndockWindow mutates it.
+                    for (int index = 0; index < child.m_Tabs.Count; index++)
+                    {
+                        DockWindow tab = child.m_Tabs[index];
+                        if (selected == null && tab.IsSelected)
+                            selected = tab;
+                        child.UndockWindow(tab);
+                        AddTab(tab, false);
+                    }
+                }
+                if (selected != null)
+                    SelectTab(selected);
+                return;
             }
+
+            ContainerControl? splitterParent = splitter.Parent;
+            if (splitterParent == null)
+                return;
+            Panel source = ReferenceEquals(host, splitter.Panel2) ? splitter.Panel1 : splitter.Panel2;
+            Control[] remaining = source.Children
+                .Where(control => !ReferenceEquals(control, source.VerticalScrollBar) &&
+                                  !ReferenceEquals(control, source.HorizontalScrollBar))
+                .ToArray();
+            splitterParent.RemoveChild(splitter);
+            for (int index = remaining.Length - 1; index >= 0; index--)
+                splitterParent.AddChild(remaining[index]);
+            splitter.Dispose();
         }
 
         protected virtual void DockWindow(DockState state, DockWindow window, bool autoSelect = true, float splitterValue = 0)
         {
-            if (state == DockState.Hidden)
+            CreateTabsProxy();
+            if (state == DockState.DockFill)
             {
-                window.Hide();
-                return;
+                AddTab(window, autoSelect);
             }
-
-            if (state != DockState.DockFill && state != DockState.Float && state != DockState.Unknown)
+            else
             {
-                DockPanel child = CreateChildPanel(state, splitterValue <= 0 ? DefaultSplitterValue : splitterValue);
-                child.AddTab(window, autoSelect);
-                return;
+                DockPanel child = CreateChildPanel(state, splitterValue != 0.0f ? splitterValue : DefaultSplitterValue);
+                child.DockWindow(DockState.DockFill, window);
             }
-
-            AddTab(window, autoSelect);
         }
 
         protected virtual void UndockWindow(DockWindow window)
         {
-            int index = m_Tabs.IndexOf(window);
+            int index = GetTabIndex(window);
             if (index < 0)
                 return;
 
-            bool wasSelected = m_SelectedTab == window;
+            if (ReferenceEquals(window, m_SelectedTab))
+                SelectTab(index == 0 && m_Tabs.Count > 1 ? 1 : index - 1);
+
             m_Tabs.RemoveAt(index);
-            if (wasSelected)
-                m_SelectedTab = null;
-
             window.ParentDockPanel = null;
-            RemoveChild(window);
-
-            if (wasSelected && m_Tabs.Count > 0)
-                SelectTab(m_Tabs[index == 0 ? 0 : index - 1]);
             if (m_Tabs.Count == 0)
                 OnLastTabRemoved();
+            else
+                PerformLayout();
         }
 
         protected virtual void AddTab(DockWindow window, bool autoSelect = true)
         {
-            window.ParentDockPanel?.UndockWindowInternal(window);
-            if (m_Tabs.Contains(window))
-                return;
-
             m_Tabs.Add(window);
             window.ParentDockPanel = this;
-            AddChild(window);
-            window.Visible = false;
-
-            if (autoSelect || m_SelectedTab == null)
+            if (autoSelect)
                 SelectTab(window);
-            else
-                PerformLayout();
         }
 
         protected virtual void OnSelectedTabChanged()
@@ -238,85 +311,39 @@ namespace SE.Editor.GUI
 
         protected override void OnLayoutChildren()
         {
-            Rectangle remaining = new Rectangle(0, 0, Width, Height);
-            foreach (DockPanel childPanel in m_ChildPanels)
-            {
-                float splitter = Math.Clamp(childPanel.m_SplitterValue, 0.05f, 0.95f);
-                switch (childPanel.m_DockStateInParent)
-                {
-                case DockState.DockTop:
-                {
-                    float size = remaining.Height * splitter;
-                    childPanel.SetBounds(remaining.X, remaining.Y, remaining.Width, size);
-                    remaining = new Rectangle(remaining.X, remaining.Y + size, remaining.Width, Math.Max(0.0f, remaining.Height - size));
-                    break;
-                }
-                case DockState.DockBottom:
-                {
-                    float size = remaining.Height * splitter;
-                    childPanel.SetBounds(remaining.X, remaining.Bottom - size, remaining.Width, size);
-                    remaining = new Rectangle(remaining.X, remaining.Y, remaining.Width, Math.Max(0.0f, remaining.Height - size));
-                    break;
-                }
-                case DockState.DockLeft:
-                {
-                    float size = remaining.Width * splitter;
-                    childPanel.SetBounds(remaining.X, remaining.Y, size, remaining.Height);
-                    remaining = new Rectangle(remaining.X + size, remaining.Y, Math.Max(0.0f, remaining.Width - size), remaining.Height);
-                    break;
-                }
-                case DockState.DockRight:
-                {
-                    float size = remaining.Width * splitter;
-                    childPanel.SetBounds(remaining.Right - size, remaining.Y, size, remaining.Height);
-                    remaining = new Rectangle(remaining.X, remaining.Y, Math.Max(0.0f, remaining.Width - size), remaining.Height);
-                    break;
-                }
-                default:
-                    childPanel.SetBounds(remaining.X, remaining.Y, remaining.Width, remaining.Height);
-                    break;
-                }
-            }
-
-            m_TabAreaBounds = new Rectangle(
-                remaining.X,
-                remaining.Y + DefaultHeaderHeight,
-                remaining.Width,
-                Math.Max(0.0f, remaining.Height - DefaultHeaderHeight));
-            TabsProxy.SetBounds(remaining.X, remaining.Y, remaining.Width, Math.Min(DefaultHeaderHeight, remaining.Height));
-            foreach (DockWindow tab in m_Tabs)
-            {
-                tab.SetBounds(m_TabAreaBounds.X, m_TabAreaBounds.Y, m_TabAreaBounds.Width, m_TabAreaBounds.Height);
-            }
+            m_TabsProxy?.SetBounds(0.0f, 0.0f, Width, Height);
         }
 
         protected override void OnDispose()
         {
-            if (IsDisposed)
-                return;
+            if (ParentDockPanel != null)
+                ParentDockPanel.m_ChildPanels.Remove(this);
 
-            foreach (DockWindow tab in m_Tabs.ToArray())
+            base.OnDispose();
+
+            // Native DockPanel destroys tabs that were not attached to the active proxy view.
+            for (int index = 0; index < m_Tabs.Count; index++)
             {
+                DockWindow tab = m_Tabs[index];
                 tab.ParentDockPanel = null;
+                if (!tab.IsDisposed)
+                    tab.Dispose();
             }
-
             m_Tabs.Clear();
             m_ChildPanels.Clear();
-            base.OnDispose();
+            m_SelectedTab = null;
+            m_TabsProxy = null;
         }
 
         private DockPanelProxy CreateTabsProxy()
         {
-            DockPanelProxy proxy = new DockPanelProxy(this);
-            m_TabsProxy = proxy;
-            AddChild(proxy);
-            return proxy;
-        }
-
-        private void SetDockPlacement(DockState state, float splitterValue)
-        {
-            m_DockStateInParent = state;
-            m_SplitterValue = splitterValue > 0.0f ? splitterValue : DefaultSplitterValue;
+            if (m_TabsProxy == null)
+            {
+                m_TabsProxy = new DockPanelProxy(this);
+                AddChild(m_TabsProxy);
+                m_TabsProxy.UnlockChildrenRecursive();
+            }
+            return m_TabsProxy;
         }
     }
 }

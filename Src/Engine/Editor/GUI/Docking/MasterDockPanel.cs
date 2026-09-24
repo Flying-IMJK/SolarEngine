@@ -23,7 +23,7 @@ namespace SE.Editor.GUI
                 int count = 0;
                 foreach (DockWindow window in m_Windows)
                 {
-                    if (!window.IsHidden)
+                    if (window.Visible)
                         count++;
                 }
 
@@ -33,18 +33,27 @@ namespace SE.Editor.GUI
 
         public void ResetLayout()
         {
-            foreach (DockWindow window in m_Windows)
-            {
-                DockWindowInternal(DockState.DockFill, window, m_Windows.IndexOf(window) == 0);
-            }
+            // Native ResetLayout only clears the current tree. Default layout restoration is external.
+            for (int index = 0; index < m_Windows.Count; index++)
+                m_Windows[index].Close();
+
+            // Preserve the native forward iteration over a list that disposal mutates.
+            for (int index = 0; index < ChildPanels.Count; index++)
+                ChildPanels[index].Dispose();
+
+            DockPanelProxy? proxy = TabsProxy;
+            proxy?.Parent?.RemoveChild(proxy);
+            DisposeChildren();
+            if (proxy != null)
+                AddChild(proxy);
         }
 
         public DockPanel? HitTest(Float2 position, FloatWindowDockPanel? excluded)
         {
-            for (int i = m_FloatingPanels.Count - 1; i >= 0; i--)
+            for (int i = 0; i < m_FloatingPanels.Count; i++)
             {
                 FloatWindowDockPanel panel = m_FloatingPanels[i];
-                if (!ReferenceEquals(panel, excluded))
+                if (panel.Visible && !ReferenceEquals(panel, excluded))
                 {
                     DockPanel? hit = panel.HitTest(position);
                     if (hit != null)
@@ -57,48 +66,36 @@ namespace SE.Editor.GUI
 
         public void LinkWindow(DockWindow window)
         {
-            if (!m_Windows.Contains(window))
-                m_Windows.Add(window);
+            m_Windows.Add(window);
         }
 
         public void UnlinkWindow(DockWindow window)
         {
-            if (m_Windows.Remove(window))
-                window.NotifyUnlinked();
+            window.NotifyUnlinked();
+            if (!IsDisposing)
+                m_Windows.Remove(window);
         }
 
-        internal FloatWindowDockPanel CreateFloatingPanel(Float2 location, Float2 size, string title)
+        internal FloatWindowDockPanel CreateFloatingPanel(Float2 location, Float2 size, WindowStartPosition startPosition, string title)
         {
-            FloatWindowDockPanel floatingPanel = new FloatWindowDockPanel(this);
-            m_FloatingPanels.Add(floatingPanel);
-
-            if (Root is SE.GUI.WindowRootControl)
-            {
-                SE.Window window = SE.Window.CreateManaged(title, new Float2(size.X, size.Y));
-                Float2 position = new Float2(location.X, location.Y);
-                window.Position = position;
-                floatingPanel.AttachHostWindow(window);
-                floatingPanel.SetBounds(0.0f, 0.0f, size.X, size.Y);
-                window.GUI.AddChild(floatingPanel);
-                window.Show();
-            }
-            else if (Root != null)
-            {
-                floatingPanel.SetBounds(location.X, location.Y, size.X, size.Y);
-                Root.AddChild(floatingPanel);
-            }
-            else
-            {
-                floatingPanel.SetBounds(location.X, location.Y, size.X, size.Y);
-            }
+            SE.Window window = FloatWindowDockPanel.CreateFloatWindow(Root, location, size, startPosition, title);
+            FloatWindowDockPanel floatingPanel = new FloatWindowDockPanel(this, window.GUI);
+            floatingPanel.SetBounds(0.0f, 0.0f, size.X, size.Y);
 
             return floatingPanel;
         }
 
         public override DockState TryGetDockState(out float splitterValue)
         {
-            splitterValue = DefaultSplitterValue;
+            splitterValue = 0.5f;
             return DockState.DockFill;
+        }
+
+        protected override void OnDispose()
+        {
+            base.OnDispose();
+            m_Windows.Clear();
+            m_FloatingPanels.Clear();
         }
     }
 }

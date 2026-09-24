@@ -1,61 +1,53 @@
 using System;
-using SE.Editor.GUI;
 using SE.GUI;
 
 namespace SE.Editor.GUI
 {
     public enum ClosingReason
     {
-        CloseEvent,
-        User,
-    }
-
-    public enum ScrollBars
-    {
-        None,
-        Horizontal,
-        Vertical,
-        Both,
+        Unknown = 0,
+        User = 1,
+        EngineExit = 2,
+        CloseEvent = 3,
     }
 
     public enum WindowStartPosition
     {
-        Manual,
-        CenterParent,
+        CenterParent = 0,
+        CenterScreen = 1,
+        Manual = 2,
     }
 
     public class DockWindow : Panel
     {
+        private MasterDockPanel? m_MasterPanel;
         private string m_Title = string.Empty;
-        private Float2 m_TitleSize = Float2.Zero;
+        private Float2 m_TitleSize = new Float2(-1.0f);
 
         public DockWindow(MasterDockPanel masterPanel, bool hideOnClose = true, ScrollBars scrollBars = ScrollBars.None)
             : base(new Rectangle(0, 0, 300, 200))
         {
-            MasterPanel = masterPanel;
+            AnchorMin = Float2.Zero;
+            AnchorMax = Float2.One;
+            Offsets = Margin.Zero;
+            m_MasterPanel = masterPanel;
             HideOnClose = hideOnClose;
             ScrollBars = scrollBars;
-            base.ScrollBars = scrollBars switch
-            {
-                ScrollBars.Horizontal => SE.GUI.ScrollBars.Horizontal,
-                ScrollBars.Vertical => SE.GUI.ScrollBars.Vertical,
-                ScrollBars.Both => SE.GUI.ScrollBars.Both,
-                _ => SE.GUI.ScrollBars.None,
-            };
-            MasterPanel.LinkWindow(this);
+            base.ScrollBars = scrollBars;
+            masterPanel.LinkWindow(this);
 
             // Flax registers CloseTab, PreviousTab, and NextTab through Editor InputActions here.
             // Keep those bindings disabled until the managed Editor input-action API is available.
         }
 
         public bool HideOnClose { get; set; }
-        public MasterDockPanel MasterPanel { get; }
+        public MasterDockPanel? MasterPanel => m_MasterPanel;
         public DockPanel? ParentDockPanel { get; internal set; }
         public bool IsDocked => ParentDockPanel != null;
         public bool IsSelected => ParentDockPanel?.SelectedTab == this;
         public bool IsHidden => !Visible || ParentDockPanel == null;
         public virtual Float2 DefaultSize => new Float2(900, 580);
-        public virtual string SerializationTypename => GetType().Name;
+        public virtual string SerializationTypename => "::" + GetType().Name;
         /// <summary>
         /// Gets the docking-layer scrollbar configuration used to construct this window.
         /// </summary>
@@ -67,11 +59,13 @@ namespace SE.Editor.GUI
             set
             {
                 m_Title = value;
-                m_TitleSize = new Float2(value.Length * 7.0f, DockPanel.DefaultHeaderHeight);
+                m_TitleSize = new Float2(-1.0f);
+                PerformLayout();
             }
         }
 
         public Float2 TitleSize => m_TitleSize;
+        public SpriteHandle Icon;
 
         public void ShowFloating()
         {
@@ -91,10 +85,21 @@ namespace SE.Editor.GUI
         public void ShowFloating(Float2 location, Float2 size, WindowStartPosition position = WindowStartPosition.CenterParent)
         {
             Undock();
-            FloatWindowDockPanel floatingPanel = MasterPanel.CreateFloatingPanel(location, size, Title);
-            floatingPanel.DockWindowInternal(DockState.Float, this);
+            Float2 windowSize = size.X * size.X + size.Y * size.Y > 4.0f ? size : DefaultSize;
+            FloatWindowDockPanel floatingPanel = m_MasterPanel!.CreateFloatingPanel(location, windowSize, position, Title);
+            floatingPanel.DockWindowInternal(DockState.DockFill, this);
             Visible = true;
+            SE.Window? window = floatingPanel.HostWindow;
+            if (window != null)
+            {
+                window.GUI.UnlockChildrenRecursive();
+                window.GUI.PerformLayout();
+                window.Show();
+                window.BringToFront();
+                window.Focus();
+            }
             OnShow();
+            window?.GUI.PerformLayout();
         }
 
         public void Show(DockState state = DockState.Float, DockPanel? toDock = null, bool autoSelect = true, float splitterValue = 0)
@@ -112,30 +117,29 @@ namespace SE.Editor.GUI
 
             Visible = true;
             Undock();
-            DockPanel target = toDock ?? MasterPanel;
+            DockPanel target = toDock ?? m_MasterPanel!;
             target.DockWindowInternal(state, this, autoSelect, splitterValue);
             OnShow();
+            PerformLayout();
         }
 
-        public void Show(DockState state, DockWindow toDock)
+        public void Show(DockState state, DockWindow? toDock)
         {
-            Show(state, toDock.ParentDockPanel);
+            Show(state, toDock?.ParentDockPanel);
         }
 
         public void FocusOrShow()
         {
-            // Flax obtains the default dock state from Editor.Options.Interface.NewWindowLocation.
-            // That Editor option is intentionally disabled until it is exposed to managed code.
-            if (IsDocked)
-                SelectTab();
-            else
-                Show();
+            FocusOrShow(DockState.DockFill);
         }
 
         public void FocusOrShow(DockState state)
         {
-            if (IsDocked)
+            if (Visible)
+            {
                 SelectTab();
+                Focus();
+            }
             else
                 Show(state);
         }
@@ -148,8 +152,11 @@ namespace SE.Editor.GUI
 
         public bool Close(ClosingReason reason = ClosingReason.CloseEvent)
         {
-            if (OnClosing(reason))
-                return true;
+            // Native active code treats false as cancellation despite the opposite header comment.
+            if (!OnClosing(reason))
+                return false;
+
+            OnClose();
 
             if (HideOnClose)
             {
@@ -157,13 +164,11 @@ namespace SE.Editor.GUI
             }
             else
             {
-                ParentDockPanel?.UndockWindowInternal(this);
-                MasterPanel.UnlinkWindow(this);
+                Undock();
                 Dispose();
             }
 
-            OnClose();
-            return false;
+            return true;
         }
 
         public void SelectTab(bool autoFocus = true)
@@ -173,42 +178,52 @@ namespace SE.Editor.GUI
 
         public void BringToFront()
         {
-            SelectTab(false);
+            if (Root is WindowRootControl root)
+                root.Window.BringToFront();
         }
 
-        public virtual void Focus()
+        public override void Focus()
         {
-            SelectTab(false);
+            base.Focus();
+            SelectTab();
+            BringToFront();
         }
 
         public override bool OnKeyDown(KeyboardKeys key)
         {
+            if (base.OnKeyDown(key))
+                return true;
+
             // Flax forwards unhandled keys to InputActions.Process(Editor.Instance, this, key).
             // Keep the Editor shortcut route disabled; no replacement shortcut behavior is introduced.
             return false;
+        }
+
+        public override void PerformLayout(bool force = false)
+        {
+            if (m_TitleSize.X <= 0.0f)
+            {
+                Font? font = Style.Current.FontMedium;
+                if (font != null)
+                    m_TitleSize = font.MeasureText(m_Title, new TextLayoutOptions());
+            }
+            base.PerformLayout(force);
         }
 
         public virtual void OnShowContextMenu(ContextMenu menu)
         {
         }
 
-        // Flax window-layout serialization is permitted for this migration, but must remain disabled
-        // until its layout coordinator and XML persistence path are migrated as a single unit.
-        // No replacement serialization format or compatibility layer is introduced here.
-        /*
-        public virtual string SerializationTypename => "::" + GetType().FullName;
-
         public virtual bool UseLayoutData => false;
 
+        // Native XML persistence overloads remain disabled. The active no-argument hook below is a no-op,
+        // matching the current C++ surface without introducing a managed layout format.
+        /*
         public virtual void OnLayoutSerialize(System.Xml.XmlWriter writer)
         {
         }
 
         public virtual void OnLayoutDeserialize(System.Xml.XmlElement node)
-        {
-        }
-
-        public virtual void OnLayoutDeserialize()
         {
         }
 
@@ -224,12 +239,21 @@ namespace SE.Editor.GUI
         }
         */
 
+        public virtual void OnLayoutDeserialize()
+        {
+        }
+
         protected virtual void OnUnlink()
         {
+            m_MasterPanel = null;
         }
 
         protected virtual void Undock()
         {
+            if (ContainsFocus)
+                Focus();
+            Defocus();
+
             ParentDockPanel?.UndockWindowInternal(this);
         }
 
@@ -248,10 +272,9 @@ namespace SE.Editor.GUI
 
         protected override void OnDispose()
         {
-            if (IsDisposed)
-                return;
-
-            MasterPanel.UnlinkWindow(this);
+            if (Parent != null && !Parent.IsDisposing)
+                Undock();
+            m_MasterPanel?.UnlinkWindow(this);
             base.OnDispose();
         }
 

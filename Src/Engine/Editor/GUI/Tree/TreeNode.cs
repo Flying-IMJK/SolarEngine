@@ -1,7 +1,8 @@
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using SE;
 using SE.GUI;
+
 namespace SE.Editor.GUI
 {
     public enum DragItemPositioning
@@ -12,16 +13,26 @@ namespace SE.Editor.GUI
         Below,
     }
 
+    /// <summary>
+    /// Managed counterpart of the native tree node control.
+    /// </summary>
     public class TreeNode : ContainerControl
     {
-        private const MouseButton LeftMouseButton = MouseButton.Left;
-        private const MouseButton RightMouseButton = MouseButton.Right;
         public const float DefaultDragInsertPositionMargin = 3.0f;
         public const float DefaultNodeOffsetY = 0.0f;
 
         private readonly List<TreeNode> m_Nodes = new List<TreeNode>();
-        private readonly Label m_HeaderText;
+        protected readonly Label m_HeaderText;
+        private readonly SpriteHandle m_IconCollapsed;
+        private readonly SpriteHandle m_IconOpened;
+        private Tree? m_Tree;
+        private Tree? m_LastTree;
         private bool m_IsExpanded;
+        private float m_AnimationProgress;
+        private float m_CachedHeight;
+        private float m_XOffset;
+        private float m_TextWidth;
+        private bool m_TextChanged;
         private string m_Text = string.Empty;
         private float m_HeaderHeight = 16.0f;
         private Margin m_TextMargin = new Margin(2.0f);
@@ -31,45 +42,68 @@ namespace SE.Editor.GUI
         private bool m_IsMouseDown;
         private float m_MouseDownTime;
         private Float2 m_MouseDownPos;
-
         private bool m_IsDragOverHeader;
         private static ulong m_DragEndFrame;
 
         public TreeNode(bool canChangeOrder = false)
-            : base(new Rectangle(0, 0, 200, 16))
+            : this(canChangeOrder, SpriteHandle.Invalid, SpriteHandle.Invalid)
         {
-            CanChangeOrder = canChangeOrder;
-            AnimationProgress = 1.0f;
+        }
+
+        public TreeNode(bool canChangeOrder, SpriteHandle iconCollapsed, SpriteHandle iconOpened)
+            : base(new Rectangle(0, 0, 64, 16))
+        {
+            m_AnimationProgress = 1.0f;
+            m_CachedHeight = m_HeaderHeight;
+            m_IconCollapsed = iconCollapsed;
+            m_IconOpened = iconOpened;
             m_MouseDownTime = -1.0f;
-            m_HeaderText = new Label(new Rectangle(0, 0, 200, m_HeaderHeight), string.Empty)
+
+            Style style = Style.Current;
+            TextColor = style.TextColor;
+            BackgroundColorSelected = style.BackgroundSelected;
+            BackgroundColorHighlighted = style.BackgroundHighlighted;
+            BackgroundColorSelectedUnfocused = style.LightBackground;
+            TextFont = new FontReference(style.FontSmall!);
+
+            m_HeaderText = new Label(new Rectangle(0, 0, 64, m_HeaderHeight), string.Empty)
             {
                 AutoFocus = false,
                 Enabled = false,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                TextWrapping = TextWrapping.NoWrap,
             };
+            ParentChanged += OnParentChanged;
             AddChild(m_HeaderText);
-            SetBounds(0, 0, 200, m_HeaderHeight);
         }
 
-        public IReadOnlyList<TreeNode> Nodes => m_Nodes;
-        public bool CanChangeOrder { get; }
         public float ChildrenIndent { get; set; } = 12.0f;
-        public float AnimationProgress { get; private set; }
         public bool HasAnyVisibleChild => m_Nodes.Exists(static node => node.Visible);
         public DragItemPositioning DragOverMode => m_DragOverMode;
-        public Tree? ParentTree => FindParentTree();
-        public bool IsRoot => Parent is Tree;
+        public Tree? ParentTree => GetParentTree();
+        public bool IsRoot => Parent is not TreeNode;
         public float MinimumWidth => CalculateMinimumWidth();
-        public Rectangle ArrowRect => new Rectangle(0, 0, m_HeaderHeight, m_HeaderHeight);
         public Rectangle HeaderRect => new Rectangle(0, 0, Width, m_HeaderHeight);
-        public Rectangle TextRect => new Rectangle(m_TextMargin.Left, 0, Width - m_TextMargin.Width, m_HeaderHeight);
+        public Rectangle ArrowRect => CustomArrowRect ?? new Rectangle(m_XOffset + 2.0f + m_TextMargin.Left, 2.0f, 12.0f, 12.0f);
+        public Rectangle TextRect => CalculateTextRect();
+        public Rectangle? CustomArrowRect { get; set; }
+        public Color TextColor { get; set; }
+        public FontReference TextFont { get; set; }
+        public Color BackgroundColorSelected { get; set; }
+        public Color BackgroundColorHighlighted { get; set; }
+        public Color BackgroundColorSelectedUnfocused { get; set; }
+        public Color IconColor { get; set; } = Color.White;
 
         public string Text
         {
             get => m_Text;
             set
             {
-                m_Text = value;
-                m_HeaderText.Text = value;
+                m_Text = value ?? string.Empty;
+                m_TextChanged = true;
+                m_HeaderText.Text = m_Text;
+                PerformLayout();
             }
         }
 
@@ -88,24 +122,16 @@ namespace SE.Editor.GUI
         public bool IsCollapsed
         {
             get => !m_IsExpanded;
-            set => IsExpanded = !value;
-        }
-
-        public bool IsCollapsedInHierarchy
-        {
-            get
+            set
             {
-                TreeNode? node = this;
-                while (node != null)
-                {
-                    if (!node.IsExpanded && node.Nodes.Count > 0)
-                        return true;
-                    node = node.Parent as TreeNode;
-                }
-
-                return false;
+                if (value)
+                    Collapse(true);
+                else
+                    Expand(true);
             }
         }
+
+        public bool IsCollapsedInHierarchy => IsCollapsed || (Parent is TreeNode parent && parent.IsCollapsedInHierarchy);
 
         public Margin TextMargin
         {
@@ -122,94 +148,82 @@ namespace SE.Editor.GUI
             get => m_HeaderHeight;
             set
             {
+                if (Mathf.NearEqual(m_HeaderHeight, value))
+                    return;
                 m_HeaderHeight = value;
                 PerformLayout();
             }
         }
 
-        public TreeNode AddNode(TreeNode node)
-        {
-            m_Nodes.Add(node);
-            AddChild(node);
-            PerformLayout();
-            RequestTreeLayout();
-            return node;
-        }
-
-        /// <summary>
-        /// Removes and disposes all child nodes. Dynamic editor trees use this when
-        /// a filesystem refresh rebuilds a branch.
-        /// </summary>
-        public void ClearNodes()
-        {
-            TreeNode[] nodes = m_Nodes.ToArray();
-            m_Nodes.Clear();
-            foreach (TreeNode node in nodes)
-            {
-                RemoveChild(node);
-                node.Dispose();
-            }
-            PerformLayout();
-            RequestTreeLayout();
-        }
-
         public void Expand(bool noAnimation = false)
         {
+            // Expanding the direct parent recursively continues the parent chain.
             ExpandAllParents(noAnimation);
-            if (m_IsExpanded)
+            if (m_IsExpanded && m_AnimationProgress >= 1.0f)
                 return;
 
+            bool previousState = m_IsExpanded;
             m_IsExpanded = true;
-            AnimationProgress = noAnimation ? 1.0f : 0.0f;
+            if (noAnimation)
+                m_AnimationProgress = 1.0f;
+            else if (previousState != m_IsExpanded)
+                m_AnimationProgress = 1.0f - m_AnimationProgress;
+
             OnExpandedChanged();
-            PerformLayout();
-            RequestTreeLayout();
+            OnExpandAnimationChanged();
         }
 
         public void Collapse(bool noAnimation = false)
         {
-            if (!m_IsExpanded)
+            if (!m_IsExpanded && m_AnimationProgress >= 1.0f)
                 return;
 
+            bool previousState = m_IsExpanded;
             m_IsExpanded = false;
-            AnimationProgress = noAnimation ? 0.0f : 1.0f;
+            if (noAnimation)
+                m_AnimationProgress = 1.0f;
+            else if (previousState != m_IsExpanded)
+                m_AnimationProgress = 1.0f - m_AnimationProgress;
+
             OnExpandedChanged();
-            PerformLayout();
-            RequestTreeLayout();
+            OnExpandAnimationChanged();
         }
 
         public void ExpandAll(bool noAnimation = false)
         {
+            bool wasLayoutLocked = IsLayoutLocked;
+            IsLayoutLocked = true;
             Expand(noAnimation);
             foreach (TreeNode child in m_Nodes)
-            {
                 child.ExpandAll(noAnimation);
-            }
+            IsLayoutLocked = wasLayoutLocked;
+            PerformLayout();
         }
 
         public void CollapseAll(bool noAnimation = false)
         {
+            bool wasLayoutLocked = IsLayoutLocked;
+            IsLayoutLocked = true;
             Collapse(noAnimation);
             foreach (TreeNode child in m_Nodes)
-            {
                 child.CollapseAll(noAnimation);
-            }
+            IsLayoutLocked = wasLayoutLocked;
+            PerformLayout();
         }
 
         public void ExpandAllParents(bool noAnimation = false)
         {
-            TreeNode? parent = Parent as TreeNode;
-            while (parent != null)
-            {
+            if (Parent is TreeNode parent)
                 parent.Expand(noAnimation);
-                parent = parent.Parent as TreeNode;
-            }
         }
 
         public void EndAnimation()
         {
-            AnimationProgress = m_IsExpanded ? 1.0f : 0.0f;
-            OnExpandAnimationChanged();
+            if (m_AnimationProgress < 1.0f)
+            {
+                m_AnimationProgress = 1.0f;
+                OnExpandAnimationChanged();
+            }
         }
 
         public void Select()
@@ -219,12 +233,291 @@ namespace SE.Editor.GUI
 
         public override void Update(float deltaTime)
         {
+            if (m_AnimationProgress < 1.0f)
+            {
+                if (deltaTime > 1.0f / 20.0f)
+                    m_AnimationProgress = 1.0f;
+                else
+                    m_AnimationProgress = Math.Min(1.0f, m_AnimationProgress + deltaTime / 0.1f);
+                OnExpandAnimationChanged();
+            }
+
             const float longPressTimeSeconds = 0.6f;
             if (m_IsMouseDown && Time.GetUnscaledGameTime() - m_MouseDownTime > longPressTimeSeconds)
                 OnLongPress();
-
             if (m_IsExpanded)
                 base.Update(deltaTime);
+        }
+
+        public override void Draw()
+        {
+            if (!VisibleInHierarchy || IsDisposed)
+                return;
+
+            Style style = Style.Current;
+            Tree? tree = ParentTree;
+            bool isSelected = false;
+            if (tree != null)
+            {
+                for (int i = 0; i < tree.Selection.Count; i++)
+                {
+                    if (ReferenceEquals(tree.Selection[i], this))
+                    {
+                        isSelected = true;
+                        break;
+                    }
+                }
+            }
+            bool isFocused = tree?.ContainsFocus == true;
+            Rectangle headerRect = ToScreen(HeaderRect);
+
+            if (isSelected || m_MouseOverHeader)
+            {
+                Color background = isSelected && isFocused
+                    ? BackgroundColorSelected
+                    : m_MouseOverHeader ? BackgroundColorHighlighted : BackgroundColorSelectedUnfocused;
+                Render2D.FillRectangle(headerRect, background);
+            }
+
+            if (HasAnyVisibleChild)
+            {
+                SpriteHandle arrow = m_IsExpanded ? style.ArrowDown : style.ArrowRight;
+                Rectangle arrowRect = ToScreen(ArrowRect);
+                Color arrowColor = m_MouseOverHeader ? style.Foreground : style.ForegroundGrey;
+                Render2D.DrawSprite(arrow, arrowRect, arrowColor);
+            }
+
+            Rectangle textRect = TextRect;
+            if (m_IconCollapsed.IsValid)
+            {
+                SpriteHandle icon = m_IsExpanded ? m_IconOpened : m_IconCollapsed;
+                Rectangle iconRect = ToScreen(new Rectangle(textRect.Left - 18.0f, 0, 16, 16));
+                Color iconColor = IconColor;
+                Render2D.DrawSprite(icon, iconRect, iconColor);
+            }
+
+            m_HeaderText.TextColor = CacheTextColor();
+            m_HeaderText.Font = TextFont.GetFont();
+            m_HeaderText.Draw();
+
+            if (m_DragOverMode != DragItemPositioning.None && tree?.DraggedOverNode == this)
+            {
+                Rectangle screenTextRect = ToScreen(textRect);
+                switch (m_DragOverMode)
+                {
+                    case DragItemPositioning.At:
+                        Render2D.FillRectangle(screenTextRect, style.Selection);
+                        Render2D.DrawRectangle(screenTextRect, style.SelectionBorder, 1.0f);
+                        break;
+                    case DragItemPositioning.Above:
+                        Render2D.DrawRectangle(new Rectangle(screenTextRect.X, screenTextRect.Top - DefaultDragInsertPositionMargin * 0.5f - DefaultNodeOffsetY - m_TextMargin.Top, screenTextRect.Width, DefaultDragInsertPositionMargin), style.SelectionBorder, 1.0f);
+                        break;
+                    case DragItemPositioning.Below:
+                        Render2D.DrawRectangle(new Rectangle(screenTextRect.X, screenTextRect.Bottom + m_TextMargin.Bottom - DefaultDragInsertPositionMargin * 0.5f, screenTextRect.Width, DefaultDragInsertPositionMargin), style.SelectionBorder, 1.0f);
+                        break;
+                }
+            }
+
+            DrawGuideLines(tree, isSelected, style);
+            if (m_IsExpanded)
+            {
+                foreach (Control child in Children)
+                {
+                    if (!ReferenceEquals(child, m_HeaderText) && child.Visible)
+                        child.Draw();
+                }
+            }
+        }
+
+        public override bool OnMouseDown(Float2 location, MouseButton button)
+        {
+            UpdateMouseOverFlags(location);
+            if (m_MouseOverHeader)
+            {
+                if (button == MouseButton.Left)
+                {
+                    m_IsMouseDown = true;
+                    m_MouseDownPos = location;
+                    // Preserve the active native implementation; its time query is commented out.
+                    m_MouseDownTime = 0.0f;
+                }
+                Focus();
+                return true;
+            }
+
+            if (m_IsExpanded)
+                return base.OnMouseDown(location, button);
+            Focus();
+            return true;
+        }
+
+        public override bool OnMouseUp(Float2 location, MouseButton button)
+        {
+            UpdateMouseOverFlags(location);
+            if (button == MouseButton.Left && m_IsMouseDown)
+            {
+                m_IsMouseDown = false;
+                m_MouseDownTime = -1.0f;
+            }
+
+            if (m_MouseOverHeader)
+            {
+                if (button == MouseButton.Left && Engine.FrameCount - m_DragEndFrame < 10)
+                    return true;
+
+                Tree? tree = ParentTree;
+                if (!m_MouseOverArrow && tree != null)
+                {
+                    RootControl? window = tree.Root;
+                    if (window?.GetKey(KeyboardKeys.Shift) == true)
+                        tree.SelectRange(this);
+                    else if (window?.GetKey(KeyboardKeys.Control) == true)
+                        tree.AddOrRemoveSelection(this);
+                    else
+                    {
+                        bool isSelected = false;
+                        if (button == MouseButton.Right)
+                        {
+                            for (int i = 0; i < tree.Selection.Count; i++)
+                            {
+                                if (ReferenceEquals(tree.Selection[i], this))
+                                {
+                                    isSelected = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!isSelected)
+                            tree.Select(this);
+                    }
+                }
+
+                if (m_MouseOverArrow && HasAnyVisibleChild)
+                {
+                    if (ParentTree?.Root?.GetKey(KeyboardKeys.Alt) == true)
+                    {
+                        if (m_IsExpanded)
+                            CollapseAll();
+                        else
+                            ExpandAll();
+                    }
+                    else if (m_IsExpanded)
+                        Collapse();
+                    else
+                        Expand();
+                }
+
+                if (button == MouseButton.Right && TestHeaderHit(ref location))
+                    tree?.OnRightClickInternal(this, location);
+                Focus();
+                return true;
+            }
+
+            if (button == MouseButton.Right && TestHeaderHit(ref location))
+                ParentTree?.OnRightClickInternal(this, location);
+            return base.OnMouseUp(location, button);
+        }
+
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
+        {
+            if (TestHeaderHit(ref location))
+                return OnMouseDoubleClickHeader(ref location, button);
+            if (m_AnimationProgress >= 1.0f)
+                return base.OnMouseDoubleClick(location, button);
+            return false;
+        }
+
+        public override void OnMouseMove(Float2 location)
+        {
+            UpdateMouseOverFlags(location);
+            if (m_IsMouseDown && Float2.Distance(m_MouseDownPos, location) > 10.0f)
+            {
+                m_IsMouseDown = false;
+                m_MouseDownTime = -1.0f;
+                BeginDragDrop();
+                return;
+            }
+            if (m_AnimationProgress >= 1.0f && m_IsExpanded)
+                base.OnMouseMove(location);
+        }
+
+        public override void OnMouseLeave()
+        {
+            m_MouseOverArrow = false;
+            m_MouseOverHeader = false;
+            if (m_IsMouseDown)
+            {
+                m_IsMouseDown = false;
+                m_MouseDownTime = -1.0f;
+                BeginDragDrop();
+            }
+            base.OnMouseLeave();
+        }
+
+        public override bool OnKeyDown(KeyboardKeys key) => m_IsExpanded && base.OnKeyDown(key);
+        public override bool OnKeyUp(KeyboardKeys key) => m_IsExpanded && base.OnKeyUp(key);
+
+        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
+        {
+            DragDropEffect result = base.OnDragEnter(ref location, data);
+            m_DragOverMode = DragItemPositioning.None;
+            if (result == DragDropEffect.None)
+            {
+                UpdateDragPositioning(ref location);
+                m_IsDragOverHeader = TestHeaderHit(ref location);
+                if (m_IsDragOverHeader)
+                {
+                    if (ParentTree != null)
+                        ParentTree.DraggedOverNode = this;
+                    if (ArrowRect.Contains(location) && HasAnyVisibleChild)
+                        Expand(true);
+                    result = OnDragEnterHeader(data);
+                }
+                if (result == DragDropEffect.None)
+                    m_DragOverMode = DragItemPositioning.None;
+            }
+            return result;
+        }
+
+        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
+        {
+            DragDropEffect result = base.OnDragMove(ref location, data);
+            ClearDragPositioning();
+            if (result == DragDropEffect.None)
+            {
+                UpdateDragPositioning(ref location);
+                bool isDragOverHeader = TestHeaderHit(ref location);
+                if (isDragOverHeader)
+                {
+                    if (ParentTree != null)
+                        ParentTree.DraggedOverNode = this;
+                    if (ArrowRect.Contains(location) && HasAnyVisibleChild)
+                        Expand(true);
+                    result = !m_IsDragOverHeader ? OnDragEnterHeader(data) : OnDragMoveHeader(data);
+                }
+                else if (m_IsDragOverHeader)
+                    OnDragLeaveHeader();
+                m_IsDragOverHeader = isDragOverHeader;
+                if (result == DragDropEffect.None)
+                    m_DragOverMode = DragItemPositioning.None;
+            }
+            return result;
+        }
+
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
+        {
+            DragDropEffect result = base.OnDragDrop(ref location, data);
+            if (result == DragDropEffect.None)
+            {
+                UpdateDragPositioning(ref location);
+                m_DragEndFrame = Engine.FrameCount;
+                if (TestHeaderHit(ref location))
+                    result = OnDragDropHeader(data);
+            }
+            m_IsDragOverHeader = false;
+            ClearDragPositioning();
+            return result;
         }
 
         public override void OnDragLeave()
@@ -234,287 +527,43 @@ namespace SE.Editor.GUI
                 m_IsDragOverHeader = false;
                 OnDragLeaveHeader();
             }
-
             ClearDragPositioning();
             base.OnDragLeave();
         }
 
-        public override bool OnMouseDown(Float2 location, MouseButton button)
+        public override void PerformLayout(bool force = false)
         {
-            UpdateMouseOverFlags(location);
-
-            // Check if mouse hits bar and node isn't a root
-            if (m_MouseOverHeader)
-            {
-                // Check if left button goes down
-                if (button == MouseButton.Left)
-                {
-                    m_IsMouseDown = true;
-                    m_MouseDownPos = location;
-                    m_MouseDownTime = Time.GetUnscaledGameTime();
-                }
-
-                // Handled
-                Root?.Focus(this);
-                return true;
-            }
-
-            // Base
-            if (m_IsExpanded)
-                return base.OnMouseDown(location, button);
-
-            // Handled
-            Root?.Focus(this);
-            return true;
-        }
-
-        public override bool OnMouseUp(Float2 location, MouseButton button)
-        {
-            UpdateMouseOverFlags(location);
-
-            // Clear flag for left button
-            if (button == MouseButton.Left && m_IsMouseDown)
-            {
-                m_IsMouseDown = false;
-                m_MouseDownTime = -1.0f;
-            }
-
-            // Check if mouse hits bar and node isn't a root
-            if (m_MouseOverHeader)
-            {
-                // Skip mouse up event right after drag drop ends
-                if (button == MouseButton.Left && Engine.FrameCount - m_DragEndFrame < 10)
-                    return true;
-
-                // Prevent from selecting node when user is just clicking at an arrow
-                Tree? tree = ParentTree;
-                if (!m_MouseOverArrow && tree != null)
-                {
-                    RootControl? window = tree.Root;
-                    if (window?.GetKey(KeyboardKeys.Shift) == true)
-                    {
-                        // Select range
-                        tree.SelectRange(this);
-                    }
-                    else if (window?.GetKey(KeyboardKeys.Control) == true)
-                    {
-                        // Add/Remove
-                        tree.AddOrRemoveSelection(this);
-                    }
-                    else if (button == MouseButton.Right && tree.Selection.Contains(this))
-                    {
-                        // Do nothing
-                    }
-                    else
-                    {
-                        // Select
-                        tree.Select(this);
-                    }
-                }
-
-                // Check if mouse hits arrow
-                if (m_MouseOverArrow && HasAnyVisibleChild)
-                {
-                    if (Root?.GetKey(KeyboardKeys.Alt) == true)
-                    {
-                        if (m_IsExpanded)
-                            CollapseAll();
-                        else
-                            ExpandAll();
-                    }
-                    else
-                    {
-                        if (m_IsExpanded)
-                            Collapse();
-                        else
-                            Expand();
-                    }
-                }
-
-                // Check if mouse hits bar
-                if (button == MouseButton.Right && TestHeaderHit(ref location))
-                    tree?.OnRightClickInternal(this, location);
-
-                // Handled
-                Root?.Focus(this);
-                return true;
-            }
-
-            // Check if mouse hits bar
-            if (button == MouseButton.Right && TestHeaderHit(ref location))
-                ParentTree?.OnRightClickInternal(this, location);
-
-            // Base
-            return base.OnMouseUp(location, button);
-        }
-
-        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
-        {
-            if (TestHeaderHit(ref location))
-                return OnMouseDoubleClickHeader(ref location, button);
-
-            if (AnimationProgress >= 1.0f)
-                return base.OnMouseDoubleClick(location, button);
-
-            return false;
-        }
-
-        public override void OnMouseMove(Float2 location)
-        {
-            UpdateMouseOverFlags(location);
-
-            // Check if start drag and drop
-            if (m_IsMouseDown && Float2.Distance(m_MouseDownPos, location) > 10.0f)
-            {
-                // Clear flag
-                m_IsMouseDown = false;
-                m_MouseDownTime = -1.0f;
-
-                // Start
-                BeginDragDrop();
+            SyncNodesFromChildren();
+            if (IsLayoutLocked && !force)
                 return;
-            }
 
-            // Check if animation has been finished
-            if (AnimationProgress >= 1.0f && m_IsExpanded)
-                base.OnMouseMove(location);
-        }
+            bool wasLocked = IsLayoutLocked;
+            if (!wasLocked)
+                LockChildrenRecursive();
 
-        public override void OnMouseLeave()
-        {
-            // Clear flags
-            m_MouseOverArrow = false;
-            m_MouseOverHeader = false;
-
-            // Check if start drag and drop
-            if (m_IsMouseDown)
+            float width = Parent is TreeNode parent ? parent.Width : Width;
+            if (m_IsExpanded || m_AnimationProgress < 1.0f)
             {
-                // Clear flag
-                m_IsMouseDown = false;
-                m_MouseDownTime = -1.0f;
-
-                // Start
-                BeginDragDrop();
+                SetBounds(X, Y, width, Height);
+                PerformLayoutBeforeChildren();
+                foreach (Control child in Children)
+                    child.PerformLayout(true);
+                PerformLayoutAfterChildren();
             }
-
-            base.OnMouseLeave();
-        }
-
-        public override bool OnKeyDown(KeyboardKeys key)
-        {
-            if (m_IsExpanded)
-                return base.OnKeyDown(key);
-            return false;
-        }
-
-        public override bool OnKeyUp(KeyboardKeys key)
-        {
-            if (m_IsExpanded)
-                return base.OnKeyUp(key);
-            return false;
-        }
-
-        /// <inheritdoc />
-        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
-        {
-            var result = base.OnDragEnter(ref location, data);
-
-            // Check if no children handled that event
-            m_DragOverMode = DragItemPositioning.None;
-            if (result == DragDropEffect.None)
+            else
             {
-                UpdateDragPositioning(ref location);
-
-                // Check if mouse is over header
-                m_IsDragOverHeader = TestHeaderHit(ref location);
-                if (m_IsDragOverHeader)
-                {
-                    if (ParentTree != null)
-                        ParentTree.DraggedOverNode = this;
-
-                    // Expand node if mouse goes over arrow
-                    if (ArrowRect.Contains(location) && HasAnyVisibleChild)
-                    {
-                        Expand(true);
-                    }
-
-                    result = OnDragEnterHeader(data);
-                }
-
-                if (result == DragDropEffect.None)
-                {
-                    m_DragOverMode = DragItemPositioning.None;
-                }
+                m_CachedHeight = m_HeaderHeight;
+                SetBounds(X, Y, width, m_HeaderHeight);
+                LayoutHeader();
             }
 
-            return result;
+            if (!wasLocked)
+                UnlockChildrenRecursive();
         }
 
-        /// <inheritdoc />
-        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
+        public override int Compare(Control? other)
         {
-            var result = base.OnDragMove(ref location, data);
-
-            // Check if no children handled that event
-            ClearDragPositioning();
-            if (result == DragDropEffect.None)
-            {
-                UpdateDragPositioning(ref location);
-
-                // Check if mouse is over header
-                bool isDragOverHeader = TestHeaderHit(ref location);
-                if (isDragOverHeader)
-                {
-                    if (ParentTree != null)
-                        ParentTree.DraggedOverNode = this;
-
-                    // Expand node if mouse goes over arrow
-                    if (ArrowRect.Contains(location) && HasAnyVisibleChild)
-                        Expand(true);
-
-                    if (!m_IsDragOverHeader)
-                        result = OnDragEnterHeader(data);
-                    else
-                        result = OnDragMoveHeader(data);
-                }
-                else if (m_IsDragOverHeader)
-                {
-                    OnDragLeaveHeader();
-                }
-                m_IsDragOverHeader = isDragOverHeader;
-
-                if (result == DragDropEffect.None)
-                {
-                    m_DragOverMode = DragItemPositioning.None;
-                }
-            }
-
-            return result;
-        }
-
-        /// <inheritdoc />
-        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
-        {
-            var result = base.OnDragDrop(ref location, data);
-
-            // Check if no children handled that event
-            if (result == DragDropEffect.None)
-            {
-                UpdateDragPositioning(ref location);
-                m_DragEndFrame = Engine.FrameCount;
-
-                // Check if mouse is over header
-                if (TestHeaderHit(ref location))
-                {
-                    result = OnDragDropHeader(data);
-                }
-            }
-
-            // Clear cache
-            m_IsDragOverHeader = false;
-            ClearDragPositioning();
-
-            return result;
+            return other is TreeNode node ? string.Compare(Text, node.Text, StringComparison.Ordinal) : 0;
         }
 
         protected virtual DragDropEffect OnDragEnterHeader(DragData data) => DragDropEffect.None;
@@ -522,11 +571,11 @@ namespace SE.Editor.GUI
         protected virtual DragDropEffect OnDragDropHeader(DragData data) => DragDropEffect.None;
         protected virtual void OnDragLeaveHeader() { }
         protected virtual void BeginDragDrop() { }
+
         protected virtual bool OnMouseDoubleClickHeader(ref Float2 location, MouseButton button)
         {
             _ = location;
             _ = button;
-
             if (HasAnyVisibleChild)
             {
                 if (m_IsExpanded)
@@ -534,73 +583,182 @@ namespace SE.Editor.GUI
                 else
                     Expand();
             }
-
             return true;
         }
+
         protected virtual void OnLongPress() { }
         protected virtual void OnExpandedChanged() { }
-        protected virtual void OnExpandAnimationChanged() { }
-        protected virtual bool TestHeaderHit(ref Float2 location) => HeaderRect.Contains(ref location);
 
-        protected override void OnLayoutChildren()
+        protected virtual void OnExpandAnimationChanged()
         {
-            m_HeaderText.SetBounds(m_TextMargin.Left, 0, Width - m_TextMargin.Width, m_HeaderHeight);
-
-            float y = m_HeaderHeight + DefaultNodeOffsetY;
-            foreach (TreeNode child in m_Nodes)
-            {
-                child.Visible = m_IsExpanded;
-                if (!m_IsExpanded)
-                    continue;
-
-                child.SetBounds(ChildrenIndent, y, Width - ChildrenIndent, child.Height);
-                y += child.Height;
-            }
-
-            Height = y;
+            if (ParentTree != null)
+                ParentTree.PerformLayout();
+            else if (Parent != null)
+                Parent.PerformLayout();
+            else
+                PerformLayout();
         }
 
-        private Tree? FindParentTree()
+        protected virtual bool TestHeaderHit(ref Float2 location) => HeaderRect.Contains(ref location);
+
+        protected virtual Color CacheTextColor()
         {
-            SE.GUI.Control? current = Parent;
-            while (current != null)
+            return Enabled ? TextColor : TextColor * 0.6f;
+        }
+
+        protected override void OnChildAdded(Control control)
+        {
+            if (control is TreeNode node && !m_Nodes.Contains(node))
+                m_Nodes.Add(node);
+            control.SizeChanged += OnChildSizeChanged;
+            base.OnChildAdded(control);
+        }
+
+        protected override void OnChildRemoved(Control control)
+        {
+            if (control is TreeNode node)
+                m_Nodes.Remove(node);
+            control.SizeChanged -= OnChildSizeChanged;
+            base.OnChildRemoved(control);
+        }
+
+        protected override void OnBoundsChanged(bool locationChanged, bool sizeChanged)
+        {
+            base.OnBoundsChanged(locationChanged, sizeChanged);
+            if (sizeChanged)
+                LayoutHeader();
+        }
+
+        protected override void OnDispose()
+        {
+            ParentChanged -= OnParentChanged;
+            m_LastTree?.RemoveFromSelection(this);
+            base.OnDispose();
+        }
+
+        private void PerformLayoutBeforeChildren()
+        {
+            if (m_IsExpanded)
             {
-                if (current is Tree tree)
-                    return tree;
-                current = current.Parent;
+                float xOffset = m_XOffset + ChildrenIndent;
+                foreach (TreeNode node in m_Nodes)
+                    node.m_XOffset = xOffset;
+            }
+            LayoutHeader();
+        }
+
+        private void PerformLayoutAfterChildren()
+        {
+            float y = m_HeaderHeight;
+            float height = m_HeaderHeight;
+            float xOffset = m_XOffset + ChildrenIndent;
+            if (m_IsExpanded || m_AnimationProgress < 1.0f)
+            {
+                y -= m_CachedHeight * (m_IsExpanded ? 1.0f - m_AnimationProgress : m_AnimationProgress);
+                foreach (TreeNode node in m_Nodes)
+                {
+                    if (!node.Visible)
+                        continue;
+                    node.m_XOffset = xOffset;
+                    node.SetBounds(0, y, Width, node.Height);
+                    float nodeHeight = node.Height + DefaultNodeOffsetY;
+                    y += nodeHeight;
+                    height += nodeHeight;
+                }
             }
 
-            return null;
+            m_CachedHeight = height;
+            SetBounds(X, Y, Width, Math.Max(m_HeaderHeight, y));
+            LayoutHeader();
+        }
+
+        private void LayoutHeader()
+        {
+            if (m_HeaderText == null)
+                return;
+            Rectangle textRect = TextRect;
+            m_HeaderText.TextColor = CacheTextColor();
+            m_HeaderText.Font = TextFont?.GetFont();
+            m_HeaderText.SetBounds(textRect);
+        }
+
+        private Tree? GetParentTree()
+        {
+            if (m_Tree == null)
+            {
+                if (Parent is TreeNode node)
+                    m_Tree = node.ParentTree;
+                else if (Parent is Tree tree)
+                    m_Tree = tree;
+                if (m_Tree != null)
+                    m_LastTree = m_Tree;
+            }
+            return m_Tree;
         }
 
         private float CalculateMinimumWidth()
         {
-            float width = Text.Length * 7.0f + m_TextMargin.Width;
-            foreach (TreeNode child in m_Nodes)
+            UpdateTextWidth();
+            float minWidth = m_XOffset + m_TextWidth + 6.0f + 16.0f;
+            if (m_IconCollapsed.IsValid)
+                minWidth += 16.0f;
+            if (m_IsExpanded || m_AnimationProgress < 1.0f)
             {
-                width = System.Math.Max(width, ChildrenIndent + child.MinimumWidth);
+                foreach (TreeNode node in m_Nodes)
+                {
+                    if (node.Visible)
+                        minWidth = Math.Max(minWidth, node.MinimumWidth);
+                }
             }
+            return minWidth;
+        }
 
-            return width;
+        private void UpdateTextWidth()
+        {
+            if (!m_TextChanged)
+                return;
+            Font? font = TextFont?.GetFont();
+            if (font != null)
+            {
+                TextLayoutOptions layout = new TextLayoutOptions();
+                m_TextWidth = font.MeasureText(m_Text, layout).X;
+                m_TextChanged = false;
+            }
+        }
+
+        private Rectangle CalculateTextRect()
+        {
+            float left = m_XOffset + 16.0f;
+            Rectangle textRect = new Rectangle(left, 0, Width - left, m_HeaderHeight);
+            m_TextMargin.ShrinkRectangle(ref textRect);
+            if (m_IconCollapsed.IsValid)
+            {
+                textRect.X += 18.0f;
+                textRect.Width -= 18.0f;
+            }
+            return textRect;
         }
 
         private void UpdateDragPositioning(ref Float2 location)
         {
-            if (location.Y < DefaultDragInsertPositionMargin) m_DragOverMode = DragItemPositioning.Above;
-            else if ((!m_IsExpanded || !HasAnyVisibleChild) && location.Y > HeaderHeight - DefaultDragInsertPositionMargin)
-            {
+            Rectangle header = HeaderRect;
+            Rectangle above = new Rectangle(header.X, header.Y - DefaultDragInsertPositionMargin - DefaultNodeOffsetY, header.Width, DefaultDragInsertPositionMargin * 2.0f);
+            Rectangle below = new Rectangle(header.X, header.Bottom - DefaultDragInsertPositionMargin, header.Width, DefaultDragInsertPositionMargin * 2.0f);
+            if (above.Contains(location))
+                m_DragOverMode = DragItemPositioning.Above;
+            else if ((IsCollapsed || !HasAnyVisibleChild) && below.Contains(location))
                 m_DragOverMode = DragItemPositioning.Below;
-            }
             else
-            {
                 m_DragOverMode = DragItemPositioning.At;
-            }
 
             Tree? tree = ParentTree;
-            if (tree != null)
+            if (m_DragOverMode == DragItemPositioning.None)
             {
-                tree.DraggedOverNode = this;
+                if (tree != null && ReferenceEquals(tree.DraggedOverNode, this))
+                    tree.DraggedOverNode = null;
             }
+            else if (tree != null)
+                tree.DraggedOverNode = this;
         }
 
         private void ClearDragPositioning()
@@ -611,28 +769,80 @@ namespace SE.Editor.GUI
                 tree.DraggedOverNode = null;
         }
 
-        private void RequestTreeLayout()
-        {
-            ParentTree?.PerformLayout();
-        }
-
         private void UpdateMouseOverFlags(Float2 location)
         {
-            // Cache flags
             m_MouseOverArrow = HasAnyVisibleChild && ArrowRect.Contains(location);
-            m_MouseOverHeader = new Rectangle(0, 0, Width, m_HeaderHeight - 1).Contains(location);
-            if (m_MouseOverHeader)
+            m_MouseOverHeader = new Rectangle(0, 0, Width, m_HeaderHeight - 1.0f).Contains(location);
+            if (!m_MouseOverHeader)
+                return;
+            foreach (Control child in Children)
             {
-                // Allow non-scrollable controls to stay on top of the header and override the mouse behaviour
-                for (int i = 0; i < Children.Count; i++)
+                if (!child.IsScrollable && child.EnabledInHierarchy && child.VisibleInHierarchy && child.Bounds.Contains(location))
                 {
-                    Control child = Children[i];
-                    if (!child.IsScrollable && child.EnabledInHierarchy && child.VisibleInHierarchy && child.Bounds.Contains(location))
-                    {
-                        m_MouseOverHeader = false;
-                        break;
-                    }
+                    m_MouseOverHeader = false;
+                    break;
                 }
+            }
+        }
+
+        private void OnChildSizeChanged(Control control)
+        {
+            if (!m_IsExpanded && control is TreeNode)
+                return;
+            PerformLayout();
+        }
+
+        private void SyncNodesFromChildren()
+        {
+            m_Nodes.Clear();
+            foreach (Control child in Children)
+            {
+                if (child is TreeNode node)
+                    m_Nodes.Add(node);
+            }
+        }
+
+        private void OnParentChanged(Control control)
+        {
+            _ = control;
+            m_Tree = null;
+        }
+
+        private Rectangle ToScreen(Rectangle local)
+        {
+            Float2 screen = ScreenPos;
+            local.X += screen.X;
+            local.Y += screen.Y;
+            return local;
+        }
+
+        private void DrawGuideLines(Tree? tree, bool isSelected, Style style)
+        {
+            if (tree == null || tree.Children.Count == 0)
+                return;
+
+            TreeNode? parentNode = Parent as TreeNode;
+            bool thisNodeIsLast = false;
+            while (parentNode != null && !ReferenceEquals(parentNode, tree.GetChild(0)))
+            {
+                float bottomOffset = 0.0f;
+                float topOffset = 0.0f;
+                if (ReferenceEquals(Parent, parentNode) && parentNode.m_Nodes.Count > 0 && ReferenceEquals(this, parentNode.m_Nodes[0]))
+                    topOffset = 2.0f;
+                if (thisNodeIsLast && parentNode.m_Nodes.Count == 1)
+                    bottomOffset = topOffset != 0.0f ? 4.0f : 2.0f;
+                if (ReferenceEquals(Parent, parentNode) && parentNode.m_Nodes.Count > 0 && ReferenceEquals(this, parentNode.m_Nodes[parentNode.m_Nodes.Count - 1]) && !m_IsExpanded)
+                {
+                    thisNodeIsLast = true;
+                    bottomOffset = topOffset != 0.0f ? 4.0f : 2.0f;
+                }
+
+                float leftOffset = m_IconCollapsed.IsValid ? 27.0f : 9.0f;
+                Rectangle parentText = parentNode.ToScreen(parentNode.TextRect);
+                Rectangle parentHeader = parentNode.ToScreen(parentNode.HeaderRect);
+                Rectangle line = new Rectangle(parentText.Left - leftOffset, parentHeader.Top + topOffset, 1.0f, parentHeader.Height - bottomOffset);
+                Render2D.FillRectangle(line, isSelected ? style.ForegroundGrey : style.LightBackground);
+                parentNode = parentNode.Parent as TreeNode;
             }
         }
     }

@@ -9,13 +9,14 @@ namespace SE.Editor.GUI
 
         private readonly List<TreeNode> m_Nodes = new List<TreeNode>();
         private readonly List<TreeNode> m_Selection = new List<TreeNode>();
+        private readonly bool m_SupportMultiSelect;
         private float m_KeyUpdateTime = KeyUpdateTimeout;
         private Margin m_Margin;
 
         public Tree(bool supportMultiSelect = false)
             : base(new Rectangle(0, 0, 240, 320))
         {
-            SupportMultiSelect = supportMultiSelect;
+            m_SupportMultiSelect = supportMultiSelect;
             AutoSize = true;
             SetBounds(0, 0, 240, 320);
         }
@@ -23,11 +24,9 @@ namespace SE.Editor.GUI
         public event Action<IReadOnlyList<TreeNode>, IReadOnlyList<TreeNode>>? SelectedChanged;
         public event Action<TreeNode, Float2>? RightClick;
 
-        public IReadOnlyList<TreeNode> Nodes => m_Nodes;
         public IReadOnlyList<TreeNode> Selection => m_Selection;
         public TreeNode? SelectedNode => m_Selection.Count > 0 ? m_Selection[0] : null;
         public TreeNode? DraggedOverNode { get; set; }
-        public bool SupportMultiSelect { get; }
 
         public Margin Margin
         {
@@ -40,31 +39,6 @@ namespace SE.Editor.GUI
         }
 
         public bool AutoSize { get; set; }
-
-        public TreeNode AddNode(TreeNode node)
-        {
-            m_Nodes.Add(node);
-            AddChild(node);
-            PerformLayout();
-            return node;
-        }
-
-        /// <summary>
-        /// Removes and disposes all root nodes. Dynamic model-backed trees use
-        /// this before rebuilding their presentation nodes.
-        /// </summary>
-        public void ClearNodes()
-        {
-            TreeNode[] nodes = m_Nodes.ToArray();
-            m_Nodes.Clear();
-            foreach (TreeNode node in nodes)
-            {
-                RemoveChild(node);
-                node.Dispose();
-            }
-            DeselectAll();
-            PerformLayout();
-        }
 
         public void OnRightClickInternal(TreeNode node, Float2 location)
         {
@@ -92,7 +66,7 @@ namespace SE.Editor.GUI
                     m_Selection.Add(node);
                     node.ExpandAllParents();
                 }
-                if (!SupportMultiSelect)
+                if (!m_SupportMultiSelect)
                     break;
             }
 
@@ -106,7 +80,7 @@ namespace SE.Editor.GUI
 
         public void AddOrRemoveSelection(TreeNode node)
         {
-            if (!SupportMultiSelect)
+            if (!m_SupportMultiSelect)
             {
                 Select(node);
                 return;
@@ -120,7 +94,7 @@ namespace SE.Editor.GUI
 
         public void SelectRange(TreeNode endNode)
         {
-            if (!SupportMultiSelect || SelectedNode == null)
+            if (!m_SupportMultiSelect || SelectedNode == null)
             {
                 Select(endNode);
                 return;
@@ -140,7 +114,7 @@ namespace SE.Editor.GUI
 
         public void SelectAllExpanded()
         {
-            if (!SupportMultiSelect)
+            if (!m_SupportMultiSelect)
                 return;
 
             Select(GetExpandedNodes());
@@ -151,6 +125,13 @@ namespace SE.Editor.GUI
             List<TreeNode> before = new List<TreeNode>(m_Selection);
             m_Selection.Clear();
             RaiseSelectionChanged(before);
+        }
+
+        internal void RemoveFromSelection(TreeNode node)
+        {
+            List<TreeNode> before = new List<TreeNode>(m_Selection);
+            if (m_Selection.Remove(node))
+                RaiseSelectionChanged(before);
         }
 
         public override bool OnKeyDown(KeyboardKeys key)
@@ -236,6 +217,13 @@ namespace SE.Editor.GUI
 
         protected override void OnLayoutChildren()
         {
+            m_Nodes.Clear();
+            foreach (Control control in Children)
+            {
+                if (control is TreeNode node)
+                    m_Nodes.Add(node);
+            }
+
             float y = m_Margin.Top;
             float width = Math.Max(0, Width - m_Margin.Width);
             foreach (TreeNode node in m_Nodes)
@@ -251,6 +239,23 @@ namespace SE.Editor.GUI
             {
                 Height = y + m_Margin.Bottom;
             }
+        }
+
+        protected override void OnChildAdded(Control control)
+        {
+            if (control is TreeNode node && !m_Nodes.Contains(node))
+                m_Nodes.Add(node);
+            base.OnChildAdded(control);
+        }
+
+        protected override void OnChildRemoved(Control control)
+        {
+            if (control is TreeNode node)
+            {
+                m_Nodes.Remove(node);
+                m_Selection.Remove(node);
+            }
+            base.OnChildRemoved(control);
         }
 
         private List<TreeNode> GetExpandedNodes()
@@ -280,8 +285,10 @@ namespace SE.Editor.GUI
 
         private static TreeNode? GetFirstVisibleChild(TreeNode node)
         {
-            foreach (TreeNode child in node.Nodes)
+            foreach (Control control in node.Children)
             {
+                if (control is not TreeNode child)
+                    continue;
                 if (child.Visible)
                     return child;
             }
@@ -295,8 +302,10 @@ namespace SE.Editor.GUI
             if (!node.IsExpanded)
                 return;
 
-            foreach (TreeNode child in node.Nodes)
+            foreach (Control control in node.Children)
             {
+                if (control is not TreeNode child)
+                    continue;
                 WalkExpanded(child, result);
             }
         }

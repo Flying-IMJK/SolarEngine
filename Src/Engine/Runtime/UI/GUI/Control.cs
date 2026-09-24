@@ -3,14 +3,45 @@ using System.Collections.Generic;
 
 namespace SE.GUI
 {
-    /// <summary>
-    /// Base class for all managed GUI controls.
-    /// </summary>
+    /// <summary>Base class for all GUI controls.</summary>
     public class Control : IDisposable
     {
+        public struct AnchorPresetData
+        {
+            public AnchorPresets Preset;
+            public Float2 Min;
+            public Float2 Max;
+
+            public AnchorPresetData(AnchorPresets preset, Float2 min, Float2 max)
+            {
+                Preset = preset;
+                Min = min;
+                Max = max;
+            }
+        }
+
+        protected static readonly AnchorPresetData[] anchorPresetsData =
+        {
+            new(AnchorPresets.TopLeft, Float2.Zero, Float2.Zero),
+            new(AnchorPresets.TopCenter, new Float2(0.5f, 0), new Float2(0.5f, 0)),
+            new(AnchorPresets.TopRight, new Float2(1, 0), new Float2(1, 0)),
+            new(AnchorPresets.MiddleLeft, new Float2(0, 0.5f), new Float2(0, 0.5f)),
+            new(AnchorPresets.MiddleCenter, new Float2(0.5f), new Float2(0.5f)),
+            new(AnchorPresets.MiddleRight, new Float2(1, 0.5f), new Float2(1, 0.5f)),
+            new(AnchorPresets.BottomLeft, new Float2(0, 1), new Float2(0, 1)),
+            new(AnchorPresets.BottomCenter, new Float2(0.5f, 1), new Float2(0.5f, 1)),
+            new(AnchorPresets.BottomRight, Float2.One, Float2.One),
+            new(AnchorPresets.HorizontalStretchTop, Float2.Zero, new Float2(1, 0)),
+            new(AnchorPresets.HorizontalStretchMiddle, new Float2(0, 0.5f), new Float2(1, 0.5f)),
+            new(AnchorPresets.HorizontalStretchBottom, new Float2(0, 1), Float2.One),
+            new(AnchorPresets.VerticalStretchLeft, Float2.Zero, new Float2(0, 1)),
+            new(AnchorPresets.VerticalStretchCenter, new Float2(0.5f, 0), new Float2(0.5f, 1)),
+            new(AnchorPresets.VerticalStretchRight, new Float2(1, 0), Float2.One),
+            new(AnchorPresets.StretchAll, Float2.Zero, Float2.One),
+        };
+
         private ContainerControl? m_Parent;
         private RootControl? m_Root;
-        private Rectangle m_Bounds;
         private bool m_Visible = true;
         private bool m_Enabled = true;
         private bool m_IsDisposing;
@@ -18,78 +49,40 @@ namespace SE.GUI
         private bool m_IsMouseOver;
         private bool m_IsDragOver;
         private bool m_IsFocused;
+        private bool m_IsNavFocused;
+        private readonly List<int> m_TouchOvers = new();
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Control"/> class.
-        /// </summary>
-        public Control() : this(Rectangle.Empty)
-        {
-        }
+        private Rectangle m_Bounds;
+        private Margin m_Offsets;
+        private Float2 m_AnchorMin;
+        private Float2 m_AnchorMax;
+        private Float2 m_Scale = Float2.One;
+        private Float2 m_Pivot = Float2.Half;
+        private Float2 m_Shear;
+        private float m_Rotation;
+        private Matrix3x3 m_CachedTransform;
+        private Matrix3x3 m_CachedTransformInv;
+        private bool m_PivotRelativeSizing;
 
+        public Control() : this(Rectangle.Empty) { }
+        public Control(float x, float y, float width, float height) : this(new Rectangle(x, y, width, height)) { }
+        public Control(Float2 location, Float2 size) : this(new Rectangle(location, size)) { }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Control"/> class.
-        /// </summary>
-        /// <param name="x">X coordinate</param>
-        /// <param name="y">Y coordinate</param>
-        /// <param name="width">Width</param>
-        /// <param name="height">Height</param>
-        public Control(float x, float y, float width, float height)
-            : this(new Rectangle(x, y, width, height))
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Control"/> class.
-        /// </summary>
-        /// <param name="location">Upper left corner location.</param>
-        /// <param name="size">Bounds size.</param>
-        public Control(Float2 location, Float2 size)
-            : this(new Rectangle(location, size))
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Control"/> class.
-        /// </summary>
         public Control(Rectangle bounds)
         {
             m_Bounds = bounds;
+            m_Offsets = new Margin(bounds.X, bounds.Width, bounds.Y, bounds.Height);
+            UpdateTransform();
         }
 
-        /// <summary>
-        /// Raised after the control location changes.
-        /// </summary>
         public event Action<Control>? LocationChanged;
-
-        /// <summary>
-        /// Raised after the control size changes.
-        /// </summary>
         public event Action<Control>? SizeChanged;
-
-        /// <summary>
-        /// Raised after the parent changes.
-        /// </summary>
         public event Action<Control>? ParentChanged;
-
-        /// <summary>
-        /// Raised after the visibility changes.
-        /// </summary>
         public event Action<Control>? VisibleChanged;
 
-        /// <summary>
-        /// Gets or sets the diagnostic name of this control.
-        /// </summary>
         public string Name { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Gets or sets the text presented by the owning root tooltip when the pointer rests over this control.
-        /// </summary>
         public string TooltipText { get; set; } = string.Empty;
 
-        /// <summary>
-        /// Gets the parent container, or <c>null</c> when unparented.
-        /// </summary>
         public ContainerControl? Parent
         {
             get => m_Parent;
@@ -98,649 +91,493 @@ namespace SE.GUI
                 if (ReferenceEquals(m_Parent, value))
                     return;
 
-                value?.AddChild(this);
-                if (value == null)
-                    m_Parent?.RemoveChild(this);
+                Defocus();
+                Float2 oldParentSize;
+                if (m_Parent != null)
+                {
+                    oldParentSize = m_Parent.Size;
+                    m_Parent.RemoveChildInternal(this);
+                }
+                else
+                {
+                    oldParentSize = Float2.Zero;
+                    ClearState();
+                }
+
+                m_Parent = value;
+                if (m_Parent != null)
+                    m_Parent.AddChildInternal(this);
+
+                CacheRootHandle();
+                OnParentChangedInternal();
+                if (m_Parent != null && oldParentSize != m_Parent.Size)
+                    OnParentResized();
             }
         }
 
-        /// <summary>
-        /// Checks if control has parent container control.
-        /// </summary>
         public bool HasParent => m_Parent != null;
-
-        /// <summary>
-        /// Gets the root control that owns this control tree.
-        /// </summary>
         public RootControl? Root => m_Root;
+        public int IndexInParent { get => m_Parent?.IndexOf(this) ?? -1; set => m_Parent?.SetChildIndex(this, value); }
 
-        /// <summary>
-        /// Gets or sets the zero-based position of this control inside its parent.
-        /// </summary>
-        public int IndexInParent
-        {
-            get => m_Parent?.IndexOf(this) ?? -1;
-            set => m_Parent?.SetChildIndex(this, value);
-        }
-
-        /// <summary>
-        /// Gets or sets the local bounds relative to the parent control.
-        /// </summary>
-        public Rectangle Bounds
-        {
-            get => m_Bounds;
-            set => SetBounds(value);
-        }
-
-        public float X
-        {
-            get => m_Bounds.X;
-            set => SetBounds(value, m_Bounds.Y, m_Bounds.Width, m_Bounds.Height);
-        }
-
-        public float Y
-        {
-            get => m_Bounds.Y;
-            set => SetBounds(m_Bounds.X, value, m_Bounds.Width, m_Bounds.Height);
-        }
-
-        public float Width
-        {
-            get => m_Bounds.Width;
-            set => SetBounds(m_Bounds.X, m_Bounds.Y, value, m_Bounds.Height);
-        }
-
-        public float Height
-        {
-            get => m_Bounds.Height;
-            set => SetBounds(m_Bounds.X, m_Bounds.Y, m_Bounds.Width, value);
-        }
-
-        public Float2 Location
-        {
-            get => m_Bounds.Location;
-            set => SetBounds(new Rectangle(value, m_Bounds.Size));
-        }
-
-        public Float2 Size
-        {
-            get => m_Bounds.Size;
-            set => SetBounds(new Rectangle(m_Bounds.Location, value));
-        }
-
-        /// <summary>
-        /// Gets the bounds in root logical coordinates.
-        /// </summary>
-        public Rectangle ScreenBounds => new Rectangle(ScreenPos, m_Bounds.Size);
-
-        /// <summary>
-        /// Gets the position in root logical coordinates.
-        /// </summary>
-        public Float2 ScreenPos
+        public AnchorPresets AnchorPreset
         {
             get
             {
-                var position = m_Bounds.Location;
-                for (Control child = this; child.Parent is ContainerControl parent; child = parent)
+                for (int i = 0; i < anchorPresetsData.Length; i++)
                 {
-                    position += parent.Location;
-                    if (child.ApplyParentChildOffset)
-                        position += parent.ChildOffset;
+                    if (Float2.NearEqual(m_AnchorMin, anchorPresetsData[i].Min) && Float2.NearEqual(m_AnchorMax, anchorPresetsData[i].Max))
+                        return anchorPresetsData[i].Preset;
                 }
-                return position;
+                return AnchorPresets.Custom;
             }
+            set => SetAnchorPreset(value, false);
         }
 
-        /// <summary>
-        /// Gets or sets the normalized minimum anchor point.
-        /// </summary>
-        public Float2 AnchorMin { get; set; } = Float2.Zero;
-
-        /// <summary>
-        /// Gets or sets the normalized maximum anchor point.
-        /// </summary>
-        public Float2 AnchorMax { get; set; } = Float2.Zero;
-
-        /// <summary>
-        /// Gets or sets the offsets relative to the anchors.
-        /// </summary>
-        public Margin Offsets { get; set; } = new Margin(0.0f, 100.0f, 0.0f, 30.0f);
-
-        /// <summary>
-        /// Gets or sets the normalized pivot used by layout implementations.
-        /// </summary>
-        public Float2 Pivot { get; set; } = Float2.Half;
-
-        /// <summary>
-        /// Gets or sets the visual scale applied by a control implementation.
-        /// </summary>
-        public Float2 Scale { get; set; } = Float2.One;
-
-        /// <summary>
-        /// Gets or sets the visual rotation in degrees.
-        /// </summary>
-        public float Rotation { get; set; }
-
-        /// <summary>
-        /// Gets or sets whether the control can receive user input.
-        /// </summary>
-        public bool Enabled
+        public Rectangle Bounds { get => m_Bounds; set => SetBounds(value); }
+        public float X { get => m_Bounds.X; set => SetBounds(value, Y, Width, Height); }
+        public float Y { get => m_Bounds.Y; set => SetBounds(X, value, Width, Height); }
+        public float Width
         {
-            get => m_Enabled;
+            get => m_Bounds.Width;
             set
             {
-                if (m_Enabled == value)
-                    return;
-
-                m_Enabled = value;
-                if (!value)
-                    ClearState();
+                if (Mathf.NearEqual(Width, value)) return;
+                Rectangle bounds = new(X, Y, value, Height);
+                if (m_PivotRelativeSizing) bounds.X += (Width - value) * m_Pivot.X;
+                SetBounds(bounds);
             }
         }
+        public float Height
+        {
+            get => m_Bounds.Height;
+            set
+            {
+                if (Mathf.NearEqual(Height, value)) return;
+                Rectangle bounds = new(X, Y, Width, value);
+                if (m_PivotRelativeSizing) bounds.Y += (Height - value) * m_Pivot.Y;
+                SetBounds(bounds);
+            }
+        }
+        public Float2 Location { get => m_Bounds.Location; set => SetBounds(new Rectangle(value, Size)); }
+        public Float2 Size { get => m_Bounds.Size; set => SetBounds(new Rectangle(Location, value)); }
+        public Float2 Center { get => m_Bounds.Center; set => Location = value - Size * 0.5f; }
+        public Float2 UpperLeft => m_Bounds.UpperLeft;
+        public Float2 UpperRight => m_Bounds.UpperRight;
+        public Float2 BottomRight => m_Bounds.BottomRight;
+        public Float2 BottomLeft => m_Bounds.BottomLeft;
+        public Rectangle ScreenBounds
+        {
+            get
+            {
+                Float2 upperLeft = PointToRoot(Float2.Zero);
+                Float2 bottomRight = PointToRoot(Size);
+                return new Rectangle(upperLeft, bottomRight - upperLeft);
+            }
+        }
+        public Float2 ScreenPos => PointToRoot(Float2.Zero);
 
-        /// <summary>
-        /// Gets whether this control and all its parents are enabled.
-        /// </summary>
+        public Float2 LocalLocation
+        {
+            get
+            {
+                Float2 localLocation = Location;
+                if (m_Parent != null)
+                    _ = localLocation - (m_Parent.m_Bounds.Size * (m_AnchorMax + m_AnchorMin) * 0.5f);
+                localLocation += Size * m_Pivot;
+                return localLocation;
+            }
+            set
+            {
+                if (m_Parent != null)
+                    SetBounds(new Rectangle(value + (m_Parent.Bounds.Size * (m_AnchorMax + m_AnchorMin) * 0.5f) - Size * m_Pivot, Size));
+                else
+                    SetBounds(new Rectangle(value - Size * m_Pivot, Size));
+            }
+        }
+        public float LocalX { get => LocalLocation.X; set => LocalLocation = new Float2(value, LocalLocation.Y); }
+        public float LocalY { get => LocalLocation.Y; set => LocalLocation = new Float2(LocalLocation.X, value); }
+        public bool PivotRelativeSizing { get => m_PivotRelativeSizing; set => m_PivotRelativeSizing = value; }
+
+        public Float2 AnchorMin
+        {
+            get => m_AnchorMin;
+            set { if (m_AnchorMin != value) { Rectangle bounds = m_Bounds; m_AnchorMin = value; UpdateBounds(); SetBounds(bounds); } }
+        }
+        public Float2 AnchorMax
+        {
+            get => m_AnchorMax;
+            set { if (m_AnchorMax != value) { Rectangle bounds = m_Bounds; m_AnchorMax = value; UpdateBounds(); SetBounds(bounds); } }
+        }
+        public Margin Offsets { get => m_Offsets; set { if (m_Offsets != value) { m_Offsets = value; UpdateBounds(); } } }
+        public Float2 Pivot { get => m_Pivot; set { if (m_Pivot != value) { m_Pivot = value; UpdateTransform(); m_Parent?.OnChildResized(this); } } }
+        public Float2 Scale { get => m_Scale; set { if (m_Scale != value) { m_Scale = value; UpdateTransform(); m_Parent?.OnChildResized(this); } } }
+        public Float2 Shear { get => m_Shear; set { if (m_Shear != value) { m_Shear = value; UpdateTransform(); m_Parent?.OnChildResized(this); } } }
+        public float Rotation { get => m_Rotation; set { if (!Mathf.NearEqual(m_Rotation, value)) { m_Rotation = value; UpdateTransform(); m_Parent?.OnChildResized(this); } } }
+        public Matrix3x3 CachedTransform => m_CachedTransform;
+
+        public bool Enabled { get => m_Enabled; set { if (m_Enabled != value) { m_Enabled = value; if (!value) ClearState(); } } }
         public bool EnabledInHierarchy => m_Enabled && (m_Parent?.EnabledInHierarchy ?? true);
-
-        /// <summary>
-        /// Gets or sets whether the control participates in layout, drawing and hit testing.
-        /// </summary>
         public bool Visible
         {
             get => m_Visible;
             set
             {
-                if (m_Visible == value)
-                    return;
-
+                if (m_Visible == value) return;
                 m_Visible = value;
-                if (!value)
-                    ClearState();
+                if (!value) ClearState();
                 VisibleChanged?.Invoke(this);
+                m_Parent?.PerformLayout();
             }
         }
-
-        /// <summary>
-        /// Gets whether this control and all its parents are visible.
-        /// </summary>
         public bool VisibleInHierarchy => m_Visible && (m_Parent?.VisibleInHierarchy ?? true);
-
-        /// <summary>
-        /// Gets or sets whether pointer selection automatically focuses this control.
-        /// </summary>
         public bool AutoFocus { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets whether scroll containers should include this control.
-        /// </summary>
         public bool IsScrollable { get; set; } = true;
-
-        /// <summary>
-        /// Gets whether this control is moved by the view offset of a scrollable parent.
-        /// Internal overlay controls, such as scrollbars, opt out of the offset.
-        /// </summary>
-        internal virtual bool ApplyParentChildOffset => true;
-
-        /// <summary>
-        /// Gets or sets the background color used by controls that render a background.
-        /// </summary>
-        public Color BackgroundColor { get; set; }
-
+        public Color BackgroundColor { get; set; } = Color.Transparent;
         public bool IsMouseOver => m_IsMouseOver;
         public bool IsFocused => m_IsFocused;
+        public bool IsNavFocused => m_IsNavFocused;
         public virtual bool ContainsFocus => m_IsFocused;
         public bool IsDisposing => m_IsDisposing;
         public bool IsDisposed => m_IsDisposed;
+        internal virtual bool ApplyParentChildOffset => true;
 
-        /// <summary>
-        /// Sets the local bounds.
-        /// </summary>
-        public void SetBounds(float x, float y, float width, float height)
+        public Control? NavTargetUp { get; set; }
+        public Control? NavTargetDown { get; set; }
+        public Control? NavTargetLeft { get; set; }
+        public Control? NavTargetRight { get; set; }
+
+        public void SetAnchorPreset(AnchorPresets anchorPreset, bool preserveBounds, bool setPivotToo = false)
         {
-            SetBounds(new Rectangle(x, y, width, height));
+            for (int i = 0; i < anchorPresetsData.Length; i++)
+            {
+                if (anchorPresetsData[i].Preset != anchorPreset) continue;
+                Float2 anchorMin = anchorPresetsData[i].Min;
+                Float2 anchorMax = anchorPresetsData[i].Max;
+                Rectangle bounds = m_Bounds;
+                if (!Float2.NearEqual(m_AnchorMin, anchorMin) || !Float2.NearEqual(m_AnchorMax, anchorMax))
+                {
+                    if (!anchorMin.IsZero || !anchorMax.IsZero) IsScrollable = false;
+                    m_AnchorMin = anchorMin;
+                    m_AnchorMax = anchorMax;
+                    if (preserveBounds) { UpdateBounds(); SetBounds(bounds); }
+                }
+                if (!preserveBounds)
+                {
+                    if (m_Parent != null)
+                    {
+                        Rectangle parentBounds = m_Parent.GetDesireClientArea();
+                        switch (anchorPreset)
+                        {
+                            case AnchorPresets.TopLeft: bounds.Location = Float2.Zero; break;
+                            case AnchorPresets.TopCenter: bounds.Location = new Float2(parentBounds.Left * 0.5f - bounds.Left * 0.5f, 0); break;
+                            case AnchorPresets.TopRight: bounds.Location = new Float2(parentBounds.Left - bounds.Left, 0); break;
+                            case AnchorPresets.MiddleLeft: bounds.Location = new Float2(0, parentBounds.Height * 0.5f - bounds.Height * 0.5f); break;
+                            case AnchorPresets.MiddleCenter: bounds.Location = new Float2(parentBounds.Left * 0.5f - bounds.Left * 0.5f, parentBounds.Height * 0.5f - bounds.Height * 0.5f); break;
+                            case AnchorPresets.MiddleRight: bounds.Location = new Float2(parentBounds.Left - bounds.Left, parentBounds.Height * 0.5f - bounds.Height * 0.5f); break;
+                            case AnchorPresets.BottomLeft: bounds.Location = new Float2(0, parentBounds.Height - bounds.Height); break;
+                            case AnchorPresets.BottomCenter: bounds.Location = new Float2(parentBounds.Left * 0.5f - bounds.Left * 0.5f, parentBounds.Height - bounds.Height); break;
+                            case AnchorPresets.BottomRight: bounds.Location = new Float2(parentBounds.Left - bounds.Left, parentBounds.Height - bounds.Height); break;
+                            case AnchorPresets.VerticalStretchLeft: bounds.Location = Float2.Zero; bounds.Size = new Float2(bounds.Left, parentBounds.Height); break;
+                            case AnchorPresets.VerticalStretchCenter: bounds.Location = new Float2(parentBounds.Left * 0.5f - bounds.Left * 0.5f, 0); bounds.Size = new Float2(bounds.Left, parentBounds.Height); break;
+                            case AnchorPresets.VerticalStretchRight: bounds.Location = new Float2(parentBounds.Left - bounds.Left, 0); bounds.Size = new Float2(bounds.Left, parentBounds.Height); break;
+                            case AnchorPresets.HorizontalStretchTop: bounds.Location = Float2.Zero; bounds.Size = new Float2(parentBounds.Left, bounds.Height); break;
+                            case AnchorPresets.HorizontalStretchMiddle: bounds.Location = new Float2(0, parentBounds.Height * 0.5f - bounds.Height * 0.5f); bounds.Size = new Float2(parentBounds.Left, bounds.Height); break;
+                            case AnchorPresets.HorizontalStretchBottom: bounds.Location = new Float2(0, parentBounds.Height - bounds.Height); bounds.Size = new Float2(parentBounds.Left, bounds.Height); break;
+                            case AnchorPresets.StretchAll: bounds.Location = Float2.Zero; bounds.Size = parentBounds.Size; break;
+                        }
+                        bounds.Location += parentBounds.Location;
+                    }
+                    SetBounds(bounds);
+                }
+                if (setPivotToo) Pivot = (anchorMin + anchorMax) / 2.0f;
+                m_Parent?.PerformLayout();
+                return;
+            }
         }
 
-        /// <summary>
-        /// Sets the local bounds.
-        /// </summary>
+        public void SetBounds(float x, float y, float width, float height) => SetBounds(new Rectangle(x, y, width, height));
         public void SetBounds(Rectangle bounds)
         {
-            if (m_Bounds.Equals(bounds))
-                return;
+            if (m_Bounds == bounds) return;
+            // Native bounds assignment first derives offsets from the parent client area.
+            Rectangle parentBounds = m_Parent?.GetDesireClientArea() ?? Rectangle.Empty;
+            Margin anchors = m_Parent == null ? Margin.Zero : new Margin(
+                m_AnchorMin.X * parentBounds.Size.X + parentBounds.Location.X,
+                m_AnchorMax.X * parentBounds.Size.X,
+                m_AnchorMin.Y * parentBounds.Size.Y + parentBounds.Location.Y,
+                m_AnchorMax.Y * parentBounds.Size.Y);
+            m_Offsets.Left = bounds.X - anchors.Left;
+            m_Offsets.Right = m_AnchorMin.X != m_AnchorMax.X ? anchors.Right - bounds.X - bounds.Width : bounds.Width;
+            m_Offsets.Top = bounds.Y - anchors.Top;
+            m_Offsets.Bottom = m_AnchorMin.Y != m_AnchorMax.Y ? anchors.Bottom - bounds.Y - bounds.Height : bounds.Height;
+            UpdateBounds();
+        }
 
-            bool locationChanged = m_Bounds.Location != bounds.Location;
-            bool sizeChanged = m_Bounds.Size != bounds.Size;
-            m_Bounds = bounds;
-
-            if (locationChanged)
-                LocationChanged?.Invoke(this);
-            if (sizeChanged)
-                SizeChanged?.Invoke(this);
-
+        internal void UpdateBounds()
+        {
+            Rectangle previous = m_Bounds;
+            Rectangle parentBounds = m_Parent?.GetDesireClientArea() ?? Rectangle.Empty;
+            Float2 anchorMin = m_Parent == null ? Float2.Zero : m_AnchorMin * parentBounds.Size;
+            Float2 anchorMax = m_Parent == null ? Float2.Zero : m_AnchorMax * parentBounds.Size;
+            Float2 offset = m_Parent == null ? Float2.Zero : parentBounds.Location;
+            m_Bounds.X = anchorMin.X + m_Offsets.Left + offset.X;
+            m_Bounds.Width = m_AnchorMin.X != m_AnchorMax.X ? anchorMax.X - anchorMin.X - m_Offsets.Left - m_Offsets.Right : m_Offsets.Right;
+            m_Bounds.Y = anchorMin.Y + m_Offsets.Top + offset.Y;
+            m_Bounds.Height = m_AnchorMin.Y != m_AnchorMax.Y ? anchorMax.Y - anchorMin.Y - m_Offsets.Top - m_Offsets.Bottom : m_Offsets.Bottom;
+            UpdateTransform();
+            bool locationChanged = previous.Location != m_Bounds.Location;
+            bool sizeChanged = previous.Size != m_Bounds.Size;
+            if (locationChanged) LocationChanged?.Invoke(this);
+            if (sizeChanged) { SizeChanged?.Invoke(this); m_Parent?.OnChildResized(this); }
             OnBoundsChanged(locationChanged, sizeChanged);
         }
 
-        /// <summary>
-        /// Converts a point from root logical coordinates to local control coordinates.
-        /// </summary>
+        private void UpdateTransform()
+        {
+            // Keep the native scale/shear/rotation order and pivot translation intact.
+            Float2 pivot = m_Pivot * m_Bounds.Size;
+            Float2 negativePivot = -pivot;
+            float shearX = m_Shear.X == 0 ? 0 : 1.0f / Mathf.Tan(Mathf.DegreesToRadians * (90.0f - Mathf.Clamp(m_Shear.X, -89.0f, 89.0f)));
+            float shearY = m_Shear.Y == 0 ? 0 : 1.0f / Mathf.Tan(Mathf.DegreesToRadians * (90.0f - Mathf.Clamp(m_Shear.Y, -89.0f, 89.0f)));
+            Matrix3x3 transform = new(m_Scale.X, m_Scale.X * shearY, 0, m_Scale.Y * shearX, m_Scale.Y, 0, 0, 0, 1);
+            float sin = Mathf.Sin(Mathf.DegreesToRadians * m_Rotation);
+            float cos = Mathf.Cos(Mathf.DegreesToRadians * m_Rotation);
+            transform.M11 = (m_Scale.X * cos) + (transform.M12 * -sin);
+            transform.M12 = (m_Scale.X * sin) + (transform.M12 * cos);
+            float m21 = (transform.M21 * cos) + (m_Scale.Y * -sin);
+            transform.M22 = (transform.M21 * sin) + (m_Scale.Y * cos);
+            transform.M21 = m21;
+            transform.M31 = (negativePivot.X * transform.M11) + (negativePivot.Y * transform.M21) + pivot.X + m_Bounds.X;
+            transform.M32 = (negativePivot.X * transform.M12) + (negativePivot.Y * transform.M22) + pivot.Y + m_Bounds.Y;
+            m_CachedTransform = transform;
+            Matrix3x3.Invert(ref m_CachedTransform, out m_CachedTransformInv);
+        }
+
         public Float2 PointFromRoot(Float2 location)
         {
-            return location - ScreenPos;
+            if (m_Parent != null) location = m_Parent.PointFromRoot(location);
+            return PointFromParent(location);
         }
-
-        /// <summary>
-        /// Converts a point from local control coordinates to root logical coordinates.
-        /// </summary>
         public Float2 PointToRoot(Float2 location)
         {
-            return location + ScreenPos;
+            location = PointToParent(location);
+            return m_Parent == null ? location : m_Parent.PointToRoot(location);
         }
-
-        /// <summary>
-        /// Converts a point from local control coordinates to immediate parent coordinates.
-        /// </summary>
         public Float2 PointToParent(Float2 location)
         {
-            return PointToParent(ref location);
-        }
-
-        /// <summary>
-        /// Converts a point from local control coordinates to immediate parent coordinates.
-        /// </summary>
-        public virtual Float2 PointToParent(ref Float2 location)
-        {
-            Float2 result = location + Location;
-            if (ApplyParentChildOffset && Parent != null)
-                result += Parent.ChildOffset;
+            Matrix3x3.Transform2D(ref location, ref m_CachedTransform, out Float2 result);
+            if (ApplyParentChildOffset && m_Parent != null) result += m_Parent.ChildOffset;
             return result;
         }
-
-        /// <summary>
-        /// Converts a point from local control coordinates to one of ancestor parent coordinates.
-        /// </summary>
+        public virtual Float2 PointToParent(ref Float2 location) => PointToParent(location);
         public Float2 PointToParent(ContainerControl parent, Float2 location)
         {
             ArgumentNullException.ThrowIfNull(parent);
-
             Control? control = this;
-            while (control != null && !ReferenceEquals(control, parent))
+            while (control != null)
             {
                 location = control.PointToParent(location);
                 control = control.Parent;
+                if (ReferenceEquals(control, parent)) break;
             }
-
             return location;
         }
-
-        /// <summary>
-        /// Converts a point from immediate parent coordinates to local control coordinates.
-        /// </summary>
-        public Float2 PointFromParent(Float2 locationParent)
+        public Float2 PointFromParent(Float2 location)
         {
-            return PointFromParent(ref locationParent);
-        }
-
-        /// <summary>
-        /// Converts a point from immediate parent coordinates to local control coordinates.
-        /// </summary>
-        public virtual Float2 PointFromParent(ref Float2 locationParent)
-        {
-            Float2 result = locationParent;
-            if (ApplyParentChildOffset && Parent != null)
-                result -= Parent.ChildOffset;
-            result -= Location;
+            if (ApplyParentChildOffset && m_Parent != null) location -= m_Parent.ChildOffset;
+            Matrix3x3.Transform2D(ref location, ref m_CachedTransformInv, out Float2 result);
             return result;
         }
-
-        /// <summary>
-        /// Converts a point from one of ancestor parent coordinates to local control coordinates.
-        /// </summary>
+        public virtual Float2 PointFromParent(ref Float2 location) => PointFromParent(location);
         public Float2 PointFromParent(ContainerControl parent, Float2 location)
         {
             ArgumentNullException.ThrowIfNull(parent);
-
-            List<Control> path = new List<Control>();
+            List<Control> path = new();
             Control? control = this;
-            while (control != null && !ReferenceEquals(control, parent))
-            {
-                path.Add(control);
-                control = control.Parent;
-            }
-
-            for (int i = path.Count - 1; i >= 0; i--)
-                location = path[i].PointFromParent(location);
-
+            while (control != null && !ReferenceEquals(control, parent)) { path.Add(control); control = control.Parent; }
+            for (int i = path.Count - 1; i >= 0; i--) location = path[i].PointFromParent(location);
             return location;
         }
 
-        /// <summary>
-        /// Checks if a root logical-coordinate point is inside this control.
-        /// </summary>
-        public virtual bool ContainsPoint(Float2 location)
-        {
-            return VisibleInHierarchy && ScreenBounds.Contains(location);
-        }
+        public virtual bool ContainsPoint(Float2 location) => ContainsPoint(location, false);
+        public virtual bool ContainsPoint(Float2 location, bool precise) { _ = precise; return location.X >= 0 && location.Y >= 0 && location.X <= Width && location.Y <= Height; }
+        public virtual bool RayCast(ref Float2 location, out Control? hit) { if (ContainsPoint(location, true)) { hit = this; return true; } hit = null; return false; }
+        public virtual void PerformLayout(bool force = false) { _ = force; }
+        public virtual void Update(float deltaTime) => OnUpdate(deltaTime);
+        public virtual void Draw() => OnDraw();
 
-        /// <summary>
-        /// Performs layout for this control.
-        /// </summary>
-        public virtual void PerformLayout(bool force = false)
-        {
-            _ = force;
-        }
+        public virtual void OnGetFocus() { m_IsFocused = true; m_IsNavFocused = false; }
+        public virtual void OnLostFocus() { m_IsFocused = false; m_IsNavFocused = false; }
+        public virtual void OnFocusGained() { }
+        public virtual void OnFocusLost() { }
+        public virtual void Focus() { if (!IsFocused) Root?.Focus(this); }
+        public virtual void Defocus() { if (ContainsFocus) Root?.Focus(null); }
+        public virtual void OnStartContainsFocus() { }
+        public virtual void OnEndContainsFocus() { }
 
-        /// <summary>
-        /// Updates this control once per frame.
-        /// </summary>
-        public virtual void Update(float deltaTime)
-        {
-            if (VisibleInHierarchy && !m_IsDisposed)
-                OnUpdate(deltaTime);
-        }
-
-        /// <summary>
-        /// Draws this control. Drawing is intentionally performed in logical coordinates.
-        /// </summary>
-        public virtual void Draw()
-        {
-            if (VisibleInHierarchy && !m_IsDisposed)
-            {
-                OnDraw();
-            }
-        }
-
-
-        /// <summary>
-        /// When control gets input focus
-        /// </summary>
-        public virtual void OnGetFocus()
-        {
-            // Cache flag
-            m_IsFocused = true;
-            // _isNavFocused = false;
-        }
-
-        /// <summary>
-        /// When control losts input focus
-        /// </summary>
-        public virtual void OnLostFocus()
-        {
-            // Clear flag
-            m_IsFocused = false;
-            // _isNavFocused = false;
-        }
-
-        /// <summary>
-        /// Sets input focus to the control.
-        /// </summary>
-        public virtual void Focus()
-        {
-            if (!IsFocused)
-                Root?.Focus(this);
-        }
-
-        /// <summary>
-        /// Removes input focus from the control.
-        /// </summary>
-        public virtual void Defocus()
-        {
-            if (ContainsFocus)
-                Root?.Focus(null);
-        }
-
-        /// <summary>
-        /// Called when control starts containing focus.
-        /// </summary>
-        public virtual void OnStartContainsFocus()
-        {
-        }
-
-        /// <summary>
-        /// Called when control stops containing focus.
-        /// </summary>
-        public virtual void OnEndContainsFocus()
-        {
-        }
-
-        /// <summary>
-        /// Clears transient input state from this control.
-        /// </summary>
         public virtual void ClearState()
         {
-            SetMouseOver(false);
+            // ClearState deliberately follows native ordering; do not pre-clear the flags.
             Defocus();
-
-            if (m_IsMouseOver)
-                OnMouseLeave();
-            if (m_IsDragOver)
-                OnDragLeave();
-            /*while (_touchOvers != null && _touchOvers.Count != 0)
-            {
-                OnTouchLeave(_touchOvers[0]);
-            }*/
+            if (m_IsMouseOver) OnMouseLeave();
+            if (m_IsDragOver) OnDragLeave();
+            while (m_TouchOvers.Count != 0) OnTouchLeave(m_TouchOvers[0]);
         }
 
-        /// <summary>
-        /// Disposes the control and detaches it from its parent.
-        /// </summary>
         public void Dispose()
         {
-            if (m_IsDisposed || m_IsDisposing)
-                return;
-
-            m_IsDisposing = true;
-            m_Parent?.RemoveChild(this);
-            ClearState();
+            if (m_IsDisposing) return;
+            OnDestroy();
+            // The managed compatibility seam must unlink the disposed instance from its live parent list.
+            if (m_Parent != null)
+            {
+                m_Parent.RemoveChildInternal(this);
+                m_Parent = null;
+            }
             OnDispose();
             m_IsDisposed = true;
-            m_IsDisposing = false;
             GC.SuppressFinalize(this);
         }
 
-        /// <summary>
-        /// Handles character input routed from the root control.
-        /// </summary>
-        public virtual bool OnCharInput(char character)
+        public virtual void OnDestroy()
         {
-            _ = character;
-            return false;
+            m_IsDisposing = true;
+            Defocus();
+            TooltipText = string.Empty;
         }
 
-        /// <summary>
-        /// Handles a key press routed from the root control.
-        /// </summary>
-        public virtual bool OnKeyDown(KeyboardKeys key)
-        {
-            _ = key;
-            return false;
+        public virtual bool OnCharInput(char character) { return false; }
+        public virtual bool OnKeyDown(KeyboardKeys key) { return false; }
+        public virtual bool OnKeyUp(KeyboardKeys key) { return false; }
+        public virtual bool OnMouseDown(Float2 location, MouseButton button) { return false; }
+        public virtual bool OnMouseUp(Float2 location, MouseButton button) { return false; }
+        public virtual bool OnMouseDoubleClick(Float2 location, MouseButton button) { return false; }
+        public virtual bool OnMouseWheel(Float2 location, float delta) { return false; }
+        public virtual void OnMouseMove(Float2 location) { }
+        public virtual void OnMouseEnter(Float2 location) { m_IsMouseOver = true; OnMouseEnter(); }
+        public virtual void OnMouseEnter() { }
+        public virtual void OnMouseLeave() { m_IsMouseOver = false; }
+        public virtual bool IsTouchOver() => m_TouchOvers.Count != 0;
+        public virtual bool IsTouchPointerOver(int pointerIndex) => m_TouchOvers.Contains(pointerIndex);
+        public virtual void OnTouchEnter(Float2 location, int pointerIndex) { m_TouchOvers.Add(pointerIndex); }
+        public virtual bool OnTouchDown(Float2 location, int pointerIndex) { return false; }
+        public virtual void OnTouchMove(Float2 location, int pointerIndex) { }
+        public virtual bool OnTouchUp(Float2 location, int pointerIndex) { return false; }
+        public virtual void OnTouchLeave(int pointerIndex) { m_TouchOvers.Remove(pointerIndex); if (m_TouchOvers.Count == 0) OnTouchLeave(); }
+        public virtual void OnTouchLeave() { }
+        public virtual bool IsDragOver() => m_IsDragOver;
+        public virtual DragDropEffect OnDragEnter(ref Float2 location, DragData data) 
+        {  
+            m_IsDragOver = true; 
+            return DragDropEffect.None; 
         }
 
-        /// <summary>
-        /// Handles a key release routed from the root control.
-        /// </summary>
-        public virtual bool OnKeyUp(KeyboardKeys key)
-        {
-            _ = key;
-            return false;
+        public virtual DragDropEffect OnDragMove(ref Float2 location, DragData data) 
+        {  
+            return DragDropEffect.None; 
         }
 
-        public virtual bool OnMouseDown(Float2 location, MouseButton button)
-        {
-            _ = location;
-            _ = button;
-            return false;
+        public virtual DragDropEffect OnDragDrop(ref Float2 location, DragData data) 
+        {  
+            m_IsDragOver = false;
+            return DragDropEffect.None; 
         }
 
-        public virtual bool OnMouseUp(Float2 location, MouseButton button)
+        public virtual void OnDragLeave() { m_IsDragOver = false; }
+
+        public virtual Control? GetNavTarget(NavDirection direction) => direction switch
         {
-            _ = location;
-            _ = button;
-            return false;
+            NavDirection.Up => NavTargetUp,
+            NavDirection.Down => NavTargetDown,
+            NavDirection.Left => NavTargetLeft,
+            NavDirection.Right => NavTargetRight,
+            _ => null,
+        };
+        public virtual Float2 GetNavOrigin(NavDirection direction) => direction switch
+        {
+            NavDirection.Up => new Float2(Size.X * 0.5f, 0),
+            NavDirection.Down => new Float2(Size.X * 0.5f, Size.Y),
+            NavDirection.Left => new Float2(0, Size.Y * 0.5f),
+            // Preserve the active native Right-origin expression verbatim.
+            NavDirection.Right => new Float2(Size.Y, Size.Y * 0.5f),
+            NavDirection.Next => Float2.Zero,
+            NavDirection.Previous => Size,
+            _ => Size * 0.5f,
+        };
+        public virtual Control? OnNavigate(NavDirection direction, Float2 location, Control? caller, List<Control> visited)
+        {
+            if (caller == m_Parent && AutoFocus && Visible) 
+                return this;
+
+            return m_Parent?.OnNavigate(direction, PointToParent(GetNavOrigin(direction)), caller, visited);
+        }
+        public virtual void NavigationFocus() { Focus(); if (IsFocused) m_IsNavFocused = true; }
+
+        public virtual int Compare(Control? other) => other == null ? 0 : (int)(Y - other.Y);
+        protected virtual void OnUpdate(float deltaTime) { }
+        protected virtual void OnDraw() 
+        {
+            if (BackgroundColor.A > 0.0f)
+            {
+                Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), BackgroundColor);
+            }
+        }
+        protected virtual void OnDispose() { }
+        protected virtual void OnBoundsChanged(bool locationChanged, bool sizeChanged) { }
+        protected virtual void OnParentChangedInternal() { ParentChanged?.Invoke(this); }
+        protected internal virtual void OnParentResized() 
+        {
+            if (!m_AnchorMin.IsZero || !m_AnchorMax.IsZero)
+            {
+                UpdateBounds();
+            }
+        }
+        internal virtual void CacheRootHandle() 
+        { 
+            if (m_Parent != null) 
+                m_Root = m_Parent.Root; 
         }
 
-        public virtual bool OnMouseDoubleClick(Float2 location, MouseButton button)
-        {
-            _ = location;
-            _ = button;
-            return false;
+        internal void SetParentCore(ContainerControl? parent) 
+        { 
+            m_Parent = parent; 
+            CacheRootHandle(); 
+            ParentChanged?.Invoke(this); 
         }
-
-        public virtual bool OnMouseWheel(Float2 location, float delta)
-        {
-            _ = location;
-            _ = delta;
-            return false;
+        internal virtual void SetRootCore(RootControl? root) 
+        { 
+            m_Root = root; 
         }
-
-        public virtual void OnMouseMove(Float2 location)
-        {
-            _ = location;
-        }
-
-        public virtual void OnMouseEnter()
-        {
-        }
-
-        public virtual void OnMouseLeave()
-        {
-        }
-
-        public virtual bool OnTouchDown(Float2 location, int pointerIndex)
-        {
-            _ = location;
-            _ = pointerIndex;
-            return false;
-        }
-
-        public virtual void OnTouchMove(Float2 location, int pointerIndex)
-        {
-            _ = location;
-            _ = pointerIndex;
-        }
-
-        public virtual bool OnTouchUp(Float2 location, int pointerIndex)
-        {
-            _ = location;
-            _ = pointerIndex;
-            return false;
-        }
-
-        public virtual void OnFocusGained()
-        {
-        }
-
-        public virtual void OnFocusLost()
-        {
-        }
-
-        public virtual DragDropEffect OnDragEnter(ref Float2 location, DragData data)
-        {
-            _ = location;
-            _ = data;
-            return DragDropEffect.None;
-        }
-
-        public virtual DragDropEffect OnDragMove(ref Float2 location, DragData data)
-        {
-            _ = location;
-            _ = data;
-            return DragDropEffect.None;
-        }
-
-        public virtual DragDropEffect OnDragDrop(ref Float2 location, DragData data)
-        {
-            _ = location;
-            _ = data;
-            return DragDropEffect.None;
-        }
-
-        public virtual void OnDragLeave()
-        {
-        }
-
-        protected virtual void OnUpdate(float deltaTime)
-        {
-            _ = deltaTime;
-        }
-
-        protected virtual void OnDraw()
-        {
-            if (BackgroundColor.A <= 0.0f)
-                return;
-
-            Rectangle bounds = ScreenBounds;
-            Color color = BackgroundColor;
-            Render2D.FillRectangle(bounds, color);
-        }
-
-        protected virtual void OnDispose()
-        {
-        }
-
-        protected virtual void OnBoundsChanged(bool locationChanged, bool sizeChanged)
-        {
-            _ = locationChanged;
-            if (sizeChanged)
-                PerformLayout();
-        }
-
-        internal void SetParentCore(ContainerControl? parent)
-        {
-            if (ReferenceEquals(m_Parent, parent))
-                return;
-
-            ContainerControl? oldParent = m_Parent;
-            m_Parent = parent;
-            SetRootCore(parent?.Root);
-            ParentChanged?.Invoke(this);
-            oldParent?.UpdateContainsFocusUpwards();
-            parent?.UpdateContainsFocusUpwards();
-        }
-
-        internal virtual void SetRootCore(RootControl? root)
-        {
-            if (ReferenceEquals(m_Root, root))
-                return;
-
-            if (m_IsFocused && !ReferenceEquals(root, m_Root))
-                m_Root?.Focus(null);
-            m_Root = root;
-        }
-
-        internal void SetMouseOver(bool value)
+        internal void SetMouseOver(bool value) 
         {
             if (m_IsMouseOver == value)
+            {
                 return;
+            }
 
-            m_IsMouseOver = value;
             if (value)
-                OnMouseEnter();
+            {
+                OnMouseEnter(Float2.Zero);
+            }
             else
+            {
                 OnMouseLeave();
+            } 
         }
-
         internal void SetFocused(bool value)
         {
-            if (m_IsFocused == value)
-                return;
-
-            m_IsFocused = value;
-            if (value)
-            {
-                OnGetFocus();
-                OnFocusGained();
+            if (m_IsFocused == value) return;
+            if (value) 
+            { 
+                OnGetFocus(); 
+                OnFocusGained(); 
             }
-            else
-            {
-                OnLostFocus();
-                OnFocusLost();
+            else 
+            { 
+                OnLostFocus(); 
+                OnFocusLost(); 
             }
-            m_IsFocused = value;
-            if (this is ContainerControl container)
-                container.UpdateContainsFocusUpwards();
-            else
-                m_Parent?.UpdateContainsFocusUpwards();
+            m_Parent?.UpdateContainsFocusUpwards();
         }
     }
 }

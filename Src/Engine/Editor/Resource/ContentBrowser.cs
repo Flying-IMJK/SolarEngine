@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using SE.Editor.GUI;
 using SE.GUI;
 
 namespace SE.Editor
@@ -66,7 +67,11 @@ namespace SE.Editor
 
         private static void RebuildFolder(ContentFolder folder, ContentTreeNode node)
         {
-            node.ClearNodes();
+            foreach (Control child in new List<Control>(node.Children))
+            {
+                if (child is TreeNode treeNode)
+                    treeNode.Dispose();
+            }
             foreach (ContentItem item in new List<ContentItem>(folder.Children))
             {
                 item.Dispose();
