@@ -34,33 +34,24 @@ namespace SE::BuildTool
         }
     }
 
-    //-------------------------------------------------------------------------
-
-    PropertyData const* TypeInfoStruct::GetPropertyDescriptor(StringID propertyID) const
+    std::string TypeInfoField::GetFriendlyName() const
     {
-        ENGINE_ASSERT(typeID != StringID::Invalid && IsFlag(TypeInfoBase::Flag::IsClassStruct));
+		std::string friendlyName = name;
+		Utils::String::ReplaceAll(friendlyName, "m_", "");
 
-        return nullptr;
-    }
-
-	std::string PropertyData::GetFriendlyName() const
-    {
-		std::string name = this->name;
-		Utils::String::ReplaceAll(name, "m_", "");
-
-        if ( name.empty() )
+        if (friendlyName.empty())
         {
-            return name;
+			return friendlyName;
         }
 
-        if ( name.length() > 1 && name[0] == 'p' && isupper( name[1] ) )
+        if (friendlyName.length() > 1 && friendlyName[0] == 'p' && isupper(friendlyName[1]))
         {
-            name = name.substr( 1, name.length() - 1 );
+			friendlyName = friendlyName.substr(1, friendlyName.length() - 1);
         }
 
-        GenerateFriendlyName( name );
+        GenerateFriendlyName(friendlyName);
 
-        return name;
+		return friendlyName;
     }
 
 
@@ -220,61 +211,30 @@ namespace SE::BuildTool
         return category;
     }
 
+    std::vector<TypeInfoField const*> TypeInfoStruct::GetReflectedFields() const
+    {
+        std::vector<TypeInfoField const*> reflectedFields;
+        reflectedFields.reserve(fields.size());
+        for (auto const& field : fields)
+        {
+            if (field.IsReflectedProperty())
+            {
+                reflectedFields.push_back(&field);
+            }
+        }
+
+        return reflectedFields;
+    }
+
     bool TypeInfoStruct::HasArrayProperties() const
     {
         for (auto const& field : fields)
         {
-            if (field.type.arraySize > 0)
+            if (field.IsReflectedProperty() && field.IsStaticArray())
             {
                 return true;
             }
         }
-
-        return false;
-    }
-
-    bool TypeInfoStruct::HasDynamicArrayProperties() const
-    {
-        return false;
-    }
-
-    bool TypeInfoStruct::HasResourcePtrProperties() const
-    {
-/*        for ( auto& propertyDesc : m_properties )
-        {
-            if (propertyDesc.m_typeID == TypeIDCore::ResourcePtr )
-            {
-                return true;
-            }
-
-            if ( propertyDesc.m_typeID == TypeIDCore::TResourcePtr )
-            {
-                return true;
-            }
-        }*/
-
-        return false;
-    }
-
-    bool TypeInfoStruct::HasResourcePtrOrStructProperties() const
-    {
-/*        for ( auto& propertyDesc : m_properties )
-        {
-            if ( propertyDesc.m_typeID == TypeIDCore::ResourcePtr )
-            {
-                return true;
-            }
-
-            if ( propertyDesc.m_typeID == TypeIDCore::TResourcePtr )
-            {
-                return true;
-            }
-
-            if ( !IsCoreType( propertyDesc.m_typeID ) && !propertyDesc.IsEnumProperty() && !propertyDesc.IsBitFlagsProperty() )
-            {
-                return true;
-            }
-        }*/
 
         return false;
     }

@@ -17,103 +17,6 @@ namespace SE::BuildTool
         Internal,
     };
 
-    // -------------------------------------------------------------------------
-    // Binding extension for DataType
-    // -------------------------------------------------------------------------
-
-    enum class PropertyFlags
-    {
-        None           = 0,
-        IsStructure    = 1 << 0,
-        IsEnum         = 1 << 1,
-        IsBitFlags     = 1 << 2,
-        IsArray        = 1 << 3,
-        IsDynamicArray = 1 << 4,
-    };
-
-    class PropertyPath
-    {
-    public:
-        struct Element
-        {
-            StringID propertyID = StringID::Invalid;
-        };
-
-        PropertyPath() = default;
-        explicit PropertyPath(StringID rootID) { m_elements.push_back({rootID}); }
-
-        size_t         GetNumElements() const { return m_elements.size(); }
-        const Element& operator[](size_t index) const { return m_elements[index]; }
-        StringID GetRootID() const { return m_elements.empty() ? StringID::Invalid : m_elements.front().propertyID; }
-
-    private:
-        std::vector<Element> m_elements;
-    };
-
-    struct PropertyData
-    {
-    public:
-        PropertyData() = default;
-
-        PropertyData(std::string const& name, int32_t lineNumber) : propertyID(name), name(name), lineNumber(lineNumber)
-        {}
-
-        PropertyData(std::string const& name, std::string const& typeName, int32_t lineNumber) :
-            propertyID(name), name(name), typeName(typeName), lineNumber(lineNumber)
-        {}
-
-        inline bool IsStructureProperty() const { return flags.IsFlag(PropertyFlags::IsStructure); }
-        inline bool IsEnumProperty() const { return flags.IsFlag(PropertyFlags::IsEnum); }
-        inline bool IsBitFlagsProperty() const { return flags.IsFlag(PropertyFlags::IsBitFlags); }
-        inline bool IsArrayProperty() const
-        {
-            return flags.IsFlag(PropertyFlags::IsArray) || flags.IsFlag(PropertyFlags::IsDynamicArray);
-        }
-        inline bool IsStaticArrayProperty() const
-        {
-            return flags.IsFlag(PropertyFlags::IsArray) && !flags.IsFlag(PropertyFlags::IsDynamicArray);
-        }
-        inline bool     IsDynamicArrayProperty() const { return flags.IsFlag(PropertyFlags::IsDynamicArray); }
-        inline uint32_t GetArraySize() const
-        {
-            ENGINE_ASSERT(arraySize > 0);
-            return (uint32_t)arraySize;
-        }
-
-        inline bool operator==(PropertyData const& RHS) const { return propertyID == RHS.propertyID; }
-        inline bool operator!=(PropertyData const& RHS) const { return propertyID != RHS.propertyID; }
-
-        // Dev Info
-        //-------------------------------------------------------------------------
-
-        std::string      GetFriendlyName() const;
-        std::string_view GetCategory() const { return category; }
-
-        // MetaData
-        //-------------------------------------------------------------------------
-
-        bool HasMetaData() const { return !metaData.empty(); }
-
-    public:
-        TypeID                   propertyID;
-        int                      lineNumber = -1;
-        TypeID                   typeID;
-        std::string              name;
-        std::string              metaData;
-        std::string              description;
-        std::string              typeName;
-        std::string              templateArgTypeName;
-        int                      arraySize = -1;
-        EnumFlags<PropertyFlags> flags;
-        bool                     isDevOnly = true;
-
-        // From MetaData
-        std::string category;
-        bool        isToolsReadOnly      = false;
-        bool        showInRestrictedMode = false;
-    };
-
-    //-------------------------------------------------------------------------
     struct TypeInfo
     {
         TypeID      typeID;
@@ -260,6 +163,11 @@ namespace SE::BuildTool
         std::string comment;
         std::string marshalAs;
         int         lineNumber = -1;
+
+        bool IsReflectedProperty() const { return isReflect && !isStatic; }
+        bool IsStaticArray() const { return type.arraySize > 0; }
+        TypeID GetPropertyID() const { return TypeID(name); }
+        std::string GetFriendlyName() const;
     };
 
     struct TypeInfoStruct : TypeInfoBase
@@ -293,13 +201,8 @@ namespace SE::BuildTool
 
         TypeInfoStruct(StringID typeID, std::string const& name) : TypeInfoBase(typeID, name, Flag::IsClassStruct) {};
 
-        bool                HasProperties() const { return !fields.empty(); }
-        PropertyData const* GetPropertyDescriptor(StringID propertyID) const;
-
+        std::vector<TypeInfoField const*> GetReflectedFields() const;
         bool HasArrayProperties() const;
-        bool HasDynamicArrayProperties() const;
-        bool HasResourcePtrProperties() const;
-        bool HasResourcePtrOrStructProperties() const;
     };
 
     //-------------------------------------------------------------------------

@@ -16,20 +16,6 @@ namespace SE::BuildTool
     // Binding extraction helpers
     // -------------------------------------------------------------------------
 
-    static void GetAllDerivedProperties(TypeDatabase const *pDatabase, StringID parentTypeID, std::vector<PropertyData> &results)
-    {
-        //TypeInfoBase const *pParentDesc = pDatabase->GetType(parentTypeID);
-        //if (pParentDesc != nullptr)
-        //{
-        //    GetAllDerivedProperties(pDatabase, pParentDesc->parentTypeID, results);
-        //    for (auto &parentProperty : pParentDesc->properties)
-        //    {
-        //        results.push_back(parentProperty);
-        //    }
-        //}
-    }
-
-
     static void ApplyStructOptions(const MarkMacro& macro, TypeInfoStruct& type)
     {
         type.APIIsInterface   = macro.type == MacroTypeEnum::SEInterface;
@@ -216,111 +202,6 @@ namespace SE::BuildTool
             field.comment    = ClangUtils::GetCursorComment(cr);
             ApplyFieldOptions(filedMacro, field);
             pClass->fields.push_back(field);
-
-
-            //pClass->properties.push_back(PropertyData(ClangUtils::GetCursorDisplayName(cr), lineNumber));
-            //PropertyData &propertyDesc = pClass->properties.back();
-
-            //// Try read any user comments for this field
-            //propertyDesc.description = ClangUtils::GetCursorComment(cr);
-
-            //// If we dont have an explicit comment for the property, try to get it from the macro declaration
-            //if (propertyDesc.description.empty())
-            //{
-            //    propertyDesc.description = propertyMarkMacro.macroComment;
-            //}
-
-            //ReflectedFieldTypeInfo resolvedFieldType;
-            //if (!ResolveFieldType(pContext, pClass, cr, propertyDesc.name, resolvedFieldType))
-            //{
-            //    return false;
-            //}
-
-            //if (resolvedFieldType.isFixedArray)
-            //{
-            //    propertyDesc.flags.SetFlag(PropertyFlags::IsArray);
-            //    propertyDesc.arraySize = resolvedFieldType.arraySize;
-            //}
-            //if (resolvedFieldType.isDynamicArray)
-            //{
-            //    propertyDesc.flags.SetFlag(PropertyFlags::IsDynamicArray);
-            //}
-
-            ////-------------------------------------------------------------------------
-            //// Set property typename and validate
-            //// If it is a templated type, we only support one level of specialization for exposed properties, so flatten the type
-            //propertyDesc.typeName = resolvedFieldType.typeInfo.name;
-            //propertyDesc.typeID = resolvedFieldType.typeID;
-            //if (!resolvedFieldType.typeInfo.templateArgs.empty())
-            //{
-            //    std::string flattenedArgs;
-            //    resolvedFieldType.typeInfo.GetFlattenedTemplateArgs(flattenedArgs);
-            //    propertyDesc.templateArgTypeName = flattenedArgs;
-            //}
-
-            //// Check for unsupported types
-            ////-------------------------------------------------------------------------
-            //// Core Types
-            //if (Utils::IsCoreType(propertyDesc.typeID))
-            //{
-            //    // Check if this field is a generic resource ptr
-            //    /*                    if (propertyDesc.m_typeID == TypeIDCore::ResourcePtr)
-            //                        {
-            //                            pContext->LogError("Generic resource pointers are not allowed to be exposed, please use a TResourcePtr instead! ( property: {0} in class: {0} )", propertyDesc.name, pClass->name);
-            //                            return CXChildVisit_Break;
-            //                        }
-
-            //                        if (propertyDesc.m_typeID == TypeIDCore::TResourcePtr && propertyDesc.m_templateArgTypeName == "SE::Resource::IResource")
-            //                        {
-            //                            pContext->LogError("Generic resource pointers ( TResourcePtr<IResource> ) are not allowed to be exposed, please use a specific resource type instead! ( property: {0} in class: {0} )", propertyDesc.name, pClass->name);
-            //                            return CXChildVisit_Break;
-            //                        }*/
-
-            //    // Bit flags
-            //    /*if (propertyDesc.typeID == TypeIDCore::BitFlags)
-            //    {
-            //        propertyDesc.flags.SetFlag(PropertyInfo::Flags::IsBitFlags);
-            //    }
-            //    else if (propertyDesc.typeID == TypeIDCore::TBitFlags)
-            //    {
-            //        propertyDesc.flags.SetFlag(PropertyInfo::Flags::IsBitFlags);
-
-            //        // Perform validation on the enum type for the bit-flags
-            //        DataType const *pFlagTypeDesc = pContext->m_pDatabase->GetType(propertyDesc.templateArgTypeName.ToString());
-            //        if (pFlagTypeDesc == nullptr || !pFlagTypeDesc->IsEnum())
-            //        {
-            //            pContext->LogError("Unsupported type encountered: {0} for bitflags property: {1} in class: {2}", propertyDesc.typeName, propertyDesc.name, pClass->name);
-            //            return CXChildVisit_Break;
-            //        }
-            //    }*/
-
-            //    // Arrays
-            //    /*if (propertyDesc.typeID == TypeIDCore::List)
-            //    {
-            //        pContext->LogError("We dont support arrays of arrays. Property: {0} in class: {1}", propertyDesc.name, pClass->name);
-            //        return CXChildVisit_Break;
-            //    }*/
-            //}
-            //else // Non-Core Types
-            //{
-            //    // Non-core types must have a valid type descriptor
-            //    TypeInfoBase const *pPropertyTypeDesc = pContext->pDatabase->GetType(propertyDesc.typeID);
-            //    if (pPropertyTypeDesc == nullptr)
-            //    {
-            //        pContext->LogError("Unsupported type encountered: {0} for property: {1} in class: {2}", propertyDesc.typeName, propertyDesc.name, pClass->name);
-            //        return false;
-            //    }
-
-            //    // Check for enum types - bitflags are a special case and are not an enum
-            //    if (pPropertyTypeDesc->IsFlag(TypeInfoBase::Flags::IsEnum))
-            //    {
-            //        propertyDesc.flags.SetFlag(PropertyFlags::IsEnum);
-            //    }
-            //    else
-            //    {
-            //        propertyDesc.flags.SetFlag(PropertyFlags::IsStructure);
-            //    }
-            //}
 
         }
 

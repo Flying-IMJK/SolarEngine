@@ -70,11 +70,9 @@ namespace SE::BuildTool
         bool CreateTables();
         bool DropTables();
 
-        bool ReadAdditionalTypeData(TypeInfoBase &type);
         bool ReadAdditionalEnumData(TypeInfoBase &type);
         bool ReadAdditionalResourceTypeData(ReflectedResourceType &type);
 
-        bool WriteAdditionalTypeData(TypeInfoBase const &type);
         bool WriteAdditionalEnumData(TypeInfoBase const &type);
         bool WriteAdditionalResourceTypeData(ReflectedResourceType const &type);
 

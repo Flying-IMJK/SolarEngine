@@ -602,14 +602,6 @@ namespace SE::BuildTool
         //                return false;
         //            }
         //        }
-        //        else
-        //        {
-        //            if (!ReadAdditionalTypeData(type))
-        //            {
-        //                return false;
-        //            }
-        //        }
-
         //        // Add type to list
         //        m_ownedTypes.push_back(std::move(type));
         //    }
@@ -693,13 +685,6 @@ namespace SE::BuildTool
     //                return false;
     //            }
     //        }
-    //        else
-    //        {
-    //            if (!WriteAdditionalTypeData(type))
-    //            {
-    //                return false;
-    //            }
-    //        }
     //    }
 
         // Update database info
@@ -738,11 +723,6 @@ namespace SE::BuildTool
         //-------------------------------------------------------------------------
 
         if (!ExecuteSimpleQuery("CREATE TABLE IF NOT EXISTS `Types` ( `TypeID` INTEGER UNIQUE, `ParentID` INTEGER, `HeaderID` INTEGER, `Name` TEXT, `Namespace` TEXT, `TypeFlags` INTEGER, PRIMARY KEY( `TypeID` ) );"))
-        {
-            return false;
-        }
-
-        if (!ExecuteSimpleQuery("CREATE TABLE IF NOT EXISTS `Properties` ( `PropertyID` INTEGER, `LineNumber` INTEGER, `OwnerTypeID` INTEGER, `TypeID` INTEGER, `Name` TEXT, `Description` TEXT, `TypeName` TEXT, `TemplateTypeName` TEXT, `PropertyFlags` INTEGER, `ArraySize` INTEGER DEFAULT -1, `MetaData` TEXT, PRIMARY KEY( PropertyID, OwnerTypeID ) );"))
         {
             return false;
         }
@@ -792,6 +772,7 @@ namespace SE::BuildTool
             return false;
         }
 
+        // Remove the table left by the retired property schema.
         if (!ExecuteSimpleQuery("DROP TABLE IF EXISTS `Properties`;"))
         {
             return false;
@@ -821,54 +802,6 @@ namespace SE::BuildTool
     }
 
     //-------------------------------------------------------------------------
-
-    bool TypeDatabase::ReadAdditionalTypeData(TypeInfoBase &type)
-    {
-        ENGINE_ASSERT(type.typeID != StringID::Invalid && !type.IsFlag(TypeInfoBase::Flag::IsEnum));
-
-        sqlite3_stmt *pStatement = nullptr;
-
-        // Get all properties
-        //-------------------------------------------------------------------------
-
-        FillStatementBuffer("SELECT * FROM `Properties` WHERE `OwnerTypeID` = %u;", (uint32_t)type.typeID);
-        if (IsValidSQLiteResult(sqlite3_prepare_v2(m_pDatabase, m_statementBuffer, -1, &pStatement, nullptr)))
-        {
-            while (sqlite3_step(pStatement) == SQLITE_ROW)
-            {
-                PropertyData propDesc;
-                propDesc.lineNumber = sqlite3_column_int(pStatement, 1);
-                propDesc.typeID = TypeID(sqlite3_column_int(pStatement, 3));
-                propDesc.name = (char const *)sqlite3_column_text(pStatement, 4);
-                propDesc.description = (char const *)sqlite3_column_text(pStatement, 5);
-                propDesc.typeName = (char const *)sqlite3_column_text(pStatement, 6);
-                propDesc.templateArgTypeName = (char const *)sqlite3_column_text(pStatement, 7);
-                propDesc.flags.Set((uint32_t)sqlite3_column_int(pStatement, 8));
-                propDesc.arraySize = sqlite3_column_int(pStatement, 9);
-                propDesc.metaData = (char const *)sqlite3_column_text(pStatement, 10);
-                propDesc.propertyID = TypeID(propDesc.name);
-                ENGINE_ASSERT(propDesc.propertyID == (uint32_t)sqlite3_column_int(pStatement, 0)); // Ensure the property ID matches the recorded one
-
-            }
-
-            if (!IsValidSQLiteResult(sqlite3_finalize(pStatement)))
-            {
-                return false;
-            }
-
-            //-------------------------------------------------------------------------
-			Function<bool(PropertyData const &, PropertyData const &)> compare = [](PropertyData const &a, PropertyData const &b)
-			{ return a.lineNumber < b.lineNumber; };
-
-
-            //-------------------------------------------------------------------------
-
-            pStatement = nullptr;
-            return true;
-        }
-
-        return false;
-    }
 
     bool TypeDatabase::ReadAdditionalEnumData(TypeInfoBase &type)
     {
@@ -924,35 +857,6 @@ namespace SE::BuildTool
         {
             return false;
         }
-
-        return true;
-    }
-
-    bool TypeDatabase::WriteAdditionalTypeData(TypeInfoBase const &type)
-    {
-        // Delete old properties
-        if (!ExecuteSimpleQuery("DELETE FROM `Properties` WHERE `OwnerTypeID` = %u;", (uint32_t)type.typeID))
-        {
-            return false;
-        }
-
-        // Update properties
-  //      {
-		//std::string escapedDescription = propertyDesc.description;
-		//	Utils::String::ReplaceAll(escapedDescription, "\"", "\"\"");
-
-		//	std::string escapedMetaData;
-  //          if (propertyDesc.HasMetaData())
-  //          {
-  //              escapedMetaData = propertyDesc.metaData;
-		//		Utils::String::ReplaceAll(escapedMetaData, "\"", "\"\"");
-  //          }
-
-  //          if (!ExecuteSimpleQuery("INSERT OR REPLACE INTO `Properties`(`PropertyID`, `LineNumber`, `OwnerTypeID`,`TypeID`,`Name`,`Description`,`TypeName`,`TemplateTypeName`,`PropertyFlags`,`ArraySize`,`MetaData`) VALUES ( %u, %d, %u, %u, \"%s\", \"%s\", \"%s\", \"%s\", %u, %d, \"%s\" );", (uint32_t)propertyDesc.propertyID, propertyDesc.lineNumber, (uint32_t)type.typeID, (uint32_t)propertyDesc.typeID, propertyDesc.name.c_str(), escapedDescription.c_str(), propertyDesc.typeName.c_str(), propertyDesc.templateArgTypeName.c_str(), (uint32_t)propertyDesc.flags.Get(), propertyDesc.arraySize, escapedMetaData.c_str()))
-  //          {
-  //              return false;
-  //          }
-  //      }
 
         return true;
     }
