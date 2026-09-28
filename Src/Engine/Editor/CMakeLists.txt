@@ -43,7 +43,6 @@ set(EditorSourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/Test.cpp
 )
 
-add_subdirectory(_Generated)
 add_subdirectory(ThirdParty)
 add_subdirectory(Core)
 add_subdirectory(Modules)
