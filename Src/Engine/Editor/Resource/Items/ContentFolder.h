@@ -33,7 +33,7 @@ namespace SE::Editor
     {
         SE_DEFINE_CLASS_DEFAULT(ContentFolder, ContentItem)
     private:
-        Ref<DragItems> _dragOverItems;
+        SharedPtr<DragItems> _dragOverItems;
         bool _validDragOver;
 
     public:

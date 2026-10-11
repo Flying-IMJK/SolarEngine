@@ -76,7 +76,7 @@ namespace SE
         Data->Accept(writerObj.GetWriter());
     }
 
-    const String& JsonAssetBase::GetPath() const
+    String JsonAssetBase::GetPath() const
     {
 #if SE_EDITOR
         return m_Path;

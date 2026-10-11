@@ -168,7 +168,7 @@ namespace SE::Editor
 
 	    for (int i = 0; i <= (int)ContentItemSearchFilter::Other; i++)
 	    {
-	    	m_ViewDropdown->items.Add(enumInfo->constants[i].id.ToString());
+	    	m_ViewDropdown->Items.Add(enumInfo->constants[i].id.ToString());
 	    }
 	    m_ViewDropdown->PopupCreate.Bind<ContentWindow, &ContentWindow::OnViewDropdownPopupCreate>(this);
 
@@ -1015,9 +1015,9 @@ namespace SE::Editor
 		}
 
 		ContextMenuChildMenu* filters = menu->AddChildMenu(SE_TEXT("Filters"));
-		for (int i = 0; i < m_ViewDropdown->items.Count(); i++)
+		for (int i = 0; i < m_ViewDropdown->Items.Count(); i++)
 		{
-			auto filterButton = filters->ContextMenu->AddButton(m_ViewDropdown->items[i], CreateFunc<ContentWindow, &ContentWindow::OnFilterClicked>(this));
+			auto filterButton = filters->ContextMenu->AddButton(m_ViewDropdown->Items[i], CreateFunc<ContentWindow, &ContentWindow::OnFilterClicked>(this));
 			filterButton->CloseMenuOnClick = false;
 			filterButton->Tag = i;
 		}
@@ -1219,8 +1219,8 @@ namespace SE::Editor
 		// Apply filter
 		auto items = List<ContentItem*>(8);
 		String& query = m_ItemsSearchBox->Text;
-		int filtersLength = m_ViewDropdown->items.Count();
-		bool* filters = NewArray<bool>(m_ViewDropdown->items.Count());
+		int filtersLength = m_ViewDropdown->Items.Count();
+		bool* filters = NewArray<bool>(m_ViewDropdown->Items.Count());
 		if (m_ViewDropdown->HasSelection)
 		{
 			// Update filters flags

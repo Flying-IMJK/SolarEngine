@@ -1,146 +1,223 @@
+#nullable disable annotations
+
 using System;
+using System.Collections.Generic;
 using SE.GUI;
 
 namespace SE.Editor.GUI
 {
-    public sealed class DockPanelProxy : ContainerControl
+    /// <summary>
+    /// Proxy control used for docking <see cref="DockWindow"/> inside <see cref="DockPanel"/>.
+    /// </summary>
+    /// <seealso cref="ContainerControl" />
+    public class DockPanelProxy : ContainerControl
     {
-        private readonly DockPanel m_Panel;
-        private double m_DragEnterTime = -1.0;
+        /// <summary>
+        /// The is mouse down flag (left button).
+        /// </summary>
+        public bool IsMouseLeftButtonDown = false;
 
-        public DockPanelProxy(DockPanel panel)
-            : base(new Rectangle(0, 0, 64, 64))
-        {
-            AutoFocus = false;
-            AnchorMin = Float2.Zero;
-            AnchorMax = Float2.One;
-            Offsets = Margin.Zero;
-            m_Panel = panel;
-        }
+        /// <summary>
+        /// The is mouse down flag (right button).
+        /// </summary>
+        public bool IsMouseRightButtonDown = false;
 
-        public bool IsMouseLeftButtonDown { get; set; }
-        public bool IsMouseRightButtonDown { get; set; }
-        public bool IsMouseMiddleButtonDown { get; set; }
-        public bool IsMouseDownOverCross { get; set; }
-        public DockWindow? MouseDownWindow { get; set; }
-        public Float2 MousePosition { get; set; } = Float2.Minimum;
-        public DockWindow? StartDragAsyncWindow { get; set; }
+        /// <summary>
+        /// The is mouse down flag (middle button).
+        /// </summary>
+        public bool IsMouseMiddleButtonDown = false;
 
-        public DockWindow? GetTabAt(Float2 position) => GetTabAt(position, out _);
+        /// <summary>
+        /// The is mouse down over cross button flag.
+        /// </summary>
+        public bool IsMouseDownOverCross = false;
 
+        /// <summary>
+        /// The mouse down window.
+        /// </summary>
+        public DockWindow MouseDownWindow = null;
+
+        /// <summary>
+        /// The mouse position.
+        /// </summary>
+        public Float2 MousePosition = Float2.Minimum;
+
+        /// <summary>
+        /// The start drag asynchronous window.
+        /// </summary>
+        public DockWindow StartDragAsyncWindow = null;
+
+        /// <inheritdoc />
         public override void Draw()
         {
             base.Draw();
-            if (!VisibleInHierarchy || IsDisposed)
-                return;
 
+            // Cache data
             Style style = Style.Current;
-            Font? font = style.FontMedium;
-            Rectangle header = ToScreen(GetHeaderRectangle());
-            int tabsCount = m_Panel.TabsCount;
-            bool containsFocus = ContainsFocus &&
-                                 (Root is not WindowRootControl root || root.Window.IsFocused);
-            if (tabsCount > 0)
-                Render2D.FillRectangle(header, style.BackgroundHighlighted);
+            RootControl window = Root;
+            bool containsFocus = ContainsFocus && ((WindowRootControl)window).Window.IsFocused;
+            Rectangle headerRect = GetHeaderRectangle();
+            int tabsCount = _panel.TabsCount;
 
+            if (tabsCount > 0)
+            {
+                Render2D.FillRectangle(headerRect, style.BackgroundHighlighted);
+            }
+
+            // Check if has only one window docked
             if (tabsCount == 1)
             {
-                DockWindow tab = m_Panel.GetTab(0);
-                Float2 titleSize = font?.MeasureText(tab.Title, new TextLayoutOptions()) ?? tab.TitleSize;
+                DockWindow tab = _panel.GetTab(0);
+
+                string tabTitle = tab.Title;
+                Float2 tabTitleSize = style.FontMedium.MeasureText(tabTitle, TextLayoutOptions.Default);
                 float iconWidth = tab.Icon.IsValid
-                    ? Math.Max(DockPanel.DefaultButtonsSize, header.Height - DockPanel.DefaultButtonsMargin)
-                    : 0.0f;
-                float tabSize = iconWidth + DockPanel.DefaultTextMargin + titleSize.X +
-                                DockPanel.DefaultButtonsSize * 2.0f + DockPanel.DefaultButtonsMargin;
-                Rectangle tabRect = ToScreen(new Rectangle(0, 0, tabSize, DockPanel.DefaultHeaderHeight));
-                bool isMouseOver = GetHeaderRectangle().Contains(MousePosition);
+                    ? Math.Max(DockPanel.DefaultButtonsSize, headerRect.Height - DockPanel.DefaultButtonsMargin)
+                    : 0;
+                float tabSize = iconWidth + DockPanel.DefaultTextMargin + tabTitleSize.X +
+                    DockPanel.DefaultButtonsSize * 2 + DockPanel.DefaultButtonsMargin;
+
+                // Draw header
+                Rectangle tabRect = new Rectangle(headerRect.Left, headerRect.Y, tabSize, headerRect.Height);
+                bool isMouseOver = headerRect.Contains(MousePosition);
                 if (containsFocus)
+                {
                     Render2D.FillRectangle(tabRect, style.BackgroundSelected);
+                }
 
                 if (tab.Icon.IsValid)
                 {
-                    Render2D.DrawSprite(tab.Icon,
-                        ToScreen(new Rectangle(0, 0, iconWidth, iconWidth)),
+                    Render2D.DrawSprite(
+                        tab.Icon,
+                        new Rectangle(tabRect.Left, tabRect.Y, iconWidth, iconWidth),
                         style.Foreground);
                 }
-                if (font != null)
+
+                // Draw text
+                Rectangle textRect = new Rectangle(
+                    tabRect.Left + iconWidth + DockPanel.DefaultTextMargin,
+                    tabRect.Y + DockPanel.DefaultTextMargin,
+                    tabTitleSize.X,
+                    tabRect.Height - DockPanel.DefaultTextMargin);
+
+                Render2D.DrawText(
+                    style.FontMedium,
+                    tabTitle,
+                    textRect,
+                    style.TextColor,
+                    TextAlignment.Center,
+                    TextAlignment.Center);
+
+                // Draw cross
+                Rectangle crossRect = new Rectangle(
+                    textRect.Right + DockPanel.DefaultButtonsSize,
+                    (tabRect.Height - DockPanel.DefaultButtonsSize) / 2,
+                    DockPanel.DefaultButtonsSize,
+                    DockPanel.DefaultButtonsSize);
+                bool isMouseOverCross = isMouseOver && crossRect.Contains(MousePosition);
+                if (isMouseOverCross)
                 {
-                    Rectangle textRect = ToScreen(new Rectangle(
-                        iconWidth + DockPanel.DefaultTextMargin,
-                        DockPanel.DefaultTextMargin,
-                        titleSize.X,
-                        DockPanel.DefaultHeaderHeight - DockPanel.DefaultTextMargin));
-                    Render2D.DrawText(font, tab.Title, textRect, style.TextColor,
-                        TextAlignment.Center, TextAlignment.Center);
+                    Render2D.FillRectangle(crossRect,
+                        (containsFocus ? style.BackgroundSelected : style.LightBackground) * 1.3f);
                 }
-
-                Rectangle cross = GetSingleTabDrawCloseButtonBounds(titleSize.X, iconWidth);
-                bool overCross = isMouseOver && cross.Contains(MousePosition);
-                Rectangle screenCross = ToScreen(cross);
-                if (overCross)
-                    Render2D.FillRectangle(screenCross, (containsFocus ? style.BackgroundSelected : style.LightBackground) * 1.3f);
-                if (style.Cross.IsValid)
-                    Render2D.DrawSprite(style.Cross, screenCross, style.ForegroundGrey);
-                return;
+                Render2D.DrawSprite(style.Cross, crossRect, style.ForegroundGrey);
             }
-
-            Render2D.FillRectangle(header, style.LightBackground);
-            float x = 0.0f;
-            foreach (DockWindow tab in m_Panel.Tabs)
+            else
             {
-                float width = GetTabWidth(tab);
-                Rectangle tabRect = new Rectangle(x, 0, width, DockPanel.DefaultHeaderHeight);
-                bool isMouseOver = tabRect.Contains(MousePosition);
-                bool isSelected = ReferenceEquals(m_Panel.SelectedTab, tab);
-                Color tabColor = style.BackgroundHighlighted;
-                if (isSelected)
+                // Draw background
+                Render2D.FillRectangle(headerRect, style.LightBackground);
+
+                // Render all tabs
+                float x = 0;
+                for (int i = 0; i < tabsCount; i++)
                 {
-                    tabColor = containsFocus ? style.BackgroundSelected : style.BackgroundNormal;
-                    Render2D.FillRectangle(ToScreen(tabRect), tabColor);
-                }
-                else if (isMouseOver)
-                {
-                    Render2D.FillRectangle(ToScreen(tabRect), tabColor);
-                }
-                else
-                {
-                    Render2D.DrawLine(ScreenPos + tabRect.BottomLeft - new Float2(0, 1), ScreenPos + tabRect.UpperLeft, tabColor);
-                    Render2D.DrawLine(ScreenPos + tabRect.BottomRight - new Float2(0, 1), ScreenPos + tabRect.UpperRight, tabColor);
+                    // Cache data
+                    DockWindow tab = _panel.GetTab(i);
+                    Color tabColor = Color.Black;
+                    Float2 titleSize = tab.TitleSize;
+                    float iconWidth = tab.Icon.IsValid
+                        ? DockPanel.DefaultButtonsSize + DockPanel.DefaultTextMargin
+                        : 0;
+                    float width = titleSize.X + DockPanel.DefaultButtonsSize +
+                        2 * DockPanel.DefaultButtonsMargin +
+                        DockPanel.DefaultTextMargin + DockPanel.DefaultTextMargin + iconWidth;
+                    Rectangle tabRect = new Rectangle(x, 0, width, DockPanel.DefaultHeaderHeight);
+                    bool isMouseOver = tabRect.Contains(MousePosition);
+                    bool isSelected = _panel.SelectedTab == tab;
+
+                    // Check if tab is selected
+                    if (isSelected)
+                    {
+                        tabColor = containsFocus ? style.BackgroundSelected : style.BackgroundNormal;
+                        Render2D.FillRectangle(tabRect, tabColor);
+                    }
+                    // Check if mouse is over
+                    else if (isMouseOver)
+                    {
+                        tabColor = style.BackgroundHighlighted;
+                        Render2D.FillRectangle(tabRect, tabColor);
+                    }
+                    else
+                    {
+                        tabColor = style.BackgroundHighlighted;
+                        Render2D.DrawLine(tabRect.BottomLeft - new Float2(0, 1), tabRect.UpperLeft, tabColor);
+                        Render2D.DrawLine(tabRect.BottomRight - new Float2(0, 1), tabRect.UpperRight, tabColor);
+                    }
+
+                    if (tab.Icon.IsValid)
+                    {
+                        Render2D.DrawSprite(
+                            tab.Icon,
+                            new Rectangle(
+                                x + DockPanel.DefaultTextMargin,
+                                (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) / 2,
+                                DockPanel.DefaultButtonsSize,
+                                DockPanel.DefaultButtonsSize),
+                            style.Foreground);
+                    }
+
+                    // Draw text
+                    Render2D.DrawText(
+                        style.FontMedium,
+                        tab.Title,
+                        new Rectangle(
+                            x + DockPanel.DefaultTextMargin + iconWidth,
+                            0,
+                            10000,
+                            DockPanel.DefaultHeaderHeight),
+                        style.TextColor,
+                        TextAlignment.Near,
+                        TextAlignment.Center);
+
+                    // Draw cross
+                    if (isSelected || isMouseOver)
+                    {
+                        Rectangle crossRect = new Rectangle(
+                            x + width - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin,
+                            (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) / 2,
+                            DockPanel.DefaultButtonsSize,
+                            DockPanel.DefaultButtonsSize);
+                        bool isMouseOverCross = isMouseOver && crossRect.Contains(MousePosition);
+                        if (isMouseOverCross)
+                        {
+                            Render2D.FillRectangle(crossRect, tabColor * 1.3f);
+                        }
+                        Render2D.DrawSprite(style.Cross, crossRect,
+                            isMouseOverCross ? style.Foreground : style.ForegroundGrey);
+                    }
+
+                    // Move
+                    x += width;
                 }
 
-                float iconWidth = tab.Icon.IsValid ? DockPanel.DefaultButtonsSize + DockPanel.DefaultTextMargin : 0.0f;
-                if (tab.Icon.IsValid)
-                {
-                    Render2D.DrawSprite(tab.Icon,
-                        ToScreen(new Rectangle(x + DockPanel.DefaultTextMargin,
-                            (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) * 0.5f,
-                            DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize)),
-                        style.Foreground);
-                }
-                if (font != null)
-                {
-                    Render2D.DrawText(font, tab.Title,
-                        ToScreen(new Rectangle(x + DockPanel.DefaultTextMargin + iconWidth, 0, 10000, DockPanel.DefaultHeaderHeight)),
-                        style.TextColor, TextAlignment.Near, TextAlignment.Center);
-                }
-
-                if (isSelected || isMouseOver)
-                {
-                    Rectangle cross = GetCloseButtonBounds(x, width);
-                    bool overCross = isMouseOver && cross.Contains(MousePosition);
-                    if (overCross)
-                        Render2D.FillRectangle(ToScreen(cross), tabColor * 1.3f);
-                    if (style.Cross.IsValid)
-                        Render2D.DrawSprite(style.Cross, ToScreen(cross), overCross ? style.Foreground : style.ForegroundGrey);
-                }
-                x += width;
+                // Draw selected tab strip
+                Render2D.FillRectangle(
+                    new Rectangle(0, DockPanel.DefaultHeaderHeight - 2, Width, 2),
+                    containsFocus ? style.BackgroundSelected : style.BackgroundNormal);
             }
-
-            Render2D.FillRectangle(
-                ToScreen(new Rectangle(0, DockPanel.DefaultHeaderHeight - 2, Width, 2)),
-                containsFocus ? style.BackgroundSelected : style.BackgroundNormal);
         }
 
+        /// <inheritdoc />
         public override void OnLostFocus()
         {
             IsMouseLeftButtonDown = false;
@@ -148,337 +225,484 @@ namespace SE.Editor.GUI
             IsMouseMiddleButtonDown = false;
             MouseDownWindow = null;
             MousePosition = Float2.Minimum;
+
             base.OnLostFocus();
         }
 
-        public override void OnMouseEnter()
+        /// <inheritdoc />
+        public override void OnMouseEnter(Float2 location)
         {
-            if (Root != null)
-                MousePosition = PointFromRoot(Root.MousePosition);
-            base.OnMouseEnter();
+            MousePosition = location;
+
+            base.OnMouseEnter(location);
         }
 
+        /// <inheritdoc />
         public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
-            DockWindow? tab = GetTabAt(location);
-            if (tab?.Root is WindowRootControl root && button == MouseButton.Left)
+            // Maximize/restore on double click
+            bool closeButton;
+            DockWindow tab = GetTabAtPos(location, out closeButton);
+
+            WindowRootControl rootWindow = null;
+            if (tab != null)
             {
-                if (root.Window.IsMaximized)
-                    root.Window.Restore();
+                rootWindow = tab.RootWindow();
+            }
+            if (rootWindow != null && button == MouseButton.Left)
+            {
+                if (rootWindow.IsMaximized())
+                {
+                    rootWindow.Restore();
+                }
                 else
-                    root.Window.Maximize();
+                {
+                    rootWindow.Maximize();
+                }
                 return true;
             }
+
             return base.OnMouseDoubleClick(location, button);
         }
 
+        /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            MousePosition = location;
-            MouseDownWindow = GetTabAt(location, out bool overCross);
-            // Native uses a local with the same name as the member, so the member stays unchanged.
+            bool IsMouseDownOverCross;
+            MouseDownWindow = GetTabAtPos(location, out IsMouseDownOverCross);
+
+            // Check buttons
             if (button == MouseButton.Left)
             {
+                // Cache data
                 IsMouseLeftButtonDown = true;
-                if (!overCross && MouseDownWindow != null)
-                    m_Panel.SelectTab(MouseDownWindow);
+                if (!IsMouseDownOverCross && MouseDownWindow != null)
+                {
+                    _panel.SelectTab(MouseDownWindow);
+                }
             }
             else if (button == MouseButton.Right)
             {
+                // Cache data
                 IsMouseRightButtonDown = true;
                 if (MouseDownWindow != null)
-                    m_Panel.SelectTab(MouseDownWindow, false);
+                {
+                    _panel.SelectTab(MouseDownWindow, false);
+                }
             }
             else if (button == MouseButton.Middle)
             {
+                // Cache data
                 IsMouseMiddleButtonDown = true;
             }
+
             return base.OnMouseDown(location, button);
         }
 
+        /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            MousePosition = location;
-            DockWindow? tab = GetTabAt(location, out bool overCross);
+            // Check tabs under mouse position at the beginning and at the end
+            bool overCross;
+            DockWindow tab = GetTabAtPos(location, out overCross);
+
+            // Check buttons
             if (button == MouseButton.Left && IsMouseLeftButtonDown)
             {
+                // Clear flag
                 IsMouseLeftButtonDown = false;
-                if (tab != null && ReferenceEquals(tab, MouseDownWindow) && IsMouseDownOverCross && overCross)
+
+                // Check if tabs are the same and cross was pressed
+                if (tab != null && tab == MouseDownWindow && IsMouseDownOverCross && overCross)
+                {
                     tab.Close(ClosingReason.User);
+                }
                 MouseDownWindow = null;
             }
             else if (button == MouseButton.Right && IsMouseRightButtonDown)
             {
+                // Clear flag
                 IsMouseRightButtonDown = false;
+
                 if (tab != null)
+                {
                     ShowContextMenu(tab, location);
+                }
             }
             else if (button == MouseButton.Middle && IsMouseMiddleButtonDown)
             {
+                // Clear flag
                 IsMouseMiddleButtonDown = false;
-                tab?.Close(ClosingReason.User);
+
+                if (tab != null)
+                {
+                    tab.Close(ClosingReason.User);
+                }
             }
+
             return base.OnMouseUp(location, button);
         }
 
+        /// <inheritdoc />
         public override void OnMouseMove(Float2 location)
         {
             MousePosition = location;
             if (IsMouseLeftButtonDown)
             {
+                // Check if mouse is outside the header
                 if (!GetHeaderRectangle().Contains(location))
                 {
+                    // Clear flag
                     IsMouseLeftButtonDown = false;
+
+                    // Check tab under the mouse
                     if (!IsMouseDownOverCross && MouseDownWindow != null)
+                    {
                         StartDrag(MouseDownWindow);
+                    }
                     MouseDownWindow = null;
                 }
-                else if (MouseDownWindow != null && m_Panel.TabsCount > 1)
+                // Check if has more than one tab to change order
+                else if (MouseDownWindow != null && _panel.TabsCount > 1)
                 {
-                    Rectangle current = GetTabBounds(MouseDownWindow);
-                    if (!current.Contains(location))
+                    // Check if mouse left current tab rect
+                    Rectangle currWinRect = GetTabRect(MouseDownWindow);
+                    if (!currWinRect.Contains(location))
                     {
-                        int index = m_Panel.GetTabIndex(MouseDownWindow);
-                        if (location.X < current.X)
-                            m_Panel.MoveTabLeft(index);
-                        else if (!ReferenceEquals(m_Panel.LastTab, MouseDownWindow))
-                            m_Panel.MoveTabRight(index);
-                        m_Panel.PerformLayout();
+                        int index = _panel.GetTabIndex(MouseDownWindow);
+
+                        // Check if move right or left
+                        if (location.X < currWinRect.X)
+                        {
+                            // Move left
+                            _panel.MoveTabLeft(index);
+                        }
+                        else if (_panel.LastTab != MouseDownWindow)
+                        {
+                            // Move right
+                            _panel.MoveTabRight(index);
+                        }
+
+                        // Update
+                        _panel.PerformLayout();
                     }
                 }
             }
+
             base.OnMouseMove(location);
         }
 
+        /// <inheritdoc />
         public override void OnMouseLeave()
         {
             if (IsMouseLeftButtonDown)
             {
                 IsMouseLeftButtonDown = false;
+
+                // Check tabs under mouse position
                 if (!IsMouseDownOverCross && MouseDownWindow != null)
+                {
                     StartDrag(MouseDownWindow);
+                }
                 MouseDownWindow = null;
             }
             IsMouseRightButtonDown = false;
             IsMouseMiddleButtonDown = false;
             MousePosition = Float2.Minimum;
+
             base.OnMouseLeave();
         }
 
+        /// <inheritdoc />
         public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
         {
             DragDropEffect result = base.OnDragEnter(ref location, data);
-            return result != DragDropEffect.None ? result : SelectTabUnderPointer(location);
+            if (result != DragDropEffect.None)
+            {
+                return result;
+            }
+            return TrySelectTabUnderLocation(location);
         }
 
+        /// <inheritdoc />
         public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
             DragDropEffect result = base.OnDragMove(ref location, data);
-            return result != DragDropEffect.None ? result : SelectTabUnderPointer(location);
+            if (result != DragDropEffect.None)
+            {
+                return result;
+            }
+            return TrySelectTabUnderLocation(location);
         }
 
+        /// <inheritdoc />
         public override void OnDragLeave()
         {
-            m_DragEnterTime = -1.0;
+            _dragEnterTime = -1;
+
             base.OnDragLeave();
         }
 
-        public override void Update(float deltaTime)
+        /// <inheritdoc />
+        public override Rectangle GetDesireClientArea()
         {
-            base.Update(deltaTime);
-            if (StartDragAsyncWindow != null)
-                StartDragAsync();
+            return new Rectangle(0, DockPanel.DefaultHeaderHeight,
+                Width, Height - DockPanel.DefaultHeaderHeight);
         }
 
-        protected override void OnLayoutChildren()
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DockPanelProxy"/> class.
+        /// </summary>
+        /// <param name="panel">The panel.</param>
+        public DockPanelProxy(DockPanel panel) : base(0, 0, 64, 64)
         {
-            DockWindow? selected = m_Panel.SelectedTab;
-            selected?.SetBounds(
-                0.0f,
-                DockPanel.DefaultHeaderHeight,
-                Width,
-                Math.Max(0.0f, Height - DockPanel.DefaultHeaderHeight));
+            AutoFocus = false;
+
+            _panel = panel;
+            AnchorPreset = AnchorPresets.StretchAll;
+            Offsets = Margin.Zero;
         }
 
-        public void ShowContextMenu(DockWindow tab, Float2 location)
-        {
-            ContextMenu menu = new ContextMenu();
-            tab.OnShowContextMenu(menu);
-            menu.AddButton("Close", () =>
-            {
-                tab.Close(ClosingReason.User);
-                if (ReferenceEquals(tab, MouseDownWindow))
-                    MouseDownWindow = null;
-            });
-            menu.AddButton("Close All", () => m_Panel.CloseAll());
-            menu.AddButton("Close All But This", () => CloseAllBut(tab));
-            if (m_Panel.GetTabIndex(tab) + 1 < m_Panel.TabsCount)
-                menu.AddButton("Close All To The Right", () => CloseAllToTheRight(tab));
+        private DockPanel _panel = null;
+        private double _dragEnterTime = -1;
 
-            if (!m_Panel.IsFloating)
-            {
-                menu.AddSeparator();
-                menu.AddButton("Undock", tab.ShowFloating);
-            }
-            else if (tab.Root is WindowRootControl root)
-            {
-                menu.AddSeparator();
-                if (root.Window.IsMaximized)
-                    menu.AddButton("Restore", root.Window.Restore);
-                else
-                    menu.AddButton("Maximize", root.Window.Maximize);
-            }
-            menu.Show(this, location.X, location.Y);
+        private Rectangle GetHeaderRectangle()
+        {
+            return new Rectangle(0, 0, Width, DockPanel.DefaultHeaderHeight);
         }
 
-        private Rectangle GetHeaderRectangle() => new Rectangle(0, 0, Width, DockPanel.DefaultHeaderHeight);
-
-        private DockWindow? GetTabAt(Float2 position, out bool closeButton)
+        private DockWindow GetTabAtPos(Float2 position, out bool closeButton)
         {
+            DockWindow result = null;
             closeButton = false;
-            if (m_Panel.TabsCount == 1)
+
+            int tabsCount = _panel.TabsCount;
+            if (tabsCount == 1)
             {
+                Rectangle crossRect = new Rectangle(
+                    Width - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin,
+                    (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) / 2,
+                    DockPanel.DefaultButtonsSize,
+                    DockPanel.DefaultButtonsSize);
                 if (GetHeaderRectangle().Contains(position))
                 {
-                    closeButton = GetSingleTabHitCloseButtonBounds().Contains(position);
-                    return m_Panel.GetTab(0);
+                    closeButton = crossRect.Contains(position);
+                    result = _panel.GetTab(0);
                 }
-                return null;
+            }
+            else
+            {
+                float x = 0;
+                for (int i = 0; i < tabsCount; i++)
+                {
+                    DockWindow tab = _panel.GetTab(i);
+                    Float2 titleSize = tab.TitleSize;
+                    float iconWidth = tab.Icon.IsValid
+                        ? DockPanel.DefaultButtonsSize + DockPanel.DefaultTextMargin
+                        : 0;
+                    float width = titleSize.X + DockPanel.DefaultButtonsSize +
+                        2 * DockPanel.DefaultButtonsMargin +
+                        DockPanel.DefaultTextMargin + DockPanel.DefaultTextMargin + iconWidth;
+                    Rectangle tabRect = new Rectangle(x, 0, width, DockPanel.DefaultHeaderHeight);
+                    bool isMouseOver = tabRect.Contains(position);
+                    if (isMouseOver)
+                    {
+                        Rectangle crossRect = new Rectangle(
+                            x + width - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin,
+                            (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) / 2,
+                            DockPanel.DefaultButtonsSize,
+                            DockPanel.DefaultButtonsSize);
+                        closeButton = crossRect.Contains(position);
+                        result = tab;
+                        break;
+                    }
+                    x += width;
+                }
             }
 
-            float x = 0.0f;
-            foreach (DockWindow tab in m_Panel.Tabs)
-            {
-                float width = GetTabWidth(tab);
-                if (new Rectangle(x, 0, width, DockPanel.DefaultHeaderHeight).Contains(position))
-                {
-                    closeButton = GetCloseButtonBounds(x, width).Contains(position);
-                    return tab;
-                }
-                x += width;
-            }
-            return null;
+            return result;
         }
 
-        private Rectangle GetTabBounds(DockWindow tab)
+        private Rectangle GetTabRect(DockWindow win)
         {
-            if (m_Panel.TabsCount == 1)
-                return GetHeaderRectangle();
-            float x = 0.0f;
-            foreach (DockWindow candidate in m_Panel.Tabs)
+            SE.Debug.Assert(_panel.ContainsTab(win), "Window is not a tab of this panel.");
+
+            int tabsCount = _panel.TabsCount;
+            if (tabsCount == 1)
             {
-                // Keep the native drag-reorder rectangle, including its omission of icon width.
-                float width = candidate.TitleSize.X + DockPanel.DefaultButtonsSize +
-                              2.0f * DockPanel.DefaultButtonsMargin + 2.0f * DockPanel.DefaultTextMargin;
-                if (ReferenceEquals(candidate, tab))
-                    return new Rectangle(x, 0, width, DockPanel.DefaultHeaderHeight);
-                x += width;
+                return GetHeaderRectangle();
             }
+            else
+            {
+                float x = 0;
+                for (int i = 0; i < tabsCount; i++)
+                {
+                    DockWindow tab = _panel.GetTab(i);
+                    Float2 titleSize = tab.TitleSize;
+                    float width = titleSize.X + DockPanel.DefaultButtonsSize +
+                        2 * DockPanel.DefaultButtonsMargin +
+                        DockPanel.DefaultTextMargin + DockPanel.DefaultTextMargin;
+                    if (tab == win)
+                    {
+                        return new Rectangle(x, 0, width, DockPanel.DefaultHeaderHeight);
+                    }
+                    x += width;
+                }
+            }
+
             return Rectangle.Empty;
         }
 
-        private static float GetTabWidth(DockWindow tab)
+        private void StartDrag(DockWindow win)
         {
-            float iconWidth = tab.Icon.IsValid ? DockPanel.DefaultButtonsSize + DockPanel.DefaultTextMargin : 0.0f;
-            return tab.TitleSize.X + DockPanel.DefaultButtonsSize +
-                   2.0f * DockPanel.DefaultButtonsMargin + 2.0f * DockPanel.DefaultTextMargin + iconWidth;
-        }
-
-        private static Rectangle GetCloseButtonBounds(float tabX, float tabWidth)
-        {
-            return new Rectangle(
-                tabX + tabWidth - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin,
-                (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) * 0.5f,
-                DockPanel.DefaultButtonsSize,
-                DockPanel.DefaultButtonsSize);
-        }
-
-        private Rectangle GetSingleTabHitCloseButtonBounds()
-        {
-            return new Rectangle(
-                Width - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin,
-                (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) * 0.5f,
-                DockPanel.DefaultButtonsSize,
-                DockPanel.DefaultButtonsSize);
-        }
-
-        private static Rectangle GetSingleTabDrawCloseButtonBounds(float titleWidth, float iconWidth)
-        {
-            return new Rectangle(
-                iconWidth + DockPanel.DefaultTextMargin + titleWidth + DockPanel.DefaultButtonsSize,
-                (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) * 0.5f,
-                DockPanel.DefaultButtonsSize,
-                DockPanel.DefaultButtonsSize);
-        }
-
-        private Rectangle ToScreen(Rectangle local)
-            => new Rectangle(ScreenPos + local.Location, local.Size);
-
-        private void StartDrag(DockWindow window)
-        {
+            // Clear cache
             MouseDownWindow = null;
-            StartDragAsyncWindow = window;
+            StartDragAsyncWindow = win;
+
+            // Register for late update in an async manner (to prevent from crash due to changing UI structure on window undock)
             StartDragAsync();
         }
 
         private void StartDragAsync()
         {
-            DockWindow? window = StartDragAsyncWindow;
-            StartDragAsyncWindow = null;
-            if (window == null)
-                return;
+            if (StartDragAsyncWindow != null)
+            {
+                DockWindow win = StartDragAsyncWindow;
+                StartDragAsyncWindow = null;
 
-            if (m_Panel.ChildPanelsCount == 0 && m_Panel.TabsCount == 1 && m_Panel is FloatWindowDockPanel floating)
-            {
-                DockHintWindow.Create(floating);
-            }
-            else
-            {
-                int index = m_Panel.GetTabIndex(window);
-                if (index == 0)
-                    index = m_Panel.TabsCount;
-                m_Panel.SelectTab(index - 1);
-                DockHintWindow.Create(window);
+                // Check if has only one window docked and is floating
+                if (_panel.ChildPanelsCount == 0 && _panel.TabsCount == 1 && _panel.IsFloating)
+                {
+                    // Create docking hint window but in an async manner
+                    DockHintWindow.Create(_panel as FloatWindowDockPanel);
+                }
+                else
+                {
+                    // Select another tab
+                    int index = _panel.GetTabIndex(win);
+                    if (index == 0)
+                    {
+                        index = _panel.TabsCount;
+                    }
+                    _panel.SelectTab(index - 1);
+
+                    // Create docking hint window
+                    DockHintWindow.Create(win);
+                }
             }
         }
 
-        private DragDropEffect SelectTabUnderPointer(Float2 location)
+        private DragDropEffect TrySelectTabUnderLocation(Float2 location)
         {
-            DockWindow? tab = GetTabAt(location);
-            if (tab == null)
+            bool closeButton;
+            DockWindow tab = GetTabAtPos(location, out closeButton);
+            if (tab != null)
             {
-                m_DragEnterTime = -1.0;
-                return DragDropEffect.None;
+                // Auto-select tab only if drag takes some time
+                double time = Environment.TickCount64 * 0.001;
+                if (_dragEnterTime < 0)
+                {
+                    _dragEnterTime = time;
+                }
+                if (time - _dragEnterTime < 0.3f)
+                {
+                    return DragDropEffect.Link;
+                }
+                _dragEnterTime = -1;
+
+                _panel.SelectTab(tab);
+                Update(0); // Fake update
+                return DragDropEffect.Move;
             }
-
-            double time = Environment.TickCount64 * 0.001;
-            if (m_DragEnterTime < 0.0)
-                m_DragEnterTime = time;
-            if (time - m_DragEnterTime < 0.3)
-                return DragDropEffect.Link;
-
-            m_DragEnterTime = -1.0;
-            m_Panel.SelectTab(tab);
-            Update(0.0f);
-            return DragDropEffect.Move;
+            _dragEnterTime = -1;
+            return DragDropEffect.None;
         }
 
-        private void CloseAllBut(DockWindow tab)
+        private void ShowContextMenu(DockWindow tab, Float2 location)
         {
-            // Forward iteration matches native mutation behavior exactly.
-            for (int index = 0; index < m_Panel.TabsCount; index++)
+            ContextMenu menu = new ContextMenu();
+            menu.Tag = tab;
+
+            tab.OnShowContextMenu(menu);
+            menu.AddButton("Close", OnTabMenuCloseClicked);
+            menu.AddButton("Close All", OnTabMenuCloseAllClicked);
+            menu.AddButton("Close All But This", OnTabMenuCloseAllButThisClicked);
+            if (_panel.Tabs.IndexOf(tab) + 1 < _panel.TabsCount)
             {
-                DockWindow candidate = m_Panel.GetTab(index);
-                if (!ReferenceEquals(candidate, tab))
-                    candidate.Close();
+                menu.AddButton("Close All To The Right", OnTabMenuCloseAllToTheRightClicked);
+            }
+            if (!_panel.IsFloating)
+            {
+                menu.AddSeparator();
+                menu.AddButton("Undock", OnTabMenuUndockClicked);
+            }
+            else if (!(tab.RootWindow() != null && tab.RootWindow().IsMaximized()))
+            {
+                menu.AddSeparator();
+                menu.AddButton("Maximize", OnTabMenuMaximizeClicked);
+            }
+            else if (tab.RootWindow() != null && tab.RootWindow().IsMaximized())
+            {
+                menu.AddSeparator();
+                menu.AddButton("Restore", OnTabMenuRestoreClicked);
+            }
+            menu.Show(this, location);
+        }
+
+        private void OnTabMenuCloseClicked(ContextMenuButton button)
+        {
+            DockWindow tab = (DockWindow)button.ParentContextMenu.Tag;
+            tab.Close(ClosingReason.User);
+            if (tab == MouseDownWindow)
+            {
+                MouseDownWindow = null;
             }
         }
 
-        private void CloseAllToTheRight(DockWindow tab)
+        private void OnTabMenuCloseAllClicked(ContextMenuButton button)
         {
-            for (int index = m_Panel.GetTabIndex(tab) + 1; index < m_Panel.TabsCount; index++)
-                m_Panel.GetTab(index).Close();
+            _panel.CloseAll();
         }
 
+        private void OnTabMenuCloseAllButThisClicked(ContextMenuButton button)
+        {
+            DockWindow tab = (DockWindow)button.ParentContextMenu.Tag;
+            List<DockWindow> windows = _panel.Tabs;
+            for (int i = 0; i < windows.Count; i++)
+            {
+                if (windows[i] != tab)
+                {
+                    windows[i].Close();
+                }
+            }
+        }
+
+        private void OnTabMenuCloseAllToTheRightClicked(ContextMenuButton button)
+        {
+            DockWindow tab = (DockWindow)button.ParentContextMenu.Tag;
+            List<DockWindow> windows = _panel.Tabs;
+            for (int i = _panel.Tabs.IndexOf(tab) + 1; i < windows.Count; i++)
+            {
+                windows[i].Close();
+            }
+        }
+
+        private void OnTabMenuUndockClicked(ContextMenuButton button)
+        {
+            DockWindow tab = (DockWindow)button.ParentContextMenu.Tag;
+            tab.ShowFloating();
+        }
+
+        private void OnTabMenuMaximizeClicked(ContextMenuButton button)
+        {
+            DockWindow tab = (DockWindow)button.ParentContextMenu.Tag;
+            tab.RootWindow().Maximize();
+        }
+
+        private void OnTabMenuRestoreClicked(ContextMenuButton button)
+        {
+            DockWindow tab = (DockWindow)button.ParentContextMenu.Tag;
+            tab.RootWindow().Restore();
+        }
     }
 }

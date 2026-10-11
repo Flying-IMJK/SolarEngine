@@ -10,6 +10,7 @@ namespace SE
 	class AssetsCache;
 	class IAssetFactory;
 	struct ScriptingTypeHandle;
+	struct TextureUtilsOptions;
 
 	// Content and assets statistics container.
 	SE_STRUCT(API())
@@ -364,8 +365,6 @@ namespace SE
 		static void DeleteAsset(const StringView& path);
 
 	public:
-#if SE_EDITOR
-
 		/// <summary>
 		/// Renames the asset.
 		/// </summary>
@@ -390,9 +389,8 @@ namespace SE
 		/// <param name="srcPath">The source path.</param>
 		/// <param name="dstId">The destination id.</param>
 		/// <returns>True if failed, otherwise false.</returns>
+        SE_FUNCTION(API())
 		static bool CloneAssetFile(const StringView& dstPath, const StringView& srcPath, const UID& dstId);
-
-#endif
 
 		/// <summary>
 		/// Unloads the specified asset.

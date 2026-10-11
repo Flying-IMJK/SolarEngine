@@ -1,41 +1,46 @@
-// Managed editor GUI feature implementation.
+#nullable disable annotations
+
 using System;
-using System.Collections.Generic;
 using SE.GUI;
 
 namespace SE.Editor.GUI
 {
-    public sealed class ToolStrip : ContainerControl
+    /// <summary>
+    /// Tool strip with child items.
+    /// </summary>
+    public class ToolStrip : ContainerControl
     {
-        public const float DefaultMarginV = 1.0f;
-        public const float DefaultMarginH = 2.0f;
+        /// <summary>
+        /// The default margin vertically.
+        /// </summary>
+        public const int DefaultMarginV = 1;
 
-        private readonly List<ToolStripItem> m_Items = new List<ToolStripItem>();
+        /// <summary>
+        /// The default margin horizontally.
+        /// </summary>
+        public const int DefaultMarginH = 2;
 
-        public ToolStrip(float height, float y, float width)
-            : base(new Rectangle(0, y, width, height))
-        {
-            AutoFocus = false;
-            BackgroundColor = Style.Current.BackgroundNormal;
-            SetBounds(0, y, width, height);
+        /// <summary>
+        /// Event fired when button gets clicked with the primary mouse button.
+        /// </summary>
+        public Action<ToolStripButton> ButtonClicked;
 
-            // Flax scales this offset with Editor.Options.Interface.IconsScale.
-            // Keep the Editor option dependency disabled until it is exposed to managed code.
-        }
+        /// <summary>
+        /// Event fired when button gets clicked with the secondary mouse button.
+        /// </summary>
+        public Action<ToolStripButton> SecondaryButtonClicked;
 
-        public event Action<ToolStripButton>? ButtonClicked;
-        public event Action<ToolStripButton>? SecondaryButtonClicked;
-
-        public IReadOnlyList<ToolStripItem> Items => m_Items;
-        public float ItemsHeight => Math.Max(0.0f, Height - 2.0f * DefaultMarginV);
-
-        public ToolStripButton? LastButton
+        /// <summary>
+        /// Tries to get the last button.
+        /// </summary>
+        public ToolStripButton LastButton
         {
             get
             {
-                for (int i = m_Items.Count - 1; i >= 0; i--)
+                for (int i = m_Children.Count - 1; i >= 0; i--)
                 {
-                    if (m_Items[i] is ToolStripButton button)
+                    ToolStripButton button = m_Children[i] as ToolStripButton;
+                    if (button != null)
                     {
                         return button;
                     }
@@ -45,14 +50,17 @@ namespace SE.Editor.GUI
             }
         }
 
+        /// <summary>
+        /// Gets amount of buttons that has been added
+        /// </summary>
         public int ButtonsCount
         {
             get
             {
                 int result = 0;
-                foreach (ToolStripItem item in m_Items)
+                for (int i = 0; i < m_Children.Count; i++)
                 {
-                    if (item is ToolStripButton)
+                    if (m_Children[i] is ToolStripButton)
                     {
                         result++;
                     }
@@ -62,231 +70,443 @@ namespace SE.Editor.GUI
             }
         }
 
-        public ToolStripButton AddButton(string text, Action? onClick = null)
+        /// <summary>
+        /// Gets the height for the items.
+        /// </summary>
+        public float ItemsHeight => Height - 2 * DefaultMarginV;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ToolStrip"/> class.
+        /// </summary>
+        /// <param name="height">The toolstrip height.</param>
+        /// <param name="y">The toolstrip Y position.</param>
+        public ToolStrip(float height, float y = 0)
         {
-            ToolStripButton button = new ToolStripButton(ItemsHeight, text);
+            AutoFocus = false;
+            AnchorPreset = AnchorPresets.HorizontalStretchTop;
+            BackgroundColor = Style.Current.LightBackground;
+            Offsets = new Margin(0, 0, y, height);
+        }
+
+        /// <summary>
+        /// Adds the button.
+        /// </summary>
+        /// <param name="sprite">The icon sprite.</param>
+        /// <param name="onClick">The custom action to call on button clicked.</param>
+        /// <returns>The button.</returns>
+        public ToolStripButton AddButton(SpriteHandle sprite, Action onClick = null)
+        {
+            ToolStripButton button = new ToolStripButton(ItemsHeight, sprite);
+            button.Parent = this;
+
             if (onClick != null)
             {
-                button.Clicked += _ => onClick();
+                button.Clicked += onClick;
             }
 
-            button.Clicked += OnChildButtonClicked;
-            button.SecondaryClicked += OnChildButtonSecondaryClicked;
-            m_Items.Add(button);
-            AddChild(button);
-            PerformLayout();
             return button;
         }
 
-        public ToolStripSeparator AddSeparator()
+        /// <summary>
+        /// Adds the button.
+        /// </summary>
+        /// <param name="sprite">The icon sprite.</param>
+        /// <param name="text">The text.</param>
+        /// <param name="onClick">The custom action to call on button clicked.</param>
+        /// <returns>The button.</returns>
+        public ToolStripButton AddButton(SpriteHandle sprite, string text, Action onClick = null)
         {
-            ToolStripSeparator separator = new ToolStripSeparator(ItemsHeight);
-            m_Items.Add(separator);
-            AddChild(separator);
-            PerformLayout();
-            return separator;
+            ToolStripButton button = new ToolStripButton(ItemsHeight, sprite);
+            button.Text = text;
+            button.Parent = this;
+
+            if (onClick != null)
+            {
+                button.Clicked += onClick;
+            }
+
+            return button;
         }
 
-        protected override void OnLayoutChildren()
+        /// <summary>
+        /// Adds the button.
+        /// </summary>
+        /// <param name="text">The text.</param>
+        /// <param name="onClick">The custom action to call on button clicked.</param>
+        /// <returns>The button.</returns>
+        public ToolStripButton AddButton(string text, Action onClick = null)
         {
-            float x = DefaultMarginH;
-            float h = ItemsHeight;
-            foreach (ToolStripItem item in m_Items)
-            {
-                if (!item.Visible)
-                {
-                    continue;
-                }
+            ToolStripButton button = new ToolStripButton(ItemsHeight, SpriteHandle.Invalid);
+            button.Text = text;
+            button.Parent = this;
 
-                item.SetBounds(x, DefaultMarginV, item.Width, h);
-                x += item.Width + DefaultMarginH;
+            if (onClick != null)
+            {
+                button.Clicked += onClick;
+            }
+
+            return button;
+        }
+
+        /// <summary>
+        /// Adds the separator.
+        /// </summary>
+        /// <returns>The separator.</returns>
+        public ToolStripSeparator AddSeparator()
+        {
+            return AddChild(new ToolStripSeparator(ItemsHeight));
+        }
+
+        public void OnButtonClicked(ToolStripButton button)
+        {
+            if (ButtonClicked != null)
+            {
+                ButtonClicked(button);
             }
         }
 
+        public void OnSecondaryButtonClicked(ToolStripButton button)
+        {
+            if (SecondaryButtonClicked != null)
+            {
+                SecondaryButtonClicked(button);
+            }
+        }
+
+        /// <inheritdoc />
+        public override void OnChildResized(Control control)
+        {
+            base.OnChildResized(control);
+
+            PerformLayout();
+        }
+
+        /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)
         {
             if (base.OnKeyDown(key))
+            {
                 return true;
+            }
 
-            // Flax forwards unhandled keys to the owning EditorWindow InputActions collection.
-            // Keep that Editor shortcut route disabled; no replacement shortcut behavior is introduced.
+            // Fallback to the owning window for shortcuts
+            EditorWindow editorWindow = null;
+            ContainerControl c = Parent;
+            while (c != null && editorWindow == null)
+            {
+                editorWindow = c as EditorWindow;
+                c = c.Parent;
+            }
+
             return false;
+            /*var editor = Editor.Instance;
+            if (editorWindow == null)
+            {
+                editorWindow = editor.Windows.EditWin; // Fallback to main editor window
+            }
+            return editorWindow.InputActions.Process(editor, this, key);*/
         }
 
-        private void OnChildButtonClicked(ToolStripButton button)
+        /// <inheritdoc />
+        protected override void PerformLayoutBeforeChildren()
         {
-            ButtonClicked?.Invoke(button);
-        }
-
-        private void OnChildButtonSecondaryClicked(ToolStripButton button)
-        {
-            SecondaryButtonClicked?.Invoke(button);
+            // Arrange controls
+            float x = DefaultMarginH;
+            float h = ItemsHeight;
+            for (int i = 0; i < m_Children.Count; i++)
+            {
+                Control c = m_Children[i];
+                if (c.Visible)
+                {
+                    float w = c.Width;
+                    c.Bounds = new Rectangle(x, DefaultMarginV, w, h);
+                    x += w + DefaultMarginH;
+                }
+            }
         }
     }
 
-    public abstract class ToolStripItem : Control
+    /// <summary>
+    /// Tool strip button control.
+    /// </summary>
+    public class ToolStripButton : Control
     {
-        protected ToolStripItem(Rectangle bounds)
-            : base(bounds)
-        {
-        }
-    }
+        private SpriteHandle m_Icon;
+        private string m_Text = string.Empty;
+        private bool m_PrimaryMouseDown;
+        private bool m_SecondaryMouseDown;
 
-    public sealed class ToolStripButton : ToolStripItem
-    {
-        private string m_Text;
-        private bool m_IsPrimaryMouseDown;
-        private bool m_IsSecondaryMouseDown;
+        /// <summary>
+        /// The default margin for button parts (icon, text, etc.).
+        /// </summary>
+        public const int DefaultMargin = 2;
 
-        public ToolStripButton(float height, string text)
-            : base(new Rectangle(0, 0, MeasureWidth(height, text), height))
-        {
-            m_Text = text;
-            SetBounds(0, 0, MeasureWidth(height, text), height);
-        }
+        /// <summary>
+        /// Event fired when user clicks the button.
+        /// </summary>
+        public Action Clicked;
 
-        public event Action<ToolStripButton>? Clicked;
-        public event Action<ToolStripButton>? SecondaryClicked;
+        /// <summary>
+        /// Event fired when user clicks the button.
+        /// </summary>
+        public Action SecondaryClicked;
 
-        public bool Checked { get; private set; }
-        public bool AutoCheck { get; private set; }
-        public ContextMenu? ContextMenu { get; set; }
+        /// <summary>
+        /// The checked state.
+        /// </summary>
+        public bool Checked;
 
+        /// <summary>
+        /// The automatic check mode.
+        /// </summary>
+        public bool AutoCheck;
+
+        /// <summary>
+        /// Gets or sets the button text.
+        /// </summary>
         public string Text
         {
-            get => m_Text;
+            get
+            {
+                return m_Text;
+            }
             set
             {
                 m_Text = value;
-                SetBounds(X, Y, MeasureWidth(Height, value), Height);
-                Parent?.PerformLayout();
+                PerformLayout();
             }
         }
 
+        /// <summary>
+        /// The icon.
+        /// </summary>
+        public SpriteHandle Icon
+        {
+            get
+            {
+                return m_Icon;
+            }
+            set
+            {
+                m_Icon = value;
+                PerformLayout();
+            }
+        }
+
+        /// <summary>
+        /// A reference to a context menu to raise when the secondary mouse button is pressed.
+        /// </summary>
+        public ContextMenu ContextMenu;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ToolStripButton"/> class.
+        /// </summary>
+        /// <param name="height">The height.</param>
+        /// <param name="icon">The icon.</param>
+        public ToolStripButton(float height, SpriteHandle icon) : base(0, 0, height, height)
+        {
+            m_Icon = icon;
+        }
+
+        /// <summary>
+        /// Sets the automatic check mode.
+        /// </summary>
+        /// <param name="value">True if use auto check, otherwise false.</param>
+        /// <returns>This button.</returns>
         public ToolStripButton SetAutoCheck(bool value)
         {
             AutoCheck = value;
             return this;
         }
 
+        /// <summary>
+        /// Sets the checked state.
+        /// </summary>
+        /// <param name="value">True if check it, otherwise false.</param>
+        /// <returns>This button.</returns>
         public ToolStripButton SetChecked(bool value)
         {
             Checked = value;
             return this;
         }
 
+        /// <inheritdoc />
+        public override void Draw()
+        {
+            base.Draw();
+
+            // Cache data
+            Style style = Style.Current;
+            float iconSize = Height - DefaultMargin;
+            Rectangle clientRect = new Rectangle(Float2.Zero, Size);
+            Rectangle iconRect = new Rectangle(DefaultMargin, DefaultMargin, iconSize, iconSize);
+            Rectangle textRect = new Rectangle(DefaultMargin, 0, 0, Height);
+            bool enabled = EnabledInHierarchy;
+            bool mouseButtonDown = m_PrimaryMouseDown || m_SecondaryMouseDown;
+
+            // Draw background
+            if (enabled && (IsMouseOver || IsNavFocused || Checked))
+            {
+                Color color = style.Background * 1.3f;
+                if (Checked)
+                {
+                    color = style.BackgroundSelected;
+                }
+                else if (mouseButtonDown)
+                {
+                    color = style.BackgroundHighlighted;
+                }
+
+                Render2D.FillRectangle(clientRect, color);
+            }
+
+            // Draw icon
+            if (m_Icon.IsValid)
+            {
+                Render2D.DrawSprite(m_Icon, iconRect, enabled ? style.Foreground : style.ForegroundDisabled);
+                textRect.Location.X += iconSize + DefaultMargin;
+            }
+
+            // Draw text
+            if (m_Text.Length > 0)
+            {
+                textRect.Size.X = Width - DefaultMargin - textRect.Left;
+                Render2D.RenderText(style.FontMedium, m_Text, textRect, enabled ? style.TextColor : style.ForegroundDisabled,
+                    TextAlignment.Near, TextAlignment.Center);
+            }
+        }
+
+        /// <inheritdoc />
+        public override void PerformLayout(bool force = false)
+        {
+            Style style = Style.Current;
+            float iconSize = Height - DefaultMargin;
+            bool hasSprite = m_Icon.IsValid;
+            float width = DefaultMargin * 2;
+
+            if (hasSprite)
+            {
+                width += iconSize;
+            }
+
+            if (m_Text.Length > 0 && style != null && style.FontMedium != null)
+            {
+                width += style.FontMedium.MeasureText(m_Text, TextLayoutOptions.Default).X + (hasSprite ? DefaultMargin : 0);
+            }
+
+            Width = width;
+        }
+
+        /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left)
             {
-                m_IsPrimaryMouseDown = true;
-                Root?.StartTrackingMouse(this);
+                m_PrimaryMouseDown = true;
+                Focus();
                 return true;
             }
 
             if (button == MouseButton.Right)
             {
-                m_IsSecondaryMouseDown = true;
-                Root?.StartTrackingMouse(this);
+                m_SecondaryMouseDown = true;
+                Focus();
                 return true;
             }
 
             return base.OnMouseDown(location, button);
         }
 
+        /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (button == MouseButton.Left && m_IsPrimaryMouseDown)
+            if (button == MouseButton.Left && m_PrimaryMouseDown)
             {
-                m_IsPrimaryMouseDown = false;
-                Root?.EndTrackingMouse();
-                InvokeClick();
+                m_PrimaryMouseDown = false;
+                if (AutoCheck)
+                {
+                    Checked = !Checked;
+                }
+
+                if (Clicked != null)
+                {
+                    Clicked();
+                }
+
+                ToolStrip toolStrip = Parent as ToolStrip;
+                if (toolStrip != null)
+                {
+                    toolStrip.OnButtonClicked(this);
+                }
+
                 return true;
             }
 
-            if (button == MouseButton.Right && m_IsSecondaryMouseDown)
+            if (button == MouseButton.Right && m_SecondaryMouseDown)
             {
-                m_IsSecondaryMouseDown = false;
-                Root?.EndTrackingMouse();
-                InvokeSecondaryClick();
-                ContextMenu?.Show(this, 0.0f, Height);
+                m_SecondaryMouseDown = false;
+                if (SecondaryClicked != null)
+                {
+                    SecondaryClicked();
+                }
+
+                ToolStrip toolStrip = Parent as ToolStrip;
+                if (toolStrip != null)
+                {
+                    toolStrip.OnButtonClicked(this);
+                }
+
+                if (ContextMenu != null)
+                {
+                    ContextMenu.Show(this, new Float2(0, Height));
+                }
+
                 return true;
             }
 
             return base.OnMouseUp(location, button);
         }
 
-        public override void ClearState()
+        /// <inheritdoc />
+        public override void OnMouseLeave()
         {
-            m_IsPrimaryMouseDown = false;
-            m_IsSecondaryMouseDown = false;
-            base.ClearState();
+            m_PrimaryMouseDown = false;
+            m_SecondaryMouseDown = false;
+
+            base.OnMouseLeave();
         }
 
-        protected override void OnDraw()
+        /// <inheritdoc />
+        public override void OnLostFocus()
         {
-            bool enabled = EnabledInHierarchy;
-            if (enabled && (IsMouseOver || Checked))
-            {
-                Color background = Checked
-                    ? Style.Current.BackgroundSelected
-                    : (m_IsPrimaryMouseDown || m_IsSecondaryMouseDown)
-                        ? Style.Current.BackgroundHighlighted
-                        : Style.Current.BackgroundNormal;
-                Rectangle bounds = ScreenBounds;
-                Render2D.FillRectangle(bounds, background);
-            }
+            m_PrimaryMouseDown = false;
+            m_SecondaryMouseDown = false;
 
-            Font? font = Style.Current.FontMedium;
-            if (ReferenceEquals(font, null) || string.IsNullOrEmpty(Text))
-                return;
-
-            Rectangle textBounds = ScreenBounds;
-            Color textColor = enabled ? Style.Current.Foreground : Style.Current.ForegroundDisabled;
-            Render2D.RenderText(font, Text, textBounds, textColor, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
-        }
-
-        public void InvokeClick()
-        {
-            if (AutoCheck)
-            {
-                Checked = !Checked;
-            }
-
-            Clicked?.Invoke(this);
-        }
-
-        public void InvokeSecondaryClick()
-        {
-            SecondaryClicked?.Invoke(this);
-        }
-
-        private static float MeasureWidth(float height, string text)
-        {
-            float width = 4.0f;
-            if (string.IsNullOrEmpty(text))
-            {
-                return Math.Max(width, height);
-            }
-
-            return width + text.Length * 7.0f + 6.0f;
+            base.OnLostFocus();
         }
     }
 
-    public sealed class ToolStripSeparator : ToolStripItem
+    /// <summary>
+    /// ToolStrip separator control.
+    /// </summary>
+    public class ToolStripSeparator : Control
     {
-        public ToolStripSeparator(float height)
-            : base(new Rectangle(0, 0, 4, height))
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ToolStripSeparator"/> class.
+        /// </summary>
+        /// <param name="height">The height.</param>
+        public ToolStripSeparator(float height) : base(0, 0, 4, height)
         {
-            SetBounds(0, 0, 4, height);
             AutoFocus = false;
         }
 
-        protected override void OnDraw()
+        /// <inheritdoc />
+        public override void Draw()
         {
-            Rectangle line = new Rectangle(ScreenPos.X + (Width - 1.0f) * 0.5f, ScreenPos.Y + 2.0f, 1.0f, MathF.Max(0.0f, Height - 4.0f));
-            Color color = Style.Current.BackgroundHighlighted;
-            Render2D.FillRectangle(line, color);
+            base.Draw();
+
+            // Draw the separator line
+            Render2D.FillRectangle(new Rectangle((Width - 4) / 2, 2, 1, Height - 4), Style.Current.LightBackground * 1.3f);
         }
     }
 }

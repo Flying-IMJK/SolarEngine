@@ -1,101 +1,145 @@
+#nullable disable annotations
+
 using System.Collections.Generic;
 
 namespace SE.Editor.GUI
 {
-    public sealed class MasterDockPanel : DockPanel
+    /// <summary>
+    /// Master Dock Panel control used as a root control for dockable windows workspace.
+    /// </summary>
+    public class MasterDockPanel : DockPanel
     {
-        private readonly List<DockWindow> m_Windows = new List<DockWindow>(32);
-        private readonly List<FloatWindowDockPanel> m_FloatingPanels = new List<FloatWindowDockPanel>(4);
+        /// <summary>
+        /// Array with all created dock windows for that master panel.
+        /// </summary>
+        public List<DockWindow> Windows = new List<DockWindow>(32);
 
-        public MasterDockPanel()
-            : base(null)
-        {
-        }
+        /// <summary>
+        /// Array with all floating windows for that master panel.
+        /// </summary>
+        public List<FloatWindowDockPanel> FloatingPanels = new List<FloatWindowDockPanel>(4);
 
-        public override bool IsMaster => true;
-        public IReadOnlyList<DockWindow> Windows => m_Windows;
-        public List<FloatWindowDockPanel> FloatingPanels => m_FloatingPanels;
-
+        /// <summary>
+        /// Gets the visible windows count.
+        /// </summary>
+        /// <value>
+        /// The visible windows count.
+        /// </value>
         public int VisibleWindowsCount
         {
             get
             {
-                int count = 0;
-                foreach (DockWindow window in m_Windows)
+                int result = 0;
+                for (int i = 0; i < Windows.Count; i++)
                 {
-                    if (window.Visible)
-                        count++;
+                    if (Windows[i].Visible)
+                    {
+                        result++;
+                    }
                 }
-
-                return count;
+                return result;
             }
         }
 
+        public MasterDockPanel() : base(null)
+        {
+        }
+
+        /// <summary>
+        /// Resets windows layout.
+        /// </summary>
         public void ResetLayout()
         {
-            // Native ResetLayout only clears the current tree. Default layout restoration is external.
-            for (int index = 0; index < m_Windows.Count; index++)
-                m_Windows[index].Close();
+            // Close all windows
+            for (int i = 0; i < Windows.Count; i++)
+            {
+                Windows[i].Close();
+            }
 
-            // Preserve the native forward iteration over a list that disposal mutates.
-            for (int index = 0; index < ChildPanels.Count; index++)
-                ChildPanels[index].Dispose();
+            // Ensure that has no docked windows
+            List<DockPanel> childPanels = ChildPanels;
+            for (int i = 0; i < childPanels.Count; i++)
+            {
+                childPanels[i].Dispose();
+            }
 
-            DockPanelProxy? proxy = TabsProxy;
-            proxy?.Parent?.RemoveChild(proxy);
+            // Delete remaining controls (except tabs proxy)
+            if (TabsProxy != null)
+            {
+                TabsProxy.Parent = null;
+            }
             DisposeChildren();
-            if (proxy != null)
-                AddChild(proxy);
+            if (TabsProxy != null)
+            {
+                TabsProxy.Parent = this;
+            }
         }
 
-        public DockPanel? HitTest(Float2 position, FloatWindowDockPanel? excluded)
+        /// <summary>
+        /// Performs hit test over dock panel.
+        /// </summary>
+        /// <param name="position">Screen space position to test.</param>
+        /// <param name="excluded">Floating window to omit during searching (and all docked to that one).</param>
+        /// <returns>Dock panel that has been hit or null if nothing found.</returns>
+        public DockPanel HitTest(Float2 position, FloatWindowDockPanel excluded)
         {
-            for (int i = 0; i < m_FloatingPanels.Count; i++)
+            // Check all floating windows
+            // TODO: gather windows order and take it into account when performing test
+            for (int i = 0; i < FloatingPanels.Count; i++)
             {
-                FloatWindowDockPanel panel = m_FloatingPanels[i];
-                if (panel.Visible && !ReferenceEquals(panel, excluded))
+                FloatWindowDockPanel win = FloatingPanels[i];
+                if (win.Visible && win != excluded)
                 {
-                    DockPanel? hit = panel.HitTest(position);
-                    if (hit != null)
-                        return hit;
+                    DockPanel result = win.HitTest(position);
+                    if (result != null)
+                    {
+                        return result;
+                    }
                 }
             }
 
-            return HitTest(position);
+            // Base
+            return base.HitTest(position);
         }
 
         public void LinkWindow(DockWindow window)
         {
-            m_Windows.Add(window);
+            // Add to the windows list
+            Windows.Add(window);
         }
 
         public void UnlinkWindow(DockWindow window)
         {
+            // Call event to the window
             window.NotifyUnlinked();
-            if (!IsDisposing)
-                m_Windows.Remove(window);
+
+            // Prevent this action during disposing (we don't want to modify Windows list)
+            if (IsDisposing)
+            {
+                return;
+            }
+
+            // Remove from the windows list
+            Windows.Remove(window);
         }
 
-        internal FloatWindowDockPanel CreateFloatingPanel(Float2 location, Float2 size, WindowStartPosition startPosition, string title)
+        /// <inheritdoc />
+        public override void OnDestroy()
         {
-            SE.Window window = FloatWindowDockPanel.CreateFloatWindow(Root, location, size, startPosition, title);
-            FloatWindowDockPanel floatingPanel = new FloatWindowDockPanel(this, window.GUI);
-            floatingPanel.SetBounds(0.0f, 0.0f, size.X, size.Y);
+            base.OnDestroy();
 
-            return floatingPanel;
+            Windows.Clear();
+            FloatingPanels.Clear();
         }
 
+        /// <inheritdoc />
         public override DockState TryGetDockState(out float splitterValue)
         {
             splitterValue = 0.5f;
             return DockState.DockFill;
         }
 
-        protected override void OnDispose()
-        {
-            base.OnDispose();
-            m_Windows.Clear();
-            m_FloatingPanels.Clear();
-        }
+        /// <inheritdoc />
+        public override bool IsMaster => true;
     }
 }

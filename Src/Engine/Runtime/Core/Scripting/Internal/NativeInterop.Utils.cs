@@ -88,7 +88,6 @@ namespace SE.Interop
 
             return parameterTypes;
         }
-
     }
 
 }

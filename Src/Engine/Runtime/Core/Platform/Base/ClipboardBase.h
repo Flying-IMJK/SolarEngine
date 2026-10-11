@@ -12,7 +12,7 @@ namespace SE
 	/// <summary>
 	/// Native platform clipboard service.
 	/// </summary>
-	SE_CLASS(API(Static, Name = "Clipboard", Tag = "NativeInvokeUseName"))
+	SE_CLASS(API(Static, Name = "Clipboard", NativeInvokeUseName))
 	class SE_API_RUNTIME ClipboardBase
 	{
 		SCRIPTING_TYPE_MIN(ClipboardBase)

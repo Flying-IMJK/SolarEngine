@@ -25,7 +25,7 @@ namespace SE
 		/// <summary>
 		/// The stored data typeID. Used to recognize asset type.
 		/// </summary>
-		//SE_FIELD(Reflect, API())
+		SE_FIELD(Reflect, API())
 		TypeID typeID = TypeID::Invalid;
 
 		/// <summary>

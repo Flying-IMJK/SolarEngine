@@ -249,10 +249,6 @@ namespace SE::BuildTool
             {
                 return Unsupported(type, element.diagnosticCode.c_str(), "unsupported collection element: " + element.diagnostic);
             }
-            if (collection.kind == CollectionKind::Fixed && element.kind != BindingTypeKind::Blittable)
-            {
-                return Unsupported(type, "SEBIND006", "fixed arrays require a blittable P0 element type");
-            }
             result.kind = BindingTypeKind::Collection;
             result.collection = std::move(collection);
             return result;
@@ -310,6 +306,15 @@ namespace SE::BuildTool
         }
 
         TypeInfoBase const* declaration = database.ResolveTypeDeclaration(type);
+        if (!declaration && type.declaredTypeID != TypeID::Invalid)
+        {
+            // Flax-style API lookup: the source alias can name an exported
+            // class even when its platform-specific native target is not API.
+            bool ambiguous = false;
+            declaration = database.FindApiTypeByName(type.declaredTypeID, ambiguous);
+            if (ambiguous)
+                return Unsupported(type, "SEBIND005", "multiple API types match declared name " + type.declaredTypeID.ToString());
+        }
         result.declaration = declaration;
         if (!declaration)
         {
@@ -379,7 +384,7 @@ namespace SE::BuildTool
     }
 
     CppTypeConversion ResolveCppTypeConversion(TypeDatabase const&, BindingTypeSemantics const& semantics,
-                                               BindingUseSite, BindingDirection)
+                                               BindingUseSite, ApiParameterDirection)
     {
         CppTypeConversion result;
         result.kind = semantics.kind;
@@ -429,7 +434,9 @@ namespace SE::BuildTool
         case BindingTypeKind::ScriptingObject:
         case BindingTypeKind::NativeObject:
             result.exportType = "void*";
-            result.nativeValueType = GetNativeDeclarationName(*semantics.declaration) + "*";
+            // The exported API class determines the managed name, while the
+            // original pointee determines the cast back to native C++.
+            result.nativeValueType = semantics.sourceType.ToString(false, true);
             result.strategy = InteropStrategy::ManualWrapper;
             break;
         case BindingTypeKind::ObjectRef:
@@ -467,7 +474,7 @@ namespace SE::BuildTool
     }
 
     CSharpTypeConversion ResolveCSharpTypeConversion(TypeDatabase const& database, BindingTypeSemantics const& semantics,
-                                                     BindingUseSite useSite, BindingDirection direction)
+                                                     BindingUseSite useSite, ApiParameterDirection direction)
     {
         CSharpTypeConversion result;
         result.kind = semantics.kind;
@@ -486,7 +493,8 @@ namespace SE::BuildTool
             break;
         case BindingTypeKind::String:
         case BindingTypeKind::StringView:
-            if (semantics.kind == BindingTypeKind::StringView && direction != BindingDirection::In)
+            if (semantics.kind == BindingTypeKind::StringView && direction != ApiParameterDirection::In &&
+                !(useSite == BindingUseSite::EventParameter && direction == ApiParameterDirection::Ref))
             {
                 result.strategy = InteropStrategy::Unsupported;
                 result.diagnostic = "StringView is call-scope input-only in P0";
@@ -500,7 +508,7 @@ namespace SE::BuildTool
         case BindingTypeKind::Collection:
         {
             BindingTypeSemantics elementSemantics = ResolveBindingTypeSemantics(database, semantics.collection.elementType);
-            CSharpTypeConversion element = ResolveCSharpTypeConversion(database, elementSemantics, BindingUseSite::ArrayElement, BindingDirection::In);
+            CSharpTypeConversion element = ResolveCSharpTypeConversion(database, elementSemantics, BindingUseSite::ArrayElement, ApiParameterDirection::In);
             if (element.strategy == InteropStrategy::Unsupported)
             {
                 result.diagnostic = "unsupported collection element C# lowering: " + element.diagnostic;
@@ -550,16 +558,6 @@ namespace SE::BuildTool
             break;
         }
         return result;
-    }
-
-    BindingDirection GetBindingDirection(TypeInfoParam const& parameter)
-    {
-        switch (parameter.direction)
-        {
-        case ApiParameterDirection::Out: return BindingDirection::Out;
-        case ApiParameterDirection::Ref: return BindingDirection::Ref;
-        default: return BindingDirection::In;
-        }
     }
 
     static AbiValueKind GetAbiValueKind(BindingTypeSemantics const& semantics)
@@ -627,7 +625,7 @@ namespace SE::BuildTool
         plan.entryPoint = function.entryPoint;
 
         BindingTypeSemantics returnSemantics = ResolveBindingTypeSemantics(database, function.returnType, function.marshalAs);
-        CSharpTypeConversion returnCSharp = ResolveCSharpTypeConversion(database, returnSemantics, BindingUseSite::Return, BindingDirection::Out);
+        CSharpTypeConversion returnCSharp = ResolveCSharpTypeConversion(database, returnSemantics, BindingUseSite::Return, ApiParameterDirection::Out);
         if (!returnSemantics.IsSupported() || returnCSharp.strategy == InteropStrategy::Unsupported)
             plan.diagnostics.push_back("SEBIND001 " + owner.name + "::" + function.name + " return '" +
                 function.returnType.ToString() + "': " +
@@ -657,14 +655,14 @@ namespace SE::BuildTool
         for (int i = 0; i < function.params.size(); ++i)
         {
             TypeInfoParam const& parameter = function.params[i];
-            const BindingDirection direction = GetBindingDirection(parameter);
+            const ApiParameterDirection direction = parameter.direction;
             BindingTypeSemantics semantics = ResolveBindingTypeSemantics(database, parameter.type, parameter.marshalAs);
             CSharpTypeConversion csharp = ResolveCSharpTypeConversion(database, semantics, BindingUseSite::Parameter, direction);
             if (!semantics.IsSupported() || csharp.strategy == InteropStrategy::Unsupported)
                 plan.diagnostics.push_back("SEBIND001 " + owner.name + "::" + function.name + " parameter '" + parameter.name +
                     "' type '" + parameter.type.ToString() + "': " +
                     (!semantics.IsSupported() ? semantics.diagnostic : csharp.diagnostic));
-            if (semantics.kind == BindingTypeKind::Collection && direction != BindingDirection::In &&
+            if (semantics.kind == BindingTypeKind::Collection && direction != ApiParameterDirection::In &&
                 IsOneOf(parameter.type.typeID.ToString(), { "SE::Span", "Span" }))
                 plan.diagnostics.push_back("SEBIND001 " + owner.name + "::" + function.name + " parameter '" + parameter.name +
                     "' type '" + parameter.type.ToString() + "': mutable Span replacement is outside the P0 collection policy");
@@ -675,8 +673,8 @@ namespace SE::BuildTool
             abiParameter.role = AbiParameterRole::PublicParameter;
             abiParameter.publicParameterIndex = i;
             AbiPassMode passMode = AbiPassMode::Value;
-            if (direction == BindingDirection::Out) passMode = AbiPassMode::OutPointer;
-            else if (direction == BindingDirection::Ref) passMode = AbiPassMode::Pointer;
+            if (direction == ApiParameterDirection::Out) passMode = AbiPassMode::OutPointer;
+            else if (direction == ApiParameterDirection::Ref) passMode = AbiPassMode::Pointer;
             abiParameter.type = MakeAbiType(semantics, passMode);
             mapping.abiParameterIndices.push_back(static_cast<int>(plan.parameters.size()));
             plan.parameters.push_back(abiParameter);
@@ -687,8 +685,8 @@ namespace SE::BuildTool
                 countParameter.role = AbiParameterRole::HiddenCount;
                 countParameter.publicParameterIndex = i;
                 AbiPassMode countPassMode = AbiPassMode::Value;
-                if (direction == BindingDirection::Ref) countPassMode = AbiPassMode::Pointer;
-                else if (direction == BindingDirection::Out) countPassMode = AbiPassMode::OutPointer;
+                if (direction == ApiParameterDirection::Ref) countPassMode = AbiPassMode::Pointer;
+                else if (direction == ApiParameterDirection::Out) countPassMode = AbiPassMode::OutPointer;
                 countParameter.type = { AbiValueKind::Integer, TypeID("int32"), countPassMode, BindingTypeKind::Blittable };
                 mapping.abiParameterIndices.push_back(static_cast<int>(plan.parameters.size()));
                 plan.parameters.push_back(countParameter);
@@ -718,7 +716,7 @@ namespace SE::BuildTool
 
     static void ValidateUseSite(TypeDatabase const& database, TypeInfoStruct const& owner, std::string const& memberName,
                                 TypeInfo const& type, std::string_view marshalAs, BindingUseSite useSite,
-                                BindingDirection direction, std::vector<std::string>& diagnostics)
+                                ApiParameterDirection direction, std::vector<std::string>& diagnostics)
     {
         BindingTypeSemantics semantics = ResolveBindingTypeSemantics(database, type, marshalAs);
         CppTypeConversion cpp = ResolveCppTypeConversion(database, semantics, useSite, direction);
@@ -748,7 +746,7 @@ namespace SE::BuildTool
         {
             if (owner.isStruct && !field.isStatic)
                 ValidateUseSite(database, owner, field.name, field.type, field.marshalAs,
-                    BindingUseSite::Field, BindingDirection::In, diagnostics);
+                    BindingUseSite::Field, ApiParameterDirection::In, diagnostics);
             if (!field.isAPI) continue;
 
             TypeInfoFunc getter;
@@ -788,7 +786,7 @@ namespace SE::BuildTool
             if (!eventInfo.isAPI) continue;
             for (auto const& parameter : eventInfo.params)
                 ValidateUseSite(database, owner, eventInfo.name + "." + parameter.name, parameter.type, parameter.marshalAs,
-                    BindingUseSite::Parameter, GetBindingDirection(parameter), diagnostics);
+                    BindingUseSite::EventParameter, parameter.direction, diagnostics);
         }
     }
 

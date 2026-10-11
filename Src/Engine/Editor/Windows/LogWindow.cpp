@@ -236,7 +236,7 @@ namespace SE::Editor
         // OnEditorOptionsChanged(Editor.Options.Options);
         // FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
 
-        _logCountPerGroup.Resize((int)LogGroup::Max);
+        m_LogCountPerGroup.Resize((int)LogGroup::Max);
         _groupButtons.Resize(3);
 
         // Toolstrip
@@ -305,16 +305,16 @@ namespace SE::Editor
         _logInfo->Offsets = Margin::Zero;
 
         // Entries panel
-        _entriesPanel = New<VerticalPanel>();
-        _entriesPanel->AnchorPreset = AnchorPresets::HorizontalStretchTop;
-        _entriesPanel->Offsets = Margin::Zero;
-        _entriesPanel->IsScrollable = true;
-        _entriesPanel->Parent = _split->Panel1;
+        m_EntriesPanel = New<VerticalPanel>();
+        m_EntriesPanel->AnchorPreset = AnchorPresets::HorizontalStretchTop;
+        m_EntriesPanel->Offsets = Margin::Zero;
+        m_EntriesPanel->IsScrollable = true;
+        m_EntriesPanel->Parent = _split->Panel1;
     }
 
     void LogWindow::Clear()
     {
-        if (_entriesPanel == nullptr)
+        if (m_EntriesPanel == nullptr)
             return;
 
         RemoveEntries();
@@ -322,7 +322,7 @@ namespace SE::Editor
 
     void LogWindow::Add(LogEntryDescription& desc)
     {
-        if (_entriesPanel == nullptr)
+        if (m_EntriesPanel == nullptr)
             return;
 
         // Create new entry
@@ -376,7 +376,7 @@ namespace SE::Editor
                 bool newEntry = true;
                 if (_collapseLogsButton->Checked)
                 {
-                    for(Control* child : _entriesPanel->Children())
+                    for(Control* child : m_EntriesPanel->Children())
                     {
                         LogEntry* entry;
                         if (TypeTryCast<LogEntry>(child, entry ))
@@ -449,21 +449,21 @@ namespace SE::Editor
             if (_pendingEntries.Count() > 0)
             {
                 // Check if user want's to scroll view by var (or is viewing earlier entry)
-                Panel* panelScroll = static_cast<Panel*>(_entriesPanel->Parent.operator->());
+                Panel* panelScroll = static_cast<Panel*>(m_EntriesPanel->Parent.operator->());
                 bool scrollView = (panelScroll->vScrollBar->GetMaximum() - panelScroll->vScrollBar->GetTargetValue()) < LogEntry::DefaultHeight * 1.5f;
 
                 // Add pending entries
                 LogEntry* newEntry = nullptr;
                 bool anyVisible = false;
-                _entriesPanel->SetIsLayoutLocked(true);
-                float spacing = _entriesPanel->Spacing;
-                Margin margin = _entriesPanel->Margin;
-                Float2 offset = _entriesPanel->Offset;
-                float width = _entriesPanel->Width - margin.GetWidth();
+                m_EntriesPanel->SetIsLayoutLocked(true);
+                float spacing = m_EntriesPanel->Spacing;
+                Margin margin = m_EntriesPanel->Margin;
+                Float2 offset = m_EntriesPanel->Offset;
+                float width = m_EntriesPanel->Width - margin.GetWidth();
                 float top = margin.Top;
-                if (_entriesPanel->ChildrenCount() > 0)
+                if (m_EntriesPanel->ChildrenCount() > 0)
                 {
-                    top = _entriesPanel->GetChild(_entriesPanel->ChildrenCount() - 1)->Bottom + spacing;
+                    top = m_EntriesPanel->GetChild(m_EntriesPanel->ChildrenCount() - 1)->Bottom + spacing;
                 }
 
                 for (int i = 0; i < _pendingEntries.Count(); i++)
@@ -471,13 +471,13 @@ namespace SE::Editor
                     newEntry = _pendingEntries[i];
                     newEntry->Visible = _groupButtons[(int)newEntry->Group]->Checked;
                     anyVisible |= newEntry->Visible;
-                    newEntry->Parent = _entriesPanel;
+                    newEntry->Parent = m_EntriesPanel;
                     newEntry->Bounds = Rectangle(margin.Left + offset.X, top + offset.Y, width, newEntry->Height);
                     top = newEntry->Bottom + spacing;
-                    _logCountPerGroup[(int)newEntry->Group]++;
+                    m_LogCountPerGroup[(int)newEntry->Group]++;
                 }
-                _entriesPanel->Height = top + margin.Bottom;
-                _entriesPanel->SetIsLayoutLocked(false);
+                m_EntriesPanel->Height = top + margin.Bottom;
+                m_EntriesPanel->SetIsLayoutLocked(false);
                 _pendingEntries.Clear();
                 UpdateCount();
                 ENGINE_ASSERT(newEntry != nullptr);
@@ -530,9 +530,9 @@ namespace SE::Editor
 
     void LogWindow::UpdateLogTypeVisibility(LogGroup group, bool isVisible)
     {
-        _entriesPanel->SetIsLayoutLocked(true);
+        m_EntriesPanel->SetIsLayoutLocked(true);
 
-        auto children = _entriesPanel->Children();
+        auto children = m_EntriesPanel->Children();
         for (int i = 0; i < children.Count(); i++)
         {
             LogEntry* logEntry;
@@ -540,8 +540,8 @@ namespace SE::Editor
                 logEntry->Visible = isVisible;
         }
 
-        _entriesPanel->SetIsLayoutLocked(false);
-        _entriesPanel->PerformLayout();
+        m_EntriesPanel->SetIsLayoutLocked(false);
+        m_EntriesPanel->PerformLayout();
     }
 
     void LogWindow::UpdateCount()
@@ -550,31 +550,31 @@ namespace SE::Editor
         UpdateCount((int)LogGroup::Warning, SE_TEXT(" Warning"));
         UpdateCount((int)LogGroup::Info, SE_TEXT(" Message"));
 
-        if (_logCountPerGroup[(int)LogGroup::Error] == 0)
+        if (m_LogCountPerGroup[(int)LogGroup::Error] == 0)
         {
-            _iconType = _logCountPerGroup[(int)LogGroup::Warning] == 0 ? Log::Severity::Info : Log::Severity::Warning;
+            _iconType = m_LogCountPerGroup[(int)LogGroup::Warning] == 0 ? Log::Severity::Info : Log::Severity::Warning;
         }
     }
 
     void LogWindow::UpdateCount(int group, String msg)
     {
-        if (_logCountPerGroup[group] != 1)
+        if (m_LogCountPerGroup[group] != 1)
             msg += 's';
-        _groupButtons[group]->Text = String::Format(SE_TEXT("{0}{1}"), _logCountPerGroup[group], msg);
+        _groupButtons[group]->Text = String::Format(SE_TEXT("{0}{1}"), m_LogCountPerGroup[group], msg);
     }
 
 
     void LogWindow::RemoveEntries()
     {
-        _entriesPanel->SetIsLayoutLocked(true);
+        m_EntriesPanel->SetIsLayoutLocked(true);
 
         Selected = nullptr;
-        for (int i = _entriesPanel->ChildrenCount() - 1; i >= 0; i--)
+        for (int i = m_EntriesPanel->ChildrenCount() - 1; i >= 0; i--)
         {
             LogEntry* entry;
-            if (TypeTryCast<LogEntry>(_entriesPanel->GetChild(i), entry))
+            if (TypeTryCast<LogEntry>(m_EntriesPanel->GetChild(i), entry))
             {
-                _logCountPerGroup[(int)entry->Group]--;
+                m_LogCountPerGroup[(int)entry->Group]--;
                 entry->Dispose();
                 Delete(entry);
                 i--;
@@ -582,9 +582,9 @@ namespace SE::Editor
         }
         UpdateCount();
 
-        _entriesPanel->Children().Clear();
-        _entriesPanel->SetIsLayoutLocked(false);
-        _entriesPanel->PerformLayout();
+        m_EntriesPanel->Children().Clear();
+        m_EntriesPanel->SetIsLayoutLocked(false);
+        m_EntriesPanel->PerformLayout();
     }
 
     void LogWindow::__SetSelected(LogEntry* value)

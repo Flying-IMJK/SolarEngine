@@ -59,11 +59,17 @@ namespace SE::BuildTool
         TypeInfoBase const* GetRegisteredType(TypeID typeID) const;
         CppTypeConversion ResolveConversion(TypeInfo const& type, std::string_view marshalAs = {},
                                             BindingUseSite useSite = BindingUseSite::Parameter,
-                                            BindingDirection direction = BindingDirection::In) const;
+                                            ApiParameterDirection direction = ApiParameterDirection::In) const;
         std::string GetInteropValueType(TypeInfo const& type, std::string_view marshalAs = {}) const;
         bool CanGenerateVariantFieldAccess(TypeInfo const& type) const;
         bool GetNativeToManagedConvert(TypeInfo const& type, std::string& expr, std::string_view marshalAs = {}) const;
         bool GetManagedToNativeConvert(TypeInfo const& type, std::string& expr, std::string_view marshalAs = {}) const;
+        std::string GenerateCppWrapperNativeToManagedParam(const TypeInfoParam& param,
+                                                           std::string& setupOut, bool& useLocalVar) const;
+        std::string GenerateCppWrapperManagedToNative(const TypeInfoParam& param,
+                                                      const std::string& managedValue) const;
+        void GenerateCppWrapperManagedToNativeParam(const TypeInfoParam& param, const std::string& nativeValue,
+                                                    std::string& writeBackOut) const;
         std::string GetNativeToVariantConvert(TypeInfo const& type, const std::string& expr) const;
         std::string GetVariantToNativeConvert(TypeInfo const& type, const std::string& expr) const;
         std::string GetReturnTypeConver(const TypeInfoFunc& fn) const;

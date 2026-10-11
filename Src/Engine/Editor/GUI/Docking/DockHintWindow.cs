@@ -22,9 +22,11 @@ namespace SE.Editor.GUI
         {
             m_ToMove = toMove ?? throw new ArgumentNullException(nameof(toMove));
             TargetState = DockState.Float;
-            SE.Window? host = toMove.HostWindow;
+            SE.Window? host = toMove.Window?.Window;
             if (host == null)
+            {
                 throw new InvalidOperationException("Floating dock panel has no host window.");
+            }
 
             m_ToMove.Focus();
             m_ToMove.Defocus();
@@ -44,9 +46,13 @@ namespace SE.Editor.GUI
             // Floating panels sample after focus, matching the native window mouse query.
             Float2 mouseScreen = initialMouseScreen ?? GetMouseScreenPosition(host);
             if (mouseScreen != Float2.Zero)
+            {
                 CalculateDragOffset(mouseScreen);
+            }
             else
+            {
                 m_LateDragOffsetUpdate = true;
+            }
 
             // The native implementation keeps the restored size for the whole drag operation.
             m_DefaultWindowSize = host.Size;
@@ -69,7 +75,10 @@ namespace SE.Editor.GUI
         public static DockHintWindow Create(FloatWindowDockPanel toMove)
         {
             if (toMove == null)
+            {
                 throw new ArgumentNullException(nameof(toMove));
+            }
+
             DockHintWindow hint = new DockHintWindow(toMove);
             return hint;
         }
@@ -90,11 +99,14 @@ namespace SE.Editor.GUI
             {
                 throw new InvalidOperationException("The window did not create a floating dock panel.");
             }
-            if (floating.HostWindow != null)
+            if (floating.Window != null)
             {
-                SE.Window host = floating.HostWindow;
+                SE.Window host = floating.Window.Window;
                 if (mouseScreen == Float2.Zero)
+                {
                     mouseScreen = GetMouseScreenPosition(host);
+                }
+
                 host.Position = mouseScreen - new Float2(8.0f);
             }
             return new DockHintWindow(floating, mouseScreen);
@@ -119,14 +131,16 @@ namespace SE.Editor.GUI
         public void Update(Float2 mouseScreenPosition)
         {
             if (IsDisposed)
+            {
                 return;
+            }
 
             TargetPanel = m_ToMove.MasterPanel.HitTest(mouseScreenPosition, m_ToMove);
             TargetState = DockState.Float;
             if (TargetPanel != null)
             {
                 m_DockRect = TargetPanel.DockAreaBounds;
-                float hintSize = Proxy.HintWindowsSize * (TargetPanel.Root?.DpiScale ?? 1.0f);
+                float hintSize = Proxy.HintWindowsSize * (TargetPanel.Root?.GetDpiScale() ?? 1.0f);
                 Float2 center = m_DockRect.Location + m_DockRect.Size * 0.5f;
                 m_UpperRect = new Rectangle(center.X - hintSize * 0.5f, m_DockRect.Y + BorderMargin, hintSize, hintSize);
                 m_BottomRect = new Rectangle(center.X - hintSize * 0.5f, m_DockRect.Bottom - hintSize - BorderMargin, hintSize, hintSize);
@@ -137,15 +151,26 @@ namespace SE.Editor.GUI
                 if (m_ToMove.ChildPanelsCount == 0)
                 {
                     if (m_UpperRect.Contains(mouseScreenPosition))
+                    {
                         TargetState = DockState.DockTop;
+                    }
                     else if (m_BottomRect.Contains(mouseScreenPosition))
+                    {
                         TargetState = DockState.DockBottom;
+                    }
                     else if (m_LeftRect.Contains(mouseScreenPosition))
+                    {
                         TargetState = DockState.DockLeft;
+                    }
                     else if (m_RightRect.Contains(mouseScreenPosition))
+                    {
                         TargetState = DockState.DockRight;
+                    }
+
                     if (m_CenterRect.Contains(mouseScreenPosition))
+                    {
                         TargetState = DockState.DockFill;
+                    }
                 }
             }
 
@@ -185,7 +210,10 @@ namespace SE.Editor.GUI
         private void Dispose(bool commit)
         {
             if (IsDisposed)
+            {
                 return;
+            }
+
             IsDisposed = true;
             Proxy.Window?.EndTrackingMouse();
             Proxy.Hide();
@@ -200,7 +228,9 @@ namespace SE.Editor.GUI
                 else if (noChildren && TargetState == DockState.DockFill)
                 {
                     while (m_ToMove.TabsCount > 0)
+                    {
                         m_ToMove.GetTab(0).Show(DockState.DockFill, TargetPanel);
+                    }
                 }
                 else
                 {
@@ -208,37 +238,52 @@ namespace SE.Editor.GUI
                     DockWindow first = m_ToMove.GetTab(0);
                     first.Show(TargetState, TargetPanel);
                     while (m_ToMove.TabsCount > 0)
+                    {
                         m_ToMove.GetTab(0).Show(DockState.DockFill, first);
+                    }
+
                     selected?.SelectTab();
                 }
                 if (TargetPanel.Root is WindowRootControl root)
+                {
                     root.Window.Focus();
+                }
             }
-            else if (commit && m_ToMove.HostWindow != null)
+            else if (commit && m_ToMove.Window != null)
             {
                 Float2 mouseScreen = m_WindowRect.Location + m_DragOffset;
                 if (Proxy.Window != null)
-                    mouseScreen = Proxy.Window.ClientToScreen(Proxy.Window.GUI.MousePosition * Proxy.Window.DpiScale);
-                m_ToMove.HostWindow.Position = mouseScreen - m_DragOffset;
-                m_ToMove.HostWindow.Show();
+                {
+                    mouseScreen = Proxy.Window.ClientToScreen(Proxy.Window.GUI.GetMousePosition() * Proxy.Window.DpiScale);
+                }
+
+                m_ToMove.Window.Window.Position = mouseScreen - m_DragOffset;
+                m_ToMove.Window.Window.Show();
             }
 
             TargetPanel = null;
             TargetState = DockState.Unknown;
             if (ReferenceEquals(Active, this))
+            {
                 Active = null;
+            }
         }
 
         private void CalculateDragOffset(Float2 mouseScreenPosition)
         {
-            if (m_ToMove.HostWindow != null)
-                m_DragOffset = mouseScreenPosition - m_ToMove.HostWindow.Position;
+            if (m_ToMove.Window != null)
+            {
+                m_DragOffset = mouseScreenPosition - m_ToMove.Window.Window.Position;
+            }
         }
 
         private static Float2 GetMouseScreenPosition(SE.Window? window)
         {
             if (window == null)
+            {
                 return Float2.Zero;
+            }
+
             Float2 mouse = window.MousePosition;
             return mouse != Float2.Zero && mouse != Float2.Minimum
                 ? window.ClientToScreen(mouse)
@@ -315,7 +360,10 @@ namespace SE.Editor.GUI
             {
                 PreviewBounds = preview;
                 if (Window != null)
+                {
                     Window.ClientBounds = preview;
+                }
+
                 SetHint(Up, upper, showHints && showBorders);
                 SetHint(Down, bottom, showHints && showBorders);
                 SetHint(Left, left, showHints && showBorders);
@@ -379,18 +427,28 @@ namespace SE.Editor.GUI
             private static void SetHint(SE.Window? window, Rectangle bounds, bool visible)
             {
                 if (window == null)
+                {
                     return;
+                }
+
                 window.Position = bounds.Location;
                 if (visible)
+                {
                     window.Show();
+                }
                 else
+                {
                     window.Hide();
+                }
             }
 
             private static void CloseProxy(ref SE.Window? window)
             {
                 if (window == null)
+                {
                     return;
+                }
+
                 window.Close(SE.ClosingReason.User);
                 window = null;
             }
@@ -398,7 +456,9 @@ namespace SE.Editor.GUI
             private static void OnMouseMove(ref Float2 localPosition)
             {
                 if (Window != null)
+                {
                     Active?.OnMouseMove(Window.ClientToScreen(localPosition * Window.DpiScale));
+                }
             }
 
             private static void OnMouseUp(ref Float2 localPosition, MouseButton button, ref bool handled)
@@ -407,7 +467,9 @@ namespace SE.Editor.GUI
                 {
                     handled = true;
                     if (Window != null)
+                    {
                         Active?.OnMouseUp(Window.ClientToScreen(localPosition * Window.DpiScale));
+                    }
                 }
             }
 

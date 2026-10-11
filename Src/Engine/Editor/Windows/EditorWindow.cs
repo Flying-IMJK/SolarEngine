@@ -98,28 +98,28 @@ namespace SE.Editor
                 return true;
             }
 
-/*            switch (key)
-            {
-                case KeyboardKeys.Return:
-                    if (CanUseNavigation() && Root != null && Root->GetFocusedControl() != null)
-                    {
-                        Root->SubmitFocused();
-                        return true;
-                    }
-                    break;
-                case KeyboardKeys.Tab:
-                    if (CanUseNavigation() && Root != null)
-                    {
-                        bool shiftDown = Root->GetKey(KeyboardKeys::Shift);
-                        Root.Navigate(shiftDown ? NavDirection.Previous : NavDirection.Next);
-                        return true;
-                    }
-                    break;
-            }*/
+            /*            switch (key)
+                        {
+                            case KeyboardKeys.Return:
+                                if (CanUseNavigation() && Root != null && Root->GetFocusedControl() != null)
+                                {
+                                    Root->SubmitFocused();
+                                    return true;
+                                }
+                                break;
+                            case KeyboardKeys.Tab:
+                                if (CanUseNavigation() && Root != null)
+                                {
+                                    bool shiftDown = Root->GetKey(KeyboardKeys::Shift);
+                                    Root.Navigate(shiftDown ? NavDirection.Previous : NavDirection.Next);
+                                    return true;
+                                }
+                                break;
+                        }*/
             return false;
         }
 
-        protected override void OnDispose()
+        public override void OnDestroy()
         {
             if (IsDisposing)
             {
@@ -129,7 +129,7 @@ namespace SE.Editor
             OnExit();
 
             Editor.Windows.UnregisterWindow(this);
-            base.OnDispose();
+            base.OnDestroy();
         }
     }
 }

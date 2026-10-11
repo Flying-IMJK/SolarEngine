@@ -14,7 +14,7 @@
 
 namespace SE
 {
-    bool ImportModel::TryGetImportOptions(const StringView& path, Options& options)
+    bool ImportModel::TryGetImportOptions(const StringView& path, ModelUtilsOptions& options)
     {
         if (FileSystem::FileExists(path))
         {
@@ -159,11 +159,11 @@ namespace SE
     CreateAssetResult ImportModel::Import(CreateAssetContext& context)
     {
         // Get import options
-        Options options;
+        ModelUtilsOptions options;
         if (context.CustomArg != nullptr)
         {
             // Copy import options from argument
-            options = *static_cast<Options*>(context.CustomArg);
+            options = *static_cast<ModelUtilsOptions*>(context.CustomArg);
         }
         else
         {
@@ -208,9 +208,9 @@ namespace SE
         List<IGrouping<StringView, MeshData*>>& meshesByName = *meshesByNamePtr;
 
         // Import objects from file separately
-        ModelUtils::Options::CachedData cached = { data, (void*)meshesByNamePtr };
+        ModelUtilsOptions::CachedData cached = { data, (void*)meshesByNamePtr };
         List<PrefabObject> prefabObjects;
-        if (options.Type == ModelUtils::ModelType::Prefab)
+        if (options.Type == ModelUtilsModelType::Prefab)
         {
             // Normalize options
             options.SplitObjects = false;
@@ -218,7 +218,7 @@ namespace SE
 
             // Import all of the objects recursive but use current model data to skip loading file again
             options.Cached = &cached;
-            Function<bool(Options& splitOptions, const StringView& objectName, String& outputPath, MeshData* meshData)> splitImport = [&context, &autoImportOutput](Options& splitOptions, const StringView& objectName, String& outputPath, MeshData* meshData)
+            Function<bool(ModelUtilsOptions& splitOptions, const StringView& objectName, String& outputPath, MeshData* meshData)> splitImport = [&context, &autoImportOutput](ModelUtilsOptions& splitOptions, const StringView& objectName, String& outputPath, MeshData* meshData)
             {
                 // Recursive importing of the split object
                 String postFix = objectName;
@@ -229,7 +229,7 @@ namespace SE
                 outputPath = autoImportOutput / String(FileSystem::GetFileNameWithoutExtension(context.TargetAssetPath)) + SE_TEXT(" ") + postFix + SE_TEXT(".flax");
                 splitOptions.SubAssetFolder = SE_TEXT(" "); // Use the same folder as asset as they all are imported to the subdir for the prefab (see SubAssetFolder usage above)
 
-                if (splitOptions.Type == ModelUtils::ModelType::Model && meshData)
+                if (splitOptions.Type == ModelUtilsModelType::Model && meshData)
                 {
                     // These settings interfere with submesh reimporting
                     splitOptions.CenterGeometry = false;
@@ -268,7 +268,7 @@ namespace SE
                 prefabObject.NodeIndex = group.First()->NodeIndex;
                 prefabObject.Name = group.First()->Name;
 
-                splitOptions.Type = ModelUtils::ModelType::Model;
+                splitOptions.Type = ModelUtilsModelType::Model;
                 splitOptions.ObjectIndex = groupIndex;
                 if (!splitImport(splitOptions, group.GetKey(), prefabObject.AssetPath, group.First()))
                 {
@@ -279,7 +279,7 @@ namespace SE
             for (int32 i = 0; i < data->Animations.Count(); i++)
             {
                 auto& animation = data->Animations[i];
-                splitOptions.Type = ModelUtils::ModelType::Animation;
+                splitOptions.Type = ModelUtilsModelType::Animation;
                 splitOptions.ObjectIndex = i;
                 splitImport(splitOptions, animation.Name, prefabObject.AssetPath, nullptr);
             }*/
@@ -292,8 +292,8 @@ namespace SE
 
             // Import rest of the objects recursive but use current model data to skip loading file again
             options.Cached = &cached;
-            Function<bool(Options& splitOptions, const StringView& objectName)> splitImport;
-            splitImport.Bind([&context](Options& splitOptions, const StringView& objectName)
+            Function<bool(ModelUtilsOptions& splitOptions, const StringView& objectName)> splitImport;
+            splitImport.Bind([&context](ModelUtilsOptions& splitOptions, const StringView& objectName)
             {
                 // Recursive importing of the split object
                 String postFix = objectName;
@@ -306,8 +306,8 @@ namespace SE
             auto splitOptions = options;
             switch (options.Type)
             {
-            case ModelUtils::ModelType::Model:
-            case ModelUtils::ModelType::SkinnedModel:
+            case ModelUtilsModelType::Model:
+            case ModelUtilsModelType::SkinnedModel:
                 LOG_INFO("Resource", "Splitting imported {0} meshes", meshesByName.Count());
                 for (int32 groupIndex = 1; groupIndex < meshesByName.Count(); groupIndex++)
                 {
@@ -316,7 +316,7 @@ namespace SE
                     splitImport(splitOptions, group.GetKey());
                 }
                 break;
-            case ModelUtils::ModelType::Animation:
+            case ModelUtilsModelType::Animation:
                 /*LOG_INFO("Resource", "Splitting imported {0} animations", data->Animations.Count());
                 for (int32 i = 1; i < data->Animations.Count(); i++)
                 {
@@ -332,7 +332,7 @@ namespace SE
         List<MeshData*> meshesToDelete;
         if (options.ObjectIndex >= 0 &&
             options.ObjectIndex < meshesByName.Count() &&
-            (options.Type == ModelUtils::ModelType::Model || options.Type == ModelUtils::ModelType::SkinnedModel))
+            (options.Type == ModelUtilsModelType::Model || options.Type == ModelUtilsModelType::SkinnedModel))
         {
             auto& group = meshesByName[options.ObjectIndex];
             if (&dataThis == data)
@@ -410,7 +410,7 @@ namespace SE
         // Check if restore local changes on asset reimport
         constexpr bool RestoreAnimEventsOnReimport = true;
         const bool restoreMaterials = options.RestoreMaterialsOnReimport && data->Materials.HasItems();
-        const bool restoreAnimEvents = false;//RestoreAnimEventsOnReimport && options.Type == ModelUtils::ModelType::Animation && data->Animations.HasItems();
+        const bool restoreAnimEvents = false;//RestoreAnimEventsOnReimport && options.Type == ModelUtilsModelType::Animation && data->Animations.HasItems();
         if ((restoreMaterials || restoreAnimEvents) && FileSystem::FileExists(context.TargetAssetPath))
         {
             AssetRef<Asset> asset = AssetContent::LoadAsync<Asset>(context.TargetAssetPath);
@@ -467,7 +467,7 @@ namespace SE
 
         // When using generated lightmap UVs those coordinates needs to be moved so all meshes are in unique locations in [0-1]x[0-1] coordinates space
         // Model importer generates UVs in [0-1] space for each mesh so now we need to pack them inside the whole model (only when using multiple meshes)
-        /*if (options.Type == ModelUtils::ModelType::Model && options.LightmapUVsSource == ModelLightmapUVsSource::Generate && data->LODs.HasItems() && data->LODs[0].Meshes.Count() > 1)
+        /*if (options.Type == ModelUtilsModelType::Model && options.LightmapUVsSource == ModelLightmapUVsSource::Generate && data->LODs.HasItems() && data->LODs[0].Meshes.Count() > 1)
         {
             RepackMeshLightmapUVs(*data);
         }*/
@@ -476,16 +476,16 @@ namespace SE
         CreateAssetResult result = CreateAssetResult::InvalidTypeID;
         switch (options.Type)
         {
-        case ModelUtils::ModelType::Model:
+        case ModelUtilsModelType::Model:
             result = CreateModel(context, *data, &options);
             break;
-        case ModelUtils::ModelType::SkinnedModel:
+        case ModelUtilsModelType::SkinnedModel:
             result = CreateSkinnedModel(context, *data, &options);
             break;
-        case ModelUtils::ModelType::Animation:
+        case ModelUtilsModelType::Animation:
             result = CreateAnimation(context, *data, &options);
             break;
-        case ModelUtils::ModelType::Prefab:
+        case ModelUtilsModelType::Prefab:
             result = CreatePrefab(context, *data, options, prefabObjects);
             break;
         }
@@ -529,7 +529,7 @@ namespace SE
         return CreateModel(context, modelData);
     }
 
-    CreateAssetResult ImportModel::CreateModel(CreateAssetContext& context, ModelData& modelData, const Options* options)
+    CreateAssetResult ImportModel::CreateModel(CreateAssetContext& context, ModelData& modelData, const ModelUtilsOptions* options)
     {
         PROFILE_CPU();
         IMPORT_SETUP(Model, MODE_VERSION);
@@ -580,7 +580,7 @@ namespace SE
         return CreateAssetResult::Ok;
     }
 
-    CreateAssetResult ImportModel::CreateSkinnedModel(CreateAssetContext& context, ModelData& modelData, const Options* options)
+    CreateAssetResult ImportModel::CreateSkinnedModel(CreateAssetContext& context, ModelData& modelData, const ModelUtilsOptions* Options)
     {
         PROFILE_CPU();
         /*
@@ -624,7 +624,7 @@ namespace SE
         return CreateAssetResult::Ok;
     }
 
-    CreateAssetResult ImportModel::CreateAnimation(CreateAssetContext& context, ModelData& modelData, const Options* options)
+    CreateAssetResult ImportModel::CreateAnimation(CreateAssetContext& context, ModelData& modelData, const ModelUtilsOptions* options)
     {
         PROFILE_CPU();
         /*
@@ -643,7 +643,7 @@ namespace SE
         return CreateAssetResult::Ok;
     }
 
-    CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, ModelData& data, const Options& options, const List<PrefabObject>& prefabObjects)
+    CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, ModelData& data, const ModelUtilsOptions& options, const List<PrefabObject>& prefabObjects)
     {
         PROFILE_CPU();
         if (data.Nodes.Count() == 0)

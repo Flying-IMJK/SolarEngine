@@ -9,7 +9,7 @@ namespace SE::Editor
 	{
 		// private ModelImportSettings _settings = new();
 	private:
-		ImportModel::Options options;
+		ModelUtilsOptions options;
 
 	public:
 		/// <summary>

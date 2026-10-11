@@ -1,334 +1,255 @@
+#nullable disable annotations
+
 using System;
+using System.Collections.Generic;
 
 namespace SE.GUI
 {
     /// <summary>
-    /// Root of a managed GUI tree. It owns focus, pointer capture and event routing.
+    /// Root of a GUI tree.
     /// </summary>
-    public class RootControl : ContainerControl
+    public abstract class RootControl : ContainerControl
     {
-        private Control? m_FocusedControl;
-        private Control? m_TrackingControl;
-        private Control? m_MouseOverControl;
-        private DragData? m_DragData;
-        private readonly Tooltip m_Tooltip;
+        private static ContainerControl s_GameRoot;
 
-        public RootControl()
+        public RootControl() : base(0, 0, 100, 60)
         {
-            SetRootCore(this);
-            m_Tooltip = new Tooltip();
-        }
-
-        public RootControl(Rectangle bounds)
-            : base(bounds)
-        {
-            SetRootCore(this);
-            m_Tooltip = new Tooltip();
+            AutoFocus = false;
         }
 
         /// <summary>
-        /// Gets the game GUI root when one has been registered by the host.
+        /// Gets the main GUI control. Use it to plug in custom GUI controls.
         /// </summary>
-        public static ContainerControl? GameRoot { get; private set; }
+        public static ContainerControl GetGameRoot()
+        {
+            return s_GameRoot;
+        }
+
+        /// <summary>
+        /// Sets the main GUI control.
+        /// </summary>
+        public static void SetGameRoot(ContainerControl value)
+        {
+            s_GameRoot = value;
+        }
 
         /// <summary>
         /// Gets or sets the currently focused control.
         /// </summary>
-        public Control? FocusedControl
-        {
-            get => m_FocusedControl;
-            set => Focus(value);
-        }
+        public abstract Control GetFocusedControl();
+
+        public abstract void SetFocusedControl(Control value);
 
         /// <summary>
-        /// Gets the currently captured pointer target.
+        /// Gets the tracking mouse offset.
         /// </summary>
-        public Control? TrackingControl => m_TrackingControl;
+        public abstract Float2 GetTrackingMouseOffset();
 
         /// <summary>
-        /// Gets the pointer position in root logical coordinates.
+        /// Gets or sets the position of the mouse in the window space coordinates.
         /// </summary>
-        public Float2 MousePosition { get; private set; }
+        public abstract Float2 GetMousePosition();
+
+        public abstract void SetMousePosition(Float2 value);
 
         /// <summary>
-        /// Gets the current DPI scale supplied by the owning window.
+        /// The update callbacks collection. Controls can register for logic updates.
         /// </summary>
-        public float DpiScale { get; private set; } = 1.0f;
+        public List<Action<float>> UpdateCallbacks = new(1024);
 
         /// <summary>
-        /// Gets the managed tooltip service for this root.
+        /// The update callbacks to add before invoking the update.
         /// </summary>
-        public Tooltip Tooltip => m_Tooltip;
+        public List<Action<float>> UpdateCallbacksToAdd = new();
 
         /// <summary>
-        /// Registers the game GUI root.
+        /// The update callbacks to remove before invoking the update.
         /// </summary>
-        public static void SetGameRoot(ContainerControl? value)
-        {
-            GameRoot = value;
-        }
+        public List<Action<float>> UpdateCallbacksToRemove = new();
+
+        #region Navigation
 
         /// <summary>
-        /// Updates the root's DPI scale and logical bounds.
+        /// The custom callback for UI navigation. Overrides the default navigation behaviour.
         /// </summary>
-        public void SetWindowMetrics(Float2 logicalSize, float dpiScale)
-        {
-            DpiScale = dpiScale > 0.0f ? dpiScale : 1.0f;
-            SetBounds(0.0f, 0.0f, logicalSize.X, logicalSize.Y);
-            PerformLayout(true);
-        }
+        public Action<NavDirection> CustomNavigation;
 
         /// <summary>
-        /// Starts pointer capture for a control in this root tree.
+        /// Performs UI navigation.
         /// </summary>
-        public void StartTrackingMouse(Control control)
+        public void Navigate(NavDirection direction)
         {
-            ArgumentNullException.ThrowIfNull(control);
-            if (!ReferenceEquals(control.Root, this))
-                throw new InvalidOperationException("Only controls in this root can capture its pointer.");
-
-            m_TrackingControl = control;
-            if (control.AutoFocus)
-                Focus(control);
-        }
-
-        /// <summary>
-        /// Ends pointer capture.
-        /// </summary>
-        public void EndTrackingMouse()
-        {
-            m_TrackingControl = null;
-        }
-
-        /// <summary>
-        /// Focuses a control in this root tree, or clears focus.
-        /// </summary>
-        public bool Focus(Control? control)
-        {
-            if (ReferenceEquals(m_FocusedControl, control))
-                return false;
-            if (control != null && (!ReferenceEquals(control.Root, this) || !control.VisibleInHierarchy || !control.EnabledInHierarchy))
-                return false;
-
-            Control? previous = m_FocusedControl;
-            m_FocusedControl = control;
-            previous?.SetFocused(false);
-            control?.SetFocused(true);
-            return true;
-        }
-
-        /// <summary>
-        /// Gets the key state for this root.
-        /// </summary>
-        public virtual bool GetKey(KeyboardKeys key)
-        {
-            _ = key;
-            return false;
-        }
-
-        /// <summary>
-        /// Gets the key down state for this root.
-        /// </summary>
-        public virtual bool GetKeyDown(KeyboardKeys key)
-        {
-            _ = key;
-            return false;
-        }
-
-        /// <summary>
-        /// Gets the key up state for this root.
-        /// </summary>
-        public virtual bool GetKeyUp(KeyboardKeys key)
-        {
-            _ = key;
-            return false;
-        }
-
-        public override bool OnCharInput(char character)
-        {
-            return m_FocusedControl?.OnCharInput(character) ?? false;
-        }
-
-        public override bool OnKeyDown(KeyboardKeys key)
-        {
-            return m_FocusedControl?.OnKeyDown(key) ?? false;
-        }
-
-        public override bool OnKeyUp(KeyboardKeys key)
-        {
-            return m_FocusedControl?.OnKeyUp(key) ?? false;
-        }
-
-        public override bool OnMouseDown(Float2 location, MouseButton button)
-        {
-            MousePosition = location;
-            Control? control = m_TrackingControl ?? HitTest(location);
-            UpdateMouseOver(location);
-            if (control == null || ReferenceEquals(control, this))
-                return false;
-
-            if (control.AutoFocus)
-                Focus(control);
-            return control.OnMouseDown(control.PointFromRoot(location), button);
-        }
-
-        public override bool OnMouseUp(Float2 location, MouseButton button)
-        {
-            MousePosition = location;
-            Control? control = m_TrackingControl ?? HitTest(location);
-            UpdateMouseOver(location);
-            return control == null || ReferenceEquals(control, this) ? false : control.OnMouseUp(control.PointFromRoot(location), button);
-        }
-
-        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
-        {
-            MousePosition = location;
-            Control? control = m_TrackingControl ?? HitTest(location);
-            UpdateMouseOver(location);
-            return control == null || ReferenceEquals(control, this) ? false : control.OnMouseDoubleClick(control.PointFromRoot(location), button);
-        }
-
-        public override bool OnMouseWheel(Float2 location, float delta)
-        {
-            MousePosition = location;
-            Control? control = m_TrackingControl ?? HitTest(location);
-            UpdateMouseOver(location);
-            return control == null || ReferenceEquals(control, this) ? false : control.OnMouseWheel(control.PointFromRoot(location), delta);
-        }
-
-        public override void OnMouseMove(Float2 location)
-        {
-            MousePosition = location;
-            Control? control = m_TrackingControl ?? HitTest(location);
-            UpdateMouseOver(location);
-            if (control != null && !ReferenceEquals(control, this))
-                control.OnMouseMove(control.PointFromRoot(location));
-        }
-
-        public override void OnMouseLeave()
-        {
-            if (m_MouseOverControl != null)
-                m_Tooltip.OnMouseLeaveControl(m_MouseOverControl);
-            m_MouseOverControl?.SetMouseOver(false);
-            m_MouseOverControl = null;
-        }
-
-        public override bool OnTouchDown(Float2 location, int pointerIndex)
-        {
-            Control? control = HitTest(location);
-            if (control?.AutoFocus == true)
-                Focus(control);
-            return control == null || ReferenceEquals(control, this) ? false : control.OnTouchDown(control.PointFromRoot(location), pointerIndex);
-        }
-
-        public override void OnTouchMove(Float2 location, int pointerIndex)
-        {
-            Control? control = HitTest(location);
-            if (control != null && !ReferenceEquals(control, this))
-                control.OnTouchMove(control.PointFromRoot(location), pointerIndex);
-        }
-
-        public override bool OnTouchUp(Float2 location, int pointerIndex)
-        {
-            Control? control = HitTest(location);
-            return control == null || ReferenceEquals(control, this) ? false : control.OnTouchUp(control.PointFromRoot(location), pointerIndex);
-        }
-
-        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
-        {
-            ArgumentNullException.ThrowIfNull(data);
-            MousePosition = location;
-            m_DragData = data;
-            Control? control = m_TrackingControl ?? HitTest(location);
-            UpdateMouseOver(location);
-
-            if (control == null || ReferenceEquals(control, this))
+            if (direction == NavDirection.None)
             {
-                return DragDropEffect.None;
+                return;
             }
 
-            Float2 pos = control.PointFromRoot(location);
-            return control.OnDragEnter(ref pos, data);
-        }
-
-        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
-        {
-            ArgumentNullException.ThrowIfNull(data);
-            MousePosition = location;
-            m_DragData = data;
-            Control? control = m_TrackingControl ?? HitTest(location);
-            UpdateMouseOver(location);
-
-            if (control == null || ReferenceEquals(control, this))
+            if (CustomNavigation != null)
             {
-                return DragDropEffect.None;
+                // Custom
+                CustomNavigation(direction);
+                return;
             }
 
-            Float2 pos = control.PointFromRoot(location);
-            return control.OnDragMove(ref pos, data);
-        }
+            List<Control> visited = new();
 
-        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
-        {
-            ArgumentNullException.ThrowIfNull(data);
-            MousePosition = location;
-            Control? control = m_TrackingControl ?? HitTest(location);
-            DragDropEffect result = DragDropEffect.None;
-            if (!(control == null || ReferenceEquals(control, this)))
+            Control focused = GetFocusedControl();
+            if (focused == null)
             {
-                Float2 pos = control.PointFromRoot(location);
-                result = control.OnDragDrop(ref pos, data);
+                // Nothing is focused so go to the first control
+                focused = OnNavigate(direction, Float2.Zero, this, visited);
+                if (focused != null)
+                {
+                    focused.NavigationFocus();
+                }
+                return;
             }
 
-            m_DragData = null;
-            return result;
+            Control target = focused.GetNavTarget(direction);
+            if (target != null)
+            {
+                // Explicitly specified focus target
+                target.NavigationFocus();
+                return;
+            }
+
+            // Automatic navigation routine
+            target = focused.OnNavigate(direction, focused.GetNavOrigin(direction), this, visited);
+            if (target != null)
+            {
+                target.NavigationFocus();
+            }
         }
 
-        public override void OnDragLeave()
+        /// <summary>
+        /// Submits the currently focused control.
+        /// </summary>
+        public void SubmitFocused()
         {
-            m_DragData = null;
-            m_MouseOverControl?.OnDragLeave();
+            Control focusedControl = GetFocusedControl();
+            if (focusedControl != null)
+            {
+                focusedControl.OnSubmit();
+            }
         }
 
-        public override void ClearState()
-        {
-            m_TrackingControl = null;
-            m_DragData = null;
-            m_Tooltip.Hide();
-            m_MouseOverControl?.SetMouseOver(false);
-            m_MouseOverControl = null;
-            Focus(null);
-            base.ClearState();
-        }
+        #endregion
 
-        protected override void OnDispose()
-        {
-            if (ReferenceEquals(GameRoot, this))
-                GameRoot = null;
-            m_Tooltip.Dispose();
-            base.OnDispose();
-        }
-
+        /// <inheritdoc />
         public override void Update(float deltaTime)
         {
             base.Update(deltaTime);
-            if (!ReferenceEquals(m_Tooltip.Parent, this))
-                m_Tooltip.Update(deltaTime);
+
+            // Flush requests
+            for (int i = 0; i < UpdateCallbacksToAdd.Count; i++)
+            {
+                UpdateCallbacks.Add(UpdateCallbacksToAdd[i]);
+            }
+            UpdateCallbacksToAdd.Clear();
+            for (int i = 0; i < UpdateCallbacksToRemove.Count; i++)
+            {
+                // Native List<UpdateDelegate*>::Remove compares pointer identity and moves the last item into the gap.
+                for (int j = 0; j < UpdateCallbacks.Count; j++)
+                {
+                    if ((object)UpdateCallbacks[j] == (object)UpdateCallbacksToRemove[i])
+                    {
+                        int lastIndex = UpdateCallbacks.Count - 1;
+                        if (lastIndex != 0)
+                        {
+                            UpdateCallbacks[j] = UpdateCallbacks[lastIndex];
+                        }
+                        UpdateCallbacks.RemoveAt(lastIndex);
+                        break;
+                    }
+                }
+            }
+            UpdateCallbacksToRemove.Clear();
+
+            // Perform the UI update
+            for (int i = 0; i < UpdateCallbacks.Count; i++)
+            {
+                UpdateCallbacks[i](deltaTime);
+            }
         }
 
-        private void UpdateMouseOver(Float2 location)
+        /// <inheritdoc />
+        public override bool RayCast(ref Float2 location, out Control hit)
         {
-            Control? next = HitTest(location);
-            if (ReferenceEquals(next, m_MouseOverControl))
-                return;
+            // Ignore self
+            return RayCastChildren(location, out hit);
+        }
 
-            if (m_MouseOverControl != null)
-                m_Tooltip.OnMouseLeaveControl(m_MouseOverControl);
-            m_MouseOverControl?.SetMouseOver(false);
-            m_MouseOverControl = next;
-            m_MouseOverControl?.SetMouseOver(true);
-            if (m_MouseOverControl != null && !ReferenceEquals(m_MouseOverControl, this))
-                m_Tooltip.OnMouseEnterControl(m_MouseOverControl);
+        /// <inheritdoc />
+        public override bool ContainsPoint(Float2 location, bool precise = false)
+        {
+            if (precise) // Ignore as utility-only element
+            {
+                return false;
+            }
+            return base.ContainsPoint(location, precise);
+        }
+
+        /// <summary>
+        /// Starts the mouse tracking. Used by the scrollbars, splitters, etc.
+        /// </summary>
+        /// <param name="control">The target control that want to track mouse. It will receive OnMouseMove event.</param>
+        /// <param name="useMouseScreenOffset">If set to <c>true</c> will use mouse screen offset.</param>
+        public abstract void StartTrackingMouse(Control control, bool useMouseScreenOffset);
+
+        /// <summary>
+        /// Ends the mouse tracking.
+        /// </summary>
+        public abstract void EndTrackingMouse();
+
+        /// <summary>
+        /// Gets keyboard key state.
+        /// </summary>
+        /// <param name="key">Key to check.</param>
+        /// <returns>True while the user holds down the key identified by id.</returns>
+        public abstract bool GetKey(KeyboardKeys key);
+
+        /// <summary>
+        /// Gets keyboard key down state.
+        /// </summary>
+        /// <param name="key">Key to check.</param>
+        /// <returns>True during the frame the user starts pressing down the key.</returns>
+        public abstract bool GetKeyDown(KeyboardKeys key);
+
+        /// <summary>
+        /// Gets keyboard key up state.
+        /// </summary>
+        /// <param name="key">Key to check.</param>
+        /// <returns>True during the frame the user releases the button.</returns>
+        public abstract bool GetKeyUp(KeyboardKeys key);
+
+        /// <summary>
+        /// Gets mouse button state.
+        /// </summary>
+        /// <param name="button">Mouse button to check.</param>
+        /// <returns>True while the user holds down the button.</returns>
+        public abstract bool GetMouseButton(MouseButton button);
+
+        /// <summary>
+        /// Gets mouse button down state.
+        /// </summary>
+        /// <param name="button">Mouse button to check.</param>
+        /// <returns>True during the frame the user starts pressing down the button.</returns>
+        public abstract bool GetMouseButtonDown(MouseButton button);
+
+        /// <summary>
+        /// Gets mouse button up state.
+        /// </summary>
+        /// <param name="button">Mouse button to check.</param>
+        /// <returns>True during the frame the user releases the button.</returns>
+        public abstract bool GetMouseButtonUp(MouseButton button);
+
+        /// <inheritdoc />
+        public override RootControl Root
+        {
+            get
+            {
+                return this;
+            }
         }
     }
 }

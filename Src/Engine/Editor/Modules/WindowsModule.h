@@ -11,7 +11,6 @@ namespace SE::Editor
 	class ContentItem;
 	class LogWindow;
 	class EditorWindow;
-	class SceneHierarchyWindow;
 
 	class WindowsModule : public EditorModule
 	{
@@ -28,7 +27,6 @@ namespace SE::Editor
 		/// </summary>
 		ContentWindow* ContentWin = nullptr;
 
-		SceneHierarchyWindow* SceneHierarchyWin = nullptr;
 
 		PropertiesWindow* PropertiesWin = nullptr;
 

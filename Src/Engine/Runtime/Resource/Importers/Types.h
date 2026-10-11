@@ -5,7 +5,6 @@
 
 #include "Runtime/Core/Types/Delegate.h"
 #include "Runtime/Core/Types/Strings/String.h"
-#include "Runtime/Core/TypeSystem/IType.h"
 
 
 namespace SE

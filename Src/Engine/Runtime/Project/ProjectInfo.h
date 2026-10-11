@@ -5,16 +5,20 @@
 //#include "Engine/Core/Math/Ray.h"
 #include "Runtime/Core/Types/Collections/List.h"
 #include "Runtime/Core/Types/Collections/HashSet.h"
+#include <Runtime/Core/Scripting/ScriptingObject.h>
 
 #include "Runtime/API.h"
 #include "Version.h"
 
 namespace SE
 {
+	/// <summary>
 	/// Contains information about Flax project.
 	/// </summary>
-	class SE_API_RUNTIME ProjectInfo
+    SE_CLASS(API(NoSpawn))
+    class SE_API_RUNTIME ProjectInfo : public ScriptingObject
 	{
+        SCRIPTING_TYPE_NO_SPAWN(ProjectInfo);
 	public:
 
 		/// <summary>
@@ -27,16 +31,20 @@ namespace SE
 		/// <summary>
 		/// The project reference.
 		/// </summary>
+		SE_STRUCT(API())
 		struct Reference
 		{
+			SCRIPTING_TYPE_MIN(Reference)
 			/// <summary>
 			/// The referenced project name.
 			/// </summary>
+            SE_FIELD(API())
 			String Name;
 
 			/// <summary>
 			/// The referenced project.
 			/// </summary>
+			SE_FIELD(API())
 			ProjectInfo* Project;
 		};
 
@@ -45,51 +53,61 @@ namespace SE
 		/// <summary>
 		/// The project name.
 		/// </summary>
+		SE_FIELD(API())
 		String Name = String::Empty;
 
 		/// <summary>
 		/// The absolute path to the project file.
 		/// </summary>
+		SE_FIELD(API())
 		String ProjectPath = String::Empty;
 
 		/// <summary>
 		/// The project root folder path.
 		/// </summary>
+		SE_FIELD(API())
 		String ProjectFolderPath = String::Empty;
 
 		/// <summary>
 		/// The project version.
 		/// </summary>
+		SE_FIELD(API())
 		VersionInfo Version;
 
 		/// <summary>
 		/// The project publisher company.
 		/// </summary>
+		SE_FIELD(API())
 		String Company = String::Empty;
 
 		/// <summary>
 		/// The project copyright note.
 		/// </summary>
+		SE_FIELD(API())
 		String Copyright = String::Empty;
 
 		/// <summary>
 		/// The name of the build target to use for the game building (final, cooked game code).
 		/// </summary>
+		SE_FIELD(API())
 		String GameTarget = String::Empty;
 
 		/// <summary>
 		/// The name of the build target to use for the game in editor building (editor game code).
 		/// </summary>
+		SE_FIELD(API())
 		String EditorTarget = String::Empty;
 
 		/// <summary>
 		/// The project references.
 		/// </summary>
+		SE_FIELD(API())
 		List<Reference> References;
 
 		/// <summary>
 		/// The default scene asset identifier to open on project startup.
 		/// </summary>
+		SE_FIELD(API())
 		UID DefaultScene = UID::Empty;
 
 		/// <summary>
@@ -100,21 +118,18 @@ namespace SE
 		/// <summary>
 		/// The minimum version supported by this project.
 		/// </summary>
+		SE_FIELD(API())
 		VersionInfo MinEngineVersion;
 
 		/// <summary>
 		/// The user-friendly nickname of the engine installation to use when opening the project. Can be used to open game project with a custom engine distributed for team members. This value must be the same in engine and game projects to be paired.
 		/// </summary>
+		SE_FIELD(API())
 		String EngineNickname = String::Empty;
 
 	public:
 
-		ProjectInfo()
-		{
-			Version = VersionInfo(1, 0);
-//			DefaultSceneSpawn = Ray(Float3::Zero, Float3::Forward);
-			DefaultScene = UID::Empty;
-		}
+		ProjectInfo();
 
 		/// <summary>
 		/// Saves the project file (*.flaxproj).

@@ -50,7 +50,6 @@ namespace SE
 	/// <summary>
 	/// Thread priority levels.
 	/// </summary>
-	SE_ENUM(API())
 	enum class ThreadPriority
 	{
 		/// <summary>
@@ -86,7 +85,7 @@ namespace SE
 	/// <summary>
 	/// Runtime platform service.
 	/// </summary>
-    SE_CLASS(API(Static, Name = "Platform", Tag = "NativeInvokeUseName"))
+    SE_CLASS(API(Static, Name = "Platform", NativeInvokeUseName))
 	class SE_API_RUNTIME PlatformBase
 	{
 		SCRIPTING_TYPE_MIN(PlatformBase);

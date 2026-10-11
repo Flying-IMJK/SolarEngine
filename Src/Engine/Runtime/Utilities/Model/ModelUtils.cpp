@@ -14,11 +14,9 @@
 
 namespace SE
 {
-#if SE_EDITOR
-
-    void ModelUtils::Options::Serialize(SerializeContext& context)
+    void ModelUtilsOptions::Serialize(SerializeContext& context)
     {
-        SERIALIZE_GET_OTHER_OBJ(ModelUtils::Options, context.otherObj);
+        SERIALIZE_GET_OTHER_OBJ(ModelUtilsOptions, context.otherObj);
 
         SERIALIZE(Type);
         SERIALIZE(CalculateNormals);
@@ -68,7 +66,7 @@ namespace SE
         SERIALIZE(SubAssetFolder);
     }
 
-    void ModelUtils::Options::Deserialize(DeserializeContext& context)
+    void ModelUtilsOptions::Deserialize(DeserializeContext& context)
     {
         DESERIALIZE(Type);
         DESERIALIZE(CalculateNormals);
@@ -128,7 +126,7 @@ namespace SE
         DESERIALIZE(EnableRootMotion);
         if (EnableRootMotion)
         {
-            RootMotion = RootMotionMode::ExtractNode;
+            RootMotion = ModelUtilsRootMotionMode::ExtractNode;
             // RootMotionFlags = AnimationRootMotionFlags::RootPositionXZ;
         }
     }
@@ -140,7 +138,7 @@ namespace SE
             name = name.Substring(namespaceStart + 1);
     }
 
-    bool ModelUtils::ImportData(const String& path, ModelData& data, Options& options, String& errorMsg)
+    bool ModelUtils::ImportData(const String& path, ModelData& data, ModelUtilsOptions& options, String& errorMsg)
     {
         PROFILE_CPU();
 
@@ -151,7 +149,7 @@ namespace SE
         options.FramesRange.Y = Math::Max(options.FramesRange.Y, options.FramesRange.X);
         options.DefaultFrameRate = Math::Max(0.0f, options.DefaultFrameRate);
         options.SamplingRate = Math::Max(0.0f, options.SamplingRate);
-        if (options.SplitObjects || options.Type == ModelType::Prefab)
+        if (options.SplitObjects || options.Type == ModelUtilsModelType::Prefab)
             options.MergeMeshes = false; // Meshes merging doesn't make sense when we want to import each mesh individually
         // TODO: maybe we could update meshes merger to collapse meshes within the same name if splitting is enabled?
 
@@ -435,7 +433,7 @@ namespace SE
         return autoImportOutput / filename + ASSET_FILES_EXTENSION_WITH_DOT;
     }
 
-    bool ModelUtils::ImportModel(const String& path, ModelData& data, Options& options, String& errorMsg, const String& autoImportOutput)
+    bool ModelUtils::ImportModel(const String& path, ModelData& data, ModelUtilsOptions& options, String& errorMsg, const String& autoImportOutput)
     {
         PROFILE_CPU();
         LOG_INFO("Resource", "Importing model from \'{0}\'", path);
@@ -444,26 +442,26 @@ namespace SE
         // Import data
         switch (options.Type)
         {
-        case ModelType::Model:
+        case ModelUtilsModelType::Model:
             options.ImportTypes = ImportDataTypes::Geometry | ImportDataTypes::Nodes;
             if (options.ImportMaterials)
                 options.ImportTypes = EnumAddFlags(options.ImportTypes, ImportDataTypes::Materials);
             if (options.ImportTextures)
                 options.ImportTypes = EnumAddFlags(options.ImportTypes, ImportDataTypes::Textures);
             break;
-        case ModelType::SkinnedModel:
+        case ModelUtilsModelType::SkinnedModel:
             options.ImportTypes = ImportDataTypes::Geometry | ImportDataTypes::Nodes | ImportDataTypes::Skeleton;
             if (options.ImportMaterials)
                 options.ImportTypes = EnumAddFlags(options.ImportTypes, ImportDataTypes::Materials);
             if (options.ImportTextures)
                 options.ImportTypes = EnumAddFlags(options.ImportTypes, ImportDataTypes::Textures);
             break;
-        case ModelType::Animation:
+        case ModelUtilsModelType::Animation:
             options.ImportTypes = ImportDataTypes::Animations;
-            if (options.RootMotion == RootMotionMode::ExtractCenterOfMass)
+            if (options.RootMotion == ModelUtilsRootMotionMode::ExtractCenterOfMass)
                 options.ImportTypes = EnumAddFlags(options.ImportTypes, ImportDataTypes::Skeleton);
             break;
-        case ModelType::Prefab:
+        case ModelUtilsModelType::Prefab:
             options.ImportTypes = ImportDataTypes::Geometry | ImportDataTypes::Nodes | ImportDataTypes::Animations;
             if (options.ImportMaterials)
                 options.ImportTypes = EnumAddFlags(options.ImportTypes, ImportDataTypes::Materials);
@@ -729,7 +727,7 @@ namespace SE
 
         switch (options.Type)
         {
-        case ModelType::Model:
+        case ModelUtilsModelType::Model:
             if (data.LODs.IsEmpty() || data.LODs[0].Meshes.IsEmpty())
             {
                 errorMsg = SE_TEXT("Imported model has no valid geometry.");
@@ -741,14 +739,14 @@ namespace SE
                 return false;
             }
             break;
-        case ModelType::SkinnedModel:
+        case ModelUtilsModelType::SkinnedModel:
             if (data.LODs.Count() > 1)
             {
                 LOG_WARNING("Resource", "Imported skinned model has more than one LOD. Removing the lower LODs. Only single one is supported.");
                 data.LODs.Resize(1);
             }
             break;
-        case ModelType::Animation:
+        case ModelUtilsModelType::Animation:
             /*if (data.Animations.IsEmpty())
             {
                 errorMsg = SE_TEXT("Imported file has no valid animations.");
@@ -890,7 +888,7 @@ namespace SE
         // Apply the import transformation
         if (!importTransform.IsIdentity() && data.Nodes.HasItems())
         {
-            if (options.Type == ModelType::SkinnedModel)
+            if (options.Type == ModelUtilsModelType::SkinnedModel)
             {
                 // Transform the root node using the import transformation
                 /*auto& root = data.Skeleton.RootNode();
@@ -963,7 +961,7 @@ namespace SE
             !
     #endif
         }
-        if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && options.Type != ModelType::Prefab)
+        if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && options.Type != ModelUtilsModelType::Prefab)
         {
             // Perform simple nodes mapping to single node (will transform meshes to model local space)
             /*SkeletonMapping<ModelDataNode> skeletonMapping(data.Nodes, nullptr);
@@ -994,7 +992,7 @@ namespace SE
                 }
             }*/
         }
-        if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && options.Type == ModelType::Prefab)
+        if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && options.Type == ModelUtilsModelType::Prefab)
         {
             // Apply just the scale and rotations.
             for (int32 lodIndex = 0; lodIndex < data.LODs.Count(); lodIndex++)
@@ -1546,5 +1544,5 @@ meshopt_remapVertexBuffer(dstMesh->name.Get(), srcMesh->name.Get(), srcMeshVerte
         offsetMatrix.Invert();
     }*/
 
-#endif
+
 } // SE

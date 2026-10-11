@@ -86,6 +86,8 @@ namespace SE::BuildTool
         //-------------------------------------------------------------------------
 
         bool GetQualifiedNameForType(clang::QualType type, std::string &qualifiedName);
+        std::string GetDeclaredTypeAliasName(CXType type);
+        std::string GetTemplateNonTypeArgumentName(CXType type, int index);
 
         inline clang::QualType GetQualType(CXType type)
         {

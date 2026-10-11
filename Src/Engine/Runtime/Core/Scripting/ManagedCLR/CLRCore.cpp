@@ -269,15 +269,39 @@ namespace SE
         while (inner)
         {
             const Char* stackTrace = inner->StackTrace.HasChars() ? *inner->StackTrace : SE_TEXT("<empty>");
-            LOG_WARNING("Scripting", "Inner exception. {0}\nStack strace:\n{1}\n", inner->Message, stackTrace);
+            switch (type)
+            {
+                case Log::Severity::Info:
+                    LOG_INFO("Scripting", "Inner exception. {0}\nStack strace:\n{1}\n", inner->Message, stackTrace);
+                    break;
+                case Log::Severity::Warning:
+                    LOG_WARNING("Scripting", "Inner exception. {0}\nStack strace:\n{1}\n", inner->Message, stackTrace);
+                    break;
+                case Log::Severity::Error:
+                    LOG_ERROR("Scripting", "Inner exception. {0}\nStack strace:\n{1}\n", inner->Message, stackTrace);
+                    break;
+
+            }
             inner = inner->InnerException;
         }
 
         // Send stack trace only to log file
         const Char* stackTrace = StackTrace.HasChars() ? *StackTrace : SE_TEXT("<empty>");
         const String info = target && *target ? String::Format(SE_TEXT("Exception has been thrown during {0}."), target) : SE_TEXT("Exception has been thrown.");
-        LOG_WARNING("Scripting", "{0} {1}\nStack strace:\n{2}", info, Message, stackTrace);
-        Log::AddEntry(type, SE_TEXT("Scripting"), "", 0, SE_TEXT("{0}\n{1}"), info, Message);
+
+        switch (type)
+        {
+            case Log::Severity::Info:
+                LOG_INFO("Scripting", "{0} {1}\nStack strace:\n{2}", info, Message, stackTrace);
+                break;
+            case Log::Severity::Warning:
+                LOG_WARNING("Scripting", "{0} {1}\nStack strace:\n{2}", info, Message, stackTrace);
+                break;
+            case Log::Severity::Error:
+                LOG_ERROR("Scripting", "{0} {1}\nStack strace:\n{2}", info, Message, stackTrace);
+                break;
+
+        }
     }
 
 

@@ -1,430 +1,658 @@
+using SE.Editor.GUI;
+using SE.GUI;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using SE.GUI;
+using System.Text;
 
 namespace SE.Editor
 {
     public enum ContentItemType
     {
+        /// <summary>The binary or text asset.</summary>
         Asset,
+        /// <summary>The directory.</summary>
         Folder,
+        /// <summary>The script file.</summary>
         Script,
+        /// <summary>The scene file.</summary>
         Scene,
+        /// <summary>The other type.</summary>
         Other,
     }
 
+    /// <summary>Content item filter types used for searching.</summary>
     public enum ContentItemSearchFilter
     {
+        /// <summary>The model.</summary>
         Model,
+        /// <summary>The skinned model.</summary>
         SkinnedModel,
+        /// <summary>The material.</summary>
         Material,
+        /// <summary>The texture.</summary>
         Texture,
+        /// <summary>The scene.</summary>
         Scene,
+        /// <summary>The prefab.</summary>
         Prefab,
+        /// <summary>The script.</summary>
         Script,
+        /// <summary>The audio.</summary>
         Audio,
+        /// <summary>The animation.</summary>
         Animation,
+        /// <summary>The json.</summary>
         Json,
+        /// <summary>The particles.</summary>
         Particles,
+        /// <summary>The shader source files.</summary>
         Shader,
-        Other,
-    }
-
-    public enum ContentFolderType
-    {
-        Content,
-        Source,
+        /// <summary>The other.</summary>
         Other,
     }
 
     public interface IContentItemOwner
     {
+        /// <summary>Called when referenced item gets deleted. Item should not be used after that.</summary>
         void OnItemDeleted(ContentItem item);
+        /// <summary>Called when referenced item gets renamed.</summary>
         void OnItemRenamed(ContentItem item);
+        /// <summary>Called when item gets reimported or reloaded.</summary>
         void OnItemReimported(ContentItem item);
+        /// <summary>Called when referenced item gets disposed. Item should not be used after that.</summary>
         void OnItemDispose(ContentItem item);
     }
 
     /// <summary>
-    /// Managed presentation model for one entry in the editor content browser.
-    /// It deliberately stores paths and managed state only; native assets are
-    /// addressed through stable ids instead of raw C++ pointers.
+    /// Content item in the editor content browser.
     /// </summary>
     public abstract class ContentItem : Control
     {
+        /// <summary>The default margin size.</summary>
         public const int DefaultMarginSize = 4;
+        /// <summary>The default text height.</summary>
         public const int DefaultTextHeight = 24;
+        /// <summary>The default thumbnail size.</summary>
         public const int DefaultThumbnailSize = 64;
+        /// <summary>The default width.</summary>
         public const int DefaultWidth = DefaultThumbnailSize + 2 * DefaultMarginSize;
+        /// <summary>The default height.</summary>
         public const int DefaultHeight = DefaultThumbnailSize + 2 * DefaultMarginSize + DefaultTextHeight;
 
-        private readonly HashSet<IContentItemOwner> m_Owners = new();
-        private bool m_MouseDown;
-        private Float2 m_MouseDownStart;
+        private ContentFolder _parentFolder;
+        private bool _isMouseDown;
+        private Float2 _mouseDownStartPos;
+        private readonly List<IContentItemOwner> _references = new(4);
+        private SpriteHandle _shadowIcon = SpriteHandle.Invalid;
 
-        protected ContentItem(string path)
-            : base(new Rectangle(0, 0, DefaultWidth, DefaultHeight))
-        {
-            UpdatePath(path);
-        }
-
+        /// <summary>Gets the type of the item.</summary>
         public abstract ContentItemType ItemType { get; }
-        public virtual ContentItemSearchFilter SearchFilter => ContentItemSearchFilter.Other;
+        /// <summary>Gets the type of the item searching filter to use.</summary>
+        public abstract ContentItemSearchFilter SearchFilter { get; }
+        /// <summary>Gets a value indicating whether this instance is asset.</summary>
         public bool IsAsset => ItemType == ContentItemType.Asset;
+        /// <summary>Gets a value indicating whether this instance is folder.</summary>
         public bool IsFolder => ItemType == ContentItemType.Folder;
-        public virtual bool CanHaveChildren => IsFolder;
-        public virtual bool CanRename => ParentFolder != null;
-        public virtual bool CanDrag => ParentFolder != null;
-        public virtual bool Exists => File.Exists(Path) || Directory.Exists(Path);
-        public ContentFolder? ParentFolder { get; private set; }
-        public string Path { get; private set; } = string.Empty;
-        public string FileName { get; private set; } = string.Empty;
-        public string ShortName { get; private set; } = string.Empty;
-        public string NamePath { get; private set; } = string.Empty;
-        public string Tooltip { get; protected set; } = string.Empty;
-        public object? Thumbnail { get; internal set; }
-        public bool ShowFileExtension { get; set; }
-        public int ReferencesCount => m_Owners.Count;
-        public virtual object? DefaultThumbnail => null;
-        public bool HasDefaultThumbnail => DefaultThumbnail != null;
-        public virtual string DisplayName => ShowFileExtension ? FileName : ShortName;
-
-        public event Action<ContentItem>? DoubleClicked;
-        public event Action<ContentItem>? Reloaded;
-
-        public virtual void UpdatePath(string path)
+        /// <summary>Gets a value indicating whether this instance can have children.</summary>
+        public bool CanHaveChildren => ItemType == ContentItemType.Folder;
+        /// <summary>Determines whether this item can be renamed.</summary>
+        public virtual bool CanRename => true;
+        /// <summary>Gets a value indicating whether this item can be dragged and dropped.</summary>
+        public virtual bool CanDrag => Root != null;
+        /// <summary>Gets a value indicating whether this item exists on drive.</summary>
+        public virtual bool Exists => File.Exists(Path);
+        /// <summary>Gets the parent folder.</summary>
+        public ContentFolder ParentFolder
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(path);
-            Path = path;
-            FileName = System.IO.Path.GetFileName(path);
-            ShortName = System.IO.Path.GetFileNameWithoutExtension(path);
-            NamePath = ShortName;
-            Name = DisplayName;
-            UpdateTooltipText();
-            OnPathChanged();
-            Notify(static (owner, item) => owner.OnItemRenamed(item));
+            get => _parentFolder;
+            set
+            {
+                if (_parentFolder == value)
+                {
+                    return;
+                }
+
+                if (_parentFolder != null)
+                {
+                    _parentFolder.Children.Remove(this);
+                }
+
+                _parentFolder = value;
+
+                if (_parentFolder != null)
+                {
+                    _parentFolder.Children.Add(this);
+                }
+
+                OnParentFolderChanged();
+            }
         }
 
+        /// <summary>Gets the path to the item.</summary>
+        public string Path;
+        /// <summary>Gets the item file name (filename with extension).</summary>
+        public string FileName;
+        /// <summary>Gets the item short name (filename without extension).</summary>
+        public string ShortName;
+        /// <summary>Gets the asset name relative to the project root folder (without asset file extension).</summary>
+        public string NamePath = string.Empty;
+        /// <summary>Gets the default name of the content item thumbnail. Returns null if not used.</summary>
+        public virtual SpriteHandle DefaultThumbnail => SpriteHandle.Invalid;
+        /// <summary>Gets a value indicating whether this item has default thumbnail.</summary>
+        public virtual bool HasDefaultThumbnail => false;
+        /// <summary>
+        /// Gets or sets the item thumbnail. Warning, thumbnail may not be available if item has no references.
+        /// </summary>
+        public SpriteHandle Thumbnail = SpriteHandle.Invalid;
+        /// <summary>True if force show file extension.</summary>
+        public bool ShowFileExtension;
+
+        /// <summary>
+        /// Updates the item path. Use with caution or even don't use it. It's dangerous.
+        /// </summary>
+        /// <param name="value">The new path.</param>
+        public virtual void UpdatePath(string value)
+        {
+            value = value.Replace('\\', '/');
+            if (value.Length > 2
+                && ((value[0] >= 'A' && value[0] <= 'Z') || (value[0] >= 'a' && value[0] <= 'z'))
+                && value[1] == ':')
+            {
+                value = value.Substring(0, 2) + '/' + value.Substring(3);
+            }
+
+            Path = value;
+            FileName = System.IO.Path.GetFileName(value);
+            ShortName = System.IO.Path.GetFileNameWithoutExtension(value);
+
+            OnPathChanged();
+            for (int i = 0; i < _references.Count; i++)
+            {
+                _references[i].OnItemRenamed(this);
+            }
+        }
+
+        /// <summary>Refreshes the item thumbnail.</summary>
         public virtual void RefreshThumbnail()
         {
-            ThumbnailService.Instance.RequestPreview(this);
+            if (HasDefaultThumbnail)
+            {
+                return;
+            }
+
+            Thumbnails thumbnails = Editor.Instance.UI.Thumbnails;
+
+            // Delete old thumbnail and remove it from the cache
+            thumbnails.DeletePreview(this);
+
+            // Request new one (if need to)
+            if (_references.Count() > 0)
+            {
+                thumbnails.RequestPreview(this);
+            }
         }
 
+        /// <summary>Updates the tooltip text text.</summary>
         public virtual void UpdateTooltipText()
         {
-            Tooltip = Path;
-            TooltipText = Tooltip;
+            // Native tooltip text builder is commented out.
         }
 
-        public virtual ContentItem? Find(string path)
+        /// <summary>Tries to find the item at the specified path.</summary>
+        /// <param name="path">The path.</param>
+        /// <returns>Found item or null if missing.</returns>
+        public virtual ContentItem Find(string path)
         {
-            return string.Equals(Path, path, StringComparison.OrdinalIgnoreCase) ? this : null;
+            return Path == path ? this : null;
         }
 
-        public virtual bool Find(ContentItem item) => ReferenceEquals(this, item);
-
-        public void AddReference(IContentItemOwner owner)
+        /// <summary>Tries to find a specified item in the assets tree.</summary>
+        /// <param name="item">The item.</param>
+        /// <returns>True if found, otherwise false.</returns>
+        public virtual bool Find(ContentItem item)
         {
-            ArgumentNullException.ThrowIfNull(owner);
-            m_Owners.Add(owner);
+            return this == item;
         }
 
-        public void RemoveReference(IContentItemOwner owner)
+        /// <summary>Tries to find the item with the specified id.</summary>
+        /// <param name="id">The id.</param>
+        /// <returns>Found item or null if missing.</returns>
+        public virtual ContentItem Find(Guid id)
         {
-            ArgumentNullException.ThrowIfNull(owner);
-            m_Owners.Remove(owner);
+            return null;
         }
 
+        /// <summary>Gets the local space rectangle for element name text area.</summary>
+        public Rectangle TextRectangle
+        {
+            get
+            {
+                if (!Visible)
+                {
+                    return Rectangle.Empty;
+                }
+
+                ContentView view = Parent as ContentView;
+                Float2 size = Size;
+                ContentViewType viewType = ContentViewType.Tiles;
+                if (view != null)
+                {
+                    viewType = view.ViewType;
+                }
+
+                switch (viewType)
+                {
+                    case ContentViewType.Tiles:
+                    {
+                        float textHeight = DefaultTextHeight * size.X / DefaultWidth;
+                        return new Rectangle(0, size.Y - textHeight, size.X, textHeight);
+                    }
+                    case ContentViewType.List:
+                    {
+                        float thumbnailSize = size.Y - 2 * DefaultMarginSize;
+                        float textHeight = Math.Min(size.Y, 24.0f);
+                        return new Rectangle(thumbnailSize + DefaultMarginSize * 2,
+                            (size.Y - textHeight) * 0.5f,
+                            size.X - textHeight - DefaultMarginSize * 3.0f, textHeight);
+                    }
+                }
+
+                return Rectangle.Empty;
+            }
+        }
+
+        /// <summary>Draws the item thumbnail.</summary>
+        /// <param name="rectangle">The thumbnail rectangle.</param>
+        public void DrawThumbnail(Rectangle rectangle)
+        {
+            // Native DrawShadow branch is commented out.
+            if (Thumbnail.IsValid)
+            {
+                Render2D.DrawSprite(Thumbnail, rectangle, Color.White);
+            }
+            else
+            {
+                Render2D.FillRectangle(rectangle, Color.Black);
+            }
+        }
+
+        /// <summary>Draws the item thumbnail.</summary>
+        /// <param name="rectangle">The thumbnail rectangle.</param>
+        /// <param name="shadow">Whether or not to draw the shadow.</param>
+        public void DrawThumbnail(Rectangle rectangle, bool shadow)
+        {
+            if (shadow)
+            {
+                const float thumbnailInShadowSize = 50.0f;
+                Rectangle shadowRect = rectangle.MakeExpanded(
+                    (DefaultThumbnailSize - thumbnailInShadowSize) * rectangle.Width / DefaultThumbnailSize * 1.3f);
+                if (!_shadowIcon.IsValid)
+                {
+                    _shadowIcon = EditorIcons.AssetShadow128;
+                }
+                    Render2D.DrawSprite(_shadowIcon, shadowRect, Color.White);
+            }
+
+            if (Thumbnail.IsValid)
+            {
+                Render2D.DrawSprite(Thumbnail, rectangle, Color.White);
+            }
+            else
+            {
+                Render2D.FillRectangle(rectangle, Color.Black);
+            }
+        }
+
+        /// <summary>Gets the amount of references to that item.</summary>
+        public int ReferencesCount => _references.Count;
+
+        /// <summary>Adds the reference to the item.</summary>
+        /// <param name="obj">The object.</param>
+        public void AddReference(IContentItemOwner obj)
+        {
+            SE.Debug.Assert(obj != null, "Invalid content item owner.");
+            SE.Debug.Assert(!_references.Contains(obj), "Content item owner already exists.");
+            _references.Add(obj);
+
+            if (_references.Count == 1 && !Thumbnail.IsValid)
+            {
+                RequestThumbnail();
+            }
+        }
+
+        /// <summary>Removes the reference from the item.</summary>
+        /// <param name="obj">The object.</param>
+        public void RemoveReference(IContentItemOwner obj)
+        {
+            if (_references.Remove(obj))
+            {
+                if (_references.Count == 0 && Thumbnail.IsValid)
+                {
+                    ReleaseThumbnail();
+                }
+            }
+        }
+
+        /// <summary>Called when context menu is being prepared to show. Can be used to add custom options.</summary>
+        /// <param name="menu">The menu.</param>
+        public virtual void OnContextMenu(ContextMenu menu)
+        {
+        }
+
+        /// <summary>Called when item gets renamed or location gets changed (path modification).</summary>
+        public virtual void OnPathChanged()
+        {
+        }
+
+        /// <summary>Called when content item gets removed (by the user or externally).</summary>
         public virtual void OnDelete()
         {
-            Notify(static (owner, item) => owner.OnItemDeleted(item));
-            ParentFolder?.RemoveChild(this);
+            while (_references.Count > 0)
+            {
+                IContentItemOwner reference = _references[0];
+                reference.OnItemDeleted(this);
+                RemoveReference(reference);
+            }
+
+            if (Thumbnail.IsValid)
+            {
+                ReleaseThumbnail();
+            }
+        }
+
+        /// <inheritdoc />
+        public override void NavigationFocus()
+        {
+            base.NavigationFocus();
+            if (IsFocused)
+            {
+                ContentView view = Parent as ContentView;
+                if (view != null)
+                {
+                    view.Select(this);
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public override void Draw()
+        {
+            Float2 size = Size;
+            Style style = Style.Current;
+            ContentView view = Parent as ContentView;
+            if (view == null)
+            {
+                return;
+            }
+
+            bool isSelected = view.IsSelected(this);
+            Rectangle clientRect = new Rectangle(Float2.Zero, size);
+            Rectangle textRect = TextRectangle;
+            Rectangle thumbnailRect = Rectangle.Empty;
+            TextAlignment nameAlignment = TextAlignment.Near;
+
+            switch (view.ViewType)
+            {
+                case ContentViewType.Tiles:
+                {
+                    float thumbnailSize = size.X;
+                    thumbnailRect = new Rectangle(0, 0, thumbnailSize, thumbnailSize);
+                    nameAlignment = TextAlignment.Center;
+
+                    if (this is ContentFolder)
+                    {
+                        Rectangle shadowRect = new Rectangle(2, 2, clientRect.Width + 1, clientRect.Height + 1);
+                        Color color = Color.Black.AlphaMultiplied(0.2f);
+                        Render2D.FillRectangle(shadowRect, color);
+                        Render2D.FillRectangle(clientRect, style.Background.RGBMultiplied(1.25f));
+
+                        float accentHeight = 2 * view.ViewScale;
+                        Rectangle barRect = new Rectangle(0, thumbnailRect.Height - accentHeight, clientRect.Width, accentHeight);
+                        Render2D.FillRectangle(barRect, Color.DimGray);
+
+                        if (isSelected)
+                        {
+                            Render2D.FillRectangle(clientRect,
+                                Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
+                        }
+                        else if (IsMouseOver)
+                        {
+                            Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
+                        }
+
+                        DrawThumbnail(thumbnailRect, false);
+                    }
+                    else
+                    {
+                        Rectangle shadowRect = new Rectangle(2, 2, clientRect.Width + 1, clientRect.Height + 1);
+                        Color color = Color.Black.AlphaMultiplied(0.2f);
+                        Render2D.FillRectangle(shadowRect, color);
+                        Render2D.FillRectangle(clientRect, style.Background.RGBMultiplied(1.25f));
+                        Render2D.FillRectangle(TextRectangle, style.LightBackground);
+                        DrawThumbnail(thumbnailRect, false);
+
+                        float accentHeight = 2 * view.ViewScale;
+                        Rectangle barRect = new Rectangle(0, thumbnailRect.Height - accentHeight, clientRect.Width, accentHeight);
+                        Render2D.FillRectangle(barRect, Color.DimGray);
+
+                        if (isSelected)
+                        {
+                            Render2D.FillRectangle(textRect,
+                                Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
+                            Render2D.DrawRectangle(clientRect,
+                                Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground, 1.0f);
+                        }
+                        else if (IsMouseOver)
+                        {
+                            Render2D.FillRectangle(textRect, style.BackgroundHighlighted);
+                            Render2D.DrawRectangle(clientRect, style.BackgroundHighlighted, 1.0f);
+                        }
+                    }
+                    break;
+                }
+                case ContentViewType.List:
+                {
+                    float thumbnailSize = size.Y - 2 * DefaultMarginSize;
+                    thumbnailRect = new Rectangle(DefaultMarginSize, DefaultMarginSize, thumbnailSize, thumbnailSize);
+                    nameAlignment = TextAlignment.Near;
+
+                    if (isSelected)
+                    {
+                        Render2D.FillRectangle(clientRect,
+                            Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
+                    }
+                    else if (IsMouseOver)
+                    {
+                        Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
+                    }
+
+                    DrawThumbnail(thumbnailRect);
+                    break;
+                }
+            }
+
+            Render2D.PushClip(textRect);
+            Render2D.RenderText(style.FontMedium,
+                ShowFileExtension || view.ShowFileExtensions ? FileName : ShortName,
+                textRect, style.TextColor, nameAlignment, TextAlignment.Center,
+                TextWrapping.WrapWords, 1.0f, 0.95f);
+            Render2D.PopClip();
         }
 
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (button != MouseButton.Left)
-                return base.OnMouseDown(location, button);
-
-            m_MouseDown = true;
-            m_MouseDownStart = location;
-            FindContentView()?.OnItemClick(this);
+            Focus();
+            if (button == MouseButton.Left)
+            {
+                _isMouseDown = true;
+                _mouseDownStartPos = location;
+            }
             return true;
         }
 
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            _ = location;
-            if (button != MouseButton.Left || !m_MouseDown)
-                return base.OnMouseUp(location, button);
+            if (button == MouseButton.Left && _isMouseDown)
+            {
+                _isMouseDown = false;
 
-            m_MouseDown = false;
-            return true;
+                // Mirrors the native TypeTryCast<ContentView>(this) expression.
+                ContentView otherItem = (object)this as ContentView;
+                if (otherItem != null)
+                {
+                    otherItem.OnItemClick(this);
+                }
+            }
+
+            return base.OnMouseUp(location, button);
         }
 
         public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
-            _ = location;
-            if (button != MouseButton.Left)
-                return base.OnMouseDoubleClick(location, button);
-
-            FindContentView()?.OnItemDoubleClick(this);
-            DoubleClicked?.Invoke(this);
+            Focus();
+            ContentView otherItem = Parent as ContentView;
+            if (otherItem != null)
+            {
+                otherItem.OnItemDoubleClick(this);
+            }
             return true;
         }
 
         public override void OnMouseMove(Float2 location)
         {
-            if (m_MouseDown && (location - m_MouseDownStart).LengthSquared > 16.0f)
-                m_MouseDown = false;
-            base.OnMouseMove(location);
+            if (_isMouseDown && Float2.Distance(_mouseDownStartPos, location) > 10.0f)
+            {
+                _isMouseDown = false;
+                DoDrag();
+            }
         }
 
-        protected virtual void OnPathChanged()
+        /// <inheritdoc />
+        public override void OnMouseLeave()
         {
+            if (_isMouseDown)
+            {
+                _isMouseDown = false;
+                DoDrag();
+            }
+
+            base.OnMouseLeave();
         }
 
-        protected virtual void OnReimport()
+        /// <inheritdoc />
+        public override void OnSubmit()
         {
-            Reloaded?.Invoke(this);
-            Notify(static (owner, item) => owner.OnItemReimported(item));
+            // Native asset opening branch is commented out.
+            base.OnSubmit();
         }
 
-        protected override void OnDispose()
+        /// <inheritdoc />
+        public override int CompareTo(Control other)
         {
-            ParentFolder?.RemoveChild(this);
-            Notify(static (owner, item) => owner.OnItemDispose(item));
-            m_Owners.Clear();
-            base.OnDispose();
+            if (other is ContentItem otherItem)
+            {
+                if (otherItem.IsFolder)
+                {
+                    return 1;
+                }
+                return string.CompareOrdinal(ShortName, otherItem.ShortName);
+            }
+
+            return base.CompareTo(other);
         }
 
-        internal void SetParentFolder(ContentFolder? value)
+        /// <inheritdoc />
+        public override void OnDestroy()
         {
-            ParentFolder = value;
-            OnParentFolderChanged();
+            while (_references.Count > 0)
+            {
+                IContentItemOwner reference = _references[0];
+                reference.OnItemDispose(this);
+                RemoveReference(reference);
+            }
+
+            if (Thumbnail.IsValid)
+            {
+                ReleaseThumbnail();
+            }
+
+            base.OnDestroy();
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ContentItem"/> class.
+        /// </summary>
+        /// <param name="path">The path to the item.</param>
+        protected ContentItem(string path)
+            : base(new Rectangle(0, 0, DefaultWidth, DefaultHeight))
+        {
+            Path = path;
+            FileName = System.IO.Path.GetFileName(path);
+            ShortName = System.IO.Path.GetFileNameWithoutExtension(path);
+        }
+
+        /// <summary>Called when item parent folder gets changed.</summary>
         protected virtual void OnParentFolderChanged()
         {
         }
 
-        protected void NotifyReimported() => OnReimport();
-
-        private void Notify(Action<IContentItemOwner, ContentItem> callback)
+        /// <summary>Requests the thumbnail.</summary>
+        protected void RequestThumbnail()
         {
-            var owners = m_Owners.ToArray();
-            foreach (IContentItemOwner owner in owners)
+            Editor.Instance.UI.Thumbnails.RequestPreview(this);
+        }
+
+        /// <summary>Releases the thumbnail.</summary>
+        protected void ReleaseThumbnail()
+        {
+            Thumbnail = SpriteHandle.Invalid;
+        }
+
+        /// <summary>Called when item gets reimported or reloaded.</summary>
+        protected virtual void OnReimport()
+        {
+            for (int i = 0; i < _references.Count; i++)
             {
-                callback(owner, this);
+                _references[i].OnItemReimported(this);
             }
+            RefreshThumbnail();
         }
 
-        private ContentView? FindContentView()
+        /// <summary>Does the drag and drop operation with this asset.</summary>
+        protected virtual void DoDrag()
         {
-            for (Control? control = Parent; control != null; control = control.Parent)
+            if (!CanDrag)
             {
-                if (control is ContentView view)
-                    return view;
+                return;
             }
 
-            return null;
-        }
-    }
-
-    public class ContentFolder : ContentItem
-    {
-        private readonly List<ContentItem> m_Children = new();
-
-        public ContentFolder(ContentFolderType folderType, string path)
-            : base(path)
-        {
-            FolderType = folderType;
+            DragData data;
+            if (Parent is ContentView view && view.IsSelected(this))
+            {
+                data = DragItems.GetDragData(view.GetSelection());
+            }
+            else
+            {
+                data = DragItems.GetDragData(this);
+            }
+            DoDragDrop(data);
         }
 
-        public override ContentItemType ItemType => ContentItemType.Folder;
-        public ContentFolderType FolderType { get; }
-        public bool CanHaveAssets => FolderType == ContentFolderType.Content;
-        public ContentTreeNode? Node { get; internal set; }
-        public IReadOnlyList<ContentItem> Children => m_Children;
-        public override bool CanRename => ParentFolder != null;
-        public override bool CanDrag => ParentFolder != null;
-
-        public ContentItem AddChild(ContentItem item)
+        /// <inheritdoc />
+        protected override bool ShowTooltip()
         {
-            ArgumentNullException.ThrowIfNull(item);
-            if (ReferenceEquals(item, this))
-                throw new InvalidOperationException("A folder cannot contain itself.");
-            if (item.ParentFolder == this)
-                return item;
-
-            item.ParentFolder?.RemoveChild(item);
-            m_Children.Add(item);
-            item.SetParentFolder(this);
-            return item;
-        }
-
-        public bool RemoveChild(ContentItem item)
-        {
-            if (!m_Children.Remove(item))
-                return false;
-
-            item.SetParentFolder(null);
             return true;
         }
 
-        public ContentItem? FindChild(string path)
+        /// <summary>Called when building tooltip text.</summary>
+        /// <param name="sb">The output string builder.</param>
+        protected virtual void OnBuildTooltipText(StringBuilder sb)
         {
-            return m_Children.Find(item => string.Equals(item.Path, path, StringComparison.OrdinalIgnoreCase));
-        }
-
-        public bool ContainsChild(string path) => FindChild(path) != null;
-
-        public override void UpdatePath(string path)
-        {
-            string previousPath = Path;
-            base.UpdatePath(path);
-            if (string.IsNullOrEmpty(previousPath))
-                return;
-
-            foreach (ContentItem child in m_Children)
-            {
-                string relative = System.IO.Path.GetRelativePath(previousPath, child.Path);
-                child.UpdatePath(System.IO.Path.Combine(path, relative));
-            }
-        }
-
-        public override ContentItem? Find(string path)
-        {
-            ContentItem? direct = base.Find(path);
-            if (direct != null)
-                return direct;
-
-            foreach (ContentItem child in m_Children)
-            {
-                ContentItem? result = child.Find(path);
-                if (result != null)
-                    return result;
-            }
-
-            return null;
-        }
-
-        public override bool Find(ContentItem item)
-        {
-            if (base.Find(item))
-                return true;
-
-            foreach (ContentItem child in m_Children)
-            {
-                if (child.Find(item))
-                    return true;
-            }
-
-            return false;
-        }
-
-        protected override void OnDispose()
-        {
-            foreach (ContentItem child in m_Children.ToArray())
-            {
-                child.Dispose();
-            }
-            m_Children.Clear();
-            base.OnDispose();
+            // Native tooltip text building is commented out.
         }
     }
 
-    public class AssetItem : ContentItem
-    {
-        public AssetItem(string path, string typeId, Guid id)
-            : base(path)
-        {
-            TypeId = typeId ?? string.Empty;
-            Id = id;
-        }
-
-        public override ContentItemType ItemType => ContentItemType.Asset;
-        public Guid Id { get; }
-        public string TypeId { get; }
-        public bool IsLoaded { get; private set; }
-        public override ContentItemSearchFilter SearchFilter => ContentItemSearchFilter.Other;
-
-        public virtual void SetLoaded(bool value)
-        {
-            IsLoaded = value;
-        }
-
-        public virtual void Reload()
-        {
-            NotifyReimported();
-        }
-    }
-
-    public class BinaryAssetItem : AssetItem
-    {
-        public BinaryAssetItem(string path, string typeId, Guid id, string? sourcePath = null)
-            : base(path, typeId, id)
-        {
-            SourcePath = sourcePath;
-        }
-
-        public string? SourcePath { get; private set; }
-
-        public bool TryGetImportPath(out string? path)
-        {
-            path = SourcePath;
-            return !string.IsNullOrEmpty(path);
-        }
-
-        public void SetImportPath(string? path)
-        {
-            SourcePath = path;
-        }
-    }
-
-    public sealed class FileItem : ContentItem
-    {
-        public FileItem(string path)
-            : base(path)
-        {
-        }
-
-        public override ContentItemType ItemType => ContentItemType.Other;
-        public override ContentItemSearchFilter SearchFilter => ContentItemSearchFilter.Other;
-    }
-
-    public sealed class JsonAssetItem : AssetItem
-    {
-        public JsonAssetItem(string path, string typeId, Guid id)
-            : base(path, typeId, id)
-        {
-        }
-
-        public override ContentItemSearchFilter SearchFilter => ContentItemSearchFilter.Json;
-    }
-
-    public sealed class SceneItem : AssetItem
-    {
-        public SceneItem(string path, Guid id)
-            : base(path, "SceneAsset", id)
-        {
-        }
-
-        public override ContentItemType ItemType => ContentItemType.Scene;
-        public override ContentItemSearchFilter SearchFilter => ContentItemSearchFilter.Scene;
-    }
-
-    public sealed class NewItem : ContentItem
-    {
-        public NewItem(string path)
-            : base(path)
-        {
-        }
-
-        public override ContentItemType ItemType => ContentItemType.Other;
-        public override bool Exists => false;
-        public override bool CanDrag => false;
-    }
 }

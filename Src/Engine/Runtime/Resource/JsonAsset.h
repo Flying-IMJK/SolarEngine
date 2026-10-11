@@ -85,7 +85,7 @@ namespace SE
 #endif
     public:
         // [Asset]
-        const String& GetPath() const override;
+        String GetPath() const override;
         uint64 GetMemoryUsage() const override;
 #if SE_EDITOR
         void GetReferences(List<UID, HeapAllocation>& output) const override;

@@ -14,11 +14,6 @@ namespace SE.Log
         event LogDelegate SendLog;
 
         /// <summary>
-        /// Occurs on sending a exception log message.
-        /// </summary>
-        event LogExceptionDelegate SendExceptionLog;
-
-        /// <summary>
         /// Logs the raw message to the log.
         /// </summary>
         /// <param name="logType">Type of the log message. Not: fatal will stop the engine. Error may show a message popup.</param>

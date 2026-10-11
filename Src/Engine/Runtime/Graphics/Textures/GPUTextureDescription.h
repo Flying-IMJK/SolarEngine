@@ -14,7 +14,7 @@ namespace SE
 	/// <summary>
 	/// Describes texture compression format type
 	/// </summary>
-	SE_ENUM(Reflect)
+	SE_ENUM(Reflect, API())
 	enum class TextureFormatType : byte
 	{
 		// Invalid value.
@@ -388,6 +388,7 @@ namespace SE
 		/// <param name="textureFlags">true if the texture needs to support unordered read write.</param>
 		/// <param name="arraySize">Size of the texture 2D array, default to 1.</param>
 		/// <returns>A new instance of <see cref="GPUTextureDescription" /> class.</returns>
+		SE_FUNCTION(API())
 		static GPUTextureDescription New2D(int32 width,
 			int32 height,
 			PixelFormat format,

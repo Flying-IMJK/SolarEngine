@@ -383,29 +383,29 @@ namespace SE
 
 	//-------------------------------------------------------------------------
 	template <typename T>
-	using Scope = std::unique_ptr<T, DefaultDeleter<T>>;
+	using UniquePtr = std::unique_ptr<T, DefaultDeleter<T>>;
 
 	template <typename T, typename... Args>
-	constexpr Scope<T> CreateScope(Args &&...args)
+	constexpr UniquePtr<T> CreateScope(Args &&...args)
 	{
-		return Scope<T>(New<T>(std::forward<Args>(args)...));
+		return UniquePtr<T>(New<T>(std::forward<Args>(args)...));
 	}
 
 	template <typename T>
-	using Ref = std::shared_ptr<T>;
+	using SharedPtr = std::shared_ptr<T>;
 
 	template <typename T, typename... Args>
-	constexpr Ref<T> MakeRef(Args &&...args)
+	constexpr SharedPtr<T> MakeRef(Args &&...args)
 	{
 		return std::make_shared<T>(std::forward<Args>(args)...);
 	}
 
 	template <typename T>
-	constexpr Ref<T> CreateRef(T* target)
+	constexpr SharedPtr<T> CreateRef(T* target)
 	{
-		return Ref<T>(target);
+		return SharedPtr<T>(target);
 	}
 
 	template <typename T>
-	using WeakRef = std::weak_ptr<T>;
+	using WeakPtr = std::weak_ptr<T>;
 }

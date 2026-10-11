@@ -17,7 +17,7 @@ namespace SE
 	class ImportTexture
 	{
 	public:
-		typedef TextureUtils::Options Options;
+		typedef TextureUtilsOptions Options;
 
 	public:
 		/// <summary>

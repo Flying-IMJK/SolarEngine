@@ -316,10 +316,8 @@ namespace SE
 		return result;
 	}
 
-	bool WindowsFileSystem::ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title, String& path)
+	String WindowsFileSystem::ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title)
 	{
-		bool result = true;
-
 		// Randomly generated GUID used for storing the last location of this dialog
 		const UID folderGuid(0x53890ed9, 0xa55e47ba, 0xa970bdae, 0x72acedff);
 
@@ -349,15 +347,14 @@ namespace SE
 					LPWSTR resultPath;
 					if (SUCCEEDED(si->GetDisplayName(SIGDN_DESKTOPABSOLUTEPARSING, &resultPath)))
 					{
-						path = resultPath;
 						CoTaskMemFree(resultPath);
-						result = false;
+						return resultPath;
 					}
 				}
 			}
 		}
-
-		return result;
+			
+		return String::Empty;
 	}
 
 	bool WindowsFileSystem::ShowFileExplorer(const StringView& path)

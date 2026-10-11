@@ -1,5 +1,9 @@
 
 
+using SE.Interop;
+
+using System.Runtime.InteropServices;
+
 namespace SE
 {
     public unsafe static partial class Scripting
@@ -10,4 +14,5 @@ namespace SE
 
         }
     }
+
 }

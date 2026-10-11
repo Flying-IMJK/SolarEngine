@@ -13,8 +13,11 @@ namespace SE.Editor
         private float m_LastWidth = float.NaN;
         private float m_LastHeight = float.NaN;
 
+        private Thumbnails m_Thumbnails;
+
         public UIModule(Editor editor) : base(editor)
         {
+            m_Thumbnails = new Thumbnails(editor);
         }
 
         public MainMenu MainMenu { get; private set; } = null!;
@@ -22,15 +25,19 @@ namespace SE.Editor
         public StatusBar StatusBar { get; private set; } = null!;
         public MasterDockPanel MasterDockPanel { get; private set; } = null!;
 
+        public Thumbnails Thumbnails => m_Thumbnails;
+
         internal override int Order => -95;
 
         public override void OnInit()
         {
             m_Root = Editor.MainWindow.GUI;
-            MainMenu = m_Root.AddChild(new MainMenu(Editor.MainWindow, Math.Max(m_Root.Width, 1.0f)));
-            ToolStrip = m_Root.AddChild(new ToolStrip(ToolStrip.DefaultMarginV * 2.0f + 26.0f, MainMenu.DefaultHeight, Math.Max(m_Root.Width, 1.0f)));
-            StatusBar = m_Root.AddChild(new StatusBar(0.0f, Math.Max(m_Root.Width, 1.0f)));
+            MainMenu = m_Root.AddChild(new MainMenu(m_Root));
+            ToolStrip = m_Root.AddChild(new ToolStrip(ToolStrip.DefaultMarginV * 2.0f + 26.0f, MainMenu.Height));
+            StatusBar = m_Root.AddChild(new StatusBar());
             MasterDockPanel = m_Root.AddChild(new MasterDockPanel());
+
+            m_Thumbnails.Init();
 
             BuildMenus();
             BuildToolStrip();
@@ -41,18 +48,22 @@ namespace SE.Editor
         public override void OnUpdate()
         {
             UpdateLayout(force: false);
-            ThumbnailService.Instance.Update();
+            m_Thumbnails.Update();
         }
 
         public override void OnDispose()
         {
             if (m_Root == null)
+            {
                 return;
+            }
 
             DisposeControl(MasterDockPanel);
             DisposeControl(StatusBar);
             DisposeControl(ToolStrip);
             DisposeControl(MainMenu);
+
+            m_Thumbnails.Exit();
             m_Root = null;
         }
 
@@ -75,16 +86,20 @@ namespace SE.Editor
         private void UpdateLayout(bool force)
         {
             if (m_Root == null || m_Root.IsDisposed)
+            {
                 return;
+            }
 
             float width = Math.Max(m_Root.Width, 1.0f);
-            float height = Math.Max(m_Root.Height, MainMenu.DefaultHeight + ToolStrip.Height + StatusBar.DefaultHeight + 1.0f);
+            float height = Math.Max(m_Root.Height, MainMenu.Height + ToolStrip.Height + StatusBar.DefaultHeight + 1.0f);
             if (!force && width == m_LastWidth && height == m_LastHeight)
+            {
                 return;
+            }
 
             m_LastWidth = width;
             m_LastHeight = height;
-            MainMenu.SetBounds(0.0f, 0.0f, width, MainMenu.DefaultHeight);
+            MainMenu.SetBounds(0.0f, 0.0f, width, MainMenu.Height);
             float toolStripTop = MainMenu.Y + MainMenu.Height;
             ToolStrip.SetBounds(0.0f, toolStripTop, width, ToolStrip.Height);
             StatusBar.SetBounds(0.0f, height - StatusBar.DefaultHeight, width, StatusBar.DefaultHeight);
@@ -96,7 +111,9 @@ namespace SE.Editor
         private static void DisposeControl(Control? control)
         {
             if (control == null || control.IsDisposed)
+            {
                 return;
+            }
 
             control.Parent?.RemoveChild(control);
             control.Dispose();

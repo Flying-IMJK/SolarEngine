@@ -14,6 +14,9 @@ namespace SE::BuildTool
         bool IsValid() const { return !fullName.empty(); }
 
         std::string fullName;
+        // Keep the API spelling through template substitution; fullName is
+        // still the native type used when emitting C++.
+        std::string declaredTypeName;
         std::vector<TypeInfoTemplate> genericArgs;
         bool isTemplateParameter = false;
         bool isConst             = false;

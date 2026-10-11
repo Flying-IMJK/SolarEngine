@@ -22,7 +22,7 @@ namespace SE::BuildTool
     using CodeGeneratorUtils::WithoutArray;
 
     CSharpTypeConversion BindingsCSharpGenerator::ResolveConversion(const TypeInfo& cppType, std::string_view marshalAs,
-                                                                    BindingUseSite useSite, BindingDirection direction) const
+                                                                    BindingUseSite useSite, ApiParameterDirection direction) const
     {
         const BindingTypeSemantics semantics = ResolveBindingTypeSemantics(m_Database, cppType, marshalAs);
         return ResolveCSharpTypeConversion(m_Database, semantics, useSite, direction);
@@ -114,7 +114,7 @@ namespace SE::BuildTool
     }
 
     std::string BindingsCSharpGenerator::GetCSharpParamMarshalAttribute(const TypeInfo& cppType, const std::string& paramName,
-                                                                        std::string_view marshalAs, BindingDirection direction) const
+                                                                        std::string_view marshalAs, ApiParameterDirection direction) const
     {
         const CollectionInfo collection = GetCollectionInfo(cppType);
         if (collection.IsCollection())
@@ -149,7 +149,7 @@ namespace SE::BuildTool
         {
             return "[return: MarshalAs(UnmanagedType.U1)]";
         }
-        const CSharpTypeConversion conversion = ResolveConversion(cppType, marshalAs, BindingUseSite::Return, BindingDirection::Out);
+        const CSharpTypeConversion conversion = ResolveConversion(cppType, marshalAs, BindingUseSite::Return, ApiParameterDirection::Out);
         if (conversion.kind == BindingTypeKind::String || conversion.kind == BindingTypeKind::StringView)
         {
             return "[return: MarshalUsing(typeof(SE.Interop.StringMarshaller))]";
@@ -201,7 +201,15 @@ namespace SE::BuildTool
         }
         if (conversion.kind == BindingTypeKind::Collection)
         {
-            const std::string elementType = GetCSharpPublicType(GetCollectionInfo(cppType).elementType);
+            const TypeInfo elementTypeInfo = GetCollectionInfo(cppType).elementType;
+            const CSharpTypeConversion elementConversion = ResolveConversion(elementTypeInfo, {}, BindingUseSite::ArrayElement);
+            if (elementConversion.kind == BindingTypeKind::InteropStruct)
+            {
+                return Utils::String::Format(
+                    "{0} != IntPtr.Zero ? NativeInterop.ConvertArray(Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr({0}).Target).ToSpan<{1}>(), {2}.ConvertToManaged) : null",
+                    expression, elementConversion.libraryImportManagedType, elementConversion.marshaller);
+            }
+            const std::string elementType = GetCSharpPublicType(elementTypeInfo);
             return Utils::String::Format(
                 "{0} != IntPtr.Zero ? Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr({0}).Target).ToArray<{1}>() : null",
                 expression, elementType);
@@ -223,6 +231,14 @@ namespace SE::BuildTool
             return Utils::String::Format("Interop.StringMarshaller.ManagedToNative.ConvertToUnmanaged({0})", expression);
         if (conversion.kind == BindingTypeKind::Collection)
         {
+            const TypeInfo elementTypeInfo = GetCollectionInfo(cppType).elementType;
+            const CSharpTypeConversion elementConversion = ResolveConversion(elementTypeInfo, {}, BindingUseSite::ArrayElement);
+            if (elementConversion.kind == BindingTypeKind::InteropStruct)
+            {
+                return Utils::String::Format(
+                    "{0}?.Length > 0 ? ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(NativeInterop.ConvertArray({0}, {1}.ConvertToUnmanaged)), GCHandleType.Weak) : IntPtr.Zero",
+                    expression, elementConversion.marshaller);
+            }
             return Utils::String::Format(
                 "{0}?.Length > 0 ? ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray({0}), GCHandleType.Weak) : IntPtr.Zero",
                 expression);
@@ -327,16 +343,16 @@ namespace SE::BuildTool
 
             TypeInfo const paramType = fn.params[i].type;
             const std::string_view marshalAs = fn.params[i].marshalAs;
-            const BindingDirection direction = GetBindingDirection(fn.params[i]);
+            const ApiParameterDirection direction = fn.params[i].direction;
             std::string type = forPublic ? GetCSharpPublicType(paramType, marshalAs)
                                          : ResolveConversion(paramType, marshalAs, BindingUseSite::Parameter, direction).libraryImportManagedType;
 
             // Pass by ref for non-interop
-            if (forPublic && direction == BindingDirection::Ref)
+            if (forPublic && direction == ApiParameterDirection::Ref)
             {
                 params += Utils::String::Format("ref {0} {1}", type, MakeCSharpIdentifier(fn.params[i].name));
             }
-            else if (forPublic && direction == BindingDirection::Out)
+            else if (forPublic && direction == ApiParameterDirection::Out)
             {
                 params += Utils::String::Format("out {0} {1}", type, MakeCSharpIdentifier(fn.params[i].name));
             }
@@ -350,7 +366,7 @@ namespace SE::BuildTool
                         params += Utils::String::Format("{0} ", marshalAttr);
                 }
                 std::string defaultValue;
-                if (forPublic && !fn.params[i].defaultValue.empty() && direction == BindingDirection::In && IsCSharpOptionalConstant(fn.params[i]))
+                if (forPublic && !fn.params[i].defaultValue.empty() && direction == ApiParameterDirection::In && IsCSharpOptionalConstant(fn.params[i]))
                 {
                     defaultValue = Utils::String::Format(" = {0}", NormalizeCSharpDefaultValue(fn.params[i]));
                 }
@@ -417,7 +433,7 @@ namespace SE::BuildTool
             if (params.length() > 0) params += ", ";
             TypeInfo const paramType = fn.params[i].type;
             const std::string_view marshalAs = fn.params[i].marshalAs;
-            const BindingDirection direction = GetBindingDirection(fn.params[i]);
+            const ApiParameterDirection direction = fn.params[i].direction;
             std::string interopType = ResolveConversion(paramType, marshalAs, BindingUseSite::Parameter, direction).libraryImportManagedType;
             std::string marshalAttr = GetCSharpParamMarshalAttribute(paramType, fn.params[i].name, marshalAs, direction);
 
@@ -426,11 +442,11 @@ namespace SE::BuildTool
                 params += Utils::String::Format("{0} ", marshalAttr);
             }
 
-            if (direction == BindingDirection::Out)
+            if (direction == ApiParameterDirection::Out)
             {
                 params += "out ";
             }
-            else if (direction == BindingDirection::Ref)
+            else if (direction == ApiParameterDirection::Ref)
             {
                 params += "ref ";
             }
@@ -438,8 +454,8 @@ namespace SE::BuildTool
             const CollectionInfo collection = GetCollectionInfo(paramType);
             if (collection.HasRuntimeCount())
             {
-                const char* countDirection = direction == BindingDirection::Out ? "out "
-                    : direction == BindingDirection::Ref ? "ref " : "";
+                const char* countDirection = direction == ApiParameterDirection::Out ? "out "
+                    : direction == ApiParameterDirection::Ref ? "ref " : "";
                 params += Utils::String::Format(", {0}int __{1}Count", countDirection, MakeCSharpIdentifier(fn.params[i].name));
             }
         }
@@ -463,10 +479,10 @@ namespace SE::BuildTool
                 std::string paramName = MakeCSharpIdentifier(fn.params[i].name);
                 TypeInfo const paramType = fn.params[i].type;
                 const CollectionInfo collection = GetCollectionInfo(paramType);
-                const BindingDirection direction = GetBindingDirection(fn.params[i]);
+                const ApiParameterDirection direction = fn.params[i].direction;
                 const CSharpTypeConversion conversion = ResolveConversion(
                     paramType, fn.params[i].marshalAs, BindingUseSite::Parameter, direction);
-                const bool needsManualTemporary = direction != BindingDirection::In &&
+                const bool needsManualTemporary = direction != ApiParameterDirection::In &&
                     conversion.strategy == InteropStrategy::ManualWrapper &&
                     conversion.publicType != conversion.libraryImportManagedType;
                 std::string abiArgument = paramName;
@@ -475,7 +491,7 @@ namespace SE::BuildTool
                     abiArgument = Utils::String::Format("__{0}Abi", paramName);
                     if (preCall)
                     {
-                        if (direction == BindingDirection::Out)
+                        if (direction == ApiParameterDirection::Out)
                             *preCall += Utils::String::Format("            {0} {1};\n", conversion.libraryImportManagedType, abiArgument);
                         else
                             *preCall += Utils::String::Format("            var {0} = {1};\n", abiArgument,
@@ -485,20 +501,20 @@ namespace SE::BuildTool
                         *postCall += Utils::String::Format("            {0} = {1};\n", paramName,
                             GetCSharpFromInterop(paramType, abiArgument, fn.params[i].marshalAs));
                 }
-                else if (direction == BindingDirection::In && !collection.IsCollection())
+                else if (direction == ApiParameterDirection::In && !collection.IsCollection())
                 {
                     abiArgument = GetCSharpToInterop(paramType, paramName, fn.params[i].marshalAs);
                 }
 
-                if (direction == BindingDirection::Out)
+                if (direction == ApiParameterDirection::Out)
                     args += Utils::String::Format("out {0}", abiArgument);
-                else if (direction == BindingDirection::Ref)
+                else if (direction == ApiParameterDirection::Ref)
                     args += Utils::String::Format("ref {0}", abiArgument);
                 else
                     args += abiArgument;
                 if (collection.HasRuntimeCount())
                 {
-                    if (direction == BindingDirection::In)
+                    if (direction == ApiParameterDirection::In)
                     {
                         args += Utils::String::Format(", {0}", GetCSharpCollectionCountExpression(paramType, paramName));
                     }
@@ -507,24 +523,24 @@ namespace SE::BuildTool
                         const std::string countName = Utils::String::Format("__{0}Count", paramName);
                         if (preCall)
                         {
-                            if (direction == BindingDirection::Out)
+                            if (direction == ApiParameterDirection::Out)
                                 *preCall += Utils::String::Format("            int {0};\n", countName);
                             else
                                 *preCall += Utils::String::Format("            int {0} = {1};\n", countName,
                                     GetCSharpCollectionCountExpression(paramType, paramName));
                         }
                         args += Utils::String::Format(", {0} {1}",
-                            direction == BindingDirection::Out ? "out" : "ref", countName);
+                            direction == ApiParameterDirection::Out ? "out" : "ref", countName);
                     }
                 }
             }
             else
             {
                 // Public call - forward as-is with ref/out keywords
-                const BindingDirection direction = GetBindingDirection(fn.params[i]);
-                if (direction == BindingDirection::Out)
+                const ApiParameterDirection direction = fn.params[i].direction;
+                if (direction == ApiParameterDirection::Out)
                     args += Utils::String::Format("out {0}", MakeCSharpIdentifier(fn.params[i].name));
-                else if (direction == BindingDirection::Ref)
+                else if (direction == ApiParameterDirection::Ref)
                     args += Utils::String::Format("ref {0}", MakeCSharpIdentifier(fn.params[i].name));
                 else
                     args += MakeCSharpIdentifier(fn.params[i].name);
@@ -544,7 +560,7 @@ namespace SE::BuildTool
         TypeInfo const returnTypeInfo = fn.returnType;
         const CollectionInfo returnCollection = GetCollectionInfo(returnTypeInfo);
         const FunctionAbiPlan abiPlan = BuildFunctionAbiPlan(m_Database, cls, fn);
-        std::string interopRetType = ResolveConversion(returnTypeInfo, fn.marshalAs, BindingUseSite::Return, BindingDirection::Out).libraryImportManagedType;
+        std::string interopRetType = ResolveConversion(returnTypeInfo, fn.marshalAs, BindingUseSite::Return, ApiParameterDirection::Out).libraryImportManagedType;
         std::string interopParams = BuildCSharpInteropParams(cls, fn);
         std::string returnMarshalAttr = GetCSharpReturnMarshalAttribute(returnTypeInfo, fn.marshalAs);
         std::string internalName = Utils::String::Format("Internal_{0}", fn.uniqueName);
@@ -555,7 +571,7 @@ namespace SE::BuildTool
             {
                 interopParams += ", ";
             }
-            std::string marshal = GetCSharpParamMarshalAttribute(returnTypeInfo, "__resultAsRef", fn.marshalAs, BindingDirection::Out);
+            std::string marshal = GetCSharpParamMarshalAttribute(returnTypeInfo, "__resultAsRef", fn.marshalAs, ApiParameterDirection::Out);
             if (!marshal.empty())
             {
                 interopParams += marshal + " ";
@@ -622,10 +638,10 @@ namespace SE::BuildTool
                         overloadArgs += ", ";
                     if (i < firstNonConstantDefault)
                     {
-                        const BindingDirection direction = GetBindingDirection(fn.params[i]);
-                        if (direction == BindingDirection::Ref)
+                        const ApiParameterDirection direction = fn.params[i].direction;
+                        if (direction == ApiParameterDirection::Ref)
                             overloadArgs += "ref ";
-                        else if (direction == BindingDirection::Out)
+                        else if (direction == ApiParameterDirection::Out)
                             overloadArgs += "out ";
                         overloadArgs += MakeCSharpIdentifier(fn.params[i].name);
                     }
@@ -674,7 +690,7 @@ namespace SE::BuildTool
             std::string callArgs = interopCallArgs;
             if (!callArgs.empty()) callArgs += ", ";
             callArgs += "out __resultAsRef";
-            output += Utils::String::Format("            {0} __resultAsRef;\n", ResolveConversion(returnTypeInfo, fn.marshalAs, BindingUseSite::Return, BindingDirection::Out).libraryImportManagedType);
+            output += Utils::String::Format("            {0} __resultAsRef;\n", ResolveConversion(returnTypeInfo, fn.marshalAs, BindingUseSite::Return, ApiParameterDirection::Out).libraryImportManagedType);
             output += Utils::String::Format("            Internal_{0}({1});\n", fn.uniqueName, callArgs);
             output += postCall;
             std::string fromInterop = GetCSharpFromInterop(returnTypeInfo, "__resultAsRef", fn.marshalAs);
@@ -767,7 +783,7 @@ namespace SE::BuildTool
                     callArgs += ", ";
                 callArgs += "out __resultAsRef";
                 output += Utils::String::Format("            get {{ {0} __resultAsRef; Internal_{1}({2}); return {3}; }}\n",
-                    ResolveConversion(getterType, getterFunction.marshalAs, BindingUseSite::Return, BindingDirection::Out).libraryImportManagedType, getterFunction.uniqueName, callArgs,
+                    ResolveConversion(getterType, getterFunction.marshalAs, BindingUseSite::Return, ApiParameterDirection::Out).libraryImportManagedType, getterFunction.uniqueName, callArgs,
                     GetCSharpFromInterop(getterType, "__resultAsRef", getterFunction.marshalAs));
             }
             else
@@ -782,7 +798,7 @@ namespace SE::BuildTool
             const TypeInfoFunc& setterFunction = publicSetter->function;
             TypeInfo setterType = setterFunction.params[0].type;
 
-            const bool usesPointer = GetBindingDirection(setterFunction.params[0]) == BindingDirection::Ref;
+            const bool usesPointer = setterFunction.params[0].direction == ApiParameterDirection::Ref;
             const std::string setterModifier = publicGetter && setterAccess != propertyAccess
                 ? CodeGeneratorUtils::GetAccessString(setterAccess) + " " : "";
             const std::string instanceArg = setterFunction.isStatic ? "" : "__unmanagedPtr";
@@ -919,8 +935,7 @@ namespace SE::BuildTool
             output += Utils::String::Format("        {0}\n", field.attributes);
         }
 
-        std::string fieldDecl =
-            Utils::String::Format("        {0} {1} {2}", fieldAccess, publicType, MakeCSharpIdentifier(field.name));
+        std::string fieldDecl = Utils::String::Format("        {0} {1} {2}", fieldAccess, publicType, MakeCSharpIdentifier(field.name));
         if (fieldTypeInfo.typeID == TypeID("bool"))
         {
             fieldDecl = Utils::String::Format("        [MarshalAs(UnmanagedType.U1)]\n        {0} {1} {2}",
@@ -1018,8 +1033,8 @@ namespace SE::BuildTool
             TypeInfo const paramType = evt.params[i].type;
             if (paramType.isRef && !paramType.isConst)
                 invokeParams += "ref ";
-            const BindingDirection direction = GetBindingDirection(evt.params[i]);
-            std::string interopType = ResolveConversion(paramType, evt.params[i].marshalAs, BindingUseSite::Parameter, direction).libraryImportManagedType;
+            const ApiParameterDirection direction = evt.params[i].direction;
+            std::string interopType = ResolveConversion(paramType, evt.params[i].marshalAs, BindingUseSite::EventParameter, direction).libraryImportManagedType;
             std::string publicType = GetCSharpPublicType(paramType, evt.params[i].marshalAs);
             invokeParams += Utils::String::Format("{0} {1}", interopType, parameterName);
             if (paramType.isRef && !paramType.isConst)
@@ -1260,16 +1275,36 @@ namespace SE::BuildTool
         {
             if (field.isStatic) continue;
             const BindingTypeSemantics semantics = ResolveBindingTypeSemantics(m_Database, field.type, field.marshalAs);
-            if (semantics.kind == BindingTypeKind::Collection && semantics.collection.kind != CollectionKind::Fixed)
+            if (semantics.kind == BindingTypeKind::String || semantics.kind == BindingTypeKind::StringView)
             {
+                output += Utils::String::Format(
+                    "                Interop.StringMarshaller.Free(unmanaged.{0});\n", field.name);
+            }
+            else if (semantics.kind == BindingTypeKind::InteropStruct)
+            {
+                const CSharpTypeConversion fieldConversion = ResolveConversion(field.type, field.marshalAs, BindingUseSite::Field);
+                output += Utils::String::Format(
+                    "                {0}.Free(unmanaged.{1});\n", fieldConversion.marshaller, field.name);
+            }
+            else if (semantics.kind == BindingTypeKind::Collection && semantics.collection.kind != CollectionKind::Fixed)
+            {
+                const CSharpTypeConversion elementConversion = ResolveConversion(
+                    semantics.collection.elementType, {}, BindingUseSite::ArrayElement);
                 output += Utils::String::Format(
                     "                if (unmanaged.{0} != IntPtr.Zero)\n"
                     "                {{\n"
                     "                    ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{0});\n"
-                    "                    Unsafe.As<ManagedArray>(handle.Target).Free();\n"
-                    "                    handle.Free();\n"
-                    "                }}\n",
+                    "                    ManagedArray array = Unsafe.As<ManagedArray>(handle.Target);\n",
                     field.name);
+                if (elementConversion.kind == BindingTypeKind::InteropStruct)
+                {
+                    output += Utils::String::Format(
+                        "                    foreach (var value in array.ToSpan<{0}>()) {1}.Free(value);\n",
+                        elementConversion.libraryImportManagedType, elementConversion.marshaller);
+                }
+                output += "                    array.Free();\n"
+                          "                    handle.Free();\n"
+                          "                }\n";
             }
         }
         output += "            }\n\n";

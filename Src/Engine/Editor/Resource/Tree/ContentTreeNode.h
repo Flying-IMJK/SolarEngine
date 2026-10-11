@@ -17,7 +17,7 @@ namespace SE::Editor
     {
         SE_DEFINE_CLASS_DEFAULT(ContentTreeNode, TreeNode)
     private:
-        Ref<DragItems> _dragOverItems;
+        SharedPtr<DragItems> _dragOverItems;
         List<Rectangle> _highlights;
 
     protected:

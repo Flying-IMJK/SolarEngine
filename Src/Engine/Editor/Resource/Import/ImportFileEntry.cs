@@ -1,10 +1,209 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace SE.Editor
 {
+    /// <summary>
+    /// Creates new <see cref="ImportFileEntry"/> for the given source file.
+    /// </summary>
+    /// <param name="request">The import request.</param>
+    /// <returns>The file entry.</returns>
+    public delegate ImportFileEntry ImportFileEntryHandler(ref Request request);
+
+    /// <summary>
+    /// File import entry.
+    /// </summary>
+    public class ImportFileEntry : IFileEntryAction
+    {
+        /// <inheritdoc />
+        public string SourceUrl { get; }
+
+        /// <inheritdoc />
+        public string ResultUrl { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether this entry has settings to modify.
+        /// </summary>
+        public virtual bool HasSettings => Settings != null;
+
+        /// <summary>
+        /// Gets or sets the settings object to modify.
+        /// </summary>
+        public virtual object Settings => null;
+
+        /// <summary>
+        /// Tries the override import settings.
+        /// </summary>
+        /// <param name="settings">The settings.</param>
+        /// <returns>True if settings override was successful and there is no need to edit them in dedicated dialog, otherwise false.</returns>
+        public virtual bool TryOverrideSettings(object settings)
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImportFileEntry"/> class.
+        /// </summary>
+        /// <param name="request">The import request.</param>
+        public ImportFileEntry(ref Request request)
+        {
+            SourceUrl = request.InputPath;
+            ResultUrl = request.OutputPath;
+        }
+
+        /// <summary>
+        /// Modifies the result URL filename (keeps destination folder and extension).
+        /// </summary>
+        /// <param name="filename">The new filename.</param>
+        public void ModifyResultFilename(string filename)
+        {
+            var directory = Path.GetDirectoryName(ResultUrl) ?? string.Empty;
+            var extension = Path.GetExtension(ResultUrl);
+            ResultUrl = Path.Combine(directory, filename + extension);
+        }
+
+        /// <summary>
+        /// Performs file importing.
+        /// </summary>
+        /// <returns>True if failed, otherwise false.</returns>
+        public virtual bool Import()
+        {
+            // Skip if missing
+            if (!Directory.Exists(SourceUrl) && !File.Exists(SourceUrl))
+                return true;
+
+            // Setup output
+            string folder = Path.GetDirectoryName(ResultUrl);
+            if (folder != null && !Directory.Exists(folder))
+            {
+                Directory.CreateDirectory(folder);
+            }
+
+            if (Directory.Exists(SourceUrl))
+            {
+                // Copy directory
+                FileSystem.DirectoryCopy(SourceUrl, ResultUrl, true);
+                return false;
+            }
+
+            // Copy file
+            File.Copy(SourceUrl, ResultUrl, true);
+            return false;
+        }
+
+        /// <summary>
+        /// The file types registered for importing. Key is a file extension (without a leading dot).
+        /// Allows to plug custom importing options gather for different input file types.
+        /// </summary>
+        public static readonly Dictionary<string, ImportFileEntryHandler> FileTypes = new Dictionary<string, ImportFileEntryHandler>(32);
+
+        /// <summary>
+        /// Creates the entry.
+        /// </summary>
+        /// <param name="request">The import request.</param>
+        /// <returns>Created file entry.</returns>
+        public static ImportFileEntry CreateEntry(ref Request request)
+        {
+            // Get extension (without a dot)
+            var extension = Path.GetExtension(request.InputPath);
+            if (File.GetAttributes(request.InputPath).HasFlag(FileAttributes.Directory))
+            {
+                return new FolderImportEntry(ref request);
+            }
+
+            if (extension.Length > 0)
+            {
+                if (extension[0] == '.')
+                {
+                    extension = extension.Remove(0, 1);
+                }
+                extension = extension.ToLower();
+            }
+
+            // Check if use overriden type
+            if (FileTypes.TryGetValue(extension, out ImportFileEntryHandler createDelegate))
+            {
+                return createDelegate(ref request);
+            }
+
+            return request.IsInBuilt ? new AssetImportEntry(ref request) : new ImportFileEntry(ref request);
+        }
+
+        internal static void RegisterDefaultTypes()
+        {
+            // Textures
+            FileTypes["tga"] = ImportTexture;
+            FileTypes["png"] = ImportTexture;
+            FileTypes["bmp"] = ImportTexture;
+            FileTypes["gif"] = ImportTexture;
+            FileTypes["tiff"] = ImportTexture;
+            FileTypes["tif"] = ImportTexture;
+            FileTypes["jpeg"] = ImportTexture;
+            FileTypes["jpg"] = ImportTexture;
+            FileTypes["dds"] = ImportTexture;
+            FileTypes["hdr"] = ImportTexture;
+            FileTypes["raw"] = ImportTexture;
+            FileTypes["exr"] = ImportTexture;
+
+            // Models
+            FileTypes["obj"] = ImportModel;
+            FileTypes["fbx"] = ImportModel;
+            FileTypes["x"] = ImportModel;
+            FileTypes["dae"] = ImportModel;
+            FileTypes["gltf"] = ImportModel;
+            FileTypes["glb"] = ImportModel;
+            //
+            FileTypes["blend"] = ImportModel;
+            FileTypes["bvh"] = ImportModel;
+            FileTypes["ase"] = ImportModel;
+            FileTypes["ply"] = ImportModel;
+            FileTypes["dxf"] = ImportModel;
+            FileTypes["ifc"] = ImportModel;
+            FileTypes["nff"] = ImportModel;
+            FileTypes["smd"] = ImportModel;
+            FileTypes["vta"] = ImportModel;
+            FileTypes["mdl"] = ImportModel;
+            FileTypes["md2"] = ImportModel;
+            FileTypes["md3"] = ImportModel;
+            FileTypes["md5mesh"] = ImportModel;
+            FileTypes["q3o"] = ImportModel;
+            FileTypes["q3s"] = ImportModel;
+            FileTypes["ac"] = ImportModel;
+            FileTypes["stl"] = ImportModel;
+            FileTypes["lwo"] = ImportModel;
+            FileTypes["lws"] = ImportModel;
+            FileTypes["lxo"] = ImportModel;
+
+            // Audio
+            FileTypes["wav"] = ImportAudio;
+            FileTypes["mp3"] = ImportAudio;
+            FileTypes["ogg"] = ImportAudio;
+        }
+
+        private static ImportFileEntry ImportModel(ref Request request)
+        {
+            return new ModelImportEntry(ref request);
+        }
+
+        private static ImportFileEntry ImportAudio(ref Request request)
+        {
+            return null; // new AudioImportEntry(ref request);
+        }
+
+        private static ImportFileEntry ImportTexture(ref Request request)
+        {
+            return new TextureImportEntry(ref request);
+        }
+
+        /// <inheritdoc />
+        public bool Execute()
+        {
+            return Import();
+        }
+    }
+
+
     public sealed class ImportRequest
     {
         public ImportRequest(string inputPath, string outputPath, bool isInBuilt = false, bool skipSettingsDialog = false, object? settings = null)
@@ -23,163 +222,4 @@ namespace SE.Editor
         public object? Settings { get; }
     }
 
-    public interface IFileEntryAction
-    {
-        string SourceUrl { get; }
-        string ResultUrl { get; }
-        bool Execute();
-    }
-
-    public class ImportFileEntry : IFileEntryAction
-    {
-        public ImportFileEntry(ImportRequest request)
-        {
-            ArgumentNullException.ThrowIfNull(request);
-            SourceUrl = request.InputPath;
-            ResultUrl = request.OutputPath;
-        }
-
-        public string SourceUrl { get; }
-        public string ResultUrl { get; private set; }
-        public virtual object? Settings => null;
-        public bool HasSettings => Settings != null;
-        public virtual bool TryOverrideSettings(object settings) => false;
-
-        public void ModifyResultFilename(string filename)
-        {
-            ArgumentException.ThrowIfNullOrWhiteSpace(filename);
-            string? directory = Path.GetDirectoryName(ResultUrl);
-            string extension = Path.GetExtension(ResultUrl);
-            ResultUrl = Path.Combine(directory ?? string.Empty, filename + extension);
-        }
-
-        public virtual bool Import()
-        {
-            if (!File.Exists(SourceUrl) && !Directory.Exists(SourceUrl))
-                return false;
-
-            string? outputDirectory = Path.GetDirectoryName(ResultUrl);
-            if (!string.IsNullOrEmpty(outputDirectory))
-                Directory.CreateDirectory(outputDirectory);
-
-            if (Directory.Exists(SourceUrl))
-            {
-                CopyDirectory(SourceUrl, ResultUrl);
-                return true;
-            }
-
-            File.Copy(SourceUrl, ResultUrl, overwrite: true);
-            return true;
-        }
-
-        public bool Execute() => Import();
-
-        protected static void CopyDirectory(string source, string destination)
-        {
-            Directory.CreateDirectory(destination);
-            foreach (string file in Directory.EnumerateFiles(source))
-            {
-                File.Copy(file, Path.Combine(destination, Path.GetFileName(file)), overwrite: true);
-            }
-            foreach (string directory in Directory.EnumerateDirectories(source))
-            {
-                CopyDirectory(directory, Path.Combine(destination, Path.GetFileName(directory)));
-            }
-        }
-    }
-
-    public sealed class FolderImportEntry : ImportFileEntry
-    {
-        private readonly Action<IEnumerable<string>, ContentFolder, bool>? m_ImportChildren;
-        private readonly ContentFolder? m_TargetFolder;
-
-        public FolderImportEntry(ImportRequest request, ContentFolder? targetFolder = null, Action<IEnumerable<string>, ContentFolder, bool>? importChildren = null)
-            : base(request)
-        {
-            SkipSettingsDialog = request.SkipSettingsDialog;
-            m_TargetFolder = targetFolder;
-            m_ImportChildren = importChildren;
-        }
-
-        public bool SkipSettingsDialog { get; }
-
-        public override bool Import()
-        {
-            if (!Directory.Exists(SourceUrl))
-                return false;
-
-            Directory.CreateDirectory(ResultUrl);
-            if (m_TargetFolder == null || m_ImportChildren == null)
-                return true;
-
-            m_ImportChildren(Directory.EnumerateFileSystemEntries(SourceUrl), m_TargetFolder, SkipSettingsDialog);
-            return true;
-        }
-    }
-
-    public sealed class ModelImportEntry : ImportFileEntry
-    {
-        public ModelImportEntry(ImportRequest request)
-            : base(request)
-        {
-        }
-
-        public override bool Import() => ResourceInterop.ImportBackend.ImportModel(SourceUrl, ResultUrl);
-    }
-
-    public sealed class TextureImportEntry : ImportFileEntry
-    {
-        public TextureImportEntry(ImportRequest request)
-            : base(request)
-        {
-        }
-
-        public override bool Import() => ResourceInterop.ImportBackend.ImportTexture(SourceUrl, ResultUrl);
-    }
-
-    /// <summary>
-    /// Managed queue for choosing the correct entry type. Native importer calls are
-    /// deliberately isolated in the two entry types above.
-    /// </summary>
-    public sealed class ResourceImportService
-    {
-        private static readonly HashSet<string> TextureExtensions = new(StringComparer.OrdinalIgnoreCase)
-        {
-            ".tga", ".png", ".bmp", ".gif", ".tiff", ".tif", ".jpeg", ".jpg", ".dds", ".hdr", ".raw", ".exr",
-        };
-
-        private static readonly HashSet<string> ModelExtensions = new(StringComparer.OrdinalIgnoreCase)
-        {
-            ".obj", ".fbx", ".x", ".dae", ".gltf", ".glb", ".blend", ".bvh", ".ase", ".ply", ".dxf", ".ifc", ".nff", ".smd", ".vta", ".mdl", ".md2", ".md3", ".md5mesh", ".q3o", ".q3s", ".ac", ".stl", ".lwo", ".lws", ".lxo",
-        };
-
-        public ImportFileEntry CreateEntry(ImportRequest request, ContentFolder? destination = null)
-        {
-            string extension = Path.GetExtension(request.InputPath);
-            if (string.IsNullOrEmpty(extension))
-                return new FolderImportEntry(request, destination, Import);
-            if (TextureExtensions.Contains(extension))
-                return new TextureImportEntry(request);
-            if (ModelExtensions.Contains(extension))
-                return new ModelImportEntry(request);
-            return new ImportFileEntry(request);
-        }
-
-        public bool Import(string inputPath, ContentFolder destination, bool skipSettingsDialog = false)
-        {
-            ArgumentNullException.ThrowIfNull(destination);
-            string fileName = Path.GetFileName(inputPath);
-            string outputPath = Path.Combine(destination.Path, fileName);
-            ImportRequest request = new(inputPath, outputPath, isInBuilt: true, skipSettingsDialog);
-            return CreateEntry(request, destination).Execute();
-        }
-
-        public void Import(IEnumerable<string> inputPaths, ContentFolder destination, bool skipSettingsDialog = false)
-        {
-            foreach (string inputPath in inputPaths.Where(static path => !string.IsNullOrWhiteSpace(path)))
-            {
-                Import(inputPath, destination, skipSettingsDialog);
-            }
-        }
-    }
 }

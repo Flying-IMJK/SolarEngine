@@ -8,8 +8,13 @@
 
 namespace SE
 {
+	struct TextureUtilsOptions;
+	struct ModelUtilsOptions;
+
+	SE_CLASS(API(Static))
 	class SE_API_RUNTIME AssetsImporting
 	{
+		SCRIPTING_TYPE_MIN(AssetsImporting)
 	public:
 
 		/// <summary>
@@ -140,7 +145,7 @@ namespace SE
 		/// <param name="outputPath">The output path.</param>
 		/// <param name="assetId">The asset identifier. If valid then used as new asset id. Set to the actual asset id after import.</param>
 		/// <param name="arg">The custom argument.</param>
-		/// <returns>True if fails, otherwise false.</returns>
+		/// <returns>False if fails, otherwise false.</returns>
 		static bool Create(const CreateAssetFunction& importFunc, const StringView& outputPath, UID& assetId, void* arg = nullptr);
 
 		/// <summary>
@@ -149,7 +154,7 @@ namespace SE
 		/// <param name="importFunc">The import function.</param>
 		/// <param name="outputPath">The output path.</param>
 		/// <param name="arg">The custom argument.</param>
-		/// <returns>True if fails, otherwise false.</returns>
+		/// <returns>False if fails, otherwise false.</returns>
 		static bool Create(const CreateAssetFunction& importFunc, const StringView& outputPath, void* arg = nullptr)
 		{
 			UID id = UID::Empty;
@@ -163,7 +168,7 @@ namespace SE
 		/// <param name="outputPath">The output path.</param>
 		/// <param name="assetId">The asset identifier.</param>
 		/// <param name="arg">The custom argument.</param>
-		/// <returns>True if fails, otherwise false.</returns>
+		/// <returns>False if fails, otherwise false.</returns>
 		static bool Create(const String& tag, const StringView& outputPath, UID& assetId, void* arg = nullptr);
 
 		/// <summary>
@@ -172,7 +177,7 @@ namespace SE
 		/// <param name="tag">The asset type tag.</param>
 		/// <param name="outputPath">The output path.</param>
 		/// <param name="arg">The custom argument.</param>
-		/// <returns>True if fails, otherwise false.</returns>
+		/// <returns>false if fails, otherwise false.</returns>
 		static bool Create(const String& tag, const StringView& outputPath, void* arg = nullptr)
 		{
 			UID id = UID::Empty;
@@ -186,8 +191,9 @@ namespace SE
 		/// <param name="outputPath">The output path.</param>
 		/// <param name="assetId">The asset identifier. If valid then used as new asset id. Set to the actual asset id after import.</param>
 		/// <param name="arg">The custom argument.</param>
-		/// <returns>True if fails, otherwise false.</returns>
-		static bool Import(const StringView& inputPath, const StringView& outputPath, UID& assetId, void* arg = nullptr);
+		/// <returns>False if fails, otherwise false.</returns>
+		SE_FUNCTION(API())
+		static bool Import(const StringView& inputPath, const StringView& outputPath, UID& assetId, void* arg);
 
 		/// <summary>
 		/// Imports file and creates asset. If asset already exists overwrites it's contents.
@@ -195,8 +201,9 @@ namespace SE
 		/// <param name="inputPath">The input path.</param>
 		/// <param name="outputPath">The output path.</param>
 		/// <param name="arg">The custom argument.</param>
-		/// <returns>True if fails, otherwise false.</returns>
-		static bool Import(const StringView& inputPath, const StringView& outputPath, void* arg = nullptr)
+		/// <returns>False if fails, otherwise false.</returns>
+		SE_FUNCTION(API())
+		static bool Import(const StringView& inputPath, const StringView& outputPath, void* arg)
 		{
 			UID id = UID::Empty;
 			return Import(inputPath, outputPath, id, arg);
@@ -209,7 +216,7 @@ namespace SE
 		/// <param name="outputPath">The output path.</param>
 		/// <param name="assetId">The asset identifier. If valid then used as new asset id. Set to the actual asset id after import.</param>
 		/// <param name="arg">The custom argument.</param>
-		/// <returns>True if fails, otherwise false.</returns>
+		/// <returns>False if fails, otherwise false.</returns>
 		static bool ImportIfEdited(const StringView& inputPath, const StringView& outputPath, UID& assetId, void* arg = nullptr);
 
 		/// <summary>
@@ -218,7 +225,7 @@ namespace SE
 		/// <param name="inputPath">The input path.</param>
 		/// <param name="outputPath">The output path.</param>
 		/// <param name="arg">The custom argument.</param>
-		/// <returns>True if fails, otherwise false.</returns>
+		/// <returns>False if fails, otherwise false.</returns>
 		static bool ImportIfEdited(const StringView& inputPath, const StringView& outputPath, void* arg = nullptr)
 		{
 			UID id = UID::Empty;
@@ -227,6 +234,35 @@ namespace SE
 
 		// Converts source files path into the relative format if enabled by the project settings. Result path can be stored in asset for reimports.
 		static String GetImportPath(const String& path);
+
+		SE_FUNCTION(API())
+		static bool TryRestoreImportOptions(TextureUtilsOptions& options, String assetPath);
+
+		SE_FUNCTION(API())
+		static bool TryRestoreImportOptions(ModelUtilsOptions& options, String assetPath);
+
+		SE_FUNCTION(API())
+		static String CanImport(const StringView& extension);
+
+		/// <summary>
+		/// Imports the texture asset file to the target location.
+		/// </summary>
+		/// <param name="inputPath">The source file path.</param>
+		/// <param name="outputPath">The result asset file path.</param>
+		/// <param name="options">The import settings.</param>
+		/// <returns>False if importing failed, otherwise false.</returns>
+		SE_FUNCTION(API())
+		static bool Import(const String& inputPath, const String& outputPath, const TextureUtilsOptions& options);
+
+		/// <summary>
+		/// Imports the model asset file to the target location.
+		/// </summary>
+		/// <param name="inputPath">The source file path.</param>
+		/// <param name="outputPath">The result asset file path.</param>
+		/// <param name="options">The import settings.</param>
+		/// <returns>False if importing failed, otherwise false.</returns>
+		SE_FUNCTION(API())
+		static bool Import(const String& inputPath, const String& outputPath, const ModelUtilsOptions& options);
 
 	private:
 		static bool Create(const CreateAssetFunction& callback, const StringView& inputPath, const StringView& outputPath, UID& assetId, void* arg);

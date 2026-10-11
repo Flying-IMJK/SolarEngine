@@ -38,6 +38,7 @@ namespace SE
 		/// <summary>
 		/// The native parent window pointer.
 		/// </summary>
+		SE_FIELD(API(Prop))
 		Window* Parent = nullptr;
 
 		/// <summary>

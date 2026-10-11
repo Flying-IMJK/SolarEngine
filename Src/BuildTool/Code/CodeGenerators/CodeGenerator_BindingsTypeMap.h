@@ -38,8 +38,7 @@ namespace SE::BuildTool
         OpaquePointer,
     };
 
-    enum class BindingUseSite { Parameter, Return, Field, ArrayElement, Variant };
-    enum class BindingDirection { In, Ref, Out };
+    enum class BindingUseSite { Parameter, EventParameter, Return, Field, ArrayElement, Variant };
     enum class InteropStrategy { Direct, CustomMarshaller, ManualWrapper, Unsupported };
 
     struct ReferenceSemantics
@@ -177,16 +176,15 @@ namespace SE::BuildTool
     BindingTypeSemantics ResolveBindingTypeSemantics(TypeDatabase const& database, TypeInfo const& type,
                                                      std::string_view marshalAs = {});
     CppTypeConversion ResolveCppTypeConversion(TypeDatabase const& database, BindingTypeSemantics const& semantics,
-                                               BindingUseSite useSite, BindingDirection direction);
+                                               BindingUseSite useSite, ApiParameterDirection direction);
     CSharpTypeConversion ResolveCSharpTypeConversion(TypeDatabase const& database, BindingTypeSemantics const& semantics,
-                                                     BindingUseSite useSite, BindingDirection direction);
+                                                     BindingUseSite useSite, ApiParameterDirection direction);
     FunctionAbiPlan BuildFunctionAbiPlan(TypeDatabase const& database, TypeInfoStruct const& owner,
                                          TypeInfoFunc const& function);
     bool ValidateBindingsHeader(TypeDatabase const& database, BindingsHeaderInfo const& header,
                                 std::vector<std::string>& diagnostics,
                                 std::vector<std::string>* fingerprints = nullptr);
 
-    BindingDirection GetBindingDirection(TypeInfoParam const& parameter);
     std::string GetManagedTypeName(TypeInfoBase const& declaration);
     bool IsKnownBlittableBuiltin(TypeInfo const& type);
     CollectionInfo GetCollectionInfo(TypeInfo const& type);

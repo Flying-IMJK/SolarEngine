@@ -39,7 +39,7 @@ namespace SE
 		static bool ShowOpenFileDialog(const StringView& initialDirectory, const StringView& filter, bool multiSelect, const StringView& title, List <String, HeapAllocation>& filenames);
 		static bool ShowOpenFileDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& filter, bool multiSelect, const StringView& title, List<String, HeapAllocation>& filenames);
 		static bool ShowSaveFileDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& filter, bool multiSelect, const StringView& title, List<String, HeapAllocation>& filenames);
-		static bool ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title, String& path);
+		static String ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title);
 		static bool ShowFileExplorer(const StringView& path);
 	};
 

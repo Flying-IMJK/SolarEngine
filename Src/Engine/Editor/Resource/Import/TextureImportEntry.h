@@ -21,7 +21,7 @@ namespace SE::Editor
         bool Import() override;
 
     private:
-        TextureUtils::Options m_Setting;
+        TextureUtilsOptions m_Setting;
     };
 
 } // SE

@@ -26,7 +26,6 @@ namespace SE.Editor
         public struct LogEntryDescription
         {
             public LogType Level;
-            public string Title;
             public string Description;
             public Guid ContextObject;
             public string LocationFile;
@@ -34,7 +33,6 @@ namespace SE.Editor
         }
 
         private const float ToolStripHeight = 22.0f;
-        private const float MarkerWidth = 4.0f;
 
         private readonly ToolStrip m_ToolStrip;
         private readonly ToolStripButton m_ClearOnPlayButton;
@@ -58,7 +56,7 @@ namespace SE.Editor
             Icon = EditorIcons.LogWindow32;
 
 
-            m_ToolStrip = new ToolStrip(ToolStripHeight, 0.0f, Width);
+            m_ToolStrip = new ToolStrip(ToolStripHeight, 0.0f);
             AddChild(m_ToolStrip);
             m_ToolStrip.AddButton("Clear", Clear).TooltipText = "Clears all log entries";
             m_ClearOnPlayButton = m_ToolStrip.AddButton("Clear on Play").SetAutoCheck(true).SetChecked(true);
@@ -80,14 +78,14 @@ namespace SE.Editor
                 SplitterValue = 0.8f,
             };
             AddChild(m_Split);
-            m_Split.Panel1.ScrollBars = SE.GUI.ScrollBars.Vertical;
-            m_Split.Panel2.ScrollBars = SE.GUI.ScrollBars.Both;
+            m_Split.Panel1.SetScrollBars(SE.GUI.ScrollBars.Vertical);
+            m_Split.Panel2.SetScrollBars(SE.GUI.ScrollBars.Both);
 
             m_LogInfo = new Label
             {
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Near,
-                TextWrapping = TextWrapping.WrapWords,
+                Wrapping = TextWrapping.WrapWords,
                 TextColor = Style.Current.Foreground,
             };
             m_Split.Panel2.AddChild(m_LogInfo);
@@ -97,14 +95,12 @@ namespace SE.Editor
                 Margin = new Margin(0.0f),
                 Spacing = 0.0f,
                 AutoSize = false,
-                ScrollBars = SE.GUI.ScrollBars.None,
                 IsScrollable = true,
             };
             m_Split.Panel1.AddChild(m_EntriesPanel);
 
             UpdateCount();
             Debug.Logger.LogHandler.SendLog += LogHandlerOnSendLog;
-            Debug.Logger.LogHandler.SendExceptionLog += LogHandlerOnSendExceptionLog;
         }
 
         public int EntryCount => m_Entries.Count;
@@ -134,14 +130,22 @@ namespace SE.Editor
             lock (m_PendingEntriesLock)
             {
                 if (m_PendingEntries.Count == 0)
+                {
                     return;
+                }
 
                 pendingEntries = new List<LogEntryDescription>(m_PendingEntries);
                 m_PendingEntries.Clear();
             }
 
             Panel panelScroll = m_Split.Panel1;
-            bool scrollView = panelScroll.MaximumScrollOffset.Y - panelScroll.ScrollOffset.Y < LogEntry.DefaultHeight * 1.5f;
+            VScrollBar verticalScrollBar = panelScroll.vScrollBar;
+            float maximumScrollOffsetY = 0.0f;
+            if (verticalScrollBar != null)
+            {
+                maximumScrollOffsetY = verticalScrollBar.Maximum;
+            }
+            bool scrollView = maximumScrollOffsetY + panelScroll.GetViewOffset().Y < LogEntry.DefaultHeight * 1.5f;
             LogEntry? lastEntry = null;
             bool anyVisible = false;
             for (int i = 0; i < pendingEntries.Count; i++)
@@ -156,15 +160,22 @@ namespace SE.Editor
             if (scrollView && anyVisible && lastEntry != null)
             {
                 panelScroll.ScrollViewTo(lastEntry);
-                if (panelScroll.MaximumScrollOffset.Y - panelScroll.ScrollOffset.Y >= LogEntry.DefaultHeight * 1.5f)
+                verticalScrollBar = panelScroll.vScrollBar;
+                maximumScrollOffsetY = 0.0f;
+                if (verticalScrollBar != null)
+                {
+                    maximumScrollOffsetY = verticalScrollBar.Maximum;
+                }
+                if (maximumScrollOffsetY + panelScroll.GetViewOffset().Y >= LogEntry.DefaultHeight * 1.5f)
+                {
                     panelScroll.ScrollViewTo(new Float2(float.MaxValue, float.MaxValue));
+                }
             }
         }
 
         public override void OnExit()
         {
             Debug.Logger.LogHandler.SendLog -= LogHandlerOnSendLog;
-            Debug.Logger.LogHandler.SendExceptionLog -= LogHandlerOnSendExceptionLog;
         }
 
         public override void OnStartContainsFocus()
@@ -173,11 +184,13 @@ namespace SE.Editor
             base.OnStartContainsFocus();
         }
 
-        protected override void OnLayoutChildren()
+        protected override void PerformLayoutBeforeChildren()
         {
-            base.OnLayoutChildren();
+            base.PerformLayoutBeforeChildren();
             if (m_ToolStrip == null || m_Split == null || m_LogInfo == null || m_EntriesPanel == null)
+            {
                 return;
+            }
 
             m_ToolStrip.SetBounds(0.0f, 0.0f, Width, ToolStripHeight);
             m_Split.SetBounds(0.0f, ToolStripHeight, Width, MathF.Max(0.0f, Height - ToolStripHeight));
@@ -190,11 +203,13 @@ namespace SE.Editor
             get => m_Selected;
             set
             {
-                if (ReferenceEquals(m_Selected, value))
+                if (m_Selected == value)
+                {
                     return;
+                }
 
                 m_Selected = value;
-                m_LogInfo.Text = m_Selected?.Info ?? string.Empty;
+                m_LogInfo.Text = m_Selected != null ? m_Selected.GetInfo() : string.Empty;
             }
         }
 
@@ -218,7 +233,10 @@ namespace SE.Editor
                 for (int i = 0; i < m_Entries.Count; i++)
                 {
                     LogEntry existing = m_Entries[i];
-                    if (existing.Matches(ref desc))
+                    if (string.Equals(existing.Desc.LocationFile, desc.LocationFile, StringComparison.Ordinal) &&
+                        existing.Desc.Level == desc.Level &&
+                        string.Equals(existing.Desc.Description, desc.Description, StringComparison.Ordinal) &&
+                        existing.Desc.LocationLine == desc.LocationLine)
                     {
                         existing.LogCount++;
                         existing.Visible = m_GroupButtons[(int)existing.Group].Checked;
@@ -227,7 +245,7 @@ namespace SE.Editor
                 }
             }
 
-            LogEntry entry = new(this, ref desc)
+            LogEntry entry = new(this, desc)
             {
                 Visible = m_GroupButtons[(int)LogGroupFromLogType(desc.Level)].Checked,
             };
@@ -247,7 +265,9 @@ namespace SE.Editor
                 LogEntry entry = m_Entries[i];
                 entry.SetBounds(0.0f, y, entryWidth, LogEntry.DefaultHeight);
                 if (entry.Visible)
+                {
                     y += LogEntry.DefaultHeight;
+                }
             }
             m_EntriesPanel.SetBounds(0.0f, 0.0f, entryWidth, y);
             m_EntriesPanel.PerformLayout();
@@ -259,7 +279,9 @@ namespace SE.Editor
             {
                 LogEntry entry = m_Entries[i];
                 if (entry.Group == group)
+                {
                     entry.Visible = isVisible;
+                }
             }
 
             LayoutEntries(m_Split.Panel1.Width);
@@ -275,7 +297,9 @@ namespace SE.Editor
         private void UpdateCount(int group, string text)
         {
             if (m_LogCountPerGroup[group] != 1)
+            {
                 text += "s";
+            }
             m_GroupButtons[group].Text = m_LogCountPerGroup[group] + text;
         }
 
@@ -284,8 +308,7 @@ namespace SE.Editor
             LogEntryDescription desc = new()
             {
                 Level = level,
-                Title = message ?? string.Empty,
-                Description = string.Empty,
+                Description = message ?? string.Empty,
                 ContextObject = context?.ID ?? Guid.Empty,
                 LocationFile = string.Empty,
             };
@@ -323,29 +346,6 @@ namespace SE.Editor
             Add(ref desc);
         }
 
-        private void LogHandlerOnSendExceptionLog(Exception exception, SE.Object context)
-        {
-            LogEntryDescription desc = new()
-            {
-                Level = LogType.Error,
-                Title = exception.Message,
-                Description = exception.StackTrace ?? string.Empty,
-                ContextObject = context?.ID ?? Guid.Empty,
-                LocationFile = string.Empty,
-            };
-
-            if (!string.IsNullOrEmpty(exception.StackTrace))
-            {
-                Match match = m_LogRegex.Match(exception.StackTrace);
-                if (match.Success)
-                {
-                    desc.LocationFile = match.Groups[2].Value;
-                    desc.LocationLine = ParseLocationLine(match);
-                }
-            }
-
-            Add(ref desc);
-        }
 
         private static LogGroup LogGroupFromLogType(LogType level)
         {
@@ -360,116 +360,193 @@ namespace SE.Editor
         private static int ParseLocationLine(Match match)
         {
             if (int.TryParse(match.Groups[4].Value, out int line))
+            {
                 return line;
+            }
             return int.TryParse(match.Groups[5].Value, out line) ? line : 0;
         }
 
-        private sealed class LogEntry : Control
+        private class LogEntry : Control
         {
-            public const float DefaultHeight = 24.0f;
+            private bool _isRightMouseDown;
+            private LogWindow _window;
 
-            private readonly LogWindow m_Window;
-            private bool m_IsRightMouseDown;
+            /// <summary>
+            /// The default height of the entries.
+            /// </summary>
+            public const float DefaultHeight = 32.0f;
 
-            public LogEntry(LogWindow window, ref LogEntryDescription desc)
+            public LogGroup Group;
+            public LogEntryDescription Desc;
+            public SpriteHandle Icon;
+            public int LogCount = 1;
+
+            public LogEntry(LogWindow window, LogEntryDescription desc)
                 : base(0.0f, 0.0f, 120.0f, DefaultHeight)
             {
-                m_Window = window;
-                Desc = desc;
-                Group = LogGroupFromLogType(desc.Level);
+                AnchorPreset = AnchorPresets.HorizontalStretchTop;
                 IsScrollable = true;
                 AutoFocus = true;
-                TooltipText = desc.Description;
+
+                _window = window;
+                Desc = desc;
+                switch (desc.Level)
+                {
+                    case LogType.Warning:
+                        Group = LogGroup.Warning;
+                        break;
+                    case LogType.Info:
+                        Group = LogGroup.Info;
+                        break;
+                    default:
+                        Group = LogGroup.Error;
+                        break;
+                }
             }
 
-            public LogGroup Group { get; }
-            public LogEntryDescription Desc { get; }
-            public int LogCount { get; set; } = 1;
-            public string Info => string.IsNullOrEmpty(Desc.Description) ? Desc.Title : Desc.Title + Environment.NewLine + Desc.Description;
-
-            public bool Matches(ref LogEntryDescription desc)
+            /// <summary>
+            /// Gets the information text.
+            /// </summary>
+            public string GetInfo()
             {
-                return Desc.Level == desc.Level &&
-                       Desc.LocationLine == desc.LocationLine &&
-                       string.Equals(Desc.Title, desc.Title, StringComparison.Ordinal) &&
-                       string.Equals(Desc.Description, desc.Description, StringComparison.Ordinal) &&
-                       string.Equals(Desc.LocationFile, desc.LocationFile, StringComparison.Ordinal);
+                return Desc.Description;
             }
 
+            /// <inheritdoc />
             public override void Draw()
             {
                 base.Draw();
 
+                // Cache data
                 Style style = Style.Current;
-                Rectangle clientRect = ScreenBounds;
                 int index = IndexInParent;
-                if (ReferenceEquals(m_Window.Selected, this))
+                Rectangle clientRect = new(Float2.Zero, Size);
+
+                // Background
+                if (_window.Selected == this)
                 {
-                    Color selected = IsFocused ? style.BackgroundSelected : style.BackgroundNormal;
-                    Render2D.FillRectangle(clientRect, selected);
+                    Render2D.FillRectangle(clientRect, IsFocused ? style.BackgroundSelected : style.LightBackground);
                 }
                 else if (IsMouseOver)
                 {
-                    Color highlighted = style.BackgroundHighlighted;
-                    Render2D.FillRectangle(clientRect, highlighted);
+                    Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
                 }
                 else if (index % 2 == 0)
                 {
-                    Color striped = style.Background * 0.9f;
-                    Render2D.FillRectangle(clientRect, striped);
+                    Render2D.FillRectangle(clientRect, style.Background * 0.9f);
                 }
 
-                Color markerColor = Group switch
+                // Icon
+                Color iconColor = default;
+                SpriteHandle icon = default;
+                switch (Group)
                 {
-                    LogGroup.Error => new Color(0.95f, 0.22f, 0.18f, 1.0f),
-                    LogGroup.Warning => new Color(0.95f, 0.78f, 0.18f, 1.0f),
-                    _ => style.Foreground,
-                };
-                Rectangle marker = new(clientRect.X, clientRect.Y, MarkerWidth, clientRect.Height);
-                Render2D.FillRectangle(marker, markerColor);
+                    case LogGroup.Error:
+                        iconColor = Color.Red;
+                        icon = EditorIcons.Error32;
+                        break;
+                    case LogGroup.Warning:
+                        iconColor = Color.Yellow;
+                        icon = EditorIcons.Warning32;
+                        break;
+                    case LogGroup.Info:
+                        iconColor = style.Foreground;
+                        icon = EditorIcons.Info32;
+                        break;
+                }
+                Render2D.DrawSprite(icon, new Rectangle(5, 0, 32, 32), iconColor);
 
-                // TODO: replace the marker with EditorIcons Info/Warning/Error sprites
-                // once managed EditorIcons are exposed:
-                // Render2D.DrawSprite(ref icon, ref iconRect, ref markerColor);
+                // Title
+                Rectangle textRect = new(38, 0, clientRect.Width - 40, clientRect.Height - 10);
+                Render2D.PushClip(clientRect);
 
-                string title = LogCount <= 1 ? Desc.Title : $"{Desc.Title} ({LogCount})";
-                Rectangle textRect = new(clientRect.X + 8.0f, clientRect.Y, MathF.Max(0.0f, clientRect.Width - 10.0f), clientRect.Height);
-                Font? font = style.FontMedium;
-                if (ReferenceEquals(font, null))
-                    return;
+                string text = string.Empty;
+                if (LogCount == 1)
+                {
+                    text = Desc.Description;
+                }
+                else if (LogCount > 1)
+                {
+                    text = string.Format("{0} ({1})", Desc.Description, LogCount);
+                }
 
-                Color textColor = style.Foreground;
-                Render2D.RenderText(font, title, textRect, textColor, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap);
+                Render2D.RenderText(style.FontMedium, text, textRect, style.TextColor, TextAlignment.Near, TextAlignment.Center);
+
+                Render2D.PopClip();
             }
 
+            /// <inheritdoc />
             public override void OnGetFocus()
             {
                 base.OnGetFocus();
-                m_Window.Selected = this;
+
+                _window.Selected = this;
             }
 
+            /// <inheritdoc />
             public override bool OnKeyDown(KeyboardKeys key)
             {
+                // InputOptions options = FlaxEditor.Editor.Instance.Options.Options.Input;
+
+                // Up
                 if (key == KeyboardKeys.ArrowUp)
                 {
-                    FocusSibling(-1);
-                    return true;
+                    int index = IndexInParent - 1;
+                    if (index >= 0)
+                    {
+                        Control target = Parent.GetChild(index);
+                        target.Focus();
+                        Panel panel = (Panel)Parent.Parent;
+                        panel.ScrollViewTo(target);
+                        return true;
+                    }
                 }
-
-                if (key == KeyboardKeys.ArrowDown)
+                // Down
+                else if (key == KeyboardKeys.ArrowDown)
                 {
-                    FocusSibling(1);
-                    return true;
+                    int index = IndexInParent + 1;
+                    if (index < Parent.ChildrenCount)
+                    {
+                        Control target = Parent.GetChild(index);
+                        target.Focus();
+                        Panel panel = (Panel)Parent.Parent;
+                        panel.ScrollViewTo(target);
+                        return true;
+                    }
                 }
-
-                if (key == KeyboardKeys.Return)
+                // Enter
+                else if (key == KeyboardKeys.Return)
                 {
                     Open();
-                    return true;
                 }
 
-                // TODO: wire Ctrl+C through the managed input action API once it exists.
+                /*// Ctrl+C
+                else if (options.Copy.Process(this))
+                {
+                    Copy();
+                    return true;
+                }*/
+
                 return base.OnKeyDown(key);
+            }
+
+            /// <summary>
+            /// Opens the entry location.
+            /// </summary>
+            public void Open()
+            {
+                /*if (!string.IsNullOrEmpty(Desc.LocationFile) && File.Exists(Desc.LocationFile))
+                {
+                    Editor.Instance.CodeEditing.OpenFile(Desc.LocationFile, Desc.LocationLine);
+                }*/
+            }
+
+            /// <summary>
+            /// Copies the entry information to the system clipboard (as text).
+            /// </summary>
+            public void Copy()
+            {
+                // Clipboard.Text = GetInfo().Replace("\r\n", "\n").Replace("\n", Environment.NewLine);
             }
 
             public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
@@ -478,10 +555,13 @@ namespace SE.Editor
                 return true;
             }
 
+            /// <inheritdoc />
             public override bool OnMouseDown(Float2 location, MouseButton button)
             {
                 if (base.OnMouseDown(location, button))
+                {
                     return true;
+                }
 
                 if (button == MouseButton.Left)
                 {
@@ -492,72 +572,53 @@ namespace SE.Editor
                 if (button == MouseButton.Right)
                 {
                     Focus();
-                    m_IsRightMouseDown = true;
+
+                    _isRightMouseDown = true;
                     return true;
                 }
 
                 return false;
             }
 
+            /// <inheritdoc />
             public override bool OnMouseUp(Float2 location, MouseButton button)
             {
                 if (base.OnMouseUp(location, button))
+                {
                     return true;
+                }
 
-                if (m_IsRightMouseDown && button == MouseButton.Right)
+                if (_isRightMouseDown && button == MouseButton.Right)
                 {
                     Focus();
+
                     ContextMenu menu = new();
-                    menu.AddButton("Copy", Copy).Enabled = false;
-                    menu.AddButton("Open", Open).Enabled = CanOpen();
-                    menu.Show(this, location.X, location.Y);
+                    menu.AddButton("Copy", Copy);
+                    menu.AddButton("Open", Open).Enabled = Desc.LocationFile.Length > 0 && File.Exists(Desc.LocationFile);
+                    menu.Show(this, location);
                 }
 
                 return false;
             }
 
+            /// <inheritdoc />
             public override void OnMouseLeave()
             {
-                m_IsRightMouseDown = false;
+                _isRightMouseDown = false;
+
                 base.OnMouseLeave();
             }
 
-            private void FocusSibling(int offset)
+            /// <inheritdoc />
+            protected override void OnVisibleChanged()
             {
-                if (Parent == null)
-                    return;
-
-                int index = IndexInParent + offset;
-                while (index >= 0 && index < Parent.ChildrenCount)
+                // Deselect on hide
+                if (!Visible && _window.Selected == this)
                 {
-                    if (Parent.GetChild(index) is LogEntry target && target.Visible)
-                    {
-                        target.Focus();
-                        m_Window.m_Split.Panel1.ScrollViewTo(target);
-                        return;
-                    }
-                    index += offset;
+                    _window.Selected = null;
                 }
-            }
 
-            private bool CanOpen()
-            {
-                return !string.IsNullOrEmpty(Desc.LocationFile) && File.Exists(Desc.LocationFile);
-            }
-
-            private void Open()
-            {
-                if (!CanOpen())
-                    return;
-
-                // TODO: call Editor.CodeEditing.OpenFile(Desc.LocationFile, Desc.LocationLine)
-                // once the managed code-editing API is exposed.
-            }
-
-            private void Copy()
-            {
-                // TODO: use Clipboard.Text/Clipboard.SetText once a managed clipboard wrapper exists.
-                // string text = Info.Replace("\r\n", "\n").Replace("\n", Environment.NewLine);
+                base.OnVisibleChanged();
             }
         }
     }

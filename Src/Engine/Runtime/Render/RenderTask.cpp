@@ -43,7 +43,7 @@ namespace SE
 		}
 	}
 
-	RenderTask::RenderTask()
+	RenderTask::RenderTask(const SpawnParams& params) : ScriptingObject(params)
 	{
 		// Register
 		TasksLocker.Lock();
@@ -136,8 +136,8 @@ namespace SE
 
 	//---------------------------------------------------------
 
-	SceneRenderTask::SceneRenderTask()
-	{
+	SceneRenderTask::SceneRenderTask(const SpawnParams& params) : RenderTask(params)
+    {
 		Buffers = New<RenderBuffers>();
 
 		// Initialize view
@@ -439,9 +439,9 @@ namespace SE
 		if (Output && !Output->IsAllocated())
 			return false;
 		return RenderTask::CanDraw();
-	}
+	} 
 
-	MainRenderTask::MainRenderTask()
+	MainRenderTask::MainRenderTask(const SpawnParams& params) : SceneRenderTask(params)
 	{
 		if (Instance == nullptr)
 		{

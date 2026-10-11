@@ -9,11 +9,8 @@ namespace SE
 	/// <summary>
 	/// Importing models utility
 	/// </summary>
-	class ImportModel
+	class SE_API_RUNTIME ImportModel
 	{
-	public:
-		typedef ModelUtils::Options Options;
-
 	public:
 		/// <summary>
 		/// Tries the get model import options from the target location asset.
@@ -21,7 +18,7 @@ namespace SE
 		/// <param name="path">The asset path.</param>
 		/// <param name="options">The options.</param>
 		/// <returns>True if success, otherwise false.</returns>
-		static bool TryGetImportOptions(const StringView& path, Options& options);
+		static bool TryGetImportOptions(const StringView& path, ModelUtilsOptions& options);
 
 		/// <summary>
 		/// Imports the model file.
@@ -38,10 +35,10 @@ namespace SE
 		static CreateAssetResult Create(CreateAssetContext& context);
 
 	private:
-		static CreateAssetResult CreateModel(CreateAssetContext& context, ModelData& data, const Options* options = nullptr);
-		static CreateAssetResult CreateSkinnedModel(CreateAssetContext& context, ModelData& data, const Options* options = nullptr);
-		static CreateAssetResult CreateAnimation(CreateAssetContext& context, ModelData& data, const Options* options = nullptr);
-		static CreateAssetResult CreatePrefab(CreateAssetContext& context, ModelData& data, const Options& options, const List<struct PrefabObject>& prefabObjects);
+		static CreateAssetResult CreateModel(CreateAssetContext& context, ModelData& data, const ModelUtilsOptions* options = nullptr);
+		static CreateAssetResult CreateSkinnedModel(CreateAssetContext& context, ModelData& data, const ModelUtilsOptions* options = nullptr);
+		static CreateAssetResult CreateAnimation(CreateAssetContext& context, ModelData& data, const ModelUtilsOptions* options = nullptr);
+		static CreateAssetResult CreatePrefab(CreateAssetContext& context, ModelData& data, const ModelUtilsOptions& options, const List<struct PrefabObject>& prefabObjects);
 	};
 
 } // SE

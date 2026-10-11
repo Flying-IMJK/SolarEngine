@@ -64,7 +64,7 @@ namespace SE
 
 	void WindowRootControl::Hide() const
 	{
-		_window->Show();
+		_window->Hide();
 	}
 
 	void WindowRootControl::Minimize() const

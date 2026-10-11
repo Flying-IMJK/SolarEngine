@@ -712,6 +712,12 @@ namespace SE
             idsMapping->KeyOf(*id, id);
     }
 
+    DEFINE_INTERNAL_CALL(CLRString*) ObjectInternal_TypeIDToTypeName(uint32 id)
+	{
+		TypeCompositeInfo const * typeinfo = Types::GetTypeInfo(TypeID(id));
+		return CLRUtils::ToString(typeinfo ? typeinfo->GetTypeName() : String::Empty);
+	}
+
     class ScriptingObjectInternal
     {
     public:
@@ -731,6 +737,8 @@ namespace SE
             ADD_INTERNAL_CALL("SE.Object::FromUnmanagedPtr", &ObjectInternal_FromUnmanagedPtr);
             ADD_INTERNAL_CALL("SE.Object::MapObjectID", &ObjectInternal_MapObjectID);
             ADD_INTERNAL_CALL("SE.Object::RemapObjectID", &ObjectInternal_RemapObjectID);
+
+            ADD_INTERNAL_CALL("SE.Object::TypeIDToTypeName", &ObjectInternal_TypeIDToTypeName);
         }
 
         static ScriptingObject* Spawn(const ScriptingObjectSpawnParams& params)

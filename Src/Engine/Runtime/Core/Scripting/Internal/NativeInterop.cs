@@ -95,9 +95,7 @@ namespace SE.Interop
 
             InitScriptingAssemblyLoadContext();
             DelegateHelpers.InitMethods();
-
-            Debug.Log("测试");
-
+            Log.DebugLogHandler.RegisterNativeLogCallback();
         }
 
 
@@ -121,6 +119,7 @@ namespace SE.Interop
         [UnmanagedCallersOnly]
         internal static unsafe void Exit()
         {
+            Log.DebugLogHandler.UnregisterNativeLogCallback();
         }
 
 
@@ -1121,11 +1120,8 @@ namespace SE.Interop
 
             internal static void ToManagedPointer(ref IntPtr managedValue, IntPtr nativePtr, bool byRef)
             {
-                Type type = typeof(T);
-                byRef |= type.IsByRef; // Is this needed?
-                if (type.IsByRef)
-                    Assert.IsTrue(type.GetElementType().IsValueType);
-                managedValue = byRef ? nativePtr : Unsafe.Read<IntPtr>(nativePtr.ToPointer());
+                // CLRMethod.Invoke passes pointer-sized values by address for both value and ref parameters.
+                managedValue = Unsafe.Read<IntPtr>(nativePtr.ToPointer());
             }
 
             internal static void ToManagedHandle(ref ManagedHandle managedValue, IntPtr nativePtr, bool byRef)
@@ -1968,7 +1964,7 @@ namespace SE.Interop
             : base(message)
         {
 #if !BUILD_RELEASE
-            Debug.Logger.LogHandler.LogWrite(Log.LogType.Error, "Native interop exception!");
+            Debug.Logger.LogHandler.LogException(this, null);
 #endif
         }
     }

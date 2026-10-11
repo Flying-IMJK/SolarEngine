@@ -33,16 +33,16 @@ namespace SE::Editor
 	{
 		// The managed UIModule owns the editor GUI tree. Keep this native module
 		// only for thumbnail/background services used by the remaining C++ assets.
-		thumbnails->OnInit();
+		//thumbnails->OnInit();
 	}
 
 	void UIModule::OnUpdate()
 	{
-		thumbnails->OnUpdate();
+		//thumbnails->OnUpdate();
 	}
 	void UIModule::OnExit()
 	{
-		thumbnails->OnExit();
+		//thumbnails->OnExit();
 	}
 
 	MasterDockPanel* UIModule::GetMasterPanel()

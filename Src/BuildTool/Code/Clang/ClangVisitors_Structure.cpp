@@ -123,6 +123,32 @@ namespace SE::BuildTool
         param.comment = ClangUtils::GetCursorComment(argCr);
     }
 
+    static uint32_t GetExpansionOffset(CXSourceLocation location)
+    {
+        uint32_t offset = 0;
+        clang_getExpansionLocation(location, nullptr, nullptr, nullptr, &offset);
+        return offset;
+    }
+
+    template<typename Parameter>
+    static void ApplyParameterMacro(ClangParserContext* context, HeaderID headerID, CXCursor argCr, uint32_t& previousEndOffset, Parameter& parameter)
+    {
+        const uint32_t endOffset = GetExpansionOffset(clang_getRangeEnd(clang_getCursorExtent(argCr)));
+        MarkMacro macro;
+        if (context->FindParameterMacro(headerID, previousEndOffset, endOffset, macro))
+        {
+            if (!parameter.type.isRef || parameter.type.isConst || parameter.type.isMoveRef)
+            {
+                context->LogError("SE_PARAM at line {0} requires a mutable lvalue reference parameter", macro.fileLine);
+            }
+            else
+            {
+                parameter.direction = macro.api->parameterDirection;
+            }
+        }
+        previousEndOffset = endOffset;
+    }
+
     static void VisitConstructor(CXCursor cr, TypeInfoStruct* pType)
     {
         /*CXType funcType = clang_getCursorType(cr);
@@ -229,6 +255,9 @@ namespace SE::BuildTool
                 TypeInfoParam param;
                 param.name = Utils::String::Format("arg{0}", i);
                 param.type = evt.cppType.genericityArgs[i];
+                param.direction = param.type.isRef && !param.type.isConst
+                    ? ApiParameterDirection::Ref
+                    : ApiParameterDirection::In;
                 evt.params.push_back(param);
             }
 
@@ -274,12 +303,16 @@ namespace SE::BuildTool
             }
 
             int numArgs = clang_Cursor_getNumArguments(cr);
+            uint32_t previousEndOffset = GetExpansionOffset(clang_getRangeStart(clang_getCursorExtent(cr)));
             for (int i = 0; i < numArgs; ++i)
             {
                 CXCursor argCr = clang_Cursor_getArgument(cr, i);
 
                 TypeInfoParam param;
                 ClangUtils::FillTypeInfoParam(argCr, param);
+                ApplyParameterMacro(pContext, pClass->headerID, argCr, previousEndOffset, param);
+                if (pContext->HasErrorOccured())
+                    return false;
                 func.params.push_back(param);
             }
 
@@ -452,6 +485,9 @@ namespace SE::BuildTool
                 TypeInfoParamTemplate param;
                 param.name = Utils::String::Format("arg{0}", i);
                 param.type = ParseTemplateType(pContext, argumentType, pClass->templateParameters);
+                param.direction = param.type.isRef && !param.type.isConst
+                    ? ApiParameterDirection::Ref
+                    : ApiParameterDirection::In;
                 evt.params.push_back(param);
             }
 
@@ -501,12 +537,16 @@ namespace SE::BuildTool
             }
 
             int numArgs = clang_Cursor_getNumArguments(cr);
+            uint32_t previousEndOffset = GetExpansionOffset(clang_getRangeStart(clang_getCursorExtent(cr)));
             for (int i = 0; i < numArgs; ++i)
             {
                 CXCursor argCr = clang_Cursor_getArgument(cr, i);
 
                 TypeInfoParamTemplate param;
                 FillTypeInfoParamTemplate(argCr, param, pClass->templateParameters);
+                ApplyParameterMacro(pContext, pClass->headerID, argCr, previousEndOffset, param);
+                if (pContext->HasErrorOccured())
+                    return false;
                 func.params.push_back(param);
             }
 

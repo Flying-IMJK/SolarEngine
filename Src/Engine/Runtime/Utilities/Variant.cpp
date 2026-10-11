@@ -1,6 +1,7 @@
 
 #include "Variant.h"
 
+#include "Runtime/Core/TypeSystem/TypeID.h"
 #include "Runtime/Core/Math/Transform.h"
 
 #include "Runtime/Core/Math/BoundingVolumes.h"
@@ -68,6 +69,7 @@ namespace SE
             "SE.Double4",// Double4
             "System.Guid",// UID
             "SE.Color32",// Color32
+            "SE.TypeID",// TypeID
             // @formatter:on
         };
     }
@@ -309,6 +311,9 @@ namespace SE
         case VariantTypes::Uint:
             result = SE_TEXT("Uint");
             break;
+        case VariantTypes::TypeID:
+            result = SE_TEXT("TypeID");
+            break;
         case VariantTypes::Int64:
             result = SE_TEXT("Int64");
             break;
@@ -527,6 +532,12 @@ namespace SE
         : Type(VariantTypes::Uint)
     {
         AsUint = v;
+    }
+
+    Variant::Variant(const TypeID& v)
+        : Type(VariantTypes::TypeID)
+    {
+        AsUint = static_cast<uint32>(v);
     }
 
     Variant::Variant(int64 v)
@@ -992,6 +1003,7 @@ namespace SE
             case VariantTypes::Int:
                 return AsInt == other.AsInt;
             case VariantTypes::Uint:
+            case VariantTypes::TypeID:
                 return AsUint == other.AsUint;
             case VariantTypes::Int64:
                 return AsInt64 == other.AsInt64;
@@ -1115,6 +1127,7 @@ namespace SE
             case VariantTypes::Int:
                 return AsInt < other.AsInt;
             case VariantTypes::Uint:
+            case VariantTypes::TypeID:
                 return AsUint < other.AsUint;
             case VariantTypes::Int64:
                 return AsInt64 < other.AsInt64;
@@ -1155,6 +1168,7 @@ namespace SE
         case VariantTypes::Int:
             return AsInt != 0;
         case VariantTypes::Uint:
+        case VariantTypes::TypeID:
             return AsUint != 0;
         case VariantTypes::Int64:
             return AsInt64 != 0;
@@ -1192,6 +1206,7 @@ namespace SE
         case VariantTypes::Int:
             return (Char)AsInt;
         case VariantTypes::Uint:
+        case VariantTypes::TypeID:
             return (Char)AsUint;
         case VariantTypes::Int64:
             return (Char)AsInt64;
@@ -1237,6 +1252,7 @@ namespace SE
         case VariantTypes::Int:
             return (int64)AsInt;
         case VariantTypes::Uint:
+        case VariantTypes::TypeID:
             return (int64)AsUint;
         case VariantTypes::Int64:
             return AsInt64;
@@ -1287,6 +1303,11 @@ namespace SE
         return (uint32)operator uint64();
     }
 
+    Variant::operator TypeID() const
+    {
+        return TypeID(operator uint32());
+    }
+
     Variant::operator uint64() const
     {
         switch (Type.Type)
@@ -1300,6 +1321,7 @@ namespace SE
         case VariantTypes::Int:
             return (uint64)AsInt;
         case VariantTypes::Uint:
+        case VariantTypes::TypeID:
             return (uint64)AsUint;
         case VariantTypes::Int64:
             return (uint64)AsInt64;
@@ -1348,6 +1370,7 @@ namespace SE
         case VariantTypes::Int:
             return (float)AsInt;
         case VariantTypes::Uint:
+        case VariantTypes::TypeID:
             return (float)AsUint;
         case VariantTypes::Int64:
             return (float)AsInt64;
@@ -1405,6 +1428,7 @@ namespace SE
         case VariantTypes::Int:
             return (double)AsInt;
         case VariantTypes::Uint:
+        case VariantTypes::TypeID:
             return (double)AsUint;
         case VariantTypes::Int64:
             return (double)AsInt64;
@@ -1526,6 +1550,7 @@ namespace SE
         case VariantTypes::Int:
             return Float2((float)AsInt);
         case VariantTypes::Uint:
+        case VariantTypes::TypeID:
             return Float2((float)AsUint);
         case VariantTypes::Int64:
             return Float2((float)AsInt64);
@@ -1580,6 +1605,7 @@ namespace SE
         case VariantTypes::Int:
             return Float3((float)AsInt);
         case VariantTypes::Uint:
+        case VariantTypes::TypeID:
             return Float3((float)AsUint);
         case VariantTypes::Int64:
             return Float3((float)AsInt64);
@@ -1634,6 +1660,7 @@ namespace SE
         case VariantTypes::Int:
             return Float4((float)AsInt);
         case VariantTypes::Uint:
+        case VariantTypes::TypeID:
             return Float4((float)AsUint);
         case VariantTypes::Int64:
             return Float4((float)AsInt64);
@@ -1693,6 +1720,7 @@ namespace SE
         case VariantTypes::Int:
             return Double3((double)AsInt);
         case VariantTypes::Uint:
+        case VariantTypes::TypeID:
             return Double3((double)AsUint);
         case VariantTypes::Int64:
             return Double3((double)AsInt64);
@@ -1747,6 +1775,7 @@ namespace SE
         case VariantTypes::Int:
             return Double4((double)AsInt);
         case VariantTypes::Uint:
+        case VariantTypes::TypeID:
             return Double4((double)AsUint);
         case VariantTypes::Int64:
             return Double4((double)AsInt64);
@@ -1811,6 +1840,7 @@ namespace SE
         case VariantTypes::Int:
             return Int4(AsInt);
         case VariantTypes::Uint:
+        case VariantTypes::TypeID:
             return Int4((int32)AsUint);
         case VariantTypes::Int64:
             return Int4((int32)AsInt64);
@@ -1865,6 +1895,7 @@ namespace SE
         case VariantTypes::Int:
             return Color((float)AsInt);
         case VariantTypes::Uint:
+        case VariantTypes::TypeID:
             return Color((float)AsUint);
         case VariantTypes::Int64:
             return Color((float)AsInt64);
@@ -2533,6 +2564,7 @@ namespace SE
         case VariantTypes::Int:
             return StringUtils::ToString(AsInt);
         case VariantTypes::Uint:
+        case VariantTypes::TypeID:
             return StringUtils::ToString(AsUint);
         case VariantTypes::Enum:
             /*if (Type.TypeName)
@@ -2652,6 +2684,9 @@ namespace SE
             case VariantTypes::Uint:
                 *this = *(uint32*)data;
                 break;
+            case VariantTypes::TypeID:
+                *this = TypeID(*(uint32*)data);
+                break;
             case VariantTypes::Int64:
                 *this = *(int64*)data;
                 break;
@@ -2736,6 +2771,7 @@ namespace SE
         case VariantTypes::Bool:
         case VariantTypes::Int:
         case VariantTypes::Uint:
+        case VariantTypes::TypeID:
         case VariantTypes::Int64:
         case VariantTypes::Uint64:
         case VariantTypes::Float:
@@ -2864,6 +2900,10 @@ namespace SE
     {
         if (v.Type == to)
             return true;
+        if (v.Type.Type == VariantTypes::TypeID)
+            return CanCast(Variant(v.AsUint), to);
+        if (to.Type == VariantTypes::TypeID)
+            return CanCast(v, VariantTypeHandle(VariantTypes::Uint));
         if (v.Type.Type == VariantTypes::Color32)
             return CanCast(Variant(Color(v.AsColor32())), to);
         if (to.Type == VariantTypes::Color32)
@@ -3161,6 +3201,10 @@ namespace SE
     {
         if (v.Type == to)
             return v;
+        if (v.Type.Type == VariantTypes::TypeID)
+            return Cast(Variant(v.AsUint), to);
+        if (to.Type == VariantTypes::TypeID && CanCast(v, VariantTypeHandle(VariantTypes::Uint)))
+            return Variant(TypeID((uint32)Cast(v, VariantTypeHandle(VariantTypes::Uint))));
         if (to.Type == VariantTypes::Color32 && CanCast(v, VariantTypeHandle(VariantTypes::Color)))
             return Variant((Color32)v);
         if (v.Type.Type == VariantTypes::Color32)
@@ -3817,6 +3861,7 @@ namespace SE
         case VariantTypes::Uint16:
             return GetHash(key.AsUint16);
         case VariantTypes::Uint:
+        case VariantTypes::TypeID:
             return GetHash(key.AsUint);
         case VariantTypes::Int64:
             return GetHash(key.AsInt64);
@@ -3913,6 +3958,7 @@ namespace SE
             stream->ReadInt32(&data.AsInt);
             break;
         case VariantTypes::Uint:
+        case VariantTypes::TypeID:
             stream->ReadUint32(&data.AsUint);
             break;
         case VariantTypes::Int64:
@@ -4152,6 +4198,7 @@ namespace SE
             stream->WriteInt32(data.AsInt);
             break;
         case VariantTypes::Uint:
+        case VariantTypes::TypeID:
             stream->WriteUint32(data.AsUint);
             break;
         case VariantTypes::Int64:

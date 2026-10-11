@@ -25,10 +25,10 @@ namespace SE
 		return true;
 	}
 
-	bool FileSystemBase::ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title, String& path)
+	String FileSystemBase::ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title)
 	{
 		// No supported
-		return true;
+		return String::Empty;
 	}
 
 	bool FileSystemBase::ShowFileExplorer(const StringView& path)

@@ -63,7 +63,6 @@ add_subdirectory(ShaderCompilation)
 add_subdirectory(Render)
 add_subdirectory(Resource)
 add_subdirectory(Utilities)
-add_subdirectory(_Generated)
 
 
 source_group(TREE ${EngineRuntimeDir} FILES ${RuntimeSourceFiles} ${RuntimeHeadFiles})

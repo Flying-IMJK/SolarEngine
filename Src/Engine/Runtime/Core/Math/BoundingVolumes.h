@@ -404,8 +404,10 @@ namespace SE
     /// <summary>
     /// Defines a frustum which can be used in frustum culling, zoom to Extents (zoom to fit) operations, (matrix, frustum, camera) interchange, and many kind of intersection testing.
     /// </summary>
+    SE_STRUCT(API(InBuild("BoundingFrustum")))
     struct SE_API_RUNTIME BoundingFrustum
     {
+        SCRIPTING_TYPE_MIN(BoundingFrustum)
         friend CollisionsHelper;
     private:
         Matrix _matrix;

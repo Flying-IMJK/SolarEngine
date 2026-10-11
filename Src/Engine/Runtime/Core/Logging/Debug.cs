@@ -18,7 +18,7 @@ namespace SE
 
 
         /// <summary>
-        /// Assert a condition and logs a formatted error message to the Flax console on failure.
+        /// Assert a condition and logs a formatted error message to the  console on failure.
         /// </summary>
         /// <param name="condition">Condition you expect to be true.</param>
         /// <param name="context">Object to which the message applies.</param>
@@ -32,7 +32,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Assert a condition and logs a formatted error message to the Flax console on failure.
+        /// Assert a condition and logs a formatted error message to the  console on failure.
         /// </summary>
         /// <param name="condition">Condition you expect to be true.</param>
         /// <param name="message">String or object to be converted to string representation for display.</param>
@@ -44,7 +44,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Assert a condition and logs a formatted error message to the Flax console on failure.
+        /// Assert a condition and logs a formatted error message to the  console on failure.
         /// </summary>
         /// <param name="condition">Condition you expect to be true.</param>
         /// <param name="message">String to be converted to string representation for display.</param>
@@ -56,7 +56,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Assert a condition and logs a formatted error message to the Flax console on failure.
+        /// Assert a condition and logs a formatted error message to the  console on failure.
         /// </summary>
         /// <param name="condition">Condition you expect to be true.</param>
         /// <param name="context">Object to which the message applies.</param>
@@ -69,7 +69,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Assert a condition and logs a formatted error message to the Flax console on failure.
+        /// Assert a condition and logs a formatted error message to the  console on failure.
         /// </summary>
         /// <param name="condition">Condition you expect to be true.</param>
         /// <param name="context">Object to which the message applies.</param>
@@ -82,7 +82,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Assert a condition and logs a formatted error message to the Flax console on failure.
+        /// Assert a condition and logs a formatted error message to the  console on failure.
         /// </summary>
         /// <param name="condition">Condition you expect to be true.</param>
         /// <param name="format">A composite format string.</param>
@@ -95,7 +95,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Assert a condition and logs a formatted error message to the Flax console on failure.
+        /// Assert a condition and logs a formatted error message to the  console on failure.
         /// </summary>
         /// <param name="condition">Condition you expect to be true.</param>
         /// <param name="format">A composite format string.</param>
@@ -119,7 +119,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Logs message to the Flax Console.
+        /// Logs message to the  Console.
         /// </summary>
         /// <param name="message">String or object to be converted to string representation for display.</param>
         public static void Log(object message)
@@ -128,7 +128,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Logs message to the Flax Console.
+        /// Logs message to the  Console.
         /// </summary>
         /// <param name="message">String or object to be converted to string representation for display.</param>
         /// <param name="context">Object to which the message applies.</param>
@@ -159,7 +159,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Logs a formatted assertion message to the Flax console.
+        /// Logs a formatted assertion message to the  console.
         /// </summary>
         /// <param name="format">A composite format string.</param>
         /// <param name="args">Format arguments.</param>
@@ -170,7 +170,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Logs a formatted assertion message to the Flax console.
+        /// Logs a formatted assertion message to the  console.
         /// </summary>
         /// <param name="format">A composite format string.</param>
         /// <param name="args">Format arguments.</param>
@@ -201,7 +201,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Logs a formatted error message to the Flax console.
+        /// Logs a formatted error message to the  console.
         /// </summary>
         /// <param name="format">A composite format string.</param>
         /// <param name="args">Format arguments.</param>
@@ -211,7 +211,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Logs a formatted error message to the Flax console.
+        /// Logs a formatted error message to the  console.
         /// </summary>
         /// <param name="format">A composite format string.</param>
         /// <param name="args">Format arguments.</param>
@@ -253,7 +253,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Logs a formatted message to the Flax Console.
+        /// Logs a formatted message to the  Console.
         /// </summary>
         /// <param name="format">A composite format string.</param>
         /// <param name="args">Format arguments.</param>
@@ -263,7 +263,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Logs a formatted message to the Flax Console.
+        /// Logs a formatted message to the  Console.
         /// </summary>
         /// <param name="format">A composite format string.</param>
         /// <param name="args">Format arguments.</param>
@@ -293,7 +293,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Logs a formatted warning message to the Flax Console.
+        /// Logs a formatted warning message to the  Console.
         /// </summary>
         /// <param name="format">A composite format string.</param>
         /// <param name="args">Format arguments.</param>
@@ -303,7 +303,7 @@ namespace SE
         }
 
         /// <summary>
-        /// Logs a formatted warning message to the Flax Console.
+        /// Logs a formatted warning message to the  Console.
         /// </summary>
         /// <param name="format">A composite format string.</param>
         /// <param name="args">Format arguments.</param>

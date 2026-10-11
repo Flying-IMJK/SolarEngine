@@ -1,314 +1,527 @@
-// Managed editor GUI feature implementation.
-using System;
-using System.Collections.Generic;
+#nullable disable annotations
+
 using SE.GUI;
 
 namespace SE.Editor.GUI
 {
-    public sealed class MainMenu : ContainerControl
+    public class MainMenu : ContainerControl
     {
-        public const float DefaultHeight = 28.0f;
+        private Window.HitTestDelegate _hitTestCall;
+        private bool _useCustomWindowSystem = false;
+        private Image _icon = null;
+        private Label _title = null;
+        private Button _closeButton = null;
+        private Button _minimizeButton = null;
+        private Button _maximizeButton = null;
+        private Window _window = null;
+        private MainMenuButton _selected = null;
 
-        private const float WindowButtonWidth = 46.0f;
-        private const float ResizeBorderThickness = 5.0f;
-        private readonly List<MainMenuButton> m_Buttons = new List<MainMenuButton>();
-        private readonly Window m_Window;
-        private readonly Window.HitTestDelegate m_HitTestDelegate;
-        private readonly Image m_Icon;
-        private readonly Label m_Title;
-        private readonly Button m_MinimizeButton;
-        private readonly Button m_MaximizeButton;
-        private readonly Button m_CloseButton;
-        private MainMenuButton? m_Selected;
-        private bool m_WindowClosed;
-
-        public MainMenu(Window window, float width)
-            : base(new Rectangle(0, 0, width, DefaultHeight))
+        private void OnSelectedContextMenuVisibleChanged(Control control)
         {
-            ArgumentNullException.ThrowIfNull(window);
-
-            m_Window = window;
-            AutoFocus = false;
-            IsScrollable = false;
-            BackgroundColor = Style.Current.LightBackground;
-
-            Texture? windowIcon = AssetContent.LoadInternal<Texture>(EditorAssets.WindowIcon);
-            FontAsset? windowIconsFont = AssetContent.LoadInternal<FontAsset>(EditorAssets.WindowIconsFont);
-            Font? iconFont = windowIconsFont?.CreateFont(9.0f);
-
-            m_Icon = new Image(new Rectangle(0, 0, DefaultHeight, DefaultHeight))
+            if (_selected != null)
             {
-                Margin = new Margin(6.0f),
-                Brush = windowIcon != null ? new TextureBrush(windowIcon) : null,
-                Color = Style.Current.Foreground,
-                KeepAspectRatio = false,
-            };
-
-            m_Title = new Label(new Rectangle(0, 0, width, DefaultHeight), m_Window.Title)
-            {
-                HorizontalAlignment = TextAlignment.Center,
-                VerticalAlignment = TextAlignment.Center,
-                TextColor = Style.Current.ForegroundGrey,
-            };
-
-            m_MinimizeButton = CreateWindowButton(EditorAssets.SegMDL2Icons.ChromeMinimize, iconFont);
-            m_MaximizeButton = CreateWindowButton(m_Window.IsMaximized ? EditorAssets.SegMDL2Icons.ChromeRestore : EditorAssets.SegMDL2Icons.ChromeMaximize, iconFont);
-            m_CloseButton = CreateWindowButton(EditorAssets.SegMDL2Icons.ChromeClose, iconFont);
-            m_CloseButton.BackgroundColorHighlighted = Color.Red;
-            m_CloseButton.BackgroundColorPressed = Color.Red.RGBMultiplied(1.3f);
-
-            m_MinimizeButton.Clicked += _ => m_Window.Minimize();
-            m_MaximizeButton.Clicked += _ => ToggleMaximized();
-            m_CloseButton.Clicked += _ => m_Window.Close(SE.ClosingReason.User);
-
-            AddChild(m_Icon);
-            AddChild(m_Title);
-            AddChild(m_MinimizeButton);
-            AddChild(m_MaximizeButton);
-            AddChild(m_CloseButton);
-
-            m_HitTestDelegate = OnWindowHitTest;
-            m_Window.HitTest = m_HitTestDelegate;
-            m_Window.Closed += OnWindowClosed;
-            SetBounds(0, 0, width, DefaultHeight);
-        }
-
-        public IReadOnlyList<MainMenuButton> Buttons => m_Buttons;
-
-        public MainMenuButton? Selected
-        {
-            get => m_Selected;
-            set
-            {
-                if (ReferenceEquals(m_Selected, value))
-                    return;
-
-                if (m_Selected != null)
-                {
-                    m_Selected.ContextMenu.VisibleChanged -= OnSelectedContextMenuVisibleChanged;
-                    m_Selected.ContextMenu.Hide();
-                }
-                m_Selected = value;
-                if (m_Selected != null && m_Selected.ContextMenu.HasItems)
-                {
-                    m_Selected.ContextMenu.Show(m_Selected, 0, m_Selected.Height);
-                    m_Selected.ContextMenu.VisibleChanged += OnSelectedContextMenuVisibleChanged;
-                }
-            }
-        }
-
-        private void OnSelectedContextMenuVisibleChanged(ContextMenu contextMenu)
-        {
-            if (!contextMenu.IsOpened && ReferenceEquals(m_Selected?.ContextMenu, contextMenu))
                 Selected = null;
-        }
-
-        public MainMenuButton AddButton(string text)
-        {
-            MainMenuButton button = new MainMenuButton(text);
-            m_Buttons.Add(button);
-            AddChild(button);
-            PerformLayout();
-            return button;
-        }
-
-        public MainMenuButton? GetButton(string text)
-        {
-            foreach (MainMenuButton button in m_Buttons)
-            {
-                if (string.Equals(button.Text, text, StringComparison.OrdinalIgnoreCase))
-                    return button;
             }
-
-            return null;
         }
 
-        public override void Update(float deltaTime)
+        /// <summary>
+        /// Return the rightmost button.
+        /// </summary>
+        /// <returns>Rightmost button, null if there is no <see cref="MainMenuButton"/>.</returns>
+        private MainMenuButton GetRightButton()
         {
-            base.Update(deltaTime);
-            if (m_WindowClosed)
-                return;
-
-            m_Title.Text = m_Window.Title;
-            m_MaximizeButton.Text = m_Window.IsMaximized ? EditorAssets.SegMDL2Icons.ChromeRestore : EditorAssets.SegMDL2Icons.ChromeMaximize;
-        }
-
-        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
-        {
-            if (base.OnMouseDoubleClick(location, button))
-                return true;
-
-            Control? child = HitTest(PointToRoot(location));
-            if (button == MouseButton.Left && child is not Button && child is not MainMenuButton && !ReferenceEquals(child, m_Icon))
+            MainMenuButton b = null;
+            foreach (Control control in Children)
             {
-                ToggleMaximized();
+                bool isMenuButton = control is MainMenuButton;
+                if (b == null && isMenuButton)
+                {
+                    b = (MainMenuButton)control;
+                }
+
+                if (isMenuButton && b != null && control.Right > b.Right)
+                {
+                    b = (MainMenuButton)control;
+                }
             }
-
-            return true;
+            return b;
         }
 
-        protected override void OnLayoutChildren()
+        private void OnWindowClosed()
         {
-            float x = DefaultHeight;
-            foreach (MainMenuButton button in m_Buttons)
+            if (_window != null)
             {
-                if (!button.Visible)
-                    continue;
-
-                float width = button.MeasureWidth();
-                button.SetBounds(x, 0, width, Height);
-                x += width;
+                _window.HitTest = null;
+                _window = null;
             }
-
-            float right = Width;
-            m_CloseButton.SetBounds(right - WindowButtonWidth, 0, WindowButtonWidth, Height);
-            right = m_CloseButton.X;
-            m_MaximizeButton.SetBounds(right - WindowButtonWidth, 0, WindowButtonWidth, Height);
-            right = m_MaximizeButton.X;
-            m_MinimizeButton.SetBounds(right - WindowButtonWidth, 0, WindowButtonWidth, Height);
-            right = m_MinimizeButton.X;
-
-            m_Icon.SetBounds(0, 0, DefaultHeight, Height);
-            m_Title.SetBounds(x + 2.0f, 0, Math.Max(0.0f, right - x - 4.0f), Height);
         }
 
-        protected override void OnDispose()
+        private WindowHitCodes OnHitTest(Float2 mouse)
         {
-            DetachWindow();
-            base.OnDispose();
-        }
+            float dpiScale = _window.DpiScale;
 
-        private static Button CreateWindowButton(string text, Font? font)
-        {
-            return new Button(new Rectangle(0, 0, WindowButtonWidth, DefaultHeight), text)
+            if (_window.IsMinimized)
             {
-                AutoFocus = false,
-                Font = font,
-                TextColor = Style.Current.Foreground,
-                BackgroundColor = Color.Transparent,
-                BackgroundColorHighlighted = Style.Current.LightBackground.RGBMultiplied(0.8f),
-                BackgroundColorPressed = Style.Current.LightBackground.RGBMultiplied(0.65f),
-            };
-        }
-
-        private WindowHitCodes OnWindowHitTest(ref Float2 screenPosition)
-        {
-            if (m_WindowClosed || m_Window.IsMinimized)
                 return WindowHitCodes.NoWhere;
-
-            float dpiScale = Math.Max(m_Window.DpiScale, 0.001f);
-            Float2 clientPosition = m_Window.ScreenToClient(screenPosition * dpiScale) / dpiScale;
-            Float2 windowSize = m_Window.Size / dpiScale;
-
-            if (!m_Window.IsMaximized)
-            {
-                bool left = clientPosition.X <= ResizeBorderThickness;
-                bool right = clientPosition.X >= windowSize.X - ResizeBorderThickness;
-                bool top = clientPosition.Y <= ResizeBorderThickness;
-                bool bottom = clientPosition.Y >= windowSize.Y - ResizeBorderThickness;
-
-                if (bottom && left)
-                    return WindowHitCodes.BottomLeft;
-                if (bottom && right)
-                    return WindowHitCodes.BottomRight;
-                if (top && left)
-                    return WindowHitCodes.TopLeft;
-                if (top && right)
-                    return WindowHitCodes.TopRight;
-                if (right)
-                    return WindowHitCodes.Right;
-                if (left)
-                    return WindowHitCodes.Left;
-                if (top)
-                    return WindowHitCodes.Top;
-                if (bottom)
-                    return WindowHitCodes.Bottom;
             }
 
-            if (ScreenBounds.Contains(clientPosition))
+            if (!_window.IsMaximized)
             {
-                Control? control = HitTest(clientPosition);
-                if (control == null || ReferenceEquals(control, this) || ReferenceEquals(control, m_Title))
+                Float2 pos = _window.ScreenToClient(mouse * dpiScale); // pos is not DPI adjusted
+                Float2 winSize = _window.Size;
+
+                // Distance from which the mouse is considered to be on the border/corner
+                float distance = 5.0f * dpiScale;
+
+                if (pos.Y > winSize.Y - distance && pos.X < distance)
+                {
+                    return WindowHitCodes.BottomLeft;
+                }
+                if (pos.X > winSize.X - distance && pos.Y > winSize.Y - distance)
+                {
+                    return WindowHitCodes.BottomRight;
+                }
+                if (pos.Y < distance && pos.X < distance)
+                {
+                    return WindowHitCodes.TopLeft;
+                }
+                if (pos.Y < distance && pos.X > winSize.X - distance)
+                {
+                    return WindowHitCodes.TopRight;
+                }
+                if (pos.X > winSize.X - distance)
+                {
+                    return WindowHitCodes.Right;
+                }
+                if (pos.X < distance)
+                {
+                    return WindowHitCodes.Left;
+                }
+                if (pos.Y < distance)
+                {
+                    return WindowHitCodes.Top;
+                }
+                if (pos.Y > winSize.Y - distance)
+                {
+                    return WindowHitCodes.Bottom;
+                }
+            }
+
+            Float2 mousePos = PointFromScreen(mouse * dpiScale);
+            Control controlUnderMouse = GetChildAt(mousePos);
+            bool isMouseOverSth = controlUnderMouse != null && controlUnderMouse != _title;
+
+            MainMenuButton rb = GetRightButton();
+            if (rb == null)
+            {
+                Float2 upperLeft = _title.UpperLeft;
+                Rectangle rectangle = new Rectangle(upperLeft,
+                    new Float2(_minimizeButton.BottomLeft.X - upperLeft.X, _title.Height));
+                if (rectangle.Contains(mousePos) && !isMouseOverSth)
+                {
                     return WindowHitCodes.Caption;
+                }
+            }
+            else if (_minimizeButton != null &&
+                new Rectangle(rb.UpperRight, _minimizeButton.BottomLeft - rb.UpperRight).Contains(mousePos) &&
+                !isMouseOverSth)
+            {
+                return WindowHitCodes.Caption;
             }
 
             return WindowHitCodes.Client;
         }
 
-        private void ToggleMaximized()
+        /// <summary>
+        /// Gets or sets the selected button (with opened context menu).
+        /// </summary>
+        public MainMenuButton Selected
         {
-            if (m_WindowClosed)
-                return;
+            get => _selected;
+            set
+            {
+                if (_selected == value)
+                {
+                    return;
+                }
 
-            if (m_Window.IsMaximized)
-                m_Window.Restore();
+                if (_selected != null)
+                {
+                    _selected.ContextMenu.VisibleChanged -= OnSelectedContextMenuVisibleChanged;
+                    _selected.ContextMenu.Hide();
+                }
+
+                _selected = value;
+
+                if (_selected != null && _selected.ContextMenu.HasChildren)
+                {
+                    _selected.ContextMenu.Show(_selected, new Float2(0, _selected.Height));
+                    _selected.ContextMenu.VisibleChanged += OnSelectedContextMenuVisibleChanged;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MainMenu"/> class.
+        /// </summary>
+        /// <param name="mainWindow">The main window.</param>
+        public MainMenu(RootControl mainWindow) : base(0, 0, 0, 20)
+        {
+            AutoFocus = false;
+            AnchorPreset = AnchorPresets.HorizontalStretchTop;
+
+            _useCustomWindowSystem = true;
+            if (_useCustomWindowSystem)
+            {
+                BackgroundColor = Style.Current.LightBackground;
+                Height = 28;
+
+                Texture windowIcon = AssetContent.LoadAsyncInternal<Texture>(EditorAssets.WindowIcon);
+                FontAsset windowIconsFont = AssetContent.LoadAsyncInternal<FontAsset>(EditorAssets.WindowIconsFont);
+
+                windowIcon.WaitForLoaded();
+                windowIconsFont.WaitForLoaded();
+
+                Font iconFont = windowIconsFont.CreateFont(9);
+                _hitTestCall = OnWindowHitTest;
+
+                _window = mainWindow.RootWindow().Window;
+                _window.HitTest = _hitTestCall;
+                _window.Closed += OnWindowClosed;
+
+                // ScriptsBuilder.GetBinariesConfiguration(...)
+                _icon = new Image();
+                _icon.Margin = new Margin(6, 6, 6, 6);
+                _icon.Brush = new TextureBrush(windowIcon);
+                _icon.Color = Style.Current.Foreground;
+                _icon.KeepAspectRatio = false;
+                _icon.Parent = this;
+
+                _title = new Label(0, 0, Width, Height);
+                _title.Text = _window.Title;
+                _title.HorizontalAlignment = TextAlignment.Center;
+                _title.VerticalAlignment = TextAlignment.Center;
+                _title.ClipText = true;
+                _title.TextColor = Style.Current.ForegroundGrey;
+                _title.TextColorHighlighted = Style.Current.ForegroundGrey;
+                _title.Parent = this;
+
+                _closeButton = new Button(0, 0, 46, Height);
+                _closeButton.Text = EditorAssets.SegMDL2Icons.ChromeClose;
+                _closeButton.Font = iconFont;
+                _closeButton.TextColor = Style.Current.Foreground;
+                _closeButton.BackgroundColor = Color.Transparent;
+                _closeButton.BackgroundColorHighlighted = Color.Red;
+                _closeButton.BackgroundColorSelected = Color.Red.RGBMultiplied(1.3f);
+                _closeButton.BorderColor = Color.Transparent;
+                _closeButton.BorderColorHighlighted = Color.Transparent;
+                _closeButton.BorderColorSelected = Color.Transparent;
+                _closeButton.Parent = this;
+                _closeButton.Clicked += () =>
+                {
+                    _window.Close(SE.ClosingReason.User);
+                };
+
+                _minimizeButton = new Button(0, 0, 46, Height);
+                _minimizeButton.Text = EditorAssets.SegMDL2Icons.ChromeMinimize;
+                _minimizeButton.Font = iconFont;
+                _minimizeButton.TextColor = Style.Current.Foreground;
+                _minimizeButton.BackgroundColor = Color.Transparent;
+                _minimizeButton.BackgroundColorHighlighted = Style.Current.LightBackground.RGBMultiplied(0.8f);
+                _minimizeButton.BorderColor = Color.Transparent;
+                _minimizeButton.BorderColorHighlighted = Color.Transparent;
+                _minimizeButton.BorderColorSelected = Color.Transparent;
+                _minimizeButton.Parent = this;
+                _minimizeButton.Clicked += () =>
+                {
+                    _window.Minimize();
+                };
+
+                _maximizeButton = new Button(0, 0, 46, Height);
+                _maximizeButton.Text = _window.IsMaximized
+                    ? EditorAssets.SegMDL2Icons.ChromeRestore
+                    : EditorAssets.SegMDL2Icons.ChromeMaximize;
+                _maximizeButton.TextColor = Style.Current.Foreground;
+                _maximizeButton.Font = iconFont;
+                _maximizeButton.BackgroundColor = Color.Transparent;
+                _maximizeButton.BackgroundColorHighlighted = Style.Current.LightBackground.RGBMultiplied(0.8f);
+                _maximizeButton.BorderColor = Color.Transparent;
+                _maximizeButton.BorderColorHighlighted = Color.Transparent;
+                _maximizeButton.BorderColorSelected = Color.Transparent;
+                _maximizeButton.Parent = this;
+                _maximizeButton.Clicked += () =>
+                {
+                    if (_window.IsMaximized)
+                    {
+                        _window.Restore();
+                    }
+                    else
+                    {
+                        _window.Maximize();
+                    }
+                };
+            }
             else
-                m_Window.Maximize();
+            {
+                BackgroundColor = Style.Current.LightBackground;
+            }
         }
 
-        private void OnWindowClosed()
+        public override void Update(float deltaTime)
         {
-            m_WindowClosed = true;
-            DetachWindow();
+            base.Update(deltaTime);
+
+            if (_maximizeButton != null)
+            {
+                _maximizeButton.Text = _window.IsMaximized
+                    ? EditorAssets.SegMDL2Icons.ChromeRestore
+                    : EditorAssets.SegMDL2Icons.ChromeMaximize;
+            }
         }
 
-        private void DetachWindow()
+        /// <summary>
+        /// Adds the button.
+        /// </summary>
+        /// <param name="text">The button text.</param>
+        /// <returns>Created button control.</returns>
+        public MainMenuButton AddButton(string text)
         {
-            if (m_Window.HitTest == m_HitTestDelegate)
-                m_Window.HitTest = null;
-            m_Window.Closed -= OnWindowClosed;
-        }
-    }
-
-    public sealed class MainMenuButton : Control
-    {
-        public MainMenuButton(string text)
-            : base(new Rectangle(0, 0, 32, 16))
-        {
-            Text = text;
-            ContextMenu = new ContextMenu();
+            return AddChild(new MainMenuButton(text));
         }
 
-        public string Text { get; }
-        public ContextMenu ContextMenu { get; }
-
-        public float MeasureWidth()
+        /// <summary>
+        /// Gets the button.
+        /// </summary>
+        /// <param name="text">The button text.</param>
+        /// <returns>The button or null if missing.</returns>
+        public MainMenuButton GetButton(string text)
         {
-            return 18.0f + Text.Length * 7.0f;
+            MainMenuButton result = null;
+            for (int i = 0; i < ChildrenCount; i++)
+            {
+                Control control = Children[i];
+                MainMenuButton button = control as MainMenuButton;
+                if (button != null && button.Text == text)
+                {
+                    result = button;
+                    break;
+                }
+            }
+            return result;
         }
 
-        public override bool OnMouseDown(Float2 location, MouseButton button)
+        /// <inheritdoc />
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
-            if (Parent is MainMenu mainMenu)
-                mainMenu.Selected = this;
+            if (base.OnMouseDoubleClick(location, button))
+            {
+                return true;
+            }
+
+            Control child = GetChildAtRecursive(location);
+            if (_useCustomWindowSystem && child is not Button && child is not MainMenuButton)
+            {
+                if (_window.IsMaximized)
+                {
+                    _window.Restore();
+                }
+                else
+                {
+                    _window.Maximize();
+                }
+            }
+
             return true;
         }
 
-        public override void OnMouseEnter()
+        /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
         {
-            base.OnMouseEnter();
-            if (Parent is MainMenu mainMenu && mainMenu.Selected != null)
-                mainMenu.Selected = this;
-        }
-
-        protected override void OnDraw()
-        {
-            bool opened = ContextMenu.IsOpened;
-            bool active = EnabledInHierarchy && ContextMenu.HasItems && (opened || IsMouseOver);
-            if (active)
+            if (base.OnKeyDown(key))
             {
-                Color background = opened ? Style.Current.Background : Style.Current.BackgroundHighlighted;
-                Rectangle bounds = ScreenBounds;
-                Render2D.FillRectangle(bounds, background);
+                return true;
             }
 
-            Font? font = Style.Current.FontMedium;
-            if (ReferenceEquals(font, null))
-                return;
+            // Fallback to the edit window for shortcuts
+            return false;
+        }
 
-            Rectangle textBounds = ScreenBounds;
-            Color textColor = active ? Style.Current.Foreground : Style.Current.ForegroundDisabled;
-            Render2D.RenderText(font, Text, textBounds, textColor, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            base.OnDestroy();
+
+            if (_window != null)
+            {
+                OnWindowClosed();
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void PerformLayoutAfterChildren()
+        {
+            float x = 0;
+
+            if (_useCustomWindowSystem)
+            {
+                // Icon
+                _icon.X = x;
+                _icon.Size = new Float2(Height);
+                x += _icon.Width;
+            }
+
+            // Arrange controls
+            MainMenuButton rightMostButton = null;
+            for (int i = 0; i < m_Children.Count; i++)
+            {
+                Control c = m_Children[i];
+                MainMenuButton b = c as MainMenuButton;
+                if (b != null && c.Visible)
+                {
+                    b.Bounds = new Rectangle(x, 0, b.Width, Height);
+
+                    if (rightMostButton == null)
+                    {
+                        rightMostButton = b;
+                    }
+                    else if (rightMostButton.X < b.X)
+                    {
+                        rightMostButton = b;
+                    }
+
+                    x += b.Width;
+                }
+            }
+
+            if (_useCustomWindowSystem)
+            {
+                // Buttons
+                float width = _closeButton.Width;
+                _closeButton.Height = Height;
+                _closeButton.X = Width - width;
+                _maximizeButton.Height = Height;
+                _maximizeButton.X = _closeButton.X - _maximizeButton.Width;
+                _minimizeButton.Height = Height;
+                _minimizeButton.X = _maximizeButton.X - _minimizeButton.Width;
+
+                // Title
+                _title.Bounds = new Rectangle(x + 2, 0, _minimizeButton.Left - x - 4, Height);
+                _title.Text = _window.Title;
+            }
+        }
+
+        private WindowHitCodes OnWindowHitTest(ref Float2 mousePosition)
+        {
+            Float2 pos = mousePosition / _window.DpiScale;
+            return OnHitTest(pos);
+        }
+    }
+
+    public class MainMenuButton : Control
+    {
+        /// <summary>
+        /// The button text.
+        /// </summary>
+        public string Text;
+
+        /// <summary>
+        /// The context menu.
+        /// </summary>
+        public ContextMenu ContextMenu = null;
+
+        /// <summary>
+        /// The background color when mouse is over.
+        /// </summary>
+        public Color BackgroundColorMouseOver = Color.Transparent;
+
+        /// <summary>
+        /// The background color when mouse is over and context menu is opened.
+        /// </summary>
+        public Color BackgroundColorMouseOverOpened = Color.Transparent;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MainMenuButton"/> class.
+        /// </summary>
+        /// <param name="text">The text.</param>
+        public MainMenuButton(string text) : base(0, 0, 32, 16)
+        {
+            ContextMenu = new ContextMenu();
+
+            Text = text;
+
+            Style style = Style.Current;
+            if (true)
+            {
+                BackgroundColorMouseOver = style.BackgroundHighlighted;
+                BackgroundColorMouseOverOpened = style.Background;
+            }
+            else
+            {
+                BackgroundColorMouseOver = BackgroundColorMouseOverOpened = style.LightBackground * 1.3f;
+            }
+        }
+
+        /// <inheritdoc />
+        public override void Draw()
+        {
+            // Cache data
+            Style style = Style.Current;
+            Rectangle clientRect = new Rectangle(0, 0, Width, Height);
+            bool hasChildItems = ContextMenu.HasChildren;
+            bool isOpened = ContextMenu.IsOpened;
+            bool enabled = EnabledInHierarchy;
+
+            // Draw background
+            if (enabled && hasChildItems && (isOpened || IsMouseOver))
+            {
+                Render2D.FillRectangle(clientRect,
+                    isOpened ? BackgroundColorMouseOverOpened : BackgroundColorMouseOver);
+            }
+
+            // Draw text
+            Render2D.DrawText(style.FontMedium, Text, clientRect,
+                enabled && hasChildItems ? style.Foreground : style.ForegroundDisabled,
+                TextAlignment.Center, TextAlignment.Center);
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseDown(Float2 location, MouseButton button)
+        {
+            Focus();
+
+            MainMenu mainMenu = Parent as MainMenu;
+            if (mainMenu != null)
+            {
+                mainMenu.Selected = this;
+            }
+
+            return true;
+        }
+
+        /// <inheritdoc />
+        public override void OnMouseEnter(Float2 location)
+        {
+            base.OnMouseEnter(location);
+
+            MainMenu mainMenu = Parent as MainMenu;
+            if (mainMenu != null && mainMenu.Selected != null)
+            {
+                mainMenu.Selected = this;
+            }
+        }
+
+        /// <inheritdoc />
+        public override void PerformLayout(bool force = false)
+        {
+            Style style = Style.Current;
+            float width = 18;
+
+            if (style.FontMedium != null)
+            {
+                width += style.FontMedium.MeasureText(Text, TextLayoutOptions.Default).X;
+            }
+
+            Width = width;
         }
     }
 }

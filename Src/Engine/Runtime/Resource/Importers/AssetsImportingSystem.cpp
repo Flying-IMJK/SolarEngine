@@ -7,20 +7,20 @@
 #include "ImportTexture.h"
 #include "ImportShader.h"
 
-#include "Runtime/Core/Serialization/JsonWriters.hpp"
-#include "Runtime/Core/Platform/FileSystem.h"
-#include "Runtime/Core/Thread/Threading.h"
-#include "Runtime/Core/Systems.h"
-#include "Runtime/Core/Profiler/Profiler.h"
-#include "Runtime/Core/TypeSystem/Types.h"
-#include "Runtime/Resource/Storage/AssetStorages.h"
-#include "Runtime/Resource/AssetContent.h"
-#include "Runtime/Resource/AssetsCache.h"
-#include "Runtime/Resource/AssetRef.h"
-#include "Runtime/Resource/Asset.h"
-#include "Runtime/EngineContext.h"
-
-
+#include <Runtime/Core/Serialization/JsonWriters.hpp>
+#include <Runtime/Core/Platform/FileSystem.h>
+#include <Runtime/Core/Thread/Threading.h>
+#include <Runtime/Core/Systems.h>
+#include <Runtime/Core/Profiler/Profiler.h>
+#include <Runtime/Core/TypeSystem/Types.h>
+#include <Runtime/Resource/Storage/AssetStorages.h>
+#include <Runtime/Resource/AssetContent.h>
+#include <Runtime/Resource/AssetsCache.h>
+#include <Runtime/Resource/AssetRef.h>
+#include <Runtime/Resource/Asset.h>
+#include <Runtime/EngineContext.h>
+#include <Runtime/Utilities/Model/ModelUtils.h>
+#include <Runtime/Utilities/Texture/TextureUtils.h>
 
 
 namespace SE
@@ -426,7 +426,7 @@ namespace SE
 			return FileSystem::ConvertAbsolutePathToRelative(EngineContext::ProjectFolder, path);
 		}
 		return path;
-	}
+    }
 
 	bool AssetsImporting::Create(const Function<CreateAssetResult(CreateAssetContext&)>& callback, const StringView& inputPath,
 		const StringView& outputPath, UID& assetId, void* arg)
@@ -515,5 +515,43 @@ namespace SE
 
 		return true;
 	}
+
+	bool AssetsImporting::TryRestoreImportOptions(TextureUtilsOptions& options, String assetPath)
+	{
+		FileSystem::NormalizePath(assetPath);
+		return ImportTexture::TryGetImportOptions(assetPath, options);
+    }
+
+    bool AssetsImporting::TryRestoreImportOptions(ModelUtilsOptions& options, String assetPath) 
+	{
+		FileSystem::NormalizePath(assetPath);
+		return ImportModel::TryGetImportOptions(assetPath, options);
+    }
+
+    String AssetsImporting::CanImport(const StringView& extension) 
+	{ 
+		const AssetImporter* importer = nullptr;
+
+		if (extension.Length() > 0 && extension[0] == '.')
+        {
+			importer = GetImporter(extension.Substring(1));
+        }
+		else 
+		{
+			importer = GetImporter(extension);	
+		}
+	
+		return importer ? importer->ResultExtension : String::Empty;
+    }
+
+    bool AssetsImporting::Import(const String& inputPath, const String& outputPath, const TextureUtilsOptions& options)
+    {
+        return Import(inputPath, outputPath, (void*)&options);
+    }
+
+    bool AssetsImporting::Import(const String& inputPath, const String& outputPath, const ModelUtilsOptions& options)
+    {
+		return Import(inputPath, outputPath, (void*)&options);
+    }
 	
 } // SE

@@ -105,7 +105,7 @@ namespace SE
 		const String importPath = GetImportPath();
 		if (importPath.HasChars())
 		{
-			AssetsImporting::Import(importPath, GetPath());
+			AssetsImporting::Import(importPath, GetPath(), nullptr);
 		}
 	}
 
@@ -474,7 +474,7 @@ namespace SE
 
 #endif
 
-	const String& BinaryAsset::GetPath() const
+	String BinaryAsset::GetPath() const
 	{
 #if SE_EDITOR
 		return storage ? storage->GetPath() : String::Empty;

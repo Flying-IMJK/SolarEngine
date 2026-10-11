@@ -406,6 +406,7 @@ Variant CLRUtils::UnboxVariant(CLRObject* value)
             case VariantTypes::Bool:
             case VariantTypes::Int:
             case VariantTypes::Uint:
+            case VariantTypes::TypeID:
             case VariantTypes::Int64:
             case VariantTypes::Uint64:
             case VariantTypes::Float:
@@ -565,6 +566,7 @@ CLRObject* CLRUtils::BoxVariant(const Variant& value)
     case VariantTypes::Int:
         return CLRCore::Object::Box((void*)&value.AsInt, CLRCore::TypeCache::Int32);
     case VariantTypes::Uint:
+    case VariantTypes::TypeID:
         return CLRCore::Object::Box((void*)&value.AsUint, CLRCore::TypeCache::UInt32);
     case VariantTypes::Int64:
         return CLRCore::Object::Box((void*)&value.AsInt64, CLRCore::TypeCache::Int64);
@@ -654,6 +656,7 @@ CLRObject* CLRUtils::BoxVariant(const Variant& value)
                 case VariantTypes::Bool:
                 case VariantTypes::Int:
                 case VariantTypes::Uint:
+                case VariantTypes::TypeID:
                 case VariantTypes::Int64:
                 case VariantTypes::Uint64:
                 case VariantTypes::Float:
@@ -830,6 +833,7 @@ CLRClass* CLRUtils::GetClass(const VariantTypeHandle& value)
     case VariantTypes::Int:
         return CLRCore::TypeCache::Int32;
     case VariantTypes::Uint:
+    case VariantTypes::TypeID:
         return CLRCore::TypeCache::UInt32;
     case VariantTypes::Int64:
         return CLRCore::TypeCache::Int64;
@@ -923,6 +927,7 @@ CLRClass* CLRUtils::GetClass(const Variant& value)
     case VariantTypes::Int:
         return CLRCore::TypeCache::Int32;
     case VariantTypes::Uint:
+    case VariantTypes::TypeID:
         return CLRCore::TypeCache::UInt32;
     case VariantTypes::Int64:
         return CLRCore::TypeCache::Int64;

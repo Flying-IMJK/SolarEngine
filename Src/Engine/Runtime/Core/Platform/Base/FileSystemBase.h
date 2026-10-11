@@ -42,7 +42,7 @@ namespace SE
 	/// <summary>
 	/// Platform implementation of filesystem service.
 	/// </summary>
-	SE_CLASS(API(Static, Name = "FileSystem", Tag = "NativeInvokeUseName"))
+	SE_CLASS(API(Static, Name = "FileSystem", NativeInvokeUseName))
 	class SE_API_RUNTIME FileSystemBase
 	{
 		SCRIPTING_TYPE_MIN(FileSystemBase);
@@ -55,17 +55,18 @@ namespace SE
 		/// <param name="multiSelect">True if allow multiple files to be selected, otherwise use single-file mode.</param>
 		/// <param name="title">The dialog title.</param>
 		/// <param name="filenames">The output names of the files picked by the user.</param>
-		/// <returns>True if failed, otherwise false.</returns>
+		/// <returns>True if files were selected, otherwise false.</returns>
 		/// <remarks>
 		/// Example file filters:
 		///    "All Files\0*.*"
 		///    "All Files\0*.*\0Image Files\0*.png;*.jpg"
 		/// </remarks>
+		SE_FUNCTION(API())
 		static bool ShowOpenFileDialog(const StringView& initialDirectory,
 			const StringView& filter,
 			bool multiSelect,
 			const StringView& title,
-			List <String, HeapAllocation>& filenames);
+			SE_PARAM(API(Out)) List <String, HeapAllocation>& filenames);
 
 		/// <summary>
 		/// Displays a standard dialog box that prompts the user to open a file(s).
@@ -76,18 +77,19 @@ namespace SE
 		/// <param name="multiSelect">True if allow multiple files to be selected, otherwise use single-file mode.</param>
 		/// <param name="title">The dialog title.</param>
 		/// <param name="filenames">The output names of the files picked by the user.</param>
-		/// <returns>True if failed, otherwise false.</returns>
+		/// <returns>True if files were selected, otherwise false.</returns>
 		/// <remarks>
 		/// Example file filters:
 		///    "All Files\0*.*"
 		///    "All Files\0*.*\0Image Files\0*.png;*.jpg"
 		/// </remarks>
+		SE_FUNCTION(API())
 		static bool ShowOpenFileDialog(Window* parentWindow,
 			const StringView& initialDirectory,
 			const StringView& filter,
 			bool multiSelect,
 			const StringView& title,
-			List <String, HeapAllocation>& filenames);
+			SE_PARAM(API(Out)) List <String, HeapAllocation>& filenames);
 
 		/// <summary>
 		/// Displays a standard dialog box that prompts the user to save a file(s).
@@ -104,12 +106,13 @@ namespace SE
 		///    "All Files\0*.*"
 		///    "All Files\0*.*\0Image Files\0*.png;*.jpg"
 		/// </remarks>
+		SE_FUNCTION(API())
 		static bool ShowSaveFileDialog(Window* parentWindow,
 			const StringView& initialDirectory,
 			const StringView& filter,
 			bool multiSelect,
 			const StringView& title,
-			List <String, HeapAllocation>& filenames);
+			SE_PARAM(API(Out)) List <String, HeapAllocation>& filenames);
 
 		/// <summary>
 		/// Displays a standard dialog box that prompts the user to select a folder.
@@ -117,9 +120,9 @@ namespace SE
 		/// <param name="parentWindow">The parent window.</param>
 		/// <param name="initialDirectory">The initial directory.</param>
 		/// <param name="title">The dialog title.</param>
-		/// <param name="path">The output path.</param>
-		/// <returns>True if failed, otherwise false.</returns>
-		static bool ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title, String& path);
+		/// <returns>The selected folder path.</returns>
+		SE_FUNCTION(API())
+		static String ShowBrowseFolderDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& title);
 
 		/// <summary>
 		/// Opens a standard file explorer application and navigates to the given directory.

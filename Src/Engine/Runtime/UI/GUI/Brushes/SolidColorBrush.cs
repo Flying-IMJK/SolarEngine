@@ -16,6 +16,7 @@ namespace SE.GUI
         }
 
         public Color Color { get; set; }
+        public Float2 Size => Float2.One;
 
         public void Draw(Rectangle bounds, Color color)
         {

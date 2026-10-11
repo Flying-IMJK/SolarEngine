@@ -11,36 +11,47 @@ namespace SE
 	class RenderList;
 	class SceneRenderTask;
 
+	SE_INJECT_CODE(cpp, "#include \"Runtime/Render/RenderTask.h\"")
+
 	// <summary>
 	/// The high-level renderer context. Used to collect the draw calls for the scene rendering. Can be used to perform a custom rendering.
 	/// </summary>
+	SE_STRUCT(API())
 	struct SE_API_RUNTIME RenderContext
 	{
+		SCRIPTING_TYPE_MIN(RenderContext)
+
+		SE_FIELD(API())
 		GPUContext* gpuContext = nullptr;
 
 		/// <summary>
 		/// The render buffers.
 		/// </summary>
+		SE_FIELD(API())
 		RenderBuffers* buffers = nullptr;
 
 		/// <summary>
 		/// The render list.
 		/// </summary>
+		SE_FIELD(API())
 		RenderList* list = nullptr;
 
 		/// <summary>
 		/// The scene rendering task that is a source of renderable objects (optional).
 		/// </summary>
+		SE_FIELD(API())
 		SceneRenderTask* task = nullptr;
 
 		/// <summary>
 		/// The proxy render view used to synchronize objects level of detail during rendering (eg. during shadow maps rendering passes). It's optional.
 		/// </summary>
+		SE_FIELD(API())
 		RenderView* lodProxyView = nullptr;
 
 		/// <summary>
 		/// The render view.
 		/// </summary>
+		SE_FIELD(API())
 		RenderView view;
 
 		/// <summary>
@@ -55,31 +66,38 @@ namespace SE
 	/// <summary>
 	/// The high-level renderer context batch that encapsulates multiple rendering requests within a single task (eg. optimize main view scene rendering and shadow projections at once).
 	/// </summary>
-	struct RenderContextBatch
+	SE_STRUCT(API())
+	struct SE_API_RUNTIME RenderContextBatch
 	{
+		SCRIPTING_TYPE_MIN(RenderContextBatch)
 		/// <summary>
 		/// The render buffers.
 		/// </summary>
+		SE_FIELD(API())
 		RenderBuffers* buffers = nullptr;
 
 		/// <summary>
 		/// The scene rendering task that is a source of renderable objects (optional).
 		/// </summary>
+		SE_FIELD(API())
 		SceneRenderTask* task = nullptr;
 
 		/// <summary>
 		/// The all render views collection for the current rendering (main view, shadow projections, etc.).
 		/// </summary>
+		SE_FIELD(API())
 		List<RenderContext, RendererAllocation> Contexts;
 
 		/// <summary>
 		/// The Job System labels to wait on, after draw calls collecting.
 		/// </summary>
+		SE_FIELD(API())
 		List<uint64, InlinedAllocation<8>> WaitLabels;
 
 		/// <summary>
 		/// Enables using async tasks via Job System when performing drawing.
 		/// </summary>
+		SE_FIELD(API())
 		bool EnableAsync = true;
 
 		RenderContextBatch() = default;

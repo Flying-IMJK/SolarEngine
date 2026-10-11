@@ -113,11 +113,13 @@ namespace SE
 		/// <summary>
 		/// Gets the path to the asset storage file. In Editor, it reflects the actual file, in cooked Game, it fakes the Editor path to be informative for developers.
 		/// </summary>
-		virtual const String& GetPath() const = 0;
+		SE_FUNCTION(API())
+		virtual String GetPath() const = 0;
 
 		/// <summary>
 		/// Returns true if asset is loaded, otherwise false.
 		/// </summary>
+		SE_FUNCTION(API())
 		FORCE_INLINE bool IsLoaded() const
 		{
 			return Platform::AtomicRead(&m_LoadState) == (int64)LoadState::Loaded;
@@ -126,6 +128,7 @@ namespace SE
 		/// <summary>
 		/// 上次资源加载失败，则返回 true，否则返回 false。
 		/// </summary>
+				SE_FUNCTION(API())
 		bool LastLoadFailed() const
 		{
 			return Platform::AtomicRead(&m_LoadState) == (int64)LoadState::LoadFailed;
@@ -139,12 +142,11 @@ namespace SE
 			return m_IsVirtual != 0;
 		}
 
-#if SE_EDITOR
 		/// <summary>
 		/// Determines whether this asset was marked to be deleted on unload.
 		/// </summary>
+		SE_FUNCTION(API())
 		bool ShouldDeleteFileOnUnload() const;
-#endif
 
 		/// <summary>
 		/// Gets amount of CPU memory used by this resource (in bytes). It's a rough estimation. Memory may be fragmented, compressed or sub-allocated so the actual memory pressure from this resource may vary.
@@ -155,6 +157,7 @@ namespace SE
 		/// <summary>
 		/// Reloads the asset.
 		/// </summary>
+		SE_FUNCTION(API())
 		void Reload();
 
 		/// <summary>

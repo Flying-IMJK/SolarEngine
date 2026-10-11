@@ -11,102 +11,103 @@ namespace SE
 	class JsonWriter;
 
 	/// <summary>
+	/// Texture import options.
+	/// </summary>
+	SE_STRUCT(Reflect, API(Attributes="HideInEditor"))
+	struct SE_API_RUNTIME TextureUtilsOptions : IType, ISerializable
+	{
+		SCRIPTING_TYPE_MIN(TextureUtilsOptions)
+		SE_DEFINE_CLASS_DEFAULT(TextureUtilsOptions, IType);
+
+		// Texture format type.
+        SE_FIELD(API(Attributes = "EditorOrder(0), DefaultValue(TextureFormatType.ColorRGB)"))
+		TextureFormatType Type = TextureFormatType::ColorRGBA;
+
+		// True if texture should be imported as a texture atlas (with sprites).
+		SE_FIELD(API(Attributes = "EditorOrder(10), DefaultValue(false)"))
+		bool IsAtlas = false;
+
+		// True if disable dynamic texture streaming.
+		SE_FIELD(API(Attributes = "EditorOrder(20), DefaultValue(false)"))
+		bool NeverStream = false;
+
+		// True if disable dynamic texture streaming.
+		SE_FIELD(API(Attributes = "EditorOrder(30), DefaultValue(true)"))
+		bool Compress = true;
+
+		// True if texture channels have independent data (for compression methods).
+		SE_FIELD(API(Attributes = "EditorOrder(40), DefaultValue(false)"))
+		bool IndependentChannels = false;
+
+		// True if use sRGB format for texture data. Recommended for color maps and diffuse color textures.
+		SE_FIELD(API(Attributes = "EditorOrder(50), EditorDisplay(null, \"sRGB\")"))
+		bool sRGB = false;
+
+		// True if generate mip maps chain for the texture.
+		SE_FIELD(API(Attributes = "EditorOrder(60), DefaultValue(true)"))
+		bool GenerateMipMaps = true;
+
+		// True if flip Y coordinate of the texture.
+		SE_FIELD(API(Attributes = "EditorOrder(70), DefaultValue(false)"))
+		bool FlipY = false;
+
+		// True if to invert the green channel on a normal map. Good for OpenGL to DirectX conversion.
+		SE_FIELD(API(Attributes = "EditorOrder(71), DefaultValue(false)"))
+		bool InvertGreenChannel = false;
+
+		// Texture size scale. Allows increasing or decreasing the imported texture resolution. Default is 1.
+		SE_FIELD(API(Attributes = "EditorOrder(80), Limit(0.0001f, 1000.0f, 0.01f), DefaultValue(1.0f)"))
+		float Scale = 1.0f;
+
+		// Maximum size of the texture (for both width and height). Higher resolution textures will be resized during importing process. Used to clip textures that are too big.
+		SE_FIELD(API(Attributes = "HideInEditor, DefaultValue((int)8192)"))
+		int32 MaxSize = 8192;
+
+		// True if resize texture on import. Use SizeX/SizeY properties to define texture width and height. Texture scale property will be ignored.
+		SE_FIELD(API(Attributes = "EditorOrder(100), DefaultValue(false)"))
+		bool Resize = false;
+
+		// The width of the imported texture. If Resize property is set to true then texture will be resized during the import to this value during the import, otherwise it will be ignored.
+		SE_FIELD(API(Attributes = "HideInEditor, DefaultValue((int)1024)"))
+		int32 SizeX = 1024;
+
+		// The height of the imported texture. If Resize property is set to true then texture will be resized during the import to this value during the import, otherwise it will be ignored.
+		SE_FIELD(API(Attributes = "HideInEditor, DefaultValue((int)1024)"))
+		int32 SizeY = 1024;
+
+		// Check to preserve alpha coverage in generated mips for alpha test reference. Scales mipmap alpha values to preserve alpha coverage based on an alpha test reference value.
+		SE_FIELD(API(Attributes = "EditorOrder(200), DefaultValue(false)"))
+		bool PreserveAlphaCoverage = false;
+
+		// The reference value for the alpha coverage preserving.
+		SE_FIELD(API(Attributes = "EditorOrder(210), DefaultValue(0.5f)"))
+		float PreserveAlphaCoverageReference = 0.5f;
+
+		// The texture group for streaming (negative if unused). See Streaming Settings.
+		SE_FIELD(API(Attributes = "EditorOrder(300), DefaultValue(-1)"))
+		int32 TextureGroup = -1;
+
+		// The sprites for the sprite sheet import mode.
+		SE_FIELD(API(Attributes = "HideInEditor"))
+		List<Sprite> Sprites;
+
+		// Function used for fast importing textures used by internal parts of the engine
+		Function<bool(TextureData&)> InternalLoad;
+
+	public:
+		String ToString() const;
+
+		// [ISerializable]
+		void Serialize(SerializeContext& context) override;
+		void Deserialize(DeserializeContext& context) override;
+	};
+
+	/// <summary>
 	/// Textures importing, processing and exporting utilities.
 	/// </summary>
 	class SE_API_RUNTIME TextureUtils
 	{
 	public:
-		/// <summary>
-		/// Texture import options.
-		/// </summary>
-		SE_STRUCT(Reflect)
-		struct SE_API_RUNTIME Options : IType, ISerializable
-		{
-			SE_DEFINE_CLASS_DEFAULT(Options, IType);
-
-			// Texture format type.
-			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(0)")
-			TextureFormatType Type = TextureFormatType::ColorRGBA;
-
-			// True if texture should be imported as a texture atlas (with sprites).
-			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(10)")
-			bool IsAtlas = false;
-
-			// True if disable dynamic texture streaming.
-			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(20)")
-			bool NeverStream = false;
-
-			// True if disable dynamic texture streaming.
-			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(30)")
-			bool Compress = true;
-
-			// True if texture channels have independent data (for compression methods).
-			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(40)")
-			bool IndependentChannels = false;
-
-			// True if use sRGB format for texture data. Recommended for color maps and diffuse color textures.
-			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(50), EditorDisplay(null, \"sRGB\")")
-			bool sRGB = false;
-
-			// True if generate mip maps chain for the texture.
-			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(60)")
-			bool GenerateMipMaps = true;
-
-			// True if flip Y coordinate of the texture.
-			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(70)")
-			bool FlipY = false;
-
-			// True if to invert the green channel on a normal map. Good for OpenGL to DirectX conversion.
-			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(71)")
-			bool InvertGreenChannel = false;
-
-			// Texture size scale. Allows increasing or decreasing the imported texture resolution. Default is 1.
-			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(80), Limit(0.0001f, 1000.0f, 0.01f)")
-			float Scale = 1.0f;
-
-			// Maximum size of the texture (for both width and height). Higher resolution textures will be resized during importing process. Used to clip textures that are too big.
-			// SE_PROPERTY(Reflect, Attributes = "HideInEditor")
-			int32 MaxSize = 8192;
-
-			// True if resize texture on import. Use SizeX/SizeY properties to define texture width and height. Texture scale property will be ignored.
-			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(100)")
-			bool Resize = false;
-
-			// The width of the imported texture. If Resize property is set to true then texture will be resized during the import to this value during the import, otherwise it will be ignored.
-			// SE_PROPERTY(Reflect, Attributes = "HideInEditor")
-			int32 SizeX = 1024;
-
-			// The height of the imported texture. If Resize property is set to true then texture will be resized during the import to this value during the import, otherwise it will be ignored.
-			// SE_PROPERTY(Reflect, Attributes = "HideInEditor")
-			int32 SizeY = 1024;
-
-			// Check to preserve alpha coverage in generated mips for alpha test reference. Scales mipmap alpha values to preserve alpha coverage based on an alpha test reference value.
-			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(200)")
-			bool PreserveAlphaCoverage = false;
-
-			// The reference value for the alpha coverage preserving.
-			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(210), VisibleIf(\"PreserveAlphaCoverage\")")
-			float PreserveAlphaCoverageReference = 0.5f;
-
-			// The texture group for streaming (negative if unused). See Streaming Settings.
-			// SE_PROPERTY(Reflect, Attributes = "EditorOrder(300), CustomEditorAlias(\"FlaxEditor.CustomEditors.Dedicated.TextureGroupEditor\")")
-			int32 TextureGroup = -1;
-
-			// The sprites for the sprite sheet import mode.
-			// SE_PROPERTY(Reflect, Attributes = "HideInEditor")
-			List<Sprite> Sprites;
-
-			// Function used for fast importing textures used by internal parts of the engine
-			Function<bool(TextureData&)> InternalLoad;
-
-		public:
-			String ToString() const;
-
-			// [ISerializable]
-			void Serialize(SerializeContext& context) override;
-			void Deserialize(DeserializeContext& context) override;
-		};
-
 #if SE_EDITOR
 		/// <summary>
 		/// Checks whenever the given texture file contains alpha channel data with values different than solid fill of 1 (non fully opaque).
@@ -132,7 +133,7 @@ namespace SE
 		/// <param name="options">The import options.</param>
 		/// <param name="errorMsg">The error message container.</param>
 		/// <returns>True if fails, otherwise false.</returns>
-		static bool ImportTexture(const StringView& path, TextureData& textureData, Options options, String& errorMsg);
+		static bool ImportTexture(const StringView& path, TextureData& textureData, TextureUtilsOptions options, String& errorMsg);
 
 		/// <summary>
 		/// Exports the texture.
@@ -267,7 +268,7 @@ namespace SE
 
 		static bool ExportTextureStb(ImageType type, const StringView& path, const TextureData& textureData);
 		static bool ImportTextureStb(ImageType type, const StringView& path, TextureData& textureData, bool& hasAlpha);
-		static bool ImportTextureStb(ImageType type, const StringView& path, TextureData& textureData, const Options& options, String& errorMsg, bool& hasAlpha);
+		static bool ImportTextureStb(ImageType type, const StringView& path, TextureData& textureData, const TextureUtilsOptions& options, String& errorMsg, bool& hasAlpha);
 		static bool ConvertStb(TextureData& dst, const TextureData& src, const PixelFormat dstFormat);
 		static bool ResizeStb(PixelFormat format, TextureMipData& dstMip, const TextureMipData& srcMip, int32 dstMipWidth, int32 dstMipHeight);
 		static bool ResizeStb(TextureData& dst, const TextureData& src, int32 dstWidth, int32 dstHeight);

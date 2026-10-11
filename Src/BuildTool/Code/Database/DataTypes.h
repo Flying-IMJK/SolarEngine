@@ -20,6 +20,9 @@ namespace SE::BuildTool
     struct TypeInfo
     {
         TypeID      typeID;
+        // The typedef or using-alias name written at the API use site. The
+        // canonical typeID remains the native type used for C++ emission.
+        TypeID      declaredTypeID;
         int         arraySize = 0;
         int         pointerDepth = 0;
         bool        isPointer = false;

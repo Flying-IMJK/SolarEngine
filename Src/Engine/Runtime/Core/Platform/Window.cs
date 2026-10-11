@@ -122,7 +122,7 @@ namespace SE
 
         internal void Internal_InitializeGui(Float2 logicalSize, float dpiScale)
         {
-            m_GUI.Initialize(logicalSize, dpiScale);
+            m_GUI.Size = logicalSize;
         }
 
         // WindowBase invokes the Internal_On* methods. GraphicWindow owns the parallel
@@ -177,7 +177,7 @@ namespace SE
             MouseDown?.Invoke(ref pos, button, ref handled);
             if (handled)
             {
-                return;
+                return; 
             }
 
             GUI.OnMouseDown(pos, button);

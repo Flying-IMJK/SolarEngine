@@ -5,7 +5,6 @@
 #include "Editor/Windows/EditorWindow.h"
 #include "Editor/Windows/LogWindow.h"
 #include "Editor/Windows/ContentWindow.h"
-#include "Editor/Windows/SceneHierarchyWindow.h"
 #include "Editor/Windows/EditSceneWindow.h"
 #include "Editor/Windows/PropertiesWindow.h"
 

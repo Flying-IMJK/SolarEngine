@@ -10,8 +10,6 @@ add_subdirectory(Thumbnails)
 EDITOR_ADD(
         ContentView.h
         ContentView.cpp
-        ResourceInterop.h
-        ResourceInterop.cpp
         ContentNavigationButton.h
         ContentNavigationButton.cpp
 )

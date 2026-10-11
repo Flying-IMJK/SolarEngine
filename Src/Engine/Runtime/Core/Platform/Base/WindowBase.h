@@ -267,7 +267,7 @@ namespace SE
 	/// <summary>
 	/// Native platform window object.
 	/// </summary>
-	SE_CLASS(API(NoSpawn, NoConstructor, Sealed, Name="Window"))
+	SE_CLASS(API(NoSpawn, NoConstructor, Sealed, Name="Window", NativeInvokeUseName))
 	class SE_API_RUNTIME WindowBase : public ScriptingObject
 	{
 		SCRIPTING_TYPE_NO_SPAWN(WindowBase);

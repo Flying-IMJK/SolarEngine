@@ -349,6 +349,14 @@ namespace SE::BuildTool
                     }
                 }
             }
+            else if (token == "Out")
+            {
+                parameterDirection = ApiParameterDirection::Out;
+            }
+            else if (token == "Ref")
+            {
+                parameterDirection = ApiParameterDirection::Ref;
+            }
         }
     }
 
@@ -360,6 +368,8 @@ namespace SE::BuildTool
         fileColumn(other.fileColumn),
         fileEndLine(other.fileEndLine),
         fileEndColumn(other.fileEndColumn),
+        fileOffset(other.fileOffset),
+        fileEndOffset(other.fileEndOffset),
         type(other.type),
         macroComment(other.macroComment),
         hasReflect(other.hasReflect),
@@ -381,6 +391,8 @@ namespace SE::BuildTool
         fileColumn        = other.fileColumn;
         fileEndLine       = other.fileEndLine;
         fileEndColumn     = other.fileEndColumn;
+        fileOffset        = other.fileOffset;
+        fileEndOffset     = other.fileEndOffset;
         type              = other.type;
         macroComment      = other.macroComment;
         hasReflect        = other.hasReflect;
@@ -400,8 +412,8 @@ namespace SE::BuildTool
     {
         ENGINE_ASSERT(type < MacroTypeEnum::NumMacros);
 
-        clang_getExpansionLocation(clang_getRangeStart(sourceRange), nullptr, &fileLine, &fileColumn, nullptr);
-        clang_getExpansionLocation(clang_getRangeEnd(sourceRange), nullptr, &fileEndLine, &fileEndColumn, nullptr);
+        clang_getExpansionLocation(clang_getRangeStart(sourceRange), nullptr, &fileLine, &fileColumn, &fileOffset);
+        clang_getExpansionLocation(clang_getRangeEnd(sourceRange), nullptr, &fileEndLine, &fileEndColumn, &fileEndOffset);
 
 
         // Read the contents of the macro for all annotation types
@@ -409,7 +421,7 @@ namespace SE::BuildTool
         bool needsParamParsing =
             (type == MacroTypeEnum::SEClass || type == MacroTypeEnum::SEStruct || type == MacroTypeEnum::SEInterface ||
              type == MacroTypeEnum::SEEnum || type == MacroTypeEnum::SEField || type == MacroTypeEnum::SEFunction ||
-             type == MacroTypeEnum::SEEvent || type == MacroTypeEnum::SETypeDef);
+             type == MacroTypeEnum::SEEvent || type == MacroTypeEnum::SETypeDef || type == MacroTypeEnum::SEParam);
 
         if (needsParamParsing)
         {
@@ -481,6 +493,8 @@ namespace SE::BuildTool
                 return "SE_FIELD";
             case MacroTypeEnum::SEFunction:
                 return "SE_FUNCTION";
+            case MacroTypeEnum::SEParam:
+                return "SE_PARAM";
             case MacroTypeEnum::SEEvent:
                 return "SE_EVENT";
             case MacroTypeEnum::SETypeDef:
@@ -637,6 +651,34 @@ namespace SE::BuildTool
         }
 
         return false;
+    }
+
+    bool ClangParserContext::FindParameterMacro(HeaderID headerID, uint32_t startOffset, uint32_t endOffset, MarkMacro& macro)
+    {
+        auto headerIter = m_MarkMacros.Find(headerID);
+        if (headerIter == m_MarkMacros.end())
+            return false;
+
+        std::vector<MarkMacro>& macros = headerIter->Value;
+        int foundIndex = -1;
+        for (int index = 0; index < static_cast<int>(macros.size()); ++index)
+        {
+            const MarkMacro& candidate = macros[index];
+            if (candidate.type != MacroTypeEnum::SEParam || candidate.fileOffset < startOffset ||
+                candidate.fileEndOffset > endOffset)
+                continue;
+            if (foundIndex >= 0)
+            {
+                LogError("Multiple SE_PARAM markers for parameter at line {0}", candidate.fileLine);
+                return false;
+            }
+            foundIndex = index;
+        }
+        if (foundIndex < 0)
+            return false;
+        macro = macros[foundIndex];
+        Utils::Vector::RemoveAt(macros, static_cast<size_t>(foundIndex));
+        return true;
     }
 
 

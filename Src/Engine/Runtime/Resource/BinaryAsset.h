@@ -281,7 +281,7 @@ namespace SE
 #if SE_EDITOR
 		void OnDeleteObject() override;
 #endif
-		const String& GetPath() const final override;
+		String GetPath() const final override;
 		uint64 GetMemoryUsage() const override;
 
 	protected:

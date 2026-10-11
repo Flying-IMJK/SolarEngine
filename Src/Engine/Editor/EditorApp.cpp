@@ -12,7 +12,6 @@
 #include "Windows/ContentWindow.h"
 #include "Windows/EditSceneWindow.h"
 #include "Windows/PropertiesWindow.h"
-#include "Windows/SceneHierarchyWindow.h"
 
 
 #include "Runtime/EngineContext.h"
@@ -410,7 +409,9 @@ namespace SE::Editor
 			return nullptr;
 		}
 		return (Window*)CLRUtils::Unbox<void*>(result);
-	}
+    }
+
+    ProjectInfo* ManagedEditor::GetProjectInfo() const { return EditorApp::Ins().Project; }
 
 	void ManagedEditor::InvokeManagedMethod(const char* methodName)
 	{

@@ -1,291 +1,870 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using SE.GUI;
 
 namespace SE.Editor
 {
     public enum ContentViewType
     {
+        /// <summary>The uniform tiles.</summary>
         Tiles,
+
+        /// <summary>The vertical list.</summary>
         List,
     }
 
-    public enum ContentSortType
+    /// <summary>The method sort for items.</summary>
+    public enum SortType
     {
-        Name,
-        Type,
-        Path,
+        /// <summary>The classic alphabetic sort method (A-Z).</summary>
+        AlphabeticOrder,
+
+        /// <summary>The reverse alphabetic sort method (Z-A).</summary>
+        AlphabeticReverse,
     }
 
-    /// <summary>
-    /// Managed content-browser surface. Selection and layout are kept entirely in
-    /// C#, so native resource changes are represented by stable ContentItem values.
-    /// </summary>
-    public sealed class ContentView : ContainerControl, IContentItemOwner
+    public class ContentView : ContainerControl, IContentItemOwner
     {
-        private readonly List<ContentItem> m_Items = new();
-        private readonly HashSet<ContentItem> m_Selection = new();
-        private ContentViewType m_ViewType = ContentViewType.Tiles;
-        private float m_ViewScale = 1.0f;
+        private readonly List<ContentItem> _items = new List<ContentItem>(256);
+        private readonly List<ContentItem> _selection = new List<ContentItem>();
 
-        public ContentView()
-            : base(new Rectangle(0, 0, 400, 300))
+        private float _viewScale = 1.0f;
+        private ContentViewType _viewType = ContentViewType.Tiles;
+        private bool _isRubberBandSpanning;
+        private Float2 _mousePressLocation;
+        private Rectangle _rubberBandRectangle;
+
+        private bool _validDragOver;
+
+        /// <summary>Called when user wants to open the item.</summary>
+        public Action<ContentItem> OnOpen;
+
+        /// <summary>Called when user wants to rename the item.</summary>
+        public Action<ContentItem> OnRename;
+
+        /// <summary>Called when user wants to delete the item.</summary>
+        public Action<List<ContentItem>> OnDelete;
+
+        /// <summary>Called when user wants to paste the files/folders.</summary>
+        public Action<List<string>> OnPaste;
+
+        /// <summary>Called when user wants to duplicate the item(s).</summary>
+        public Action<List<ContentItem>> OnDuplicate;
+
+        /// <summary>Called when user wants to navigate backward.</summary>
+        public Action OnNavigateBack;
+
+        /// <summary>Occurs when view scale gets changed.</summary>
+        public Action ViewScaleChanged;
+
+        /// <summary>Occurs when view type gets changed.</summary>
+        public Action ViewTypeChanged;
+
+        /// <summary>Gets the items.</summary>
+        public List<ContentItem> GetItems()
         {
+            return _items;
         }
 
-        public IReadOnlyList<ContentItem> Items => m_Items;
-        public IReadOnlyCollection<ContentItem> Selection => m_Selection;
-        public int SelectedCount => m_Selection.Count;
-        public bool HasSelection => m_Selection.Count != 0;
-        public bool IsSearching { get; set; }
-        public bool ShowFileExtensions { get; set; }
-        public ContentSortType SortType { get; private set; } = ContentSortType.Name;
+        /// <summary>Gets the items count.</summary>
+        public int ItemsCount => _items.Count;
 
-        public ContentViewType ViewType
+        /// <summary>Gets the selected items.</summary>
+        public List<ContentItem> GetSelection()
         {
-            get => m_ViewType;
-            set
-            {
-                if (m_ViewType == value)
-                    return;
-                m_ViewType = value;
-                PerformLayout();
-            }
+            return _selection;
         }
 
+        /// <summary>Gets the selected count.</summary>
+        public int SelectedCount => _selection.Count;
+
+        /// <summary>Gets a value indicating whether any item is selected.</summary>
+        public bool HasSelection => _selection.Count > 0;
+
+        /// <summary>Gets or sets the view scale.</summary>
         public float ViewScale
         {
-            get => m_ViewScale;
+            get => _viewScale;
             set
             {
-                float clamped = Math.Clamp(value, 0.5f, 2.0f);
-                if (Math.Abs(m_ViewScale - clamped) < float.Epsilon)
-                    return;
-                m_ViewScale = clamped;
-                PerformLayout();
+                value = Math.Clamp(value, 0.3f, 3.0f);
+                if (!Mathf.NearEqual(value, _viewScale))
+                {
+                    _viewScale = value;
+                    ViewScaleChanged?.Invoke();
+                    PerformLayout();
+                }
             }
         }
 
-        public event Action<IReadOnlyCollection<ContentItem>>? SelectionChanged;
-        public event Action<ContentItem>? ItemActivated;
-        public event Action? DuplicateRequested;
-        public event Action? CopyRequested;
-        public event Action? PasteRequested;
+        /// <summary>Gets or sets the type of the view.</summary>
+        public ContentViewType ViewType
+        {
+            get => _viewType;
+            set
+            {
+                if (_viewType != value)
+                {
+                    _viewType = value;
+                    ViewTypeChanged?.Invoke();
+                    PerformLayout();
+                }
+            }
+        }
 
+        /// <summary>Flag is used to indicate if user is searching for items.</summary>
+        public bool IsSearching;
+
+        /// <summary>Flag used to indicate whenever show full file names including extensions.</summary>
+        public bool ShowFileExtensions;
+
+        /// <summary>Initializes a new instance of the <see cref="ContentView"/> class.</summary>
+        public ContentView()
+        {
+            // Native input actions collection and its bindings are commented out.
+        }
+
+        /// <summary>Clears the items in the view.</summary>
         public void ClearItems()
         {
-            foreach (ContentItem item in m_Items)
-            {
-                item.RemoveReference(this);
-                RemoveChild(item);
-            }
+            bool wasLayoutLocked = IsLayoutLocked;
+            IsLayoutLocked = true;
 
-            m_Items.Clear();
             ClearSelection();
-        }
 
-        public void ShowItems(IEnumerable<ContentItem> items, ContentSortType sortType = ContentSortType.Name, bool additive = false, bool keepSelection = false)
-        {
-            ArgumentNullException.ThrowIfNull(items);
-            HashSet<ContentItem> previousSelection = new(m_Selection);
-            if (!additive)
-                ClearItems();
-
-            foreach (ContentItem item in items)
+            for (int i = 0; i < _items.Count; i++)
             {
-                if (m_Items.Contains(item))
-                    continue;
-
-                item.ShowFileExtension = ShowFileExtensions;
-                item.AddReference(this);
-                m_Items.Add(item);
-                AddChild(item);
+                ContentItem item = _items[i];
+                item.Parent = null;
+                item.RemoveReference(this);
             }
+            _items.Clear();
 
-            SortType = sortType;
-            SortItems();
-            if (keepSelection)
-                Select(previousSelection, additive: false);
+            IsLayoutLocked = wasLayoutLocked;
             PerformLayout();
         }
 
-        public bool IsSelected(ContentItem item) => m_Selection.Contains(item);
+        /// <summary>Shows the items collection in the view.</summary>
+        /// <param name="items">The items to show.</param>
+        /// <param name="sortType">The sort method for items.</param>
+        /// <param name="additive">If true, items are added to the current list; otherwise, the items list is cleared first.</param>
+        /// <param name="keepSelection">If true, selected items are preserved; otherwise, the selection is cleared first.</param>
+        public void ShowItems(List<ContentItem> items, SortType sortType, bool additive = false, bool keepSelection = false)
+        {
+            if (items.Count == 0)
+            {
+                if (!additive)
+                {
+                    ClearItems();
+                }
+                return;
+            }
 
+            bool wasLayoutLocked = IsLayoutLocked;
+            IsLayoutLocked = true;
+            List<ContentItem> selection = !additive && keepSelection
+                ? new List<ContentItem>(_selection)
+                : new List<ContentItem>();
+
+            if (!additive)
+            {
+                ClearItems();
+            }
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                ContentItem item = items[i];
+                if (item.Visible && !_items.Contains(item))
+                {
+                    item.Parent = this;
+                    item.AddReference(this);
+                    _items.Add(item);
+                }
+            }
+            if (selection.Count > 0)
+            {
+                _selection.Clear();
+                _selection.AddRange(selection);
+            }
+
+            QuickSortChildren(sortType);
+
+            IsLayoutLocked = wasLayoutLocked;
+            PerformLayout();
+        }
+
+        /// <summary>Determines whether the specified item is selected.</summary>
+        /// <param name="item">The item.</param>
+        /// <returns>True if the specified item is selected; otherwise, false.</returns>
+        public bool IsSelected(ContentItem item)
+        {
+            return _selection.Contains(item);
+        }
+
+        /// <summary>Clears the selected items collection.</summary>
         public void ClearSelection()
         {
-            if (m_Selection.Count == 0)
-                return;
-
-            m_Selection.Clear();
-            SelectionChanged?.Invoke(Selection);
-        }
-
-        public void Select(IEnumerable<ContentItem> items, bool additive = false)
-        {
-            ArgumentNullException.ThrowIfNull(items);
-            if (!additive)
-                m_Selection.Clear();
-
-            foreach (ContentItem item in items)
+            if (_selection.Count == 0)
             {
-                if (m_Items.Contains(item))
-                    m_Selection.Add(item);
+                return;
             }
 
-            SelectionChanged?.Invoke(Selection);
+            _selection.Clear();
         }
 
+        /// <summary>Selects the specified items.</summary>
+        /// <param name="items">The items.</param>
+        /// <param name="additive">If true, items are added to the current selection; otherwise, the selection is cleared first.</param>
+        public void Select(List<ContentItem> items, bool additive = false)
+        {
+            if (items.Count == 0)
+            {
+                if (!additive)
+                {
+                    ClearSelection();
+                }
+                return;
+            }
+
+            bool wasLayoutLocked = IsLayoutLocked;
+            IsLayoutLocked = true;
+
+            if (additive)
+            {
+                for (int i = 0; i < items.Count; i++)
+                {
+                    if (!_selection.Contains(items[i]))
+                    {
+                        _selection.Add(items[i]);
+                    }
+                }
+            }
+            else
+            {
+                _selection.Clear();
+                _selection.AddRange(items);
+            }
+
+            IsLayoutLocked = wasLayoutLocked;
+            PerformLayout();
+        }
+
+        /// <summary>Selects the specified item.</summary>
+        /// <param name="item">The item.</param>
+        /// <param name="additive">If true, the item is added to the current selection; otherwise, the selection is cleared first.</param>
         public void Select(ContentItem item, bool additive = false)
         {
-            ArgumentNullException.ThrowIfNull(item);
-            Select(new[] { item }, additive);
+            bool wasLayoutLocked = IsLayoutLocked;
+            IsLayoutLocked = true;
+
+            if (additive)
+            {
+                if (!_selection.Contains(item))
+                {
+                    _selection.Add(item);
+                }
+            }
+            else
+            {
+                _selection.Clear();
+                _selection.Add(item);
+            }
+
+            IsLayoutLocked = wasLayoutLocked;
+            PerformLayout();
         }
 
-        public void SelectAll() => Select(m_Items);
+        /// <summary>Selects all the items.</summary>
+        public void SelectAll()
+        {
+            BulkSelectUpdate(true);
+        }
 
-        public void DeselectAll() => ClearSelection();
+        /// <summary>Deselects all the items.</summary>
+        public void DeselectAll()
+        {
+            BulkSelectUpdate(false);
+        }
 
+        /// <summary>Deselects the specified item.</summary>
+        /// <param name="item">The item.</param>
         public void Deselect(ContentItem item)
         {
-            if (m_Selection.Remove(item))
-                SelectionChanged?.Invoke(Selection);
+            SE.Debug.Assert(item == null, "Native assertion condition in ContentView.Deselect.");
+
+            bool wasLayoutLocked = IsLayoutLocked;
+            IsLayoutLocked = true;
+
+            if (_selection.Contains(item))
+            {
+                _selection.Remove(item);
+            }
+
+            IsLayoutLocked = wasLayoutLocked;
+            PerformLayout();
         }
 
-        public void Duplicate() => DuplicateRequested?.Invoke();
-        public void Copy() => CopyRequested?.Invoke();
-        public bool CanPaste => PasteRequested != null;
-        public void Paste() => PasteRequested?.Invoke();
+        /// <summary>Duplicates the selected items.</summary>
+        public void Duplicate()
+        {
+            OnDuplicate?.Invoke(_selection);
+        }
 
+        /// <summary>Copies the selected items to the system clipboard.</summary>
+        public void Copy()
+        {
+            if (_selection.Count == 0)
+            {
+                return;
+            }
+
+            List<string> files = new List<string>();
+            foreach (ContentItem item in _selection)
+            {
+                files.Add(item.Path);
+            }
+            Clipboard.Files = files.ToArray();
+        }
+
+        /// <summary>Returns true if user can paste copied files.</summary>
+        /// <returns>True if files can be pasted.</returns>
+        public bool CanPaste()
+        {
+            string[] files = Clipboard.Files;
+            return files.Length > 0;
+        }
+
+        /// <summary>Pastes copied items from the system clipboard.</summary>
+        public void Paste()
+        {
+            List<string> files = new List<string>(Clipboard.Files);
+            if (files.Count == 0)
+            {
+                return;
+            }
+
+            OnPaste?.Invoke(files);
+        }
+
+        /// <summary>Gives focus and selects the first item in the view.</summary>
         public void SelectFirstItem()
         {
-            if (m_Items.Count != 0)
-                Select(m_Items[0]);
-        }
-
-        public void RefreshThumbnails()
-        {
-            foreach (ContentItem item in m_Items)
+            if (_items.Count > 0)
             {
-                item.RefreshThumbnail();
+                _items[0].Focus();
+                Select(_items[0]);
+            }
+            else
+            {
+                Focus();
             }
         }
 
-        public void OnItemClick(ContentItem item, bool additive = false)
+        /// <summary>Refreshes thumbnails of all items in the view.</summary>
+        public void RefreshThumbnails()
         {
-            Select(item, additive);
+            for (int i = 0; i < _items.Count; i++)
+            {
+                _items[i].RefreshThumbnail();
+            }
         }
 
+        /// <summary>Called when user clicks on an item.</summary>
+        /// <param name="item">The item.</param>
+        public void OnItemClick(ContentItem item)
+        {
+            bool isSelected = _selection.Contains(item);
+
+            if (Root.GetKey(KeyboardKeys.Control))
+            {
+                if (isSelected)
+                {
+                    Deselect(item);
+                }
+                else
+                {
+                    Select(item, true);
+                }
+            }
+            else if (_selection.Count != 0 && Root.GetKey(KeyboardKeys.Shift))
+            {
+                int min = int.MaxValue;
+                int max = int.MinValue;
+                foreach (ContentItem itemTemp in _selection)
+                {
+                    min = Math.Min(min, itemTemp.IndexInParent);
+                    max = Math.Max(max, itemTemp.IndexInParent);
+                }
+
+                min = Math.Max(Math.Min(min, item.IndexInParent), 0);
+                max = Math.Min(Math.Max(max, item.IndexInParent), m_Children.Count - 1);
+                List<ContentItem> selection = new List<ContentItem>(_selection);
+                for (int i = min; i <= max; i++)
+                {
+                    ContentItem child = m_Children[i] as ContentItem;
+                    if (child != null && !selection.Contains(child))
+                    {
+                        selection.Add(child);
+                    }
+                }
+                Select(selection);
+            }
+            else
+            {
+                Select(item);
+            }
+        }
+
+        /// <summary>Called when user wants to open an item.</summary>
+        /// <param name="item">The item.</param>
         public void OnItemDoubleClick(ContentItem item)
         {
-            ItemActivated?.Invoke(item);
+            OnOpen?.Invoke(item);
         }
 
+        /// <inheritdoc />
+        public void OnItemDeleted(ContentItem item)
+        {
+            _selection.Remove(item);
+            _items.Remove(item);
+        }
+
+        /// <inheritdoc />
+        public void OnItemRenamed(ContentItem item)
+        {
+        }
+
+        /// <inheritdoc />
+        public void OnItemReimported(ContentItem item)
+        {
+        }
+
+        /// <inheritdoc />
+        public void OnItemDispose(ContentItem item)
+        {
+            _selection.Remove(item);
+            _items.Remove(item);
+        }
+
+        /// <inheritdoc />
+        public override void Draw()
+        {
+            base.Draw();
+
+            Style style = Style.Current;
+            if (IsDragOver() && _validDragOver)
+            {
+                Rectangle bounds = new Rectangle(Float2.One, Float2.One * 2.0f - Size);
+                Render2D.FillRectangle(bounds, style.Selection);
+                Render2D.DrawRectangle(bounds, style.SelectionBorder, 1.0f);
+            }
+
+            if (_items.Count == 0)
+            {
+                Render2D.RenderText(style.FontSmall, IsSearching ? "No results" : "Empty",
+                    new Rectangle(Float2.Zero, Size), style.ForegroundDisabled,
+                    TextAlignment.Center, TextAlignment.Center);
+            }
+
+            if (_isRubberBandSpanning)
+            {
+                Render2D.FillRectangle(_rubberBandRectangle, style.Selection);
+                Render2D.DrawRectangle(_rubberBandRectangle, style.SelectionBorder, 1.0f);
+            }
+        }
+
+        /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
+            if (base.OnMouseDown(location, button))
+            {
+                return true;
+            }
+
             if (button == MouseButton.Left)
-                ClearSelection();
-            return base.OnMouseDown(location, button);
+            {
+                _mousePressLocation = location;
+                _rubberBandRectangle = new Rectangle(_mousePressLocation.X, _mousePressLocation.Y, 0.0f, 0.0f);
+                _isRubberBandSpanning = true;
+                StartMouseCapture();
+                return true;
+            }
+
+            return AutoFocus && Focus(this);
         }
 
+        /// <inheritdoc />
+        public override void OnMouseMove(Float2 location)
+        {
+            if (_isRubberBandSpanning)
+            {
+                _rubberBandRectangle.Width = location.X - _mousePressLocation.X;
+                _rubberBandRectangle.Height = location.Y - _mousePressLocation.Y;
+            }
+
+            base.OnMouseMove(location);
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseUp(Float2 location, MouseButton button)
+        {
+            if (_isRubberBandSpanning)
+            {
+                _isRubberBandSpanning = false;
+                EndMouseCapture();
+                if (_rubberBandRectangle.Width < 0 || _rubberBandRectangle.Height < 0)
+                {
+                    Float2 size = _rubberBandRectangle.Size;
+                    _rubberBandRectangle.X = Math.Min(_rubberBandRectangle.X,
+                        _rubberBandRectangle.X + _rubberBandRectangle.Width);
+                    _rubberBandRectangle.Y = Math.Min(_rubberBandRectangle.Y,
+                        _rubberBandRectangle.Y + _rubberBandRectangle.Height);
+                    size.X = Math.Abs(size.X);
+                    size.Y = Math.Abs(size.Y);
+                    _rubberBandRectangle.Size = size;
+                }
+
+                List<ContentItem> itemsInRectangle = new List<ContentItem>();
+                for (int i = 0; i < _items.Count; i++)
+                {
+                    ContentItem item = _items[i];
+                    if (_rubberBandRectangle.Intersects(item.Bounds))
+                    {
+                        itemsInRectangle.Add(item);
+                    }
+                }
+
+                Select(itemsInRectangle, Input.GetKey(KeyboardKeys.Shift) || Input.GetKey(KeyboardKeys.Control));
+                return true;
+            }
+
+            return base.OnMouseUp(location, button);
+        }
+
+        /// <inheritdoc />
         public override bool OnMouseWheel(Float2 location, float delta)
         {
-            if (delta == 0)
-                return false;
-            ViewScale += delta > 0 ? 0.1f : -0.1f;
-            return true;
+            if (Root.GetKey(KeyboardKeys.Control))
+            {
+                ViewScale = ViewScale + delta * 0.05f;
+                return true;
+            }
+
+            return base.OnMouseWheel(location, delta);
         }
 
+        /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)
         {
-            // The root input bridge normalizes keys to virtual-key values.
-            if (key == KeyboardKeys.A)
+            if (key == KeyboardKeys.Backspace)
             {
-                SelectAll();
+                OnNavigateBack?.Invoke();
                 return true;
+            }
+
+            // Native InputActions.Process branch is commented out.
+
+            if (HasSelection)
+            {
+                if (key == KeyboardKeys.Return && _selection.Count != 0)
+                {
+                    foreach (ContentItem selectedItem in _selection)
+                    {
+                        OnOpen?.Invoke(selectedItem);
+                    }
+                    return true;
+                }
+
+                ContentItem root = _selection[0];
+                Float2 size = root.Size;
+                Float2 offset = Float2.Minimum;
+                ContentItem item = null;
+                if (key == KeyboardKeys.ArrowUp)
+                {
+                    offset = new Float2(0, -size.Y);
+                }
+                else if (key == KeyboardKeys.ArrowDown)
+                {
+                    offset = new Float2(0, size.Y);
+                }
+                else if (key == KeyboardKeys.ArrowRight)
+                {
+                    offset = new Float2(size.X, 0);
+                }
+                else if (key == KeyboardKeys.ArrowLeft)
+                {
+                    offset = new Float2(-size.X, 0);
+                }
+                if (offset != Float2.Minimum)
+                {
+                    item = GetChildAt(size / 2.0f + offset + root.Location) as ContentItem;
+                }
+                if (item != null)
+                {
+                    OnItemClick(item);
+                    return true;
+                }
             }
 
             return base.OnKeyDown(key);
         }
 
-        public void OnItemDeleted(ContentItem item)
+        /// <inheritdoc />
+        public override bool OnCharInput(char c)
         {
-            RemoveItem(item);
-        }
-
-        public void OnItemRenamed(ContentItem item)
-        {
-            if (m_Items.Contains(item))
+            if (base.OnCharInput(c))
             {
-                SortItems();
-                PerformLayout();
+                return true;
             }
-        }
 
-        public void OnItemReimported(ContentItem item)
-        {
-            if (m_Items.Contains(item))
-                item.RefreshThumbnail();
-        }
-
-        public void OnItemDispose(ContentItem item)
-        {
-            RemoveItem(item);
-        }
-
-        protected override void OnLayoutChildren()
-        {
-            if (m_ViewType == ContentViewType.List)
+            if (char.IsLetterOrDigit(c) && _items.Count != 0)
             {
-                float y = 0;
-                foreach (ContentItem item in m_Items)
+                c = char.ToLowerInvariant(c);
+                for (int i = 0; i < _items.Count; i++)
                 {
-                    item.SetBounds(0, y, Width, 26.0f);
-                    y += item.Height;
+                    ContentItem item = _items[i];
+                    string name = item.ShortName;
+                    if (name.Length > 0 && char.ToLowerInvariant(name[0]) == c)
+                    {
+                        Select(item);
+                        Panel panel = Parent as Panel;
+                        if (panel != null)
+                        {
+                            panel.ScrollViewTo(item, true);
+                        }
+                        break;
+                    }
                 }
-                return;
             }
 
-            float itemWidth = ContentItem.DefaultWidth * m_ViewScale;
-            float itemHeight = ContentItem.DefaultHeight * m_ViewScale;
-            int columns = Math.Max(1, (int)MathF.Floor(Math.Max(Width, itemWidth) / itemWidth));
-            for (int index = 0; index < m_Items.Count; index++)
+            return false;
+        }
+
+        /// <inheritdoc />
+        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
+        {
+            DragDropEffect result = base.OnDragEnter(ref location, data);
+            if (result != DragDropEffect.None)
             {
-                int column = index % columns;
-                int row = index / columns;
-                m_Items[index].SetBounds(column * itemWidth, row * itemHeight, itemWidth, itemHeight);
+                return result;
             }
+
+            if (data is DragDataFiles)
+            {
+                _validDragOver = true;
+                return DragDropEffect.Copy;
+            }
+
+            // Native actor drag branch is commented out.
+            return DragDropEffect.None;
         }
 
-        protected override void OnDispose()
+        /// <inheritdoc />
+        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
-            ClearItems();
-            base.OnDispose();
+            _validDragOver = false;
+            DragDropEffect result = base.OnDragMove(ref location, data);
+            if (result != DragDropEffect.None)
+            {
+                return result;
+            }
+
+            if (data is DragDataFiles)
+            {
+                _validDragOver = true;
+                result = DragDropEffect.Copy;
+            }
+            // Native actor drag branch is commented out.
+
+            return result;
         }
 
-        private void RemoveItem(ContentItem item)
+        /// <inheritdoc />
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
-            if (!m_Items.Remove(item))
+            DragDropEffect result = base.OnDragDrop(ref location, data);
+            if (result != DragDropEffect.None)
+            {
+                return result;
+            }
+
+            if (data is DragDataFiles)
+            {
+                // Native import call is retained as a comment until AssetImportingModule is exposed:
+                // ContentFolder currentFolder = EditorApp::Ins().windowsModule->ContentWin->CurrentViewFolder;
+                // if (currentFolder != nullptr)
+                // {
+                //     EditorApp::Ins().importingModule->Import(files->Files.Get(), files->Files.Count(), currentFolder);
+                // }
+                result = DragDropEffect.Copy;
+            }
+            // Native actor drop branch is commented out.
+
+            _validDragOver = false;
+            return result;
+        }
+
+        /// <inheritdoc />
+        public override void OnDragLeave()
+        {
+            _validDragOver = false;
+            // Native actor drag leave branch is commented out.
+            base.OnDragLeave();
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            if (IsDisposing)
+            {
                 return;
+            }
 
-            item.RemoveReference(this);
-            RemoveChild(item);
-            m_Selection.Remove(item);
-            SelectionChanged?.Invoke(Selection);
+            ClearItems();
+            base.OnDestroy();
+        }
+
+        /// <inheritdoc />
+        protected override void PerformLayoutBeforeChildren()
+        {
+            float width = GetClientArea().Width;
+            float x = 0.0f;
+            float y = 1.0f;
+            float viewScale = _viewScale * 0.97f;
+
+            switch (ViewType)
+            {
+                case ContentViewType.Tiles:
+                {
+                    float defaultItemsWidth = ContentItem.DefaultWidth * viewScale;
+                    int itemsToFit = (int)MathF.Floor(width / defaultItemsWidth) - 1;
+                    if (itemsToFit < 1)
+                    {
+                        itemsToFit = 1;
+                    }
+                    int xSpace = 4;
+                    float itemsWidth = width / Math.Max(itemsToFit, 1) - xSpace;
+                    float itemsHeight = itemsWidth / defaultItemsWidth * (ContentItem.DefaultHeight * viewScale);
+                    float flooredItemsWidth = MathF.Floor(itemsWidth);
+                    float flooredItemsHeight = MathF.Floor(itemsHeight);
+                    x = itemsToFit == 1 ? 1.0f : itemsWidth / itemsToFit + xSpace;
+                    for (int i = 0; i < m_Children.Count; i++)
+                    {
+                        Control child = m_Children[i];
+                        child.Bounds = new Rectangle(MathF.Floor(x), MathF.Floor(y),
+                            flooredItemsWidth, flooredItemsHeight);
+
+                        x += (itemsWidth + xSpace) + (itemsWidth + xSpace) / itemsToFit;
+                        if (x + itemsWidth > width)
+                        {
+                            x = itemsToFit == 1 ? 1.0f : itemsWidth / itemsToFit + xSpace;
+                            y += itemsHeight + 7.0f;
+                        }
+                    }
+                    if (x > 0.0f)
+                    {
+                        y += itemsHeight;
+                    }
+                    break;
+                }
+                case ContentViewType.List:
+                {
+                    float itemsHeight = 50.0f * viewScale;
+                    for (int i = 0; i < m_Children.Count; i++)
+                    {
+                        Control child = m_Children[i];
+                        child.Bounds = new Rectangle(x, y, width, itemsHeight);
+                        y += itemsHeight + 1.0f;
+                    }
+                    y += 40.0f;
+                    break;
+                }
+            }
+
+            if (HasParent)
+            {
+                y = Math.Max(y, Parent.Height);
+            }
+            Height = y;
+
+            base.PerformLayoutBeforeChildren();
+        }
+
+        private void BulkSelectUpdate(bool select = true)
+        {
+            bool wasLayoutLocked = IsLayoutLocked;
+            IsLayoutLocked = true;
+
+            _selection.Clear();
+            if (select)
+            {
+                _selection.AddRange(_items);
+            }
+
+            IsLayoutLocked = wasLayoutLocked;
             PerformLayout();
         }
 
-        private void SortItems()
+        private void QuickSortChildren(SortType sortType)
         {
-            m_Items.Sort(SortType switch
+            if (m_Children.Count < 2)
             {
-                ContentSortType.Type => static (left, right) => left.ItemType.CompareTo(right.ItemType),
-                ContentSortType.Path => static (left, right) => string.Compare(left.Path, right.Path, StringComparison.OrdinalIgnoreCase),
-                _ => static (left, right) => string.Compare(left.DisplayName, right.DisplayName, StringComparison.OrdinalIgnoreCase),
-            });
+                return;
+            }
 
-            for (int index = 0; index < m_Items.Count; index++)
-                m_Items[index].IndexInParent = index;
+            Stack<int> stack = new Stack<int>();
+            stack.Push(0);
+            stack.Push(m_Children.Count - 1);
+
+            while (stack.Count > 0)
+            {
+                int right = stack.Pop();
+                int left = stack.Pop();
+                Control pivotControl = m_Children[right];
+                int i = left - 1;
+                for (int j = left; j <= right - 1; j++)
+                {
+                    if (CompareForSort(m_Children[j], pivotControl, sortType))
+                    {
+                        i++;
+                        (m_Children[i], m_Children[j]) = (m_Children[j], m_Children[i]);
+                    }
+                }
+
+                (m_Children[i + 1], m_Children[right]) = (m_Children[right], m_Children[i + 1]);
+                int pivot = i + 1;
+                if (pivot - 1 > left)
+                {
+                    stack.Push(left);
+                    stack.Push(pivot - 1);
+                }
+                if (pivot + 1 < right)
+                {
+                    stack.Push(pivot + 1);
+                    stack.Push(right);
+                }
+            }
+        }
+
+        private static bool CompareForSort(Control control, Control other, SortType sortType)
+        {
+            if (control == null || other == null)
+            {
+                return false;
+            }
+            if (sortType == SortType.AlphabeticReverse)
+            {
+                if (control.CompareTo(other) > 0)
+                {
+                    return false;
+                }
+                if (control.CompareTo(other) == 0)
+                {
+                    return false;
+                }
+                return true;
+            }
+            return control.CompareTo(other) > 0;
         }
     }
 }

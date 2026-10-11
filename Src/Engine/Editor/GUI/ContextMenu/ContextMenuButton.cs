@@ -1,0 +1,272 @@
+#nullable disable annotations
+
+using System;
+using System.Collections.Generic;
+using SE.GUI;
+
+namespace SE.Editor.GUI
+{
+    public class ContextMenuButton : ContextMenuItem
+    {
+        private bool _isMouseDown = false;
+
+        /// <summary>
+        /// The amount to adjust the short keys and arrow image by in x coordinates.
+        /// </summary>
+        public float ExtraAdjustmentAmount = 0;
+
+        /// <summary>
+        /// Event fired when user clicks on the button.
+        /// </summary>
+        public Action Clicked;
+
+        /// <summary>
+        /// Event fired when user clicks on the button.
+        /// </summary>
+        public Action<ContextMenuButton> ButtonClicked;
+
+        /// <summary>
+        /// The button text.
+        /// </summary>
+        public string Text;
+
+        /// <summary>
+        /// The button short keys information (eg. 'Ctrl+C').
+        /// </summary>
+        public string ShortKeys;
+
+        /// <summary>
+        /// Item icon (best is 16x16).
+        /// </summary>
+        public SpriteHandle Icon;
+
+        /// <summary>
+        /// The checked state.
+        /// </summary>
+        public bool Checked = false;
+
+        /// <summary>
+        /// The automatic check mode.
+        /// </summary>
+        public bool AutoCheck = false;
+
+        /// <summary>
+        /// Closes the context menu after clicking the button, otherwise menu will stay open.
+        /// </summary>
+        public bool CloseMenuOnClick = true;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ContextMenuButton"/> class.
+        /// </summary>
+        /// <param name="parent">The parent context menu.</param>
+        /// <param name="text">The text.</param>
+        /// <param name="shortKeys">The short keys tip.</param>
+        public ContextMenuButton(ContextMenu parent, string text, string shortKeys = "")
+            : base(parent, 8, 22)
+        {
+            Text = text;
+            ShortKeys = shortKeys;
+        }
+
+        /// <summary>
+        /// Sets the automatic check mode. In auto check mode the button sets the check sprite as an icon when user clicks it.
+        /// </summary>
+        /// <param name="value">True if use auto check, otherwise false.</param>
+        /// <returns>This button.</returns>
+        public ContextMenuButton SetAutoCheck(bool value)
+        {
+            AutoCheck = value;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the checked state.
+        /// </summary>
+        /// <param name="value">True if check it, otherwise false.</param>
+        /// <returns>This button.</returns>
+        public ContextMenuButton SetChecked(bool value)
+        {
+            Checked = value;
+            return this;
+        }
+
+        /// <summary>
+        /// Clicks this button.
+        /// </summary>
+        public void Click()
+        {
+            if (CloseMenuOnClick && ParentContextMenu != null)
+            {
+                // Close topmost context menu
+                ParentContextMenu.TopmostCM.Hide();
+            }
+
+            // Auto check logic
+            if (AutoCheck)
+            {
+                Checked = !Checked;
+            }
+
+            // Fire event
+            Clicked?.Invoke();
+            ButtonClicked?.Invoke(this);
+            if (ParentContextMenu != null)
+            {
+                ParentContextMenu.OnButtonClicked(this);
+            }
+        }
+
+        /// <inheritdoc />
+        public override void Draw()
+        {
+            Style style = Style.Current;
+            Rectangle backgroundRect = new Rectangle(-X + 3, 0, Parent.Width - 6, Height);
+            Rectangle textRect = new Rectangle(0, 0, Width - 8, Height);
+            Color textColor = Enabled ? style.TextColor : style.TextColor;
+
+            // Draw background
+            if (IsMouseOver && Enabled)
+            {
+                Render2D.FillRectangle(backgroundRect, style.LightBackground);
+            }
+            else if (IsFocused)
+            {
+                Render2D.FillRectangle(backgroundRect, style.LightBackground);
+            }
+
+            base.Draw();
+
+            // Draw text
+            Render2D.RenderText(style.FontMedium, Text, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
+
+            if (ShortKeys.Length > 0)
+            {
+                // Draw short keys
+                Render2D.RenderText(style.FontMedium, ShortKeys,
+                    new Rectangle(textRect.X + ExtraAdjustmentAmount, textRect.Y, textRect.Width, textRect.Height),
+                    textColor, TextAlignment.Far, TextAlignment.Center);
+            }
+
+            // Draw icon
+            const float iconSize = 14;
+            SpriteHandle icon = Checked ? style.CheckBoxTick : Icon;
+            if (icon.IsValid)
+            {
+                Render2D.DrawSprite(icon,
+                    new Rectangle(-iconSize - 1, (Height - iconSize) / 2, iconSize, iconSize), textColor);
+            }
+        }
+
+        /// <inheritdoc />
+        public override void OnMouseLeave()
+        {
+            _isMouseDown = false;
+
+            base.OnMouseLeave();
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseDown(Float2 location, MouseButton button)
+        {
+            if (base.OnMouseDown(location, button))
+            {
+                return true;
+            }
+
+            _isMouseDown = true;
+            return true;
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseUp(Float2 location, MouseButton button)
+        {
+            if (base.OnMouseUp(location, button))
+            {
+                return true;
+            }
+
+            if (_isMouseDown)
+            {
+                _isMouseDown = false;
+                Click();
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            if (base.OnKeyDown(key))
+            {
+                return true;
+            }
+
+            if (key == KeyboardKeys.ArrowUp)
+            {
+                for (int i = IndexInParent - 1; i >= 0; i--)
+                {
+                    Control control = ParentContextMenu.ItemsContainer.Children[i];
+                    ContextMenuButton item = control as ContextMenuButton;
+                    if (item != null && item.Visible && item.Enabled)
+                    {
+                        item.Focus();
+                        ParentContextMenu.ItemsContainer.ScrollViewTo(item);
+                        return true;
+                    }
+                }
+            }
+            else if (key == KeyboardKeys.ArrowDown)
+            {
+                List<Control> children = ParentContextMenu.ItemsContainer.Children;
+
+                for (int i = IndexInParent + 1; i < children.Count; i++)
+                {
+                    Control control = children[i];
+                    ContextMenuButton item = control as ContextMenuButton;
+                    if (item != null && item.Visible && item.Enabled)
+                    {
+                        item.Focus();
+                        ParentContextMenu.ItemsContainer.ScrollViewTo(item);
+                        return true;
+                    }
+                }
+            }
+            else if (key == KeyboardKeys.Return)
+            {
+                Click();
+            }
+            else if (key == KeyboardKeys.Escape)
+            {
+                ParentContextMenu.Hide();
+            }
+
+            return false;
+        }
+
+        /// <inheritdoc />
+        public override void OnLostFocus()
+        {
+            _isMouseDown = false;
+
+            base.OnLostFocus();
+        }
+
+        protected override float GetMinimumWidth()
+        {
+            Style style = Style.Current;
+            float width = 20;
+            if (style.FontMedium != null)
+            {
+                width += style.FontMedium.MeasureText(Text, TextLayoutOptions.Default).X;
+                if (ShortKeys.Length > 0)
+                {
+                    width += 40 + style.FontMedium.MeasureText(ShortKeys, TextLayoutOptions.Default).X;
+                }
+            }
+
+            return MathF.Max(width, base.GetMinimumWidth());
+        }
+    }
+}

@@ -76,7 +76,7 @@ namespace SE::BuildTool
 
         CSharpTypeConversion ResolveConversion(const TypeInfo& cppType, std::string_view marshalAs = {},
                                                BindingUseSite useSite = BindingUseSite::Parameter,
-                                               BindingDirection direction = BindingDirection::In) const;
+                                               ApiParameterDirection direction = ApiParameterDirection::In) const;
         std::string GetCSharpPublicType(const TypeInfo& cppType, std::string_view marshalAs = {}) const;
         std::string GetCSharpFullTypeName(const TypeID& typeID) const;
         std::string GetCSharpFromInterop(const TypeInfo& cppType, const std::string& expression, std::string_view marshalAs = {}) const;
@@ -85,7 +85,7 @@ namespace SE::BuildTool
         bool UsePassByReference(const TypeInfo& cppType, std::string_view marshalAs = {}) const;
         std::string GetCSharpParamMarshalAttribute(const TypeInfo& cppType, const std::string& paramName,
                                                    std::string_view marshalAs = {},
-                                                   BindingDirection direction = BindingDirection::In) const;
+                                                   ApiParameterDirection direction = ApiParameterDirection::In) const;
         std::string GetCSharpReturnMarshalAttribute(const TypeInfo& cppType, std::string_view marshalAs = {}) const;
 
         TypeDatabase const& m_Database;

@@ -1,143 +1,97 @@
-using System;
-
 namespace SE.GUI
 {
-    /// <summary>
-    /// A clipped container whose children can be scrolled in logical coordinates.
-    /// </summary>
     public class ScrollableControl : ContainerControl
     {
-        private Float2 m_ScrollOffset;
-        private Float2 m_MaximumScrollOffset;
+        /// <summary>
+        /// The view offset. Useful to offset contents of the container (used by the scrollbars and drop panels).
+        /// </summary>
+        protected Float2 m_ViewOffset;
+
+        /// <summary>
+        /// Called when view offset gets changed.
+        /// </summary>
+        protected virtual void OnViewOffsetChanged()
+        {
+        }
+
+        /// <inheritdoc />
+        protected override void DrawChildren()
+        {
+            // Draw all visible child controls
+            bool hasViewOffset = !m_ViewOffset.IsZero;
+            for (int i = 0; i < m_Children.Count; i++)
+            {
+                Control child = m_Children[i];
+
+                if (child.Visible)
+                {
+                    Matrix3x3 transform = child.CachedTransform;
+                    if (hasViewOffset && child.IsScrollable)
+                    {
+                        transform.M31 += m_ViewOffset.X;
+                        transform.M32 += m_ViewOffset.Y;
+                    }
+
+                    Render2D.PushTransform(transform);
+                    child.Draw();
+                    Render2D.PopTransform();
+                }
+            }
+        }
 
         public ScrollableControl()
         {
         }
 
-        public ScrollableControl(Rectangle bounds)
-            : base(bounds)
-        {
-        }
-
-        private ScrollBars m_ScrollBars = ScrollBars.Both;
-
-        public virtual ScrollBars ScrollBars
-        {
-            get => m_ScrollBars;
-            set
-            {
-                if (m_ScrollBars == value)
-                    return;
-                m_ScrollBars = value;
-                PerformLayout();
-            }
-        }
-        public float ScrollSpeed { get; set; } = 40.0f;
-        public Float2 ScrollOffset
-        {
-            get => m_ScrollOffset;
-            set
-            {
-                Float2 clamped = new Float2(
-                    Math.Clamp(value.X, 0.0f, m_MaximumScrollOffset.X),
-                    Math.Clamp(value.Y, 0.0f, m_MaximumScrollOffset.Y));
-                if (m_ScrollOffset == clamped)
-                    return;
-                m_ScrollOffset = clamped;
-                OnScrollOffsetChanged();
-            }
-        }
-
-        public Float2 MaximumScrollOffset => m_MaximumScrollOffset;
-        internal override Float2 ChildOffset => new Float2(-m_ScrollOffset.X, -m_ScrollOffset.Y);
-
         /// <summary>
-        /// Gets the drawable area reserved for child content. Panels override this when scrollbar overlays are visible.
+        /// Gets current view offset for all the controls (used by the scroll bars).
         /// </summary>
-        protected virtual Float2 ScrollViewportSize => Size;
-
-        public override void PerformLayout(bool force = false)
+        public Float2 GetViewOffset()
         {
-            base.PerformLayout(force);
-            UpdateScrollRange();
-        }
-
-        public override bool OnMouseWheel(Float2 location, float delta)
-        {
-            _ = location;
-            if (MathF.Abs(delta) <= float.Epsilon)
-                return false;
-
-            Float2 offset = m_ScrollOffset;
-            if ((ScrollBars & ScrollBars.Vertical) != 0 && m_MaximumScrollOffset.Y > 0.0f)
-                offset.Y = Math.Clamp(offset.Y - delta * ScrollSpeed, 0.0f, m_MaximumScrollOffset.Y);
-            else if ((ScrollBars & ScrollBars.Horizontal) != 0 && m_MaximumScrollOffset.X > 0.0f)
-                offset.X = Math.Clamp(offset.X - delta * ScrollSpeed, 0.0f, m_MaximumScrollOffset.X);
-            else
-                return false;
-
-            ScrollOffset = offset;
-            return true;
-        }
-
-        public override void Draw()
-        {
-            DrawSelf();
-            if (!VisibleInHierarchy || IsDisposed)
-                return;
-
-            Float2 viewport = ScrollViewportSize;
-            Rectangle clip = new Rectangle(ScreenPos, viewport);
-            Render2D.PushClip(clip);
-            DrawChildren();
-            Render2D.PopClip();
-        }
-
-        protected override void OnBoundsChanged(bool locationChanged, bool sizeChanged)
-        {
-            base.OnBoundsChanged(locationChanged, sizeChanged);
-            if (sizeChanged)
-                UpdateScrollRange();
+            return m_ViewOffset;
         }
 
         /// <summary>
-        /// Called after changing the current view offset.
+        /// Sets the view offset.
         /// </summary>
-        protected virtual void OnScrollOffsetChanged()
+        /// <param name="value">The value.</param>
+        public virtual void SetViewOffset(Float2 value)
         {
+            m_ViewOffset = value;
+            OnViewOffsetChanged();
         }
 
-        /// <summary>
-        /// Calculates the unscrolled extent of the child content.
-        /// </summary>
-        protected Float2 GetScrollableContentSize()
+        /// <inheritdoc />
+        public override bool IntersectsChildContent(Control child, Float2 location, out Float2 childSpaceLocation)
         {
-            float right = 0.0f;
-            float bottom = 0.0f;
-            for (int index = 0; index < Children.Count; index++)
+            // Apply offset on scrollable controls
+            if (child.IsScrollable)
             {
-                Control child = Children[index];
-                if (!child.Visible || !child.IsScrollable)
-                    continue;
-                right = MathF.Max(right, child.X + child.Width);
-                bottom = MathF.Max(bottom, child.Y + child.Height);
+                location -= m_ViewOffset;
             }
 
-            return new Float2(right, bottom);
+            return child.IntersectsContent(location, out childSpaceLocation);
         }
 
-        /// <summary>
-        /// Updates the scrollable extent and clamps the current view offset.
-        /// </summary>
-        protected void UpdateScrollRange()
+        /// <inheritdoc />
+        public override bool IntersectsContent(Float2 locationParent, out Float2 location)
         {
-            Float2 content = GetScrollableContentSize();
-            Float2 viewport = ScrollViewportSize;
+            // Little workaround to prevent applying offset when performing intersection test with this scrollable control.
+            // Note that overriden PointFromParent applies view offset.
+            location = base.PointFromParent(locationParent);
+            return ContainsPoint(location);
+        }
 
-            m_MaximumScrollOffset = new Float2(
-                (ScrollBars & ScrollBars.Horizontal) != 0 ? MathF.Max(0.0f, content.X - viewport.X) : 0.0f,
-                (ScrollBars & ScrollBars.Vertical) != 0 ? MathF.Max(0.0f, content.Y - viewport.Y) : 0.0f);
-            ScrollOffset = m_ScrollOffset;
+        /// <inheritdoc />
+        public override Float2 PointToParent(Float2 location)
+        {
+            return base.PointToParent(location) + m_ViewOffset;
+        }
+
+        /// <inheritdoc />
+        public override Float2 PointFromParent(Float2 location)
+        {
+            return base.PointFromParent(location) - m_ViewOffset;
         }
     }
 }

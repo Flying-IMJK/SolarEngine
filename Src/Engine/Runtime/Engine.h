@@ -46,6 +46,7 @@ namespace SE
 		/// <summary>
 		/// Event called on engine update.
 		/// </summary>
+		SE_EVENT(API())
 		static Action UpdateCall;
 
 		/// <summary>

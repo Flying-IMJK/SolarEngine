@@ -287,6 +287,41 @@ namespace SE::BuildTool
         return nullptr;
     }
 
+    TypeInfoBase const* TypeDatabase::FindApiTypeByName(TypeID declaredTypeID, bool& ambiguous) const
+    {
+        // Match the complete C++ scope, not just a short class name. Refuse
+        // collisions so binding generation never depends on traversal order.
+        ambiguous = false;
+        if (declaredTypeID == TypeID::Invalid)
+            return nullptr;
+
+        TypeInfoBase const* match = nullptr;
+        const std::string name = declaredTypeID.ToString();
+        for (TypeInfoBase const* declaration : GetAllTypes())
+        {
+            if (!declaration->isAPI || !declaration->IsFlag(TypeInfoBase::Flag::IsClassStruct))
+                continue;
+
+            auto const* structType = static_cast<TypeInfoStruct const*>(declaration);
+            std::string apiName;
+            for (const std::string& scope : declaration->namespaceScopeList)
+                apiName += scope + "::";
+            for (const std::string& scope : declaration->structScopeList)
+                apiName += scope + "::";
+            apiName += structType->APIName.empty() ? declaration->name : structType->APIName;
+            if (apiName != name)
+                continue;
+
+            if (match)
+            {
+                ambiguous = true;
+                return nullptr;
+            }
+            match = declaration;
+        }
+        return match;
+    }
+
     bool TypeDatabase::IsTypeRegistered(StringID typeID) const
     {
         if (m_reflectedTypeBase->typeID == typeID)

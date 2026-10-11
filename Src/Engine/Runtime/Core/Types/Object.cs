@@ -210,6 +210,24 @@ namespace SE
             }
         }
 
+        public static Type GetTypeFromTypeID(uint typeId)
+        {
+            string typeName = Internal_TypeIDToTypeName(typeId);
+            if (string.IsNullOrEmpty(typeName))
+            {
+                return null;
+            }
+
+            // Convert C++ namespace to C# namespace
+            typeName = typeName.Replace("::", ".");
+            if (string.IsNullOrEmpty(typeName))
+            {
+                return null;
+            }
+
+            return Type.GetType(typeName);
+        }
+
         /// <summary>
         /// Checks if the object exists (reference is not null and the unmanaged object pointer is valid).
         /// </summary>
@@ -253,7 +271,10 @@ namespace SE
         public override bool Equals(object obj)
         {
             if (obj is SE.Object o)
+            {
                 return o.__unmanagedPtr == __unmanagedPtr;
+            }
+
             return false;
         }
 
@@ -346,6 +367,10 @@ namespace SE
 
         [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_GetUnmanagedInterface", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         internal static partial IntPtr Internal_GetUnmanagedInterface(IntPtr obj, [MarshalUsing(typeof(Interop.SystemTypeMarshaller))] Type type);
+
+
+        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_TypeIDToTypeName", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        internal static partial string Internal_TypeIDToTypeName(uint id);
 
         #endregion
     }

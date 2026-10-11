@@ -99,6 +99,9 @@ namespace SE::BuildTool
             qualifiedName = ClangUtils::GetTypeSpellingAnsi(workingType);
         }
         result.fullName = StripCppKeywordPrefixes(qualifiedName);
+        // Template instantiation must retain the source alias as well as the
+        // native type so binding lookup can still use the exported API name.
+        result.declaredTypeName = ClangUtils::GetDeclaredTypeAliasName(workingType);
 
         int const numTemplateArguments = clang_Type_getNumTemplateArguments(workingType);
         if (numTemplateArguments > 0)
@@ -109,6 +112,13 @@ namespace SE::BuildTool
                 CXType argType = clang_Type_getTemplateArgumentAsType(workingType, i);
                 if (argType.kind == CXType_Invalid)
                 {
+                    const std::string argumentName = ClangUtils::GetTemplateNonTypeArgumentName(workingType, i);
+                    if (!argumentName.empty())
+                    {
+                        TypeInfoTemplate nonTypeArgument;
+                        nonTypeArgument.fullName = argumentName;
+                        result.genericArgs.emplace_back(std::move(nonTypeArgument));
+                    }
                     continue;
                 }
                 result.genericArgs.emplace_back(ParseTemplateType(pContext, argType, templateParam));
@@ -160,6 +170,8 @@ namespace SE::BuildTool
         TypeInfoParam param;
         TypeInfoTemplate type = SubstituteTemplateType(paramTemplate.type, parameters, arguments);
         param.type.typeID = TypeID(type.fullName);
+        if (!type.declaredTypeName.empty())
+            param.type.declaredTypeID = TypeID(type.declaredTypeName);
         param.type.arraySize = type.isArray ? type.arraySize : 0;
         param.type.isPointer = type.isPointer;
         param.type.pointerDepth = type.pointerDepth > 0 ? type.pointerDepth : (type.isPointer ? 1 : 0);
@@ -186,6 +198,8 @@ namespace SE::BuildTool
         field.isStatic = fieldTemplate.isStatic;
 
         field.type.typeID = TypeID(type.fullName);
+        if (!type.declaredTypeName.empty())
+            field.type.declaredTypeID = TypeID(type.declaredTypeName);
         field.type.arraySize = type.arraySize;
         field.type.isPointer = type.isPointer;
         field.type.pointerDepth = type.pointerDepth > 0 ? type.pointerDepth : (type.isPointer ? 1 : 0);
@@ -212,6 +226,8 @@ namespace SE::BuildTool
         TypeInfoTemplate returnType = SubstituteTemplateType(functionTemplate.returnType, parameters, arguments);
         fn.name = functionTemplate.name;
         fn.returnType.typeID = TypeID(returnType.fullName);
+        if (!returnType.declaredTypeName.empty())
+            fn.returnType.declaredTypeID = TypeID(returnType.declaredTypeName);
         fn.returnType.arraySize = returnType.isArray ? returnType.arraySize : 0;
         fn.returnType.isPointer = returnType.isPointer;
         fn.returnType.pointerDepth = returnType.pointerDepth > 0 ? returnType.pointerDepth : (returnType.isPointer ? 1 : 0);
@@ -253,6 +269,8 @@ namespace SE::BuildTool
         evt.name = eventTemplate.name;
 
         evt.cppType.typeID = TypeID(cppType.fullName);
+        if (!cppType.declaredTypeName.empty())
+            evt.cppType.declaredTypeID = TypeID(cppType.declaredTypeName);
         evt.cppType.arraySize = cppType.arraySize;
         evt.cppType.isPointer = cppType.isPointer;
         evt.cppType.pointerDepth = cppType.pointerDepth > 0 ? cppType.pointerDepth : (cppType.isPointer ? 1 : 0);

@@ -124,6 +124,10 @@ namespace SE::BuildTool
         {
             pContext->AddMarkMacro(MarkMacro(pHeaderInfo, cr, range, MacroTypeEnum::SEFunction));
         }
+        else if (cursorName == MarkMacro::GetMarkMacroText(MacroTypeEnum::SEParam))
+        {
+            pContext->AddMarkMacro(MarkMacro(pHeaderInfo, cr, range, MacroTypeEnum::SEParam));
+        }
         else if (cursorName == MarkMacro::GetMarkMacroText(MacroTypeEnum::SEField))
         {
             pContext->AddMarkMacro(MarkMacro(pHeaderInfo, cr, range, MacroTypeEnum::SEField));

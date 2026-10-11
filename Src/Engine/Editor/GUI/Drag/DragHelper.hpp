@@ -44,7 +44,7 @@ namespace SE::Editor
         /// Called when drag drops.
         /// </summary>
         /// <param name="dragEventArgs">The <see cref="DragEventArgs"/> instance containing the event data.</param>
-        virtual void OnDragDrop(Ref<DragEventArgs> dragEventArgs) = 0;
+        virtual void OnDragDrop(SharedPtr<DragEventArgs> dragEventArgs) = 0;
     };
 
     /// <summary>
@@ -153,7 +153,7 @@ namespace SE::Editor
         /// Called when drag drops.
         /// </summary>
         /// <param name="dragEventArgs">Arguments</param>
-        void OnDragDrop(Ref<DragEventArgs> dragEventArgs) override
+        void OnDragDrop(SharedPtr<DragEventArgs> dragEventArgs) override
         {
             if (GetHasValidDrag())
             {

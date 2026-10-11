@@ -471,3 +471,23 @@ namespace SE
         return String::Format(SE_TEXT("Font {0} {1}"), m_Asset ? m_Asset->GetFamilyName() : String::Empty, m_Size);
     }
 } // SE
+
+extern "C" SE_API_RUNTIME int32 Font_ProcessTextLines(
+    SE::Font* font,
+    const SE::Char* text,
+    int32 textLength,
+    SE::TextLayoutOptions layout,
+    SE::FontLineCache* outputLines,
+    int32 outputCapacity)
+{
+    SE::List<SE::FontLineCache> lines;
+    font->ProcessText(SE::StringView(text, textLength), lines, layout);
+    const int32 count = lines.Count();
+    if (outputLines != nullptr)
+    {
+        const int32 copyCount = SE::Math::Min(count, outputCapacity);
+        for (int32 i = 0; i < copyCount; i++)
+            outputLines[i] = lines[i];
+    }
+    return count;
+}

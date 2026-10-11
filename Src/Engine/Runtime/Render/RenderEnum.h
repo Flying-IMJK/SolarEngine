@@ -211,6 +211,7 @@ namespace SE
     /// <summary>
     /// Rendering quality levels.
     /// </summary>
+    SE_ENUM(API())
     enum class Quality : byte
     {
         /// <summary>

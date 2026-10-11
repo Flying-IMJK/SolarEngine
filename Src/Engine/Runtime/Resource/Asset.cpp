@@ -276,14 +276,11 @@ namespace SE
 		AssetContent::OnAssetChangeId(this, oldId, newId);
 	}
 
-#if SE_EDITOR
 
 	bool Asset::ShouldDeleteFileOnUnload() const
 	{
 		return m_DeleteFileOnUnload != 0;
 	}
-
-#endif
 
 	uint64 Asset::GetMemoryUsage() const
 	{

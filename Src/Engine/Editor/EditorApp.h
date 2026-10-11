@@ -115,6 +115,9 @@ namespace SE::Editor
 		/// <returns>The main window</returns>
 		Window* GetMainWindow();
 
+		SE_FUNCTION(API())
+		ProjectInfo* GetProjectInfo() const;
+
 	private:
 
 		void OnEditorAssemblyLoaded(CLRAssembly* assembly);

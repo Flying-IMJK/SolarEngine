@@ -1,78 +1,128 @@
-// Managed editor GUI feature implementation.
-using System;
-using System.Collections.Generic;
+#nullable disable annotations
+
 using SE.GUI;
 
 namespace SE.Editor.GUI
 {
-    public sealed class NavigationBar : Panel
+    /// <summary>
+    /// A navigation bar control. Shows the current location path with UI buttons to navigate around.
+    /// </summary>
+    public class NavigationBar : Panel
     {
+        /// <summary>
+        /// The default buttons margin.
+        /// </summary>
         public const float DefaultButtonsMargin = 2.0f;
 
-        private readonly List<NavigationButton> m_Buttons = new List<NavigationButton>();
-
-        public NavigationBar()
-            : this(0.0f, 0.0f, 0.0f, 0.0f)
+        public NavigationBar() : base(ScrollBars.Horizontal)
         {
         }
 
-        public NavigationBar(float x, float y, float width, float height)
-            : base(new Rectangle(x, y, width, height))
+        /// <summary>
+        /// Updates the bar bounds and positions it after the last toolstrip button. Ensures to fit the toolstrip area (navigation bar horizontal scroll bar can be used to view the full path).
+        /// </summary>
+        /// <param name="toolstrip">The toolstrip.</param>
+        public void UpdateBounds(ToolStrip toolstrip)
         {
-            SetBounds(x, y, width, height);
-        }
-
-        public IReadOnlyList<NavigationButton> Buttons => m_Buttons;
-
-        public NavigationButton AddButton(string text)
-        {
-            NavigationButton button = new NavigationButton(text, Height);
-            m_Buttons.Add(button);
-            AddChild(button);
-            PerformLayout();
-            return button;
-        }
-
-        public void UpdateBounds(ToolStrip toolStrip, float parentWidth)
-        {
-            ToolStripButton? lastButton = toolStrip.LastButton;
-            float x = lastButton != null ? lastButton.X + lastButton.Width + 8.0f : 8.0f;
-            SetBounds(x, toolStrip.Y, parentWidth - x - 8.0f, toolStrip.Height);
-        }
-
-        public void UpdateBounds(ToolStrip toolStrip)
-        {
-            ArgumentNullException.ThrowIfNull(toolStrip);
-            UpdateBounds(toolStrip, Parent?.Width ?? Width);
-        }
-
-        protected override void OnLayoutChildren()
-        {
-            float x = DefaultButtonsMargin;
-            foreach (NavigationButton button in m_Buttons)
+            if (toolstrip == null)
             {
-                if (!button.Visible)
-                    continue;
+                return;
+            }
+            ToolStripButton lastToolstripButton = toolstrip.LastButton;
+            Float2 parentSize = Parent.Size;
+            Bounds = new Rectangle(lastToolstripButton.Right + 8.0f, 0,
+                parentSize.X - X - 8.0f, toolstrip.Height);
+        }
 
-                button.SetBounds(x, 0, button.MeasureWidth(), Height);
-                x += button.Width + DefaultButtonsMargin;
+        /// <inheritdoc />
+        protected override void Arrange()
+        {
+            base.Arrange();
+
+            // Arrange buttons
+            float x = DefaultButtonsMargin;
+            for (int i = 0; i < m_Children.Count; i++)
+            {
+                Control child = m_Children[i];
+                if (child.IsScrollable)
+                {
+                    child.X = x;
+                    x += child.Width + DefaultButtonsMargin;
+                }
             }
         }
     }
 
-    public sealed class NavigationButton : Button
+    /// <summary>
+    /// A navigation bar button. Allows to change the current location and view the path.
+    /// </summary>
+    public class NavigationButton : Button
     {
+        /// <summary>
+        /// The valid drag is over flag.
+        /// </summary>
+        protected bool m_ValidDragOver = false;
+
+        /// <summary>
+        /// The default margin (horizontal).
+        /// </summary>
         public const float DefaultMargin = 6.0f;
 
-        public NavigationButton(string text, float height)
-            : base(new Rectangle(0, 0, 2.0f * DefaultMargin, height), text)
+        public NavigationButton()
         {
-            SetBounds(0, 0, MeasureWidth(), height);
+            Height = 0;
         }
 
-        public float MeasureWidth()
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NavigationButton"/> class.
+        /// </summary>
+        /// <param name="x">The x position.</param>
+        /// <param name="y">The y position.</param>
+        /// <param name="height">The height.</param>
+        public NavigationButton(float x, float y, float height)
+            : base(x, y, 2.0f * DefaultMargin)
         {
-            return Text.Length * 7.0f + 2.0f * DefaultMargin;
+            Height = height;
+        }
+
+        /// <inheritdoc />
+        public override void Draw()
+        {
+            // Cache data
+            Style style = Style.Current;
+            Rectangle clientRect = new Rectangle(Float2.Zero, Size);
+            Rectangle textRect = new Rectangle(4, 0, clientRect.Width - 4, clientRect.Height);
+
+            // Draw background
+            if (IsDragOver() && m_ValidDragOver)
+            {
+                Render2D.FillRectangle(clientRect, style.Selection);
+                Render2D.DrawRectangle(clientRect, style.SelectionBorder);
+            }
+            else if (isPressed)
+            {
+                Render2D.FillRectangle(clientRect, style.BackgroundSelected);
+            }
+            else if (IsMouseOver)
+            {
+                Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
+            }
+
+            // Draw text
+            Render2D.DrawText(style.FontMedium, Text, textRect,
+                EnabledInHierarchy ? style.Foreground : style.ForegroundDisabled,
+                TextAlignment.Near, TextAlignment.Center);
+        }
+
+        /// <inheritdoc />
+        public override void PerformLayout(bool force = false)
+        {
+            Style style = Style.Current;
+
+            if (style != null && style.FontMedium != null)
+            {
+                Width = style.FontMedium.MeasureText(Text, TextLayoutOptions.Default).X + 2.0f * DefaultMargin;
+            }
         }
     }
 }

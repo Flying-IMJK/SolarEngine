@@ -1,138 +1,335 @@
-using System;
+#nullable disable annotations
+
 using SE.GUI;
 
 namespace SE.Editor.GUI
 {
-    public enum ClosingReason
-    {
-        Unknown = 0,
-        User = 1,
-        EngineExit = 2,
-        CloseEvent = 3,
-    }
-
-    public enum WindowStartPosition
-    {
-        CenterParent = 0,
-        CenterScreen = 1,
-        Manual = 2,
-    }
-
+    /// <summary>
+    /// Dockable window UI control.
+    /// </summary>
     public class DockWindow : Panel
     {
-        private MasterDockPanel? m_MasterPanel;
-        private string m_Title = string.Empty;
-        private Float2 m_TitleSize = new Float2(-1.0f);
+        private string _title = string.Empty;
+        private Float2 _titleSize;
 
-        public DockWindow(MasterDockPanel masterPanel, bool hideOnClose = true, ScrollBars scrollBars = ScrollBars.None)
-            : base(new Rectangle(0, 0, 300, 200))
+        /// <summary>
+        /// The master panel.
+        /// </summary>
+        protected MasterDockPanel _masterPanel;
+
+        /// <summary>
+        /// The parent panel.
+        /// </summary>
+        protected DockPanel _dockedTo;
+
+        /// <summary>
+        /// Called when window is unlinked from the master panel.
+        /// </summary>
+        protected virtual void OnUnlink()
         {
-            AnchorMin = Float2.Zero;
-            AnchorMax = Float2.One;
-            Offsets = Margin.Zero;
-            m_MasterPanel = masterPanel;
-            HideOnClose = hideOnClose;
-            ScrollBars = scrollBars;
-            base.ScrollBars = scrollBars;
-            masterPanel.LinkWindow(this);
-
-            // Flax registers CloseTab, PreviousTab, and NextTab through Editor InputActions here.
-            // Keep those bindings disabled until the managed Editor input-action API is available.
+            _masterPanel = null;
         }
 
-        public bool HideOnClose { get; set; }
-        public MasterDockPanel? MasterPanel => m_MasterPanel;
-        public DockPanel? ParentDockPanel { get; internal set; }
-        public bool IsDocked => ParentDockPanel != null;
-        public bool IsSelected => ParentDockPanel?.SelectedTab == this;
-        public bool IsHidden => !Visible || ParentDockPanel == null;
-        public virtual Float2 DefaultSize => new Float2(900, 580);
-        public virtual string SerializationTypename => "::" + GetType().Name;
         /// <summary>
-        /// Gets the docking-layer scrollbar configuration used to construct this window.
+        /// Undocks this window.
         /// </summary>
-        public new ScrollBars ScrollBars { get; }
-
-        public string Title
+        protected virtual void Undock()
         {
-            get => m_Title;
-            set
+            // Defocus itself
+            if (ContainsFocus)
             {
-                m_Title = value;
-                m_TitleSize = new Float2(-1.0f);
-                PerformLayout();
+                Focus();
+            }
+            Defocus();
+
+            // Call undock
+            if (_dockedTo != null)
+            {
+                _dockedTo.UndockWindowInternal(this);
+                SE.Debug.Assert(_dockedTo == null, "Window is still docked.");
             }
         }
 
-        public Float2 TitleSize => m_TitleSize;
+        /// <summary>
+        /// Called when window is closing. Operation can be cancelled.
+        /// </summary>
+        /// <param name="reason">The reason.</param>
+        /// <returns>True if cancel, otherwise false to allow.</returns>
+        protected virtual bool OnClosing(ClosingReason reason)
+        {
+            // Allow
+            return false;
+        }
+
+        /// <summary>
+        /// Called when window is closed.
+        /// </summary>
+        protected virtual void OnClose()
+        {
+            // Nothing to do
+        }
+
+        /// <summary>
+        /// Called when window shows.
+        /// </summary>
+        protected virtual void OnShow()
+        {
+            // Nothing to do
+        }
+
+        /// <inheritdoc />
+        protected override void PerformLayoutBeforeChildren()
+        {
+            // Cache window title dimensions
+            if (_titleSize.X <= 0)
+            {
+                Style style = Style.Current;
+                if (style != null && style.FontMedium != null)
+                {
+                    _titleSize = style.FontMedium.MeasureText(_title, TextLayoutOptions.Default);
+                }
+            }
+
+            base.PerformLayoutBeforeChildren();
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether hide window on close.
+        /// </summary>
+        public bool HideOnClose;
+
+        /// <summary>
+        /// Gets the master panel.
+        /// </summary>
+        public MasterDockPanel MasterPanel => _masterPanel;
+
+        /// <summary>
+        /// Gets the parent dock panel.
+        /// </summary>
+        public DockPanel ParentDockPanel
+        {
+            get => _dockedTo;
+            set => _dockedTo = value;
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this window is docked.
+        /// </summary>
+        public bool IsDocked => _dockedTo != null;
+
+        /// <summary>
+        /// Gets a value indicating whether this window is selected.
+        /// </summary>
+        public bool IsSelected
+        {
+            get
+            {
+                if (_dockedTo != null)
+                {
+                    return _dockedTo.SelectedTab == this;
+                }
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this window is hidden from the user (eg. not shown or hidden on closed).
+        /// </summary>
+        public bool IsHidden => !Visible || _dockedTo == null;
+
+        /// <summary>
+        /// Gets the default window size (in UI units, unscaled by DPI which is handled by windowing system).
+        /// </summary>
+        public virtual Float2 DefaultSize => new Float2(900, 580);
+
+        /// <summary>
+        /// Gets the serialization typename.
+        /// </summary>
+        public virtual string SerializationTypename => "::" + GetType().Name;
+
+        /// <summary>
+        /// Gets or sets the window title.
+        /// </summary>
+        public string Title
+        {
+            get => _title;
+            set
+            {
+                _title = value;
+
+                // Invalidate cached title size
+                _titleSize = new Float2(-1);
+                PerformLayoutBeforeChildren();
+
+                // Check if is docked to the floating window and is selected so update window title
+                if (IsSelected && _dockedTo is FloatWindowDockPanel floatPanel)
+                {
+                    floatPanel.Window.SetTitle(Title);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the window icon.
+        /// </summary>
         public SpriteHandle Icon;
 
+        /// <summary>
+        /// Gets the size of the title.
+        /// </summary>
+        public Float2 TitleSize => _titleSize;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DockWindow"/> class.
+        /// </summary>
+        /// <param name="masterPanel">The master docking panel.</param>
+        /// <param name="hideOnClose">True if hide window on closing, otherwise it will be destroyed.</param>
+        /// <param name="scrollBars">The scroll bars.</param>
+        public DockWindow(MasterDockPanel masterPanel, bool hideOnClose, ScrollBars scrollBars) : base(scrollBars)
+        {
+            _masterPanel = masterPanel;
+            HideOnClose = hideOnClose;
+            AnchorPreset = AnchorPresets.StretchAll;
+            Offsets = Margin.Zero;
+
+            // Bind navigation shortcuts
+            // Native InputActions registration is commented out.
+
+            // Link to the master panel
+            if (_masterPanel != null)
+            {
+                _masterPanel.LinkWindow(this);
+            }
+        }
+
+        /// <summary>
+        /// Shows the window in a floating state.
+        /// </summary>
         public void ShowFloating()
         {
-            ShowFloating(Float2.Zero, DefaultSize, WindowStartPosition.CenterParent);
+            ShowFloating(Float2.Zero);
         }
 
+        /// <summary>
+        /// Shows the window in a floating state.
+        /// </summary>
+        /// <param name="position">Window location.</param>
         public void ShowFloating(WindowStartPosition position)
         {
-            ShowFloating(Float2.Zero, DefaultSize, position);
+            ShowFloating(Float2.Zero, position);
         }
 
+        /// <summary>
+        /// Shows the window in a floating state.
+        /// </summary>
+        /// <param name="size">Window size, set <see cref="Float2.Zero"/> to use default.</param>
+        /// <param name="position">Window location.</param>
         public void ShowFloating(Float2 size, WindowStartPosition position = WindowStartPosition.CenterParent)
         {
             ShowFloating(new Float2(200, 200), size, position);
         }
 
+        /// <summary>
+        /// Shows the window in a floating state.
+        /// </summary>
+        /// <param name="location">Window location.</param>
+        /// <param name="size">Window size, set <see cref="Float2.Zero"/> to use default.</param>
+        /// <param name="position">Window location.</param>
         public void ShowFloating(Float2 location, Float2 size, WindowStartPosition position = WindowStartPosition.CenterParent)
         {
             Undock();
-            Float2 windowSize = size.X * size.X + size.Y * size.Y > 4.0f ? size : DefaultSize;
-            FloatWindowDockPanel floatingPanel = m_MasterPanel!.CreateFloatingPanel(location, windowSize, position, Title);
-            floatingPanel.DockWindowInternal(DockState.DockFill, this);
+
+            // Create window
+            Float2 winSize = size.LengthSquared > 4 ? size : DefaultSize;
+            SE.Window window = FloatWindowDockPanel.CreateFloatWindow(_masterPanel.Root, location, winSize, position, _title);
+            WindowRootControl windowGUI = window.GUI;
+
+            // Create dock panel for the window
+            FloatWindowDockPanel dockPanel = new FloatWindowDockPanel(_masterPanel, windowGUI);
+            dockPanel.DockWindowInternal(DockState.DockFill, this);
+
+            // Perform layout
             Visible = true;
-            SE.Window? window = floatingPanel.HostWindow;
-            if (window != null)
-            {
-                window.GUI.UnlockChildrenRecursive();
-                window.GUI.PerformLayout();
-                window.Show();
-                window.BringToFront();
-                window.Focus();
-            }
+            windowGUI.UnlockChildrenRecursive();
+            windowGUI.PerformLayout();
+
+            // Show
+            window.Show();
+            window.BringToFront();
+            window.Focus();
             OnShow();
-            window?.GUI.PerformLayout();
+
+            // Perform layout again
+            windowGUI.PerformLayout();
         }
 
-        public void Show(DockState state = DockState.Float, DockPanel? toDock = null, bool autoSelect = true, float splitterValue = 0)
+        /// <summary>
+        /// Shows the window.
+        /// </summary>
+        /// <param name="state">Initial window state.</param>
+        /// <param name="toDock">Panel to dock to it.</param>
+        /// <param name="autoSelect">Only used if <paramref name="toDock"/> is set. If true the window will be selected after docking it.</param>
+        /// <param name="splitterValue">Only used if <paramref name="toDock"/> is set. The splitter value to use. If not specified, a default value will be used.</param>
+        public void Show(DockState state = DockState.Float, DockPanel toDock = null, bool autoSelect = true, float splitterValue = 0)
         {
             if (state == DockState.Hidden)
             {
                 Hide();
-                return;
             }
-            if (state == DockState.Float)
+            else if (state == DockState.Float)
             {
                 ShowFloating();
-                return;
+            }
+            else
+            {
+                Visible = true;
+
+                // Undock first
+                Undock();
+
+                // Then dock
+                if (toDock != null)
+                {
+                    toDock.DockWindowInternal(state, this, autoSelect, splitterValue);
+                }
+                else
+                {
+                    _masterPanel.DockWindowInternal(state, this, autoSelect, splitterValue);
+                }
+
+                OnShow();
+                PerformLayout();
+            }
+        }
+
+        /// <summary>
+        /// Shows the window.
+        /// </summary>
+        /// <param name="state">Initial window state.</param>
+        /// <param name="toDock">Window to dock to it.</param>
+        public void Show(DockState state, DockWindow toDock)
+        {
+            DockPanel panel = null;
+            if (toDock != null)
+            {
+                panel = toDock.ParentDockPanel;
             }
 
-            Visible = true;
-            Undock();
-            DockPanel target = toDock ?? m_MasterPanel!;
-            target.DockWindowInternal(state, this, autoSelect, splitterValue);
-            OnShow();
-            PerformLayout();
+            Show(state, panel);
         }
 
-        public void Show(DockState state, DockWindow? toDock)
-        {
-            Show(state, toDock?.ParentDockPanel);
-        }
-
+        /// <summary>
+        /// Focuses or shows the window.
+        /// </summary>
         public void FocusOrShow()
         {
             FocusOrShow(DockState.DockFill);
         }
 
+        /// <summary>
+        /// Focuses or shows the window.
+        /// </summary>
+        /// <param name="state">The state.</param>
         public void FocusOrShow(DockState state)
         {
             if (Visible)
@@ -141,141 +338,139 @@ namespace SE.Editor.GUI
                 Focus();
             }
             else
+            {
                 Show(state);
+            }
         }
 
+        /// <summary>
+        /// Hides the window.
+        /// </summary>
         public void Hide()
         {
+            // Undock
             Undock();
+
             Visible = false;
+
+            // Ensure that dock panel has no parent
+            SE.Debug.Assert(HasParent, "Dock window has no parent.");
         }
 
+        /// <summary>
+        /// Closes the window.
+        /// </summary>
+        /// <param name="reason">Window closing reason.</param>
+        /// <returns>True if action has been cancelled (due to window internal logic).</returns>
         public bool Close(ClosingReason reason = ClosingReason.CloseEvent)
         {
-            // Native active code treats false as cancellation despite the opposite header comment.
+            // Fire events
             if (!OnClosing(reason))
+            {
                 return false;
-
+            }
             OnClose();
 
+            // Check if window should be hidden on close event
             if (HideOnClose)
             {
+                // Hide
                 Hide();
             }
             else
             {
+                // Undock
                 Undock();
+
+                // Delete itself
                 Dispose();
             }
 
+            // Done
             return true;
         }
 
+        /// <summary>
+        /// Selects this tab page.
+        /// </summary>
+        /// <param name="autoFocus">True if focus tab after selection change.</param>
         public void SelectTab(bool autoFocus = true)
         {
-            ParentDockPanel?.SelectTab(this, autoFocus);
+            if (_dockedTo != null)
+            {
+                _dockedTo.SelectTab(this, autoFocus);
+            }
         }
 
+        /// <summary>
+        /// Brings the window to the front of the Z order.
+        /// </summary>
         public void BringToFront()
         {
-            if (Root is WindowRootControl root)
-                root.Window.BringToFront();
-        }
-
-        public override void Focus()
-        {
-            base.Focus();
-            SelectTab();
-            BringToFront();
-        }
-
-        public override bool OnKeyDown(KeyboardKeys key)
-        {
-            if (base.OnKeyDown(key))
-                return true;
-
-            // Flax forwards unhandled keys to InputActions.Process(Editor.Instance, this, key).
-            // Keep the Editor shortcut route disabled; no replacement shortcut behavior is introduced.
-            return false;
-        }
-
-        public override void PerformLayout(bool force = false)
-        {
-            if (m_TitleSize.X <= 0.0f)
+            if (_dockedTo != null && _dockedTo.RootWindow() != null)
             {
-                Font? font = Style.Current.FontMedium;
-                if (font != null)
-                    m_TitleSize = font.MeasureText(m_Title, new TextLayoutOptions());
+                _dockedTo.RootWindow().Window.BringToFront();
             }
-            base.PerformLayout(force);
         }
 
-        public virtual void OnShowContextMenu(ContextMenu menu)
-        {
-        }
-
+        /// <summary>
+        /// Gets a value indicating whether window uses custom layout data.
+        /// </summary>
         public virtual bool UseLayoutData => false;
 
-        // Native XML persistence overloads remain disabled. The active no-argument hook below is a no-op,
-        // matching the current C++ surface without introducing a managed layout format.
-        /*
-        public virtual void OnLayoutSerialize(System.Xml.XmlWriter writer)
-        {
-        }
-
-        public virtual void OnLayoutDeserialize(System.Xml.XmlElement node)
-        {
-        }
-
-        protected void LayoutSerializeSplitter(System.Xml.XmlWriter writer, string name, SplitPanel splitter)
-        {
-            writer.WriteAttributeString(name, splitter.SplitterValue.ToString(System.Globalization.CultureInfo.InvariantCulture));
-        }
-
-        protected void LayoutDeserializeSplitter(System.Xml.XmlElement node, string name, SplitPanel splitter)
-        {
-            if (float.TryParse(node.GetAttribute(name), System.Globalization.CultureInfo.InvariantCulture, out float value) && value > 0.01f && value < 0.99f)
-                splitter.SplitterValue = value;
-        }
-        */
-
+        /// <summary>
+        /// Called when during windows layout deserialization if window has no layout data to load. Can be used to restore default UI layout.
+        /// </summary>
         public virtual void OnLayoutDeserialize()
         {
         }
 
-        protected virtual void OnUnlink()
+        /// <inheritdoc />
+        public override void OnDestroy()
         {
-            m_MasterPanel = null;
+            // Auto undock from non-disposing parent (user wants to remove only the dock window)
+            if (HasParent && !Parent.IsDisposing)
+            {
+                Undock();
+            }
+
+            // Unlink from the master panel
+            if (_masterPanel != null)
+            {
+                _masterPanel.UnlinkWindow(this);
+            }
+
+            base.OnDestroy();
         }
 
-        protected virtual void Undock()
+        /// <inheritdoc />
+        public override void Focus()
         {
-            if (ContainsFocus)
-                Focus();
-            Defocus();
+            base.Focus();
 
-            ParentDockPanel?.UndockWindowInternal(this);
+            SelectTab();
+            BringToFront();
         }
 
-        protected virtual bool OnClosing(ClosingReason reason)
+        /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
         {
+            // Base
+            if (base.OnKeyDown(key))
+            {
+                return true;
+            }
+
+            // Custom input events
             return false;
         }
 
-        protected virtual void OnClose()
+        /// <summary>
+        /// Called when dock panel wants to show the context menu for this window. Can be used to inject custom buttons and items to the context menu (on top).
+        /// </summary>
+        /// <param name="menu">The menu.</param>
+        public virtual void OnShowContextMenu(ContextMenu menu)
         {
-        }
-
-        protected virtual void OnShow()
-        {
-        }
-
-        protected override void OnDispose()
-        {
-            if (Parent != null && !Parent.IsDisposing)
-                Undock();
-            m_MasterPanel?.UnlinkWindow(this);
-            base.OnDispose();
         }
 
         internal void NotifyUnlinked()

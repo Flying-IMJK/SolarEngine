@@ -62,33 +62,6 @@ namespace SE::Log
 
         Float4 GetColor(float opacity = 1.0f) const;
 
-		/*
-		NotificationType GetType() const
-        {
-            switch (m_type)
-            {
-            case NotificationType::Success:
-                return ICON_CHECK_CIRCLE;
-
-            case NotificationType::Warning:
-                return ICON_ALERT;
-
-            case NotificationType::Error:
-                return ICON_CLOSE_CIRCLE;
-
-            case NotificationType::Info:
-                return ICON_INFORMATION;
-
-            default:
-                break;
-            }
-
-            //-------------------------------------------------------------------------
-
-            ENGINE_UNREACHABLE_CODE();
-            return nullptr;
-        }*/
-
         char const *GetTitle() const
         {
             switch (m_type)
@@ -127,20 +100,13 @@ namespace SE::Log
 
     SE_API_RUNTIME StringView GetSeverityAsString( Severity severity );
 
-    // Lifetime
-    //-------------------------------------------------------------------------
-
     struct SE_API_RUNTIME System
     {
-        // Lifetime
-        //-------------------------------------------------------------------------
+        static Delegate<Severity, Char const*> g_LogCallback;
 
         static void Initialize();
         static void Shutdown();
         static bool IsInitialized();
-
-        // Accessors
-        //-------------------------------------------------------------------------
 
         static List<LogEntry> const& GetLogEntries();
         static List<Notification> & GetNotifications();
@@ -156,7 +122,6 @@ namespace SE::Log
 
         // Output
         //-------------------------------------------------------------------------
-
         static void SetLogFilePath(String const& logFilePath );
         static void SaveToFile();
     };

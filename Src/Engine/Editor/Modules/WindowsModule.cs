@@ -9,10 +9,9 @@ namespace SE.Editor
     /// </summary>
     public sealed class WindowsModule : EditorModule
     {
-        private readonly Dictionary<string, EditorWindow> m_Windows = new(StringComparer.Ordinal);
+        private readonly List<EditorWindow> m_Windows = new();
 
-        public WindowsModule(Editor editor)
-            : base(editor)
+        public WindowsModule(Editor editor) : base(editor)
         {
         }
 
@@ -32,13 +31,23 @@ namespace SE.Editor
         public SceneHierarchyWindow SceneWin => SceneHierarchy;
         public EditSceneWindow EditWin => EditScene;
 
-        public IReadOnlyDictionary<string, EditorWindow> Windows => m_Windows;
+        public IReadOnlyList<EditorWindow> Windows => m_Windows;
 
         internal override int Order => -90;
 
         public bool TryGetWindow(string id, out EditorWindow? window)
         {
-            return m_Windows.TryGetValue(id, out window);
+            foreach (EditorWindow candidate in m_Windows)
+            {
+                if (string.Equals(candidate.Name, id, StringComparison.Ordinal))
+                {
+                    window = candidate;
+                    return true;
+                }
+            }
+
+            window = null;
+            return false;
         }
 
         public override void OnInit()
@@ -47,15 +56,6 @@ namespace SE.Editor
             Content = new ContentWindow(Editor);
             SceneHierarchy = new SceneHierarchyWindow(Editor);
             EditScene = new EditSceneWindow(Editor);
-
-            SE.Level.SceneSaving += OnSceneSaving;
-            SE.Level.SceneSaved += OnSceneSaved;
-            SE.Level.SceneSaveError += OnSceneSaveError;
-            SE.Level.SceneLoading += OnSceneLoading;
-            SE.Level.SceneLoaded += OnSceneLoaded;
-            SE.Level.SceneLoadError += OnSceneLoadError;
-            SE.Level.SceneUnloading += OnSceneUnloading;
-            SE.Level.SceneUnloaded += OnSceneUnloaded;
         }
 
         public override void OnEndInit()
@@ -66,7 +66,7 @@ namespace SE.Editor
             Log.Show(DockState.DockBottom, master, autoSelect: false, splitterValue: 0.25f);
             EditScene.Show(DockState.DockFill, master, autoSelect: true);
 
-            foreach (EditorWindow window in new List<EditorWindow>(m_Windows.Values))
+            foreach (EditorWindow window in new List<EditorWindow>(m_Windows))
             {
                 window.OnInit();
             }
@@ -74,7 +74,7 @@ namespace SE.Editor
 
         public override void OnUpdate()
         {
-            foreach (EditorWindow window in new List<EditorWindow>(m_Windows.Values))
+            foreach (EditorWindow window in new List<EditorWindow>(m_Windows))
             {
                 window.OnUpdate();
             }
@@ -82,16 +82,7 @@ namespace SE.Editor
 
         public override void OnDispose()
         {
-            SE.Level.SceneSaving -= OnSceneSaving;
-            SE.Level.SceneSaved -= OnSceneSaved;
-            SE.Level.SceneSaveError -= OnSceneSaveError;
-            SE.Level.SceneLoading -= OnSceneLoading;
-            SE.Level.SceneLoaded -= OnSceneLoaded;
-            SE.Level.SceneLoadError -= OnSceneLoadError;
-            SE.Level.SceneUnloading -= OnSceneUnloading;
-            SE.Level.SceneUnloaded -= OnSceneUnloaded;
-
-            foreach (EditorWindow window in new List<EditorWindow>(m_Windows.Values))
+            foreach (EditorWindow window in new List<EditorWindow>(m_Windows))
             {
                 window.Dispose();
             }
@@ -103,78 +94,15 @@ namespace SE.Editor
         internal void RegisterWindow(EditorWindow window)
         {
             ArgumentNullException.ThrowIfNull(window);
-            if (!m_Windows.TryAdd(window.Id, window))
-                throw new InvalidOperationException($"An editor window is already registered with id '{window.Id}'.");
+            m_Windows.Add(window);
             WindowAdded?.Invoke(window);
         }
 
         internal void UnregisterWindow(EditorWindow window)
         {
-            if (window != null && m_Windows.Remove(window.Id))
+            if (window != null && m_Windows.Remove(window))
+            {
                 WindowRemoved?.Invoke(window);
-        }
-
-        private void OnSceneSaving(SE.Scene scene, Guid sceneId)
-        {
-            foreach (EditorWindow window in new List<EditorWindow>(m_Windows.Values))
-            {
-                window.OnSceneSaving(scene, sceneId);
-            }
-        }
-
-        private void OnSceneSaved(SE.Scene scene, Guid sceneId)
-        {
-            foreach (EditorWindow window in new List<EditorWindow>(m_Windows.Values))
-            {
-                window.OnSceneSaved(scene, sceneId);
-            }
-        }
-
-        private void OnSceneSaveError(SE.Scene scene, Guid sceneId)
-        {
-            foreach (EditorWindow window in new List<EditorWindow>(m_Windows.Values))
-            {
-                window.OnSceneSaveError(scene, sceneId);
-            }
-        }
-
-        private void OnSceneLoading(SE.Scene scene, Guid sceneId)
-        {
-            foreach (EditorWindow window in new List<EditorWindow>(m_Windows.Values))
-            {
-                window.OnSceneLoading(scene, sceneId);
-            }
-        }
-
-        private void OnSceneLoaded(SE.Scene scene, Guid sceneId)
-        {
-            foreach (EditorWindow window in new List<EditorWindow>(m_Windows.Values))
-            {
-                window.OnSceneLoaded(scene, sceneId);
-            }
-        }
-
-        private void OnSceneLoadError(SE.Scene scene, Guid sceneId)
-        {
-            foreach (EditorWindow window in new List<EditorWindow>(m_Windows.Values))
-            {
-                window.OnSceneLoadError(scene, sceneId);
-            }
-        }
-
-        private void OnSceneUnloading(SE.Scene scene, Guid sceneId)
-        {
-            foreach (EditorWindow window in new List<EditorWindow>(m_Windows.Values))
-            {
-                window.OnSceneUnloading(scene, sceneId);
-            }
-        }
-
-        private void OnSceneUnloaded(SE.Scene scene, Guid sceneId)
-        {
-            foreach (EditorWindow window in new List<EditorWindow>(m_Windows.Values))
-            {
-                window.OnSceneUnloaded(scene, sceneId);
             }
         }
     }

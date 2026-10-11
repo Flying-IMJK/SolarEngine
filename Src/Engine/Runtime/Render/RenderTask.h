@@ -7,6 +7,7 @@
 #include "Runtime/Core/Types/Collections/List.h"
 #include "Runtime/Core/Types/Object.h"
 #include "Runtime/Core/Types/Delegate.h"
+#include "Runtime/Core/Scripting/ScriptingObject.h"
 
 #include "Runtime/API.h"
 #include "Runtime/Graphics/Viewport.h"
@@ -21,8 +22,10 @@ namespace SE
 	class GPUTextureView;
 	class GPUSwapChain;
 
-	class SE_API_RUNTIME RenderTask : public Object
+	SE_CLASS(API())
+	class SE_API_RUNTIME RenderTask : public ScriptingObject
 	{
+		SCRIPTING_TYPE(RenderTask);
 	public:
 		/// <summary>
 		/// List with all registered tasks
@@ -53,8 +56,6 @@ namespace SE
 		RenderTask* _prevTask = nullptr;
 
 	public:
-		RenderTask();
-
 		/// <summary>
 		/// Finalizes an instance of the <see cref="RenderTask"/> class.
 		/// </summary>
@@ -64,11 +65,13 @@ namespace SE
 		/// <summary>
 		/// Gets or sets a value indicating whether task is enabled.
 		/// </summary>
+		SE_FIELD(API())
 		bool Enabled = true;
 
 		/// <summary>
 		/// The order of the task. Used for tasks rendering order. Lower first, higher later.
 		/// </summary>
+		SE_FIELD(API())
 		int32 Order = 0;
 
 		/// <summary>
@@ -89,21 +92,25 @@ namespace SE
 		/// <summary>
 		/// Action fired on task rendering.
 		/// </summary>
+        SE_EVENT(API())
 		Delegate<RenderTask*, GPUContext*> Render;
 
 		/// <summary>
 		/// Action fired on task rendering begin.
 		/// </summary>
+		SE_EVENT(API())
 		Delegate<RenderTask*, GPUContext*> Begin;
 
 		/// <summary>
 		/// Action fired on task rendering end.
 		/// </summary>
+		SE_EVENT(API())
 		Delegate<RenderTask*, GPUContext*> End;
 
 		/// <summary>
 		/// Action fired just after frame present.
 		/// </summary>
+		SE_EVENT(API())
 		Delegate<RenderTask*> Present;
 
 		/// <summary>
@@ -162,6 +169,7 @@ namespace SE
 	/// <summary>
 	/// Defines actors to draw sources.
 	/// </summary>
+	SE_ENUM(API(Attributes("Flags")))
 	enum class ActorsSources
 	{
 		/// <summary>
@@ -190,11 +198,12 @@ namespace SE
 		ScenesAndCustomActors = Scenes | CustomActors,
 	};
 
-	typedef ActorsSources ActorsSourcesFlags;
+	SE_ENUM_OPERATORS(ActorsSources);
 
 	/// <summary>
 	/// The Post Process effect rendering location within the rendering pipeline.
 	/// </summary>
+    SE_ENUM(API())
 	enum class RenderingUpscaleLocation
 	{
 		/// <summary>
@@ -203,8 +212,8 @@ namespace SE
 		AfterAntiAliasingPass = 0,
 
 		/// <summary>
-			/// The up-scaling happens before the post processing after scene rendering (after geometry, lighting, volumetrics, transparency and SSR/SSAO).
-			/// </summary>
+		/// The up-scaling happens before the post processing after scene rendering (after geometry, lighting, volumetrics, transparency and SSR/SSAO).
+		/// </summary>
 		BeforePostProcessingPass = 1,
 	};
 
@@ -212,14 +221,14 @@ namespace SE
 	/// Render task which draws scene actors into the output buffer.
 	/// </summary>
 	/// <seealso cref="FlaxEngine.RenderTask" />
+    SE_CLASS(API())
 	class SE_API_RUNTIME SceneRenderTask : public RenderTask
 	{
+		SCRIPTING_TYPE(SceneRenderTask);
 	protected:
 		// class SceneRendering* _customActorsScene = nullptr;
 
 	public:
-		SceneRenderTask();
-
 		/// <summary>
 		/// Finalizes an instance of the <see cref="SceneRenderTask"/> class.
 		/// </summary>
@@ -244,6 +253,7 @@ namespace SE
 		/// <summary>
 		/// The output texture (can be null if using rendering to window swap chain). Can be used to redirect the default scene rendering output to a texture.
 		/// </summary>
+		SE_FIELD(API())
 		GPUTexture* Output = nullptr;
 
 		/// <summary>
@@ -264,7 +274,7 @@ namespace SE
 		/// <summary>
 		/// The actors source to use (configures what objects to render).
 		/// </summary>
-		ActorsSourcesFlags ActorsSource = ActorsSources::Scenes;
+		ActorsSources ActorsSource = ActorsSources::Scenes;
 
 		/// <summary>
 		/// The scale of the rendering resolution relative to the output dimensions. If lower than 1 the scene and postprocessing will be rendered at a lower resolution and upscaled to the output backbuffer.
@@ -419,10 +429,11 @@ namespace SE
 		void OnEnd(GPUContext* context) override;
 	};
 
+	SE_CLASS(API())
 	class SE_API_RUNTIME MainRenderTask final : public SceneRenderTask
 	{
+		SCRIPTING_TYPE(MainRenderTask);
 	public:
-		MainRenderTask();
 		/// <summary>
 		/// Finalizes an instance of the <see cref="MainRenderTask"/> class.
 		/// </summary>
@@ -432,6 +443,7 @@ namespace SE
 		/// <summary>
 		/// Gets the main game rendering task. Use it to plug custom rendering logic for your game.
 		/// </summary>
+		SE_FIELD(API())
 		static MainRenderTask* Instance;
 
 	public:

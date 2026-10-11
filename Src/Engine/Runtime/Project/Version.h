@@ -1,21 +1,27 @@
 #pragma once
 
-#include "Runtime/Core/Types/Variable.h"
-#include "Runtime/Core/Templates.h"
-
-#include "Runtime/API.h"
+#include <Runtime/Core/Types/Variable.h>
+#include <Runtime/Core/Templates.h>
+#include <Runtime/Core/Scripting/ScriptingTypeDefine.h>
+#include <Runtime/API.h>
 
 namespace SE
 {
 	/// <summary>
 	/// Represents the version number made of major, minor, build and revision numbers.
 	/// </summary>
+	SE_STRUCT(API())
 	struct SE_API_RUNTIME VersionInfo
 	{
+        SCRIPTING_TYPE_MIN(VersionInfo);
 	private:
+        SE_FIELD(API())
 		int32 m_Major;
+		SE_FIELD(API())
 		int32 m_Minor;
+		SE_FIELD(API())
 		int32 m_Build;
+		SE_FIELD(API())
 		int32 m_Revision;
 
 	public:

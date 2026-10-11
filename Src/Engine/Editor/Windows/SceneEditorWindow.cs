@@ -7,9 +7,9 @@ namespace SE.Editor.GUI
     /// </summary>
     public abstract class SceneEditorWindow : EditorWindow
     {
-        protected SceneEditorWindow(Editor editor, string id, string title, ScrollBars scrollBars = ScrollBars.None)
-            : base(editor, id, title, scrollBars)
+        protected SceneEditorWindow(Editor editor) : base(editor, true)
         {
+
         }
     }
 }

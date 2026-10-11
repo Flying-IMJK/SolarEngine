@@ -25,7 +25,6 @@ namespace SE
 		bool IsNormalMap() const;
 
 		uint32 GetSerializedVersion() const override;
-
 	};
 
 } // SE

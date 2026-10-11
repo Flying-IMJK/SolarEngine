@@ -153,15 +153,15 @@ namespace SE::Editor
 	void ContentNavigationSeparator::OnLayoutMenuButton(ContextMenuButton* button, int index, bool construct)
 	{
 		button->Icon = EditorIcons::FolderClosed32;
-		if (tooltips.Count() > index)
-			button->TooltipText = tooltips[index];
+		if (Tooltips.Count() > index)
+			button->TooltipText = Tooltips[index];
 	}
 
 	void ContentNavigationSeparator::OnItemClicked(int index)
 	{
 		ComboBox::OnItemClicked(index);
 
-		String& item = items[index];
+		String& item = Items[index];
 		for (Control* child : Target->TargetNode->Children())
 		{
 			ContentTreeNode* node;

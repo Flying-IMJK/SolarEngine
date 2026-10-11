@@ -663,7 +663,6 @@ namespace SE
 #endif
 	}
 
-#if SE_EDITOR
 
 	bool AssetContent::RenameAsset(const StringView& oldPath, const StringView& newPath)
 	{
@@ -873,7 +872,6 @@ namespace SE
 		return false;
 	}
 	
-#endif
 
 	void AssetContent::UnloadAsset(Asset* asset)
 	{
@@ -936,7 +934,7 @@ namespace SE
 		return asset;
 	}
 
-	void AssetContent::TryCallOnLoaded(Asset* asset)
+    void AssetContent::TryCallOnLoaded(Asset* asset)
 	{
 		Threading::ScopeLock lock(contentData->LoadedAssetsToInvokeLocker);
 		const int32 index = contentData->LoadedAssetsToInvoke.Find(asset);

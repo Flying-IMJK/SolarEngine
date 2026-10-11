@@ -150,13 +150,13 @@ namespace SE
         AssimpLogStream AssimpLogStream;
         const String Path;
         const aiScene* Scene = nullptr;
-        const ModelUtils::Options& Options;
+        const ModelUtilsOptions& Options;
 
         List<AssimpNode> Nodes;
         List<AssimpBone> Bones;
         Dictionary<int32, List<int32>> MeshIndexToNodeIndex;
 
-        AssimpImporterData(const StringView& path, const ModelUtils::Options& options)
+        AssimpImporterData(const StringView& path, const ModelUtilsOptions& options)
             : Path(path)
             , Options(options)
         {
@@ -737,7 +737,7 @@ namespace SE
         }
     }*/
 
-    bool ModelUtils::ImportDataAssimp(const String& path, ModelData& data, Options& options, String& errorMsg)
+    bool ModelUtils::ImportDataAssimp(const String& path, ModelData& data, ModelUtilsOptions& options, String& errorMsg)
     {
         static bool AssimpInited = false;
         if (!AssimpInited)

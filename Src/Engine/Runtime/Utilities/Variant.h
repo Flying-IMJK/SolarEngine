@@ -16,6 +16,7 @@ namespace SE
     class Asset;
     class StringAnsiView;
     class StringView;
+    class TypeID;
 
 
     enum class VariantTypes
@@ -70,6 +71,7 @@ namespace SE
         UID,
         // Append new serialized types here to preserve the values of existing entries.
         Color32,
+        TypeID,
 
         MAX,
     };
@@ -206,6 +208,7 @@ namespace SE
         Variant(uint16 v);
         Variant(int32 v);
         Variant(uint32 v);
+        Variant(const TypeID& v);
         Variant(int64 v);
         Variant(uint64 v);
         Variant(float v);
@@ -285,6 +288,7 @@ namespace SE
         explicit operator uint8() const;
         explicit operator uint16() const;
         explicit operator uint32() const;
+        explicit operator TypeID() const;
         explicit operator uint64() const;
         explicit operator float() const;
         explicit operator double() const;

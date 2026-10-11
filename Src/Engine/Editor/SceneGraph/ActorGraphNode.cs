@@ -117,7 +117,7 @@ namespace SE.Editor.SceneGraph
 
         protected override void OnParentChanged()
         {
-            m_TreeNode.OnParentChanged(ParentNode as ActorGraphNode);
+            m_TreeNode.OnParentChanged(m_Actor, ParentNode as ActorGraphNode);
         }
 
         public override void Dispose()

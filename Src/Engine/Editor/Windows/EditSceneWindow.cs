@@ -11,14 +11,14 @@ namespace SE.Editor.GUI
     {
         private readonly Label m_StatusLabel;
 
-        public EditSceneWindow(Editor editor)
-            : base(editor, "EditScene", "Edit Scene", ScrollBars.None)
+        public EditSceneWindow(Editor editor) : base(editor)
         {
-/*            m_StatusLabel = AddChild(new Label());
-            m_StatusLabel.AutoFocus = false;
-            m_StatusLabel.HorizontalAlignment = TextAlignment.Center;
-            m_StatusLabel.VerticalAlignment = TextAlignment.Center;
-            UpdateStatus();*/
+            Title = "Edit Scene";
+            /*            m_StatusLabel = AddChild(new Label());
+                        m_StatusLabel.AutoFocus = false;
+                        m_StatusLabel.HorizontalAlignment = TextAlignment.Center;
+                        m_StatusLabel.VerticalAlignment = TextAlignment.Center;
+                        UpdateStatus();*/
         }
 
         public override void OnUpdate()
@@ -26,18 +26,18 @@ namespace SE.Editor.GUI
             //UpdateStatus();
         }
 
-        protected override void OnLayoutChildren()
+        protected override void PerformLayoutBeforeChildren()
         {
-            base.OnLayoutChildren();
+            base.PerformLayoutBeforeChildren();
             //m_StatusLabel.SetBounds(0.0f, 0.0f, Width, Height);
         }
 
         private void UpdateStatus()
         {
-/*            int selectionCount = Editor.Scene.SelectionCount;
-            m_StatusLabel.Text = selectionCount == 0
-                ? "Scene viewport is waiting for the generated SceneRenderTask binding."
-                : $"{selectionCount} scene object(s) selected. Scene viewport is waiting for the generated SceneRenderTask binding.";*/
+            /*            int selectionCount = Editor.Scene.SelectionCount;
+                        m_StatusLabel.Text = selectionCount == 0
+                            ? "Scene viewport is waiting for the generated SceneRenderTask binding."
+                            : $"{selectionCount} scene object(s) selected. Scene viewport is waiting for the generated SceneRenderTask binding.";*/
         }
     }
 }

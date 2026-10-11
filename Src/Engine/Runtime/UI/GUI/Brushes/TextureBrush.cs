@@ -12,7 +12,11 @@ namespace SE.GUI
             Texture = texture ?? throw new ArgumentNullException(nameof(texture));
         }
 
-        public TextureBase Texture { get; }
+        public TextureBase Texture
+        {
+            get;
+        }
+        public Float2 Size => Texture.Size();
 
         public void Draw(Rectangle bounds, Color color)
         {

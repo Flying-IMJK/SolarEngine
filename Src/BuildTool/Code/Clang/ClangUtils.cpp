@@ -4,6 +4,7 @@
 #include "Core/FileSystem.h"
 
 #include <unordered_map>
+#include <llvm/Support/raw_ostream.h>
 //-------------------------------------------------------------------------
 
 namespace SE::BuildTool
@@ -43,6 +44,17 @@ namespace SE::BuildTool
             }
             FileSystem::NormalizePath(HeaderFilePath);
             return HeaderFilePath;
+        }
+
+        static const clang::TemplateSpecializationType* GetWrittenTemplateSpecialization(clang::QualType type)
+        {
+            const clang::Type* pType = type.getTypePtrOrNull();
+            if (auto const* elaborated = llvm::dyn_cast_or_null<clang::ElaboratedType>(pType))
+                pType = elaborated->getNamedType().getTypePtrOrNull();
+
+            // Inspect the written type only. Type::getAs<TemplateSpecializationType>()
+            // also desugars unrelated typedefs such as Float2.
+            return llvm::dyn_cast_or_null<clang::TemplateSpecializationType>(pType);
         }
 
         bool GetQualifiedNameForType(clang::QualType type, std::string& qualifiedName)
@@ -131,12 +143,30 @@ namespace SE::BuildTool
             {
                 // Do Nothing
             }
+            else if (auto const* specialization = GetWrittenTemplateSpecialization(type))
+            {
+                // Some specializations have no record declaration yet. Keep
+                // the base name separate from their template arguments.
+                auto const* declaration = specialization->getTemplateName().getAsTemplateDecl();
+                if (!declaration)
+                    return false;
+                qualifiedName = declaration->getQualifiedNameAsString();
+            }
             else if (pType->isRecordType())
             {
                 clang::RecordDecl const* pRecordDecl = pType->getAs<clang::RecordType>()->getDecl();
                 ENGINE_ASSERT(pRecordDecl != nullptr);
 
-                qualifiedName = pRecordDecl->getQualifiedNameAsString().c_str();
+                // Keep template arguments in TypeInfo.genericityArgs; the
+                // declaration name here must be the unspecialized base name.
+                if (auto const* specialization = llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(pRecordDecl))
+                {
+                    qualifiedName = specialization->getSpecializedTemplate()->getQualifiedNameAsString();
+                }
+                else
+                {
+                    qualifiedName = pRecordDecl->getQualifiedNameAsString();
+                }
                 /*if (templateTypeConvert.Contains(qualifiedName))
                 {
                     auto* spec = (clang::ClassTemplateSpecializationDecl*)pRecordDecl;
@@ -191,6 +221,81 @@ namespace SE::BuildTool
                 return false;
             }
             return true;
+        }
+
+        std::string GetDeclaredTypeAliasName(CXType type)
+        {
+            // Clang's canonical pointee is needed for native code, but an API
+            // can expose that pointee under a typedef matching its managed name.
+            const CXCursor declaration = clang_getTypeDeclaration(type);
+            const CXCursorKind kind = clang_getCursorKind(declaration);
+            if (kind != CXCursor_TypedefDecl && kind != CXCursor_TypeAliasDecl)
+                return {};
+
+            std::string name = GetCursorSpellingAnsi(declaration);
+            for (CXCursor parent = clang_getCursorSemanticParent(declaration);
+                 !clang_Cursor_isNull(parent) && clang_getCursorKind(parent) != CXCursor_TranslationUnit;
+                 parent = clang_getCursorSemanticParent(parent))
+            {
+                const CXCursorKind parentKind = clang_getCursorKind(parent);
+                if (parentKind == CXCursor_Namespace || parentKind == CXCursor_StructDecl ||
+                    parentKind == CXCursor_ClassDecl || parentKind == CXCursor_ClassTemplate)
+                {
+                    const std::string scope = GetCursorSpellingAnsi(parent);
+                    if (!scope.empty())
+                        name = scope + "::" + name;
+                }
+            }
+            return name;
+        }
+
+        std::string GetTemplateNonTypeArgumentName(CXType type, int index)
+        {
+            if (index < 0)
+                return {};
+
+            const clang::QualType qualType = GetQualType(type);
+            const clang::TemplateArgument* argument = nullptr;
+            const clang::ASTContext* context = nullptr;
+
+            // A specialization may be represented only by its type, without
+            // a ClassTemplateSpecializationDecl (and thus without a record).
+            if (auto const* specialization = GetWrittenTemplateSpecialization(qualType))
+            {
+                const auto arguments = specialization->template_arguments();
+                if (index < arguments.size())
+                {
+                    argument = &arguments[index];
+                    if (auto const* declaration = specialization->getTemplateName().getAsTemplateDecl())
+                        context = &declaration->getASTContext();
+                }
+            }
+
+            // Record specializations still need this path when their type no
+            // longer retains a TemplateSpecializationType node.
+            if (!argument || !context)
+            {
+                const auto* record = qualType->getAsCXXRecordDecl();
+                const auto* specialization = llvm::dyn_cast_or_null<clang::ClassTemplateSpecializationDecl>(record);
+                if (specialization && index < specialization->getTemplateArgs().size())
+                {
+                    argument = &specialization->getTemplateArgs()[index];
+                    context = &specialization->getASTContext();
+                }
+            }
+
+            if (!argument || !context || argument->getKind() == clang::TemplateArgument::Type || argument->isNull())
+            {
+                return {};
+            }
+
+            // libclang exposes the argument count but returns CXType_Invalid
+            // for values such as the 8 in InlinedAllocation<8>.
+            std::string name;
+            llvm::raw_string_ostream stream(name);
+            argument->print(context->getPrintingPolicy(), stream, false);
+            stream.flush();
+            return name;
         }
 
         bool GetAllBaseClasses(std::vector<StringID>& baseClasses, clang::CXXBaseSpecifier& baseSpecifier)
@@ -352,6 +457,12 @@ namespace SE::BuildTool
 
             param.isConst = clang_isConstQualifiedType(valueType) != 0;
 
+            // Preserve only an actual typedef/using declaration. The native
+            // typeID below remains canonical for C++ casts and signatures.
+            const std::string declaredTypeName = GetDeclaredTypeAliasName(valueType);
+            if (!declaredTypeName.empty())
+                param.declaredTypeID = TypeID(declaredTypeName);
+
             std::string typeName = ClangUtils::GetTypeSpellingAnsi(valueType);
             GetQualifiedNameForType(valueType, typeName);
 
@@ -366,7 +477,12 @@ namespace SE::BuildTool
                 {
                     CXType templateArg = clang_Type_getTemplateArgumentAsType(valueType, i);
                     if (templateArg.kind == CXType_Invalid)
+                    {
+                        const std::string argumentName = GetTemplateNonTypeArgumentName(valueType, i);
+                        if (!argumentName.empty())
+                            param.genericityArgs[i].typeID = TypeID(argumentName);
                         continue;
+                    }
 
                     FillTypeInfo(templateArg, param.genericityArgs[i]);
                 }

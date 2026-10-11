@@ -1,174 +1,426 @@
+#nullable disable annotations
 using System;
 
 namespace SE.GUI
 {
     /// <summary>
-    /// The state of a <see cref="CheckBox"/>.
+    /// The checkbox control states.
     /// </summary>
     public enum CheckBoxState
     {
+        /// <summary>
+        /// The default state.
+        /// </summary>
         Default,
+
+        /// <summary>
+        /// The checked state.
+        /// </summary>
         Checked,
+
+        /// <summary>
+        /// The intermediate state.
+        /// </summary>
         Intermediate,
     }
 
     /// <summary>
-    /// A managed three-state checkbox.
+    /// Check box control.
     /// </summary>
     public class CheckBox : Control
     {
-        private CheckBoxState m_State;
-        private bool m_IsPressed;
-        private bool m_IsMouseOverBox;
-        private float m_BoxSize;
-        private Rectangle m_Box;
+        /// <summary>
+        /// True if checked is being pressed (by mouse or touch).
+        /// </summary>
+        protected bool _isPressed;
 
-        public CheckBox()
-            : this(0.0f, 0.0f)
-        {
-        }
+        /// <summary>
+        /// The current state.
+        /// </summary>
+        protected CheckBoxState _state;
 
-        public CheckBox(float x, float y, bool isChecked = false, float size = 18.0f)
-            : base(new Rectangle(x, y, size, size))
-        {
-            m_State = isChecked ? CheckBoxState.Checked : CheckBoxState.Default;
-            m_BoxSize = MathF.Min(16.0f, size);
-            BorderColor = Style.Current.Foreground;
-            BorderColorHighlighted = Style.Current.BackgroundHighlighted;
-            ImageColor = Style.Current.Foreground;
-            CacheBox();
-        }
+        /// <summary>
+        /// The mouse over box state.
+        /// </summary>
+        protected bool _mouseOverBox;
 
-        public event Action<CheckBox>? StateChanged;
+        /// <summary>
+        /// The box size.
+        /// </summary>
+        protected float _boxSize;
 
+        /// <summary>
+        /// The box rectangle.
+        /// </summary>
+        protected Rectangle _box;
+
+        /// <summary>
+        /// Gets or sets the state of the checkbox.
+        /// </summary>
         public CheckBoxState State
         {
-            get => m_State;
+            get
+            {
+                return _state;
+            }
             set
             {
-                if (m_State == value)
-                    return;
+                if (_state != value)
+                {
+                    _state = value;
 
-                m_State = value;
-                StateChanged?.Invoke(this);
+                    if (StateChanged != null)
+                    {
+                        StateChanged(this);
+                    }
+                }
             }
         }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether this <see cref="CheckBox"/> is checked.
+        /// </summary>
         public bool Checked
         {
-            get => State == CheckBoxState.Checked;
-            set => State = value ? CheckBoxState.Checked : CheckBoxState.Default;
-        }
-
-        public bool Intermediate
-        {
-            get => State == CheckBoxState.Intermediate;
-            set => State = value ? CheckBoxState.Intermediate : CheckBoxState.Default;
-        }
-
-        public float BoxSize
-        {
-            get => m_BoxSize;
+            get
+            {
+                return _state == CheckBoxState.Checked;
+            }
             set
             {
-                m_BoxSize = MathF.Max(0.0f, value);
+                State = value ? CheckBoxState.Checked : CheckBoxState.Default;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this <see cref="CheckBox"/> is in the intermediate state.
+        /// </summary>
+        public bool Intermediate
+        {
+            get
+            {
+                return _state == CheckBoxState.Intermediate;
+            }
+            set
+            {
+                State = value ? CheckBoxState.Intermediate : CheckBoxState.Default;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the size of the box.
+        /// </summary>
+        public float BoxSize
+        {
+            get
+            {
+                return _boxSize;
+            }
+            set
+            {
+                _boxSize = value;
                 CacheBox();
             }
         }
 
-        public bool HasBorder { get; set; } = true;
-        public float BorderThickness { get; set; } = 1.0f;
-        public Color BorderColor { get; set; }
-        public Color BorderColorHighlighted { get; set; }
-        public Color ImageColor { get; set; }
-        public bool IsPressed => m_IsPressed;
+        /// <summary>
+        /// Gets or sets whether to have a border.
+        /// </summary>
+        public bool HasBorder = true;
 
         /// <summary>
-        /// Toggles between the unchecked and checked states.
+        /// Gets or sets the border thickness.
+        /// </summary>
+        public float BorderThickness = 1.0f;
+
+        /// <summary>
+        /// Gets or sets the color of the border.
+        /// </summary>
+        public Color BorderColor;
+
+        /// <summary>
+        /// Gets or sets the border color when checkbox is hovered.
+        /// </summary>
+        public Color BorderColorHighlighted;
+
+        /// <summary>
+        /// Gets or sets the color of the checkbox icon.
+        /// </summary>
+        public Color ImageColor;
+
+        /// <summary>
+        /// Gets or sets the image used to render checkbox checked state.
+        /// </summary>
+        public IBrush CheckedImage;
+
+        /// <summary>
+        /// Gets or sets the image used to render checkbox intermediate state.
+        /// </summary>
+        public IBrush IntermediateImage;
+
+        /// <summary>
+        /// Event fired when 'checked' state gets changed.
+        /// </summary>
+        public Action<CheckBox> StateChanged;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CheckBox"/> class.
+        /// </summary>
+        public CheckBox() : this(0, 0)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CheckBox"/> class.
+        /// </summary>
+        /// <param name="x">The x.</param>
+        /// <param name="y">The y.</param>
+        /// <param name="isChecked">if set to <c>true</c> set checked on start.</param>
+        /// <param name="size">The checkbox size.</param>
+        public CheckBox(float x, float y, bool isChecked = false, float size = 18)
+            : base(x, y, size, size)
+        {
+            _state = isChecked ? CheckBoxState.Checked : CheckBoxState.Default;
+            _boxSize = MathF.Min(16.0f, size);
+
+            Style style = Style.Current;
+            ImageColor = style.BorderSelected * 1.2f;
+            BorderColor = style.BorderNormal;
+            BorderColorHighlighted = style.BorderSelected;
+            CheckedImage = new SpriteBrush(style.CheckBoxTick);
+            IntermediateImage = new SpriteBrush(style.CheckBoxIntermediate);
+
+            CacheBox();
+        }
+
+        /// <summary>
+        /// Toggles the checked state.
         /// </summary>
         public void Toggle()
         {
             Checked = !Checked;
         }
 
+        /// <inheritdoc />
+        public override void Draw()
+        {
+            base.Draw();
+
+            bool enabled = EnabledInHierarchy;
+
+            // Border
+            if (HasBorder)
+            {
+                Color borderColor = BorderColor;
+                if (!enabled)
+                {
+                    borderColor *= 0.5f;
+                }
+                else if (_isPressed || _mouseOverBox || IsNavFocused)
+                {
+                    borderColor = BorderColorHighlighted;
+                }
+
+                Render2D.DrawRectangle(_box.MakeExpanded(-2.0f), borderColor, BorderThickness);
+            }
+
+            // Icon
+            if (_state != CheckBoxState.Default)
+            {
+                Color color = ImageColor;
+                if (!enabled)
+                {
+                    color *= 0.6f;
+                }
+
+                if (_state == CheckBoxState.Checked)
+                {
+                    if (CheckedImage != null)
+                    {
+                        CheckedImage.Draw(_box, color);
+                    }
+                }
+                else
+                {
+                    if (IntermediateImage != null)
+                    {
+                        IntermediateImage.Draw(_box, color);
+                    }
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public override bool ContainsPoint(Float2 location, bool precise = false)
+        {
+            if (precise) // Precise check for checkbox element
+            {
+                return _box.Contains(location);
+            }
+            return base.ContainsPoint(location, precise);
+        }
+
+        /// <inheritdoc />
         public override void OnMouseMove(Float2 location)
         {
-            m_IsMouseOverBox = m_Box.Contains(location);
+            base.OnMouseMove(location);
+
+            _mouseOverBox = _box.Contains(location);
         }
 
+        /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (button != MouseButton.Left || m_IsPressed)
-                return false;
-
-            m_IsPressed = true;
-            Root?.StartTrackingMouse(this);
-            return true;
+            if (button == MouseButton.Left && !_isPressed)
+            {
+                OnPressBegin();
+                return true;
+            }
+            return base.OnMouseDown(location, button);
         }
 
+        /// <inheritdoc />
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
+        {
+            if (button == MouseButton.Left && !_isPressed)
+            {
+                OnPressBegin();
+                return true;
+            }
+            if (button == MouseButton.Left && _isPressed)
+            {
+                OnPressEnd();
+                if (_box.Contains(location))
+                {
+                    OnClick();
+                    return true;
+                }
+            }
+            return base.OnMouseDoubleClick(location, button);
+        }
+
+        /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (button != MouseButton.Left || !m_IsPressed)
-                return false;
-
-            m_IsPressed = false;
-            Root?.EndTrackingMouse();
-            if (m_Box.Contains(location))
-                Toggle();
-            return true;
-        }
-
-        public override void ClearState()
-        {
-            m_IsPressed = false;
-            m_IsMouseOverBox = false;
-            base.ClearState();
-        }
-
-        protected override void OnDraw()
-        {
-            base.OnDraw();
-
-            Rectangle box = new Rectangle(ScreenPos + m_Box.Location, m_Box.Size);
-            Color border = m_IsPressed || m_IsMouseOverBox || IsFocused ? BorderColorHighlighted : BorderColor;
-            if (!EnabledInHierarchy)
-                border.A *= 0.5f;
-
-            if (HasBorder && BorderThickness > 0.0f && border.A > 0.0f)
-                Render2D.DrawRectangle(box, border, BorderThickness);
-
-            if (State == CheckBoxState.Default)
-                return;
-
-            Color image = ImageColor;
-            if (!EnabledInHierarchy)
-                image.A *= 0.6f;
-
-            if (State == CheckBoxState.Checked)
+            if (button == MouseButton.Left && _isPressed)
             {
-                Float2 from = new Float2(box.X + box.Width * 0.2f, box.Y + box.Height * 0.55f);
-                Float2 middle = new Float2(box.X + box.Width * 0.43f, box.Y + box.Height * 0.76f);
-                Float2 to = new Float2(box.X + box.Width * 0.82f, box.Y + box.Height * 0.25f);
-                Render2D.DrawLine(from, middle, image, MathF.Max(1.0f, BorderThickness));
-                Render2D.DrawLine(middle, to, image, MathF.Max(1.0f, BorderThickness));
+                OnPressEnd();
+                if (_box.Contains(location))
+                {
+                    OnClick();
+                    return true;
+                }
             }
-            else
-            {
-                Rectangle mark = new Rectangle(box.X + box.Width * 0.2f, box.Y + box.Height * 0.42f, box.Width * 0.6f, box.Height * 0.16f);
-                Render2D.FillRectangle(mark, image);
-            }
+            return base.OnMouseUp(location, button);
         }
 
-        protected override void OnBoundsChanged(bool locationChanged, bool sizeChanged)
+        /// <inheritdoc />
+        public override void OnMouseLeave()
         {
-            base.OnBoundsChanged(locationChanged, sizeChanged);
-            if (sizeChanged)
-                CacheBox();
+            if (_isPressed)
+            {
+                OnPressEnd();
+            }
+
+            _mouseOverBox = false;
+
+            base.OnMouseLeave();
+        }
+
+        /// <inheritdoc />
+        public override bool OnTouchDown(Float2 location, int pointerId)
+        {
+            if (!_isPressed)
+            {
+                OnPressBegin();
+                return true;
+            }
+            return base.OnTouchDown(location, pointerId);
+        }
+
+        /// <inheritdoc />
+        public override bool OnTouchUp(Float2 location, int pointerId)
+        {
+            if (_isPressed)
+            {
+                OnPressEnd();
+                if (_box.Contains(location))
+                {
+                    OnClick();
+                    return true;
+                }
+            }
+            return base.OnTouchUp(location, pointerId);
+        }
+
+        /// <inheritdoc />
+        public override void OnTouchLeave()
+        {
+            if (_isPressed)
+            {
+                OnPressEnd();
+            }
+
+            base.OnTouchLeave();
+        }
+
+        /// <inheritdoc />
+        public override void OnLostFocus()
+        {
+            if (_isPressed)
+            {
+                OnPressEnd();
+            }
+
+            base.OnLostFocus();
+        }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {
+            OnClick();
+
+            base.OnSubmit();
         }
 
         private void CacheBox()
         {
-            m_Box = new Rectangle(0.0f, (Height - m_BoxSize) * 0.5f, m_BoxSize, m_BoxSize);
+            _box = new Rectangle(0, (Height - _boxSize) * 0.5f, _boxSize, _boxSize);
+        }
+
+        protected override void OnSizeChanged()
+        {
+            base.OnSizeChanged();
+
+            CacheBox();
+        }
+
+        /// <summary>
+        /// Called when mouse or touch clicks the checkbox.
+        /// </summary>
+        protected virtual void OnClick()
+        {
+            Toggle();
+        }
+
+        /// <summary>
+        /// Called when checkbox starts to be pressed by the used (via mouse or touch).
+        /// </summary>
+        protected virtual void OnPressBegin()
+        {
+            _isPressed = true;
+            if (AutoFocus)
+            {
+                Focus();
+            }
+        }
+
+        /// <summary>
+        /// Called when checkbox ends to be pressed by the used (via mouse or touch).
+        /// </summary>
+        protected virtual void OnPressEnd()
+        {
+            _isPressed = false;
         }
     }
 }

@@ -43,6 +43,9 @@ namespace SE
 	struct Static : public API::Mark
     {};
 
+	struct NativeInvokeUseName : public API::Mark
+    {};
+
 	struct Attributes : public API::Mark
     {};
 
@@ -66,6 +69,14 @@ namespace SE
     public:
 		InBuild(const char* mapType) {}
 	};
+
+	struct Out : public API::Mark
+    {
+	};
+
+	struct Ref : public API::Mark
+    {
+	};
 	
 
 	// Declares a reflection metadata attribute type.
@@ -84,9 +95,9 @@ namespace SE
 	// Class/struct/interface annotation.
 	// Parameters: Reflect, Template,
 	// API(NoSpawn, NoConstructor, Abstract, Sealed, Static, Deprecated,
-	//     Name="...", Attributes="...", Tag="NativeInvokeUseName").
-	// Name changes only the generated API/C# name; Tag makes static native calls use
-	// that API name as their C++ target. Template is used with SE_TYPEDEF() specializations.
+	//     Name="...", Attributes="...", NativeInvokeUseName).
+	// Name changes the generated API/C# name; NativeInvokeUseName also uses that
+	// name as the C++ call target. Template is used with SE_TYPEDEF() specializations.
 	#define SE_CLASS(...)
 	#define SE_STRUCT(...)
 	#define SE_INTERFACE(...)
@@ -113,6 +124,10 @@ namespace SE
 	// NoProxy keeps the internal interop declaration and native export, but omits the public C# facade.
 	// Static binding is inferred from the C++ method declaration.
 	#define SE_FUNCTION(...)
+
+	// Parameter binding direction: SE_PARAM(API(Out)) or SE_PARAM(API(Ref)).
+	// Place directly before the parameter type in an SE_FUNCTION declaration.
+	#define SE_PARAM(...)
 
 	// Event annotation. Parameters: API(Attributes="...").
 	#define SE_EVENT(...)

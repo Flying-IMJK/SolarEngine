@@ -424,7 +424,7 @@ namespace SE
 		return true;
 	}
 	
-	bool TextureUtils::ImportTextureStb(ImageType type, const StringView& path, TextureData& textureData, const Options& options, String& errorMsg, bool& hasAlpha)
+	bool TextureUtils::ImportTextureStb(ImageType type, const StringView& path, TextureData& textureData, const TextureUtilsOptions& options, String& errorMsg, bool& hasAlpha)
 	{
 		// Load image data
 		if (type == ImageType::Internal)

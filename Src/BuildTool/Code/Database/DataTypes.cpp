@@ -61,6 +61,7 @@ namespace SE::BuildTool
     TypeInfo::TypeInfo(const TypeInfo& other)
     {
         typeID = other.typeID;
+        declaredTypeID = other.declaredTypeID;
         arraySize = other.arraySize;
         pointerDepth = other.pointerDepth;
         isPointer = other.isPointer;

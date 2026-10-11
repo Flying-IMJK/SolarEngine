@@ -126,9 +126,9 @@ namespace SE::Editor
         CriticalSection _locker;
         SplitPanel* _split;
         Label* _logInfo;
-        VerticalPanel* _entriesPanel;
+        VerticalPanel* m_EntriesPanel;
         LogEntry* _selected = nullptr;
-        List<int, InlinedAllocation<(int)LogGroup::Max>> _logCountPerGroup;
+        List<int, InlinedAllocation<(int)LogGroup::Max>> m_LogCountPerGroup;
         // Regex _logRegex = new Regex("at (.*) in (.*):(line (\\d*)|(\\d*))");
         // Threading::ThreadLocal<StringBuilder> _stringBuilder = Threading::ThreadLocal<StringBuilder>();
         // InterfaceOptions.TimestampsFormats _timestampsFormats;

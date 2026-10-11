@@ -26,7 +26,7 @@ namespace SE
 	}
 #endif
 
-	String TextureUtils::Options::ToString() const
+	String TextureUtilsOptions::ToString() const
 	{
 		return String::Format(SE_TEXT(
 				"Type: {}, IsAtlas: {}, NeverStream: {}, IndependentChannels: {}, sRGB: {}, GenerateMipMaps: {}, FlipY: {}, InvertGreen: {} Scale: {}, MaxSize: {}, Resize: {}, PreserveAlphaCoverage: {}, PreserveAlphaCoverageReference: {}, SizeX: {}, SizeY: {}"),
@@ -49,7 +49,7 @@ namespace SE
 		);
 	}
 
-	void TextureUtils::Options::Serialize(SerializeContext& context)
+	void TextureUtilsOptions::Serialize(SerializeContext& context)
 	{
 		context.stream.JKEY("Type");
 		context.stream.Enum(Type);
@@ -124,9 +124,9 @@ namespace SE
 		context.stream.EndArray();
 	}
 
-	void TextureUtils::Options::Deserialize(DeserializeContext& context)
+	void TextureUtilsOptions::Deserialize(DeserializeContext& context)
 	{
-		// Restore general import options
+		// Restore general import TextureUtilsOptions
 		Type = JsonTools::GetEnum(*context.stream, "Type", Type);
 		IsAtlas = JsonTools::GetBool(*context.stream, "IsAtlas", IsAtlas);
 		NeverStream = JsonTools::GetBool(*context.stream, "NeverStream", NeverStream);
@@ -166,7 +166,8 @@ namespace SE
 	            Sprites.Add(s);
 	        }
 	    }
-	}
+    }
+
 
 #if SE_EDITOR
 
@@ -221,15 +222,15 @@ namespace SE
 		return failed;
 	}
 
-	bool TextureUtils::ImportTexture(const StringView& path, TextureData& textureData, Options options, String& errorMsg)
+	bool TextureUtils::ImportTexture(const StringView& path, TextureData& textureData, TextureUtilsOptions TextureUtilsOptions, String& errorMsg)
 	{
 		PROFILE_CPU();
-		LOG_INFO("Graphic", "Importing texture from \'{0}\'. Options: {1}", path, options.ToString());
+		LOG_INFO("Graphic", "Importing texture from \'{0}\'. TextureUtilsOptions: {1}", path, TextureUtilsOptions.ToString());
 		const auto startTime = DateTime::NowUTC();
 
 		// Detect texture format type
 		ImageType type;
-		if (options.InternalLoad.IsBinded())
+		if (TextureUtilsOptions.InternalLoad.IsBinded())
 		{
 			type = ImageType::Internal;
 		}
@@ -242,16 +243,16 @@ namespace SE
 		}
 
 		// Clamp values
-		options.MaxSize = Math::Clamp(options.MaxSize, 1, GPU_MAX_TEXTURE_SIZE);
-		options.SizeX = Math::Clamp(options.SizeX, 1, GPU_MAX_TEXTURE_SIZE);
-		options.SizeY = Math::Clamp(options.SizeY, 1, GPU_MAX_TEXTURE_SIZE);
+		TextureUtilsOptions.MaxSize = Math::Clamp(TextureUtilsOptions.MaxSize, 1, GPU_MAX_TEXTURE_SIZE);
+		TextureUtilsOptions.SizeX = Math::Clamp(TextureUtilsOptions.SizeX, 1, GPU_MAX_TEXTURE_SIZE);
+		TextureUtilsOptions.SizeY = Math::Clamp(TextureUtilsOptions.SizeY, 1, GPU_MAX_TEXTURE_SIZE);
 
 		// Import
 		bool hasAlpha = false;
 #if COMPILE_USE_DIRECTXTEX
-		const auto failed = ImportTextureDirectXTex(type, path, textureData, options, errorMsg, hasAlpha);
+		const auto failed = ImportTextureDirectXTex(type, path, textureData, TextureUtilsOptions, errorMsg, hasAlpha);
 #elif COMPILE_USE_STB
-		const auto success = ImportTextureStb(type, path, textureData, options, errorMsg, hasAlpha);
+		const auto success = ImportTextureStb(type, path, textureData, TextureUtilsOptions, errorMsg, hasAlpha);
 #else
 		const auto success = false;
 		LOG_WARNING("Graphic", "Importing textures is not supported on this platform.");

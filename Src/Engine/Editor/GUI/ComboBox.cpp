@@ -39,12 +39,12 @@ namespace SE::Editor
 	void ComboBox::ClearItems()
 	{
 		SelectedIndex = -1;
-		items.Clear();
+		Items.Clear();
 	}
 
 	void ComboBox::AddItem(String& item)
 	{
-		items.Add(item);
+		Items.Add(item);
 	}
 
 	void ComboBox::AddItems(List<String>& items)
@@ -61,7 +61,7 @@ namespace SE::Editor
 
 	bool ComboBox::IsSelected(String& item)
 	{
-		return IsSelected(items.Find(item));
+		return IsSelected(Items.Find(item));
 	}
 
 	bool ComboBox::IsSelected(int index)
@@ -81,7 +81,7 @@ namespace SE::Editor
 		if (IsDisposing)
 			return;
 		_selectedIndices.Clear();
-		items.Clear();
+		Items.Clear();
 
 		Control::OnDestroy();
 	}
@@ -122,7 +122,7 @@ namespace SE::Editor
 		// Check if has selected item
 		if (_selectedIndices.Count() > 0)
 		{
-			String text = _selectedIndices.Count() == 1 ? (_selectedIndices[0] >= 0 && _selectedIndices[0] < items.Count() ? items[_selectedIndices[0]] : SE_TEXT("")) : SE_TEXT("Multiple Values");
+			String text = _selectedIndices.Count() == 1 ? (_selectedIndices[0] >= 0 && _selectedIndices[0] < Items.Count() ? Items[_selectedIndices[0]] : SE_TEXT("")) : SE_TEXT("Multiple Values");
 
 			// Draw text of the selected item
 			float textScale = Height / DefaultHeight;
@@ -194,9 +194,9 @@ namespace SE::Editor
 
 	void ComboBox::OnSelectedIndexChanged()
 	{
-		if (tooltips.Count() == items.Count())
+		if (Tooltips.Count() == Items.Count())
 		{
-			TooltipText = _selectedIndices.Count() == 1 ? tooltips[_selectedIndices[0]] : nullptr;
+			TooltipText = _selectedIndices.Count() == 1 ? Tooltips[_selectedIndices[0]] : nullptr;
 		}
 		SelectedIndexChanged(this);
 	}
@@ -251,7 +251,7 @@ namespace SE::Editor
 		PopupShowing(this);
 
 		// Check if has any items
-		if (items.Count() > 0)
+		if (Items.Count() > 0)
 		{
 			UpdateButtons();
 
@@ -271,8 +271,8 @@ namespace SE::Editor
 	void ComboBox::OnLayoutMenuButton(ContextMenuButton* button, int index, bool construct)
 	{
 		button->SetChecked(_selectedIndices.Contains(index));
-		if (tooltips.Count() > index)
-			button->TooltipText = tooltips[index];
+		if (Tooltips.Count() > index)
+			button->TooltipText = Tooltips[index];
 	}
 
 	ContextMenu* ComboBox::OnCreatePopup()
@@ -284,7 +284,7 @@ namespace SE::Editor
 
 	void ComboBox::UpdateButtons()
 	{
-		if (_popupMenu->Items.operator->().Count() != items.Count())
+		if (_popupMenu->Items.operator->().Count() != Items.Count())
 		{
 			List<ContextMenuItem*> itemControls = _popupMenu->Items;
 			for (auto e : itemControls)
@@ -293,11 +293,11 @@ namespace SE::Editor
 			}
 			if (Sorted)
 			{
-				Sorting::QuickSort(items);
+				Sorting::QuickSort(Items);
 			}
-			for (int i = 0; i < items.Count(); i++)
+			for (int i = 0; i < Items.Count(); i++)
 			{
-				ContextMenuButton* btn = _popupMenu->AddButton(items[i]);
+				ContextMenuButton* btn = _popupMenu->AddButton(Items[i]);
 				OnLayoutMenuButton(btn, i, true);
 				btn->Tag = i;
 			}
@@ -307,14 +307,14 @@ namespace SE::Editor
 			List<ContextMenuItem*> itemControls = _popupMenu->Items;
 			if (Sorted)
 			{
-				Sorting::QuickSort(items);
+				Sorting::QuickSort(Items);
 			}
-			for (int i = 0; i < items.Count(); i++)
+			for (int i = 0; i < Items.Count(); i++)
 			{
 				ContextMenuButton* btn;
 				if (TypeTryCast<ContextMenuButton>(itemControls[i], btn))
 				{
-					btn->Text = items[i];
+					btn->Text = Items[i];
 					OnLayoutMenuButton(btn, i, true);
 				}
 			}
@@ -324,7 +324,7 @@ namespace SE::Editor
 	void ComboBox::__SetSelectedIndex(int value)
 	{
 		// Clamp index
-		value = Math::Min(value, items.Count() - 1);
+		value = Math::Min(value, Items.Count() - 1);
 
 		// Check if index will change
 		if (value != SelectedIndex)
@@ -344,7 +344,7 @@ namespace SE::Editor
 		for (int i = 0; i < value.Count(); i++)
 		{
 			int index = value[i];
-			if (index < 0 || index >= items.Count())
+			if (index < 0 || index >= Items.Count())
 			{
 				ENGINE_ASSERT(false);
 			}

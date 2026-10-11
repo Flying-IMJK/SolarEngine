@@ -45,6 +45,8 @@ namespace SE::BuildTool
         TypeInfoBase const *GetType(StringID typeID) const;
         TypeInfoBase *GetType(StringID typeID);
         TypeInfoBase const* ResolveTypeDeclaration(TypeInfo const& type) const;
+        // Binding-only fallback from a source alias to an exported API name.
+        TypeInfoBase const* FindApiTypeByName(TypeID declaredTypeID, bool& ambiguous) const;
         std::vector<TypeInfoBase const*> GetAllTypes() const;
 		std::vector<TypeInfoBase*> GetAllTypes();
         bool IsTypeRegistered(StringID typeID) const;

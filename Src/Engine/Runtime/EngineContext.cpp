@@ -8,10 +8,10 @@ namespace SE
 	String EngineContext::ProjectFolder;
 	String EngineContext::ProductLocalFolder;
 	String EngineContext::BinariesFolder;
-#if SE_EDITOR
+
 	String EngineContext::ProjectCacheFolder;
 	String EngineContext::ProjectSourceFolder;
-#endif
+
 	String EngineContext::ProjectContentFolder;
 
 	String EngineContext::ProductName;

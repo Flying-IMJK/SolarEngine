@@ -1,57 +1,65 @@
-using System;
+#nullable disable annotations
+
 using SE.GUI;
 
 namespace SE.Editor.GUI
 {
-    public sealed class SearchBox : TextBox
+    /// <summary>
+    /// Search box control which can gather text search input from the user.
+    /// </summary>
+    public class SearchBox : TextBox
     {
-        public SearchBox()
-            : this(false, 0.0f, 0.0f)
+        /// <summary>
+        /// A button that clears the search bar.
+        /// </summary>
+        public Button ClearSearchButton;
+
+        public SearchBox() : base(false, 0, 0)
         {
+            ClearSearchButton = null;
         }
 
+        /// <summary>
+        /// Init search box
+        /// </summary>
         public SearchBox(bool isMultiline, float x, float y, float width = 120.0f)
-            : this(x, y, width, isMultiline)
+            : base(isMultiline, x, y, width)
         {
-        }
+            WatermarkText = "Search...";
 
-        public SearchBox(float x = 0, float y = 0, float width = 120, bool isMultiline = false)
-            : base(new Rectangle(x, y, width, 22), isMultiline)
-        {
-            PlaceholderText = "Search...";
-            ClearSearchButton = new Button(new Rectangle(width - 18, 4, 14, 14), "x");
-            ClearSearchButton.Visible = false;
+            ClearSearchButton = new Button();
+            ClearSearchButton.Parent = this;
+            ClearSearchButton.Width = 14.0f;
+            ClearSearchButton.Height = 14.0f;
+            ClearSearchButton.AnchorPreset = AnchorPresets.TopRight;
+            ClearSearchButton.Text = string.Empty;
             ClearSearchButton.TooltipText = "Cancel Search.";
-            ClearSearchButton.Clicked += _ => Clear();
+            ClearSearchButton.BackgroundColor = TextColor;
+            ClearSearchButton.BorderColor = Color.Transparent;
+            ClearSearchButton.BackgroundColorHighlighted = Style.Current.ForegroundGrey;
+            ClearSearchButton.BorderColorHighlighted = Color.Transparent;
+            ClearSearchButton.BackgroundColorSelected = Style.Current.ForegroundGrey;
+            ClearSearchButton.BorderColorSelected = Color.Transparent;
+            ClearSearchButton.BackgroundBrush = new SpriteBrush(EditorIcons.Cross16);
+            ClearSearchButton.Visible = false;
 
-            AddChild(ClearSearchButton);
-        }
+            ClearSearchButton.LocalY = ClearSearchButton.LocalY + 2;
+            ClearSearchButton.LocalX = ClearSearchButton.LocalX - 2;
+            ClearSearchButton.Clicked += Clear;
+            ClearSearchButton.HoverBegin += () =>
+            {
+                _changeCursor = false;
+                Cursor = CursorType.Default;
+            };
+            ClearSearchButton.HoverEnd += () =>
+            {
+                _changeCursor = true;
+            };
 
-        public event Action<SearchBox>? TextChanged;
-
-        public Button ClearSearchButton { get; }
-        public string WatermarkText
-        {
-            get => PlaceholderText;
-            set => PlaceholderText = value;
-        }
-
-        public void SetText(string text)
-        {
-            Text = text;
-        }
-
-        public void Clear()
-        {
-            SetText(string.Empty);
-        }
-
-        protected override void OnTextChanged()
-        {
-            base.OnTextChanged();
-            ClearSearchButton.Visible = !string.IsNullOrEmpty(Text);
-            ClearSearchButton.SetBounds(Width - 18, 4, 14, 14);
-            TextChanged?.Invoke(this);
+            TextChanged += () =>
+            {
+                ClearSearchButton.Visible = Text.Length != 0;
+            };
         }
     }
 }

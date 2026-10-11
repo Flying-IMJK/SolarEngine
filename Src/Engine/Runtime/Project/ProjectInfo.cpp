@@ -53,6 +53,13 @@ namespace SE
 		return defaultValue;
 	}*/
 
+	ProjectInfo::ProjectInfo() : ScriptingObject(SpawnParams(UID::New(), ProjectInfo::TypeInitializer))
+	{
+		Version = VersionInfo(1, 0);
+//			DefaultSceneSpawn = Ray(Float3::Zero, Float3::Forward);
+		DefaultScene = UID::Empty;
+	}
+
 	bool ProjectInfo::SaveProject()
 	{
 		// Serialize object to Json

@@ -21,13 +21,14 @@ namespace SE::BuildTool
 
     static std::string GetCppNativeSimpleName(const TypeInfoStruct& cls)
     {
-        return cls.APIName.empty() ? cls.name : cls.APIName;
+        return cls.name;
     }
 
 
     static std::string GetCppNativeInvokeTypeName(const TypeInfoStruct& cls)
     {
-        std::string nativeName = cls.APIIsNativeInvokeUseName ? cls.name : GetCppNativeSimpleName(cls);
+        const std::string nativeName = cls.APIIsNativeInvokeUseName && !cls.APIName.empty()
+            ? cls.APIName : GetCppNativeSimpleName(cls);
         return CodeGeneratorUtils::GetFullNativeName(cls.namespaceScopeList, cls.structScopeList, nativeName);
     }
 
@@ -36,8 +37,57 @@ namespace SE::BuildTool
         return expression + ".Get()";
     }
 
+    static std::string GetManagedElementClassExpression(const std::string& managedType)
+    {
+        struct CachedType
+        {
+            const char* managedType;
+            const char* cacheName;
+        };
+        static constexpr CachedType cachedTypes[] =
+        {
+            { "bool", "Boolean" },
+            { "sbyte", "SByte" },
+            { "byte", "Byte" },
+            { "char", "Char" },
+            { "short", "Int16" },
+            { "ushort", "UInt16" },
+            { "int", "Int32" },
+            { "uint", "UInt32" },
+            { "long", "Int64" },
+            { "ulong", "UInt64" },
+            { "float", "Single" },
+            { "double", "Double" },
+            { "string", "String" },
+            { "object", "Object" },
+            { "IntPtr", "IntPtr" },
+            { "UIntPtr", "UIntPtr" },
+        };
+        for (const CachedType& cachedType : cachedTypes)
+        {
+            if (managedType == cachedType.managedType)
+            {
+                return Utils::String::Format("CLRCore::TypeCache::{0}", cachedType.cacheName);
+            }
+        }
+        return Utils::String::Format("Scripting::FindClass(StringAnsiView(\"{0}\"))", managedType);
+    }
+
+    static std::string GetManagedElementClassExpression(const CSharpTypeConversion& conversion)
+    {
+        if (conversion.kind != BindingTypeKind::InteropStruct)
+            return GetManagedElementClassExpression(conversion.publicType);
+
+        // Reflection names nested marshaller types with '+' rather than C#'s '.'.
+        std::string internalType = conversion.libraryImportManagedType;
+        const size_t separator = internalType.find_last_of('.');
+        if (separator != std::string::npos)
+            internalType[separator] = '+';
+        return GetManagedElementClassExpression(internalType);
+    }
+
     CppTypeConversion BindingsCppGenerator::ResolveConversion(TypeInfo const& type, std::string_view marshalAs,
-                                                               BindingUseSite useSite, BindingDirection direction) const
+                                                               BindingUseSite useSite, ApiParameterDirection direction) const
     {
         const BindingTypeSemantics semantics = ResolveBindingTypeSemantics(m_Database, type, marshalAs);
         return ResolveCppTypeConversion(m_Database, semantics, useSite, direction);
@@ -97,7 +147,7 @@ namespace SE::BuildTool
     bool BindingsCppGenerator::GetNativeToManagedConvert(TypeInfo const& type, std::string& expr, std::string_view marshalAs) const
     {
         const std::string baseType = type.typeID.ToString();
-        const CppTypeConversion conversion = ResolveConversion(type, marshalAs, BindingUseSite::Return, BindingDirection::Out);
+        const CppTypeConversion conversion = ResolveConversion(type, marshalAs, BindingUseSite::Return, ApiParameterDirection::Out);
         if (baseType == "TypeID" || baseType == "SE::TypeID")
         {
             expr = Utils::String::Format("(uint32){0}", expr);
@@ -282,6 +332,9 @@ namespace SE::BuildTool
             return Utils::String::Format("(StringView){0}", expr);
         if (conversion.kind == BindingTypeKind::ScriptingObject)
         {
+            // ScriptingObject semantics always have a resolved declaration.
+            // Check that API class, then cast to the field's actual native
+            // pointer type, which may be a platform-specific alias.
             const std::string targetType = CodeGeneratorUtils::GetFullNativeName(
                 conversion.declaration->namespaceScopeList,
                 conversion.declaration->structScopeList,
@@ -289,8 +342,8 @@ namespace SE::BuildTool
                 true);
             return Utils::String::Format(
                 "({1}.AsObject && ScriptingObject::CanCast({1}.AsObject->GetClass(), {0}::GetScriptingClass()) ? "
-                "static_cast<{0}*>({1}.AsObject) : nullptr)",
-                targetType, expr);
+                " ({2}){1}.AsObject : nullptr)",
+                targetType, expr, nativeType);
         }
         if (conversion.kind == BindingTypeKind::ObjectRef)
         {
@@ -359,12 +412,12 @@ namespace SE::BuildTool
             if (parameter.role == AbiParameterRole::HiddenResult)
             {
                 const CppTypeConversion conversion = ResolveConversion(
-                    fn.returnType, fn.marshalAs, BindingUseSite::Return, BindingDirection::Out);
+                    fn.returnType, fn.marshalAs, BindingUseSite::Return, ApiParameterDirection::Out);
                 params += Utils::String::Format("{0}* __resultAsRef", conversion.exportType);
                 continue;
             }
             const TypeInfoParam& publicParameter = fn.params[parameter.publicParameterIndex];
-            const BindingDirection direction = GetBindingDirection(publicParameter);
+            const ApiParameterDirection direction = publicParameter.direction;
             const CppTypeConversion conversion = ResolveConversion(
                 publicParameter.type, publicParameter.marshalAs, BindingUseSite::Parameter, direction);
             const char* pointer = parameter.type.passMode == AbiPassMode::Value ? "" : "*";
@@ -399,8 +452,8 @@ namespace SE::BuildTool
 
             const TypeInfoParam& param = fn.params[i];
             const TypeInfo& paramType = param.type;
-            const BindingDirection direction = GetBindingDirection(param);
-            const std::string abiExpression = direction == BindingDirection::In
+            const ApiParameterDirection direction = param.direction;
+            const std::string abiExpression = direction == ApiParameterDirection::In
                 ? param.name : Utils::String::Format("*{0}", param.name);
             const CollectionInfo collection = GetCollectionInfo(paramType);
             std::string converted;
@@ -413,12 +466,12 @@ namespace SE::BuildTool
                 const std::string countName = Utils::String::Format("__{0}NativeCount", param.name);
                 const std::string arrayName = Utils::String::Format("__{0}Array", param.name);
                 setupOut += Utils::String::Format("        CLRArray* {0} = {1};\n", arrayName,
-                    direction == BindingDirection::Out ? "nullptr" : abiExpression);
+                    direction == ApiParameterDirection::Out ? "nullptr" : abiExpression);
 
                 const std::string typeName = paramType.typeID.ToString();
                 if (typeName == "BytesContainer" || typeName == "SE::BytesContainer")
                 {
-                    if (direction == BindingDirection::Out)
+                    if (direction == ApiParameterDirection::Out)
                         setupOut += Utils::String::Format("        ::SE::BytesContainer {0};\n", localName);
                     else
                         setupOut += Utils::String::Format("        auto {0} = CLRUtils::LinkArray({1});\n", localName, arrayName);
@@ -427,14 +480,14 @@ namespace SE::BuildTool
                 else if (typeName == "DataContainer" || typeName == "SE::DataContainer")
                 {
                     setupOut += Utils::String::Format("        ::SE::DataContainer<{0}> {1};\n", nativeElementType, localName);
-                    if (direction != BindingDirection::Out)
+                    if (direction != ApiParameterDirection::Out)
                         setupOut += Utils::String::Format("        CLRUtils::ToArray({0}, {1});\n", arrayName, localName);
                     converted = localName;
                 }
                 else
                 {
                     const std::string requestedCount = collection.HasRuntimeCount()
-                        ? (direction == BindingDirection::In
+                        ? (direction == ApiParameterDirection::In
                             ? Utils::String::Format("__{0}Count", param.name)
                             : Utils::String::Format("(__{0}Count != nullptr ? *__{0}Count : 0)", param.name))
                         : Utils::String::Format("CLRCore::Array::GetLength({0})", arrayName);
@@ -444,7 +497,7 @@ namespace SE::BuildTool
                         : CodeGeneratorUtils::QualifyCppType(paramType.ToNativeType());
                     setupOut += Utils::String::Format("        {0} {1};\n", nativeCollectionType, localName);
                     setupOut += Utils::String::Format("        const int32 {0} = {1} ? Math::Min((int32)CLRCore::Array::GetLength({1}), (int32){2}) : 0;\n",
-                        countName, arrayName, direction == BindingDirection::Out ? "0" : requestedCount);
+                        countName, arrayName, direction == ApiParameterDirection::Out ? "0" : requestedCount);
                     setupOut += Utils::String::Format("        {0}.Resize({1});\n", localName, countName);
                     setupOut += Utils::String::Format("        if ({0} > 0)\n        {{\n", countName);
                     setupOut += Utils::String::Format("            auto* __{0}Items = CLRCore::Array::GetAddress<{1}>({2});\n",
@@ -462,7 +515,7 @@ namespace SE::BuildTool
                         converted = localName;
                 }
 
-                if (direction != BindingDirection::In)
+                if (direction != ApiParameterDirection::In)
                 {
                     const bool usesLength = typeName == "BytesContainer" || typeName == "SE::BytesContainer" ||
                         typeName == "DataContainer" || typeName == "SE::DataContainer";
@@ -470,12 +523,12 @@ namespace SE::BuildTool
                     const std::string elementClassName = Utils::String::Format("__{0}ElementClass", param.name);
                     const BindingTypeSemantics elementSemantics = ResolveBindingTypeSemantics(m_Database, elementType);
                     const CSharpTypeConversion elementConversion = ResolveCSharpTypeConversion(
-                        m_Database, elementSemantics, BindingUseSite::ArrayElement, BindingDirection::In);
+                        m_Database, elementSemantics, BindingUseSite::ArrayElement, ApiParameterDirection::In);
                     postCallOut += Utils::String::Format("        const int32 {0} = {1}{2};\n", outCountName, localName,
                         usesLength ? ".Length()" : ".Count()");
                     postCallOut += Utils::String::Format("        if (__{0}Count != nullptr) *__{0}Count = {1};\n", param.name, outCountName);
-                    postCallOut += Utils::String::Format("        CLRClass* {0} = Scripting::FindClass(StringAnsiView(\"{1}\"));\n",
-                        elementClassName, elementConversion.publicType);
+                    postCallOut += Utils::String::Format("        CLRClass* {0} = {1};\n",
+                        elementClassName, GetManagedElementClassExpression(elementConversion));
                     postCallOut += Utils::String::Format("        if ({0} == nullptr || {1} == nullptr)\n        {{\n", elementClassName, param.name);
                     postCallOut += Utils::String::Format("            if ({0} != nullptr) *{0} = nullptr;\n        }}\n        else\n        {{\n", param.name);
                     if (elementSemantics.kind != BindingTypeKind::InteropStruct)
@@ -504,7 +557,7 @@ namespace SE::BuildTool
             else
             {
                 const BindingTypeSemantics semantics = ResolveBindingTypeSemantics(m_Database, paramType, param.marshalAs);
-                const bool manualWriteBack = direction != BindingDirection::In &&
+                const bool manualWriteBack = direction != ApiParameterDirection::In &&
                     (semantics.kind == BindingTypeKind::InteropStruct || semantics.kind == BindingTypeKind::ObjectRef);
                 if (manualWriteBack)
                 {
@@ -537,8 +590,7 @@ namespace SE::BuildTool
         const std::string interopElementType = GetInteropValueType(elementType);
         const BindingTypeSemantics elementSemantics = ResolveBindingTypeSemantics(m_Database, elementType);
         const CSharpTypeConversion elementConversion = ResolveCSharpTypeConversion(
-            m_Database, elementSemantics, BindingUseSite::ArrayElement, BindingDirection::In);
-        const std::string managedElementType = elementConversion.publicType;
+            m_Database, elementSemantics, BindingUseSite::ArrayElement, ApiParameterDirection::In);
         const bool usesInteropStruct = elementConversion.kind == BindingTypeKind::InteropStruct;
 
         output += Utils::String::Format("        const auto& __collectionValue = {0};\n", nativeExpression);
@@ -549,8 +601,10 @@ namespace SE::BuildTool
             output += Utils::String::Format("        const int32 __collectionCount = __collectionValue{0};\n", (fn.returnType.typeID == TypeID("Span") ? ".Length()": ".Count()"));
         }
         if (collection.HasRuntimeCount())
+        {
             output += "        if (__returnCount != nullptr) *__returnCount = __collectionCount;\n";
-        output += Utils::String::Format("        CLRClass* __elementClass = Scripting::FindClass(StringAnsiView(\"{0}\"));\n", managedElementType);
+        }
+        output += Utils::String::Format("        CLRClass* __elementClass = {0};\n", GetManagedElementClassExpression(elementConversion));
         output += "        if (__elementClass == nullptr)\n        {\n";
         output += postCall;
         output += "            return nullptr;\n        }\n";
@@ -725,14 +779,21 @@ namespace SE::BuildTool
                     if (fieldCollection.kind == CollectionKind::Fixed)
                     {
                         std::string expr = Utils::String::Format("value.{0}[i]", field.name);
-                        GetManagedToNativeConvert(fieldTypeInfo, expr, field.marshalAs);
+                        GetManagedToNativeConvert(fieldCollection.elementType, expr, field.marshalAs);
 
                         output += Utils::String::Format("        for (int32 i = 0; i < {0}; ++i) result.{1}[i] = {2};\n", fieldCollection.fixedElementCount, field.name, expr);
                     }
                     else
                     {
-                        const std::string nativeElementType = CodeGeneratorUtils::QualifyCppType(fieldCollection.elementType.ToString(false));
-                        output += Utils::String::Format("        result.{0} = CLRUtils::ToArray<{1}>(value.{0});\n", field.name, nativeElementType);
+                        std::string nativeCollectionArgs = CodeGeneratorUtils::QualifyCppType(fieldCollection.elementType.ToString(false));;
+                        // List/Array may specify a native allocator as their
+                        // second template argument; preserve it in ToArray.
+                        if (fieldTypeInfo.genericityArgs.size() > 1)
+                        {
+                            nativeCollectionArgs += ", " + CodeGeneratorUtils::QualifyCppType(fieldTypeInfo.genericityArgs[1].ToString(false));
+                        }
+                        output += Utils::String::Format("        result.{0} = CLRUtils::ToArray<{1}>(value.{0});\n",
+                            field.name, nativeCollectionArgs);
                     }
                 }
                 else
@@ -761,7 +822,7 @@ namespace SE::BuildTool
                     if (fieldCollection.kind == CollectionKind::Fixed)
                     {
                         std::string expr = Utils::String::Format("value.{0}[i]", field.name);
-                        GetNativeToManagedConvert(fieldTypeInfo, expr, field.marshalAs);
+                        GetNativeToManagedConvert(fieldCollection.elementType, expr, field.marshalAs);
 
                         output += Utils::String::Format("        for (int32 i = 0; i < {0}; ++i) result.{1}[i] = {2};\n", fieldCollection.fixedElementCount, field.name, expr);
                     }
@@ -770,10 +831,9 @@ namespace SE::BuildTool
                         const BindingTypeSemantics elementSemantics = ResolveBindingTypeSemantics(
                             m_Database, fieldCollection.elementType);
                         const CSharpTypeConversion elementConversion = ResolveCSharpTypeConversion(
-                            m_Database, elementSemantics, BindingUseSite::ArrayElement, BindingDirection::In);
-                        output += Utils::String::Format(
-                            "        result.{0} = CLRUtils::ToArray(value.{0}, Scripting::FindClass(StringAnsiView(\"{1}\")));\n",
-                            field.name, elementConversion.publicType);
+                            m_Database, elementSemantics, BindingUseSite::ArrayElement, ApiParameterDirection::In);
+                        output += Utils::String::Format("        result.{0} = CLRUtils::ToArray(value.{0}, {1});\n",
+                            field.name, GetManagedElementClassExpression(elementConversion));
                     }
                 }
                 else
@@ -841,7 +901,11 @@ namespace SE::BuildTool
                 output += "            if (result == nullptr)\n";
                 output += "                return;\n";
                 output += Utils::String::Format("            auto* resultItems = CLRCore::Array::GetAddress<BindingsInterop::{0}>(result);\n", interopName);
-                output += Utils::String::Format("            const CLRClass* elementClass = ::{0}::TypeInitializer.GetClass();\n", nativeType);
+                const CSharpTypeConversion elementConversion = ResolveCSharpTypeConversion(m_Database,
+                    ResolveBindingTypeSemantics(m_Database, TypeInfo(cls->typeID)), BindingUseSite::ArrayElement,
+                    ApiParameterDirection::In);
+                output += Utils::String::Format("            const CLRClass* elementClass = {0};\n",
+                    GetManagedElementClassExpression(elementConversion));
                 output += "            for (int32 i = 0; i < data.Length(); ++i)\n";
                 output += "            {\n";
                 output += "                auto managed = BindingsInterop::ToManaged(data[i]);\n";
@@ -969,7 +1033,7 @@ namespace SE::BuildTool
         endOut.append("{\n");
         if (!fn.isStatic)
         {
-            std::string nativeTypeName = CodeGeneratorUtils::GetFullNativeName(cls.namespaceScopeList, cls.structScopeList, GetCppNativeSimpleName(cls));
+            std::string nativeTypeName = GetCppNativeInvokeTypeName(cls);
             std::string internalName = CodeGeneratorUtils::GetInternalClassName(cls.name);
             std::string castExpr = Utils::String::Format("return {0}::{1}((::{2}*)__obj{3}{4})", internalName, fn.uniqueName, nativeTypeName,!forwardArgs.empty() ? ", " : "", forwardArgs);
             endOut.append(Utils::String::Format("    {0};\n", (retIsVoid || useOutResult) ?
@@ -1108,7 +1172,7 @@ namespace SE::BuildTool
         endOut.append("{\n");
         if (!fn.isStatic)
         {
-            std::string nativeTypeName = CodeGeneratorUtils::GetFullNativeName(cls.namespaceScopeList, cls.structScopeList, GetCppNativeSimpleName(cls));
+            std::string nativeTypeName = GetCppNativeInvokeTypeName(cls);
             std::string internalName = CodeGeneratorUtils::GetInternalClassName(cls.name);
             std::string castExpr = Utils::String::Format("return {0}::{1}((::{2}*)__obj{3}{4})", internalName, fn.uniqueName, nativeTypeName,!forwardArgs.empty() ? ", " : "", forwardArgs);
             endOut.append(Utils::String::Format("    {0};\n", (retIsVoid || useOutResult) ?
@@ -1128,6 +1192,113 @@ namespace SE::BuildTool
     }
 
 
+    std::string BindingsCppGenerator::GenerateCppWrapperNativeToManagedParam(const TypeInfoParam& param,
+                                                                             std::string& setupOut, bool& useLocalVar) const
+    {
+        const BindingTypeSemantics semantics = ResolveBindingTypeSemantics(m_Database, param.type, param.marshalAs);
+        const bool writableRef = param.type.isRef && !param.type.isConst;
+        const std::string managedName = Utils::String::Format("__managed_{0}", param.name);
+        useLocalVar = false;
+
+        if (semantics.kind == BindingTypeKind::Collection)
+        {
+            const TypeInfo& elementType = semantics.collection.elementType;
+            const std::string nativeElementType = CodeGeneratorUtils::QualifyCppType(elementType.ToString(false));
+            const BindingTypeSemantics elementSemantics = ResolveBindingTypeSemantics(m_Database, elementType);
+            const CSharpTypeConversion elementConversion = ResolveCSharpTypeConversion(
+                m_Database, elementSemantics, BindingUseSite::ArrayElement, ApiParameterDirection::In);
+            const std::string elementClass = Utils::String::Format("__{0}ElementClass", param.name);
+            const std::string nativeName = param.type.typeID.ToString();
+            const bool usesLength = IsTypeName(nativeName, "Span") || IsTypeName(nativeName, "DataContainer") ||
+                IsTypeName(nativeName, "BytesContainer");
+            const std::string count = semantics.collection.kind == CollectionKind::Fixed
+                ? std::to_string(semantics.collection.fixedElementCount)
+                : Utils::String::Format("{0}.{1}()", param.name, usesLength ? "Length" : "Count");
+            const std::string data = semantics.collection.kind == CollectionKind::Fixed
+                ? param.name : GetCollectionDataExpression(param.name);
+            setupOut += Utils::String::Format("        CLRClass* {0} = {1};\n", elementClass,
+                GetManagedElementClassExpression(elementConversion));
+            setupOut += Utils::String::Format(
+                "        CLRArray* {0} = CLRUtils::ToArray(::SE::Span<{1}>({2}, {3}), {4});\n",
+                managedName, nativeElementType, data, count, elementClass);
+            useLocalVar = writableRef;
+            return Utils::String::Format("(void*){0}{1}", writableRef ? "&" : "", managedName);
+        }
+
+        std::string managedValue = param.name;
+        GetNativeToManagedConvert(param.type, managedValue, param.marshalAs);
+        if (semantics.kind == BindingTypeKind::String || semantics.kind == BindingTypeKind::StringView)
+        {
+            setupOut += Utils::String::Format("        CLRString* {0} = {1};\n", managedName, managedValue);
+            useLocalVar = writableRef;
+            return Utils::String::Format("(void*){0}{1}", writableRef ? "&" : "", managedName);
+        }
+        if (semantics.kind == BindingTypeKind::Blittable && managedValue == param.name)
+            return Utils::String::Format("(void*)&{0}", param.name);
+
+        setupOut += Utils::String::Format("        auto {0} = {1};\n", managedName, managedValue);
+        useLocalVar = true;
+        return Utils::String::Format("(void*)&{0}", managedName);
+    }
+
+    std::string BindingsCppGenerator::GenerateCppWrapperManagedToNative(const TypeInfoParam& param,
+                                                                        const std::string& managedValue) const
+    {
+        TypeInfo valueType = param.type;
+        valueType.isRef = false;
+        valueType.isMoveRef = false;
+        const BindingTypeSemantics semantics = ResolveBindingTypeSemantics(m_Database, valueType, param.marshalAs);
+        if (semantics.kind == BindingTypeKind::Collection)
+        {
+            std::string nativeCollectionArgs = CodeGeneratorUtils::QualifyCppType(
+                semantics.collection.elementType.ToString(false));
+            if (valueType.genericityArgs.size() > 1)
+                nativeCollectionArgs += ", " + CodeGeneratorUtils::QualifyCppType(valueType.genericityArgs[1].ToString(false));
+            return Utils::String::Format("CLRUtils::ToArray<{0}>({1})", nativeCollectionArgs, managedValue);
+        }
+
+        std::string nativeValue = managedValue;
+        GetManagedToNativeConvert(valueType, nativeValue, param.marshalAs);
+        return nativeValue;
+    }
+
+    void BindingsCppGenerator::GenerateCppWrapperManagedToNativeParam(const TypeInfoParam& param,
+                                                                       const std::string& nativeValue,
+                                                                       std::string& writeBackOut) const
+    {
+        const BindingTypeSemantics semantics = ResolveBindingTypeSemantics(m_Database, param.type, param.marshalAs);
+        if (semantics.kind == BindingTypeKind::Collection)
+        {
+            const std::string nativeName = param.type.typeID.ToString();
+            const std::string nativeElementType = CodeGeneratorUtils::QualifyCppType(
+                semantics.collection.elementType.ToString(false));
+            const bool isSpan = IsTypeName(nativeName, "Span");
+            const bool isDataContainer = IsTypeName(nativeName, "DataContainer") || IsTypeName(nativeName, "BytesContainer");
+            if (isSpan || semantics.collection.kind == CollectionKind::Fixed || isDataContainer)
+            {
+                const std::string resultName = Utils::String::Format("__native_{0}", param.name);
+                writeBackOut += Utils::String::Format("        auto {0} = {1};\n", resultName, nativeValue);
+                if (isDataContainer)
+                    writeBackOut += Utils::String::Format("        {0}.Copy(::SE::Span<{1}>({2}.Get(), {2}.Count()));\n",
+                        param.name, nativeElementType, resultName);
+                else
+                {
+                    const std::string expectedCount = semantics.collection.kind == CollectionKind::Fixed
+                        ? std::to_string(semantics.collection.fixedElementCount)
+                        : Utils::String::Format("{0}.Length()", param.name);
+                    writeBackOut += Utils::String::Format("        ASSERT({0}.Count() == {1});\n", resultName, expectedCount);
+                    writeBackOut += Utils::String::Format("        for (int32 i = 0; i < {0}.Count() && i < {1}; ++i) {2}[i] = {0}[i];\n",
+                        resultName, expectedCount, param.name);
+                }
+            }
+            else
+                writeBackOut += Utils::String::Format("        {0} = {1};\n", param.name, nativeValue);
+            return;
+        }
+
+        writeBackOut += Utils::String::Format("        {0} = {1};\n", param.name, nativeValue);
+    }
+
     void BindingsCppGenerator::GenerateCppEventWrappers(const TypeInfoStruct& cls, const TypeInfoEvent& evt,
                                                          const std::string& assemblyType, std::string& bodyOut, std::string& endOut)
     {
@@ -1136,15 +1307,32 @@ namespace SE::BuildTool
 
         // Build parameter type list for the event callback
         std::string paramTypes;
-        for (int i = 0; i < evt.params.size(); ++i)
+        int paramsCount = evt.params.size();
+        for (int i = 0; i < paramsCount; ++i)
         {
             if (i > 0) paramTypes += ", ";
 
             TypeInfoParam const paramInfo = evt.params[i];
-            std::string cppType = CodeGeneratorUtils::QualifyCppType(paramInfo.type.ToString());
+            std::string cppType = CodeGeneratorUtils::QualifyCppType(paramInfo.type.ToString(paramInfo.type.arraySize == 0));
             if (paramInfo.type.isConst)
                 cppType = "const " + cppType;
-            paramTypes += Utils::String::Format("{0} {1}", cppType, paramInfo.name);
+            if (paramInfo.type.arraySize > 0)
+            {
+                if (paramInfo.type.isRef)
+                {
+                    TypeInfo elementType = paramInfo.type;
+                    elementType.isRef = false;
+                    elementType.arraySize = 0;
+                    cppType = CodeGeneratorUtils::QualifyCppType(elementType.ToString(false));
+                    if (paramInfo.type.isConst)
+                        cppType = "const " + cppType;
+                    paramTypes += Utils::String::Format("{0} (&{1})[{2}]", cppType, paramInfo.name, paramInfo.type.arraySize);
+                }
+                else
+                    paramTypes += Utils::String::Format("{0} {1}[{2}]", cppType, paramInfo.name, paramInfo.type.arraySize);
+            }
+            else
+                paramTypes += Utils::String::Format("{0} {1}", cppType, paramInfo.name);
         }
 
         // Managed wrapper - C++ calls C# delegate
@@ -1160,31 +1348,65 @@ namespace SE::BuildTool
         }
         else
         {
-            bodyOut += Utils::String::Format("        if (!method)\n        {{\n            method = ::{0}::TypeInitializer->GetType().ManagedClass->GetMethod(\"Internal_{1}_Invoke\", {2}); ASSERT(method); }}\n",
-                fullType, evt.name, evt.params.size());
+            bodyOut += Utils::String::Format("        if (!method)\n        {{\n            method = ::{0}::TypeInitializer.GetType().ManagedClass->GetMethod(\"Internal_{1}_Invoke\", {2}); ASSERT(method); \n        }}\n",
+                fullType, evt.name, paramsCount);
         }
         bodyOut += "\n        CLRObject* exception = nullptr;\n";
-        if (evt.params.size() > 0)
+
+        if (paramsCount == 0)
         {
-            bodyOut += Utils::String::Format("        void* params[{0}];\n", evt.params.size());
-            for (int i = 0; i < evt.params.size(); ++i)
-            {
-                // CLR invocation expects an address to each interop argument.
-                // Event callback parameters are native values/references, so
-                // taking their address also preserves pointer and Guid values.
-                bodyOut += Utils::String::Format("        params[{0}] = (void*)&{1};\n", i, evt.params[i].name);
-            }
+            bodyOut += "        void** params = nullptr;\n";
         }
+        else
+        {
+            bodyOut += Utils::String::Format("        void* params[{0}];\n", paramsCount);
+        }
+
+        std::vector<bool> paramsThatNeedConversion(paramsCount, false);
+        for (int i = 0; i < paramsCount; ++i)
+        {
+            const TypeInfoParam& param = evt.params[i];
+            bool useLocalVar = false;
+            const std::string paramValue = GenerateCppWrapperNativeToManagedParam(param, bodyOut, useLocalVar);
+            paramsThatNeedConversion[i] = useLocalVar;
+            bodyOut += Utils::String::Format("        params[{0}] = {1};\n", i, paramValue);
+        }
+
         if (evt.isStatic)
         {
-            bodyOut += Utils::String::Format("        method->Invoke(nullptr, {0}, &exception);\n", evt.params.empty() ? "nullptr" : "params");
+            bodyOut += "        CLRObject* instance = nullptr; \n";
         }
         else
         {
             bodyOut += Utils::String::Format("        CLRObject* instance = ((::{0}*)this)->GetManagedInstance();\n", fullType);
-            bodyOut += Utils::String::Format("        method->Invoke(instance, {0}, &exception);\n", evt.params.empty() ? "nullptr" : "params");
+
         }
-        // bodyOut += "        if (exception) DebugLog::LogException(exception);\n";
+        bodyOut += "        method->Invoke(instance, params, &exception);\n";
+
+        //bodyOut += "        if (exception) DebugLog::LogException(exception);\n";
+
+        for (int i = 0; i < paramsCount; ++i)
+        {
+            const TypeInfoParam& param = evt.params[i];
+            if (param.type.isRef && !param.type.isConst)
+            {
+                std::string managedValue;
+                if (paramsThatNeedConversion[i])
+                    managedValue = Utils::String::Format("__managed_{0}", param.name);
+                else
+                {
+                    TypeInfo valueType = param.type;
+                    valueType.isRef = false;
+                    valueType.isMoveRef = false;
+                    valueType.isConst = false;
+                    const std::string nativeType = CodeGeneratorUtils::QualifyCppType(valueType.ToString(false));
+                    managedValue = Utils::String::Format("*reinterpret_cast<{0}*>(params[{1}])", nativeType, i);
+                }
+                const std::string nativeValue = GenerateCppWrapperManagedToNative(param, managedValue);
+                GenerateCppWrapperManagedToNativeParam(param, nativeValue, bodyOut);
+            }
+        }
+
         bodyOut += "    }\n\n";
 
         // Managed bind/unbind
@@ -1217,16 +1439,17 @@ namespace SE::BuildTool
             endOut += "{\n";
             endOut += Utils::String::Format("    {0}::{1}_ManagedBind(bind);\n", internalName, evt.name);
             endOut += "}\n";
-            return;
+        }
+        else
+        {
+            endOut += Utils::String::Format("DEFINE_INTERNAL_CALL(void) {0}_{1}_ManagedBind(void* __obj, bool bind)\n", cls.name, evt.name);
+            endOut += "{\n";
+            endOut += Utils::String::Format("    {0}::{1}_ManagedBind((::{2}*)__obj, bind);\n", internalName, evt.name, fullType);
+            endOut += "}\n";
         }
 
-        endOut += Utils::String::Format("DEFINE_INTERNAL_CALL(void) {0}_{1}_ManagedBind(void* __obj, bool bind)\n", cls.name, evt.name);
-        endOut += "{\n";
-        endOut += Utils::String::Format("    {0}::{1}_ManagedBind((::{2}*)__obj, bind);\n", internalName, evt.name, fullType);
-        endOut += "}\n";
-
         // Generic scripting event wrapper (Variant-based)
-        bodyOut += Utils::String::Format("    void {0}_Wrapper({1})\n", evt.name, paramTypes);
+        bodyOut += Utils::String::Format("    {0}void {1}_Wrapper({2})\n", evt.isStatic ? "static " : "", evt.name, paramTypes);
         bodyOut += "    {\n";
         if (evt.params.size() > 0)
         {
@@ -1237,23 +1460,35 @@ namespace SE::BuildTool
                 std::string convertExpr = GetNativeToVariantConvert(paramInfo.type, paramInfo.name);
                 bodyOut += Utils::String::Format("        parameters[{0}] = {1};\n", i, convertExpr);
             }
-            bodyOut += Utils::String::Format("        ScriptingEvents::Event((ScriptingObject*)this, Span<Variant>(parameters, {0}), ::{1}::TypeInitializer, StringView(SE_TEXT(\"{2}\")));\n",
-                evt.params.size(), fullType, evt.name);
+            bodyOut += Utils::String::Format("        ScriptingEvents::Event({0}, Span<Variant>(parameters, {1}), ::{2}::TypeInitializer, StringView(SE_TEXT(\"{3}\")));\n",
+                evt.isStatic ? "nullptr" : "(ScriptingObject*)this", evt.params.size(), fullType, evt.name);
         }
         else
         {
-            bodyOut += Utils::String::Format("        ScriptingEvents::Event((ScriptingObject*)this, Span<Variant>(), ::{0}::TypeInitializer, StringView(SE_TEXT(\"{1}\")));\n",
-                fullType, evt.name);
+            bodyOut += Utils::String::Format("        ScriptingEvents::Event({0}, Span<Variant>(), ::{1}::TypeInitializer, StringView(SE_TEXT(\"{2}\")));\n",
+                evt.isStatic ? "nullptr" : "(ScriptingObject*)this", fullType, evt.name);
         }
         bodyOut += "    }\n\n";
 
-        // Generic scripting bind/unbind
-        bodyOut += Utils::String::Format("    static void {0}_Bind(::{1}* __obj, void* instance, bool bind)\n", evt.name, fullType);
+        // EventsTable stores binders with this exact signature, not callbacks
+        // that run when the event fires.
+        bodyOut += Utils::String::Format("    static void {0}_Bind(ScriptingObject* __obj, void* instance, bool bind)\n", evt.name);
         bodyOut += "    {\n";
-        bodyOut += Utils::String::Format("        Function<void({0})> f;\n", paramTypes);
-        bodyOut += Utils::String::Format("        f.Bind<{0}, &{0}::{1}_Wrapper>(({0}*)instance);\n", internalName, evt.name);
-        bodyOut += Utils::String::Format("        if (bind) __obj->{0}.Bind(f);\n", evt.name);
-        bodyOut += Utils::String::Format("        else __obj->{0}.Unbind(f);\n", evt.name);
+        if (evt.isStatic)
+        {
+            bodyOut += Utils::String::Format("        Function<void({0})> f;\n", paramTypes);
+            bodyOut += Utils::String::Format("        f.Bind<&{0}::{1}_Wrapper>();\n", internalName, evt.name);
+            bodyOut += Utils::String::Format("        if (bind) ::{0}::{1}.Bind(f);\n", fullType, evt.name);
+            bodyOut += Utils::String::Format("        else ::{0}::{1}.Unbind(f);\n", fullType, evt.name);
+        }
+        else
+        {
+            bodyOut += "        if (__obj == nullptr || instance == nullptr) return;\n";
+            bodyOut += Utils::String::Format("        Function<void({0})> f;\n", paramTypes);
+            bodyOut += Utils::String::Format("        f.Bind<{0}, &{0}::{1}_Wrapper>(({0}*)instance);\n", internalName, evt.name);
+            bodyOut += Utils::String::Format("        if (bind) ((::{0}*)__obj)->{1}.Bind(f);\n", fullType, evt.name);
+            bodyOut += Utils::String::Format("        else ((::{0}*)__obj)->{1}.Unbind(f);\n", fullType, evt.name);
+        }
         bodyOut += "    }\n";
     }
 
@@ -1267,7 +1502,7 @@ namespace SE::BuildTool
         {
             std::string fullType = CodeGeneratorUtils::GetFullNativeName(cls.namespaceScopeList, cls.structScopeList, GetCppNativeSimpleName(cls));
             output += Utils::String::Format(
-                "        ScriptingEvents::EventsTable[Pair<ScriptingTypeHandle, StringView>({0}::TypeInitializer, StringView(SE_TEXT(\"{1}\")))] = (void(*)(ScriptingObject*, void*, bool)){2}Internal::{1}_ManagedWrapper;\n",
+                "        ScriptingEvents::EventsTable[Pair<ScriptingTypeHandle, StringView>({0}::TypeInitializer, StringView(SE_TEXT(\"{1}\")))] = &{2}Internal::{1}_Bind;\n",
                 CodeGeneratorUtils::RemovePreNameSpace(fullType), evt.name, cls.name);
         }
 
@@ -1501,6 +1736,33 @@ namespace SE::BuildTool
                     GenerateCppFieldWrapperFunction(cls, setter.function, setter.invocation, bodyOut, endOut);
                 }
             }
+        }
+
+        std::vector<bool> consumedFunctions(cls.functions.size(), false);
+        for (int i = 0; i < cls.functions.size(); ++i)
+        {
+            TypeInfoFunc const& fn = cls.functions[i];
+            if (fn.APIIsPropertie)
+            {
+                if (!consumedFunctions[i])
+                {
+                    consumedFunctions[i] = true;
+
+                    if (fn.params.size() == 1)
+                    {
+                        BindingCallable setter = MakePropertySetter(cls, fn);
+                        GenerateCppMethodWrapperFunction(cls, setter.function, bodyOut, endOut);
+                    }
+                    if (fn.returnType.typeID != TypeInfo::Void.typeID)
+                    {
+                        BindingCallable getter = MakePropertyGetter(cls, fn);
+                        GenerateCppMethodWrapperFunction(cls, getter.function, bodyOut, endOut);
+                    }
+                }
+                continue;
+            }
+
+            GenerateCppMethodWrapperFunction(cls, fn, bodyOut, endOut);
         }
 
         // Value types register lifecycle callbacks just like Flax structs. The

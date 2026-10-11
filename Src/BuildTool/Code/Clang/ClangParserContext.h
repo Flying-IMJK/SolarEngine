@@ -26,6 +26,7 @@ namespace SE::BuildTool
         SEEnum,        // SE_ENUM(Reflect, API(...))
         SEField,       // SE_FIELD(Reflect, API(...))
         SEFunction,    // SE_FUNCTION(API(...))
+        SEParam,       // SE_PARAM(API(Out|Ref))
         SEEvent,       // SE_EVENT(API(...))
         SETypeDef,     // SE_TYPEDEF(...)
         SEInjectCode,  // SE_INJECT_CODE(cpp|csharp, "code")
@@ -64,6 +65,7 @@ namespace SE::BuildTool
         bool IsNoConstructor = false;
         bool IsProperty      = false;
         bool IsNativeInvokeUseName = false;
+        ApiParameterDirection             parameterDirection = ApiParameterDirection::In;
         std::string name;
         std::string attributes;
         std::string marshalAs;
@@ -99,6 +101,8 @@ namespace SE::BuildTool
         uint32_t                          fileColumn    = 0;
         uint32_t                          fileEndLine   = 0;
         uint32_t                          fileEndColumn = 0;
+        uint32_t                          fileOffset    = 0;
+        uint32_t                          fileEndOffset = 0;
         MacroTypeEnum                     type          = MacroTypeEnum::Unknown;
         std::string                       macroComment;
         bool                              hasReflect = false;
@@ -179,6 +183,7 @@ namespace SE::BuildTool
 
         void AddMarkMacro(MarkMacro const& foundMacro);
         bool FindMarkMacro(HeaderID headerID, CXCursor const& cr, MarkMacro& macro, MacroTypeEnum macroType);
+        bool FindParameterMacro(HeaderID headerID, uint32_t startOffset, uint32_t endOffset, MarkMacro& macro);
 
         void FindInjectCodeFormHead(HeaderID headerID, std::vector<TypeInfoInjectedCode>& injectCodes);
 

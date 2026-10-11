@@ -1,52 +1,68 @@
-// Managed editor GUI feature implementation.
 using SE.GUI;
+
 namespace SE.Editor.GUI
 {
-    public sealed class StatusBar : ContainerControl
+    /// <summary>
+    /// Status strip GUI control.
+    /// </summary>
+    /// <seealso cref="ContainerControl" />
+    public class StatusBar : ContainerControl
     {
-        public const float DefaultHeight = 22.0f;
+        /// <summary>
+        /// The default height.
+        /// </summary>
+        public const int DefaultHeight = 22;
 
-        private readonly Label m_Label;
-        private string m_Text = string.Empty;
-
-        public StatusBar(float y, float width)
-            : base(new Rectangle(0, y, width, DefaultHeight))
+        /// <summary>
+        /// Gets or sets the color of the status strip.
+        /// </summary>
+        public Color StatusColor
         {
-            AutoFocus = false;
-            m_Label = new Label(new Rectangle(4, 0, width - 20, DefaultHeight), string.Empty)
+            get
             {
-                AutoFocus = false,
-                Enabled = false,
-            };
-            SetBounds(0, y, width, DefaultHeight);
-            AddChild(m_Label);
-        }
-
-        public string Text
-        {
-            get => m_Text;
+                return BackgroundColor;
+            }
             set
             {
-                m_Text = value;
-                m_Label.Text = value;
+                BackgroundColor = value;
             }
         }
 
-        public Color StatusColor
+        /// <summary>
+        /// Gets or sets the status text.
+        /// </summary>
+        public string Text = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the status text color
+        /// </summary>
+        public Color TextColor = Style.Current.Foreground;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StatusBar"/> class.
+        /// </summary>
+        public StatusBar()
         {
-            get => BackgroundColor;
-            set => BackgroundColor = value;
+            AutoFocus = false;
+            AnchorPreset = AnchorPresets.HorizontalStretchBottom;
         }
 
-        public Color TextColor
+        /// <inheritdoc />
+        public override void Draw()
         {
-            get => m_Label.TextColor;
-            set => m_Label.TextColor = value;
-        }
+            base.Draw();
 
-        protected override void OnLayoutChildren()
-        {
-            m_Label.SetBounds(4, 0, Width - 20, Height);
+            Style style = Style.Current;
+
+            // Draw size grip
+            WindowRootControl window = Root as WindowRootControl;
+            if (window != null && !window.IsMaximized())
+            {
+                Render2D.DrawSprite(style.StatusBarSizeGrip, new Rectangle(Width - 12, 10, 12, 12), style.Foreground);
+            }
+
+            // Draw status text
+            Render2D.RenderText(style.FontSmall, Text, new Rectangle(4, 0, Width - 20, Height), TextColor, TextAlignment.Near, TextAlignment.Center);
         }
     }
 }

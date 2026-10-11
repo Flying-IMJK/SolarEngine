@@ -18,46 +18,56 @@ namespace SE
 	/// <summary>
 	/// Rendering view description that defines how to render the objects (camera placement, rendering properties, etc.).
 	/// </summary>
+	SE_STRUCT(API())
 	struct SE_API_RUNTIME RenderView
 	{
+		SCRIPTING_TYPE_MIN(RenderView);
 		/// <summary>
 		/// The position of the view origin (in world-units). Used for camera-relative rendering to achieve large worlds support with keeping 32-bit precision for coordinates in scene rendering.
 		/// </summary>
+		SE_FIELD(API())
 		Float3 Origin = Float3::Zero;
 
 		/// <summary>
 		/// The global position of the view (Origin+Position).
 		/// </summary>
+		SE_FIELD(API())
 		Float3 WorldPosition;
 
 		/// <summary>
 		/// The position of the view (relative to the origin).
 		/// </summary>
+		SE_FIELD(API())
 		Float3 Position;
 
 		/// <summary>
 		/// The far plane.
 		/// </summary>
+		SE_FIELD(API())
 		float Far = 10000.0f;
 
 		/// <summary>
 		/// The direction of the view.
 		/// </summary>
+		SE_FIELD(API())
 		Float3 Direction;
 
 		/// <summary>
 		/// The near plane.
 		/// </summary>
+		SE_FIELD(API())
 		float Near = 0.1f;
 
 		/// <summary>
 		/// The view matrix.
 		/// </summary>
+		SE_FIELD(API())
 		Matrix View;
 
 		/// <summary>
 		/// The projection matrix.
 		/// </summary>
+		SE_FIELD(API())
 		Matrix Projection;
 
 		/// <summary>
@@ -65,67 +75,80 @@ namespace SE
 		/// For many temporal image effects, the camera that is currently rendering needs to be slightly offset from the default projection (that is, the camera is ‘jittered’). 
 		/// If you use motion vectors and camera jittering together, use this property to keep the motion vectors stable between frames.
 		/// </summary>
+		SE_FIELD(API())
 		Matrix NonJitteredProjection;
 
 		/// <summary>
 		/// The inverted view matrix.
 		/// </summary>
+		SE_FIELD(API())
 		Matrix IV;
 
 		/// <summary>
 		/// The inverted projection matrix.
 		/// </summary>
+		SE_FIELD(API())
 		Matrix IP;
 
 		/// <summary>
 		/// The inverted projection view matrix.
 		/// </summary>
+		SE_FIELD(API())
 		Matrix IVP;
 
 		/// <summary>
 		/// The view frustum.
 		/// </summary>
+		SE_FIELD(API())
 		BoundingFrustum frustum;
 
 		/// <summary>
 		/// The view frustum used for culling (can be different than Frustum in some cases e.g. cascaded shadow map rendering).
 		/// </summary>
+		SE_FIELD(API())
 		BoundingFrustum cullingFrustum;
 
 	public:
 		/// <summary>
 		/// The draw passes mask for the current view rendering.
 		/// </summary>
+		SE_FIELD(API())
 		DrawPass Pass = DrawPass::None;
 
 		/// <summary>
 		/// Flag used by static, offline rendering passes (eg. reflections rendering, lightmap rendering etc.)
 		/// </summary>
+		SE_FIELD(API())
 		bool DrawGizmos = false;
 
 		/// <summary>
 		/// Flag used by static, offline rendering passes (eg. reflections rendering, lightmap rendering etc.)
 		/// </summary>
+		SE_FIELD(API())
 		bool IsOfflinePass = false;
 
 		/// <summary>
 		/// Flag used by single-frame rendering passes (eg. thumbnail rendering, model view caching) to reject LOD transitions animations and other temporal draw effects.
 		/// </summary>
+		SE_FIELD(API())
 		bool IsSingleFrame = false;
 
 		/// <summary>
 		/// Flag used by custom passes to skip any object culling when drawing.
 		/// </summary>
+		SE_FIELD(API())
 		bool IsCullingDisabled = false;
 
 		/// <summary>
 		/// True if TAA has been resolved when rendering view and frame doesn't contain jitter anymore. Rendering geometry after this point should not use jitter anymore (eg. editor gizmos or custom geometry as overlay).
 		/// </summary>
+		SE_FIELD(API())
 		bool IsTaaResolved = false;
 
 		/// <summary>
 		/// The static flags mask used to hide objects that don't have a given static flags. Eg. use StaticFlags::Lightmap to render only objects that can use lightmap.
 		/// </summary>
+		SE_FIELD(API())
 		StaticMask StaticFlagsMask = StaticMask::None;
 
 		/// <summary>
@@ -136,94 +159,112 @@ namespace SE
 		/// <summary>
 		/// The view mode.
 		/// </summary>
+		SE_FIELD(API())
 		ViewMode Mode = ViewMode::Default;
 
 		/// <summary>
 		/// Maximum allowed shadows quality for this view
 		/// </summary>
+		SE_FIELD(API())
 		Quality MaxShadowsQuality = Quality::Ultra;
 
 		/// <summary>
 		/// The model LOD bias. Default is 0. Applied to all the objects in the render view.
 		/// </summary>
+		SE_FIELD(API())
 		int32 ModelLODBias = 0;
 
 		/// <summary>
 		/// The model LOD distance scale factor. Default is 1. Applied to all the objects in the render view. Higher values increase LODs quality.
 		/// </summary>
+		SE_FIELD(API())
 		float ModelLODDistanceFactor = 1.0f;
 
 		/// <summary>
 		/// The model LOD bias. Default is 0. Applied to all the objects in the shadow maps render views. Can be used to improve shadows rendering performance or increase quality.
 		/// [Deprecated on 26.10.2022, expires on 26.10.2024]
 		/// </summary>
+		SE_FIELD(API())
 		DEPRECATED int32 ShadowModelLODBias = 0;
 
 		/// <summary>
 		/// The model LOD distance scale factor. Default is 1. Applied to all the objects in the shadow maps render views. Higher values increase LODs quality. Can be used to improve shadows rendering performance or increase quality.
 		/// [Deprecated on 26.10.2022, expires on 26.10.2024]
 		/// </summary>
+		SE_FIELD(API())
 		DEPRECATED float ShadowModelLODDistanceFactor = 1.0f;
 
 		/// <summary>
 		/// Temporal Anti-Aliasing jitter frame index.
 		/// </summary>
+		SE_FIELD(API())
 		int32 TaaFrameIndex = 0;
 
 		/// <summary>
 		/// The rendering mask for layers. Used to exclude objects from rendering.
 		/// </summary>
+		SE_FIELD(API())
 		LayersMask RenderLayersMask;
 
 	public:
 		/// <summary>
 		/// The view information vector with packed components to reconstruct linear depth and view position from the hardware depth buffer. Cached before rendering.
 		/// </summary>
+		SE_FIELD(API())
 		Float4 ViewInfo;
 
 		/// <summary>
 		/// The screen size packed (x - width, y - height, zw - inv width, w - inv height). Cached before rendering.
 		/// </summary>
+		SE_FIELD(API())
 		Float4 ScreenSize;
 
 		/// <summary>
 		/// The temporal AA jitter packed (xy - this frame jitter, zw - previous frame jitter). Cached before rendering. Zero if TAA is disabled. The value added to projection matrix (in clip space).
 		/// </summary>
+		SE_FIELD(API())
 		Float4 TemporalAAJitter;
 
 		/// <summary>
 		/// The previous frame rendering view origin.
 		/// </summary>
+		SE_FIELD(API())
 		Float3 PrevOrigin;
 
 		/// <summary>
 		/// The previous frame view matrix.
 		/// </summary>
+		SE_FIELD(API())
 		Matrix PrevView;
 
 		/// <summary>
 		/// The previous frame projection matrix.
 		/// </summary>
+		SE_FIELD(API())
 		Matrix PrevProjection;
 
 		/// <summary>
 		/// The previous frame view * projection matrix.
 		/// </summary>
+		SE_FIELD(API())
 		Matrix PrevViewProjection;
 
 		/// <summary>
 		/// The main viewport view * projection matrix.
 		/// </summary>
+		SE_FIELD(API())
 		Matrix MainViewProjection;
 
 		/// <summary>
 		/// The main viewport screen size packed (x - width, y - height, zw - inv width, w - inv height).
 		/// </summary>
+		SE_FIELD(API())
 		Float4 MainScreenSize;
 
 		/// <summary>
 		/// Square of <see cref="ModelLODDistanceFactor"/>. Cached by rendering backend.
 		/// </summary>
+		SE_FIELD(API())
 		float ModelLODDistanceFactorSqrt;
 
 		/// <summary>

@@ -55,12 +55,12 @@ namespace SE::Editor
         /// <summary>
         /// The items.
         /// </summary>
-        List<String> items = List<String>();
+        List<String> Items = List<String>();
         
         /// <summary>
         /// The item tooltips (optional).
         /// </summary>
-        List<String> tooltips;
+        List<String> Tooltips;
 
         /// <summary>
         /// True if sort items before showing the list, otherwise present them in the unchanged order.
@@ -298,11 +298,11 @@ namespace SE::Editor
 
         String& __GetSelectedItem()
         {
-            return _selectedIndices.Count() == 1 ? items[_selectedIndices[0]] : String::Empty;
+            return _selectedIndices.Count() == 1 ? Items[_selectedIndices[0]] : String::Empty;
         }
         void __SetSelectedItem(String& value)
         {
-            SelectedIndex = items.Find(value);
+            SelectedIndex = Items.Find(value);
         }
 
         bool __GetHasSelection() { return _selectedIndices.Count() != 0; }

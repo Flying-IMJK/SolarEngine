@@ -1,94 +1,121 @@
 using System;
+using System.Collections.Generic;
 using SE.Editor.SceneGraph;
 using SE.GUI;
 
 namespace SE.Editor.GUI
 {
-    /// <summary>
-    /// Tree presentation node for an <see cref="ActorGraphNode"/>.
-    /// Behavior follows the native ActorTreeNode implementation; features that
-    /// are commented out there remain intentionally inactive here.
-    /// </summary>
     public class ActorTreeNode : TreeNode
     {
-        private int m_OrderInParent;
-        private DragActors? m_DragActors;
-        private DragAssets? m_DragAssets;
-        private DragHandlers? m_DragHandlers;
-        private bool m_HasSearchFilter;
+        private int _orderInParent;
+        private DragActors _dragActors;
+        private DragAssets _dragAssets;
+        private DragHandlers _dragHandlers;
+        private readonly List<Rectangle> _highlights = new List<Rectangle>();
+        private bool _hasSearchFilter;
 
+        /// <summary>
+        /// The actor node that owns this node.
+        /// </summary>
+        protected ActorGraphNode _actorNode;
+
+        /// <summary>
+        /// Gets the actor.
+        /// </summary>
+        public SE.Actor GetActor()
+        {
+            return _actorNode.Actor;
+        }
+
+        /// <summary>
+        /// Gets the actor node.
+        /// </summary>
+        public ActorGraphNode GetActorGraphNode()
+        {
+            return _actorNode;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ActorTreeNode"/> class.
+        /// </summary>
         public ActorTreeNode()
-            : base(canChangeOrder: true)
+            : base(true)
         {
             ChildrenIndent = 16.0f;
         }
 
-        public ActorGraphNode? ActorGraphNode { get; private set; }
-
-        public SE.Actor? GetActor() => ActorGraphNode?.Actor;
-
-        public ActorGraphNode? GetActorGraphNode() => ActorGraphNode;
-
         public virtual void LinkNode(ActorGraphNode node)
         {
-            ArgumentNullException.ThrowIfNull(node);
-            ActorGraphNode = node;
-            SE.Actor? actor = node.Actor;
+            _actorNode = node;
+            SE.Actor actor = node.Actor;
             if (actor != null)
             {
-                m_OrderInParent = actor.OrderInParent;
-                // Native hide flags are not exposed in the managed editor yet;
-                // the active native behavior therefore keeps this visible.
-                Visible = true;
+                _orderInParent = actor.OrderInParent;
+                Visible = true; // (actor.HideFlags & HideFlags.HideInHierarchy) == 0;
+
+                // Pick the correct id when inside a prefab window.
+                Guid id = actor.HasPrefabLink && !actor.HasScene ? actor.PrefabObjectID : actor.SceneObjectId;
+                /*if (Editor.Instance.ProjectCache.IsExpandedActor(id))
+                {
+                    Expand(true);
+                }*/
             }
             else
             {
-                m_OrderInParent = 0;
+                _orderInParent = 0;
             }
 
             UpdateText();
         }
 
-        public void OnParentChanged(ActorGraphNode? parentNode)
+        public void OnParentChanged(SE.Actor actor, ActorGraphNode parentNode)
         {
-            SE.Actor? actor = GetActor();
-            m_OrderInParent = actor?.OrderInParent ?? 0;
+            // Update cached value
+            _orderInParent = actor.OrderInParent;
 
-            ActorTreeNode? parentTreeNode = parentNode?.TreeNode;
-            if (parentTreeNode != null)
+            // Update UI (special case if actor is spawned and added to existing scene tree)
+            ActorTreeNode parentTreeNode = null;
+            if (parentNode != null)
             {
-                bool wasLayoutLocked = parentTreeNode.IsLayoutLocked;
-                if (!wasLayoutLocked)
-                    parentTreeNode.IsLayoutLocked = true;
+                parentTreeNode = parentNode.TreeNode;
+            }
+
+            if (parentTreeNode != null && !parentTreeNode.IsLayoutLocked)
+            {
+                parentTreeNode.IsLayoutLocked = true;
                 Parent = parentTreeNode;
-
-                // TreeNode reserves child slot zero for its header label.
-                if (Parent != null && Parent.Children.Count > 1)
-                {
-                    int index = Math.Clamp(m_OrderInParent + 1, 1, Parent.Children.Count - 1);
-                    IndexInParent = index;
-                }
-
-                if (wasLayoutLocked)
-                    return;
-
+                IndexInParent = _orderInParent;
                 parentTreeNode.IsLayoutLocked = false;
+
+                // Skip UI update if node won't be in a view
                 if (parentTreeNode.IsCollapsedInHierarchy)
                 {
                     UnlockChildrenRecursive();
                 }
-                else if (parentTreeNode.ParentTree is Tree tree)
-                {
-                    tree.Parent?.PerformLayout();
-                }
                 else
                 {
-                    parentTreeNode.PerformLayout();
+                    // Try to perform layout at the level where it makes it the most performant (the least computations)
+                    Tree tree = parentTreeNode.ParentTree;
+                    if (tree != null)
+                    {
+                        if (tree.Parent is Panel treeParent)
+                        {
+                            treeParent.PerformLayout();
+                        }
+                        else
+                        {
+                            tree.PerformLayout();
+                        }
+                    }
+                    else
+                    {
+                        parentTreeNode.PerformLayout();
+                    }
                 }
             }
             else
             {
-                Parent = null;
+                Parent = parentTreeNode;
             }
         }
 
@@ -99,160 +126,301 @@ namespace SE.Editor.GUI
                 bool anyChanged = false;
                 foreach (Control control in parent.Children)
                 {
-                    if (control is not TreeNode child)
-                        continue;
-                    if (child is not ActorTreeNode actorChild || actorChild.GetActor() == null)
-                        continue;
-
-                    int order = actorChild.GetActor()!.OrderInParent;
-                    anyChanged |= actorChild.m_OrderInParent != order;
-                    if (anyChanged)
-                        actorChild.m_OrderInParent = order;
+                    if (control is ActorTreeNode child && child.GetActor() != null)
+                    {
+                        int orderInParent = child.GetActor().OrderInParent;
+                        anyChanged |= child._orderInParent != orderInParent;
+                        if (anyChanged)
+                        {
+                            child._orderInParent = orderInParent;
+                        }
+                    }
                 }
 
                 if (anyChanged)
+                {
                     parent.SortChildren();
+                }
             }
             else if (GetActor() != null)
             {
-                m_OrderInParent = GetActor()!.OrderInParent;
+                _orderInParent = GetActor().OrderInParent;
             }
         }
 
+        /// <summary>
+        /// Updates the tree node text.
+        /// </summary>
         public virtual void UpdateText()
         {
-            Text = ActorGraphNode?.Name ?? string.Empty;
+            Text = _actorNode.Name;
         }
 
+        /// <summary>
+        /// Updates the query search filter.
+        /// </summary>
+        /// <param name="filterText">The filter text.</param>
         public void UpdateFilter(string filterText)
         {
-            bool noFilter = string.IsNullOrEmpty(filterText);
-            m_HasSearchFilter = !noFilter;
+            // Skip hidden actors
+            SE.Actor actor = GetActor();
+            if (actor != null /* && (actor.HideFlags & HideFlags.HideInHierarchy) != 0 */)
+            {
+                return;
+            }
 
-            // The native text-match/highlight block is commented out. Keep the
-            // same effective rule: a non-empty filter hides this node, while a
-            // matching visible child keeps the branch visible.
-            bool isThisVisible = noFilter;
+            bool noFilter = string.IsNullOrEmpty(filterText);
+            _hasSearchFilter = !noFilter;
+
+            // Update itself
+            bool isThisVisible;
+            if (noFilter)
+            {
+                // Clear filter
+                _highlights.Clear();
+                isThisVisible = true;
+            }
+            else
+            {
+                /* The native query match and highlight implementation is commented out. */
+                SE.Debug.Assert(false, "Unreachable code encountered!");
+                return;
+            }
+
+            // Update children
             bool isAnyChildVisible = false;
             foreach (Control control in Children)
             {
-                if (control is not ActorTreeNode child)
-                    continue;
-                if (child is ActorTreeNode actorChild)
+                if (control is ActorTreeNode child)
                 {
-                    actorChild.UpdateFilter(filterText);
-                    isAnyChildVisible |= actorChild.Visible;
+                    child.UpdateFilter(filterText);
+                    isAnyChildVisible |= child.Visible;
                 }
             }
 
             bool isExpanded = isAnyChildVisible;
-            if (noFilter && GetActor() != null)
-                isExpanded = false;
+
+            // Restore cached state on query filter clear
+            if (noFilter && actor != null)
+            {
+                // Pick the correct id when inside a prefab window.
+                Guid id = actor.HasPrefabLink && actor.Scene == null ? actor.PrefabObjectID : actor.SceneObjectId;
+                isExpanded = false; // Editor.Instance.ProjectCache.IsExpandedActor(ref id);
+            }
 
             if (isExpanded)
+            {
                 Expand(true);
+            }
             else
+            {
                 Collapse(true);
+            }
 
-            Visible = isThisVisible || isAnyChildVisible;
+            Visible = isThisVisible | isAnyChildVisible;
         }
 
+        /// <inheritdoc />
         public override void Update(float deltaTime)
         {
-            SE.Actor? actor = GetActor();
-            if (actor != null && !m_HasSearchFilter)
-                Visible = true;
+            // Update hidden state
+            SE.Actor actor = GetActor();
+            if (actor != null && !_hasSearchFilter)
+            {
+                Visible = true; // (actor.HideFlags & HideFlags.HideInHierarchy) == 0;
+            }
 
             base.Update(deltaTime);
         }
 
+        /// <inheritdoc />
+        public override bool OnShowTooltip(string text, out Float2 location, out Rectangle area)
+        {
+            // Evaluate tooltip text once it's actually needed
+            SE.Actor actor = _actorNode.Actor;
+            if (string.IsNullOrEmpty(TooltipText) && actor != null)
+            {
+                // TooltipText = Surface.SurfaceUtils.GetVisualScriptTypeDescription(TypeUtils.GetObjectType(actor));
+            }
+
+            return base.OnShowTooltip(text, out location, out area);
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            _dragHandlers?.Clear();
+            _highlights.Clear();
+
+            _dragHandlers = null;
+            _dragActors = null;
+            _dragAssets = null;
+
+            base.OnDestroy();
+        }
+
+        public override int CompareTo(Control other)
+        {
+            if (other is ActorTreeNode node)
+            {
+                return _orderInParent - node._orderInParent;
+            }
+
+            return base.CompareTo(other);
+        }
+
+        /// <summary>
+        /// Starts the actor renaming action.
+        /// </summary>
+        public void StartRenaming(EditorWindow window, Panel treePanel = null)
+        {
+            // Block renaming during scripts reload
+            /*if (Editor.Instance.ProgressReporting.CompileScripts.IsActive)
+            {
+                return;
+            }*/
+
+            Select();
+
+            /* The native rename dialog and scrolling block is commented out. */
+        }
+
+        /// <inheritdoc />
         public override void Draw()
         {
             base.Draw();
+
+            // Draw all highlights
+            if (_highlights.Count > 0)
+            {
+                Style style = Style.Current;
+                Color color = style.ProgressNormal * 0.6f;
+                foreach (Rectangle highlight in _highlights)
+                {
+                    Render2D.FillRectangle(highlight, color);
+                }
+            }
         }
 
-        public override int Compare(Control? other)
+        public override void DoDragDrop(DragData data)
         {
-            return other is ActorTreeNode actorNode
-                ? m_OrderInParent - actorNode.m_OrderInParent
-                : 0;
+            /* The native drag initiation body is commented out. */
         }
 
-        public void StartRenaming(EditorWindow? window, Panel? treePanel = null)
+        protected override bool ShowTooltip()
         {
-            _ = window;
-            _ = treePanel;
+            return true;
         }
 
+        /// <inheritdoc />
         protected override Color CacheTextColor()
         {
-            if (Parent is not ActorTreeNode)
-                return base.CacheTextColor();
-
-            Color color = Style.Current.TextColor;
-            SE.Actor? actor = GetActor();
-            if (actor != null)
+            // Update node text color (based on ActorGraphNode.IsActiveInHierarchy but with optimized logic a little)
+            if (Parent is ActorTreeNode)
             {
-                if (actor.HasPrefabLink)
-                    color = Style.Current.ProgressNormal;
+                Color color = Style.Current.TextColor;
+                SE.Actor actor = GetActor();
+                if (actor != null)
+                {
+                    if (actor.HasPrefabLink)
+                    {
+                        // Prefab
+                        color = Style.Current.ProgressNormal;
+                    }
 
-                if (!actor.IsActiveInHierarchy)
-                    return Style.Current.ForegroundGrey;
+                    if (!actor.IsActiveInHierarchy)
+                    {
+                        // Inactive
+                        return Style.Current.ForegroundGrey;
+                    }
 
-                if (actor.HasScene && actor.IsStatic)
-                    return color * 0.85f;
+                    if (actor.HasScene /* && Editor.Instance.StateMachine.IsPlayMode */ && actor.IsStatic)
+                    {
+                        // Static
+                        return color * 0.85f;
+                    }
+                }
+
+                // Default
+                return color;
             }
 
-            return color;
+            return base.CacheTextColor();
         }
 
+        /// <inheritdoc />
         protected override void OnExpandedChanged()
         {
             base.OnExpandedChanged();
-            // Expanded-state persistence is commented out in native code.
+            SE.Actor actor = GetActor();
+
+            if (!IsLayoutLocked && actor != null)
+            {
+                // Pick the correct id when inside a prefab window.
+                Guid id = actor.HasPrefabLink && !actor.HasScene ? actor.PrefabObjectID : actor.SceneObjectId;
+                // Editor.Instance.ProjectCache.SetExpandedActor(ref id, IsExpanded);
+            }
         }
 
+        /// <inheritdoc />
         protected override DragDropEffect OnDragEnterHeader(DragData data)
         {
-            m_DragHandlers ??= new DragHandlers();
-            m_DragActors ??= new DragActors(ValidateDragActor, FindActorNode);
-            if (!m_DragHandlers.Contains(m_DragActors))
-                m_DragHandlers.Add(m_DragActors);
+            /* The native scene/content editability checks are commented out. */
+            if (_dragHandlers == null)
+            {
+                _dragHandlers = new DragHandlers();
+            }
 
-            // Asset validation is the native AssetItem virtual hook. Until a
-            // managed asset type overrides it, AssetItem's native default is
-            // false, while the content browser still resolves drag payloads.
-            m_DragAssets ??= new DragAssets(ValidateDragAsset, FindAsset);
-            if (!m_DragHandlers.Contains(m_DragAssets))
-                m_DragHandlers.Add(m_DragAssets);
+            // Check if drop actors
+            if (_dragActors == null)
+            {
+                _dragActors = new DragActors(ValidateDragActor, FindActorNode);
+                _dragHandlers.Add(_dragActors);
+            }
+            if (_dragActors.OnDragEnter(data))
+            {
+                return _dragActors.Effect;
+            }
 
-            if (m_DragActors.OnDragEnter(data))
-                return m_DragActors.Effect;
-            if (m_DragAssets.OnDragEnter(data))
-                return m_DragAssets.Effect;
+            // Check if drag assets
+            if (_dragAssets == null)
+            {
+                _dragAssets = new DragAssets(ValidateDragAsset, FindAsset);
+                _dragHandlers.Add(_dragAssets);
+            }
+            if (_dragAssets.OnDragEnter(data))
+            {
+                return _dragAssets.Effect;
+            }
+
             return DragDropEffect.None;
         }
 
+        /// <inheritdoc />
         protected override DragDropEffect OnDragMoveHeader(DragData data)
         {
-            _ = data;
-            return m_DragHandlers?.Effect ?? DragDropEffect.None;
+            return _dragHandlers.Effect;
         }
 
+        /// <inheritdoc />
         protected override void OnDragLeaveHeader()
         {
-            m_DragHandlers?.OnDragLeave();
+            _dragHandlers.OnDragLeave();
         }
 
+        /// <inheritdoc />
         protected override DragDropEffect OnDragDropHeader(DragData data)
         {
-            _ = data;
-            SE.Actor? actor = GetActor();
-            SE.Actor? newParent = actor;
+            DragDropEffect result = DragDropEffect.None;
+
+            SE.Actor myActor = GetActor();
+            SE.Actor newParent;
             int newOrder = -1;
 
-            if (actor == null)
+            // Check if has no actor (only for Root Actor)
+            if (myActor == null)
             {
+                // Append to the last scene
                 if (SE.Level.ScenesCount == 0)
                 {
                     SE.Debug.LogError("No scene loaded.");
@@ -260,15 +428,27 @@ namespace SE.Editor.GUI
                 }
                 newParent = SE.Level.GetScene(SE.Level.ScenesCount - 1);
             }
-            else if (DragOverMode == DragItemPositioning.Above && actor.Parent != null)
+            else
             {
-                newParent = actor.Parent;
-                newOrder = actor.OrderInParent;
-            }
-            else if (DragOverMode == DragItemPositioning.Below && actor.Parent != null)
-            {
-                newParent = actor.Parent;
-                newOrder = actor.OrderInParent + 1;
+                newParent = myActor;
+
+                // Use drag positioning to change target parent and index
+                if (DragOverMode == DragItemPositioning.Above)
+                {
+                    if (myActor.HasParent)
+                    {
+                        newParent = myActor.Parent;
+                        newOrder = myActor.OrderInParent;
+                    }
+                }
+                else if (DragOverMode == DragItemPositioning.Below)
+                {
+                    if (myActor.HasParent)
+                    {
+                        newParent = myActor.Parent;
+                        newOrder = myActor.OrderInParent + 1;
+                    }
+                }
             }
 
             if (newParent == null)
@@ -277,54 +457,70 @@ namespace SE.Editor.GUI
                 return DragDropEffect.None;
             }
 
-            _ = newOrder;
-            DragDropEffect result = m_DragHandlers?.HasValidDrag == true
-                ? DragDropEffect.Move
-                : DragDropEffect.None;
-            m_DragHandlers?.OnDragDrop(new DragEventArgs());
+            // Drag actors
+            if (_dragActors != null && _dragActors.HasValidDrag)
+            {
+                bool worldPositionsStays = Root.GetKey(KeyboardKeys.Control) == false;
+                SE.SceneObject[] objects = new SE.SceneObject[_dragActors.Objects.Count];
+                for (int i = 0; i < _dragActors.Objects.Count; i++)
+                {
+                    objects[i] = _dragActors.Objects[i].Actor;
+                }
+                /*var action = new ParentActorsAction(objects, newParent, newOrder, worldPositionsStays);
+                _actorNode.Root.Undo?.AddAction(action);
+                action.Do();*/
+                result = DragDropEffect.Move;
+            }
+            // Drag assets
+            else if (_dragAssets != null && _dragAssets.HasValidDrag)
+            {
+                SE.Debug.Assert(false, "Unreachable code encountered!");
+                /* The native asset spawn block is commented out. */
+                result = DragDropEffect.Move;
+            }
+
+            // Clear cache
+            _dragHandlers.OnDragDrop(null);
+
+            // Check if scene has been modified
+            if (result != DragDropEffect.None)
+            {
+                /*var node = SceneGraph.FindNode(newParent.ID) as ActorGraphNode;
+                node?.TreeNode.Expand();*/
+            }
+
             return result;
         }
 
-        private void OnRenamed(RenamePopup popup)
+        private void OnRenamed(RenamePopup renamePopup)
         {
-            // Native rename mutation is commented out; do not change Actor.Name.
-            _ = popup;
+            /*using (new UndoBlock(_actorNode.Root.Undo, Actor, "Rename"))
+            {
+                Actor.Name = renamePopup.Text.Trim();
+            }*/
         }
 
-        private static ActorGraphNode? FindActorNode(Guid id)
+        private bool ValidateDragActor(ActorGraphNode actorNode)
         {
-            return Editor.Instance?.Scene.SceneGraph.FindNode(id) as ActorGraphNode;
-        }
-
-        private static ContentItem? FindAsset(string path)
-        {
-            ManagedContentBrowser? browser = Editor.Instance?.Windows.Content.Browser;
-            return browser?.RootFolder.Find(path);
-        }
-
-        private static bool ValidateDragActor(ActorGraphNode actorNode)
-        {
-            // The native validation body is entirely commented out.
-            _ = actorNode;
             return false;
+            /* The native actor drag validation block is commented out. */
         }
 
-        private static bool ValidateDragAsset(ContentItem assetItem)
+        private bool ValidateDragAsset(ContentItem assetItem)
         {
-            // AssetItem.OnEditorDrag is the native virtual extension point. No
-            // managed override exists yet, so the native default remains false.
-            _ = assetItem;
-            return false;
+            return assetItem is AssetItem asset && asset.OnEditorDrag(this);
         }
 
-        protected override void OnDispose()
+        private static ActorGraphNode FindActorNode(Guid id)
         {
-            m_DragHandlers?.Clear();
-            m_DragActors = null;
-            m_DragAssets = null;
-            m_DragHandlers = null;
-            ActorGraphNode = null;
-            base.OnDispose();
+            return Editor.Instance.Scene.GetActorNode(id);
+        }
+
+        private static ContentItem FindAsset(string path)
+        {
+            // AssetDatabaseModule::Find(path) has no managed binding yet.
+            // return AssetDatabaseModule.Find(path);
+            return null;
         }
     }
 }

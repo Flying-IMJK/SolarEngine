@@ -29,6 +29,10 @@ namespace SE.Editor
         public UIModule UI { get; private set; }
         public SceneModule Scene { get; private set; }
         public WindowsModule Windows { get; private set; }
+        public AssetImportingModule Importing { get; private set; }
+        public AssetDatabaseModule AssetDatabase { get; private set; }
+
+
         public bool IsInitialized => m_IsInitialized;
 
         /// <summary>
@@ -56,6 +60,8 @@ namespace SE.Editor
             m_Modules.Add(UI = new UIModule(this));
             m_Modules.Add(Scene = new SceneModule(this));
             m_Modules.Add(Windows = new WindowsModule(this));
+            m_Modules.Add(Importing = new AssetImportingModule(this));
+            m_Modules.Add(AssetDatabase = new AssetDatabaseModule(this));
 
 
             m_Modules.Sort( (left, right) => left.Order.CompareTo(right.Order));

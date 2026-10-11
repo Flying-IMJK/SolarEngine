@@ -7,8 +7,6 @@ EDITOR_ADD(
     LogWindow.cpp
     ContentWindow.h
     ContentWindow.cpp
-    SceneHierarchyWindow.h
-    SceneHierarchyWindow.cpp
     EditSceneWindow.h
     EditSceneWindow.cpp
     PropertiesWindow.h
