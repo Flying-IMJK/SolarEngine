@@ -265,34 +265,34 @@ namespace SE.GUI
         {
             var style = new Style
             {
-                Background = Color.FromRGBA(0x1CFF1C1C),
-                LightBackground = Color.FromRGBA(0x2DFF2D30),
-                Foreground = Color.FromRGBA(0xFFFFFFFF),
-                ForegroundGrey = Color.FromRGBA(0xA9FFA9B3),
-                ForegroundDisabled = Color.FromRGBA(0x78FF7883),
-                ForegroundViewport = Color.FromRGBA(0xFFFFFFFF),
-                BackgroundHighlighted = Color.FromRGBA(0x54FF545C),
-                BorderHighlighted = Color.FromRGBA(0x6AFF6A75),
-                BackgroundSelected = Color.FromRGBA(0x7AFF00CC),
-                BorderSelected = Color.FromRGBA(0x97FF1CEA),
-                BackgroundNormal = Color.FromRGBA(0x3FFF3F46),
-                BorderNormal = Color.FromRGBA(0x54FF545C),
-                TextBoxBackground = Color.FromRGBA(0x33FF3337),
-                TextBoxBackgroundSelected = Color.FromRGBA(0x3FFF3F46),
-                CollectionBackgroundColor = Color.FromRGBA(0xCC14CCCC),
-                ProgressNormal = Color.FromRGBA(0xD3FF0A28),
-                Selection = Color.Orange * 0.4f,
-                SelectionBorder = Color.Orange,
+                Background = new Color(32, 34, 37),
+                LightBackground = new Color(41, 44, 48),
+                Foreground = new Color(229, 232, 235),
+                ForegroundGrey = new Color(181, 187, 195),
+                ForegroundDisabled = new Color(130, 139, 149),
+                ForegroundViewport = new Color(255, 255, 255),
+                BackgroundHighlighted = new Color(52, 57, 64),
+                BorderHighlighted = new Color(74, 89, 102),
+                BackgroundSelected = new Color(53, 74, 90),
+                BorderSelected = new Color(100, 166, 203),
+                BackgroundNormal = new Color(45, 50, 56),
+                BorderNormal = new Color(69, 75, 82),
+                TextColor = new Color(229, 232, 235),
+                TextBoxBackground = new Color(23, 26, 30),
+                TextBoxBackgroundSelected = new Color(38, 54, 64),
+                CollectionBackgroundColor = new Color(36, 39, 43),
+                ProgressNormal = new Color(98, 181, 140),
+                Selection = new Color(213, 160, 76, 102),
+                SelectionBorder = new Color(213, 160, 76),
                 Statusbar = new StatusbarStyle
                 {
-                    PlayMode = Color.FromRGBA(0x91FF2F35),
-                    Failed = Color.FromRGBA(0x24FF9C24),
-                    Loading = Color.FromRGBA(0x2DFF2D30),
+                    PlayMode = new Color(43, 97, 69),
+                    Failed = new Color(128, 51, 55),
+                    Loading = new Color(52, 69, 82),
                 },
             };
 
-            style.TextColor = style.Foreground;
-            style.DragWindow = style.BackgroundSelected * 0.7f;
+            style.DragWindow = new Color(64, 135, 177, 160);
             style.EnsureDefaultFonts();
             return style;
         }
@@ -304,26 +304,32 @@ namespace SE.GUI
         {
             var style = new Style
             {
-                Background = new Color(0.92f, 0.92f, 0.92f, 1.0f),
-                LightBackground = new Color(0.84f, 0.84f, 0.88f, 1.0f),
-                DragWindow = new Color(0.0f, 0.26f, 0.43f, 0.70f),
-                Foreground = new Color(1.0f, 1.0f, 1.0f, 1.0f),
-                ForegroundGrey = new Color(0.30f, 0.30f, 0.31f, 1.0f),
-                ForegroundDisabled = new Color(0.45f, 0.45f, 0.49f, 1.0f),
-                ForegroundViewport = new Color(1.0f, 1.0f, 1.0f, 1.0f),
-                BackgroundHighlighted = new Color(0.59f, 0.59f, 0.64f, 1.0f),
-                BorderHighlighted = new Color(0.50f, 0.50f, 0.55f, 1.0f),
-                BackgroundSelected = new Color(0.00f, 0.46f, 0.78f, 0.78f),
-                BorderSelected = new Color(0.11f, 0.57f, 0.88f, 0.65f),
-                BackgroundNormal = new Color(0.67f, 0.67f, 0.75f, 1.0f),
-                BorderNormal = new Color(0.59f, 0.59f, 0.64f, 1.0f),
-                TextColor = new Color(0.0f, 0.0f, 0.0f, 1.0f),
-                TextBoxBackground = new Color(0.75f, 0.75f, 0.81f, 1.0f),
-                TextBoxBackgroundSelected = new Color(0.73f, 0.73f, 0.80f, 1.0f),
-                CollectionBackgroundColor = new Color(0.85f, 0.85f, 0.88f, 1.0f),
-                ProgressNormal = new Color(0.03f, 0.65f, 0.12f, 1.0f),
-                Selection = Color.Orange * 0.4f,
-                SelectionBorder = Color.Orange,
+                Background = new Color(241, 242, 244),
+                LightBackground = new Color(226, 229, 233),
+                DragWindow = new Color(60, 125, 166, 122),
+                Foreground = new Color(38, 49, 61),
+                ForegroundGrey = new Color(86, 97, 109),
+                ForegroundDisabled = new Color(126, 135, 145),
+                ForegroundViewport = new Color(255, 255, 255),
+                BackgroundHighlighted = new Color(212, 220, 228),
+                BorderHighlighted = new Color(154, 177, 194),
+                BackgroundSelected = new Color(203, 221, 235),
+                BorderSelected = new Color(57, 131, 173),
+                BackgroundNormal = new Color(232, 234, 238),
+                BorderNormal = new Color(194, 201, 208),
+                TextColor = new Color(38, 49, 61),
+                TextBoxBackground = new Color(255, 255, 255),
+                TextBoxBackgroundSelected = new Color(229, 241, 250),
+                CollectionBackgroundColor = new Color(248, 249, 250),
+                ProgressNormal = new Color(63, 157, 114),
+                Selection = new Color(184, 125, 42, 102),
+                SelectionBorder = new Color(184, 125, 42),
+                Statusbar = new StatusbarStyle
+                {
+                    PlayMode = new Color(66, 153, 108),
+                    Failed = new Color(189, 81, 83),
+                    Loading = new Color(100, 150, 180),
+                },
             };
 
             style.EnsureDefaultFonts();

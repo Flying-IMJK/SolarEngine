@@ -54,6 +54,9 @@ namespace SE.Editor.GUI
 
             Style style = Style.Current;
 
+            // Match the thickness and color of the docked window splitters.
+            Render2D.FillRectangle(new Rectangle(0, 0, Width, SplitPanel.SplitterSize), style.LightBackground);
+
             // Draw size grip
             WindowRootControl window = Root as WindowRootControl;
             if (window != null && !window.IsMaximized())

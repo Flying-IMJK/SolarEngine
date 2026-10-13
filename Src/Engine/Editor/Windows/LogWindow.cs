@@ -436,21 +436,21 @@ namespace SE.Editor
                     Render2D.FillRectangle(clientRect, style.Background * 0.9f);
                 }
 
-                // Icon
+                // The precolored status PNGs retain their colors with a white tint.
                 Color iconColor = default;
                 SpriteHandle icon = default;
                 switch (Group)
                 {
                     case LogGroup.Error:
-                        iconColor = Color.Red;
+                        iconColor = Color.White;
                         icon = EditorIcons.Error32;
                         break;
                     case LogGroup.Warning:
-                        iconColor = Color.Yellow;
+                        iconColor = Color.White;
                         icon = EditorIcons.Warning32;
                         break;
                     case LogGroup.Info:
-                        iconColor = style.Foreground;
+                        iconColor = Color.White;
                         icon = EditorIcons.Info32;
                         break;
                 }

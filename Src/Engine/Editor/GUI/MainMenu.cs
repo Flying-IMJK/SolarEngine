@@ -193,7 +193,9 @@ namespace SE.Editor.GUI
                 _icon = new Image();
                 _icon.Margin = new Margin(6, 6, 6, 6);
                 _icon.Brush = new TextureBrush(windowIcon);
-                _icon.Color = Style.Current.Foreground;
+                // Preserve the engine texture's colors in both normal and hover states.
+                _icon.Color = Color.White;
+                _icon.MouseOverColor = Color.White;
                 _icon.KeepAspectRatio = false;
                 _icon.Parent = this;
 

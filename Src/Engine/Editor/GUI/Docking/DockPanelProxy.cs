@@ -61,7 +61,10 @@ namespace SE.Editor.GUI
 
             if (tabsCount > 0)
             {
-                Render2D.FillRectangle(headerRect, style.BackgroundHighlighted);
+                Render2D.FillRectangle(headerRect, style.LightBackground);
+                Render2D.FillRectangle(
+                    new Rectangle(headerRect.Left, headerRect.Bottom - 1, headerRect.Width, 1),
+                    style.BorderNormal);
             }
 
             // Check if has only one window docked
@@ -80,17 +83,20 @@ namespace SE.Editor.GUI
                 // Draw header
                 Rectangle tabRect = new Rectangle(headerRect.Left, headerRect.Y, tabSize, headerRect.Height);
                 bool isMouseOver = headerRect.Contains(MousePosition);
-                if (containsFocus)
-                {
-                    Render2D.FillRectangle(tabRect, style.BackgroundSelected);
-                }
+                // A quiet surface and two thin edges give the active tab depth in both palettes.
+                Render2D.FillRectangle(tabRect, containsFocus ? style.BackgroundSelected : style.BackgroundNormal);
+                Render2D.FillRectangle(new Rectangle(tabRect.Left, tabRect.Top, tabRect.Width, 1), style.BorderHighlighted);
+                Render2D.FillRectangle(
+                    new Rectangle(tabRect.Left, tabRect.Bottom - 2, tabRect.Width, 2),
+                    containsFocus ? style.BorderSelected : style.BorderNormal);
 
                 if (tab.Icon.IsValid)
                 {
+                    // Tab icons carry their own colors; draw them without theme tint.
                     Render2D.DrawSprite(
                         tab.Icon,
                         new Rectangle(tabRect.Left, tabRect.Y, iconWidth, iconWidth),
-                        style.Foreground);
+                        Color.White);
                 }
 
                 // Draw text
@@ -124,9 +130,6 @@ namespace SE.Editor.GUI
             }
             else
             {
-                // Draw background
-                Render2D.FillRectangle(headerRect, style.LightBackground);
-
                 // Render all tabs
                 float x = 0;
                 for (int i = 0; i < tabsCount; i++)
@@ -150,6 +153,12 @@ namespace SE.Editor.GUI
                     {
                         tabColor = containsFocus ? style.BackgroundSelected : style.BackgroundNormal;
                         Render2D.FillRectangle(tabRect, tabColor);
+                        Render2D.FillRectangle(
+                            new Rectangle(tabRect.Left, tabRect.Top, tabRect.Width, 1),
+                            style.BorderHighlighted);
+                        Render2D.FillRectangle(
+                            new Rectangle(tabRect.Left, tabRect.Bottom - 2, tabRect.Width, 2),
+                            containsFocus ? style.BorderSelected : style.BorderNormal);
                     }
                     // Check if mouse is over
                     else if (isMouseOver)
@@ -166,6 +175,7 @@ namespace SE.Editor.GUI
 
                     if (tab.Icon.IsValid)
                     {
+                        // Match the single-tab path so colored icons render unchanged.
                         Render2D.DrawSprite(
                             tab.Icon,
                             new Rectangle(
@@ -173,7 +183,7 @@ namespace SE.Editor.GUI
                                 (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) / 2,
                                 DockPanel.DefaultButtonsSize,
                                 DockPanel.DefaultButtonsSize),
-                            style.Foreground);
+                            Color.White);
                     }
 
                     // Draw text
@@ -209,11 +219,6 @@ namespace SE.Editor.GUI
                     // Move
                     x += width;
                 }
-
-                // Draw selected tab strip
-                Render2D.FillRectangle(
-                    new Rectangle(0, DockPanel.DefaultHeaderHeight - 2, Width, 2),
-                    containsFocus ? style.BackgroundSelected : style.BackgroundNormal);
             }
         }
 

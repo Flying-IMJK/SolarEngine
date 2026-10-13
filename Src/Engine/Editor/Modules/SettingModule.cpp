@@ -285,10 +285,11 @@ namespace SE::Editor
 
 		m_IconAtlas = AssetContent::CreateVirtualAsset<SpriteAtlas>();
 
-		TextureInitData* initData = TextureInitData::Create(512, 512, 1, PixelFormat::BC3_UNorm);
+		TextureInitData* initData = TextureInitData::Create(2048, 2048, 1, PixelFormat::BC3_UNorm);
 		m_IconAtlas->Init(initData);
 
-		SpriteAtlasPacker atlasPacker = SpriteAtlasPacker(initData->Width, initData->Height, 2);
+		// BC3 copies need block-aligned destinations; icon dimensions and spacing are multiples of four.
+		SpriteAtlasPacker atlasPacker = SpriteAtlasPacker(initData->Width, initData->Height, 4);
 
 		for (int i = 0; i < m_LoadedIcons.Count(); i++)
 		{
@@ -297,7 +298,14 @@ namespace SE::Editor
 			atlasPacker.InsertRectangle(iconPack->texture->Width(), iconPack->texture->Height(), i);
 		}
 
-		atlasPacker.PackRectangles();
+		const int packedCount = atlasPacker.PackRectangles();
+		if (packedCount != m_LoadedIcons.Count())
+		{
+			LOG_ERROR("Setting", "Icon atlas is too small: packed {0} of {1} icons.", packedCount, m_LoadedIcons.Count());
+			// Do not publish incomplete sprites or copy icons into missing rectangles.
+			m_IconAtlasUpload = true;
+			return;
+		}
 
 		Float2 atlasSize = m_IconAtlas->Size();
 		for (int i = 0; i < m_LoadedIcons.Count(); i++)
