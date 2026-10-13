@@ -276,6 +276,11 @@ namespace SE.GUI
 
         public Panel()
         {
+            // Initialize the palette before SetScrollBars creates its controls.
+            var style = Style.Current;
+            m_ScrollbarTrackColor = style.BackgroundHighlighted;
+            m_ScrollbarThumbColor = style.BackgroundNormal;
+            m_ScrollbarThumbSelectedColor = style.BackgroundSelected;
         }
 
         /// <summary>
@@ -283,13 +288,9 @@ namespace SE.GUI
         /// </summary>
         /// <param name="scrollBars">The scroll bars.</param>
         /// <param name="autoFocus">True if control can accept user focus</param>
-        public Panel(ScrollBars scrollBars, bool autoFocus = false)
+        public Panel(ScrollBars scrollBars, bool autoFocus = false) : this()
         {
             AutoFocus = autoFocus;
-            // var style = Style.Current;
-            // _scrollbarTrackColor = style.BackgroundHighlighted;
-            // _scrollbarThumbColor = style.BackgroundNormal;
-            // _scrollbarThumbSelectedColor = style.BackgroundSelected;
             SetScrollBars(scrollBars);
         }
 

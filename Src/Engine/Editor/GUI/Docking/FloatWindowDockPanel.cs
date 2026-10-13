@@ -95,7 +95,7 @@ namespace SE.Editor.GUI
         /// <summary>
         /// Creates a floating window.
         /// </summary>
-        /// <param name="parent">Parent window handle.</param>
+        /// <param name="parent">Source docking root; it does not own the floating window.</param>
         /// <param name="location">Client area location.</param>
         /// <param name="size">Window client area size.</param>
         /// <param name="startPosition">Window start position.</param>
@@ -104,7 +104,8 @@ namespace SE.Editor.GUI
         {
             // Setup initial window settings
             CreateWindowSettings settings = SE.Window.CreateDefaultSettings();
-            settings.Parent = (parent as WindowRootControl)?.Window;
+            // Keep floating docks as independent top-level windows for taskbar activation.
+            settings.Parent = null;
 
             settings.Title = title;
             settings.Size = size;

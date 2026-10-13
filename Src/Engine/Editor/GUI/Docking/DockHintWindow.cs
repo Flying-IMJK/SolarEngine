@@ -34,7 +34,7 @@ namespace SE.Editor.GUI
             if (host.IsMaximized)
             {
                 Float2 localMouse = host.MousePosition;
-                Float2 restoredMouseScreen = host.ClientToScreen(localMouse);
+                Float2 restoredMouseScreen = SE.Platform.MousePosition;
                 Float2 previousSize = host.Size;
                 host.Restore();
                 Float2 restoredSize = host.Size;
@@ -43,8 +43,8 @@ namespace SE.Editor.GUI
                     restoredMouseScreen.Y - localMouse.Y * restoredSize.Y / Math.Max(previousSize.Y, 1.0f));
             }
 
-            // Floating panels sample after focus, matching the native window mouse query.
-            Float2 mouseScreen = initialMouseScreen ?? GetMouseScreenPosition(host);
+            // Use the platform cursor position independently of window focus.
+            Float2 mouseScreen = initialMouseScreen ?? SE.Platform.MousePosition;
             if (mouseScreen != Float2.Zero)
             {
                 CalculateDragOffset(mouseScreen);
@@ -90,10 +90,8 @@ namespace SE.Editor.GUI
                 throw new ArgumentNullException(nameof(toMove));
             }
 
-            Float2 mouseScreen = toMove.Root is WindowRootControl sourceRoot
-                ? GetMouseScreenPosition(sourceRoot.Window)
-                : Float2.Zero;
             toMove.ShowFloating();
+            Float2 mouseScreen = SE.Platform.MousePosition;
             FloatWindowDockPanel? floating = toMove.ParentDockPanel as FloatWindowDockPanel;
             if (floating == null)
             {
@@ -102,11 +100,6 @@ namespace SE.Editor.GUI
             if (floating.Window != null)
             {
                 SE.Window host = floating.Window.Window;
-                if (mouseScreen == Float2.Zero)
-                {
-                    mouseScreen = GetMouseScreenPosition(host);
-                }
-
                 host.Position = mouseScreen - new Float2(8.0f);
             }
             return new DockHintWindow(floating, mouseScreen);
@@ -190,11 +183,11 @@ namespace SE.Editor.GUI
                 CalculateDragOffset(mouseScreenPosition);
                 m_LateDragOffsetUpdate = false;
             }
-            Update(mouseScreenPosition);
+            Update(SE.Platform.MousePosition);
         }
-        public void OnMouseUp(Float2 mouseScreenPosition)
+        public void OnMouseUp()
         {
-            Update(mouseScreenPosition);
+            Update(SE.Platform.MousePosition);
             Dispose(true);
         }
         public void OnLostFocus() => Dispose(true);
@@ -251,13 +244,8 @@ namespace SE.Editor.GUI
             }
             else if (commit && m_ToMove.Window != null)
             {
-                Float2 mouseScreen = m_WindowRect.Location + m_DragOffset;
-                if (Proxy.Window != null)
-                {
-                    mouseScreen = Proxy.Window.ClientToScreen(Proxy.Window.GUI.GetMousePosition() * Proxy.Window.DpiScale);
-                }
-
-                m_ToMove.Window.Window.Position = mouseScreen - m_DragOffset;
+                // The proxy has already been hidden, so read the platform cursor as in native docking.
+                m_ToMove.Window.Window.Position = SE.Platform.MousePosition - m_DragOffset;
                 m_ToMove.Window.Window.Show();
             }
 
@@ -275,19 +263,6 @@ namespace SE.Editor.GUI
             {
                 m_DragOffset = mouseScreenPosition - m_ToMove.Window.Window.Position;
             }
-        }
-
-        private static Float2 GetMouseScreenPosition(SE.Window? window)
-        {
-            if (window == null)
-            {
-                return Float2.Zero;
-            }
-
-            Float2 mouse = window.MousePosition;
-            return mouse != Float2.Zero && mouse != Float2.Minimum
-                ? window.ClientToScreen(mouse)
-                : Float2.Zero;
         }
 
         public static class Proxy
@@ -468,7 +443,7 @@ namespace SE.Editor.GUI
                     handled = true;
                     if (Window != null)
                     {
-                        Active?.OnMouseUp(Window.ClientToScreen(localPosition * Window.DpiScale));
+                        Active?.OnMouseUp();
                     }
                 }
             }

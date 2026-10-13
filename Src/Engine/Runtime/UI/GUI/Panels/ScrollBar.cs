@@ -527,23 +527,24 @@ namespace SE.GUI
 
         protected ScrollBar()
         {
+            // Standalone scrollbars use the same palette; Panel may override it.
+            var style = Style.Current;
+            TrackColor = style.BackgroundHighlighted;
+            ThumbColor = style.BackgroundNormal;
+            ThumbSelectedColor = style.BackgroundSelected;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ScrollBar"/> class.
         /// </summary>
         /// <param name="orientation">The orientation.</param>
-        protected ScrollBar(Orientation orientation)
+        protected ScrollBar(Orientation orientation) : this()
         {
             m_OnUpdate = OnUpdate;
 
             AutoFocus = false;
 
             _orientation = orientation;
-            // var style = Style.Current;
-            // TrackColor = style.BackgroundHighlighted;
-            // ThumbColor = style.BackgroundNormal;
-            // ThumbSelectedColor = style.BackgroundSelected;
         }
 
         /// <inheritdoc />

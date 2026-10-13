@@ -688,17 +688,18 @@ namespace SE.Editor
                 return result;
             }
 
-            if (data is DragDataFiles)
+            if (data is DragDataFiles files)
             {
-                // Native import call is retained as a comment until AssetImportingModule is exposed:
-                // ContentFolder currentFolder = EditorApp::Ins().windowsModule->ContentWin->CurrentViewFolder;
-                // if (currentFolder != nullptr)
-                // {
-                //     EditorApp::Ins().importingModule->Import(files->Files.Get(), files->Files.Count(), currentFolder);
-                // }
+                Editor editor = Editor.Instance;
+                // Import files
+                ContentFolder currentFolder = editor.Windows.ContentWin.CurrentViewFolder;
+
+                if (currentFolder != null)
+                {
+                    editor.Importing.Import(files.Files, currentFolder);
+                }
                 result = DragDropEffect.Copy;
             }
-            // Native actor drop branch is commented out.
 
             _validDragOver = false;
             return result;
