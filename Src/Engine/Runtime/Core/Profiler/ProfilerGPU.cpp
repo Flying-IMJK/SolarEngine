@@ -8,6 +8,7 @@ namespace SE
 	RenderStatsData RenderStatsData::Counter;
 
 	Function<IGPUTimerQueryProfile*()> ProfilerGPU::CreateTimerQueryProfileCall;
+	Function<void(IGPUTimerQueryProfile*)> ProfilerGPU::DelateTimerQueryProfileCall;
 	Function<void(const Char*)> ProfilerGPU::EventBeginCall;
 	Function<void()> ProfilerGPU::EventEndCall;
 	Function<uint64()> ProfilerGPU::GetFrameCountCall;
@@ -207,7 +208,11 @@ namespace SE
 
 	void ProfilerGPU::Dispose()
 	{
-		m_TimerQueriesPool.ClearDelete();
+        for (size_t i = 0; i < m_TimerQueriesPool.Count(); i++)
+        {
+            IGPUTimerQueryProfile* profile = m_TimerQueriesPool[i];
+			DelateTimerQueryProfileCall(profile);
+        }
 		m_TimerQueriesFree.Clear();
 	}
 }

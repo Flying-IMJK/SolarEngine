@@ -41,6 +41,14 @@ namespace SE
 			return timerQuery;
 		};
 
+		ProfilerGPU::DelateTimerQueryProfileCall = [](IGPUTimerQueryProfile* timerQuery)
+		{
+            GPUTimerQuery* gpuTimerQuery = static_cast<GPUTimerQuery*>(timerQuery);
+
+			gpuTimerQuery->ReleaseGPU();
+            Delete(gpuTimerQuery);
+		};
+
 #if SE_EDITOR
 		ProfilerGPU::Enabled = true;
 #endif

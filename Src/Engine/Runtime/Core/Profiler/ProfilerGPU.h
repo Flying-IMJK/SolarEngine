@@ -127,6 +127,7 @@ namespace SE
 		};
 
 		static Function<IGPUTimerQueryProfile*()> CreateTimerQueryProfileCall;
+		static Function<void(IGPUTimerQueryProfile*)> DelateTimerQueryProfileCall;
 		static Function<void(const Char*)> EventBeginCall;
 		static Function<void()> EventEndCall;
 		static Function<uint64()> GetFrameCountCall;
