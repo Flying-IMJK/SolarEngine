@@ -9,7 +9,7 @@ namespace SE.Editor
     /// <summary>
     /// Displays custom editor property name with support for context menu and visual feedback.
     /// </summary>
-    public class PropertyNameLabel : Control
+    public class PropertyNameLabel : Label
     {
         /// <summary>
         /// Helper value used by the PropertiesList to draw property names in a proper area.
@@ -39,13 +39,14 @@ namespace SE.Editor
         /// <param name="name">The property name to display.</param>
         public PropertyNameLabel(string name)
         {
-            // Text = name;
-            // HorizontalAlignment = TextAlignment.Near;
+            Text = name;
+            HorizontalAlignment = TextAlignment.Near;
             // VerticalAlignment = TextAlignment.Center;
             // Margin = new Margin(4, 0, 0, 0);
             // ClipText = true;
 
             Name = name;
+            Height = 18;
             HighlightStripColor = Color.Transparent;
         }
 
@@ -56,7 +57,7 @@ namespace SE.Editor
             if (LinkedEditor == null && editor != null)
             {
                 LinkedEditor = editor;
-                // editor.LinkedLabel = this;
+                editor.LinkedLabel = this;
             }
         }
 
@@ -66,7 +67,7 @@ namespace SE.Editor
             base.Draw();
             if (HighlightStripColor.A > 0.0f)
             {
-                // Render2D.FillRectangle(new Rectangle(0, 0, 2, Height), HighlightStripColor);
+                Render2D.FillRectangle(new Rectangle(0, 0, 2, Height), HighlightStripColor);
             }
         }
 
@@ -118,13 +119,23 @@ namespace SE.Editor
         /// <param name="location">The menu location.</param>
         protected virtual void ShowContextMenu(Float2 location)
         {
-            SE.Debug.Log($"PropertyNameLabel::ShowContextMenu - Context menu requested at ({location.X}, {location.Y})");
+            var menu = new ContextMenu();
             if (LinkedEditor != null)
-            {
-                // Native custom-editor menu item construction is commented out.
-            }
-            // SetupContextMenu?.Invoke(this, menu, LinkedEditor);
-            // menu.Show(this, location);
+                PopulateEditorActions(menu, LinkedEditor);
+            SetupContextMenu?.Invoke(this, menu, LinkedEditor);
+            menu.Show(this, location);
+        }
+
+        internal static void PopulateEditorActions(ContextMenu menu, CustomEditor editor)
+        {
+            var revertReference = menu.AddButton("Revert to Prefab", editor.RevertToReferenceValue);
+            revertReference.Enabled = editor.CanRevertReferenceValue;
+            var revertDefault = menu.AddButton("Reset to default", editor.RevertToDefaultValue);
+            revertDefault.Enabled = editor.CanRevertDefaultValue;
+            menu.AddSeparator();
+            menu.AddButton("Copy", editor.Copy);
+            var paste = menu.AddButton("Paste", editor.Paste);
+            paste.Enabled = editor.CanPaste;
         }
     }
 }

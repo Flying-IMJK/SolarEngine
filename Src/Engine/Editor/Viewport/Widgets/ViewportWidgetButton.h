@@ -11,7 +11,6 @@ namespace SE::Editor
     private:
         String _text;
         ContextMenu* _cm;
-        bool _checked;
         bool _autoCheck;
         bool _isMosueDown;
         float _forcedTextWidth;
@@ -41,7 +40,7 @@ namespace SE::Editor
         /// <summary>
         /// Gets or sets a value indicating whether this <see cref="ViewportWidgetButton"/> is checked.
         /// </summary>
-        bool Checked;
+        bool Checked = false;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ViewportWidgetButton"/> class.

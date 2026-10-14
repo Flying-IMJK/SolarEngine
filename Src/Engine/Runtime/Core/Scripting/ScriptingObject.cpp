@@ -326,13 +326,15 @@ namespace SE
     void ScriptingObject::RegisterObject()
     {
         ENGINE_ASSERT(!IsRegistered());
-        // Flags |= ObjectFlags::IsRegistered;
+        m_IsRegistered = true;
+         //Flags |= ObjectFlags::IsRegistered;
         Scripting::RegisterObject(this);
     }
 
     void ScriptingObject::UnregisterObject()
     {
         ENGINE_ASSERT(IsRegistered());
+        m_IsRegistered = false;
         // Flags &= ~ObjectFlags::IsRegistered;
         Scripting::UnregisterObject(this);
     }

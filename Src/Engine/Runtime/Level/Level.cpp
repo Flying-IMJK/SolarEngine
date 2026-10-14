@@ -799,7 +799,7 @@ namespace SE
 		}
 
 		// Preload scene asset
-		const auto sceneAsset = AssetContent::LoadAsync<JsonAsset>(id);
+		const auto sceneAsset = AssetContent::LoadAsync<SceneAsset>(id);
 		if (sceneAsset == nullptr)
 		{
 			LOG_ERROR("Scene", "Cannot load scene asset.");
@@ -846,7 +846,7 @@ namespace SE
 		return true;
 	}
 
-	bool Level::SaveSceneToBytes(List<byte> &bytes, Scene* scene, bool prettyJson)
+	bool Level::SaveSceneToBytes(Scene* scene, List<byte> &bytes, bool prettyJson)
 	{
 		Json::StringBuffer sceneData;
 		if (!SaveSceneToBytes(scene, sceneData, prettyJson))

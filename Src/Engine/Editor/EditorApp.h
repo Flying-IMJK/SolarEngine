@@ -118,6 +118,9 @@ namespace SE::Editor
 		SE_FUNCTION(API())
 		ProjectInfo* GetProjectInfo() const;
 
+		SE_FUNCTION(API())
+		void CreateDemoScene();
+
 	private:
 
 		void OnEditorAssemblyLoaded(CLRAssembly* assembly);

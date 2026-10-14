@@ -154,6 +154,7 @@ namespace SE.Editor
             settings.HasBorder = false;
             settings.AllowDragAndDrop = true;
             m_MainWindow = Window.Create(settings) ?? throw new InvalidOperationException("Failed to create the editor main window.");
+            m_MainWindow.Closed += () => EngineContext.IsRequestingExit = true;
             return m_MainWindow;
         }
 

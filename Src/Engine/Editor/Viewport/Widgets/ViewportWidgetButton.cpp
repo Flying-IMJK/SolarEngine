@@ -35,7 +35,7 @@ namespace SE::Editor
 		Rectangle textRect = Rectangle(0, 0, Width + 1, Height + 1);
 
 		// Check if is checked or mouse is over and auto check feature is enabled
-		if (_checked)
+		if (Checked)
 			Render2D::FillRectangle(textRect, style->BackgroundSelected * (IsMouseOver ? 0.9f : 0.6f));
 		else if (_autoCheck && IsMouseOver)
 			Render2D::FillRectangle(textRect, style->BackgroundHighlighted);
@@ -64,7 +64,7 @@ namespace SE::Editor
 		if (_autoCheck)
 		{
 			// Toggle
-			Checked = !_checked;
+			Checked = !Checked;
 			if (Toggled.IsBinded())
 			{
 				Toggled(this);

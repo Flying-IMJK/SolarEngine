@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using SE.Editor.Utilities;
 
 namespace SE.Editor.GUI
 {
@@ -9,6 +10,7 @@ namespace SE.Editor.GUI
     /// <seealso cref="float" />
     public class FloatValueBox : ValueBox<float>
     {
+        private Utils.ValueCategory _category = Utils.ValueCategory.None;
         public override float GetValue()
         {
             return _value;
@@ -86,6 +88,15 @@ namespace SE.Editor.GUI
             SetValue(GetValue());
         }
 
+        public void SetLimits(LimitAttribute limits)
+        {
+            _min = limits.Min;
+            _max = Mathf.Max(_min, limits.Max);
+            _slideSpeed = limits.SliderSpeed;
+            TryUseAutoSliderSpeed();
+            SetValue(GetValue());
+        }
+
         /// <summary>
         /// Sets the limits from the attribute.
         /// </summary>
@@ -111,7 +122,7 @@ namespace SE.Editor.GUI
         /// <summary>
         /// Gets or sets the category of the value. This can be none for just a number or a more specific one like a distance.
         /// </summary>
-        /*public Utils.ValueCategory Category
+        public Utils.ValueCategory Category
         {
             get => _category;
             set
@@ -123,7 +134,7 @@ namespace SE.Editor.GUI
                 _category = value;
                 UpdateText();
             }
-        }*/
+        }
 
         private void TryUseAutoSliderSpeed()
         {
@@ -137,21 +148,14 @@ namespace SE.Editor.GUI
         /// <inheritdoc />
         protected override void UpdateText()
         {
-            SetText(_value.ToString(CultureInfo.InvariantCulture));
+            SetText(NumberFormatter.FormatFloat(_value, Category));
         }
 
         /// <inheritdoc />
         protected override void TryGetValue()
         {
-            if (float.TryParse(Text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
-            {
-                SetValue(value);
-            }
-            else
-            {
-                UpdateText();
-            }
-            SetValue(value);
+            try { SetValue((float)ShuntingYard.Parse(Text)); }
+            catch (Exception ex) { SE.Debug.Log(ex.ToString()); UpdateText(); }
         }
 
         /// <inheritdoc />

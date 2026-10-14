@@ -1,43 +1,205 @@
+using System.Collections.Generic;
 using SE.GUI;
 
 namespace SE.Editor.GUI
 {
     /// <summary>
-    /// Managed scene editing window. The viewport surface is deliberately kept
-    /// independent of the C++ editor viewport until SceneRenderTask receives a
-    /// generated C# binding.
+    /// Managed scene editing window.
     /// </summary>
     public sealed class EditSceneWindow : SceneEditorWindow
     {
-        private readonly Label m_StatusLabel;
+        /// <summary>Camera preview output control.</summary>
+        public sealed class CameraPreview : RenderOutputViewport
+        {
+            private bool _isPinned;
+            private Button _pinButton;
+
+            public bool IsPinned
+            {
+                get => _isPinned;
+                set
+                {
+                    if (_isPinned != value)
+                    {
+                        _isPinned = value;
+                        UpdatePinButton();
+                    }
+                }
+            }
+
+            public Camera Camera
+            {
+                get => null; // m_Task.Camera;
+                set { /* m_Task.Camera = value; */ }
+            }
+
+            public CameraPreview() : base(new SceneRenderTask())
+            {
+                AutoFocus = false;
+
+                const float pinSize = 12.0f;
+                const float pinMargin = 2.0f;
+                _pinButton = new Button
+                {
+                    AnchorPreset = AnchorPresets.TopRight,
+                    Parent = this,
+                    Bounds = new Rectangle(Width - pinSize - pinMargin, pinMargin, pinSize, pinSize)
+                };
+                _pinButton.Clicked += () => IsPinned = !IsPinned;
+                UpdatePinButton();
+
+                m_Task.Begin += OnTaskBegin;
+            }
+
+            private void OnTaskBegin(RenderTask task, GPUContext context)
+            {
+                SceneRenderTask sceneTask = (SceneRenderTask)task;
+                // Copy camera view parameters for the scene rendering
+                RenderView view = sceneTask.View;
+                Float2 size = sceneTask.GetBuffersSize();
+                SE.Viewport viewport = new SE.Viewport(0, 0, size.X, size.Y);
+                view.CopyFrom(Camera, ref viewport);
+                sceneTask.View = view;
+            }
+
+            private void UpdatePinButton()
+            {
+                if (_isPinned)
+                {
+                    _pinButton.Text = "-";
+                    _pinButton.TooltipText = "Unpin preview";
+                }
+                else
+                {
+                    _pinButton.Text = "+";
+                    _pinButton.TooltipText = "Pin preview";
+                }
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+                Render2D.DrawRectangle(new Rectangle(Float2.Zero, Size), Color.Black);
+            }
+
+            public override void OnDestroy()
+            {
+                IsPinned = false;
+                Camera = null;
+                _pinButton = null;
+                base.OnDestroy();
+            }
+        }
+
+        private readonly List<CameraPreview> _previews = new();
+        private Actor _pilotActor;
+        private BoundingBox _pilotBounds;
+        private Transform _pilotStart;
+
+        public EditorGizmoViewport Viewport;
 
         public EditSceneWindow(Editor editor) : base(editor)
         {
-            Title = "Edit Scene";
-            /*            m_StatusLabel = AddChild(new Label());
-                        m_StatusLabel.AutoFocus = false;
-                        m_StatusLabel.HorizontalAlignment = TextAlignment.Center;
-                        m_StatusLabel.VerticalAlignment = TextAlignment.Center;
-                        UpdateStatus();*/
+            Title = "Scene";
+            Viewport = new EditorGizmoViewport(new SceneRenderTask(), editor.Scene.Root);
+            Viewport.Parent = this;
+            Viewport.NearPlane = 0.01f;
+            Viewport.FarPlane = 20000.0f;
+            // Viewport.GetTask().ViewFlags = ViewFlags.DefaultEditor;
+            // editor.Scene.SelectionChanged += OnSelectionChanged;
+            // editor.Scene.ActorRemoved += SceneOnActorRemoved;
         }
 
-        public override void OnUpdate()
+        public override void OnEditorStateChanged()
         {
-            //UpdateStatus();
+            base.OnEditorStateChanged();
+            UpdateCameraPreview();
         }
 
-        protected override void PerformLayoutBeforeChildren()
+        public override void OnExit()
         {
-            base.PerformLayoutBeforeChildren();
-            //m_StatusLabel.SetBounds(0.0f, 0.0f, Width, Height);
+            Viewport.Dispose();
         }
 
-        private void UpdateStatus()
+        private void OnSelectionChanged()
         {
-            /*            int selectionCount = Editor.Scene.SelectionCount;
-                        m_StatusLabel.Text = selectionCount == 0
-                            ? "Scene viewport is waiting for the generated SceneRenderTask binding."
-                            : $"{selectionCount} scene object(s) selected. Scene viewport is waiting for the generated SceneRenderTask binding.";*/
+            UpdateCameraPreview();
+        }
+
+        private void UpdateCameraPreview()
+        {
+            /*// Disable rendering preview during GI baking
+            if (Editor.StateMachine.CurrentState.IsPerformanceHeavy)
+            {
+                HideAllCameraPreviews();
+                return;
+            }
+
+            var selection = Editor.SceneEditing.Selection;
+
+            // Hide unpinned previews for which camera being previews is not selected
+            for (int i = 0; i < _previews.Count; i++)
+            {
+                if (_previews[i].IsPinned)
+                    continue;
+                var camera = _previews[i].Camera;
+                var cameraNode = Editor.Scene.GetActorNode(camera);
+                if (cameraNode == null || !selection.Contains(cameraNode))
+                {
+                    HideCameraPreview(_previews[i--]);
+                }
+            }
+
+            if (Editor.Options.Options.Interface.ShowSelectedCameraPreview)
+            {
+                for (int i = 0; i < selection.Count; i++)
+                {
+                    if (selection[i] is CameraNode cameraNode)
+                    {
+                        if (_previews.Count >= 8)
+                            break;
+                        var camera = (Camera)cameraNode.Actor;
+                        var preview = _previews.Find(x => x.Camera == camera);
+                        if (preview == null)
+                        {
+                            preview = new CameraPreview { Camera = camera, Parent = this };
+                            _previews.Add(preview);
+                        }
+                    }
+                }
+            }
+
+            int count = _previews.Count;
+            if (count > 0)
+            {
+                const float aspectRatio = 16.0f / 9.0f;
+                const float minHeight = 20;
+                const float minWidth = minHeight * aspectRatio;
+                const float maxHeight = 150;
+                const float maxWidth = maxHeight * aspectRatio;
+                const float viewSpaceMaxPercentage = 0.7f;
+                const float margin = 10;
+                var totalSize = Size * viewSpaceMaxPercentage - margin;
+                var singleSize = totalSize / count - count * margin;
+                float sizeX = Mathf.Clamp(singleSize.X, minWidth, maxWidth);
+                float sizeY = sizeX / aspectRatio;
+                singleSize = new Float2(sizeX, sizeY);
+                int countPerX = Mathf.FloorToInt(totalSize.X / singleSize.X);
+                int countPerY = Mathf.FloorToInt(totalSize.Y / singleSize.Y);
+                int index = 0;
+                for (int y = 1; y <= countPerY; y++)
+                {
+                    for (int x = 1; x <= countPerX; x++)
+                    {
+                        if (index == count)
+                            break;
+                        var pos = Size - (singleSize + margin) * new Float2(x, y);
+                        _previews[index++].Bounds = new Rectangle(pos, singleSize);
+                    }
+                    if (index == count)
+                        break;
+                }
+            }*/
         }
     }
 }

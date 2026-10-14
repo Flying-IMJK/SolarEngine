@@ -218,12 +218,24 @@ namespace SE.Editor.GUI
                 m_Task.Enabled = false;
                 // _task->ClearCustomActors();
                 //_task.CustomPostFx.Clear();
+
+                Object.DestroyNow(m_Task);
+                m_Task = null;
             }
-            m_BackBuffer.ReleaseGPU();
-            m_BackBufferOld.ReleaseGPU();
-            Object.DestroyNow(m_BackBuffer);
-            Object.DestroyNow(m_BackBufferOld);
-            Object.DestroyNow(m_Task);
+
+            if (m_BackBuffer != null)
+            {
+                m_BackBuffer.ReleaseGPU();
+                Object.DestroyNow(m_BackBuffer);
+                m_BackBuffer = null;
+            }
+
+            if (m_BackBufferOld != null)
+            {
+                m_BackBufferOld.ReleaseGPU();
+                Object.DestroyNow(m_BackBufferOld);
+                m_BackBufferOld = null;
+            }
 
             base.OnDestroy();
         }

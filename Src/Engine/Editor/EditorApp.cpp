@@ -29,6 +29,8 @@
 #include "Runtime/Core/Scripting/ManagedCLR/CLRUtils.h"
 #include "Runtime/Core/Scripting/ManagedCLR/CLRException.h"
 
+#include "Test.h"
+
 namespace SE::Editor
 {
 	EditorApp& EditorApp::Ins()
@@ -233,12 +235,6 @@ namespace SE::Editor
 	void EditorApp::BeforeRun()
 	{
 		RegisterModule(settingModule = New<SettingModule>(this));
-		RegisterModule(uiModule = New<UIModule>(this));
-		RegisterModule(sceneModule = New<SceneModule>(this));
-		RegisterModule(sceneGraphModule = New<SceneGraphModule>(this));
-		RegisterModule(windowsModule = New<WindowsModule>(this));
-		RegisterModule(databaseModule = New<AssetDatabaseModule>(this));
-		RegisterModule(importingModule = New<AssetImportingModule>(this));
 
 		// Note: we don't sort modules before Init (optimized)
 		const auto sortFunc = CreateFunc([](EditorModule* const &a, EditorModule* const &b)
@@ -412,6 +408,11 @@ namespace SE::Editor
     }
 
     ProjectInfo* ManagedEditor::GetProjectInfo() const { return EditorApp::Ins().Project; }
+
+    void ManagedEditor::CreateDemoScene() 
+	{ 
+		CreateTestScene();
+	}
 
 	void ManagedEditor::InvokeManagedMethod(const char* methodName)
 	{

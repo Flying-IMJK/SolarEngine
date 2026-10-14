@@ -17,7 +17,7 @@ namespace SE.Editor
         /// <param name="task">The task.</param>
         /// <param name="sceneGraphRoot">The scene graph root.</param>
         public EditorGizmoViewport(SceneRenderTask task, RootGraphNode sceneGraphRoot)
-            : base(task/*, new FPSCamera()*/, true)
+            : base(task, new FPSCamera(), true)
         {
             // Undo = undo;
             SceneGraphRoot = sceneGraphRoot;

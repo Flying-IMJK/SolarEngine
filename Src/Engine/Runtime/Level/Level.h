@@ -235,7 +235,7 @@ namespace SE
 		/// <param name="prettyJson">True if use pretty Json format writer, otherwise will use the compact Json format writer that packs data to use less memory and perform the action faster.</param>
 		/// <returns>The result data or empty if failed.</returns>
 		SE_FUNCTION(API())
-		static bool SaveSceneToBytes(List<byte> &bytes, Scene* scene, bool prettyJson = true);
+		static bool SaveSceneToBytes(Scene* scene, SE_PARAM(API(Out)) List<byte> &bytes, bool prettyJson = true);
 
 		enum class ActorEventType
 		{

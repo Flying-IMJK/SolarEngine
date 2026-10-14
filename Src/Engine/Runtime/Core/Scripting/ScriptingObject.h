@@ -27,6 +27,7 @@ namespace SE
         CLRGCHandle m_GcHandle;
         ScriptingTypeHandle m_Type;
         UID m_Id;
+        bool m_IsRegistered;
 
     public:
         /// <summary>
@@ -202,7 +203,7 @@ namespace SE
         /// </summary>
         FORCE_INLINE bool IsRegistered() const
         {
-            return false;// (Flags & ObjectFlags::IsRegistered) != ObjectFlags::None;
+            return m_IsRegistered;// (Flags & ObjectFlags::IsRegistered) != ObjectFlags::None;
         }
 
         /// <summary>

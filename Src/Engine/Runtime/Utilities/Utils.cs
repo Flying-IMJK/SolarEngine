@@ -12,6 +12,10 @@ namespace SE
     /// </summary>
     public static partial class Utils
     {
+        public enum ValueCategory
+        {
+            None, Distance, Area, Volume, Mass, Angle, Speed, Acceleration, Time, Force, Torque,
+        }
 
 
         /// <summary>

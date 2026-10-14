@@ -74,6 +74,7 @@ namespace SE.Editor
             window.ContextMenu.AddButton("Scene Hierarchy", () => Editor.Windows.SceneHierarchy.FocusOrShow());
             window.ContextMenu.AddButton("Log", () => Editor.Windows.Log.FocusOrShow());
             window.ContextMenu.AddButton("Edit Scene", () => Editor.Windows.EditScene.FocusOrShow());
+            window.ContextMenu.AddButton("Create Demo Scene", () => Editor.CreateDemoScene());
         }
 
         private void BuildToolStrip()

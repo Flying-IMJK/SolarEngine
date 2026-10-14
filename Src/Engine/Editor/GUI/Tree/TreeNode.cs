@@ -119,7 +119,7 @@ namespace SE.Editor.GUI
         /// </summary>
         public bool IsCollapsed
         {
-            get => m_IsExpanded;
+            get => !m_IsExpanded;
             set
             {
                 if (value)

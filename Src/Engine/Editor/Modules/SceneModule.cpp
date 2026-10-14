@@ -599,7 +599,7 @@ namespace SE::Editor
 		cam.Position = new Vector3(0, 150, -300);*/
 
 		List<byte> bytes;
-		if (!Level::SaveSceneToBytes(bytes, scene))
+		if (!Level::SaveSceneToBytes(scene, bytes))
 		{
 			LOG_ERROR("Level", "Serialize Scene File failed");
 		}

@@ -162,6 +162,11 @@ namespace SE
 		IsCameraCut = true;
 	}
 
+	Float2 SceneRenderTask::GetBuffersSize() const
+	{
+		return Buffers->GetSize();
+	}
+
 	/*
 	void SceneRenderTask::AddCustomActor(Actor* actor)
 	{

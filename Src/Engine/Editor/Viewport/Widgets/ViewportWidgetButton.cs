@@ -10,7 +10,6 @@ namespace SE.Editor
     {
         private string _text;
         private ContextMenu _cm;
-        private bool _checked;
         private bool _autoCheck;
         private bool _isMosueDown;
         private float _forcedTextWidth;
@@ -81,7 +80,7 @@ namespace SE.Editor
             Rectangle textRect = new Rectangle(0, 0, Width + 1, Height + 1);
 
             // Check if is checked or mouse is over and auto check feature is enabled
-            if (_checked)
+            if (Checked)
             {
                 Render2D.FillRectangle(textRect, style.BackgroundSelected * (IsMouseOver ? 0.9f : 0.6f));
             }
@@ -116,7 +115,7 @@ namespace SE.Editor
             if (_autoCheck)
             {
                 // Toggle
-                Checked = !_checked;
+                Checked = !Checked;
                 Toggled?.Invoke(this);
             }
 

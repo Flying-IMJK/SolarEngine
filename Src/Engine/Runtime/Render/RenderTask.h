@@ -238,11 +238,13 @@ namespace SE
 		/// <summary>
 		/// True if the current frame is after the camera cut. Used to clear the temporal effects history and prevent visual artifacts blended from the previous frames.
 		/// </summary>
+		SE_FIELD(API())
 		bool IsCameraCut = true;
 
 		/// <summary>
 		/// True if the task is used for custom scene rendering and default scene drawing into output should be skipped. Enable it if you use Render event and draw scene manually.
 		/// </summary>
+		SE_FIELD(API())
 		bool IsCustomRendering = false;
 
 		/// <summary>
@@ -262,6 +264,12 @@ namespace SE
 		RenderBuffers* Buffers = nullptr;
 
 		/// <summary>
+		/// Gets the scene rendering buffers size (in pixels).
+		/// </summary>
+		SE_FUNCTION(API())
+		Float2 GetBuffersSize() const;
+
+		/// <summary>
 		/// The scene rendering camera. Can be used to override the rendering view properties based on the current camera setup.
 		/// </summary>
 		// ScriptingObjectReference<Camera> Camera;
@@ -269,6 +277,7 @@ namespace SE
 		/// <summary>
 		/// The render view description.
 		/// </summary>
+		SE_FIELD(API())
 		RenderView View;
 
 		/// <summary>

@@ -75,6 +75,7 @@ namespace SE.Editor
             if (!additive)
                 Selection.Clear();
             Selection.Add(node);
+            SelectionChanged?.Invoke();
         }
 
         public void Select(List<ScenesGraphNode> selection, bool additive = false)
@@ -100,6 +101,7 @@ namespace SE.Editor
             if (Selection.Count == 0)
                 return;
             Selection.Clear();
+            SelectionChanged?.Invoke();
         }
 
         public void SaveScene(SE.Scene scene)
@@ -163,8 +165,7 @@ namespace SE.Editor
                         audioListener.Name = "Audio Listener";*/
 
             // Serialize
-            byte[] bytes = null;
-            Level.SaveSceneToBytes(ref bytes, scene);
+            Level.SaveSceneToBytes(scene, out byte[] bytes);
 
             // Cleanup
             Object.Destroy(ref scene);
@@ -260,6 +261,9 @@ namespace SE.Editor
             SE.Level.ActorOrderInParentChanged += OnActorOrderInParentChanged;
             SE.Level.ActorNameChanged += OnActorNameChanged;
             SE.Level.ActorActiveChanged += OnActorActiveChanged;
+
+
+
         }
 
         public override void OnDispose()
