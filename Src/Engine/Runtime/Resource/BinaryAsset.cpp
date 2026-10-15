@@ -469,7 +469,7 @@ namespace SE
 		ClearDependencies();
 		m_DependantAssets.Clear();
 
-//		Asset::OnDeleteObject();
+		Asset::OnDeleteObject();
 	}
 
 #endif

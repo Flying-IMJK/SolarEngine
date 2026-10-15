@@ -16,7 +16,7 @@ namespace SE.Editor
     public class ImportFilesDialog : Dialog
     {
         private TreeNode m_RootNode;
-        //private CustomEditorPresenter m_settingsEditor;
+        private CustomEditorPresenter m_SettingsEditor;
         private Tree m_Tree;
 
         /// <summary>
@@ -102,8 +102,8 @@ namespace SE.Editor
             };
 
             // Settings editor
-/*            m_settingsEditor = new CustomEditorPresenter(null);
-            m_settingsEditor.Panel.Parent = splitPanel.Panel2;*/
+            m_SettingsEditor = new CustomEditorPresenter(null);
+            m_SettingsEditor.Panel.Parent = splitPanel.Panel2;
 
             // Setup tree
             m_Tree = new Tree(true)
@@ -159,10 +159,10 @@ namespace SE.Editor
             }
 
             var node = (ItemNode)button.ParentContextMenu.Tag;
-/*            if (m_settingsEditor.Selection.Count == 1 && m_settingsEditor.Selection[0] == node.Entry.Settings)
+            if (m_SettingsEditor.Selection.Count == 1 && m_SettingsEditor.Selection[0] == node.Entry.Settings)
             {
-                m_settingsEditor.Deselect();
-            }*/
+                m_SettingsEditor.Deselect();
+            }
             node.Dispose();
         }
 
@@ -236,7 +236,7 @@ namespace SE.Editor
                 }
             }
 
-            //m_settingsEditor.Select(selection);
+            m_SettingsEditor.Select(selection);
         }
 
         /// <inheritdoc />

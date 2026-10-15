@@ -11,6 +11,7 @@
 //-------------------------------------------------------------------------
 #define STBI_MALLOC SE::PlatformAllocator::Allocate
 #define STBI_REALLOC SE::PlatformAllocator::Realloc
+#define STBI_REALLOC_SIZED SE::PlatformAllocator::Realloc
 #define STBI_FREE SE::PlatformAllocator::Free
 #define STBI_NO_PSD
 #define STBI_NO_PIC

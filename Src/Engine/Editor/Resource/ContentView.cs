@@ -25,8 +25,8 @@ namespace SE.Editor
 
     public class ContentView : ContainerControl, IContentItemOwner
     {
-        private readonly List<ContentItem> _items = new List<ContentItem>(256);
-        private readonly List<ContentItem> _selection = new List<ContentItem>();
+        private readonly List<ContentItem> m_Items = new List<ContentItem>(256);
+        private readonly List<ContentItem> m_Selection = new List<ContentItem>();
 
         private float _viewScale = 1.0f;
         private ContentViewType _viewType = ContentViewType.Tiles;
@@ -63,23 +63,23 @@ namespace SE.Editor
         /// <summary>Gets the items.</summary>
         public List<ContentItem> GetItems()
         {
-            return _items;
+            return m_Items;
         }
 
         /// <summary>Gets the items count.</summary>
-        public int ItemsCount => _items.Count;
+        public int ItemsCount => m_Items.Count;
 
         /// <summary>Gets the selected items.</summary>
         public List<ContentItem> GetSelection()
         {
-            return _selection;
+            return m_Selection;
         }
 
         /// <summary>Gets the selected count.</summary>
-        public int SelectedCount => _selection.Count;
+        public int SelectedCount => m_Selection.Count;
 
         /// <summary>Gets a value indicating whether any item is selected.</summary>
-        public bool HasSelection => _selection.Count > 0;
+        public bool HasSelection => m_Selection.Count > 0;
 
         /// <summary>Gets or sets the view scale.</summary>
         public float ViewScale
@@ -132,13 +132,13 @@ namespace SE.Editor
 
             ClearSelection();
 
-            for (int i = 0; i < _items.Count; i++)
+            for (int i = 0; i < m_Items.Count; i++)
             {
-                ContentItem item = _items[i];
+                ContentItem item = m_Items[i];
                 item.Parent = null;
                 item.RemoveReference(this);
             }
-            _items.Clear();
+            m_Items.Clear();
 
             IsLayoutLocked = wasLayoutLocked;
             PerformLayout();
@@ -163,7 +163,7 @@ namespace SE.Editor
             bool wasLayoutLocked = IsLayoutLocked;
             IsLayoutLocked = true;
             List<ContentItem> selection = !additive && keepSelection
-                ? new List<ContentItem>(_selection)
+                ? new List<ContentItem>(m_Selection)
                 : new List<ContentItem>();
 
             if (!additive)
@@ -174,17 +174,17 @@ namespace SE.Editor
             for (int i = 0; i < items.Count; i++)
             {
                 ContentItem item = items[i];
-                if (item.Visible && !_items.Contains(item))
+                if (item.Visible && !m_Items.Contains(item))
                 {
                     item.Parent = this;
                     item.AddReference(this);
-                    _items.Add(item);
+                    m_Items.Add(item);
                 }
             }
             if (selection.Count > 0)
             {
-                _selection.Clear();
-                _selection.AddRange(selection);
+                m_Selection.Clear();
+                m_Selection.AddRange(selection);
             }
 
             QuickSortChildren(sortType);
@@ -198,18 +198,18 @@ namespace SE.Editor
         /// <returns>True if the specified item is selected; otherwise, false.</returns>
         public bool IsSelected(ContentItem item)
         {
-            return _selection.Contains(item);
+            return m_Selection.Contains(item);
         }
 
         /// <summary>Clears the selected items collection.</summary>
         public void ClearSelection()
         {
-            if (_selection.Count == 0)
+            if (m_Selection.Count == 0)
             {
                 return;
             }
 
-            _selection.Clear();
+            m_Selection.Clear();
         }
 
         /// <summary>Selects the specified items.</summary>
@@ -233,16 +233,16 @@ namespace SE.Editor
             {
                 for (int i = 0; i < items.Count; i++)
                 {
-                    if (!_selection.Contains(items[i]))
+                    if (!m_Selection.Contains(items[i]))
                     {
-                        _selection.Add(items[i]);
+                        m_Selection.Add(items[i]);
                     }
                 }
             }
             else
             {
-                _selection.Clear();
-                _selection.AddRange(items);
+                m_Selection.Clear();
+                m_Selection.AddRange(items);
             }
 
             IsLayoutLocked = wasLayoutLocked;
@@ -259,15 +259,15 @@ namespace SE.Editor
 
             if (additive)
             {
-                if (!_selection.Contains(item))
+                if (!m_Selection.Contains(item))
                 {
-                    _selection.Add(item);
+                    m_Selection.Add(item);
                 }
             }
             else
             {
-                _selection.Clear();
-                _selection.Add(item);
+                m_Selection.Clear();
+                m_Selection.Add(item);
             }
 
             IsLayoutLocked = wasLayoutLocked;
@@ -295,9 +295,9 @@ namespace SE.Editor
             bool wasLayoutLocked = IsLayoutLocked;
             IsLayoutLocked = true;
 
-            if (_selection.Contains(item))
+            if (m_Selection.Contains(item))
             {
-                _selection.Remove(item);
+                m_Selection.Remove(item);
             }
 
             IsLayoutLocked = wasLayoutLocked;
@@ -307,19 +307,19 @@ namespace SE.Editor
         /// <summary>Duplicates the selected items.</summary>
         public void Duplicate()
         {
-            OnDuplicate?.Invoke(_selection);
+            OnDuplicate?.Invoke(m_Selection);
         }
 
         /// <summary>Copies the selected items to the system clipboard.</summary>
         public void Copy()
         {
-            if (_selection.Count == 0)
+            if (m_Selection.Count == 0)
             {
                 return;
             }
 
             List<string> files = new List<string>();
-            foreach (ContentItem item in _selection)
+            foreach (ContentItem item in m_Selection)
             {
                 files.Add(item.Path);
             }
@@ -349,10 +349,10 @@ namespace SE.Editor
         /// <summary>Gives focus and selects the first item in the view.</summary>
         public void SelectFirstItem()
         {
-            if (_items.Count > 0)
+            if (m_Items.Count > 0)
             {
-                _items[0].Focus();
-                Select(_items[0]);
+                m_Items[0].Focus();
+                Select(m_Items[0]);
             }
             else
             {
@@ -363,9 +363,9 @@ namespace SE.Editor
         /// <summary>Refreshes thumbnails of all items in the view.</summary>
         public void RefreshThumbnails()
         {
-            for (int i = 0; i < _items.Count; i++)
+            for (int i = 0; i < m_Items.Count; i++)
             {
-                _items[i].RefreshThumbnail();
+                m_Items[i].RefreshThumbnail();
             }
         }
 
@@ -373,7 +373,7 @@ namespace SE.Editor
         /// <param name="item">The item.</param>
         public void OnItemClick(ContentItem item)
         {
-            bool isSelected = _selection.Contains(item);
+            bool isSelected = m_Selection.Contains(item);
 
             if (Root.GetKey(KeyboardKeys.Control))
             {
@@ -386,11 +386,11 @@ namespace SE.Editor
                     Select(item, true);
                 }
             }
-            else if (_selection.Count != 0 && Root.GetKey(KeyboardKeys.Shift))
+            else if (m_Selection.Count != 0 && Root.GetKey(KeyboardKeys.Shift))
             {
                 int min = int.MaxValue;
                 int max = int.MinValue;
-                foreach (ContentItem itemTemp in _selection)
+                foreach (ContentItem itemTemp in m_Selection)
                 {
                     min = Math.Min(min, itemTemp.IndexInParent);
                     max = Math.Max(max, itemTemp.IndexInParent);
@@ -398,7 +398,7 @@ namespace SE.Editor
 
                 min = Math.Max(Math.Min(min, item.IndexInParent), 0);
                 max = Math.Min(Math.Max(max, item.IndexInParent), m_Children.Count - 1);
-                List<ContentItem> selection = new List<ContentItem>(_selection);
+                List<ContentItem> selection = new List<ContentItem>(m_Selection);
                 for (int i = min; i <= max; i++)
                 {
                     ContentItem child = m_Children[i] as ContentItem;
@@ -425,8 +425,7 @@ namespace SE.Editor
         /// <inheritdoc />
         public void OnItemDeleted(ContentItem item)
         {
-            _selection.Remove(item);
-            _items.Remove(item);
+            RemoveItem(item);
         }
 
         /// <inheritdoc />
@@ -442,8 +441,17 @@ namespace SE.Editor
         /// <inheritdoc />
         public void OnItemDispose(ContentItem item)
         {
-            _selection.Remove(item);
-            _items.Remove(item);
+            RemoveItem(item);
+        }
+
+        private void RemoveItem(ContentItem item)
+        {
+            m_Selection.Remove(item);
+            m_Items.Remove(item);
+            if (item.Parent == this)
+            {
+                item.Parent = null;
+            }
         }
 
         /// <inheritdoc />
@@ -459,7 +467,7 @@ namespace SE.Editor
                 Render2D.DrawRectangle(bounds, style.SelectionBorder, 1.0f);
             }
 
-            if (_items.Count == 0)
+            if (m_Items.Count == 0)
             {
                 Render2D.RenderText(style.FontSmall, IsSearching ? "No results" : "Empty",
                     new Rectangle(Float2.Zero, Size), style.ForegroundDisabled,
@@ -525,9 +533,9 @@ namespace SE.Editor
                 }
 
                 List<ContentItem> itemsInRectangle = new List<ContentItem>();
-                for (int i = 0; i < _items.Count; i++)
+                for (int i = 0; i < m_Items.Count; i++)
                 {
-                    ContentItem item = _items[i];
+                    ContentItem item = m_Items[i];
                     if (_rubberBandRectangle.Intersects(item.Bounds))
                     {
                         itemsInRectangle.Add(item);
@@ -566,16 +574,16 @@ namespace SE.Editor
 
             if (HasSelection)
             {
-                if (key == KeyboardKeys.Return && _selection.Count != 0)
+                if (key == KeyboardKeys.Return && m_Selection.Count != 0)
                 {
-                    foreach (ContentItem selectedItem in _selection)
+                    foreach (ContentItem selectedItem in m_Selection)
                     {
                         OnOpen?.Invoke(selectedItem);
                     }
                     return true;
                 }
 
-                ContentItem root = _selection[0];
+                ContentItem root = m_Selection[0];
                 Float2 size = root.Size;
                 Float2 offset = Float2.Minimum;
                 ContentItem item = null;
@@ -617,12 +625,12 @@ namespace SE.Editor
                 return true;
             }
 
-            if (char.IsLetterOrDigit(c) && _items.Count != 0)
+            if (char.IsLetterOrDigit(c) && m_Items.Count != 0)
             {
                 c = char.ToLowerInvariant(c);
-                for (int i = 0; i < _items.Count; i++)
+                for (int i = 0; i < m_Items.Count; i++)
                 {
-                    ContentItem item = _items[i];
+                    ContentItem item = m_Items[i];
                     string name = item.ShortName;
                     if (name.Length > 0 && char.ToLowerInvariant(name[0]) == c)
                     {
@@ -796,10 +804,10 @@ namespace SE.Editor
             bool wasLayoutLocked = IsLayoutLocked;
             IsLayoutLocked = true;
 
-            _selection.Clear();
+            m_Selection.Clear();
             if (select)
             {
-                _selection.AddRange(_items);
+                m_Selection.AddRange(m_Items);
             }
 
             IsLayoutLocked = wasLayoutLocked;

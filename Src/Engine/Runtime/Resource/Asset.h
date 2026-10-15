@@ -254,10 +254,10 @@ namespace SE
 		// [ManagedScriptingObject]
 		String ToString() const override;
 		virtual void OnDeleteObject() override;
-/*		bool CreateManaged() override;
+		bool CreateManaged() override;
 		void DestroyManaged() override;
 		void OnManagedInstanceDeleted() override;
-		void OnScriptingDispose() override;*/
+/*		void OnScriptingDispose() override;*/
 		void ChangeID(const UID& newId) override;
 	};
 

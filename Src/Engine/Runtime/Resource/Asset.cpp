@@ -3,14 +3,15 @@
 #include "AssetContent.h"
 #include "AssetRef.h"
 
-#include "Runtime/Core/Thread/Threading.h"
-#include "Runtime/Core/Thread/Task.h"
-#include "Runtime/Core/Profiler/Profiler.h"
-#include "Runtime/Resource/AssetsCache.h"
-#include "Runtime/Resource/Loading/AssetTask.h"
-#include "Runtime/Resource/Loading/Tasks/LoadAssetTask.h"
-#include "Runtime/Resource/Loading/AssetLoading.h"
-#include "Runtime/Engine.h"
+#include <Runtime/Core/Thread/Threading.h>
+#include <Runtime/Core/Thread/Task.h>
+#include <Runtime/Core/Profiler/Profiler.h>
+#include <Runtime/Core/Scripting/ManagedCLR/CLRCore.h>
+#include <Runtime/Resource/AssetsCache.h>
+#include <Runtime/Resource/Loading/AssetTask.h>
+#include <Runtime/Resource/Loading/Tasks/LoadAssetTask.h>
+#include <Runtime/Resource/Loading/AssetLoading.h>
+#include <Runtime/Engine.h>
 
 
 namespace SE
@@ -253,6 +254,47 @@ namespace SE
 				AssetContent::DeleteFileSafety(path, id);
 		}
 #endif
+	}
+
+	bool Asset::CreateManaged()
+	{
+		// Base
+		if (!ManagedScriptingObject::CreateManaged())
+        {
+			return false;
+        }
+
+		// Managed objects holds a reference to this asset until it will be removed by GC
+		AddReference();
+
+		return true;
+	}
+
+	void Asset::DestroyManaged()
+	{
+		// Clear reference
+		if (HasManagedInstance())
+		{
+			RemoveReference();
+		}
+
+		// Base
+		ManagedScriptingObject::DestroyManaged();
+	}
+
+	void Asset::OnManagedInstanceDeleted()
+	{
+		// Clear reference
+		RemoveReference();
+
+		// Cleanup
+		if (m_GcHandle)
+		{
+			CLRCore::GCHandle::Free(m_GcHandle);
+			m_GcHandle = 0;
+		}
+
+		// But do not delete itself
 	}
 
 	void Asset::ChangeID(const UID& newId)

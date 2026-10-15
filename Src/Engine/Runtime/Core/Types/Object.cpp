@@ -11,6 +11,8 @@ namespace SE
 
 	void Object::DeleteObject(float timeToLive, bool useGameTime)
 	{
+
+		OnDeleteObject();
 	}
 
 }

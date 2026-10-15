@@ -422,7 +422,9 @@ namespace SE
     {
         CLRObject* managedInstance = CreateManagedInternal();
         if (!managedInstance)
-            return true;
+        {
+            return false;
+        }
 
         // Cache the GC handle to the object (used to track the target object because it can be moved in a memory)
         auto handle = (CLRGCHandle)managedInstance;
@@ -436,14 +438,16 @@ namespace SE
                 CLRCore::ScriptingObject::SetInternalValues(monoClass, managedInstance, nullptr, nullptr);
             }
             CLRCore::GCHandle::Free(handle);
-            return true;
+            return false;
         }
 
         // Ensure to be registered
         if (!IsRegistered())
+        {
             RegisterObject();
+        }
 
-        return false;
+        return true;
     }
     
 
