@@ -94,7 +94,9 @@ namespace SE.Editor
         private void ShowButtons()
         {
             if (m_Values == null || m_Values.Count == 0 || m_Values.HasDifferentTypes)
+            {
                 return;
+            }
 
             Type type = m_Values[0]?.GetType() ?? m_Values.Type;
             const BindingFlags flags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
@@ -179,22 +181,36 @@ namespace SE.Editor
             {
                 Values.Refresh(m_Parent.Values);
             }
+
             m_IsSetBlocked = true;
-            try { Refresh(); }
-            finally { m_IsSetBlocked = false; }
+
+            try 
+            { 
+                Refresh(); 
+            }
+            finally 
+            { 
+                m_IsSetBlocked = false;
+            }
+
             if (m_RebuildOnRefresh)
             {
                 m_RebuildOnRefresh = false;
                 Presenter.BuildLayoutOnUpdate();
                 return;
             }
+
             if (m_SkipChildrenRefresh)
             {
                 m_SkipChildrenRefresh = false;
                 return;
             }
+
             foreach (var child in m_Children)
+            {
                 child.RefreshInternal();
+            }
+
             if (m_RebuildOnRefresh)
             {
                 m_RebuildOnRefresh = false;
@@ -205,15 +221,25 @@ namespace SE.Editor
         public virtual void Refresh()
         {
             if (LinkedLabel == null)
+            {
                 return;
+            }
+
             Color color = Color.Transparent;
             if (Values.HasReferenceValue && CanRevertReferenceValue)
+            {
                 color = SE.GUI.Style.Current.BackgroundSelected;
+            }
             else if (Values.HasDefaultValue && CanRevertDefaultValue)
+            {
                 color = Color.Yellow * 0.8f;
+            }
+
             LinkedLabel.HighlightStripColor = color;
             if (Values.IsObsolete)
+            {
                 LinkedLabel.TextColor = LinkedLabel.TextColorHighlighted = SE.GUI.Style.Current.ForegroundGrey;
+            }
         }
 
         public virtual bool RevertValueWithChildren => ChildrenEditors.Count != 0;
@@ -223,65 +249,101 @@ namespace SE.Editor
         public void RevertToDefaultValue()
         {
             if (Values.HasDefaultValue && CanEditValue)
+            {
                 RevertDiffToDefault();
+            }
         }
 
         private void RevertDiffToDefault()
         {
             if (RevertValueWithChildren)
+            {
                 foreach (var child in ChildrenEditors)
-                    child.RevertDiffToDefault();
+                { 
+                child.RevertDiffToDefault();
+                }
+            }
             else if (Values.IsDefaultValueModified)
+            {
                 SetValueToDefault();
+            }
         }
 
         public void RevertToReferenceValue()
         {
             if (Values.HasReferenceValue && CanEditValue)
+            {
                 RevertDiffToReference();
+            }
         }
 
         private void RevertDiffToReference()
         {
             if (RevertValueWithChildren)
+            {
                 foreach (var child in ChildrenEditors)
+                {
                     child.RevertDiffToReference();
+                }
+            }
             else if (CanRevertReferenceValue)
+            {
                 SetValueToReference();
+            }
         }
 
         public void RefreshDefaultValue()
         {
             if (!Values.HasDefaultValue)
+            {
                 return;
+            }
+
             if (ParentEditor?.Values.HasDefaultValue ?? false)
+            {
                 Values.RefreshDefaultValue(ParentEditor.Values.DefaultValue);
+            }
+
             foreach (var child in ChildrenEditors)
+            {
                 child.RefreshDefaultValue();
+            }
         }
 
         public void RefreshReferenceValue()
         {
             if (!Values.HasReferenceValue)
+            {
                 return;
+            }
+
             if (ParentEditor?.Values.HasReferenceValue ?? false)
+            {
                 Values.RefreshReferenceValue(ParentEditor.Values.ReferenceValue);
+            }
+
             foreach (var child in ChildrenEditors)
+            {
                 child.RefreshReferenceValue();
+            }
         }
 
         public void ClearDefaultValueAll()
         {
             Values.ClearDefaultValue();
             foreach (var child in ChildrenEditors)
+            {
                 child.ClearDefaultValueAll();
+            }
         }
 
         public void ClearReferenceValueAll()
         {
             Values.ClearReferenceValue();
             foreach (var child in ChildrenEditors)
+            {
                 child.ClearReferenceValueAll();
+            }
         }
 
         public void SetValueToDefault() => SetValue(CloneValue(Values.DefaultValue));
@@ -290,9 +352,13 @@ namespace SE.Editor
         protected static object? CloneValue(object? value)
         {
             if (value is SE.Object)
+            {
                 return value;
+            }
             if (value is ICloneable clonable)
+            {
                 return clonable.Clone();
+            }
             if (value != null && (!value.GetType().IsValueType || !value.GetType().IsClass))
             {
                 string json = JsonSerializer.Serialize(value, value.GetType(), JsonOptions);
@@ -311,7 +377,7 @@ namespace SE.Editor
             }
             catch (Exception ex)
             {
-                SE.Debug.Log(ex.ToString());
+                SE.Debug.Log(ex);
             }
         }
 
@@ -321,12 +387,17 @@ namespace SE.Editor
         {
             string text = Clipboard.Text;
             if (string.IsNullOrEmpty(text))
+            {
                 return;
+            }
+
             try
             {
                 object? value = JsonSerializer.Deserialize(text, Values.Type, JsonOptions);
                 if (value == null && Values.Type.IsValueType)
+                {
                     return;
+                }
                 SetValue(value);
             }
             catch (JsonException)
@@ -337,7 +408,10 @@ namespace SE.Editor
         protected void SetValue(object? value, object? token = null)
         {
             if (m_IsSetBlocked || !CanEditValue)
+            {
                 return;
+            }
+
             if (OnDirty(this, value, token))
             {
                 m_HasValueDirty = true;
@@ -345,8 +419,16 @@ namespace SE.Editor
             }
         }
 
-        protected virtual bool OnDirty(CustomEditor editor, object? value, object? token = null) =>
-            m_Parent?.OnDirty(editor, value, token) ?? false;
+        protected virtual bool OnDirty(CustomEditor editor, object? value, object? token = null)
+        {
+            if (m_Parent == null)
+            {
+                return false;
+            }
+
+            return m_Parent.OnDirty(editor, value, token);
+        }
+
         protected virtual void OnUnDirty() { }
         protected virtual void ClearToken() => m_Parent?.ClearToken();
 
@@ -354,9 +436,15 @@ namespace SE.Editor
         {
             m_IsReadOnly = value;
             if (m_Layout != null)
+            {
                 foreach (var control in m_Layout.ContainerControl.Children)
+                {
                     if (control is not PropertyNameLabel)
+                    {
                         control.Enabled = !value;
+                    }
+                }
+            }
         }
     }
 }

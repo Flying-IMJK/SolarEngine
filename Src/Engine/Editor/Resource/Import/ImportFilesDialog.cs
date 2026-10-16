@@ -134,6 +134,8 @@ namespace SE.Editor
             m_DialogSize = new Float2(TotalWidth, EditorHeight + splitPanel.Offsets.Height);
         }
 
+
+
         private void OnTreeRightClick(TreeNode node, Float2 location)
         {
             var menu = new ContextMenu();
@@ -242,6 +244,8 @@ namespace SE.Editor
         /// <inheritdoc />
         public override void OnSubmit()
         {
+            m_SettingsEditor.Update();
+
             var entries = new List<ImportFileEntry>(m_RootNode.ChildrenCount);
             for (int i = 0; i < m_RootNode.ChildrenCount; i++)
             {
@@ -254,6 +258,15 @@ namespace SE.Editor
 
             base.OnSubmit();
         }
+
+
+        public override void Update(float deltaTime)
+        {
+            base.Update(deltaTime);
+
+            m_SettingsEditor.Update();
+        }
+
 
         /// <inheritdoc />
         protected override void SetupWindowSettings(ref CreateWindowSettings settings)

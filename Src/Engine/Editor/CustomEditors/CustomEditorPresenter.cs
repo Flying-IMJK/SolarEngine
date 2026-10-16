@@ -34,7 +34,10 @@ namespace SE.Editor
         private bool _groupStateLoaded;
 
         public readonly VerticalPanel Panel;
-        /// <summary>Current selection values. Change them through Select or Deselect.</summary>
+        /// <summary>
+        /// Current selection values. Change them through Select or Deselect.
+        /// </summary>
+        /// 
         public readonly ValueContainer Selection = new();
         public string SearchText = string.Empty;
         public FeatureFlags Features = FeatureFlags.UsePrefab | FeatureFlags.UseDefault;
@@ -85,8 +88,10 @@ namespace SE.Editor
             get => _root.OverrideEditor;
             set
             {
-                if (ReferenceEquals(_root.OverrideEditor, value))
+                if (_root.OverrideEditor == value)
+                {
                     return;
+                }
                 _root.OverrideEditor = value;
                 BuildLayout();
             }
@@ -101,7 +106,9 @@ namespace SE.Editor
                 return;
             }
             if (Selection.Count == 1 && Selection[0] == obj)
+            {
                 return;
+            }
             Selection.Clear();
             Selection.Add(obj);
             Selection.SetType(obj.GetType());
@@ -253,7 +260,9 @@ namespace SE.Editor
         {
             SearchText = query;
             foreach (var child in Panel.Children)
+            {
                 UpdateFilter(child, Selection.Count == 0 ? string.Empty : query, false);
+            }
             Panel.PerformLayout();
         }
 
@@ -270,23 +279,29 @@ namespace SE.Editor
         {
             bool conditionAllows = !_conditionalVisibility.TryGetValue(control, out bool condition) || condition;
             bool collapseAllows = true;
-            if (control.Tag is LayoutElementsContainer.GroupElement group &&
-                ReferenceEquals(control, group.ContainerControl))
+            if (control.Tag is LayoutElementsContainer.GroupElement group && control == group.ContainerControl)
+            {
                 collapseAllows = !group.IsClosed;
+            }
             bool allowed = conditionAllows && collapseAllows;
             if (string.IsNullOrEmpty(query))
             {
                 control.Visible = allowed;
                 if (control is ContainerControl container)
+                {
                     foreach (var child in container.Children)
+                    {
                         UpdateFilter(child, query, false);
+                    }
+                }
                 return control.Visible;
             }
             bool ownMatch = control is PropertyNameLabel label &&
                 label.Text.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                 control.Tag is LayoutElementsContainer.GroupElement currentGroup &&
-                ReferenceEquals(control, currentGroup.Control) &&
+                control == currentGroup.Control &&
                 currentGroup.Title.Contains(query, StringComparison.OrdinalIgnoreCase);
+            
             bool childForced = forceShow || ownMatch;
             if (control is ContainerControl parent)
             {
@@ -294,10 +309,15 @@ namespace SE.Editor
                     child is PropertyNameLabel directLabel &&
                     directLabel.Text.Contains(query, StringComparison.OrdinalIgnoreCase));
             }
+
             bool match = ownMatch || forceShow;
             if (control is ContainerControl parent2)
+            {
                 foreach (var child in parent2.Children)
+                {
                     match |= UpdateFilter(child, query, childForced);
+                }
+            }
             control.Visible = match && allowed;
             return match && conditionAllows;
         }

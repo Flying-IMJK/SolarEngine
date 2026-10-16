@@ -48,7 +48,7 @@ namespace SE.Editor
         {
             foreach (ProjectTreeNode workspace in Projects)
             {
-                if (ReferenceEquals(workspace.Project, project))
+                if (workspace.Project == project)
                 {
                     return workspace;
                 }

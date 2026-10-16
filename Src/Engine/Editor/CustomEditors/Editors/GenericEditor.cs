@@ -130,7 +130,7 @@ namespace SE.Editor
             }
         }
 
-        public static List<ItemInfo> GetItemsForType(Type type, bool useProperties, bool useFields, bool usePropertiesWithoutSetter = false)
+        public static List<ItemInfo> GetItemsForType(Type type, bool useProperties, bool useFields)
         {
             var items = new List<ItemInfo>();
             const BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
@@ -139,24 +139,52 @@ namespace SE.Editor
                 foreach (var property in type.GetProperties(flags))
                 {
                     if (property.GetIndexParameters().Length != 0)
+                    {
                         continue;
+                    }
+
                     var attributes = property.GetCustomAttributes(true);
-                    bool show = attributes.Any(x => x is ShowInEditorAttribute);
-                    if (property.GetMethod == null || property.SetMethod == null && !show && !usePropertiesWithoutSetter)
+
+                    // 没有Get方法
+                    if (property.GetMethod == null)
+                    {
                         continue;
-                    if ((!property.GetMethod.IsPublic && !show) || attributes.Any(x => x is HideInEditorAttribute))
+                    }
+
+                    // 私有但是没有添加 ShowInEditorAttribute 属性
+                    if (!property.GetMethod.IsPublic && !attributes.Any(x => x is ShowInEditorAttribute))
+                    {
                         continue;
+                    }
+
+                    // 主动不显示
+                    if (attributes.Any(x => x is HideInEditorAttribute))
+                    {
+                        continue;
+                    }
+
                     items.Add(new ItemInfo(property));
                 }
             }
+
             if (useFields)
             {
                 foreach (var field in type.GetFields(flags))
                 {
                     var attributes = field.GetCustomAttributes(true);
-                    bool show = attributes.Any(x => x is ShowInEditorAttribute);
-                    if ((!field.IsPublic && !show) || attributes.Any(x => x is HideInEditorAttribute))
+
+                    // 主动不显示
+                    if (attributes.Any(x => x is HideInEditorAttribute))
+                    {
                         continue;
+                    }
+
+                    // 私有但是没有添加 ShowInEditorAttribute 属性
+                    if (!field.IsPublic && !attributes.Any(x => x is ShowInEditorAttribute))
+                    {
+                        continue;
+                    }
+
                     items.Add(new ItemInfo(field));
                 }
             }

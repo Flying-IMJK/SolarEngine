@@ -251,7 +251,7 @@ namespace SE.Editor.GUI
 
             TargetPanel = null;
             TargetState = DockState.Unknown;
-            if (ReferenceEquals(Active, this))
+            if (Active == this)  
             {
                 Active = null;
             }

@@ -243,7 +243,7 @@ namespace SE.Editor
         {
             if (left == null && right is string { Length: 0 })
                 return true;
-            if (ReferenceEquals(left, right))
+            if (left == right)
                 return true;
             if (left == null || right == null)
                 return false;

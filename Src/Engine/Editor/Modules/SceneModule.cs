@@ -450,11 +450,16 @@ namespace SE.Editor
         private static bool SequenceEqual(IReadOnlyList<ScenesGraphNode> left, IReadOnlyList<ScenesGraphNode> right)
         {
             if (left.Count != right.Count)
+            {
                 return false;
+            }
+
             for (int index = 0; index < left.Count; index++)
             {
-                if (!ReferenceEquals(left[index], right[index]))
+                if (left[index] != right[index])
+                {
                     return false;
+                }
             }
 
             return true;

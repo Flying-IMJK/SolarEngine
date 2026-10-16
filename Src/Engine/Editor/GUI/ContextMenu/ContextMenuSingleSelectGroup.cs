@@ -31,17 +31,29 @@ namespace SE.Editor.GUI
             {
                 Item? item = m_Items.Find(candidate => EqualityComparer<T>.Default.Equals(candidate.Value, value));
                 if (item != null)
+                {
                     SetSelected(item);
+                }
             }
         }
 
         public ContextMenuSingleSelectGroup<T> AddItem(string text, T value, Action? selected = null, string? tooltip = null)
         {
-            ArgumentNullException.ThrowIfNull(text);
-            var item = new Item { Text = text, Value = value, Selected = selected, Tooltip = tooltip };
+            Debug.Assert(!string.IsNullOrEmpty(text), "Text cannot be null or empty.");
+
+            var item = new Item 
+            { 
+                Text = text, 
+                Value = value, 
+                Selected = selected, 
+                Tooltip = tooltip 
+            };
+
             m_Items.Add(item);
             for (int index = 0; index < m_Menus.Count; index++)
+            {
                 AddItemToMenu(m_Menus[index], item);
+            }
             return this;
         }
 
@@ -50,7 +62,9 @@ namespace SE.Editor.GUI
             ArgumentNullException.ThrowIfNull(menu);
             m_Menus.Add(menu);
             for (int index = 0; index < m_Items.Count; index++)
+            {
                 AddItemToMenu(menu, m_Items[index]);
+            }
             return this;
         }
 
@@ -58,22 +72,26 @@ namespace SE.Editor.GUI
         {
             ContextMenuButton button = menu.AddButton(item.Text, _ => SetSelected(item));
             button.TooltipText = item.Tooltip ?? string.Empty;
-            button.SetChecked(ReferenceEquals(m_Selected, item));
+            button.SetChecked(m_Selected == item);
             item.Buttons.Add(button);
         }
 
         private void SetSelected(Item item)
         {
-            if (ReferenceEquals(m_Selected, item))
+            if (m_Selected == item)
+            {
                 return;
+            }
 
             m_Selected = item;
             for (int index = 0; index < m_Items.Count; index++)
             {
                 List<ContextMenuButton> buttons = m_Items[index].Buttons;
-                bool checkedValue = ReferenceEquals(m_Items[index], item);
+                bool checkedValue = m_Items[index] == item;
                 for (int buttonIndex = 0; buttonIndex < buttons.Count; buttonIndex++)
+                {
                     buttons[buttonIndex].SetChecked(checkedValue);
+                }
             }
             SelectedChanged?.Invoke(item.Value);
             item.Selected?.Invoke();
