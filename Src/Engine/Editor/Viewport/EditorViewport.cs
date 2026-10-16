@@ -111,6 +111,7 @@ namespace SE.Editor
         private bool _disableInputUpdate;
         private bool m_IsControllingMouse;
         private bool _isViewportControllingMouse;
+        private bool _waitForMouseRelease;
         private bool m_WasVirtualMouseRightDown;
         private bool m_IsVirtualMouseRightDown;
         private int _deltaFilteringStep;
@@ -921,26 +922,23 @@ namespace SE.Editor
 
             Window window = win.Window;
             bool canUseInput = window != null && window.IsFocused && window.IsForegroundWindow;
-            bool isViewportControllingMouse = canUseInput && GetIsControllingMouse();
-            if (isViewportControllingMouse != _isViewportControllingMouse)
+            if (!canUseInput)
             {
-                _isViewportControllingMouse = isViewportControllingMouse;
-                if (isViewportControllingMouse)
-                {
-                    StartMouseCapture();
-                }
-                else
-                {
-                    EndMouseCapture();
-                }
+                ReleaseMouseControl();
+            }
+            else if (_waitForMouseRelease)
+            {
+                _waitForMouseRelease = window.GetMouseButton(MouseButton.Left) ||
+                                       window.GetMouseButton(MouseButton.Middle) ||
+                                       window.GetMouseButton(MouseButton.Right);
             }
 
-            bool useMouse = GetIsControllingMouse() || m_PrevInput.GetIsControllingMouse() ||
+            m_PrevInput = m_Input;
+            bool useMouse = GetIsControllingMouse() || m_IsControllingMouse ||
                             (m_ViewMousePos.X >= 0.0f && m_ViewMousePos.X <= Width &&
                              m_ViewMousePos.Y >= 0.0f && m_ViewMousePos.Y <= Height);
-            m_PrevInput = m_Input;
             Control hit = GetChildAt(m_ViewMousePos, control => control.Visible /* && !(control is CanvasRootControl && control is not UIEditorRoot) */);
-            if (canUseInput && ContainsFocus && (hit == null || m_PrevInput.GetIsControllingMouse()))
+            if (canUseInput && !_waitForMouseRelease && ContainsFocus && (hit == null || m_PrevInput.GetIsControllingMouse()))
             {
                 m_Input.Gather(window, useMouse, m_PrevInput);
             }
@@ -1006,6 +1004,18 @@ namespace SE.Editor
                 OnMiddleMouseButtonUp();
             }
             m_WasVirtualMouseRightDown = m_IsVirtualMouseRightDown;
+
+            // Capture through the GUI root so movement cannot reach adjacent controls.
+            bool shouldCapture = canUseInput && !_waitForMouseRelease &&
+                                 (m_IsControllingMouse || GetIsControllingMouse());
+            if (shouldCapture != _isViewportControllingMouse)
+            {
+                _isViewportControllingMouse = shouldCapture;
+                if (shouldCapture)
+                    StartMouseCapture();
+                else
+                    EndMouseCapture();
+            }
 
             float dt = Mathf.Min(Time.GetUnscaledDeltaTime(), 1.0f);
             Float2 size = Size;
@@ -1111,6 +1121,14 @@ namespace SE.Editor
                 mouseDelta *= MouseSpeed * m_MouseSensitivity * deltaTime;
                 bool centerMouse = false;
                 UpdateView(dt, in moveDelta, in mouseDelta, ref centerMouse);
+
+                if (centerMouse)
+                {
+                    Float2 center = Float2.Round(Size * 0.5f);
+                    win.SetMousePosition(PointToWindow(center));
+                    m_ViewMousePos = center;
+                    m_LastViewMousePos = center;
+                }
 
                 if (UseOrthographicProjection && !rmbWheel)
                 {
@@ -1221,17 +1239,52 @@ namespace SE.Editor
         public override void OnLostFocus()
         {
             base.OnLostFocus();
+            ReleaseMouseControl();
+        }
+
+        /// <inheritdoc />
+        public override void OnEndMouseCapture()
+        {
+            // The root already removed the capture owner. Do not release recursively.
+            ResetMouseControl();
+            _isViewportControllingMouse = false;
+            base.OnEndMouseCapture();
+        }
+
+        private void ResetMouseControl()
+        {
+            _waitForMouseRelease |= m_IsControllingMouse || _isViewportControllingMouse;
             if (m_IsControllingMouse)
             {
-                OnControlMouseEnd(RootWindow().Window);
-                m_IsControllingMouse = false;
-                m_IsVirtualMouseRightDown = false;
+                Window window = RootWindow()?.Window;
+                if (window != null)
+                    window.Cursor = CursorType.Default;
+            }
+            m_IsControllingMouse = false;
+            m_IsVirtualMouseRightDown = false;
+            m_WasVirtualMouseRightDown = false;
+            m_Input = default;
+            m_PrevInput = default;
+            m_MouseDelta = Float2.Zero;
+            m_MouseDeltaLast = Float2.Zero;
+            System.Array.Clear(_deltaFilteringBuffer, 0, _deltaFilteringBuffer.Length);
+            _deltaFilteringStep = 0;
+        }
+
+        private void ReleaseMouseControl()
+        {
+            ResetMouseControl();
+            if (_isViewportControllingMouse)
+            {
+                _isViewportControllingMouse = false;
+                EndMouseCapture();
             }
         }
 
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            ReleaseMouseControl();
             // Editor.Instance.Options.OptionsChanged -= OnEditorOptionsChanged;
             base.OnDestroy();
         }
@@ -1329,23 +1382,19 @@ namespace SE.Editor
             Matrix.LookAt(ref position, ref target, ref up, out result);
         }
 
-        /// <summary>Called when mouse control begins.</summary>
+        /// <summary>
+        /// Called when mouse control begins.
+        /// </summary>
         /// <param name="win">The parent window.</param>
         protected virtual void OnControlMouseBegin(Window win)
         {
-            win.StartTrackingMouse(false);
+            m_StartPos = m_ViewMousePos;
             win.Cursor = CursorType.Hidden;
 
-            Float2 size = Size;
-            Float2 center = Float2.Round(size * 0.5f);
-            if (Mathf.Abs(m_ViewMousePos.X - center.X) > center.X * 0.8f ||
-                Mathf.Abs(m_ViewMousePos.Y - center.Y) > center.Y * 0.8f)
-            {
-                m_StartPos = center;
-                m_ViewMousePos = center;
-                m_LastViewMousePos = center;
-                win.MousePosition = PointToWindow(m_ViewMousePos);
-            }
+            Float2 center = Float2.Round(Size * 0.5f);
+            RootWindow().SetMousePosition(PointToWindow(center));
+            m_ViewMousePos = center;
+            m_LastViewMousePos = center;
         }
 
         /// <summary>Called when mouse control ends.</summary>
@@ -1353,8 +1402,10 @@ namespace SE.Editor
         protected virtual void OnControlMouseEnd(Window win)
         {
             win.Cursor = CursorType.Default;
-            win.MousePosition = PointToWindow(m_StartPos);
-            win.EndTrackingMouse();
+            if (win.IsFocused && win.IsForegroundWindow)
+                RootWindow().SetMousePosition(PointToWindow(m_StartPos));
+            m_ViewMousePos = m_StartPos;
+            m_LastViewMousePos = m_StartPos;
         }
 
         /// <summary>Called when left mouse button goes down.</summary>
