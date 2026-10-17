@@ -1,4 +1,4 @@
-namespace SE.Editor.Utilities
+namespace SE.Editor
 {
     public static class Units
     {

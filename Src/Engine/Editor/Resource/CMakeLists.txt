@@ -8,8 +8,5 @@ add_subdirectory(Thumbnails)
 # PARENT_SCOPE only one level
 # this command is to pass the variable to parent
 EDITOR_ADD(
-        ContentView.h
-        ContentView.cpp
-        ContentNavigationButton.h
-        ContentNavigationButton.cpp
+
 )

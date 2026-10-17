@@ -1,5 +1,4 @@
 using System;
-using SE.Editor.Utilities;
 
 namespace SE.Editor.GUI
 {

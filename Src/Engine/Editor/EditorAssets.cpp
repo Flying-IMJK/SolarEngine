@@ -107,7 +107,6 @@ namespace SE::Editor
     SpriteHandle EditorIcons::Rotate32;
     SpriteHandle EditorIcons::Scale32;
     SpriteHandle EditorIcons::Grid32;
-    SpriteHandle EditorIcons::Flax32;
     SpriteHandle EditorIcons::RotateSnap32;
     SpriteHandle EditorIcons::ScaleSnap32;
     SpriteHandle EditorIcons::Globe32;
@@ -137,7 +136,6 @@ namespace SE::Editor
     SpriteHandle EditorIcons::VisjectArrowClosed32;
 
     // 64px
-    SpriteHandle EditorIcons::Flax64;
     SpriteHandle EditorIcons::Save64;
     SpriteHandle EditorIcons::Play64;
     SpriteHandle EditorIcons::Stop64;

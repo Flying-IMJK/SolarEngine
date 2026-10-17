@@ -1,8 +1,6 @@
-#nullable disable annotations
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using SE.GUI;
 using SE.Editor.GUI;
 
@@ -308,128 +306,6 @@ namespace SE.Editor
         {
             Select();
             StartRenaming();
-        }
-    }
-
-    /// <summary>
-    /// Content tree node used for main directories.
-    /// </summary>
-    public class MainContentTreeNode : ContentTreeNode
-    {
-        private FileSystemWatcher _watcher;
-
-        private void OnEvent(object sender, FileSystemEventArgs eventArgs)
-        {
-            Editor.Instance?.AssetDatabase?.OnDirectoryEvent(this, eventArgs);
-        }
-
-        /// <inheritdoc />
-        public override bool GetCanDelete()
-        {
-            return false;
-        }
-
-        /// <inheritdoc />
-        public override bool GetCanDuplicate()
-        {
-            return false;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="MainContentTreeNode"/> class.
-        /// </summary>
-        /// <param name="parent">The parent project.</param>
-        /// <param name="type">The folder type.</param>
-        /// <param name="path">The folder path.</param>
-        public MainContentTreeNode(ProjectTreeNode parent, ContentFolderType type, string path)
-            : base(parent, type, path)
-        {
-            _watcher = new FileSystemWatcher(path)
-            {
-                IncludeSubdirectories = true,
-                EnableRaisingEvents = true,
-                NotifyFilter = NotifyFilters.CreationTime | NotifyFilters.Size | NotifyFilters.FileName | NotifyFilters.DirectoryName,
-            };
-            _watcher.Changed += OnEvent;
-            _watcher.Created += OnEvent;
-            _watcher.Deleted += OnEvent;
-            _watcher.Renamed += OnEvent;
-        }
-
-        /// <inheritdoc />
-        public override void OnDestroy()
-        {
-            // _watcher.EnableRaisingEvents = false;
-            _watcher.Dispose();
-            _watcher = null;
-
-            base.OnDestroy();
-        }
-
-        /// <inheritdoc />
-        protected override void BeginDragDrop()
-        {
-            // No drag for root nodes
-        }
-    }
-
-    /// <summary>
-    /// Root tree node for the project workspace.
-    /// </summary>
-    public class ProjectTreeNode : ContentTreeNode
-    {
-        /// <summary>
-        /// The project.
-        /// </summary>
-        public ProjectInfo Project;
-
-        /// <summary>
-        /// The project content directory.
-        /// </summary>
-        public MainContentTreeNode Content;
-
-        /// <summary>
-        /// The project source code directory.
-        /// </summary>
-        public MainContentTreeNode Source;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ProjectTreeNode"/> class.
-        /// </summary>
-        public ProjectTreeNode(ProjectInfo project) : base(null, project.ProjectFolderPath)
-        {
-            Project = project;
-            ProjectName = project.Name;
-            ContentFolder folder = GetFolder();
-            folder.FileName = project.Name;
-            folder.ShortName = project.Name;
-            Text = project.Name;
-        }
-
-        public string ProjectName { get; }
-
-        /// <inheritdoc />
-        public override string GetNavButtonLabel()
-        {
-            // return Project.Name;
-            return ProjectName;
-        }
-
-        /// <inheritdoc />
-        public override int CompareTo(Control other)
-        {
-            // Move the main game project to the top
-            // if (Project.Name == Editor.Instance.Project.Name)
-            // {
-            //     return -1;
-            // }
-            return base.CompareTo(other);
-        }
-
-        /// <inheritdoc />
-        protected override void BeginDragDrop()
-        {
-            // No drag for root nodes
         }
     }
 }
