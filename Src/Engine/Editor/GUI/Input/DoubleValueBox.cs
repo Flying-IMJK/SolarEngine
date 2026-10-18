@@ -1,6 +1,4 @@
 using System;
-using System.Globalization;
-using SE.Editor.Utilities;
 
 namespace SE.Editor.GUI
 {

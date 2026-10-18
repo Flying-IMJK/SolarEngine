@@ -1,4 +1,3 @@
-// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -7,7 +6,7 @@ using System.Linq;
 using System.Text;
 using SE;
 
-namespace SE.Editor.Utilities
+namespace SE.Editor
 {
     /// <summary>
     /// The Shunting-Yard algorithm parsing utilities.

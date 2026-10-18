@@ -1,12 +1,39 @@
 #pragma once
 #include "Runtime/Render/2D/SpriteAtlas.h"
 
+namespace SE
+{
+    class Texture;
+}
+
 namespace SE::Editor
 {
+    struct IconPack
+	{
+		String name;
+		SpriteHandle* value = nullptr;
+		Texture* texture = nullptr;
+		Int2 position = Int2(0, 0);
+
+		IconPack() : name()
+		{
+
+		}
+
+		IconPack(String name, SpriteHandle* value) : name(name), value(value)
+		{
+		}
+	};
+
     SE_CLASS(API(Static))
     class EditorIcons
     {
         SCRIPTING_TYPE_MIN(EditorIcons)
+
+
+    public:
+		static List<IconPack>& GetIconDefine();
+
     public:
         // 12px
         SE_FIELD(API(ReadOnly)) static SpriteHandle DragBar12;
@@ -25,7 +52,6 @@ namespace SE::Editor
         SE_FIELD(API(ReadOnly)) static SpriteHandle Rotate32;
         SE_FIELD(API(ReadOnly)) static SpriteHandle Scale32;
         SE_FIELD(API(ReadOnly)) static SpriteHandle Grid32;
-        SE_FIELD(API(ReadOnly)) static SpriteHandle Flax32;
         SE_FIELD(API(ReadOnly)) static SpriteHandle RotateSnap32;
         SE_FIELD(API(ReadOnly)) static SpriteHandle ScaleSnap32;
         SE_FIELD(API(ReadOnly)) static SpriteHandle Globe32;
@@ -55,7 +81,6 @@ namespace SE::Editor
         SE_FIELD(API(ReadOnly)) static SpriteHandle VisjectArrowClosed32;
 
         // 64px
-        SE_FIELD(API(ReadOnly)) static SpriteHandle Flax64;
         SE_FIELD(API(ReadOnly)) static SpriteHandle Save64;
         SE_FIELD(API(ReadOnly)) static SpriteHandle Play64;
         SE_FIELD(API(ReadOnly)) static SpriteHandle Stop64;

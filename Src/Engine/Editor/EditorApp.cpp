@@ -1,19 +1,5 @@
 #include "EditorApp.h"
 
-#include "Modules/EditorModule.h"
-#include "Modules/SettingModule.h"
-#include "Modules/UIModule.h"
-#include "Modules/WindowsModule.h"
-#include "Modules/AssetDatabaseModule.h"
-#include "Windows/LogWindow.h"
-#include "Modules/AssetImportingModule.h"
-#include "Modules/SceneGraphModule.h"
-#include "Modules/SceneModule.h"
-#include "Windows/ContentWindow.h"
-#include "Windows/EditSceneWindow.h"
-#include "Windows/PropertiesWindow.h"
-
-
 #include "Runtime/EngineContext.h"
 #include "Runtime/Settings/GlobalSettings_Resource.h"
 #include "Runtime/Graphics/GraphicWindow.h"
@@ -24,10 +10,21 @@
 #include "Runtime/Core/IniFile.h"
 #include "Runtime/Core/Platform/FileSystem.h"
 
-#include "Editor/GUI/Docking/MasterDockPanel.h"
 #include "Runtime/Core/Scripting/ManagedCLR/CLRMethod.h"
 #include "Runtime/Core/Scripting/ManagedCLR/CLRUtils.h"
 #include "Runtime/Core/Scripting/ManagedCLR/CLRException.h"
+
+#include "Runtime/Render/2D/SpriteAtlasPacker.h"
+#include "Runtime/Render/2D/SpriteAtlas.h"
+#include "Runtime/Render/Assets/Texture/Texture.h"
+#include "Runtime/Resource/Factories/IAssetFactory.h"
+#include "Runtime/Resource/Importers/AssetsImportingSystem.h"
+#include "Runtime/Graphics/GPUContext.h"
+#include "Runtime/Graphics/GPUDevice.h"
+
+
+#include "Editor/EditorIcons.h"
+#include "Editor/EditorAssets.h"
 
 #include "Test.h"
 
@@ -59,7 +56,7 @@ namespace SE::Editor
 				projectPath = Platform::GetWorkingDirectory() / projectPath;
 				FileSystem::PathRemoveRelativeParts(projectPath);
 			}
-			if (projectPath.EndsWith(SE_TEXT(".flaxproj")))
+			if (projectPath.EndsWith(SE_TEXT(".solarproj")))
 			{
 				projectPath = FileSystem::GetDirectoryName(projectPath);
 			}
@@ -73,7 +70,7 @@ namespace SE::Editor
 		if (NewProject)
 		{
 			List<String> projectFiles;
-			FileSystem::DirectoryGetFiles(projectFiles, projectPath, SE_TEXT("*.flaxproj"), DirectorySearchOption::TopOnly);
+			FileSystem::DirectoryGetFiles(projectFiles, projectPath, SE_TEXT("*.solarproj"), DirectorySearchOption::TopOnly);
 			if (projectFiles.Count() > 1)
 			{
 				Platform::Fatal(SE_TEXT("Too many project files."));
@@ -120,7 +117,7 @@ namespace SE::Editor
 			// Create project file
 			ProjectInfo newProject;
 			newProject.Name = MoveTemp(tmpName);
-			newProject.ProjectPath = projectPath / newProject.Name + SE_TEXT(".flaxproj");
+			newProject.ProjectPath = projectPath / newProject.Name + SE_TEXT(".solarproj");
 			newProject.ProjectFolderPath = projectPath;
 			newProject.Version = VersionInfo(1, 0);
 			newProject.Company = SE_TEXT("My Company");
@@ -128,16 +125,22 @@ namespace SE::Editor
 			newProject.GameTarget = SE_TEXT("GameTarget");
 			newProject.EditorTarget = SE_TEXT("GameEditorTarget");
 			/*auto& flaxRef = newProject.References.AddOne();
-			flaxRef.Name = SE_TEXT("$(EnginePath)/Flax.flaxproj");
+			flaxRef.Name = SE_TEXT("$(EnginePath)/Flax.solarproj");
 			flaxRef.Project = nullptr;*/
 			if (!newProject.SaveProject())
+            {
 				return 10;
+            }
 
 			// Generate source files
 			if (!FileSystem::CreateDirectory(projectPath / SE_TEXT("Content")))
+            {
 				return 11;
+            }
 			if (!FileSystem::CreateDirectory(projectPath / SE_TEXT("Source/Game")))
+            {
 				return 11;
+            }
 
 			/*if (failed)
 				return 12;*/
@@ -159,7 +162,7 @@ namespace SE::Editor
 			if (!FileSystem::ShowOpenFileDialog(
 				nullptr,
 				StringView::Empty,
-				SE_TEXT("Project files (*.flaxproj)\0*.flaxproj\0All files (*.*)\0*.*\0"),
+				SE_TEXT("Project files (*.solarproj)\0*.solarproj\0All files (*.*)\0*.*\0"),
 				false,
 				SE_TEXT("Select project to open in Editor"),
 				files) || files.Count() != 1)
@@ -188,10 +191,10 @@ namespace SE::Editor
 		// Load project
 		Project = New<ProjectInfo>();
 		List<String> projectFiles;
-		FileSystem::DirectoryGetFiles(projectFiles, projectPath, SE_TEXT("*.flaxproj"), DirectorySearchOption::TopOnly);
+		FileSystem::DirectoryGetFiles(projectFiles, projectPath, SE_TEXT("*.solarproj"), DirectorySearchOption::TopOnly);
 		if (projectFiles.Count() == 0)
 		{
-			Platform::Fatal(SE_TEXT("Missing project file (*.flaxproj)."));
+			Platform::Fatal(SE_TEXT("Missing project file (*.solarproj)."));
 			return -2;
 		}
 		if (projectFiles.Count() > 1)
@@ -229,38 +232,15 @@ namespace SE::Editor
 		globalSettings.LoadSettings(settings);
 
 		managedEditor = New<ManagedEditor>();
+
 		return true;
 	}
 
 	void EditorApp::BeforeRun()
 	{
-		RegisterModule(settingModule = New<SettingModule>(this));
-
-		// Note: we don't sort modules before Init (optimized)
-		const auto sortFunc = CreateFunc([](EditorModule* const &a, EditorModule* const &b)
-		{
-			return a->InitOrder() < b->InitOrder();
-		});
-		Sorting::QuickSort(m_Modules, sortFunc);
-		_isAfterInit = true;
-
-		// Initialize modules (from front to back)
-		for (int i = 0; i < m_Modules.Count(); i++)
-		{
-			EditorModule* module = m_Modules[i];
-			module->OnInit();
-		}
-		_areModulesInited = true;
-
-
-		// Initialize modules (from front to back)
-		for (int i = 0; i < m_Modules.Count(); i++)
-		{
-			EditorModule* module = m_Modules[i];
-			module->OnEndInit();
-		}
-
-		_areModulesAfterInitEnd = true;
+		// Asset import and icon loading require the initialized engine systems.
+		ImportAsset();
+		LoadIcon();
 
 		// The native modules now provide only background services. Initialize the
 		// managed presentation after those services are ready.
@@ -276,23 +256,16 @@ namespace SE::Editor
 			managedEditor = nullptr;
 		}
 
-		// Native modules remain only as background services while their managed
-		// counterparts own the editor GUI. Preserve their normal reverse cleanup.
-		for (int i = m_Modules.Count() - 1; i >= 0; i--)
-			m_Modules[i]->OnExit();
-		_areModulesAfterInitEnd = false;
-		_areModulesInited = false;
-		_isAfterInit = false;
 		// m_Window->Close();
 		// Delete(m_Window);
 	}
 
 	void EditorApp::OnUpdate()
 	{
-		// Keep unported native services (asset database, import queue and
-		// thumbnails) alive. Their GUI owners were removed from these modules.
-		for (int i = 0; i < m_Modules.Count(); i++)
-			m_Modules[i]->OnUpdate();
+		if (!m_IconAtlasUpload)
+        {
+			UploadIcon();
+        }
 
 		if (managedEditor != nullptr)
 		{
@@ -316,22 +289,153 @@ namespace SE::Editor
 		}
 	}
 
-	void EditorApp::RegisterModule(EditorModule* module)
-	{
-		LOG_INFO("Editor", "Register Editor module ");
+    void EditorApp::ImportAsset()
+    {
+    	String assetsPath = String::Format(SE_TEXT("{0}/{1}"), EngineContext::ProjectCacheFolder, EditorAssets::AssetsPath);
 
-		m_Modules.Add(module);
-		if (_isAfterInit)
+    	List<String> file;
+    	FileSystem::DirectoryGetFiles(file, assetsPath, nullptr);
+		for (String fileName : file)
 		{
-			Sorting::QuickSort(m_Modules, CreateFunc([](EditorModule* const &a, EditorModule* const &b) {
-				return a->InitOrder() < b->InitOrder();
-			}));
+			String fileExtension = FileSystem::GetExtension(fileName);
+			if (fileExtension == ASSET_FILES_EXTENSION)
+			{
+				continue;
+			}
+
+			auto importer = AssetsImporting::GetImporter(fileExtension);
+			if (importer == nullptr)
+			{
+				continue;
+			}
+
+			String outPath = fileName;
+			FileSystem::ReplaceExtension(outPath, ASSET_FILES_EXTENSION);
+			AssetsImporting::ImportIfEdited(fileName, outPath);
 		}
-		if (_areModulesInited)
-			module->OnInit();
-		if (_areModulesAfterInitEnd)
-			module->OnEndInit();
+    }
+
+    void EditorApp::LoadIcon()
+	{
+	    List<IconPack*> icons;
+		StringBuilder path;
+    	// Find icons
+    	for (IconPack &iconDefine : EditorIcons::GetIconDefine())
+    	{
+    		path.Clear();
+    		path.Append(EditorAssets::IconsPath);
+    		path.Append("/");
+    		path.Append(iconDefine.name);
+    		auto icon = AssetContent::LoadAsyncInternal<Texture>(path.ToString());
+
+    		if (icon == nullptr)
+    		{
+    			LOG_WARNING("Setting", "not find icon \'{0}\'.", iconDefine.name);
+    			continue;
+    		}
+
+    		iconDefine.texture = icon;
+
+    		icons.Add(&iconDefine);
+    	}
+
+		m_LoadedIcons.Clear();
+    	List<IconPack*> loadFailedIcons;
+    	while (icons.Count() > 0)
+    	{
+    		for (int i = 0; i < icons.Count(); i++)
+    		{
+    			IconPack* iconPack = icons[i];
+
+    			if (!iconPack->texture->IsLoaded())
+    			{
+    				continue;
+    			}
+
+    			if (iconPack->texture->LastLoadFailed())
+    			{
+    				LOG_WARNING("Setting", "Failed to load icon \'{0}\'.", iconPack->name);
+    				loadFailedIcons.Add(iconPack);
+    			}
+    			else
+    			{
+    				m_LoadedIcons.Add(iconPack);
+    			}
+
+    			icons.RemoveAt(i);
+    			i--;
+    		}
+    	}
+
+		m_IconAtlas = AssetContent::CreateVirtualAsset<SpriteAtlas>();
+
+		TextureInitData* initData = TextureInitData::Create(2048, 2048, 1, PixelFormat::BC3_UNorm);
+		m_IconAtlas->Init(initData);
+
+		// BC3 copies need block-aligned destinations; icon dimensions and spacing are multiples of four.
+		SpriteAtlasPacker atlasPacker = SpriteAtlasPacker(initData->Width, initData->Height, 4);
+
+		for (int i = 0; i < m_LoadedIcons.Count(); i++)
+		{
+			IconPack* iconPack = m_LoadedIcons[i];
+
+			atlasPacker.InsertRectangle(iconPack->texture->Width(), iconPack->texture->Height(), i);
+		}
+
+		const int packedCount = atlasPacker.PackRectangles();
+		if (packedCount != m_LoadedIcons.Count())
+		{
+			LOG_ERROR("Setting", "Icon atlas is too small: packed {0} of {1} icons.", packedCount, m_LoadedIcons.Count());
+			// Do not publish incomplete sprites or copy icons into missing rectangles.
+			m_IconAtlasUpload = true;
+			return;
+		}
+
+		Float2 atlasSize = m_IconAtlas->Size();
+		for (int i = 0; i < m_LoadedIcons.Count(); i++)
+		{
+			IconPack* iconPack = m_LoadedIcons[i];
+
+			SpriteAtlasPacker::Rect rectangle = atlasPacker.GetRectangle(i);
+
+			Sprite sprite;
+			sprite.Area = Rectangle(rectangle.x / atlasSize.X, rectangle.y / atlasSize.Y, rectangle.width / atlasSize.X, rectangle.height / atlasSize.Y);
+			sprite.Name = iconPack->name;
+			SpriteHandle handle = m_IconAtlas->AddSprite(sprite);
+
+			*iconPack->value = handle;
+			iconPack->position = Int2(rectangle.x, rectangle.y);
+		}
+    }
+
+    void EditorApp::UploadIcon()
+	{
+		for (int i = 0; i < m_LoadedIcons.Count(); i++)
+		{
+			IconPack* iconPack = m_LoadedIcons[i];
+
+			if (iconPack->texture->GetResidentMipLevels() < iconPack->texture->GetMipLevels())
+			{
+				return;
+			}
+		}
+
+		if (m_IconAtlas->GetResidentMipLevels() <= 0)
+		{
+			return;
+		}
+
+		m_IconAtlasUpload = true;
+
+		GPUContext* gpuContext = GPUDevice::instance->GetMainContext();
+		for (int i = 0; i < m_LoadedIcons.Count(); i++)
+		{
+			IconPack* iconPack = m_LoadedIcons[i];
+			gpuContext->CopyTexture(m_IconAtlas->GetTexture(), 0, iconPack->position.X, iconPack->position.Y, 0,
+				iconPack->texture->GetTexture(), 0);
+		}
 	}
+
 
 
 	UID ManagedEditor::ObjectID(0x91970b4e, 0x99634f61, 0x84723632, 0x54c776af);

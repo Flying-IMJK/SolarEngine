@@ -32,8 +32,8 @@ namespace SE::Editor
 			return;
 		}
 
-		String cubeMapOutPutPath = EngineContext::ProjectContentFolder + SE_TEXT("/Skybox.sge");
-		CubeTexture* cubeTexture = AssetContent::Load<CubeTexture>(cubeMapOutPutPath);
+		
+		CubeTexture* cubeTexture = AssetContent::LoadAsyncInternal<CubeTexture>(SE_TEXT("Asset/Texture/Skybox"));
 
 		Scene* scene = Level::Scenes[0];
 

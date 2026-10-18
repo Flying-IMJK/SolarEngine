@@ -29,7 +29,6 @@ endmacro()
 set(EditorHeadFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/API.h
     ${CMAKE_CURRENT_SOURCE_DIR}/EditorApp.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/EditorContext.h
     ${CMAKE_CURRENT_SOURCE_DIR}/EditorAssets.h
     ${CMAKE_CURRENT_SOURCE_DIR}/EditorIcons.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Test.h
@@ -38,8 +37,8 @@ set(EditorHeadFiles
 set(EditorSourceFiles
     ${CMAKE_CURRENT_SOURCE_DIR}/API.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/EditorApp.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/EditorContext.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/EditorAssets.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/EditorIcons.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Test.cpp
 )
 

@@ -28,6 +28,8 @@ namespace SE
 		Manual,
 	};
 
+	SE_INJECT_CODE(cpp, "#include \"Runtime/Core/Platform/Window.h\"")
+
 	/// <summary>
 	/// Settings for new window.
 	/// </summary>

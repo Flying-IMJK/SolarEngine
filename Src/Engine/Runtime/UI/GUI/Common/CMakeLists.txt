@@ -1,19 +1,4 @@
 
 RUNTIME_ADD(
-    Button.h
-    Button.cpp
-    Text.h
-    Text.cpp
-    Label.h
-    Label.cpp
-    Image.h
-    Image.cpp
-    TextBoxBase.h
-    TextBoxBase.cpp
-    TextBox.h
-    TextBox.cpp
-    CheckBox.h
-    CheckBox.cpp
-    ClickableLabel.h
-    ClickableLabel.cpp
+
 )

@@ -3,29 +3,17 @@
 #include "Editor/API.h"
 #include "Runtime/App.h"
 
-#include "EditorContext.h"
-
-namespace SE::Editor
-{
-	class SceneGraphModule;
-	class SceneModule;
-}
-
 namespace SE
 {
-	class ManagedEditor;
 	class ProjectInfo;
+	class SpriteAtlas;
 }
 
 namespace SE::Editor
 {
-	class AssetImportingModule;
-	class AssetDatabaseModule;
-	class UIModule;
-	class WindowsModule;
-	class EditorModule;
-	class SettingModule;
 	class ManagedEditor;
+
+	struct IconPack;
 
 	class SE_API_EDITOR EditorApp : public App
 	{
@@ -47,13 +35,6 @@ namespace SE::Editor
 		/// Information about the loaded game project.
 		/// </summary>
 		ProjectInfo* Project = nullptr;
-		SettingModule* settingModule = nullptr;
-		UIModule* uiModule = nullptr;
-		SceneModule* sceneModule = nullptr;
-		SceneGraphModule* sceneGraphModule = nullptr;
-		WindowsModule* windowsModule = nullptr;
-		AssetDatabaseModule* databaseModule = nullptr;
-		AssetImportingModule* importingModule = nullptr;
 
 	public:
 		int32 LoadProduct() override;
@@ -69,18 +50,17 @@ namespace SE::Editor
 
 	private:
 
-		bool _isAfterInit = false, _areModulesInited = false, _areModulesAfterInitEnd = false;
+		bool m_IconAtlasUpload;
+		SpriteAtlas* m_IconAtlas = nullptr;
+		List<IconPack*> m_LoadedIcons;
 
 		/*void BorderlessWindowHitTest(const Float2& mouse, WindowHitCodes& hit, bool& handled);
 		void DrawToolBar();
 		void DrawWindowControls();*/
 
-		void RegisterModule(EditorModule* module);
-
-		List<EditorModule*> m_Modules = List<EditorModule*>(16);
-		// GraphicWindow* m_Window = nullptr;
-
-		EditorContext m_Context;
+		void ImportAsset();
+		void LoadIcon();
+		void UploadIcon();
 	};
 
 	SE_CLASS(API(NoSpawn, Name="Editor"))
