@@ -230,7 +230,7 @@ namespace SE
         // , AtmosphericFog(nullptr)
         // , Fog(nullptr)
         // , Blendable(32)
-        , _instanceBuffer(1024 * sizeof(InstanceData), sizeof(InstanceData), SE_TEXT("Instance Buffer"))
+        , _instanceBuffer(1024 * sizeof(StaticMeshInstanceData), sizeof(StaticMeshInstanceData), SE_TEXT("Instance Buffer"))
     {
     }
 
@@ -411,11 +411,12 @@ namespace SE
         FORCE_INLINE bool CanBatchWith(const DrawCall& a, const DrawCall& b)
         {
             IMaterial::InstancingHandler handler;
+            // 自动合批中的每个 DrawCall 只写入一条实例记录。
             return a.Material == b.Material &&
                     a.Material->CanUseInstancing(handler) &&
                     Platform::MemoryCompare(&a.Geometry, &b.Geometry, sizeof(a.Geometry)) == 0 &&
-                    a.InstanceCount != 0 &&
-                    b.InstanceCount != 0 &&
+                    a.InstanceCount == 1 &&
+                    b.InstanceCount == 1 &&
                     handler.CanBatch(a, b) &&
                     a.WorldDeterminantSign * b.WorldDeterminantSign > 0;
         }
@@ -546,8 +547,8 @@ namespace SE
                 goto DRAW;
             }
             _instanceBuffer.Clear();
-            _instanceBuffer.data.Resize(instancedBatchesCount * sizeof(InstanceData));
-            auto instanceData = (InstanceData*)_instanceBuffer.data.Get();
+            _instanceBuffer.data.Resize(instancedBatchesCount * sizeof(StaticMeshInstanceData));
+            auto instanceData = (StaticMeshInstanceData*)_instanceBuffer.data.Get();
 
             // Write to instance buffer
             for (int32 i = 0; i < list.Batches.Count(); i++)
@@ -570,7 +571,7 @@ namespace SE
                 auto& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
                 if (batch.Instances.Count() > 1)
                 {
-                    Platform::MemoryCopy(instanceData, batch.Instances.Get(), batch.Instances.Count() * sizeof(InstanceData));
+                    Platform::MemoryCopy(instanceData, batch.Instances.Get(), batch.Instances.Count() * sizeof(StaticMeshInstanceData));
                     instanceData += batch.Instances.Count();
                 }
             }
@@ -604,8 +605,8 @@ namespace SE
                     }
                     for (int32 j = vbCount; j < ARRAY_SIZE(drawCall.Geometry.VertexBuffers); j++)
                     {
-                        vb[vbCount] = nullptr;
-                        vbOffsets[vbCount] = 0;
+                        vb[j] = nullptr;
+                        vbOffsets[j] = 0;
                     }
 
                     bindParams.firstDrawCall = &drawCall;
@@ -633,10 +634,11 @@ namespace SE
                         {
                             vbCount = 3;
                             vb[vbCount] = _instanceBuffer.GetBuffer();
-                            vbOffsets[vbCount] = 0;
+                            // Buffer Offset 已选择当前批次起点，Draw 不再重复使用非零 startInstance。
+                            vbOffsets[vbCount] = instanceBufferOffset * sizeof(StaticMeshInstanceData);
                             vbCount++;
                             context->BindVB(ToSpan(vb, vbCount), vbOffsets);
-                            context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.InstanceCount, instanceBufferOffset, 0, drawCall.Draw.StartIndex);
+                            context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
                             instanceBufferOffset += batch.BatchSize;
                         }
                     }
@@ -655,8 +657,8 @@ namespace SE
                     }
                     for (int32 j = vbCount; j < ARRAY_SIZE(drawCall.Geometry.VertexBuffers); j++)
                     {
-                        vb[vbCount] = nullptr;
-                        vbOffsets[vbCount] = 0;
+                        vb[j] = nullptr;
+                        vbOffsets[j] = 0;
                     }
 
                     bindParams.firstDrawCall = &drawCall;
@@ -682,10 +684,10 @@ namespace SE
                         {
                             vbCount = 3;
                             vb[vbCount] = _instanceBuffer.GetBuffer();
-                            vbOffsets[vbCount] = 0;
+                            vbOffsets[vbCount] = instanceBufferOffset * sizeof(StaticMeshInstanceData);
                             vbCount++;
                             context->BindVB(ToSpan(vb, vbCount), vbOffsets);
-                            context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.Instances.Count(), instanceBufferOffset, 0, drawCall.Draw.StartIndex);
+                            context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.Instances.Count(), 0, 0, drawCall.Draw.StartIndex);
                             instanceBufferOffset += batch.Instances.Count();
                         }
                     }
@@ -784,7 +786,7 @@ namespace SE
                 b.Surface.Skinning == nullptr;*/
     }
 
-    void SurfaceDrawCallHandler::WriteDrawCall(InstanceData* instanceData, const DrawCall& drawCall)
+    void SurfaceDrawCallHandler::WriteDrawCall(StaticMeshInstanceData* instanceData, const DrawCall& drawCall)
     {
         instanceData->InstanceOrigin = Float3(drawCall.World.M41, drawCall.World.M42, drawCall.World.M43);
         instanceData->PerInstanceRandom = drawCall.PerInstanceRandom;

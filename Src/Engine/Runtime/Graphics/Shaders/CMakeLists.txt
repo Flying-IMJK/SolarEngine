@@ -14,8 +14,6 @@ RUNTIME_ADD(
         SLC2VertexInputLayout.cpp
         ShaderBindingSnapshot.h
         ShaderBindingSnapshot.cpp
-        ShaderParameterBlock.h
-        ShaderParameterBlock.cpp
         ShaderProgramInstance.h
         ShaderProgramInstance.cpp
 

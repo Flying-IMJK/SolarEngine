@@ -21,6 +21,7 @@ namespace SE
 
 	protected:
 		GPUSamplerDescription m_Desc;
+		bool m_IsInitialized = false;
 
 		GPUSampler();
 
@@ -32,6 +33,11 @@ namespace SE
 		const GPUSamplerDescription& GetDescription() const
 		{
 			return m_Desc;
+		}
+
+		FORCE_INLINE bool IsInitialized() const
+		{
+			return m_IsInitialized;
 		}
 
 	public:

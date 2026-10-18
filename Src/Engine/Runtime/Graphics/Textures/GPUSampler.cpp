@@ -32,6 +32,10 @@ namespace SE
 			LOG_WARNING("Graphic", "GPUSampler Cannot initialize sampler. Description: {0}", desc.ToString());
 			return false;
 		}
+		// GPUResource::ReleaseGPU uses memory usage as its initialized-state gate.
+		// A sampler has no byte allocation estimate, so one byte is the lifecycle sentinel.
+		m_MemoryUsage = 1;
+		m_IsInitialized = true;
 		return true;
 	}
 
@@ -47,6 +51,7 @@ namespace SE
 
 	void GPUSampler::OnReleaseGPU()
 	{
+		m_IsInitialized = false;
 		m_Desc.Clear();
 	}
 

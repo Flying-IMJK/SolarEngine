@@ -28,9 +28,9 @@
 | `ShaderProgramReflection.h/.cpp` | `ShaderProgramReflection` | type/block 索引和物理布局描述 |
 | `ShaderVar.h/.cpp` | `ShaderVar` | 绑定到运行时 ParameterBlock 的成员、固定数组、资源与 uniform 访问句柄 |
 | `ShaderNameResolver.h/.cpp` | `ShaderNameResolver` | 解析 `a.b[2].c` |
-| `ShaderParameterBlock.h/.cpp` | `ShaderParameterBlock` | 一个 blockId 的 uniform bytes、逻辑资源槽和递归子块 |
+| `ShaderProgramInstance.h/.cpp` | `ShaderProgramInstance` | 所有 Uniform Block bytes、逻辑资源槽和子块状态的唯一可变来源 |
 | `ShaderBindingSnapshot.h/.cpp` | `ShaderBindingSnapshot` | 绑定验证成功后冻结的逻辑资源与 Uniform Buffer 提交快照 |
-| `ShaderProgramInstance.h/.cpp` | `ShaderProgramInstance` | 完整 Program 实例及其唯一根 ParameterBlock |
+| `ShaderProgramInstance.h/.cpp` | `ShaderProgramInstance` | 完整 Program 实例及其统一参数状态 |
 | `ShaderProgramLayoutVulkan.h/.cpp` | `ShaderProgramLayoutVulkan` | Vulkan layout 创建/复用 |
 | `ShaderDescriptorWriterVulkan.h/.cpp` | `ShaderDescriptorWriterVulkan` | descriptor write |
 | `GPUShaderProgramVulkan.h/.cpp` | `SLC2ShaderProgramVulkan` | 持有 SLC2 Program 的不可变 VkShaderModule、descriptor layout 与 Vertex Input State |
@@ -84,18 +84,17 @@ Select(programId, target, defines):
 SLC2GPUShader (immutable)
   -> SLC2ShaderProgram (immutable Reflection / backend layout / stages)
     -> ShaderProgramInstance (per Material/Pass)
-      -> Root ShaderParameterBlock
-        -> child ShaderParameterBlock (subBlockId)
+      -> Uniform Block / Resource Binding state
         -> ShaderVar (block + location)
 
-ValidateAllBindings(root)
+BuildSnapshot(root)
   -> ShaderBindingSnapshot (immutable)
   -> Vulkan DescriptorWriter
 ```
 
 - `ShaderProgramReflection` 只保存 type/block 图、名称索引和物理 mapping；不保存资源值或 descriptor set。
 - `ShaderProgramInstance` 每次由 `SLC2GPUShader::CreateProgramInstance()` 创建，拥有独立根块；不同实例不共享任何可变绑定状态。
-- `ShaderParameterBlock` 对应一个具体 `blockId`，拥有该块的 CPU uniform bytes、`resources[logicalRange][logicalElement]` 及所有子块；资源永远以逻辑位置保存。
+- `ShaderProgramInstance` 统一持有各 `blockId` 的 CPU uniform bytes、`resourceBindings[logicalSlot][logicalElement]` 及子块关系；资源永远以逻辑位置保存，不再维护独立 ParameterBlock 资源树。
 - `ShaderVar` 同时持有 ParameterBlock 与该块内的 `ShaderVarLocation`。`FindVar(path)` 只是从根块取得它的入口；成员和数组访问不重新解析全路径。
 - `ShaderBindingSnapshot` 是唯一允许交给后端的绑定数据。Descriptor Writer 不读取可变 ParameterBlock，也不修改它。
 
@@ -196,8 +195,9 @@ bool SetUniform(StringView path, const void* data, uint32 size, String& error);
 - 设置 `null` 等价于未绑定。
 - 没有 required/optional 策略。
 - 没有默认资源库。
-- 主资源绑定自动覆盖其 `auxiliaryRanges`。
-- 用户不能按 internal role 名直接绑定。
+- 逻辑资源只绑定主 Texture/Buffer/Sampler 槽；附属 counter 不暴露为 NamePath 或独立 Setter。
+- `GPUBuffer` 是附属 counter 的父资源和生命周期 owner；Snapshot 只冻结父 Buffer，不缓存 counter 指针。
+- Append/Consume 的 Binding Plan 为同一个 `ResourceSlotIndex` 生成 `Primary` 与 `Counter` 两条物理记录；Vulkan 提交时分别解析父 Buffer 的主 view 与 `GPUBufferVulkan::Counter->View()`。普通 `RWStructuredBuffer` 不自动创建 counter。
 - 固定资源数组支持逐元素绑定。
 - Uniform 写入只复制到对应 ParameterBlock 的 CPU byte array。
 - 名称 API 是 `ShaderProgramInstance::FindVar(path)` 的便利入口；核心写入 API 位于 `ShaderVar`，从而使链式成员和数组访问与名称访问共享同一套逻辑槽定位。
@@ -205,11 +205,9 @@ bool SetUniform(StringView path, const void* data, uint32 size, String& error);
 ## ParameterBlock 状态
 
 ```text
-ShaderParameterBlock
-  blockId
-  uniformData[uniformByteSize]
-  resources[logicalRange][logicalElement]
-  subBlocks[]
+ShaderProgramInstance
+  uniformBlocks[blockId]
+  resourceBindings[logicalSlot][logicalElement]
 ```
 
 每个 `ShaderProgramInstance` 从 `rootBlockId` 递归构造一棵 ParameterBlock 树；block-flavor `rangeBinding` 精确决定子块，而 simple range 只分配资源槽。状态按逻辑位置保存，不按 Vulkan binding 保存；后端只能消费验证后冻结的快照。
@@ -217,11 +215,10 @@ ShaderParameterBlock
 ## 提交前完整性
 
 ```text
-ValidateAllBindings(root):
+BuildSnapshot(root):
   pass 1:
     walk reachable blocks
     for each simple logical range
-      skip internalRole ranges
       require every resource element is non-null
       require object still alive and compatible
       copy logical resource to pending snapshot
@@ -234,7 +231,7 @@ ValidateAllBindings(root):
   return Freeze(snapshot)
 ```
 
-第一阶段不得分配本次提交专用 GPU 对象或写 descriptor；任何缺失资源都必须在构造 `VkWriteDescriptorSet` 前失败。成功时 `ShaderBindingSnapshot` 同时包含所有逻辑资源和所有非空 defaultUniformBuffer 的物化结果，随后与 ParameterBlock 脱离关系。
+第一阶段不得分配本次提交专用 GPU 对象或写 descriptor；任何缺失资源都必须在构造 `VkWriteDescriptorSet` 前失败。成功时 `ShaderBindingSnapshot` 同时包含所有逻辑资源和所有非空 defaultUniformBuffer 的物化结果，随后与 `ShaderProgramInstance` 的可变状态脱离关系；不存在需要单独解析或搜索的 counter 逻辑槽。
 
 ## Vulkan Pipeline Layout
 
@@ -305,7 +302,7 @@ Graphics：
 ```text
 PrepareAndBind:
   require pipeline fingerprint == program layout fingerprint
-  snapshot = program.ValidateAllBindings()
+  snapshot = program.BuildSnapshot()
   sets = AllocateDescriptorSets(layout)
   DescriptorWriter.BuildAndCommit(snapshot, sets)
   BindPipeline

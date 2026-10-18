@@ -100,7 +100,7 @@ struct ShaderParameterBlockRecord
 
   Resource:
     resourceKind, shape, access, elementTypeId?
-    imageFormat?, structuredKind?, auxiliaryRanges[]
+    imageFormat?, structuredKind?
 
   ParameterBlock:
     containerKind = ConstantBuffer | ParameterBlock
@@ -113,8 +113,6 @@ struct ShaderParameterBlockRecord
     ShaderLogicalResourceKind ResourceKind;
     uint32 Count;
     uint32 BaseIndex;
-    Optional&lt;ShaderInternalRole&gt; InternalRole;
-    Optional&lt;uint32&gt; OwnerRangeOffset;
 };
 
 struct ShaderRangeBinding
@@ -138,14 +136,13 @@ struct ShaderDescriptorRange
     ShaderDescriptorFlags Flags;
 };</code></pre>
     <ul>
-      <li>一个逻辑 range 可映射 1～N 个物理 descriptor range；组合资源、counter 等不得被压成一对一模型。</li>
+      <li>当前 SLC2 simple resource range 必须映射一个 primary descriptor，并可为 Append/Consume 增加一个 counter descriptor；两者共享同一 logical range。</li>
       <li><code>Simple</code> 必须有 descriptor mapping、没有 SubBlock；块 flavor 必须有一个 SubBlock、没有 descriptor mapping。</li>
       <li><code>defaultUniformBuffer</code> 与普通 descriptor 使用相同物理字段，但 Role 固定为 <code>uniformData</code>。</li>
       <li>set/binding 是当前 Target 下相对 Program 根的绝对坐标，不保存 Slang 子块局部坐标。</li>
-      <li><code>OwnerRangeOffset</code> 保存同一 Type Record 内主 range 的绝对局部索引，不是 counter range 到主 range 的有符号差值；非辅助 range 必须为 null。</li>
-      <li><code>Resource.AuxiliaryRanges[].RangeOffset</code> 是从该 Resource 主 range 到辅助 range 的正向相对 range 偏移；运行时使用 <code>accumulatedMainRange + RangeOffset</code>。它与辅助 range 上的绝对局部 <code>OwnerRangeOffset</code> 语义不同。</li>
+      <li><code>GPUBuffer</code> 负责附属 counter 的创建与生命周期；counter 不进入 logical range、NamePath 或 Snapshot，但会作为同一 range 的 physical Descriptor Write Target。</li>
       <li>ConstantBuffer/ParameterBlock Type Record 自身各有一条 count 为 1 的逻辑容器 range；具体子块的 <code>RangeBindings</code> 则对应其 <code>ElementTypeId</code> 的内容 ranges，二者不能混用。</li>
-      <li>Schema 2 的 simple mapping 固定 <code>ArrayElementBase = 0</code>、<code>LogicalElementStride = 1</code>、<code>DescriptorCount = logical range.Count</code>。反射到非恒等映射时 Builder 必须失败。</li>
+      <li>Schema 3 的 simple mapping 固定 <code>ArrayElementBase = 0</code>、<code>LogicalElementStride = 1</code>、<code>DescriptorCount = logical range.Count</code>。除可选 counter 外，反射到非恒等映射或其他多 physical range 时 Builder 必须失败。</li>
     </ul>
   </section>
 
@@ -177,7 +174,7 @@ struct ShaderDescriptorRange
         <tr><td><code>getElementCount/getElementTypeLayout/getElementStride(Uniform)</code></td><td><code>BuildArrayFields()</code></td><td>固定正数 count；元素类型 ID；无逐元素节点；块数组闭包失败。</td></tr>
         <tr><td><code>getResourceShape/getResourceAccess/getResourceResultType/getElementTypeLayout</code></td><td><code>BuildStableResourceFields()</code></td><td>ResourceKind/Shape/Access/ElementTypeId/StructuredKind。StructuredBuffer 使用当前 Target 的 <code>getElementTypeLayout()</code>；Texture/TypedBuffer 的 result type 经 <code>ProgramLayout::getTypeLayout(type, LayoutRules::Default)</code> 转成布局后再 intern。</td></tr>
         <tr><td><code>getBindingRangeCount/getBindingRangeType/getBindingRangeBindingCount/getBindingRangeLeafTypeLayout/getBindingRangeImageFormat</code></td><td><code>BuildLogicalResourceRanges()</code></td><td>逐 logical range 生成 ResourceKind/Count；BaseIndex 是 count 的 checked 前缀和。</td></tr>
-        <tr><td><code>getExplicitCounterBindingRangeOffset()</code></td><td><code>LinkExplicitCounterRange()</code></td><td>Counter 的 InternalRole、主 range 的绝对局部 OwnerRangeOffset、Resource AuxiliaryRanges。</td></tr>
+        <tr><td><code>getExplicitCounter()/getExplicitCounterBindingRangeOffset()</code></td><td><code>BuildLogicalBindingRangeMap()</code></td><td>先确认显式 counter 语义，再把 primary/counter raw binding ranges 关联到同一个 logical range；不生成独立 counter range。</td></tr>
         <tr><td><code>getBindingRangeDescriptorSetIndex/getBindingRangeFirstDescriptorRangeIndex/getBindingRangeDescriptorRangeCount</code></td><td><code>EnumerateDescriptorRanges()</code></td><td>显式连接 logical range 与 descriptor ranges；索引域不互换。</td></tr>
         <tr><td><code>getDescriptorSetSpaceOffset/getDescriptorSetDescriptorRangeIndexOffset/getDescriptorSetDescriptorRangeDescriptorCount/getDescriptorSetDescriptorRangeType/getDescriptorSetDescriptorRangeCategory</code></td><td><code>ResolveDescriptorRange()</code></td><td>绝对 Set/Binding、稳定 DescriptorType/Role、有限 Count、固定 Base=0/Stride=1。</td></tr>
         <tr><td><code>getSubObjectRangeCount/getSubObjectRangeBindingRangeIndex/getSubObjectRangeOffset/getSubObjectRangeSpaceOffset</code></td><td><code>IndexSubObjectRanges()</code> / <code>MakeChildBlockContext()</code></td><td>块 logical range 恰好一个 sub-object 并创建 SubBlockId；SolarEngine 当前接入 Slang 下的 StructuredBuffer 也恰好一个仅校验的 shader-object sub-object；spaceOffset 只检查有限，不参与 BindingPath 累加。</td></tr>
@@ -211,8 +208,8 @@ struct ShaderDescriptorRange
         <tr><td><code>MapMatrixLayout()</code></td><td><code>SlangMatrixLayoutMode</code></td><td>RowMajor/ColumnMajor；Unknown 失败；非 Matrix 写 None/null。</td></tr>
         <tr><td><code>MapResourceShape()</code></td><td><code>SlangResourceShape</code> 的 base + flags</td><td>Texture 维度/数组/MS、typed/structured/raw buffer、subpass input、acceleration structure；Combined 或未知 flag 失败。</td></tr>
         <tr><td><code>MapResourceAccess()</code></td><td><code>SlangResourceAccess</code></td><td>None/Read/ReadWrite/RasterOrdered/Append/Consume/Write/Feedback；不合法的 shape/access 组合失败。</td></tr>
-        <tr><td><code>MapImageFormat()</code></td><td><code>SlangImageFormat</code></td><td>只接受系统设计 8.10A 列出的 Schema 2 格式；unknown 写 null；其他失败。</td></tr>
-        <tr><td><code>MapLogicalRange()</code></td><td><code>BindingType + leaf shape/access + internal role</code></td><td><code>ShaderLogicalResourceKind</code>；不得仅从 VkDescriptorType 反推。</td></tr>
+        <tr><td><code>MapImageFormat()</code></td><td><code>SlangImageFormat</code></td><td>只接受系统设计 8.10A 列出的 Schema 3 格式；unknown 写 null；其他失败。</td></tr>
+        <tr><td><code>MapLogicalRange()</code></td><td><code>BindingType + leaf shape/access</code></td><td><code>ShaderLogicalResourceKind</code>；不得仅从 VkDescriptorType 反推；附属 counter 不形成逻辑 range。</td></tr>
         <tr><td><code>MapDescriptorType()</code></td><td><code>descriptor-range BindingType + ParameterCategory</code></td><td>Vulkan descriptor type；category 必须是 DescriptorTableSlot。</td></tr>
         <tr><td><code>MapStage()</code></td><td><code>SlangStage</code></td><td>Vertex/Hull/Domain/Geometry/Fragment/Compute；其他 Stage 在当前 Program 模型中失败。</td></tr>
       </tbody>
@@ -475,8 +472,6 @@ ResolveDescriptorRange(
     }
 
 MapDescriptorRole(logicalRange, slangDescriptorType):
-    IF logicalRange.InternalRole == Counter:
-        return Counter
     IF slangDescriptorType == Sampler AND
        logicalRange.ResourceKind != Sampler:
         return Sampler
@@ -572,7 +567,7 @@ InternType(raw, internedByKey, records):
       </div>
       <div class="pseudo-io">
         <div><strong>输入</strong>RawType + 当前 TypeLayout</div>
-        <div><strong>不变量</strong>OwnerRangeOffset 始终指向当前类型局部主 range</div>
+        <div><strong>不变量</strong>每个 Resource 只保留一个主逻辑 range；附属 counter 不进入 IR</div>
         <div><strong>输出</strong>ShaderResourceRange[]</div>
       </div>
       <pre><code>BuildLogicalResourceRanges(raw):
@@ -582,23 +577,10 @@ InternType(raw, internedByKey, records):
 
         Resource:
             normalized = ReadDirectLeafRanges(raw.SlangTypeLayout)
-            IF raw.StructuredKind IN { Counter, Append, Consume }:
-                counterIndex = CheckedRangeIndex(
-                    raw.SlangTypeLayout
-                        .getExplicitCounterBindingRangeOffset())
-                ownerIndex = FindMainStructuredBufferRange(normalized)
-                REQUIRE(counterIndex != ownerIndex)
-                REQUIRE(normalized[counterIndex].Count ==
-                        normalized[ownerIndex].Count)
-                REQUIRE(counterIndex &gt; ownerIndex)
-                normalized[counterIndex].InternalRole = Counter
-                normalized[counterIndex].OwnerRangeOffset = ownerIndex
-                raw.AuxiliaryRanges.Add({
-                    Role = Counter,
-                    RangeOffset = CHECKED_SUB(
-                        counterIndex,
-                        ownerIndex)
-                })
+            IF raw.SlangTypeLayout.getExplicitCounter() != null:
+                counterRange = ReadFiniteRangeIndex(
+                    raw.SlangTypeLayout.getExplicitCounterBindingRangeOffset())
+                logicalMap = { primaryRange, counterRange }
 
         ParameterBlock:
             normalized = [
@@ -624,9 +606,6 @@ InternType(raw, internedByKey, records):
 
                 FOR childRange IN child:
                     copy = childRange
-                    IF copy.OwnerRangeOffset != null:
-                        copy.OwnerRangeOffset =
-                            CHECKED_ADD(start, copy.OwnerRangeOffset)
                     normalized.Add(copy)
 
         Array:
@@ -635,7 +614,7 @@ InternType(raw, internedByKey, records):
                 range.Count = CHECKED_MUL(
                     range.Count,
                     raw.ElementCount)
-                // Range 顺序不变，owner 的局部 range index 不变。
+                // Range 顺序不变；附属 counter 不作为独立 range 复制。
 
     runningBase = 0
     FOR range IN normalized:
@@ -643,14 +622,15 @@ InternType(raw, internedByKey, records):
         runningBase = CHECKED_ADD(runningBase, range.Count)
 
     reflectedCount = raw.SlangTypeLayout.getBindingRangeCount()
-    REQUIRE(reflectedCount == normalized.Count)
-    FOR i IN [0, reflectedCount):
-        REQUIRE(normalized[i].Count ==
-                raw.SlangTypeLayout.getBindingRangeBindingCount(i))
+    REQUIRE(reflectedCount == CountOwnedRawRanges(logicalMap))
+    FOR logicalRange, mapping IN Zip(normalized, logicalMap):
+        REQUIRE(logicalRange.Count == BindingCount(mapping.primaryRange))
+        IF mapping.counterRange exists:
+            REQUIRE(logicalRange.Count == BindingCount(mapping.counterRange))
         REQUIRE(IsLogicalKindCompatible(
-            normalized[i],
-            raw.SlangTypeLayout.getBindingRangeType(i),
-            raw.SlangTypeLayout.getBindingRangeLeafTypeLayout(i)))
+            logicalRange,
+            raw.SlangTypeLayout.getBindingRangeType(mapping.primaryRange),
+            raw.SlangTypeLayout.getBindingRangeLeafTypeLayout(mapping.primaryRange)))
 
     return normalized</code></pre>
       <p class="pseudo-note">Struct 的 <code>start == normalized.Count</code> 同时验证 Slang 字段 range 偏移与声明顺序拼接一致。数组只放大每条 range 的元素数，不复制 range 记录；counter 的 owner 仍是数组 Type Record 内相同的局部 rangeIndex。</p>
@@ -963,7 +943,7 @@ BuildPrunedRange(candidateRange):
     <h3 id="slc2-json">JSON 写入规则</h3>
     <ul>
       <li>使用 SolarEngine 当前 JSON Writer；字段调用顺序就是规范顺序。</li>
-      <li>固定写 SLC2 format 3.0；资源反射子对象的 <code>ShaderReflectionIR.Schema</code> 仍为 2，两者是独立版本域。</li>
+      <li>固定写 SLC2 format 3.0；资源反射子对象的 <code>ShaderReflectionIR.Schema</code> 为 3，两者是独立版本域。</li>
       <li>Vertex Binding 按 slot 排序，Element 按 slot/offset/semantic/semanticIndex 排序，Signature 按 location/semantic/semanticIndex 排序；Semantic 写大写规范字符串。</li>
       <li>输出无 BOM UTF-8、LF、最终换行；字符串必须是有效 UTF-8，禁止平台本地编码。</li>
       <li>代码 blob 使用 JSON Base64 字符串；另存明确的 <code>encoding</code> 和完整 SHA-256，读取时先 Base64 解码再验证 hash。</li>

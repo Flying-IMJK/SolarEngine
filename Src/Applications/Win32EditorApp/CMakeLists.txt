@@ -17,6 +17,7 @@ set_target_properties(${EDITOR_TARGET_NAME} PROPERTIES OUTPUT_NAME "SE")
 target_include_directories(${EDITOR_TARGET_NAME} PRIVATE
     ${EngineLibDir}
     ${EngineDir}
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 add_dependencies(${EDITOR_TARGET_NAME} SERuntime SEEditor)

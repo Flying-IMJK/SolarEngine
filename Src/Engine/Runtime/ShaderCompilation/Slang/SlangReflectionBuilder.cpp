@@ -1,4 +1,5 @@
 #include "SlangReflectionBuilder.h"
+#include "Runtime/Core/Types/Collections/ChunkedArray.h"
 
 #include <slang-com-ptr.h>
 
@@ -12,11 +13,52 @@ namespace SE
 			List<Slang::ComPtr<slang::IMetadata>> Metadata;
 		};
 
+		// Builder-only association between one user-visible logical resource range and
+		// the Slang binding ranges that provide its primary and optional counter descriptors.
+		struct LogicalBindingRangeMap
+		{
+			uint32 PrimaryRangeIndex = Max_uint32;
+			int32 CounterRangeIndex = -1;
+		};
+
 		struct TypeBuildEntry
 		{
 			slang::TypeLayoutReflection* Layout = nullptr;
 			uint32 TypeId = 0;
+			List<LogicalBindingRangeMap> LogicalRanges;
 		};
+
+		struct BindingPathNode
+		{
+			slang::VariableLayoutReflection* VariableLayout = nullptr;
+			const BindingPathNode* Outer = nullptr;
+		};
+
+		// Slang 的 offset 都是相对当前 VariableLayout 的。路径保存具体 occurrence，
+		// 两个边界分别决定 Uniform byte 和 descriptor binding 从哪里停止向外累计。
+		struct BindingPath
+		{
+			const BindingPathNode* Leaf = nullptr;
+			const BindingPathNode* DeepestConstantBuffer = nullptr;
+			const BindingPathNode* DeepestParameterBlock = nullptr;
+		};
+
+		struct BlockLayoutContext
+		{
+			slang::TypeLayoutReflection* ContainerTypeLayout = nullptr;
+			slang::TypeLayoutReflection* ElementTypeLayout = nullptr;
+			BindingPath ContainerPath;
+			bool HasContainerPath = false;
+			BindingPath ElementPath;
+		};
+
+		struct ResolvedCategoryOffset
+		{
+			uint64 Value = 0;
+			uint64 Space = 0;
+		};
+
+		using BindingPathNodeArena = ChunkedArray<BindingPathNode, 64>;
 
 		String ToTypeKind(const slang::TypeReflection::Kind kind)
 		{
@@ -45,7 +87,11 @@ namespace SE
 
 		String ToBindingTypeString(const slang::BindingType type)
 		{
-			switch (type)
+			// Slang encodes writable resources by adding MutableFlag to the
+			// descriptor type. SLC2 keeps the base descriptor category; write
+			// capability remains represented by the reflected resource access.
+			const uint32 baseType = static_cast<uint32>(type) & static_cast<uint32>(slang::BindingType::BaseMask);
+			switch (static_cast<slang::BindingType>(baseType))
 			{
 			case slang::BindingType::Sampler:
 				return SE_TEXT("Sampler");
@@ -286,19 +332,162 @@ namespace SE
 			return static_cast<uint32>(record.ResourceRanges.Count() - 1);
 		}
 
+		void RecomputeResourceRangeBases(ShaderIRTypeRecord& record)
+		{
+			uint32 baseIndex = 0;
+			for (int32 rangeIndex = 0; rangeIndex < record.ResourceRanges.Count(); rangeIndex++)
+			{
+				record.ResourceRanges[rangeIndex].BaseIndex = baseIndex;
+				baseIndex += record.ResourceRanges[rangeIndex].Count;
+			}
+		}
+
 		void AppendResourceRanges(ShaderIRTypeRecord& destination, const ShaderIRTypeRecord& source, const uint32 multiplier)
 		{
 			for (int32 rangeIndex = 0; rangeIndex < source.ResourceRanges.Count(); rangeIndex++)
 			{
 				ShaderIRResourceRange range = source.ResourceRanges[rangeIndex];
 				range.Count *= multiplier;
-				range.BaseIndex = 0;
-				for (int32 existingIndex = 0; existingIndex < destination.ResourceRanges.Count(); existingIndex++)
-				{
-					range.BaseIndex += destination.ResourceRanges[existingIndex].Count;
-				}
 				destination.ResourceRanges.Add(range);
 			}
+			RecomputeResourceRangeBases(destination);
+		}
+
+		bool ReadBindingRangeCount(slang::TypeLayoutReflection* typeLayout, const uint32 rangeIndex, uint32& output, String& error)
+		{
+			const SlangInt rangeCount = typeLayout->getBindingRangeCount();
+			if (rangeCount < 0 || rangeIndex >= static_cast<uint32>(rangeCount))
+			{
+				error = SE_TEXT("Slang logical resource references an invalid binding range.");
+				return false;
+			}
+			const SlangInt count = typeLayout->getBindingRangeBindingCount(rangeIndex);
+			if (count <= 0 || static_cast<uint64>(count) > Max_uint32)
+			{
+				error = SE_TEXT("Slang binding range has an invalid resource count.");
+				return false;
+			}
+			output = static_cast<uint32>(count);
+			return true;
+		}
+
+		bool ValidateLogicalBindingRanges(slang::TypeLayoutReflection* typeLayout,
+			const ShaderIRTypeRecord& record,
+			const List<LogicalBindingRangeMap>& logicalRanges,
+			String& error)
+		{
+			const SlangInt rawRangeCount = typeLayout->getBindingRangeCount();
+			if (rawRangeCount < 0 || rawRangeCount > Max_int32 ||
+				logicalRanges.Count() != record.ResourceRanges.Count())
+			{
+				error = SE_TEXT("Slang binding ranges do not match the logical resource graph.");
+				return false;
+			}
+
+			List<byte> ownedRanges;
+			ownedRanges.Resize(static_cast<int32>(rawRangeCount));
+			for (int32 logicalIndex = 0; logicalIndex < logicalRanges.Count(); logicalIndex++)
+			{
+				const LogicalBindingRangeMap& mapping = logicalRanges[logicalIndex];
+				const ShaderIRResourceRange& logicalRange = record.ResourceRanges[logicalIndex];
+				if (mapping.PrimaryRangeIndex >= static_cast<uint32>(rawRangeCount) ||
+					ownedRanges[mapping.PrimaryRangeIndex] != 0)
+				{
+					error = SE_TEXT("A logical resource has an invalid or multiply-owned primary binding range.");
+					return false;
+				}
+				uint32 primaryCount;
+				if (!ReadBindingRangeCount(typeLayout, mapping.PrimaryRangeIndex, primaryCount, error) ||
+					primaryCount != logicalRange.Count)
+				{
+					if (error.IsEmpty())
+					{
+						error = SE_TEXT("Primary binding range count does not match its logical resource range.");
+					}
+					return false;
+				}
+				ownedRanges[mapping.PrimaryRangeIndex] = 1;
+
+				if (mapping.CounterRangeIndex >= 0)
+				{
+					const uint32 counterRangeIndex = static_cast<uint32>(mapping.CounterRangeIndex);
+					if (counterRangeIndex >= static_cast<uint32>(rawRangeCount) ||
+						counterRangeIndex == mapping.PrimaryRangeIndex || ownedRanges[counterRangeIndex] != 0)
+					{
+						error = SE_TEXT("A logical resource has an invalid or multiply-owned counter binding range.");
+						return false;
+					}
+					uint32 counterCount;
+					if (!ReadBindingRangeCount(typeLayout, counterRangeIndex, counterCount, error) ||
+						counterCount != logicalRange.Count)
+					{
+						if (error.IsEmpty())
+						{
+							error = SE_TEXT("Counter binding range count does not match its parent logical resource range.");
+						}
+						return false;
+					}
+					ownedRanges[counterRangeIndex] = 1;
+				}
+			}
+
+			for (int32 rangeIndex = 0; rangeIndex < ownedRanges.Count(); rangeIndex++)
+			{
+				if (ownedRanges[rangeIndex] == 0)
+				{
+					error = SE_TEXT("Slang binding range has no logical resource owner.");
+					return false;
+				}
+			}
+			return true;
+		}
+
+		bool BuildResourceRanges(slang::TypeLayoutReflection* typeLayout,
+			ShaderIRTypeRecord& record,
+			List<LogicalBindingRangeMap>& logicalRanges,
+			String& error)
+		{
+			const SlangInt rawRangeCount = typeLayout->getBindingRangeCount();
+			if (rawRangeCount <= 0 || rawRangeCount > Max_int32)
+			{
+				error = SE_TEXT("Shader resource type has no finite binding range.");
+				return false;
+			}
+
+			LogicalBindingRangeMap mapping;
+			slang::VariableLayoutReflection* explicitCounter = typeLayout->getExplicitCounter();
+			if (explicitCounter != nullptr)
+			{
+				// Counter existence comes from the explicit counter layout. Its numeric offset
+				// is used only after that semantic relationship has been established.
+				const SlangInt counterRangeIndex = typeLayout->getExplicitCounterBindingRangeOffset();
+				if (typeLayout->getResourceShape() != SLANG_STRUCTURED_BUFFER || rawRangeCount != 2 ||
+					counterRangeIndex < 0 || counterRangeIndex >= rawRangeCount)
+				{
+					error = SE_TEXT("Structured buffer counter reflection has an invalid binding range shape.");
+					return false;
+				}
+				mapping.CounterRangeIndex = static_cast<int32>(counterRangeIndex);
+				mapping.PrimaryRangeIndex = counterRangeIndex == 0 ? 1u : 0u;
+			}
+			else
+			{
+				if (rawRangeCount != 1)
+				{
+					error = SE_TEXT("Shader resource has multiple binding ranges without an explicit counter owner.");
+					return false;
+				}
+				mapping.PrimaryRangeIndex = 0;
+			}
+
+			uint32 resourceCount;
+			if (!ReadBindingRangeCount(typeLayout, mapping.PrimaryRangeIndex, resourceCount, error))
+			{
+				return false;
+			}
+			AddResourceRange(record, record.ResourceKind, resourceCount);
+			logicalRanges.Add(mapping);
+			return true;
 		}
 
 		uint32 BuildType(slang::TypeLayoutReflection* typeLayout, List<TypeBuildEntry>& entries, ShaderReflectionIR& output, String& error)
@@ -327,6 +516,7 @@ namespace SE
 			entry.Layout = typeLayout;
 			entry.TypeId = static_cast<uint32>(output.Types.Count());
 			entries.Add(entry);
+			const int32 entryIndex = entries.Count() - 1;
 
 			ShaderIRTypeRecord record;
 			record.Id = entry.TypeId;
@@ -334,6 +524,7 @@ namespace SE
 			record.Name = String(typeLayout->getName());
 			record.UniformByteSize = static_cast<uint32>(typeLayout->getSize(slang::ParameterCategory::Uniform));
 			output.Types.Add(record);
+			List<LogicalBindingRangeMap> logicalRanges;
 
 			switch (slangKind)
 			{
@@ -360,6 +551,39 @@ namespace SE
 					member.ResourceIndexOffset = 0;
 					record.Members.Add(member);
 					AppendResourceRanges(record, output.Types[member.TypeId], 1);
+
+					const int32 childEntryIndex = FindTypeEntry(entries, field->getTypeLayout());
+					if (childEntryIndex < 0)
+					{
+						error = SE_TEXT("Slang struct field has no completed logical binding map.");
+						return Max_uint32;
+					}
+					const TypeBuildEntry& childEntry = entries[childEntryIndex];
+					if (childEntry.LogicalRanges.HasItems())
+					{
+						const SlangInt fieldRangeOffset = typeLayout->getFieldBindingRangeOffset(fieldIndex);
+						if (fieldRangeOffset < 0 || static_cast<uint64>(fieldRangeOffset) > Max_uint32)
+						{
+							error = SE_TEXT("Slang struct field has an invalid binding range offset.");
+							return Max_uint32;
+						}
+						for (int32 rangeIndex = 0; rangeIndex < childEntry.LogicalRanges.Count(); rangeIndex++)
+						{
+							LogicalBindingRangeMap mapping = childEntry.LogicalRanges[rangeIndex];
+							const uint64 primaryRangeIndex = static_cast<uint64>(fieldRangeOffset) + mapping.PrimaryRangeIndex;
+							const int64 counterRangeIndex = mapping.CounterRangeIndex >= 0
+								? static_cast<int64>(fieldRangeOffset) + mapping.CounterRangeIndex
+								: -1;
+							if (primaryRangeIndex > Max_uint32 || counterRangeIndex > Max_int32)
+							{
+								error = SE_TEXT("Slang struct field binding range mapping overflows.");
+								return Max_uint32;
+							}
+							mapping.PrimaryRangeIndex = static_cast<uint32>(primaryRangeIndex);
+							mapping.CounterRangeIndex = static_cast<int32>(counterRangeIndex);
+							logicalRanges.Add(mapping);
+						}
+					}
 				}
 				break;
 			case slang::TypeReflection::Kind::Array:
@@ -371,6 +595,15 @@ namespace SE
 				record.ElementCount = static_cast<uint32>(typeLayout->getElementCount());
                 record.ElementByteStride = static_cast<uint32>(typeLayout->getElementStride(SlangParameterCategory::SLANG_PARAMETER_CATEGORY_UNIFORM));
 				AppendResourceRanges(record, output.Types[record.ElementTypeId], record.ElementCount);
+				{
+					const int32 elementEntryIndex = FindTypeEntry(entries, typeLayout->getElementTypeLayout());
+					if (elementEntryIndex < 0)
+					{
+						error = SE_TEXT("Slang array element has no completed logical binding map.");
+						return Max_uint32;
+					}
+					logicalRanges = entries[elementEntryIndex].LogicalRanges;
+				}
 				break;
 			case slang::TypeReflection::Kind::Resource:
 			case slang::TypeReflection::Kind::SamplerState:
@@ -380,7 +613,10 @@ namespace SE
 				record.ResourceKind = ToResourceKindString(slangKind);
 				record.Shape = ToResourceShapeString(typeLayout->getResourceShape());
 				record.Access = ToResourceAccessString(typeLayout->getResourceAccess());
-				AddResourceRange(record, record.ResourceKind, 1);
+				if (!BuildResourceRanges(typeLayout, record, logicalRanges, error))
+				{
+					return Max_uint32;
+				}
 				break;
 			case slang::TypeReflection::Kind::ConstantBuffer:
 			case slang::TypeReflection::Kind::ParameterBlock:
@@ -390,13 +626,33 @@ namespace SE
 					return Max_uint32;
 				}
 				record.ResourceKind = record.Kind;
-				AddResourceRange(record, record.Kind, 1);
+				{
+					uint32 blockCount;
+					if (typeLayout->getBindingRangeCount() != 1 ||
+						!ReadBindingRangeCount(typeLayout, 0, blockCount, error) || blockCount != 1)
+					{
+						if (error.IsEmpty())
+						{
+							error = SE_TEXT("ConstantBuffer or ParameterBlock type must have one binding range.");
+						}
+						return Max_uint32;
+					}
+					AddResourceRange(record, record.Kind, blockCount);
+					LogicalBindingRangeMap mapping;
+					mapping.PrimaryRangeIndex = 0;
+					logicalRanges.Add(mapping);
+				}
 				break;
 			default:
 				break;
 			}
 
+			if (!ValidateLogicalBindingRanges(typeLayout, record, logicalRanges, error))
+			{
+				return Max_uint32;
+			}
 			output.Types[entry.TypeId] = record;
+			entries[entryIndex].LogicalRanges = logicalRanges;
 			return entry.TypeId;
 		}
 
@@ -469,12 +725,153 @@ namespace SE
 			return true;
 		}
 
-		bool BuildDescriptorRange(slang::TypeLayoutReflection* typeLayout, const SlangInt descriptorSetIndex, const SlangInt descriptorRangeIndex, const String& role, const StageUsageContext& stageUsage, ShaderIRDescriptorRange& output, String& error)
+		bool AddFiniteOffset(const size_t value, uint64& accumulator, String& error)
 		{
-			uint32 set;
-			uint32 binding;
+			if (value >= SLANG_UNBOUNDED_SIZE - 1 || static_cast<uint64>(value) > Max_uint64 - accumulator)
+			{
+				error = SE_TEXT("Slang reflection returned an unknown, unbounded, or overflowing offset.");
+				return false;
+			}
+			accumulator += static_cast<uint64>(value);
+			return true;
+		}
+
+		bool IsNodeInPath(const BindingPathNode* target, const BindingPathNode* leaf)
+		{
+			if (target == nullptr)
+			{
+				return true;
+			}
+			for (const BindingPathNode* node = leaf; node != nullptr; node = node->Outer)
+			{
+				if (node == target)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		bool AppendBindingPath(const BindingPath& base, slang::VariableLayoutReflection* variableLayout, BindingPathNodeArena& arena, BindingPath& output, String& error)
+		{
+			if (variableLayout == nullptr)
+			{
+				error = SE_TEXT("Slang binding path variable layout is null.");
+				return false;
+			}
+			BindingPathNode node;
+			node.VariableLayout = variableLayout;
+			node.Outer = base.Leaf;
+			output = base;
+			output.Leaf = arena.Add(node);
+			return true;
+		}
+
+		bool ResolveCategory(const BindingPath& path, const slang::ParameterCategory category, ResolvedCategoryOffset& output, String& error)
+		{
+			if (!IsNodeInPath(path.DeepestConstantBuffer, path.Leaf) || !IsNodeInPath(path.DeepestParameterBlock, path.Leaf))
+			{
+				error = SE_TEXT("Slang binding path has a container boundary outside its node chain.");
+				return false;
+			}
+
+			output = ResolvedCategoryOffset();
+			if (category == slang::ParameterCategory::Uniform)
+			{
+				for (const BindingPathNode* node = path.Leaf; node != path.DeepestConstantBuffer; node = node->Outer)
+				{
+					if (node == nullptr || !AddFiniteOffset(node->VariableLayout->getOffset(category), output.Value, error))
+					{
+						if (error.IsEmpty())
+						{
+							error = SE_TEXT("Slang Uniform binding path does not reach its ConstantBuffer boundary.");
+						}
+						return false;
+					}
+				}
+				return true;
+			}
+
+			const bool spaceAware = category == slang::ParameterCategory::ConstantBuffer ||
+				category == slang::ParameterCategory::ShaderResource ||
+				category == slang::ParameterCategory::UnorderedAccess ||
+				category == slang::ParameterCategory::SamplerState ||
+				category == slang::ParameterCategory::DescriptorTableSlot;
+			if (!spaceAware)
+			{
+				error = SE_TEXT("Slang descriptor uses an unsupported parameter category.");
+				return false;
+			}
+
+			// ParameterBlock 内的 binding 是块局部值；set 则继续累计所有外层
+			// ParameterBlock occurrence 的 SubElementRegisterSpace offset。
+			for (const BindingPathNode* node = path.Leaf; node != path.DeepestParameterBlock; node = node->Outer)
+			{
+				if (node == nullptr || !AddFiniteOffset(node->VariableLayout->getOffset(category), output.Value, error) || !AddFiniteOffset(node->VariableLayout->getBindingSpace(category), output.Space, error))
+				{
+					if (error.IsEmpty())
+					{
+						error = SE_TEXT("Slang descriptor binding path does not reach its ParameterBlock boundary.");
+					}
+					return false;
+				}
+			}
+			for (const BindingPathNode* node = path.DeepestParameterBlock; node != nullptr; node = node->Outer)
+			{
+				if (!AddFiniteOffset(node->VariableLayout->getOffset(slang::ParameterCategory::SubElementRegisterSpace), output.Space, error))
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
+		bool EnterSingleElementContainer(const BindingPath& occurrencePath, slang::TypeLayoutReflection* containerTypeLayout, BindingPathNodeArena& arena, BlockLayoutContext& output, String& error)
+		{
+			if (containerTypeLayout == nullptr || occurrencePath.Leaf == nullptr ||
+				(containerTypeLayout->getKind() != slang::TypeReflection::Kind::ConstantBuffer && containerTypeLayout->getKind() != slang::TypeReflection::Kind::ParameterBlock))
+			{
+				error = SE_TEXT("Slang single-element container context is invalid.");
+				return false;
+			}
+			slang::VariableLayoutReflection* containerVarLayout = containerTypeLayout->getContainerVarLayout();
+			slang::VariableLayoutReflection* elementVarLayout = containerTypeLayout->getElementVarLayout();
+			if (containerVarLayout == nullptr || containerVarLayout->getTypeLayout() == nullptr || elementVarLayout == nullptr || elementVarLayout->getTypeLayout() == nullptr)
+			{
+				error = SE_TEXT("Slang single-element container has no container or element layout.");
+				return false;
+			}
+
+			BindingPath innerPath = occurrencePath;
+			innerPath.DeepestConstantBuffer = occurrencePath.Leaf;
+			const size_t subSpaceSize = containerVarLayout->getTypeLayout()->getSize(slang::ParameterCategory::SubElementRegisterSpace);
+			if (subSpaceSize >= SLANG_UNBOUNDED_SIZE - 1 || subSpaceSize > Max_uint32)
+			{
+				error = SE_TEXT("Slang single-element container has an invalid descriptor-set size.");
+				return false;
+			}
+			if (subSpaceSize != 0)
+			{
+				innerPath.DeepestParameterBlock = occurrencePath.Leaf;
+			}
+
+			output = BlockLayoutContext();
+			output.ContainerTypeLayout = containerTypeLayout;
+			output.ElementTypeLayout = elementVarLayout->getTypeLayout();
+			output.HasContainerPath = true;
+			if (!AppendBindingPath(innerPath, containerVarLayout, arena, output.ContainerPath, error) || !AppendBindingPath(innerPath, elementVarLayout, arena, output.ElementPath, error))
+			{
+				return false;
+			}
+			return true;
+		}
+
+		bool BuildDescriptorRange(slang::TypeLayoutReflection* typeLayout, const BindingPath& ownerPath, const SlangInt descriptorSetIndex, const SlangInt descriptorRangeIndex, const String& role, const StageUsageContext& stageUsage, ShaderIRDescriptorRange& output, String& error)
+		{
+			uint32 relativeSet;
+			uint32 relativeBinding;
 			uint32 count;
-			if (!ReadFiniteUint32(typeLayout->getDescriptorSetSpaceOffset(descriptorSetIndex), set, error) || !ReadFiniteUint32(typeLayout->getDescriptorSetDescriptorRangeIndexOffset(descriptorSetIndex, descriptorRangeIndex), binding, error) || !ReadFiniteUint32(typeLayout->getDescriptorSetDescriptorRangeDescriptorCount(descriptorSetIndex, descriptorRangeIndex), count, error) || count == 0)
+			if (!ReadFiniteUint32(typeLayout->getDescriptorSetSpaceOffset(descriptorSetIndex), relativeSet, error) || !ReadFiniteUint32(typeLayout->getDescriptorSetDescriptorRangeIndexOffset(descriptorSetIndex, descriptorRangeIndex), relativeBinding, error) || !ReadFiniteUint32(typeLayout->getDescriptorSetDescriptorRangeDescriptorCount(descriptorSetIndex, descriptorRangeIndex), count, error) || count == 0)
 			{
 				if (error.IsEmpty())
 				{
@@ -482,56 +879,144 @@ namespace SE
 				}
 				return false;
 			}
+			const slang::ParameterCategory category = typeLayout->getDescriptorSetDescriptorRangeCategory(descriptorSetIndex, descriptorRangeIndex);
+			ResolvedCategoryOffset base;
+			if (!ResolveCategory(ownerPath, category, base, error) || base.Space + relativeSet > Max_uint32 || base.Value + relativeBinding > Max_uint32)
+			{
+				if (error.IsEmpty())
+				{
+					error = SE_TEXT("Slang descriptor location is oversized.");
+				}
+				return false;
+			}
 			output.Role = role;
-			output.Set = set;
-			output.Binding = binding;
+			output.Set = static_cast<uint32>(base.Space + relativeSet);
+			output.Binding = static_cast<uint32>(base.Value + relativeBinding);
 			output.ArrayElementBase = 0;
 			output.LogicalElementStride = 1;
 			output.DescriptorCount = count;
 			output.DescriptorType = ToBindingTypeString(typeLayout->getDescriptorSetDescriptorRangeType(descriptorSetIndex, descriptorRangeIndex));
-			if (!BuildStageMask(stageUsage, typeLayout->getDescriptorSetDescriptorRangeCategory(descriptorSetIndex, descriptorRangeIndex), set, binding, output.StageMask, error))
+			if (!BuildStageMask(stageUsage, category, output.Set, output.Binding, output.StageMask, error))
 			{
 				return false;
 			}
 			if (output.DescriptorType == SE_TEXT("Unknown"))
 			{
-				error = SE_TEXT("Slang descriptor range uses an unsupported binding type.");
+				error = String::Format(SE_TEXT("Slang descriptor range uses an unsupported binding type (kind={0}, set={1}, range={2}, type={3}, category={4})."),
+					ToTypeKind(typeLayout->getKind()), descriptorSetIndex, descriptorRangeIndex,
+					static_cast<int32>(typeLayout->getDescriptorSetDescriptorRangeType(descriptorSetIndex, descriptorRangeIndex)),
+					ToParameterCategoryString(category));
 				return false;
 			}
 			return true;
 		}
 
-		bool BuildDefaultUniformBuffer(slang::TypeLayoutReflection* containerTypeLayout, const uint32 uniformByteSize, const StageUsageContext& stageUsage, ShaderIRParameterBlock& block, String& error)
+		bool HasVariableCategory(slang::VariableLayoutReflection* variableLayout, const slang::ParameterCategory category)
+		{
+			if (variableLayout == nullptr)
+			{
+				return false;
+			}
+			for (unsigned int categoryIndex = 0; categoryIndex < variableLayout->getCategoryCount(); categoryIndex++)
+			{
+				if (variableLayout->getCategoryByIndex(categoryIndex) == category)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		bool BuildDefaultUniformBuffer(const BlockLayoutContext& context, const uint32 uniformByteSize, const StageUsageContext& stageUsage, ShaderIRParameterBlock& block, String& error)
 		{
 			if (uniformByteSize == 0)
 			{
 				return true;
 			}
-			for (SlangInt setIndex = 0; setIndex < containerTypeLayout->getDescriptorSetCount(); setIndex++)
+			if (context.ContainerTypeLayout == nullptr || !context.HasContainerPath || context.ContainerPath.Leaf == nullptr)
 			{
-				for (SlangInt descriptorRangeIndex = 0; descriptorRangeIndex < containerTypeLayout->getDescriptorSetDescriptorRangeCount(setIndex); descriptorRangeIndex++)
+				error = SE_TEXT("Shader parameter block has uniform data but no descriptor-backed container path.");
+				return false;
+			}
+
+			// PB/CB 的 ordinary data 都由容器 VariableLayout 定位。PB 的隐式 UBO
+			// 不属于元素 TypeLayout 的普通 descriptor range，不能从元素 range 猜测。
+			slang::VariableLayoutReflection* containerLayout = context.ContainerPath.Leaf->VariableLayout;
+			slang::ParameterCategory category = slang::ParameterCategory::DescriptorTableSlot;
+			if (!HasVariableCategory(containerLayout, category))
+			{
+				category = slang::ParameterCategory::ConstantBuffer;
+				if (!HasVariableCategory(containerLayout, category))
 				{
-					if (containerTypeLayout->getDescriptorSetDescriptorRangeType(setIndex, descriptorRangeIndex) != slang::BindingType::ConstantBuffer)
-					{
-						continue;
-					}
-					if (!BuildDescriptorRange(containerTypeLayout, setIndex, descriptorRangeIndex, SE_TEXT("uniformData"), stageUsage, block.DefaultUniformBuffer, error))
-					{
-						return false;
-					}
-					block.HasDefaultUniformBuffer = true;
-					return true;
+					error = SE_TEXT("Shader parameter block uniform data has no container descriptor category.");
+					return false;
 				}
 			}
-			error = SE_TEXT("Shader parameter block has uniform data but no ConstantBuffer descriptor range.");
-			return false;
+			ResolvedCategoryOffset descriptorLocation;
+			if (!ResolveCategory(context.ContainerPath, category, descriptorLocation, error) || descriptorLocation.Space > Max_uint32 || descriptorLocation.Value > Max_uint32)
+			{
+				if (error.IsEmpty())
+				{
+					error = SE_TEXT("Shader parameter block uniform descriptor location is oversized.");
+				}
+				return false;
+			}
+
+			block.DefaultUniformBuffer.Role = SE_TEXT("uniformData");
+			block.DefaultUniformBuffer.Set = static_cast<uint32>(descriptorLocation.Space);
+			block.DefaultUniformBuffer.Binding = static_cast<uint32>(descriptorLocation.Value);
+			block.DefaultUniformBuffer.ArrayElementBase = 0;
+			block.DefaultUniformBuffer.LogicalElementStride = 1;
+			block.DefaultUniformBuffer.DescriptorCount = 1;
+			block.DefaultUniformBuffer.DescriptorType = SE_TEXT("ConstantBuffer");
+			if (!BuildStageMask(stageUsage, category, block.DefaultUniformBuffer.Set, block.DefaultUniformBuffer.Binding, block.DefaultUniformBuffer.StageMask, error))
+			{
+				return false;
+			}
+			block.HasDefaultUniformBuffer = true;
+			return true;
 		}
 
-		bool BuildParameterBlock(slang::TypeLayoutReflection* containerTypeLayout, slang::TypeLayoutReflection* elementTypeLayout, const String& name, const StageUsageContext& stageUsage, List<TypeBuildEntry>& typeEntries, ShaderReflectionIR& output, uint32& blockId, String& error)
+		bool BuildSimpleDescriptor(slang::TypeLayoutReflection* elementTypeLayout,
+			const BindingPath& elementPath,
+			const uint32 rawRangeIndex,
+			const String& role,
+			const uint32 logicalCount,
+			const StageUsageContext& stageUsage,
+			ShaderIRDescriptorRange& descriptor,
+			String& error)
 		{
-			if (containerTypeLayout == nullptr || elementTypeLayout == nullptr)
+			const SlangInt descriptorSetIndex = elementTypeLayout->getBindingRangeDescriptorSetIndex(rawRangeIndex);
+			const SlangInt firstDescriptorRangeIndex =
+				elementTypeLayout->getBindingRangeFirstDescriptorRangeIndex(rawRangeIndex);
+			const SlangInt descriptorRangeCount =
+				elementTypeLayout->getBindingRangeDescriptorRangeCount(rawRangeIndex);
+			if (descriptorSetIndex < 0 || descriptorSetIndex >= elementTypeLayout->getDescriptorSetCount() ||
+				firstDescriptorRangeIndex < 0 || descriptorRangeCount != 1 ||
+				firstDescriptorRangeIndex >= elementTypeLayout->getDescriptorSetDescriptorRangeCount(descriptorSetIndex))
 			{
-				error = SE_TEXT("Shader parameter block container or element layout is null.");
+				error = SE_TEXT("Simple binding range must map to exactly one physical descriptor range.");
+				return false;
+			}
+			if (!BuildDescriptorRange(elementTypeLayout, elementPath, descriptorSetIndex,
+				firstDescriptorRangeIndex, role, stageUsage, descriptor, error))
+			{
+				return false;
+			}
+			if (descriptor.DescriptorCount != logicalCount)
+			{
+				error = SE_TEXT("Descriptor count does not match the logical resource range count.");
+				return false;
+			}
+			return true;
+		}
+
+		bool BuildParameterBlock(const BlockLayoutContext& context, BindingPathNodeArena& pathArena, const String& name, const StageUsageContext& stageUsage, List<TypeBuildEntry>& typeEntries, ShaderReflectionIR& output, uint32& blockId, String& error)
+		{
+			slang::TypeLayoutReflection* elementTypeLayout = context.ElementTypeLayout;
+			if (elementTypeLayout == nullptr)
+			{
+				error = SE_TEXT("Shader parameter block element layout is null.");
 				return false;
 			}
 			const uint32 elementTypeId = BuildType(elementTypeLayout, typeEntries, output, error);
@@ -540,18 +1025,22 @@ namespace SE
 				return false;
 			}
 			const SlangInt bindingRangeCount = elementTypeLayout->getBindingRangeCount();
-			if (bindingRangeCount < 0 || static_cast<uint32>(bindingRangeCount) != static_cast<uint32>(output.Types[elementTypeId].ResourceRanges.Count()))
+			const int32 elementEntryIndex = FindTypeEntry(typeEntries, elementTypeLayout);
+			if (bindingRangeCount < 0 || bindingRangeCount > Max_int32 || elementEntryIndex < 0 ||
+				typeEntries[elementEntryIndex].LogicalRanges.Count() != output.Types[elementTypeId].ResourceRanges.Count())
 			{
-				error = SE_TEXT("Slang binding range count does not match the logical resource range graph.");
+				error = SE_TEXT("Slang binding ranges do not match the logical resource range graph.");
 				return false;
 			}
+			// Copy the builder-only map because recursive block construction may grow the type-entry array.
+			const List<LogicalBindingRangeMap> logicalMappings = typeEntries[elementEntryIndex].LogicalRanges;
 
 			ShaderIRParameterBlock block;
 			block.Id = static_cast<uint32>(output.ParameterBlocks.Count());
 			block.Name = name;
 			block.ElementTypeId = elementTypeId;
 			block.UniformByteSize = static_cast<uint32>(elementTypeLayout->getSize(slang::ParameterCategory::Uniform));
-			if (!BuildDefaultUniformBuffer(containerTypeLayout, block.UniformByteSize, stageUsage, block, error))
+			if (!BuildDefaultUniformBuffer(context, block.UniformByteSize, stageUsage, block, error))
 			{
 				return false;
 			}
@@ -575,26 +1064,47 @@ namespace SE
 				subObjectByBindingRange[static_cast<int32>(bindingRangeIndex)] = static_cast<int32>(subObjectRangeIndex);
 			}
 
-			for (SlangInt rangeIndex = 0; rangeIndex < bindingRangeCount; rangeIndex++)
+			for (int32 logicalRangeIndex = 0; logicalRangeIndex < logicalMappings.Count(); logicalRangeIndex++)
 			{
-				const slang::BindingType bindingType = elementTypeLayout->getBindingRangeType(rangeIndex);
+				const LogicalBindingRangeMap& mapping = logicalMappings[logicalRangeIndex];
+				const uint32 primaryRangeIndex = mapping.PrimaryRangeIndex;
+				const slang::BindingType bindingType = elementTypeLayout->getBindingRangeType(primaryRangeIndex);
 				const bool isBlock = bindingType == slang::BindingType::ConstantBuffer || bindingType == slang::BindingType::ParameterBlock;
 				ShaderIRRangeBinding binding;
-				binding.RangeIndex = static_cast<uint32>(rangeIndex);
+				binding.RangeIndex = static_cast<uint32>(logicalRangeIndex);
 				if (isBlock)
 				{
 					uint32 blockCount;
-					const int32 subObjectRangeIndex = subObjectByBindingRange[static_cast<int32>(rangeIndex)];
-					slang::TypeLayoutReflection* childContainerTypeLayout = elementTypeLayout->getBindingRangeLeafTypeLayout(rangeIndex);
-					if (!ReadFiniteUint32(elementTypeLayout->getBindingRangeBindingCount(rangeIndex), blockCount, error) || blockCount != 1 || subObjectRangeIndex < 0 || childContainerTypeLayout == nullptr || childContainerTypeLayout->getElementTypeLayout() == nullptr)
+					const int32 subObjectRangeIndex = subObjectByBindingRange[primaryRangeIndex];
+					slang::TypeLayoutReflection* childContainerTypeLayout = elementTypeLayout->getBindingRangeLeafTypeLayout(primaryRangeIndex);
+					slang::VariableLayoutReflection* childElementOffsetLayout = childContainerTypeLayout != nullptr ? childContainerTypeLayout->getElementVarLayout() : nullptr;
+					if (mapping.CounterRangeIndex >= 0 ||
+						!ReadFiniteUint32(elementTypeLayout->getBindingRangeBindingCount(primaryRangeIndex), blockCount, error) || blockCount != 1 || subObjectRangeIndex < 0 || childContainerTypeLayout == nullptr || childElementOffsetLayout == nullptr || childElementOffsetLayout->getTypeLayout() == nullptr)
 					{
 						error = SE_TEXT("ConstantBuffer or ParameterBlock binding range must have one sub-object instance.");
 						return false;
 					}
+
+					slang::VariableLayoutReflection* subObjectOffsetLayout = elementTypeLayout->getSubObjectRangeOffset(subObjectRangeIndex);
+					uint32 ignoredSpaceOffset;
+					if (!ReadFiniteUint32(elementTypeLayout->getSubObjectRangeSpaceOffset(subObjectRangeIndex), ignoredSpaceOffset, error))
+					{
+						return false;
+					}
+					BindingPath childOccurrencePath;
+					if (!AppendBindingPath(context.ElementPath, subObjectOffsetLayout, pathArena, childOccurrencePath, error))
+					{
+						return false;
+					}
+					BlockLayoutContext childContext;
+					if (!EnterSingleElementContainer(childOccurrencePath, childContainerTypeLayout, pathArena, childContext, error))
+					{
+						return false;
+					}
 					uint32 subBlockId;
-					slang::VariableReflection* leafVariable = elementTypeLayout->getBindingRangeLeafVariable(rangeIndex);
-					const String childName = leafVariable != nullptr ? String(leafVariable->getName()) : String::Format(SE_TEXT("$block{0}"), rangeIndex);
-					if (!BuildParameterBlock(childContainerTypeLayout, childContainerTypeLayout->getElementTypeLayout(), childName, stageUsage, typeEntries, output, subBlockId, error))
+					slang::VariableReflection* leafVariable = elementTypeLayout->getBindingRangeLeafVariable(primaryRangeIndex);
+					const String childName = leafVariable != nullptr ? String(leafVariable->getName()) : String::Format(SE_TEXT("$block{0}"), logicalRangeIndex);
+					if (!BuildParameterBlock(childContext, pathArena, childName, stageUsage, typeEntries, output, subBlockId, error))
 					{
 						return false;
 					}
@@ -603,28 +1113,38 @@ namespace SE
 				}
 				else
 				{
-					const SlangInt descriptorSetIndex = elementTypeLayout->getBindingRangeDescriptorSetIndex(rangeIndex);
-					const SlangInt firstDescriptorRangeIndex = elementTypeLayout->getBindingRangeFirstDescriptorRangeIndex(rangeIndex);
-					const SlangInt descriptorRangeCount = elementTypeLayout->getBindingRangeDescriptorRangeCount(rangeIndex);
-					if (descriptorSetIndex < 0 || descriptorSetIndex >= elementTypeLayout->getDescriptorSetCount() || firstDescriptorRangeIndex < 0 || descriptorRangeCount <= 0 || firstDescriptorRangeIndex + descriptorRangeCount > elementTypeLayout->getDescriptorSetDescriptorRangeCount(descriptorSetIndex))
+					const ShaderIRResourceRange& logicalRange =
+						output.Types[elementTypeId].ResourceRanges[logicalRangeIndex];
+					ShaderIRDescriptorRange primaryDescriptor;
+					if (!BuildSimpleDescriptor(elementTypeLayout, context.ElementPath, primaryRangeIndex,
+						SE_TEXT("primary"), logicalRange.Count, stageUsage, primaryDescriptor, error))
 					{
-						error = SE_TEXT("Simple binding range has no descriptor range mapping.");
 						return false;
 					}
 					binding.Flavor = SE_TEXT("simple");
-					for (SlangInt descriptorOffset = 0; descriptorOffset < descriptorRangeCount; descriptorOffset++)
+					binding.DescriptorRanges.Add(primaryDescriptor);
+
+					if (mapping.CounterRangeIndex >= 0)
 					{
-						ShaderIRDescriptorRange descriptor;
-						if (!BuildDescriptorRange(elementTypeLayout, descriptorSetIndex, firstDescriptorRangeIndex + descriptorOffset, SE_TEXT("primary"), stageUsage, descriptor, error))
+						ShaderIRDescriptorRange counterDescriptor;
+						if (!BuildSimpleDescriptor(elementTypeLayout, context.ElementPath,
+							static_cast<uint32>(mapping.CounterRangeIndex), SE_TEXT("counter"),
+							logicalRange.Count, stageUsage, counterDescriptor, error))
 						{
 							return false;
 						}
-						if (descriptor.DescriptorCount != output.Types[elementTypeId].ResourceRanges[static_cast<int32>(rangeIndex)].Count)
+						if (primaryDescriptor.StageMask != counterDescriptor.StageMask)
 						{
-							error = SE_TEXT("Descriptor count does not match the logical resource range count.");
+							error = SE_TEXT("Primary and counter descriptors must have identical stage usage.");
 							return false;
 						}
-						binding.DescriptorRanges.Add(descriptor);
+						if (counterDescriptor.DescriptorType != SE_TEXT("RawBuffer") &&
+							counterDescriptor.DescriptorType != SE_TEXT("StorageBuffer"))
+						{
+							error = SE_TEXT("Structured buffer counter must use a storage-buffer descriptor.");
+							return false;
+						}
+						binding.DescriptorRanges.Add(counterDescriptor);
 					}
 				}
 				output.ParameterBlocks[blockId].RangeBindings.Add(binding);
@@ -656,7 +1176,7 @@ namespace SE
 			{
 				error = SE_TEXT("Pruned type activity does not match the source resource range graph.");
 				return false;
-		}
+			}
 
 			ShaderIRTypeRecord record;
 			record.Kind = sourceRecord.Kind;
@@ -719,35 +1239,17 @@ namespace SE
 				}
 				const ShaderIRTypeRecord& sourceElementType = source.Types[sourceRecord.ElementTypeId];
 				const int32 elementRangeCount = sourceElementType.ResourceRanges.Count();
-				if (activity.Count() != elementRangeCount * static_cast<int32>(sourceRecord.ElementCount))
+				if (activity.Count() != elementRangeCount || subBlockElementTypes.Count() != elementRangeCount)
 				{
 					error = SE_TEXT("Pruned array activity does not match the source element range graph.");
 					return false;
 				}
-				List<byte> elementActivity;
-				List<uint32> elementSubBlockElementTypes;
-				elementActivity.Resize(elementRangeCount);
-				elementSubBlockElementTypes.Resize(elementRangeCount);
-				for (int32 rangeIndex = 0; rangeIndex < elementRangeCount; rangeIndex++)
-				{
-					elementActivity[rangeIndex] = activity[rangeIndex];
-					elementSubBlockElementTypes[rangeIndex] = subBlockElementTypes[rangeIndex];
-				}
-				for (uint32 elementIndex = 1; elementIndex < sourceRecord.ElementCount; elementIndex++)
-				{
-					for (int32 rangeIndex = 0; rangeIndex < elementRangeCount; rangeIndex++)
-					{
-						const int32 sourceRangeIndex = static_cast<int32>(elementIndex) * elementRangeCount + rangeIndex;
-						if (activity[sourceRangeIndex] != elementActivity[rangeIndex] || subBlockElementTypes[sourceRangeIndex] != elementSubBlockElementTypes[rangeIndex])
-						{
-							error = SE_TEXT("Pruned resource array has inconsistent element activity.");
-							return false;
-						}
-					}
-				}
+				// Activity is tracked per logical resource range; the range count itself carries the array length.
 				uint32 elementTypeId;
 				bool elementHasContent;
-				if (!ClonePrunedType(source, sourceRecord.ElementTypeId, elementActivity, elementSubBlockElementTypes, keepUniformData, false, output, elementTypeId, elementHasContent, error))
+				if (!ClonePrunedType(
+					source, sourceRecord.ElementTypeId, activity, subBlockElementTypes, keepUniformData, false,
+					output, elementTypeId, elementHasContent, error))
 				{
 					return false;
 				}
@@ -777,14 +1279,22 @@ namespace SE
 			}
 			else
 			{
+				List<int32> rangeRemap;
+				rangeRemap.Resize(sourceRecord.ResourceRanges.Count());
+				for (int32 rangeIndex = 0; rangeIndex < rangeRemap.Count(); rangeIndex++)
+				{
+					rangeRemap[rangeIndex] = -1;
+				}
 				for (int32 rangeIndex = 0; rangeIndex < sourceRecord.ResourceRanges.Count(); rangeIndex++)
 				{
 					if (activity[rangeIndex] != 0)
 					{
 						const ShaderIRResourceRange& sourceRange = sourceRecord.ResourceRanges[rangeIndex];
-						AddResourceRange(record, sourceRange.ResourceKind, sourceRange.Count);
+						rangeRemap[rangeIndex] = record.ResourceRanges.Count();
+						record.ResourceRanges.Add(sourceRange);
 					}
 				}
+				RecomputeResourceRangeBases(record);
 			}
 
 			hasContent = record.UniformByteSize != 0 || record.ResourceRanges.Count() != 0 || record.Members.Count() != 0;
@@ -933,11 +1443,11 @@ namespace SE
 		slang::ProgramLayout* layout,
 		ShaderReflectionIR& output,
 		String& error)
-		{
-			output = ShaderReflectionIR();
+	{
+		output = ShaderReflectionIR();
 
 		if (layout == nullptr)
-			{
+		{
 			error = SE_TEXT("Slang ProgramLayout is null.");
 			return false;
 		}
@@ -964,16 +1474,41 @@ namespace SE
 			return false;
 		}
 
-		// 以 Slang 全局参数布局作为反射根。后续所有 ConstantBuffer/ParameterBlock
-		// 都由 binding range → sub-object range 的显式关系递归创建。
+		// 根 occurrence 也必须进入 BindingPath；否则顶层显式 space/set 会在递归前丢失。
 		ShaderReflectionIR source;
 		List<TypeBuildEntry> typeEntries;
-		if (!BuildParameterBlock(rootVarLayout->getTypeLayout(), rootVarLayout->getTypeLayout(), SE_TEXT("$root"), stageUsage, typeEntries, source, source.RootBlockId, error))
+		BindingPathNodeArena pathArena;
+		BindingPath rootOccurrencePath;
+		BindingPath emptyPath;
+		if (!AppendBindingPath(emptyPath, rootVarLayout, pathArena, rootOccurrencePath, error))
+		{
+			return false;
+		}
+		BlockLayoutContext rootContext;
+		slang::TypeLayoutReflection* rootTypeLayout = rootVarLayout->getTypeLayout();
+		if (rootTypeLayout->getKind() == slang::TypeReflection::Kind::ConstantBuffer || rootTypeLayout->getKind() == slang::TypeReflection::Kind::ParameterBlock)
+		{
+			if (!EnterSingleElementContainer(rootOccurrencePath, rootTypeLayout, pathArena, rootContext, error))
+			{
+				return false;
+			}
+		}
+		else
+		{
+			rootContext.ElementTypeLayout = rootTypeLayout;
+			rootContext.ElementPath = rootOccurrencePath;
+		}
+		if (!BuildParameterBlock(rootContext, pathArena, SE_TEXT("$root"), stageUsage, typeEntries, source, source.RootBlockId, error))
 		{
 			output = ShaderReflectionIR();
 			return false;
 		}
 		if (!BuildPrunedParameterBlock(source, source.RootBlockId, true, output, output.RootBlockId, error))
+		{
+			output = ShaderReflectionIR();
+			return false;
+		}
+		if (!ValidateShaderPhysicalDescriptorLayout(output, error))
 		{
 			output = ShaderReflectionIR();
 			return false;

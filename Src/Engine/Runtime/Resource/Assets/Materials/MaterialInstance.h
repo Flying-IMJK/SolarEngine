@@ -51,6 +51,7 @@ namespace SE
     public:
         // [MaterialBase]
         bool IsMaterialInstance() const override;
+        MaterialShader* GetMaterialShaderObject() const override;
 #if SE_EDITOR
         void GetReferences(List<UID>& output) const override;
 #endif

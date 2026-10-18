@@ -23,8 +23,6 @@ namespace SE
 		String ResourceKind;
 		uint32 Count = 0;
 		uint32 BaseIndex = 0;
-		String InternalRole;
-		uint32 OwnerRangeOffset = 0;
 	};
 
 	// 后端无关的类型记录，用于运行时按名称路径重建 Shader 参数树。
@@ -83,7 +81,7 @@ namespace SE
 	// SLC2 中保存的运行时反射输入；运行时只读取该 IR。
 	struct SE_API_RUNTIME ShaderReflectionIR
 	{
-		uint32 Schema = 2;
+		uint32 Schema = 3;
 		uint32 RootBlockId = 0;
 		String PipelineLayoutFingerprint;
 		List<ShaderIRTypeRecord> Types;
@@ -91,6 +89,7 @@ namespace SE
 	};
 
 	// 不依赖 Slang/Vulkan 的规范物理布局身份。Builder、Reader 与运行时均使用这一入口。
+	SE_API_RUNTIME bool ValidateShaderPhysicalDescriptorLayout(const ShaderReflectionIR& layout, String& error);
 	SE_API_RUNTIME String BuildPipelineLayoutFingerprint(const ShaderReflectionIR& layout);
 	SE_API_RUNTIME String ComputeSHA256Hex(const byte* data, int32 length);
 }

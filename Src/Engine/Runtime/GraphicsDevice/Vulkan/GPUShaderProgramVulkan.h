@@ -174,14 +174,28 @@ namespace SE
     class SLC2ComputePipelineStateVulkan;
     class SLC2GraphicsPipelineStateVulkan;
 
-    // SLC2 反射 range 到 Vulkan descriptor 写入位置的映射。
-    // 同一个结构同时覆盖显式资源和 defaultUniformBuffer 对应的 uniform 数据。
+    enum class SLC2VulkanDescriptorTarget : byte
+    {
+        Resource,
+        UniformBlock,
+    };
+
+    enum class SLC2VulkanResourceRole : byte
+    {
+        Primary,
+        Counter,
+    };
+
+    // Program 初始化时把反射坐标解析为 dense runtime index。提交阶段不再接触 Block/Range/Resource 坐标。
     struct SLC2VulkanDescriptorBinding
     {
-        uint32           BlockId              = 0;
-        uint32           RangeIndex           = 0;
-        uint32           ResourceIndex        = 0;
-        bool             IsUniformData        = false;
+        SLC2VulkanDescriptorTarget Target      = SLC2VulkanDescriptorTarget::Resource;
+        // Resource bindings always start from the frozen parent logical slot. Counter selects
+        // the auxiliary buffer owned by that parent instead of caching a child resource pointer.
+        SLC2VulkanResourceRole ResourceRole    = SLC2VulkanResourceRole::Primary;
+        uint32           ResourceSlotIndex     = Max_uint32;
+        uint32           UniformBlockIndex    = Max_uint32;
+        uint32           UniformByteSize      = 0;
         uint32           Set                  = 0;
         uint32           Binding              = 0;
         uint32           ArrayElement         = 0;

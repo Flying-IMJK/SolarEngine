@@ -227,7 +227,7 @@ LoadAndCreate(slc2Data, selection, bindings):
       <div><strong>编译独立闭环</strong>P0-P3 必须能在没有运行时 Program、Vulkan 设备和 descriptor writer 的情况下完成测试；其验收产物是完整 SLC2 和语义 manifest。</div>
       <div><strong>事务粒度</strong>一个请求只返回完整 SLC2 或失败；任何 Program/Target/Variant/Stage 失败都没有部分数据。</div>
       <div><strong>Program Layout</strong>同一 Variant 的全部 Stage 联合链接并共享一份 IR 和 Pipeline Layout。</div>
-      <div><strong>运行时绑定</strong>按名称和固定数组下标定位逻辑资源，再经 range mapping 写入 1～N 个 Vulkan descriptor。</div>
+      <div><strong>运行时绑定</strong>按名称和固定数组下标定位逻辑资源，再经预计算 primary mapping 写入 Vulkan descriptor；附属 counter 不进入 SLC2 槽位。</div>
       <div><strong>资源缺失</strong>提交前报错并中止 Draw/Dispatch；不声明 optional、不自动补默认资源。</div>
       <div><strong>首个纵向切片</strong>Vulkan Compute：Texture/Buffer/Sampler 名称绑定和 validation layer 零错误。</div>
       <div><strong>明确后置</strong>Cook/发布、DependencyIndex、默认资源、动态 specialization、Push Constant、无界 descriptor 和 runtime lifecycle 优化。</div>

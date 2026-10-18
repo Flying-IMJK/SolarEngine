@@ -44,7 +44,7 @@ namespace SE
 	{
 		if (Sampler != VK_NULL_HANDLE)
 		{
-
+			m_Device->deferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Sampler, Sampler);
 			Sampler = VK_NULL_HANDLE;
 		}
 

@@ -2,7 +2,7 @@
 #include "PostProcessSettings.h"
 #include "RenderDrawCall.h"
 #include "RenderEnum.h"
-#include "Runtime/Core/Math/Half.h"
+#include "Assets/Geometry/StaticMeshVertexFactory.h"
 #include "Utils/RendererAllocation.hpp"
 #include "Utils/RenderListBuffer.hpp"
 
@@ -50,20 +50,6 @@ namespace SE
         Float4 CascadeSplits;
         Matrix ShadowVP[6];
         });
-
-    /// <summary>
-    /// Represents data per instance element used for instanced rendering.
-    /// </summary>
-    GES_PACK_STRUCT(struct SE_API_RUNTIME InstanceData
-    {
-        Float3 InstanceOrigin;
-        float PerInstanceRandom;
-        Float3 InstanceTransform1;
-        float LODDitherFactor;
-        Float3 InstanceTransform2;
-        Float3 InstanceTransform3;
-        Half4 InstanceLightmapArea;
-    });
 
     struct RendererDirectionalLightData
     {
@@ -278,7 +264,7 @@ namespace SE
     struct BatchedDrawCall
     {
         DrawCall DrawCall;
-        List<InstanceData, RendererAllocation> Instances;
+        List<StaticMeshInstanceData, RendererAllocation> Instances;
     };
 
 
@@ -619,7 +605,7 @@ namespace SE
     {
         static void GetHash(const DrawCall& drawCall, uint32& batchKey);
         static bool CanBatch(const DrawCall& a, const DrawCall& b);
-        static void WriteDrawCall(InstanceData* instanceData, const DrawCall& drawCall);
+        static void WriteDrawCall(StaticMeshInstanceData* instanceData, const DrawCall& drawCall);
     };
 
 }// SE

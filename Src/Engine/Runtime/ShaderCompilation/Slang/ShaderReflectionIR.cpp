@@ -81,6 +81,97 @@ namespace SE
 			}
 			text += SE_TEXT("\n");
 		}
+
+		uint64 GetDescriptorLayoutCount(const ShaderIRDescriptorRange& range)
+		{
+			return static_cast<uint64>(range.ArrayElementBase) + static_cast<uint64>(range.DescriptorCount - 1) * range.LogicalElementStride + 1;
+		}
+
+		bool DescriptorRangeContains(const ShaderIRDescriptorRange& range, const uint64 element)
+		{
+			if (element < range.ArrayElementBase)
+			{
+				return false;
+			}
+			const uint64 distance = element - range.ArrayElementBase;
+			return distance % range.LogicalElementStride == 0 && distance / range.LogicalElementStride < range.DescriptorCount;
+		}
+
+		bool DescriptorRangesOverlap(const ShaderIRDescriptorRange& left, const ShaderIRDescriptorRange& right)
+		{
+			// 只枚举较短的等差序列，再用步进关系判断另一范围是否包含该物理元素。
+			// 这样大型 descriptor 数组不会退化为两个数组元素数的乘积。
+			const ShaderIRDescriptorRange& shorter = left.DescriptorCount <= right.DescriptorCount ? left : right;
+			const ShaderIRDescriptorRange& longer = left.DescriptorCount <= right.DescriptorCount ? right : left;
+			for (uint32 index = 0; index < shorter.DescriptorCount; index++)
+			{
+				const uint64 element = static_cast<uint64>(shorter.ArrayElementBase) + static_cast<uint64>(index) * shorter.LogicalElementStride;
+				if (DescriptorRangeContains(longer, element))
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+
+	bool ValidateShaderPhysicalDescriptorLayout(const ShaderReflectionIR& layout, String& error)
+	{
+		error.Clear();
+		// 将所有 block 的物理 descriptor 展平后统一检查；逻辑 block 所有权不能掩盖物理冲突。
+		List<const ShaderIRDescriptorRange*> descriptors;
+		for (int32 blockIndex = 0; blockIndex < layout.ParameterBlocks.Count(); blockIndex++)
+		{
+			const ShaderIRParameterBlock& block = layout.ParameterBlocks[blockIndex];
+			if (block.HasDefaultUniformBuffer)
+			{
+				const ShaderIRDescriptorRange& uniform = block.DefaultUniformBuffer;
+				if (uniform.Role != SE_TEXT("uniformData") || uniform.DescriptorType != SE_TEXT("ConstantBuffer") || uniform.DescriptorCount != 1 || uniform.ArrayElementBase != 0 || uniform.LogicalElementStride != 1)
+				{
+					error = SE_TEXT("Shader default uniform buffer descriptor shape is invalid.");
+					return false;
+				}
+				descriptors.Add(&uniform);
+			}
+			for (int32 bindingIndex = 0; bindingIndex < block.RangeBindings.Count(); bindingIndex++)
+			{
+				const ShaderIRRangeBinding& binding = block.RangeBindings[bindingIndex];
+				for (int32 descriptorIndex = 0; descriptorIndex < binding.DescriptorRanges.Count(); descriptorIndex++)
+				{
+					descriptors.Add(&binding.DescriptorRanges[descriptorIndex]);
+				}
+			}
+		}
+
+		for (int32 descriptorIndex = 0; descriptorIndex < descriptors.Count(); descriptorIndex++)
+		{
+			const ShaderIRDescriptorRange& descriptor = *descriptors[descriptorIndex];
+			const uint64 layoutCount = descriptor.DescriptorCount != 0 && descriptor.LogicalElementStride != 0 ? GetDescriptorLayoutCount(descriptor) : 0;
+			if (descriptor.Role.IsEmpty() || descriptor.DescriptorType.IsEmpty() || descriptor.StageMask.IsEmpty() || descriptor.DescriptorCount == 0 || descriptor.LogicalElementStride == 0 || layoutCount > Max_uint32)
+			{
+				error = SE_TEXT("Shader physical descriptor range is invalid.");
+				return false;
+			}
+			for (int32 previousIndex = 0; previousIndex < descriptorIndex; previousIndex++)
+			{
+				const ShaderIRDescriptorRange& previous = *descriptors[previousIndex];
+				if (previous.Set != descriptor.Set || previous.Binding != descriptor.Binding)
+				{
+					continue;
+				}
+				if (previous.DescriptorType != descriptor.DescriptorType || GetDescriptorLayoutCount(previous) != layoutCount)
+				{
+					error = SE_TEXT("Shader descriptor ranges use incompatible layouts at the same set and binding.");
+					return false;
+				}
+				if (DescriptorRangesOverlap(previous, descriptor))
+				{
+					error = SE_TEXT("Shader descriptor ranges have multiple logical owners for the same physical element.");
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 
 	String ComputeSHA256Hex(const byte* data, const int32 length)

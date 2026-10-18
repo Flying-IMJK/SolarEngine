@@ -1,5 +1,6 @@
 #include "StaticMeshVertexFactory.h"
 
+#include "Runtime/Core/Math/Vector4.h"
 #include "MeshDataLayout.h"
 #include "Runtime/Core/Platform/Compiler.h"
 
@@ -20,6 +21,15 @@ namespace SE
 	static_assert(sizeof(VB2ElementType) == sizeof(Color32));
 	static_assert(OFFSET_OF(VB2ElementType, Color) == 0);
 	static_assert(sizeof(Color32) == PixelFormatGetSizeInBytes(PixelFormat::R8G8B8A8_UNorm));
+
+	static_assert(OFFSET_OF(StaticMeshInstanceData, InstanceOrigin) == 0);
+	static_assert(OFFSET_OF(StaticMeshInstanceData, PerInstanceRandom) == sizeof(Float3));
+	static_assert(OFFSET_OF(StaticMeshInstanceData, InstanceTransform1) == sizeof(Float4));
+	static_assert(OFFSET_OF(StaticMeshInstanceData, LODDitherFactor) == sizeof(Float4) + sizeof(Float3));
+	static_assert(OFFSET_OF(StaticMeshInstanceData, InstanceTransform2) == sizeof(Float4) * 2);
+	static_assert(OFFSET_OF(StaticMeshInstanceData, InstanceTransform3) == sizeof(Float4) * 2 + sizeof(Float3));
+	static_assert(OFFSET_OF(StaticMeshInstanceData, InstanceLightmapArea) == sizeof(Float4) * 2 + sizeof(Float3) * 2);
+	static_assert(sizeof(StaticMeshInstanceData) == sizeof(Float4) * 2 + sizeof(Float3) * 2 + sizeof(Half4));
 
 	const VertexFactoryLayout& StaticMeshVertexFactory::GetLayout()
 	{
@@ -63,12 +73,48 @@ namespace SE
 		return geometry;
 	}
 
+	bool StaticMeshVertexFactory::CreateRenderGeometryWithInstanceBuffer(
+		const RenderGeometry& baseGeometry,
+		GPUBuffer* instanceBuffer,
+		const uint32 instanceBufferOffset,
+		RenderGeometry& output)
+	{
+		if (baseGeometry.Layout != &GetLayout())
+		{
+			LOG_ERROR("Graphics", "StaticMesh instance geometry requires the shared StaticMesh VertexFactory layout.");
+			return false;
+		}
+		if (instanceBuffer == nullptr)
+		{
+			LOG_ERROR("Graphics", "StaticMesh instance geometry requires an instance buffer at slot {0}.", InstanceSlot);
+			return false;
+		}
+		if ((instanceBufferOffset % sizeof(StaticMeshInstanceData)) != 0)
+		{
+			LOG_ERROR("Graphics", "StaticMesh instance buffer offset {0} is not aligned to instance stride {1}.",
+				instanceBufferOffset, sizeof(StaticMeshInstanceData));
+			return false;
+		}
+		if (baseGeometry.FindVertexBuffer(InstanceSlot) != nullptr)
+		{
+			LOG_ERROR("Graphics", "StaticMesh base geometry already contains instance slot {0}.", InstanceSlot);
+			return false;
+		}
+
+		// RenderGeometry 是通用值类型；实例批次只复制并附加一个显式 Slot。
+		RenderGeometry candidate = baseGeometry;
+		candidate.VertexBuffers.Add({InstanceSlot, instanceBuffer, instanceBufferOffset});
+		output = MoveTemp(candidate);
+		return true;
+	}
+
 	VertexFactoryLayout StaticMeshVertexFactory::CreateLayout()
 	{
 		const List<VertexFactoryBufferBinding> bindings = {
 			{PositionSlot, sizeof(VB0ElementType), VertexFactoryInputRate::PerVertex, 0},
 			{AttributesSlot, sizeof(VB1ElementType), VertexFactoryInputRate::PerVertex, 0},
 			{ColorSlot, sizeof(VB2ElementType), VertexFactoryInputRate::PerVertex, 0},
+			{InstanceSlot, sizeof(StaticMeshInstanceData), VertexFactoryInputRate::PerInstance, 1},
 		};
 		const List<VertexFactoryInputElement> elements = {
 			{SE_TEXT("POSITION"), 0, PixelFormat::R32G32B32_Float, PositionSlot, OFFSET_OF(VB0ElementType, Position)},
@@ -77,6 +123,11 @@ namespace SE
 			{SE_TEXT("TANGENT"), 0, PixelFormat::R10G10B10A2_UNorm, AttributesSlot, OFFSET_OF(VB1ElementType, Tangent)},
 			{SE_TEXT("TEXCOORD"), 1, PixelFormat::R16G16_Float, AttributesSlot, OFFSET_OF(VB1ElementType, LightmapUVs)},
 			{SE_TEXT("COLOR"), 0, PixelFormat::R8G8B8A8_UNorm, ColorSlot, OFFSET_OF(VB2ElementType, Color)},
+			{SE_TEXT("ATTRIBUTE"), 0, PixelFormat::R32G32B32A32_Float, InstanceSlot, OFFSET_OF(StaticMeshInstanceData, InstanceOrigin)},
+			{SE_TEXT("ATTRIBUTE"), 1, PixelFormat::R32G32B32A32_Float, InstanceSlot, OFFSET_OF(StaticMeshInstanceData, InstanceTransform1)},
+			{SE_TEXT("ATTRIBUTE"), 2, PixelFormat::R32G32B32_Float, InstanceSlot, OFFSET_OF(StaticMeshInstanceData, InstanceTransform2)},
+			{SE_TEXT("ATTRIBUTE"), 3, PixelFormat::R32G32B32_Float, InstanceSlot, OFFSET_OF(StaticMeshInstanceData, InstanceTransform3)},
+			{SE_TEXT("ATTRIBUTE"), 4, PixelFormat::R16G16B16A16_Float, InstanceSlot, OFFSET_OF(StaticMeshInstanceData, InstanceLightmapArea)},
 		};
 
 		VertexFactoryLayout layout;
@@ -99,6 +150,8 @@ namespace SE
 			return AttributesSlot;
 		case StaticMeshVertexStream::Color:
 			return ColorSlot;
+		case StaticMeshVertexStream::Instance:
+			return InstanceSlot;
 		default:
 			ENGINE_ASSERT(false);
 			return PositionSlot;

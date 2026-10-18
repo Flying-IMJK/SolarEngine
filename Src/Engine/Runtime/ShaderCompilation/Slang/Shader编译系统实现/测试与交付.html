@@ -81,7 +81,7 @@
       </div>
       <div class="phase-card">
         <strong>P7 · 完整已设计能力</strong>
-        ordinary uniform 字段、显式 ConstantBuffer/ParameterBlock、UAV、嵌套 struct/数组和辅助 counter。
+        ordinary uniform 字段、显式 ConstantBuffer/ParameterBlock、UAV、嵌套 struct/数组；Append/Consume 父 Buffer 与附属 counter physical binding。
         <div class="exit">退出：所有已支持 Type/Range 分支均有 GPU 功能测试和负向边界测试。</div>
       </div>
       <div class="phase-card">
@@ -317,7 +317,7 @@ RunSemanticSmoke():
         <tr><td>ConstantBuffer/ParameterBlock</td><td>容器 Type Record 含 count=1 logical range；具体 block 实例独立、元素 type 可共享、SubBlock 映射唯一。</td></tr>
         <tr><td>Sub-object 精确配对</td><td>每个块 binding range 恰好一个 sub-object range；StructuredBuffer simple range 恰好一个仅校验的 shader-object sub-object，其余 simple range 为零个；缺失、重复或错误 BindingRangeIndex 均失败。</td></tr>
         <tr><td>BindingPath 非法值</td><td>负数、unknown/unbounded offset、deepest 不在链中、uint64 累加或 uint32 narrow 溢出均在 Builder 失败。</td></tr>
-        <tr><td>显式 UAV counter</td><td>Counter range 的 OwnerRangeOffset 指向同类型主 range 的绝对局部索引，Resource 的正向 RangeOffset 到达同一 counter；count 相等；名称绑定同步更新辅助 range。</td></tr>
+        <tr><td>显式 UAV counter</td><td>Append/Consume 只生成一个 logical range/slot，但该 range 包含 primary + counter 两条 physical descriptors；普通 RW Structured Buffer 绑定到 Append/Consume 参数失败。GPU 正向用例执行 Append 3 次、Consume 1 次，并通过父 Buffer 的 <code>CopyCounter()</code> 读回 2。</td></tr>
         <tr><td>块数组与含块数组闭包</td><td>编译失败。</td></tr>
         <tr><td>无界数组/range</td><td>所有 Target 确定性失败。</td></tr>
         <tr><td>Push Constant</td><td>编译失败，SLC2Data 为空。</td></tr>

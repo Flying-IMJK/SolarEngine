@@ -161,22 +161,26 @@ namespace SE
 		}
 
 		// Check if need to use a counter
-		if (EnumHasAnyFlags(m_Desc.Flags, GPUBufferFlags::Counter) && EnumHasAnyFlags(m_Desc.Flags, GPUBufferFlags::Append))
+		if (EnumHasAnyFlags(m_Desc.Flags, GPUBufferFlags::Counter) || EnumHasAnyFlags(m_Desc.Flags, GPUBufferFlags::Append))
 		{
 #if GPU_ENABLE_RESOURCE_NAMING
 			String name = String(GetName()) + SE_TEXT(".Counter");
 			Counter = ::SE::New<GPUBufferVulkan>(m_Device, name);
 #else
-			Counter = ::SE::New<GPUBufferVulkan>(_device, StringView::Empty);
+			Counter = ::SE::New<GPUBufferVulkan>(m_Device, StringView::Empty);
 #endif
-			if (Counter->Init(GPUBufferDescription::Raw(4, GPUBufferFlags::UnorderedAccess)))
+			const GPUBufferDescription counterDesc = GPUBufferDescription::Buffer(
+				4, GPUBufferFlags::RawBuffer | GPUBufferFlags::UnorderedAccess, PixelFormat::Undefined, nullptr, 4);
+			if (!Counter->Init(counterDesc))
 			{
 				LOG_ERROR("Graphic", "Cannot create counter buffer.");
+				Delete(Counter);
+				Counter = nullptr;
 				return false;
 			}
 		}
-		// Check if need to bind buffer to the shaders
-		else if (useSRV || useUAV)
+		// The owner buffer still needs its primary view when it also owns an auxiliary counter.
+		if (useSRV || useUAV)
 		{
 			// Create buffer view
 			_view.Init(m_Device, this, m_Buffer, m_Desc.Size, bufferInfo.usage, m_Desc.Format);
@@ -190,6 +194,8 @@ namespace SE
 		_view.Release();
 		if (Counter)
 		{
+			// Counter is also registered with GPUDevice; release its backend state here and let the
+			// device/resource ownership path delete the scripting object.
 			Counter->OnReleaseGPU();
 			Counter = nullptr;
 		}

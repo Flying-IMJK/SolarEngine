@@ -39,7 +39,7 @@ namespace SE
             MaterialParameter& param = Params[i];
             MaterialParameter& baseParam = baseParams[i];
 
-            if (param.GetID() != baseParam.GetID() || param.GetParameterType() != baseParam.GetParameterType())
+            if (param.GetParameterID() != baseParam.GetParameterID() || param.GetParameterType() != baseParam.GetParameterType())
             {
                 // Params changed
                 OnBaseParamsChanged();
@@ -59,6 +59,7 @@ namespace SE
 
     void MaterialInstance::OnBaseUnset()
     {
+        ClearSLC2RuntimeCache();
         _baseMaterial->RemoveReference();
         _baseMaterial->OnUnloadedEvent.Unbind<MaterialInstance, &MaterialInstance::OnBaseUnloaded>(this);
         _baseMaterial->ParamsChanged.Unbind<MaterialInstance, &MaterialInstance::OnBaseParamsChanged>(this);
@@ -103,8 +104,10 @@ namespace SE
                 {
                     // Restore value
                     const Variant value = oldParam.GetValue();
-                    param->SetValue(value);
-                    param->SetIsOverride(oldParam.IsOverride());
+                    if (param->TrySetValue(value) == MaterialParameterSetResult::Success)
+                    {
+                        param->SetIsOverride(oldParam.IsOverride());
+                    }
                 }
                 else
                 {
@@ -119,6 +122,11 @@ namespace SE
     bool MaterialInstance::IsMaterialInstance() const
     {
         return true;
+    }
+
+    MaterialShader* MaterialInstance::GetMaterialShaderObject() const
+    {
+        return _baseMaterial != nullptr ? _baseMaterial->GetMaterialShaderObject() : nullptr;
     }
 
 #if SE_EDITOR
@@ -237,6 +245,7 @@ namespace SE
 
     void MaterialInstance::Unload(bool isReloading)
     {
+        ClearSLC2RuntimeCache();
         if (_baseMaterial)
         {
             OnBaseUnset();

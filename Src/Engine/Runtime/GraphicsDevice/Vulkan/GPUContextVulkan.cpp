@@ -353,7 +353,7 @@ namespace SE
 
 		ShaderBindingSnapshot snapshot;
 		// SLC2 graphics 与 compute 一样，先冻结 instance 的可变绑定状态，再交给 Vulkan descriptor 层消费。
-		if (!instance.ValidateAllBindings(snapshot))
+		if (!instance.BuildSnapshot(snapshot))
 		{
 			return false;
 		}
@@ -952,7 +952,7 @@ namespace SE
 	{
 		ShaderBindingSnapshot snapshot;
 		// SLC2 dispatch 不直接读取可变 ParameterBlock；先冻结成快照，再由 Vulkan 后端写 descriptor。
-		if (!instance.ValidateAllBindings(snapshot))
+		if (!instance.BuildSnapshot(snapshot))
 		{
 			return;
 		}
@@ -985,7 +985,16 @@ namespace SE
 		FlushBarriers();
 
 		vkCmdDispatch(cmdBuffer->GetHandle(), threadGroupCountX, threadGroupCountY, threadGroupCountZ);
-		vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 0, nullptr);
+		// Consecutive SLC2 compute passes may reuse UAV primary/counter buffers. Make writes
+		// available before the next dispatch reads or mutates the same storage descriptors.
+		const VkMemoryBarrier memoryBarrier = {
+			VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+			nullptr,
+			VK_ACCESS_SHADER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+		};
+		vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
 	}
 
 	void GPUContextVulkan::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* bufferForArgs, uint32 offsetForArgs)
@@ -1031,7 +1040,7 @@ namespace SE
 
 		ShaderBindingSnapshot snapshot;
 		// indirect 路径与直接 dispatch 使用同一套 SLC2 pipeline/descriptor 绑定流程，只额外绑定参数 buffer。
-		if (!instance.ValidateAllBindings(snapshot))
+		if (!instance.BuildSnapshot(snapshot))
 		{
 			return;
 		}
@@ -1065,8 +1074,14 @@ namespace SE
 		FlushBarriers();
 
 		vkCmdDispatchIndirect(cmdBuffer->GetHandle(), bufferForArgsVulkan->GetHandle(), offsetForArgs);
-		vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr,
-			0, nullptr, 0, nullptr);
+		const VkMemoryBarrier memoryBarrier = {
+			VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+			nullptr,
+			VK_ACCESS_SHADER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+		};
+		vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
 
 		return;
 	}
@@ -1251,6 +1266,26 @@ namespace SE
 			LOG_ERROR("Graphic", "SLC2 indexed draw for program {0} exceeds the prepared index buffer range. LayoutHash={1}.",
 				shaderProgram->GetProgramId(), _renderGeometryLayoutHash);
 			return;
+		}
+
+		const uint64 instanceStart = static_cast<uint64>(startInstance);
+		const uint32 requiredSlotsMask = _currentSLC2GraphicsState->GetRequiredVertexBufferSlotsMask();
+		for (uint32 slot = 0; slot < GPU_MAX_VB_BINDED; slot++)
+		{
+			const uint32 requiredBit = 1u << slot;
+			// 索引决定 PerVertex 元素访问范围，但 PerInstance Slot 仍可在提交前精确校验。
+			if ((requiredSlotsMask & requiredBit) == 0 ||
+				(_renderGeometryPerInstanceSlotsMask & requiredBit) == 0)
+			{
+				continue;
+			}
+
+			const uint64 available = _renderGeometryVertexElementCounts[slot];
+			if (instanceStart > available || static_cast<uint64>(instanceCount) > available - instanceStart)
+			{
+				LOG_ERROR("Graphic", "Indexed draw instance range exceeds vertex buffer slot {0}.", slot);
+				return;
+			}
 		}
 
 		if (!OnSLC2DrawCall(instance))
@@ -1463,10 +1498,12 @@ namespace SE
 			const SLC2GPUShaderProgram* program = pipelineState->GetProgram();
 			for (int32 missingIndex = 0; missingIndex < missingRequiredSlots.Count(); missingIndex++)
 			{
-				LOG_ERROR("Graphic", "RenderGeometry for program {0} with LayoutHash={1} is missing required vertex buffer slot {2}.",
+				const uint32 slot = missingRequiredSlots[missingIndex];
+				LOG_ERROR("Graphic", "RenderGeometry for program {0} with LayoutHash={1} is missing required vertex buffer slot {2} for semantics [{3}].",
 					program != nullptr ? program->GetProgramId() : String::Empty,
 					geometry.Layout->GetHash(),
-					missingRequiredSlots[missingIndex]);
+					slot,
+					pipelineState->GetRequiredVertexBufferSlotSemantics(slot));
 			}
 			return false;
 		}
@@ -1881,7 +1918,8 @@ namespace SE
 		bufferCopy.srcOffset = 0;
 		bufferCopy.dstOffset = dstOffset;
 		bufferCopy.size = 4;
-		vkCmdCopyBuffer(cmdBuffer->GetHandle(), srcBufferVulkan->GetHandle(), dstBufferVulkan->GetHandle(), 1, &bufferCopy);
+		// Counter remains an implementation detail of the parent GPUBufferVulkan.
+		vkCmdCopyBuffer(cmdBuffer->GetHandle(), counter->GetHandle(), dstBufferVulkan->GetHandle(), 1, &bufferCopy);
 	}
 
 	void GPUContextVulkan::CopyResource(GPUResource* dstResource, GPUResource* srcResource)

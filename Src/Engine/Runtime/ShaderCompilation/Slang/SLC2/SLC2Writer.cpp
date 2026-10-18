@@ -170,10 +170,6 @@ namespace SE
 					writer.Uint(range.Count);
 					writer.Key(SE_TEXT("baseIndex"));
 					writer.Uint(range.BaseIndex);
-					writer.Key(SE_TEXT("internalRole"));
-					writer.String(range.InternalRole);
-					writer.Key(SE_TEXT("ownerRangeOffset"));
-					writer.Uint(range.OwnerRangeOffset);
 					writer.EndObject();
 				}
 				writer.EndArray(type.ResourceRanges.Count());

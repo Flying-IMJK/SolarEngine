@@ -30,11 +30,11 @@
       <tbody>
         <tr><td class="path">Graphics/Shaders/SLC2GPUShader.h/.cpp</td><td><code>SLC2GPUShader</code></td><td>不可变 SLC2 Program/Target/Variant 数据和共享 Program 缓存；负责创建独立实例。</td></tr>
         <tr><td class="path">Graphics/Shaders/Reflection/ShaderProgramReflection.h/.cpp</td><td><code>ShaderProgramReflection</code></td><td>从 IR 建立 type/block 索引和物理 Pipeline 描述。</td></tr>
-        <tr><td class="path">Graphics/Shaders/Reflection/ShaderVar.h/.cpp</td><td><code>ShaderVar</code></td><td>绑定到运行时 ParameterBlock 的成员、固定数组、资源与 uniform 访问句柄，不持有 Slang 对象。</td></tr>
+        <tr><td class="path">Graphics/Shaders/Reflection/ShaderVar.h/.cpp</td><td><code>ShaderVar</code></td><td>绑定到运行时统一参数状态的成员、固定数组、资源与 uniform 访问句柄，不持有 Slang 对象。</td></tr>
         <tr><td class="path">Graphics/Shaders/Reflection/ShaderNameResolver.h/.cpp</td><td><code>ShaderNameResolver</code></td><td>解析 <code>a.b[2].c</code>，并缓存规范全名到 ShaderVarLocation。</td></tr>
-        <tr><td class="path">Graphics/Shaders/ShaderParameterBlock.h/.cpp</td><td><code>ShaderParameterBlock</code></td><td>保存一个 blockId 的 uniform bytes、逻辑资源槽和递归子块。</td></tr>
+        <tr><td class="path">Graphics/Shaders/ShaderProgramInstance.h/.cpp</td><td><code>ShaderProgramInstance</code></td><td>统一保存各 blockId 的 uniform bytes、逻辑资源槽和子块关系。</td></tr>
         <tr><td class="path">Graphics/Shaders/ShaderBindingSnapshot.h/.cpp</td><td><code>ShaderBindingSnapshot</code></td><td>绑定验证成功后冻结的逻辑资源与 Uniform Buffer 提交快照。</td></tr>
-        <tr><td class="path">Graphics/Shaders/ShaderProgramInstance.h/.cpp</td><td><code>ShaderProgramInstance</code></td><td>拥有完整 Program 的选择结果、Stage GPU 对象、共享 Reflection 和唯一根参数块。</td></tr>
+        <tr><td class="path">Graphics/Shaders/ShaderProgramInstance.h/.cpp</td><td><code>ShaderProgramInstance</code></td><td>拥有完整 Program 的选择结果、Stage GPU 对象、共享 Reflection 和统一参数状态。</td></tr>
         <tr><td class="path">GraphicsDevice/Vulkan/ShaderProgramLayoutVulkan.h/.cpp</td><td><code>ShaderProgramLayoutVulkan</code></td><td>把规范物理描述转换为 VkDescriptorSetLayout/VkPipelineLayout。</td></tr>
         <tr><td class="path">GraphicsDevice/Vulkan/ShaderDescriptorWriterVulkan.h/.cpp</td><td><code>ShaderDescriptorWriterVulkan</code></td><td>按 range mapping 创建 VkWriteDescriptorSet 并验证完整绑定。</td></tr>
         <tr><td class="path">GraphicsDevice/Vulkan/GPUShaderProgramVulkan.h/.cpp</td><td><code>SLC2ShaderProgramVulkan</code></td><td>持有 SLC2 Program 的 VkShaderModule、descriptor layout 与不可变 Vertex Input State。</td></tr>
@@ -120,10 +120,11 @@ ShaderProgramInstance* CreateProgram(
     const SLC2ShaderProgram* _program;
     const ShaderProgramReflection* _reflection;
     GPUShaderProgram* _stages[ShaderStageCount];
-    ShaderParameterBlock _rootParameters;
+    UniformBlockBindings _uniformBlocks;
+    ResourceBindings _resourceBindings;
     void* _backendLayout; // Vulkan: ShaderProgramLayoutVulkan
 };</code></pre>
-    <p>graphics 的 VS/PS/其他 Stage 与 compute 的 CS 都通过同一类型表示。<code>_reflection</code> 和 <code>_backendLayout</code> 属于完整 Variant，不属于任一 Stage。每个 Instance 都从 rootBlockId 递归创建独立的 ParameterBlock 树；共享的只有不可变 Program/Reflection/后端对象。</p>
+    <p>graphics 的 VS/PS/其他 Stage 与 compute 的 CS 都通过同一类型表示。<code>_reflection</code> 和 <code>_backendLayout</code> 属于完整 Variant，不属于任一 Stage。每个 Instance 都按 Reflection 建立统一的 Uniform Block 与 Resource Binding 状态；共享的只有不可变 Program/Reflection/后端对象。</p>
   </section>
 
   <section>
@@ -253,7 +254,8 @@ ShaderVar ShaderVar::operator[](uint32 index);</code></pre>
     <ul>
       <li>名称 API 先解析路径并从根 ParameterBlock 返回 ShaderVar；ShaderVar 的成员与数组访问不重新解析完整路径，二者都按 Type Record 检查资源大类、shape、access 和数组边界。</li>
       <li>设置 <code>null</code> 等价于未绑定；当前没有 required/optional 策略，也没有默认资源库。</li>
-      <li>一次主资源绑定自动覆盖其 <code>auxiliaryRanges</code> 对应的内部 counter 等物理 mapping；用户不能按内部 role 名直接绑定。</li>
+      <li>逻辑资源只绑定主 Texture/Buffer/Sampler 槽；附属 counter 不暴露为 NamePath 或独立 Setter。</li>
+      <li><code>GPUBuffer</code> 是附属 counter 的父资源和生命周期 owner；Snapshot 只冻结父 Buffer。Append/Consume 的 Binding Plan 为同一个 <code>ResourceSlotIndex</code> 生成 Primary/Counter 两条物理记录，Vulkan 提交时分别解析父 Buffer 的主 view 与 <code>GPUBufferVulkan::Counter-&gt;View()</code>。普通 <code>RWStructuredBuffer</code> 不自动创建 counter。</li>
       <li>固定资源数组支持逐元素绑定；首版不要求“一次传入整段数组”的批量 API。</li>
       <li>Uniform 写入只复制到对应 ParameterBlock 的 CPU byte array；上传到 GPU buffer 的生命周期和 dirty tracking 不在本设计文档中展开。</li>
     </ul>
@@ -291,20 +293,18 @@ ShaderVar ShaderVar::operator[](uint32 index);</code></pre>
     slot.Value = value
     slot.BoundTypeId = location.TypeId
     return Success</code></pre>
-      <p class="pseudo-note">内部 auxiliary range 不暴露名称；提交时从主资源对象派生 counter 等内部 view。</p>
+      <p class="pseudo-note">附属 counter 不进入 SLC2 逻辑槽或 Snapshot；Append/Consume 的能力检查作用于父 Buffer，物理 counter view 由 Vulkan 提交阶段从父对象取得。</p>
     </div>
 
-    <h3 id="runtime-binding-state">ParameterBlock 树与提交快照</h3>
-    <pre><code>ShaderParameterBlock
-  blockId
-  uniformData[uniformByteSize]
-  resources[logicalRange][logicalElement]
-  subBlocks[]                         // block-flavor mapping 的唯一子块
+    <h3 id="runtime-binding-state">统一参数状态与提交快照</h3>
+    <pre><code>ShaderProgramInstance
+  uniformBlocks[blockId]
+  resourceBindings[logicalSlot][logicalElement]
 
 ShaderBindingSnapshot (immutable)
   logicalResources[(blockId, rangeIndex, resourceIndex)]
   uniformBuffers[blockId]</code></pre>
-    <p>每个 Instance 从 rootBlockId 递归构造一棵 ParameterBlock 树。资源状态按逻辑位置保存，不按 Vulkan binding 保存；后端提交时只遍历冻结的 snapshot，并以 rangeBindings 将同一逻辑资源映射到 1～N 个物理 descriptor。</p>
+    <p>每个 Instance 按 rootBlockId 和 Reflection 建立统一状态。资源状态按逻辑位置保存，不按 Vulkan binding 保存；后端提交时只遍历冻结的 snapshot，不执行路径或 counter 搜索。</p>
 
     <h3 id="runtime-binding-validation">提交前完整性</h3>
     <ol>
@@ -318,15 +318,15 @@ ShaderBindingSnapshot (immutable)
     <h3 id="runtime-pseudocode-validate">绑定完整性验证伪代码</h3>
     <div class="pseudo">
       <div class="pseudo-header">
-        <strong>ValidateAllBindings</strong>
+        <strong>BuildSnapshot</strong>
         <small>计划实现 · 在构造任何 VkWriteDescriptorSet 前执行</small>
       </div>
       <div class="pseudo-io">
-        <div><strong>输入</strong>根 ShaderParameterBlock 树 + Reflection</div>
-        <div><strong>不变量</strong>只要求用户可绑定主 range；辅助 range 从所有者派生</div>
+        <div><strong>输入</strong>ShaderProgramInstance 的统一参数状态 + Reflection</div>
+        <div><strong>不变量</strong>只要求用户可绑定主 range；附属 counter 不进入 SLC2 Snapshot</div>
         <div><strong>输出</strong>冻结的 ShaderBindingSnapshot</div>
       </div>
-      <pre><code>ValidateAllBindings():
+      <pre><code>BuildSnapshot():
     snapshot = NewBindingSnapshot()
 
     // Pass 1：只验证逻辑绑定，不分配 GPU 对象、不写 descriptor。
@@ -338,8 +338,6 @@ ShaderBindingSnapshot (immutable)
         FOR rangeIndex, logicalRange IN Enumerate(logicalRanges):
             mapping = block.RangeBindings[rangeIndex]
             CONTINUE_IF(mapping.Flavor != Simple)
-            CONTINUE_IF(logicalRange.InternalRole != null)
-
             FOR resourceIndex IN [0, logicalRange.Count):
                 slot = state.ResourceSlot(rangeIndex, resourceIndex)
                 FAIL_IF(slot.Value == null,
@@ -450,7 +448,7 @@ ShaderBindingSnapshot (immutable)
       + logicalResourceIndex * mapping.logicalElementStride</code></pre>
     <ul>
       <li>资源数组下标只改变 <code>dstArrayElement</code>，绝不加到 binding。</li>
-      <li>SLC2 Schema 2 的 Validator 已保证 <code>arrayElementBase = 0</code>、<code>logicalElementStride = 1</code>、<code>descriptorCount = logical range.count</code>；运行时仍按显式字段计算并断言这些固定值，避免缓存损坏绕过 Reader。</li>
+      <li>SLC2 Schema 3 的 Validator 已保证 <code>arrayElementBase = 0</code>、<code>logicalElementStride = 1</code>、<code>descriptorCount = logical range.count</code>；运行时仍按显式字段计算并断言这些固定值，避免缓存损坏绕过 Reader。</li>
       <li>检查最后可寻址元素小于 descriptorCount；越界表示缓存损坏或 Builder 错误。</li>
       <li>一条逻辑 binding 的全部物理 mapping 在同一提交中更新，防止组合资源只写一半。</li>
       <li>descriptorType 决定写入 imageInfo、bufferInfo 或 texelBufferView；类型分支只有一个权威映射函数。</li>
@@ -602,7 +600,7 @@ CreatePipelineState(desc, backendProgram):
 PrepareAndBind(commandContext, pipelineState):
     REQUIRE(pipelineState.PipelineLayoutFingerprint ==
             _backend.Layout.PipelineLayoutFingerprint)
-    snapshot = TRY(_programInstance.ValidateAllBindings())
+    snapshot = TRY(_programInstance.BuildSnapshot())
     sets = TRY(commandContext.AllocateDescriptorSets(_backend.Layout))
     TRY(_backend.DescriptorWriter.BuildAndCommit(snapshot, sets))
     commandContext.BindPipeline(pipelineState.Pipeline)

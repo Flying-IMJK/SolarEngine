@@ -252,7 +252,7 @@ namespace SE
 			for (auto it = ranges->Begin(); it != ranges->End(); ++it)
 			{
 				ShaderIRResourceRange range;
-				if (!ReadString(*it, "resourceKind", range.ResourceKind, error) || !ReadUint(*it, "count", range.Count, error) || !ReadUint(*it, "baseIndex", range.BaseIndex, error) || !ReadString(*it, "internalRole", range.InternalRole, error) || !ReadUint(*it, "ownerRangeOffset", range.OwnerRangeOffset, error))
+				if (!ReadString(*it, "resourceKind", range.ResourceKind, error) || !ReadUint(*it, "count", range.Count, error) || !ReadUint(*it, "baseIndex", range.BaseIndex, error))
 				{
 					return false;
 				}
@@ -338,6 +338,53 @@ namespace SE
 			return true;
 		}
 
+		const ShaderIRTypeRecord* FindLogicalResourceLeafType(
+			const ShaderReflectionIR& layout,
+			const uint32 typeId,
+			const uint32 rangeIndex)
+		{
+			if (typeId >= static_cast<uint32>(layout.Types.Count()))
+			{
+				return nullptr;
+			}
+
+			const ShaderIRTypeRecord& type = layout.Types[typeId];
+			if (rangeIndex >= static_cast<uint32>(type.ResourceRanges.Count()))
+			{
+				return nullptr;
+			}
+			if (type.Kind != SE_TEXT("Array") && type.Kind != SE_TEXT("Struct"))
+			{
+				// SamplerState and other terminal resource kinds also own one logical range.
+				return rangeIndex == 0 ? &type : nullptr;
+			}
+			if (type.Kind == SE_TEXT("Array"))
+			{
+				// Arrays multiply each logical range count but preserve the element range order.
+				return FindLogicalResourceLeafType(layout, type.ElementTypeId, rangeIndex);
+			}
+			if (type.Kind == SE_TEXT("Struct"))
+			{
+				for (int32 memberIndex = 0; memberIndex < type.Members.Count(); memberIndex++)
+				{
+					const ShaderIRMember& member = type.Members[memberIndex];
+					if (member.TypeId >= static_cast<uint32>(layout.Types.Count()))
+					{
+						return nullptr;
+					}
+					const uint32 memberRangeCount =
+						static_cast<uint32>(layout.Types[member.TypeId].ResourceRanges.Count());
+					if (rangeIndex >= member.ResourceRangeOffset &&
+						rangeIndex - member.ResourceRangeOffset < memberRangeCount)
+					{
+						return FindLogicalResourceLeafType(
+							layout, member.TypeId, rangeIndex - member.ResourceRangeOffset);
+					}
+				}
+			}
+			return nullptr;
+		}
+
 		bool ValidateBlockTree(const ShaderReflectionIR& layout, const uint32 blockId, List<byte>& visitState, String& error)
 		{
 			if (blockId >= static_cast<uint32>(layout.ParameterBlocks.Count()))
@@ -377,13 +424,73 @@ namespace SE
 				}
 				else
 				{
+					const ShaderIRTypeRecord* resourceType = FindLogicalResourceLeafType(
+						layout, block.ElementTypeId, static_cast<uint32>(rangeIndex));
+					if (resourceType == nullptr)
+					{
+						error = SE_TEXT("SLC2 logical resource range does not resolve to a leaf type.");
+						return false;
+					}
+					const bool requiresCounter = resourceType->Shape == SE_TEXT("6") &&
+						(resourceType->Access == SE_TEXT("4") || resourceType->Access == SE_TEXT("5"));
+					if (binding.DescriptorRanges.Count() < 1 || binding.DescriptorRanges.Count() > 2)
+					{
+						error = SE_TEXT("SLC2 logical resources must contain one primary descriptor and at most one counter descriptor.");
+						return false;
+					}
+					bool hasPrimary = false;
+					bool hasCounter = false;
+					String primaryStageMask;
+					String counterStageMask;
 					for (int32 descriptorIndex = 0; descriptorIndex < binding.DescriptorRanges.Count(); descriptorIndex++)
 					{
-						if (binding.DescriptorRanges[descriptorIndex].DescriptorCount != range.Count)
+						const ShaderIRDescriptorRange& descriptor = binding.DescriptorRanges[descriptorIndex];
+						if (descriptor.DescriptorCount != range.Count)
 						{
 							error = SE_TEXT("SLC2 descriptor count does not match its logical resource range.");
 							return false;
 						}
+						if (descriptor.Role == SE_TEXT("primary"))
+						{
+							if (hasPrimary)
+							{
+								error = SE_TEXT("SLC2 logical resource has multiple primary descriptors.");
+								return false;
+							}
+							hasPrimary = true;
+							primaryStageMask = descriptor.StageMask;
+						}
+						else if (descriptor.Role == SE_TEXT("counter"))
+						{
+							if (hasCounter || (descriptor.DescriptorType != SE_TEXT("RawBuffer") &&
+								descriptor.DescriptorType != SE_TEXT("StorageBuffer")))
+							{
+								error = SE_TEXT("SLC2 logical resource has an invalid counter descriptor.");
+								return false;
+							}
+							hasCounter = true;
+							counterStageMask = descriptor.StageMask;
+						}
+						else
+						{
+							error = SE_TEXT("SLC2 logical resource uses an unknown physical descriptor role.");
+							return false;
+						}
+					}
+					if (!hasPrimary)
+					{
+						error = SE_TEXT("SLC2 logical resource has no primary descriptor.");
+						return false;
+					}
+					if (hasCounter != requiresCounter)
+					{
+						error = SE_TEXT("SLC2 counter descriptor does not match the logical resource type.");
+						return false;
+					}
+					if (hasCounter && primaryStageMask != counterStageMask)
+					{
+						error = SE_TEXT("SLC2 primary and counter descriptors have different stage usage.");
+						return false;
 					}
 				}
 			}
@@ -426,7 +533,7 @@ namespace SE
 
 		bool ValidateLayout(ShaderReflectionIR& layout, String& error)
 		{
-			if (layout.Schema != 2 || layout.Types.Count() == 0 || layout.ParameterBlocks.Count() == 0 || layout.RootBlockId >= static_cast<uint32>(layout.ParameterBlocks.Count()))
+			if (layout.Schema != 3 || layout.Types.Count() == 0 || layout.ParameterBlocks.Count() == 0 || layout.RootBlockId >= static_cast<uint32>(layout.ParameterBlocks.Count()))
 			{
 				error = SE_TEXT("SLC2 layout header is invalid.");
 				return false;
@@ -520,6 +627,10 @@ namespace SE
 					error = SE_TEXT("SLC2 type is not reachable from rootBlockId.");
 					return false;
 				}
+			}
+			if (!ValidateShaderPhysicalDescriptorLayout(layout, error))
+			{
+				return false;
 			}
 			if (BuildPipelineLayoutFingerprint(layout) != layout.PipelineLayoutFingerprint)
 			{

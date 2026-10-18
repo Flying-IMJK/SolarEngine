@@ -277,7 +277,9 @@ namespace SE
 		/// </remarks>
 		static GPUBufferDescription StructuredAppend(int32 elementCount, int32 elementSize)
 		{
-			return Buffer(elementCount * elementSize, (GPUBufferFlags::StructuredAppendBuffer, GPUBufferFlags::ShaderResource), PixelFormat::Undefined, nullptr, elementSize);
+			return Buffer(elementCount * elementSize,
+				GPUBufferFlags::StructuredAppendBuffer | GPUBufferFlags::ShaderResource,
+				PixelFormat::Undefined, nullptr, elementSize);
 		}
 
 		/// <summary>
@@ -291,7 +293,9 @@ namespace SE
 		/// </remarks>
 		static GPUBufferDescription StructuredCounter(int32 elementCount, int32 elementSize)
 		{
-			return Buffer(elementCount * elementSize, (GPUBufferFlags::StructuredCounterBuffer, GPUBufferFlags::ShaderResource), PixelFormat::Undefined, nullptr, elementSize);
+			return Buffer(elementCount * elementSize,
+				GPUBufferFlags::StructuredCounterBuffer | GPUBufferFlags::ShaderResource,
+				PixelFormat::Undefined, nullptr, elementSize);
 		}
 
 		/// <summary>

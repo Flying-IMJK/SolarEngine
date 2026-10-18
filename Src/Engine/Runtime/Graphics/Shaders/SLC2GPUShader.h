@@ -30,6 +30,9 @@ namespace SE
 		~SLC2GPUShader() override;
 
 		bool Load(const List<byte>& data);
+		// 只解析 Program/Target/Variant 选择，不创建后端 Program 或 GPU 对象，供上层候选数据校验使用。
+		bool ResolveProgramSelection(const ShaderProgramSelection& selection, const SLC2ProgramRecord*& program, const SLC2TargetRecord*& target, const SLC2VariantRecord*& variant) const;
+		static bool ResolveProgramSelection(const SLC2Artifact& artifact, const ShaderProgramSelection& selection, const SLC2ProgramRecord*& program, const SLC2TargetRecord*& target, const SLC2VariantRecord*& variant);
 		// 根据 selection 复用或创建不可变 ShaderProgram，并初始化一次可变的 ShaderProgramInstance 绑定状态。
 		bool CreateProgramInstance(const ShaderProgramSelection& selection, ShaderProgramInstance& instance);
 

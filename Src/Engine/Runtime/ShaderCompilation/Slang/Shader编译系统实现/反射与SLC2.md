@@ -27,7 +27,7 @@ SLC2 Text
 ```cpp
 struct ShaderReflectionIR
 {
-    uint32 Schema = 2;
+    uint32 Schema = 3;
     StringAnsi PipelineLayoutFingerprint;
     uint32 RootBlockId;
     Array<ShaderTypeRecord> Types;
@@ -96,7 +96,7 @@ Resource:
   elementTypeId?
   imageFormat?
   structuredKind?
-  auxiliaryRanges[]
+    // 当前 SLC2 只描述主逻辑资源；附属 counter 不进入 IR 资源树。
 
 ParameterBlock:
   containerKind = ConstantBuffer | ParameterBlock
@@ -113,8 +113,6 @@ struct ShaderResourceRange
     ShaderLogicalResourceKind ResourceKind;
     uint32 Count;
     uint32 BaseIndex;
-    Optional<ShaderInternalRole> InternalRole;
-    Optional<uint32> OwnerRangeOffset;
 };
 
 struct ShaderRangeBinding
@@ -143,10 +141,10 @@ struct ShaderDescriptorRange
 
 - `resourceRanges[]` 是逻辑范围。
 - `rangeBindings[]` 是当前 block 对逻辑 range 的落点。
-- 一条 simple range 可映射 1-N 个 descriptor。
+- 当前 SLC2 一条 simple range 必须映射一个 primary descriptor，并可为 Append/Consume 增加一个 counter descriptor；两者共享同一逻辑 range。
 - `ConstantBuffer` / `ParameterBlock` range 必须映射一个 `SubBlockId`。
 - `defaultUniformBuffer` 使用同一物理字段集合，Role 固定为 `uniformData`。
-- Schema 2 固定：
+- Schema 3 固定：
   - `ArrayElementBase = 0`
   - `LogicalElementStride = 1`
   - `DescriptorCount = logical range.Count`
@@ -255,9 +253,11 @@ Vulkan 只接受 `DescriptorTableSlot` 作为 descriptor range category。
 
 Counter：
 
-- Counter range 的 `InternalRole = Counter`。
-- `OwnerRangeOffset` 指向当前 Type Record 内主 range 的绝对局部索引。
-- Resource 的 `AuxiliaryRanges.RangeOffset` 是从主 range 到 counter range 的正向偏移。
+- SLC2 逻辑资源只保留一个主 resource range；counter 不创建独立的逻辑槽或 IR range。
+- Builder 先用 `getExplicitCounter()` 确认语义关系，再用 `getExplicitCounterBindingRangeOffset()` 将 primary/counter raw binding ranges 归到同一个 logical range；该映射只存在于 Builder 临时状态。
+- 最终 `ShaderIRRangeBinding::DescriptorRanges` 保存一条 `primary` 和可选的一条 `counter`；两者 count 与 StageMask 必须一致，counter 必须是 storage-buffer descriptor。
+- `GPUBuffer` 负责附属 counter 的创建和生命周期；Snapshot 只保存父 Buffer，Vulkan 提交阶段再通过父 `GPUBufferVulkan` 取得 `Counter->View()`。
+- 普通 `RWStructuredBuffer` 不因声明本身强制创建 counter。
 
 ## ParameterBlock 构建
 
@@ -277,7 +277,7 @@ Counter：
 1. 为当前具体 CB/PB occurrence 预留稳定 `blockId`，并以其 element TypeLayout 构造 `ParameterBlockRecord`。
 2. 读取 `getBindingRangeCount()`，按原 `rangeIndex` 建立候选 range；根据当前 Variant 的活动物理 descriptor 裁剪无活动 simple range 与删空的块子树，再压紧为与裁剪后 element type `resourceRanges[]` 等长的 `rangeBindings[]`；禁止按 descriptor 枚举顺序推断 range 对应关系。
 3. 先用 `getSubObjectRangeBindingRangeIndex()` 将 sub-object ranges 反向索引到 binding range。CB/PB range 必须恰好命中一个 sub-object；读取 offset/spaceOffset，使用 offset VariableLayout 进入子块并递归生成唯一 `SubBlockId`。
-4. simple range 只使用 `getBindingRangeDescriptorSetIndex()`、`getBindingRangeFirstDescriptorRangeIndex()` 和 `getBindingRangeDescriptorRangeCount()` 枚举其 1-N 条 descriptor mapping。每条 mapping 的 `DescriptorCount` 必须等于 logical range 的有限 `Count`。
+4. simple range 只使用 `getBindingRangeDescriptorSetIndex()`、`getBindingRangeFirstDescriptorRangeIndex()` 和 `getBindingRangeDescriptorRangeCount()` 读取 descriptor mapping；当前必须恰好一个 primary mapping，且 `DescriptorCount` 等于 logical range 的有限 `Count`。
 5. CB/PB mapping 不携带 descriptor ranges；simple mapping 不携带 `SubBlockId`。递归结束后，全部 block 从 root 组成单根、无环、非共享的树。
 
 Sub-object 是独立索引域：
@@ -311,7 +311,7 @@ Writer 和 Reader 共用同一个 Validator。
 
 必须验证：
 
-- `schema == 2`
+- `schema == 3`
 - type/block ID 连续、唯一、范围内
 - 全部 type/block 从 root 可达
 - root 单根
@@ -397,7 +397,7 @@ SLC2 v3 顶点输入规则：
 要求：
 
 - 使用固定字段顺序。
-- 固定写 SLC2 format 3.0；资源反射子对象的 `ShaderReflectionIR.Schema` 仍为 2，两者是独立版本域。
+- 固定写 SLC2 format 3.0；资源反射子对象的 `ShaderReflectionIR.Schema` 为 3，两者是独立版本域。
 - UTF-8 without BOM。
 - LF 换行，最终换行。
 - Base64 不换行。

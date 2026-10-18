@@ -6,6 +6,65 @@ namespace SE
 {
 	namespace
 	{
+		bool IsResourceLeafType(const ShaderIRTypeRecord& type)
+		{
+			return type.Kind == SE_TEXT("Resource") || type.Kind == SE_TEXT("SamplerState") ||
+				type.Kind == SE_TEXT("TextureBuffer") || type.Kind == SE_TEXT("ShaderStorageBuffer");
+		}
+
+		bool ResolvePrecomputedAddress(const ShaderProgramReflection& reflection, ShaderVarLocation& location)
+		{
+			const ShaderIRTypeRecord* type = reflection.GetType(location.TypeId);
+			if (type == nullptr)
+			{
+				LOG_ERROR("Graphics", "Shader variable type was not found while resolving its address.");
+				return false;
+			}
+			location.LogicalResourceSlotIndex = -1;
+			location.UniformByteSize = 0;
+			if (IsResourceLeafType(*type))
+			{
+				if (location.ResourceRangeIndex < 0 || location.ResourceIndex < 0)
+				{
+					LOG_ERROR("Graphics", "Shader resource leaf has no logical resource coordinates.");
+					return false;
+				}
+				ShaderResourceKey key;
+				key.BlockId = location.BlockId;
+				key.RangeIndex = static_cast<uint32>(location.ResourceRangeIndex);
+				key.ResourceIndex = static_cast<uint32>(location.ResourceIndex);
+				uint32 slotIndex;
+				if (!reflection.FindLogicalResourceSlotIndex(key, slotIndex))
+				{
+					LOG_ERROR("Graphics", "Shader resource NamePath does not map to a user-visible logical slot.");
+					return false;
+				}
+				location.Kind = ShaderParameterAddressKind::Resource;
+				location.LogicalResourceSlotIndex = static_cast<int32>(slotIndex);
+				return true;
+			}
+			if (type->Kind == SE_TEXT("ParameterBlock") || type->Kind == SE_TEXT("ConstantBuffer"))
+			{
+				// 容器类型会在 ResolveMember 中切换到对应 sub-block。
+				return true;
+			}
+			if (type->Kind == SE_TEXT("Struct") || type->Kind == SE_TEXT("Array"))
+			{
+				// 结构体和数组只负责继续导航；整块写入必须显式解析到 UniformBlock。
+				return true;
+			}
+			if (location.UniformBlockIndex >= 0 && location.UniformByteOffset >= 0 && type->UniformByteSize != 0)
+			{
+				location.Kind = ShaderParameterAddressKind::UniformValue;
+				location.UniformByteSize = type->UniformByteSize;
+			}
+			else
+			{
+				location.Kind = ShaderParameterAddressKind::Invalid;
+			}
+			return true;
+		}
+
 		bool ReadIdentifier(const String& path, int32& cursor, String& identifier)
 		{
 			const int32 start = cursor;
@@ -60,7 +119,14 @@ namespace SE
 			ShaderVarLocation location;
 			location.BlockId = root->Id;
 			location.TypeId = root->ElementTypeId;
-			location.UniformByteOffset = 0;
+			uint32 uniformBlockIndex;
+			if (reflection.FindUniformBlockIndex(root->Id, uniformBlockIndex))
+			{
+				location.Kind = ShaderParameterAddressKind::UniformBlock;
+				location.UniformBlockIndex = static_cast<int32>(uniformBlockIndex);
+				location.UniformByteOffset = 0;
+				location.UniformByteSize = root->UniformByteSize;
+			}
 			location.ResourceRangeIndex = -1;
 			location.ResourceIndex = -1;
 			return location;
@@ -90,6 +156,9 @@ namespace SE
 
 		location = source;
 		location.TypeId = member->TypeId;
+		location.Kind = ShaderParameterAddressKind::Invalid;
+		location.UniformByteSize = 0;
+		location.LogicalResourceSlotIndex = -1;
 		if (location.UniformByteOffset >= 0)
 		{
 			location.UniformByteOffset += static_cast<int32>(member->UniformOffset);
@@ -99,9 +168,14 @@ namespace SE
 			location.ResourceRangeIndex = (source.ResourceRangeIndex < 0 ? 0 : source.ResourceRangeIndex) + static_cast<int32>(member->ResourceRangeOffset);
 			location.ResourceIndex = (source.ResourceIndex < 0 ? 0 : source.ResourceIndex) + static_cast<int32>(member->ResourceIndexOffset);
 		}
+		else
+		{
+			location.ResourceRangeIndex = -1;
+			location.ResourceIndex = -1;
+		}
 		if (memberType->Kind != SE_TEXT("ParameterBlock") && memberType->Kind != SE_TEXT("ConstantBuffer"))
 		{
-			return true;
+			return ResolvePrecomputedAddress(reflection, location);
 		}
 
 		if (location.ResourceRangeIndex < 0)
@@ -123,7 +197,18 @@ namespace SE
 		}
 		location.BlockId = subBlock->Id;
 		location.TypeId = subBlock->ElementTypeId;
-		location.UniformByteOffset = 0;
+		location.Kind = ShaderParameterAddressKind::Invalid;
+		location.UniformBlockIndex = -1;
+		location.UniformByteOffset = -1;
+		uint32 uniformBlockIndex;
+		if (reflection.FindUniformBlockIndex(subBlock->Id, uniformBlockIndex))
+		{
+			location.Kind = ShaderParameterAddressKind::UniformBlock;
+			location.UniformBlockIndex = static_cast<int32>(uniformBlockIndex);
+			location.UniformByteOffset = 0;
+			location.UniformByteSize = subBlock->UniformByteSize;
+		}
+		location.LogicalResourceSlotIndex = -1;
 		location.ResourceRangeIndex = -1;
 		location.ResourceIndex = -1;
 		return true;
@@ -138,6 +223,9 @@ namespace SE
 			return false;
 		}
 		location = source;
+		location.Kind = ShaderParameterAddressKind::Invalid;
+		location.UniformByteSize = 0;
+		location.LogicalResourceSlotIndex = -1;
 		if (location.UniformByteOffset >= 0)
 		{
 			location.UniformByteOffset += static_cast<int32>(index * type->ElementByteStride);
@@ -147,7 +235,7 @@ namespace SE
 			location.ResourceIndex = location.ResourceIndex * static_cast<int32>(type->ElementCount) + static_cast<int32>(index);
 		}
 		location.TypeId = type->ElementTypeId;
-		return true;
+		return ResolvePrecomputedAddress(reflection, location);
 	}
 
 	bool ShaderNameResolver::Resolve(const ShaderProgramReflection& reflection, const String& path, ShaderVarLocation& location)
@@ -193,5 +281,28 @@ namespace SE
 			}
 		}
 		return !expectMember;
+	}
+
+	bool ShaderNameResolver::ResolveUniformBlock(const ShaderProgramReflection& reflection, const String& path, ShaderVarLocation& location)
+	{
+		if (reflection.GetBlock(reflection.GetLayout().RootBlockId) == nullptr)
+		{
+			LOG_ERROR("Graphics", "Shader reflection root is invalid.");
+			return false;
+		}
+		if (path.IsEmpty())
+		{
+			location = MakeRootLocation(reflection);
+		}
+		else if (!Resolve(reflection, path, location))
+		{
+			return false;
+		}
+		if (location.Kind != ShaderParameterAddressKind::UniformBlock || location.UniformBlockIndex < 0)
+		{
+			LOG_ERROR("Graphics", "Shader NamePath does not identify a uniform block.");
+			return false;
+		}
+		return true;
 	}
 }

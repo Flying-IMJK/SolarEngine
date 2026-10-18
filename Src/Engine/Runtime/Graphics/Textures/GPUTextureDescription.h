@@ -12,7 +12,7 @@
 namespace SE
 {
 	/// <summary>
-	/// Describes texture compression format type
+	/// Describes the texture content type.
 	/// </summary>
 	SE_ENUM(Reflect, API())
 	enum class TextureFormatType : byte
@@ -27,11 +27,7 @@ namespace SE
 		NormalMap,
 		// The gray scale (R channel).
 		GrayScale,
-		// The HDR color (RGBA channels).
-		HdrRGBA,
-		// The HDR color (RGB channels).
-		HdrRGB,
-		//
+		// Six faces of a cube texture.
 		CubeMap
 	};
 
@@ -71,7 +67,7 @@ namespace SE
 		PixelFormat Format;
 
 		/// <summary>
-		/// Texture compression type
+		/// Texture content type
 		/// </summary>
 		TextureFormatType Type;
 

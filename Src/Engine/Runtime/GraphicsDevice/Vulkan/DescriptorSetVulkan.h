@@ -31,8 +31,6 @@ namespace SE
 			GraphicsStagesCount,
 			// Compute pipeline slot
 			Compute = 0,
-			// The maximum amount of slots for all stages
-			Max = GraphicsStagesCount,
 		};
 
 		template<typename T>
@@ -84,7 +82,8 @@ namespace SE
 	class DescriptorSetLayoutVulkan : public DescriptorSetLayoutInfoVulkan
 	{
 	public:
-		typedef List<VkDescriptorSetLayout, FixedAllocation<DescriptorSet::Max>> HandlesArray;
+		// Stage-indexed legacy layouts stay inline; SLC2 physical sets may extend beyond the stage count.
+		typedef List<VkDescriptorSetLayout, InlinedAllocation<DescriptorSet::GraphicsStagesCount>> HandlesArray;
 
 		GPUDeviceVulkan* device;
 		HandlesArray handles;

@@ -5,53 +5,62 @@
 
 namespace SE
 {
-	class ShaderParameterBlock;
-	class ShaderProgramReflection;
+    class GPUBuffer;
+    class GPUSampler;
+    class GPUTextureView;
+    class ShaderProgramInstance;
+    class ShaderProgramReflection;
 
-	// ShaderVar 在反射树中的定位结果；既能表示普通 uniform 偏移，也能表示资源 range/index。
-	struct SE_API_RUNTIME ShaderVarLocation
-	{
-		uint32 BlockId = 0;
-		int32 UniformByteOffset = -1;
-		int32 ResourceRangeIndex = -1;
-		int32 ResourceIndex = -1;
-		uint32 TypeId = 0;
-	};
+    enum class ShaderParameterAddressKind : byte
+    {
+        Invalid,
+        UniformValue,
+        UniformBlock,
+        Resource,
+    };
 
-	// 面向上层的 shader 参数访问句柄。
-	// 它不拥有数据，只把反射定位结果转发到对应 ShaderParameterBlock。
-	class SE_API_RUNTIME ShaderVar
-	{
-	public:
-		ShaderVar() = default;
-		ShaderVar(ShaderParameterBlock* parameterBlock, const ShaderProgramReflection* reflection, const ShaderVarLocation& location)
-			: m_ParameterBlock(parameterBlock)
-			, _reflection(reflection)
-			, _location(location)
-		{
-		}
+    // NamePath 在反射树中的临时定位结果。预计算索引用于 Instance 热路径；
+    // Uniform offsets and logical slots are valid only for the immutable Reflection that produced them.
+    struct SE_API_RUNTIME ShaderVarLocation
+    {
+        ShaderParameterAddressKind Kind                     = ShaderParameterAddressKind::Invalid;
+        uint32                     BlockId                  = 0;
+        int32                      UniformBlockIndex        = -1;
+        int32                      UniformByteOffset        = -1;
+        uint32                     UniformByteSize          = 0;
+        int32                      LogicalResourceSlotIndex = -1;
+        int32                      ResourceRangeIndex       = -1;
+        int32                      ResourceIndex            = -1;
+        uint32                     TypeId                   = 0;
+    };
 
-		bool FindMember(const String& name, ShaderVar& result) const;
-		bool GetElement(uint32 index, ShaderVar& result) const;
-		ShaderVar operator[](uint32 index) const;
-		bool SetTexture(void* value) const;
-		bool SetBuffer(void* value) const;
-		bool SetSampler(void* value) const;
-		bool SetUniform(const void* data, uint32 size) const;
+    // 面向上层的临时 shader 参数访问对象，不缓存跨 Setter 调用的 NamePath 地址。
+    // 它不拥有数据；资源和 ordinary data 写入都转发到所属 Instance 的 dense state。
+    class SE_API_RUNTIME ShaderVar
+    {
+    public:
+        ShaderVar() = default;
+        ShaderVar(ShaderProgramInstance*         instance,
+                  const ShaderProgramReflection* reflection,
+                  const ShaderVarLocation&       location) :
+            m_Instance(instance), _reflection(reflection), _location(location)
+        {}
 
-		const ShaderVarLocation& GetLocation() const
-		{
-			return _location;
-		}
+        bool      FindMember(const String& name, ShaderVar& result) const;
+        bool      GetElement(uint32 index, ShaderVar& result) const;
+        ShaderVar operator[](uint32 index) const;
+        bool      SetTexture(GPUTextureView* value) const;
+        bool      SetBuffer(GPUBuffer* value) const;
+        bool      SetSampler(GPUSampler* value) const;
+        bool      SetUniform(const void* data, uint32 size) const;
 
-		bool IsValid() const
-		{
-			return m_ParameterBlock != nullptr && _reflection != nullptr;
-		}
+        const ShaderVarLocation& GetLocation() const { return _location; }
 
-	private:
-		ShaderParameterBlock* m_ParameterBlock = nullptr;
-		const ShaderProgramReflection* _reflection = nullptr;
-		ShaderVarLocation _location;
-	};
-}
+        bool IsValid() const { return m_Instance != nullptr && _reflection != nullptr; }
+
+    private:
+        ShaderProgramInstance*         m_Instance       = nullptr;
+        const ShaderProgramReflection* _reflection      = nullptr;
+        ShaderVarLocation              _location;
+    };
+} // namespace SE

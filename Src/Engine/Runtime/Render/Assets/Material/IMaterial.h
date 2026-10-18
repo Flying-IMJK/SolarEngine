@@ -1,11 +1,13 @@
 #pragma once
 
 #include "MaterialInfo.h"
+#include "MaterialRuntime.h"
 #include "Runtime/API.h"
 #include "Runtime/Render/RenderEnum.h"
 
 namespace SE
 {
+	struct StaticMeshInstanceData;
     class GPUConstantBuffer;
     class GPUContext;
     struct RenderContext;
@@ -72,7 +74,7 @@ namespace SE
         {
             void (*GetHash)(const DrawCall& drawCall, uint32& batchKey);
             bool (*CanBatch)(const DrawCall& a, const DrawCall& b);
-            void (*WriteDrawCall)(struct InstanceData* instanceData, const DrawCall& drawCall);
+            void (*WriteDrawCall)(StaticMeshInstanceData* instanceData, const DrawCall& drawCall);
         };
 
         /// <summary>
@@ -85,6 +87,22 @@ namespace SE
 #if BUILD_DEBUG
             handler = { nullptr, nullptr, nullptr };
 #endif
+            return false;
+        }
+
+        virtual bool IsSLC2Ready() const
+        {
+            return false;
+        }
+
+        virtual uint64 GetRuntimeGenerationID() const
+        {
+            return 0;
+        }
+
+        virtual bool PrepareSLC2Binding(const MaterialDrawContext& context, MaterialSLC2Binding& output)
+        {
+            output.Clear();
             return false;
         }
 

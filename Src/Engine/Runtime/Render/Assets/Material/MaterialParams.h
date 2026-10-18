@@ -142,6 +142,13 @@ namespace SE
         GlobalSDF = 20,
     };
 
+    enum class MaterialParameterSetResult : byte
+    {
+        Success,
+        InvalidValueType,
+        UnsupportedParameterType,
+    };
+
     /// <summary>
     /// Structure of serialized material parameter data.
     /// </summary>
@@ -205,7 +212,8 @@ namespace SE
         };
 
         AssetRef<Asset> m_AsAsset;
-        // ScriptingObjectReference<GPUTexture> m_AsGPUTexture;
+        // 代码创建的 GPUTexture 只在运行时使用，MaterialParameter 不参与其生命周期管理。
+        GPUTexture* m_AsGPUTexture = nullptr;
         String m_Name;
 
     public:
@@ -306,8 +314,23 @@ namespace SE
         /// <returns>The value.</returns>
         Variant GetValue() const;
 
+        FORCE_INLINE Asset* GetAssetValue() const
+        {
+            return m_AsAsset.Get();
+        }
+
+        FORCE_INLINE GPUTexture* GetGPUTextureValue() const
+        {
+            return m_AsGPUTexture;
+        }
+
         /// <summary>
-        /// Sets the value of the parameter.
+        /// Tries to set the parameter value and reports a deterministic failure reason.
+        /// </summary>
+        MaterialParameterSetResult TrySetValue(const Variant& value);
+
+        /// <summary>
+        /// Sets the value of the parameter. Kept as the compatibility logging wrapper.
         /// </summary>
         /// <param name="value">The value.</param>
         void SetValue(const Variant& value);
@@ -378,7 +401,9 @@ namespace SE
 
     public:
         MaterialParameter* Get(const UID& id);
+        const MaterialParameter* Get(const UID& id) const;
         MaterialParameter* Get(const StringView& name);
+        const MaterialParameter* Get(const StringView& name) const;
         int32 Find(const UID& id);
         int32 Find(const StringView& name);
 

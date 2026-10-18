@@ -34,7 +34,7 @@ namespace SE
 		// [GPUResourceView]
 		void* GetNativePtr() const override
 		{
-			return (void*)this;
+			return (void*)(DescriptorResourceVulkan*)this;
 		}
 
 		// [DescriptorOwnerResourceVulkan]

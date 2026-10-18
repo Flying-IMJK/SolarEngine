@@ -213,7 +213,7 @@ namespace SE
         bool IsValid() const final override;
 
     protected:
-        SLC2PipelineStateVulkanBase(GPUDeviceVulkan* device);
+        SLC2PipelineStateVulkanBase(GPUDeviceVulkan* device, PipelineLayoutVulkan* layout);
         ~SLC2PipelineStateVulkanBase();
 
         PipelineLayoutVulkan*            GetLayout() const;
@@ -239,11 +239,6 @@ namespace SE
         bool                               WriteResourceBinding(GPUContextVulkan*                   context,
                                                                 const ShaderBindingResource&        resource,
                                                                 const SLC2VulkanDescriptorBinding& binding);
-
-        bool                               IsDescriptorCompatibleWithResource(VkDescriptorType descriptorType,
-                                                                              ShaderRuntimeResourceType resourceType) const;
-
-        const ShaderBindingUniformData*    FindUniformData(const ShaderBindingSnapshot& snapshot, uint32 blockId) const;
 
         void                               ReleaseDescriptorState();
 
@@ -308,6 +303,7 @@ namespace SE
         const VkPipelineVertexInputStateCreateInfo* GetVertexInputState() const;
         bool                                      PrepareVertexInputState(const VertexFactoryLayout& layout);
         uint32                                    GetRequiredVertexBufferSlotsMask() const;
+        String                                    GetRequiredVertexBufferSlotSemantics(uint32 slot) const;
         uint64                                    GetVertexFactoryLayoutHash() const;
         bool                                      PrepareAndBindDescriptors(GPUContextVulkan*                        context,
                                                                             const ShaderBindingSnapshot&             snapshot,
@@ -329,6 +325,7 @@ namespace SE
             VkPipelineVertexInputStateCreateInfo State;
             List<VkVertexInputBindingDescription> Bindings;
             List<VkVertexInputAttributeDescription> Attributes;
+            String RequiredVertexBufferSlotSemantics[GPU_MAX_VB_BINDED];
             uint32 RequiredVertexBufferSlotsMask = 0;
             uint64 LayoutHash = 0;
         };

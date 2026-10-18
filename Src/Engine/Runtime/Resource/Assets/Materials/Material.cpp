@@ -28,6 +28,21 @@ namespace SE
         return false;
     }
 
+    MaterialShader* Material::GetMaterialShaderObject() const
+    {
+        return m_MaterialShader;
+    }
+
+    bool Material::InstallSLC2RuntimeData(MaterialSLC2RuntimeData&& data)
+    {
+        if (m_MaterialShader == nullptr || !m_MaterialShader->InstallSLC2RuntimeData(MoveTemp(data), Params))
+        {
+            return false;
+        }
+        ClearSLC2RuntimeCache();
+        return true;
+    }
+
     const MaterialInfo& Material::GetInfo() const
     {
         if (m_MaterialShader)
@@ -359,6 +374,8 @@ namespace SE
     void Material::Unload(bool isReloading)
     {
         UnregisterForShaderReloads(this);
+
+        ClearSLC2RuntimeCache();
 
         if (m_MaterialShader)
         {

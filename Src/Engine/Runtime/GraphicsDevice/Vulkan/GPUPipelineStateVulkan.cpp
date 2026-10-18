@@ -6,6 +6,8 @@
 #include "GPUBufferVulkan.h"
 #include "GPUShaderVulkan.h"
 
+#include "Runtime/Graphics/Textures/GPUTexture.h"
+
 #include "Runtime/Core/Types/Strings/String.h"
 #include "Runtime/Core/Types/Strings/StringView.h"
 #include "Runtime/Core/Profiler/Profiler.h"
@@ -361,8 +363,10 @@ namespace SE
 
 
 
-	SLC2PipelineStateVulkanBase::SLC2PipelineStateVulkanBase(GPUDeviceVulkan* device) :
-        GPUResourceVulkan<SLC2GPUPipelineState>(device, StringView::Empty)
+    SLC2PipelineStateVulkanBase::SLC2PipelineStateVulkanBase(GPUDeviceVulkan* device,
+                                                             PipelineLayoutVulkan* layout) :
+        GPUResourceVulkan<SLC2GPUPipelineState>(device, StringView::Empty),
+        m_Layout(layout)
     {
     }
 
@@ -410,7 +414,7 @@ namespace SE
                           "SLC2 Vulkan descriptor binding map is not empty but the layout has no descriptor sets.");
                 return false;
             }
-            if (snapshot.GetResources().HasItems() || snapshot.GetUniformData().HasItems())
+            if (snapshot.GetResourceCount() != 0 || snapshot.GetUniformData().HasItems())
             {
                 LOG_ERROR("Graphic",
                           "Descriptor snapshot contains bindings but the Vulkan layout has no descriptor sets.");
@@ -487,7 +491,7 @@ namespace SE
 	SLC2ComputePipelineStateVulkan::SLC2ComputePipelineStateVulkan(GPUDeviceVulkan*      device,
                                                                    VkPipeline            pipeline,
                                                                    PipelineLayoutVulkan* layout) :
-        SLC2PipelineStateVulkanBase(device), m_Pipeline(pipeline)
+        SLC2PipelineStateVulkanBase(device, layout), m_Pipeline(pipeline)
     {}
 
     SLC2ComputePipelineStateVulkan::~SLC2ComputePipelineStateVulkan()
@@ -657,163 +661,109 @@ namespace SE
             return false;
         }
 
-        const List<ShaderBindingResource>& resources = snapshot.GetResources();
-        for (int32 resourceIndex = 0; resourceIndex < resources.Count(); resourceIndex++)
+        for (int32 bindingIndex = 0; bindingIndex < bindings.Count(); bindingIndex++)
         {
-            const ShaderBindingResource& resource = resources[resourceIndex];
-            bool hasBinding = false;
-            for (int32 bindingIndex = 0; bindingIndex < bindings.Count(); bindingIndex++)
+            const SLC2VulkanDescriptorBinding& binding = bindings[bindingIndex];
+            if (binding.Target == SLC2VulkanDescriptorTarget::UniformBlock)
             {
-                const SLC2VulkanDescriptorBinding& binding = bindings[bindingIndex];
-                if (binding.IsUniformData || binding.BlockId != resource.BlockId ||
-                    binding.RangeIndex != resource.RangeIndex || binding.ResourceIndex != resource.ResourceIndex)
-                {
-                    continue;
-                }
-                if (!WriteResourceBinding(context, resource, binding))
-                {
-                    return false;
-                }
-                hasBinding = true;
+                continue;
             }
-            if (!hasBinding)
+            const ShaderBindingResource* resource = snapshot.GetResource(binding.ResourceSlotIndex);
+            if (resource == nullptr || !resource->IsValid() || !WriteResourceBinding(context, *resource, binding))
             {
-                LOG_ERROR("Graphic", "Runtime resource has no Vulkan descriptor binding.");
+                LOG_ERROR("Graphic", "Vulkan descriptor target references an invalid frozen resource slot.");
                 return false;
             }
         }
         return true;
     }
 
-    bool SLC2PipelineStateVulkanBase::ValidateSnapshotCompleteness(const ShaderBindingSnapshot&             snapshot,
-                                                                      const List<SLC2VulkanDescriptorBinding>& bindings) const
+    bool
+    SLC2PipelineStateVulkanBase::ValidateSnapshotCompleteness(const ShaderBindingSnapshot&             snapshot,
+                                                              const List<SLC2VulkanDescriptorBinding>& bindings) const
     {
-        const List<ShaderBindingResource>& resources = snapshot.GetResources();
+        const List<ShaderBindingUniformData>& uniformDataList = snapshot.GetUniformData();
+        for (int32 uniformBlockIndex = 0; uniformBlockIndex < uniformDataList.Count(); uniformBlockIndex++)
+        {
+            const ShaderBindingUniformData& uniformData = uniformDataList[uniformBlockIndex];
+            if (uniformData.UniformBlockIndex != static_cast<uint32>(uniformBlockIndex))
+            {
+                LOG_ERROR("Graphic", "Binding snapshot uniform blocks are not in dense reflected order.");
+                return false;
+            }
+            if ((uniformData.Source == ShaderUniformBlockSource::InternalData &&
+                 uniformData.ExternalBuffer != nullptr) ||
+                (uniformData.Source == ShaderUniformBlockSource::ExternalConstantBuffer &&
+                 (uniformData.ExternalBuffer == nullptr || uniformData.Data.HasItems())))
+            {
+                LOG_ERROR("Graphic", "Binding snapshot uniform block has an inconsistent tagged source.");
+                return false;
+            }
+        }
         for (int32 bindingIndex = 0; bindingIndex < bindings.Count(); bindingIndex++)
         {
             const SLC2VulkanDescriptorBinding& binding = bindings[bindingIndex];
-            if (binding.DescriptorWriteIndex >= static_cast<uint32>(m_DescriptorWriteContainer.descriptorWrites.Count()))
+            if (binding.DescriptorWriteIndex >=
+                static_cast<uint32>(m_DescriptorWriteContainer.descriptorWrites.Count()))
             {
                 LOG_ERROR("Graphic", "SLC2 Vulkan descriptor binding references an invalid write index.");
                 return false;
             }
-            if (binding.IsUniformData)
+            if (binding.Target == SLC2VulkanDescriptorTarget::UniformBlock)
             {
                 if (binding.DescriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
                 {
-                    LOG_ERROR("Graphic", "Default uniform buffer must map to a Vulkan dynamic uniform buffer descriptor.");
+                    LOG_ERROR("Graphic",
+                              "Default uniform buffer must map to a Vulkan dynamic uniform buffer descriptor.");
                     return false;
                 }
-                const ShaderBindingUniformData* uniformData = FindUniformData(snapshot, binding.BlockId);
-                if (uniformData == nullptr || uniformData->Data.IsEmpty())
+                const ShaderBindingUniformData* uniformData = snapshot.GetUniformData(binding.UniformBlockIndex);
+                if (uniformData == nullptr)
                 {
-                    LOG_ERROR("Graphic", "Vulkan descriptor layout has default uniform data that is missing from the binding snapshot.");
+                    LOG_ERROR("Graphic", "Vulkan default uniform block is missing from the binding snapshot.");
+                    return false;
+                }
+                if (uniformData->Source == ShaderUniformBlockSource::InternalData)
+                {
+                    if (uniformData->Data.Count() != static_cast<int32>(binding.UniformByteSize))
+                    {
+                        LOG_ERROR("Graphic", "Vulkan default uniform data has an invalid reflected size.");
+                        return false;
+                    }
+                }
+                else if (uniformData->ExternalBuffer == nullptr ||
+                         uniformData->ExternalBuffer->GetSize() < binding.UniformByteSize)
+                {
+                    LOG_ERROR("Graphic", "Vulkan external constant buffer is smaller than its reflected block.");
                     return false;
                 }
                 continue;
             }
 
-            bool hasSnapshotResource = false;
-            for (int32 resourceIndex = 0; resourceIndex < resources.Count(); resourceIndex++)
+            const ShaderBindingResource* resource = snapshot.GetResource(binding.ResourceSlotIndex);
+            if (resource == nullptr || !resource->IsValid())
             {
-                const ShaderBindingResource& resource = resources[resourceIndex];
-                if (binding.BlockId == resource.BlockId && binding.RangeIndex == resource.RangeIndex &&
-                    binding.ResourceIndex == resource.ResourceIndex)
-                {
-                    if (resource.Value == nullptr)
-                    {
-                        LOG_ERROR("Graphic", "Vulkan descriptor layout has a null runtime resource.");
-                        return false;
-                    }
-                    if (!IsDescriptorCompatibleWithResource(binding.DescriptorType, resource.Type))
-                    {
-                        LOG_ERROR("Graphic", "Runtime resource type does not match the Vulkan descriptor type.");
-                        return false;
-                    }
-                    hasSnapshotResource = true;
-                    break;
-                }
-            }
-
-            if (!hasSnapshotResource)
-            {
-                LOG_ERROR("Graphic", "Vulkan descriptor layout has an ordinary resource that is missing from the "
-                                "binding snapshot.");
+                LOG_ERROR("Graphic", "Vulkan descriptor target is outside the frozen dense resource slots.");
                 return false;
             }
-        }
-
-        const List<ShaderBindingUniformData>& uniformDataList = snapshot.GetUniformData();
-        for (int32 uniformIndex = 0; uniformIndex < uniformDataList.Count(); uniformIndex++)
-        {
-            const ShaderBindingUniformData& uniformData = uniformDataList[uniformIndex];
-            for (int32 otherIndex = uniformIndex + 1; otherIndex < uniformDataList.Count(); otherIndex++)
-            {
-                if (uniformData.BlockId == uniformDataList[otherIndex].BlockId)
-                {
-                    LOG_ERROR("Graphic", "Binding snapshot contains duplicate default uniform data.");
-                    return false;
-                }
-            }
-
-            bool hasBinding = false;
-            for (int32 bindingIndex = 0; bindingIndex < bindings.Count(); bindingIndex++)
-            {
-                const SLC2VulkanDescriptorBinding& binding = bindings[bindingIndex];
-                if (binding.IsUniformData && binding.BlockId == uniformData.BlockId)
-                {
-                    hasBinding = true;
-                    break;
-                }
-            }
-            if (!hasBinding)
-            {
-                LOG_ERROR("Graphic", "Binding snapshot has default uniform data that is not used by the Vulkan descriptor layout.");
-                return false;
-            }
-        }
-
-        for (int32 resourceIndex = 0; resourceIndex < resources.Count(); resourceIndex++)
-        {
-            const ShaderBindingResource& resource = resources[resourceIndex];
-            for (int32 otherIndex = resourceIndex + 1; otherIndex < resources.Count(); otherIndex++)
-            {
-                const ShaderBindingResource& other = resources[otherIndex];
-                if (resource.BlockId == other.BlockId && resource.RangeIndex == other.RangeIndex &&
-                    resource.ResourceIndex == other.ResourceIndex)
-                {
-                    LOG_ERROR("Graphic", "Binding snapshot contains duplicate runtime resources.");
-                    return false;
-                }
-            }
-
-            bool hasBinding = false;
-            for (int32 bindingIndex = 0; bindingIndex < bindings.Count(); bindingIndex++)
-            {
-                const SLC2VulkanDescriptorBinding& binding = bindings[bindingIndex];
-                if (!binding.IsUniformData && binding.BlockId == resource.BlockId &&
-                    binding.RangeIndex == resource.RangeIndex && binding.ResourceIndex == resource.ResourceIndex)
-                {
-                    if (!IsDescriptorCompatibleWithResource(binding.DescriptorType, resource.Type))
-                    {
-                        LOG_ERROR("Graphic", "Runtime resource type does not match the Vulkan descriptor type.");
-                        return false;
-                    }
-                    hasBinding = true;
-                }
-            }
-            if (!hasBinding)
-            {
-                LOG_ERROR("Graphic", "Binding snapshot has a runtime resource that is not used by the Vulkan descriptor layout.");
-                return false;
-            }
+			if (binding.ResourceRole == SLC2VulkanResourceRole::Counter)
+			{
+				GPUBufferVulkan* parentBuffer = static_cast<GPUBufferVulkan*>(resource->GetBuffer());
+				if (parentBuffer == nullptr || parentBuffer->Counter == nullptr ||
+					!parentBuffer->Counter->IsAllocated() || parentBuffer->Counter->View() == nullptr ||
+					parentBuffer->Counter->View()->GetNativePtr() == nullptr)
+				{
+					LOG_ERROR("Graphic", "Vulkan counter descriptor has no live counter attached to its parent buffer.");
+					return false;
+				}
+			}
         }
         return true;
     }
 
-    bool SLC2PipelineStateVulkanBase::WriteResourceBinding(GPUContextVulkan*                   context,
-                                                              const ShaderBindingResource&        resource,
-                                                              const SLC2VulkanDescriptorBinding& binding)
+    bool SLC2PipelineStateVulkanBase::WriteResourceBinding(GPUContextVulkan*                  context,
+                                                           const ShaderBindingResource&       resource,
+                                                           const SLC2VulkanDescriptorBinding& binding)
     {
         VkWriteDescriptorSet& descriptorWrite =
             m_DescriptorWriteContainer.descriptorWrites[binding.DescriptorWriteIndex];
@@ -826,8 +776,8 @@ namespace SE
         switch (binding.DescriptorType)
         {
             case VK_DESCRIPTOR_TYPE_SAMPLER: {
-                const GPUSamplerVulkan* sampler = static_cast<const GPUSamplerVulkan*>(resource.Value);
-                if (sampler->Sampler == VK_NULL_HANDLE)
+                const GPUSamplerVulkan* sampler = static_cast<const GPUSamplerVulkan*>(resource.GetSampler());
+                if (sampler == nullptr || sampler->Sampler == VK_NULL_HANDLE)
                 {
                     LOG_ERROR("Graphic", "Runtime sampler binding has no Vulkan sampler handle.");
                     return false;
@@ -837,7 +787,12 @@ namespace SE
                 break;
             }
             case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE: {
-                GPUResourceView*          view   = static_cast<GPUResourceView*>(resource.Value);
+                GPUTextureView*           view   = resource.GetTexture();
+                if (view == nullptr)
+                {
+                    LOG_ERROR("Graphic", "Runtime sampled image target is not a texture slot.");
+                    return false;
+                }
                 DescriptorResourceVulkan* handle = static_cast<DescriptorResourceVulkan*>(view->GetNativePtr());
                 if (handle == nullptr)
                 {
@@ -853,7 +808,12 @@ namespace SE
                 break;
             }
             case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE: {
-                GPUResourceView*          view   = static_cast<GPUResourceView*>(resource.Value);
+                GPUTextureView*           view   = resource.GetTexture();
+                if (view == nullptr)
+                {
+                    LOG_ERROR("Graphic", "Runtime storage image target is not a texture slot.");
+                    return false;
+                }
                 DescriptorResourceVulkan* handle = static_cast<DescriptorResourceVulkan*>(view->GetNativePtr());
                 if (handle == nullptr)
                 {
@@ -870,19 +830,30 @@ namespace SE
                 break;
             }
             case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER: {
-                GPUBuffer*                buffer = static_cast<GPUBuffer*>(resource.Value);
-                if (buffer->View() == nullptr)
+				// Both physical descriptors resolve from the same frozen parent logical slot.
+				// Counter never becomes an independent NamePath, snapshot entry, or cached child pointer.
+				GPUBufferVulkan* parentBuffer = static_cast<GPUBufferVulkan*>(resource.GetBuffer());
+				GPUBuffer* buffer = binding.ResourceRole == SLC2VulkanResourceRole::Counter
+					? (parentBuffer != nullptr ? parentBuffer->Counter : nullptr)
+					: parentBuffer;
+                if (buffer == nullptr || buffer->View() == nullptr)
                 {
                     LOG_ERROR("Graphic", "Runtime storage buffer binding has no buffer view.");
                     return false;
                 }
-                DescriptorResourceVulkan* handle =
-                        static_cast<DescriptorResourceVulkan*>(buffer->View()->GetNativePtr());
+                DescriptorResourceVulkan* handle = static_cast<DescriptorResourceVulkan*>(buffer->View()->GetNativePtr());
                 if (handle == nullptr)
                 {
                     LOG_ERROR("Graphic", "Runtime storage buffer binding has no Vulkan descriptor resource.");
                     return false;
                 }
+				if (binding.ResourceRole == SLC2VulkanResourceRole::Counter || buffer->IsUnorderedAccess())
+				{
+					// UAV primary data and counter atomics can both read and write. Record that
+					// transition before the generic storage-buffer view adds its read requirement.
+					context->AddBufferBarrier(static_cast<GPUBufferVulkan*>(buffer),
+						VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
+				}
                 VkBuffer     vkBuffer;
                 VkDeviceSize offset;
                 VkDeviceSize range;
@@ -895,8 +866,8 @@ namespace SE
                 break;
             }
             case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER: {
-                GPUBuffer*           buffer = static_cast<GPUBuffer*>(resource.Value);
-                GPUBufferViewVulkan* handle = static_cast<GPUBufferViewVulkan*>(buffer->View());
+                GPUBuffer*           buffer = resource.GetBuffer();
+                GPUBufferViewVulkan* handle = buffer != nullptr ? static_cast<GPUBufferViewVulkan*>(buffer->View()) : nullptr;
                 if (handle == nullptr)
                 {
                     LOG_ERROR("Graphic", "Runtime texel buffer binding has no Vulkan buffer view.");
@@ -910,8 +881,8 @@ namespace SE
                 break;
             }
             case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: {
-                GPUBuffer*           buffer = static_cast<GPUBuffer*>(resource.Value);
-                GPUBufferViewVulkan* handle = static_cast<GPUBufferViewVulkan*>(buffer->View());
+                GPUBuffer*           buffer = resource.GetBuffer();
+                GPUBufferViewVulkan* handle = buffer != nullptr ? static_cast<GPUBufferViewVulkan*>(buffer->View()) : nullptr;
                 if (handle == nullptr)
                 {
                     LOG_ERROR("Graphic", "Runtime storage texel buffer binding has no Vulkan buffer view.");
@@ -931,34 +902,14 @@ namespace SE
         return true;
     }
 
-    bool SLC2PipelineStateVulkanBase::IsDescriptorCompatibleWithResource(const VkDescriptorType descriptorType,
-                                                                            const ShaderRuntimeResourceType resourceType) const
-    {
-        switch (descriptorType)
-        {
-            case VK_DESCRIPTOR_TYPE_SAMPLER:
-                return resourceType == ShaderRuntimeResourceType::Sampler;
-            case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-            case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-                return resourceType == ShaderRuntimeResourceType::Texture;
-            case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-            case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-            case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-                return resourceType == ShaderRuntimeResourceType::Buffer;
-            default:
-                return false;
-        }
-    }
-
     bool SLC2PipelineStateVulkanBase::WriteUniformData(GPUContextVulkan*                        context,
-                                                          const ShaderBindingSnapshot&             snapshot,
-                                                          const List<SLC2VulkanDescriptorBinding>& bindings)
+                                                       const ShaderBindingSnapshot&             snapshot,
+                                                       const List<SLC2VulkanDescriptorBinding>& bindings)
     {
-        const List<ShaderBindingUniformData>& uniformDataList = snapshot.GetUniformData();
         for (int32 bindingIndex = 0; bindingIndex < bindings.Count(); bindingIndex++)
         {
             const SLC2VulkanDescriptorBinding& binding = bindings[bindingIndex];
-            if (!binding.IsUniformData)
+            if (binding.Target != SLC2VulkanDescriptorTarget::UniformBlock)
             {
                 continue;
             }
@@ -968,38 +919,26 @@ namespace SE
                 return false;
             }
 
-            // uniform 数据以 blockId 匹配 defaultUniformBuffer，保持普通 uniform 裁剪后的布局与运行时一致。
-            const ShaderBindingUniformData* uniformData = FindUniformData(snapshot, binding.BlockId);
+            // Program 初始化时已把 descriptor 预计算到 dense UniformBlockIndex，提交阶段直接选择 tagged source。
+            const ShaderBindingUniformData* uniformData = snapshot.GetUniformData(binding.UniformBlockIndex);
             if (uniformData == nullptr)
             {
-                LOG_ERROR("Graphic", " Vulkan descriptor layout has default uniform data that is missing from the binding snapshot.");
+                LOG_ERROR(
+                    "Graphic",
+                    " Vulkan descriptor layout has default uniform data that is missing from the binding snapshot.");
                 return false;
             }
-            if (uniformData->Data.IsEmpty())
-            {
-                LOG_ERROR("Graphic", "Default uniform buffer data is empty.");
-                return false;
-            }
-
             VkWriteDescriptorSet& descriptorWrite =
                 m_DescriptorWriteContainer.descriptorWrites[binding.DescriptorWriteIndex];
             if (binding.ArrayElement >= descriptorWrite.descriptorCount)
             {
-                LOG_ERROR("Graphic", "Vulkan default uniform buffer array element is outside the descriptor write range.");
+                LOG_ERROR("Graphic",
+                          "Vulkan default uniform buffer array element is outside the descriptor write range.");
                 return false;
             }
 
-            const UniformBufferUploaderVulkan::Allocation allocation =
-                m_Device->uniformBufferUploader->Allocate(uniformData->Data.Count(), 0, context);
-            Platform::MemoryClear(allocation.CPUAddress, allocation.Size);
-            Platform::MemoryCopy(allocation.CPUAddress, uniformData->Data.Get(), uniformData->Data.Count());
-
             VkDescriptorBufferInfo* bufferInfo =
                 const_cast<VkDescriptorBufferInfo*>(descriptorWrite.pBufferInfo + binding.ArrayElement);
-            bufferInfo->buffer = allocation.Buffer;
-            bufferInfo->offset = 0;
-            bufferInfo->range  = allocation.Size;
-
             const byte dynamicOffsetIndex =
                 m_DescriptorWriteContainer.bindingToDynamicOffset[binding.DescriptorWriteIndex];
             if (dynamicOffsetIndex == 255)
@@ -1007,42 +946,49 @@ namespace SE
                 LOG_ERROR("Graphic", "Default uniform buffer descriptor has no dynamic offset slot.");
                 return false;
             }
-            m_DynamicOffsets[dynamicOffsetIndex] = static_cast<uint32>(allocation.Offset);
-        }
 
-        for (int32 uniformIndex = 0; uniformIndex < uniformDataList.Count(); uniformIndex++)
-        {
-            const ShaderBindingUniformData& uniformData = uniformDataList[uniformIndex];
-            bool                            hasBinding  = false;
-            for (int32 bindingIndex = 0; bindingIndex < bindings.Count(); bindingIndex++)
+            if (uniformData->Source == ShaderUniformBlockSource::InternalData)
             {
-                const SLC2VulkanDescriptorBinding& binding = bindings[bindingIndex];
-                if (binding.IsUniformData && binding.BlockId == uniformData.BlockId)
+                if (uniformData->Data.Count() != static_cast<int32>(binding.UniformByteSize))
                 {
-                    hasBinding = true;
-                    break;
+                    LOG_ERROR("Graphic", "Default uniform buffer data size does not match reflection.");
+                    return false;
                 }
-            }
-            if (!hasBinding)
-            {
-                LOG_ERROR("Graphic", "Binding snapshot has default uniform data that is not used by the Vulkan descriptor layout.");
-                return false;
-            }
-        }
-        return true;
-    }
+                const UniformBufferUploaderVulkan::Allocation allocation =
+                    m_Device->uniformBufferUploader->Allocate(uniformData->Data.Count(), 0, context);
+                Platform::MemoryClear(allocation.CPUAddress, allocation.Size);
+                Platform::MemoryCopy(allocation.CPUAddress, uniformData->Data.Get(), uniformData->Data.Count());
 
-    const ShaderBindingUniformData* SLC2PipelineStateVulkanBase::FindUniformData(const ShaderBindingSnapshot& snapshot, const uint32 blockId) const
-    {
-        const List<ShaderBindingUniformData>& uniformDataList = snapshot.GetUniformData();
-        for (int32 index = 0; index < uniformDataList.Count(); index++)
-        {
-            if (uniformDataList[index].BlockId == blockId)
+                bufferInfo->buffer = allocation.Buffer;
+                bufferInfo->offset = 0;
+                bufferInfo->range  = binding.UniformByteSize;
+                m_DynamicOffsets[dynamicOffsetIndex] = static_cast<uint32>(allocation.Offset);
+            }
+            else
             {
-                return &uniformDataList[index];
+                if (uniformData->ExternalBuffer == nullptr ||
+                    uniformData->ExternalBuffer->GetSize() < binding.UniformByteSize)
+                {
+                    LOG_ERROR("Graphic", "External constant buffer does not satisfy its reflected uniform block.");
+                    return false;
+                }
+
+                // 直接消费现有 Vulkan ConstantBuffer 的最新 Ring Allocation，不复制 CPU 数据。
+                GPUConstantBufferVulkan* externalBuffer =
+                    static_cast<GPUConstantBufferVulkan*>(uniformData->ExternalBuffer);
+                VkBuffer     buffer        = VK_NULL_HANDLE;
+                VkDeviceSize offset        = 0;
+                VkDeviceSize ignoredRange  = 0;
+                uint32       dynamicOffset = 0;
+                externalBuffer->AsDynamicUniformBuffer(context, buffer, offset, ignoredRange, dynamicOffset);
+                bufferInfo->buffer = buffer;
+                bufferInfo->offset = offset;
+                bufferInfo->range  = binding.UniformByteSize;
+                m_DynamicOffsets[dynamicOffsetIndex] = dynamicOffset;
             }
         }
-        return nullptr;
+
+        return true;
     }
 
     void SLC2PipelineStateVulkanBase::ReleaseDescriptorState()
@@ -1060,7 +1006,7 @@ namespace SE
     }
 
     SLC2GraphicsPipelineStateVulkan::SLC2GraphicsPipelineStateVulkan(GPUDeviceVulkan* device) :
-        SLC2PipelineStateVulkanBase(device),
+        SLC2PipelineStateVulkanBase(device, nullptr),
         m_Pipelines(16)
     {
         blendEnable = 0;
@@ -1356,6 +1302,14 @@ namespace SE
             attribute.binding = element->Slot;
             attribute.format = VulkanTool::ToVulkanFormat(element->Format);
             attribute.offset = element->Offset;
+
+			// 缺失 Slot 的诊断保留其对应逻辑语义，便于区分普通顶点流和实例流。
+			String& slotSemantics = candidate.RequiredVertexBufferSlotSemantics[element->Slot];
+			if (!slotSemantics.IsEmpty())
+			{
+				slotSemantics += SE_TEXT(", ");
+			}
+			slotSemantics += String::Format(SE_TEXT("{0}{1}"), input.Semantic, input.SemanticIndex);
         }
 
         for (int32 bindingIndex = 0; bindingIndex < layout.GetBindings().Count(); bindingIndex++)
@@ -1440,6 +1394,15 @@ namespace SE
     {
         return m_CurrentVertexInputState != nullptr ? m_CurrentVertexInputState->RequiredVertexBufferSlotsMask : 0;
     }
+
+	String SLC2GraphicsPipelineStateVulkan::GetRequiredVertexBufferSlotSemantics(const uint32 slot) const
+	{
+		if (m_CurrentVertexInputState == nullptr || slot >= GPU_MAX_VB_BINDED)
+		{
+			return String::Empty;
+		}
+		return m_CurrentVertexInputState->RequiredVertexBufferSlotSemantics[slot];
+	}
 
     uint64 SLC2GraphicsPipelineStateVulkan::GetVertexFactoryLayoutHash() const
     {

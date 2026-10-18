@@ -16,6 +16,7 @@ namespace SE
 {
     MaterialParameter::MaterialParameter():
         m_Id(UID::New()),
+        m_ParamId(UID::New()),
         m_IsPublic(false), m_Override(false), m_RegisterIndex(0),
         m_Offset(0), _asBool(false), _asInteger(0), _asFloat(0), _asVector2(),
         _asVector3(), _asColor(), AsData{}
@@ -58,42 +59,73 @@ namespace SE
         case MaterialParameterType::GPUTextureArray:
         case MaterialParameterType::GPUTextureCube:
         case MaterialParameterType::GPUTexture:
-            // return m_AsGPUTexture.Get();
+            return static_cast<ScriptingObject*>(m_AsGPUTexture);
         default:
             return Variant::Zero;
         }
     }
 
-    void MaterialParameter::SetValue(const Variant& value)
+    MaterialParameterSetResult MaterialParameter::TrySetValue(const Variant& value)
     {
-        bool invalidType = false;
         switch (m_Type)
         {
         case MaterialParameterType::Bool:
+            if (value.Type.Type != VariantTypes::Bool)
+            {
+                return MaterialParameterSetResult::InvalidValueType;
+            }
             _asBool = (bool)value;
             break;
         case MaterialParameterType::Integer:
         case MaterialParameterType::SceneTexture:
         case MaterialParameterType::ChannelMask:
         case MaterialParameterType::TextureGroupSampler:
+            if (value.Type.Type != VariantTypes::Int && value.Type.Type != VariantTypes::Enum)
+            {
+                return MaterialParameterSetResult::InvalidValueType;
+            }
             _asInteger = (int32)value;
             break;
         case MaterialParameterType::Float:
+            if (value.Type.Type != VariantTypes::Float)
+            {
+                return MaterialParameterSetResult::InvalidValueType;
+            }
             _asFloat = (float)value;
             break;
         case MaterialParameterType::Vector2:
+            if (value.Type.Type != VariantTypes::Float2)
+            {
+                return MaterialParameterSetResult::InvalidValueType;
+            }
             _asVector2 = (Float2)value;
             break;
         case MaterialParameterType::Vector3:
+            if (value.Type.Type != VariantTypes::Float3)
+            {
+                return MaterialParameterSetResult::InvalidValueType;
+            }
             _asVector3 = (Float3)value;
             break;
         case MaterialParameterType::Vector4:
+            if (value.Type.Type != VariantTypes::Float4 && value.Type.Type != VariantTypes::Color)
+            {
+                return MaterialParameterSetResult::InvalidValueType;
+            }
             *(Float4*)&AsData = (Float4)value;
             break;
         case MaterialParameterType::Color:
+            if (value.Type.Type != VariantTypes::Color && value.Type.Type != VariantTypes::Float4)
+            {
+                return MaterialParameterSetResult::InvalidValueType;
+            }
             _asColor = (Color)value;
             break;
         case MaterialParameterType::Matrix:
+            if (value.Type.Type != VariantTypes::Matrix)
+            {
+                return MaterialParameterSetResult::InvalidValueType;
+            }
             *(Matrix*)&AsData = (Matrix)value;
             break;
         case MaterialParameterType::NormalMap:
@@ -111,65 +143,102 @@ namespace SE
                 m_AsAsset = (TextureBase*)value.AsPointer;
                     break;
             case VariantTypes::Object:
-                m_AsAsset = TypeCast<TextureBase>(value.AsObject);
-                    break;
+            {
+                TextureBase* texture = TypeTryCast<TextureBase>(value.AsObject);
+                if (value.AsObject != nullptr && texture == nullptr)
+                {
+                    return MaterialParameterSetResult::InvalidValueType;
+                }
+                m_AsAsset = texture;
+                break;
+            }
             case VariantTypes::Asset:
-                m_AsAsset = TypeCast<TextureBase>(value.AsAsset);
-                    break;
+            {
+                TextureBase* texture = TypeTryCast<TextureBase>(value.AsAsset);
+                if (value.AsAsset != nullptr && texture == nullptr)
+                {
+                    return MaterialParameterSetResult::InvalidValueType;
+                }
+                m_AsAsset = texture;
+                break;
+            }
+            case VariantTypes::UID:
+                m_AsAsset = AssetContent::LoadAsync<TextureBase>(*(UID*)value.AsData);
+                break;
             default:
-                invalidType = true;
+                return MaterialParameterSetResult::InvalidValueType;
             }
             break;
         case MaterialParameterType::GPUTextureVolume:
         case MaterialParameterType::GPUTextureCube:
         case MaterialParameterType::GPUTextureArray:
         case MaterialParameterType::GPUTexture:
-            /*switch (value.Type.Type)
-            {
-            case MaterialVariantType::Types::Null:
-                m_AsGPUTexture = nullptr;
-                    break;
-            case MaterialVariantType::Types::Pointer:
-                m_AsGPUTexture = (GPUTexture*)value.AsPointer;
-                    break;
-            case MaterialVariantType::Types::Object:
-                m_AsGPUTexture = Cast<GPUTexture>(value.AsObject);
-                    break;
-            default:
-                invalidType = true;
-            }*/
-            break;
-        /*case MaterialParameterType::GameplayGlobal:
             switch (value.Type.Type)
             {
-            case MaterialVariantType::Types::Null:
-                m_AsAsset = nullptr;
-                    break;
-            case MaterialVariantType::Types::Guid:
-                m_AsAsset = AssetContent::LoadAsync<GameplayGlobals>(*(SGUID*)value.AsData);
-                    break;
-            case MaterialVariantType::Types::Pointer:
-                m_AsAsset = (GameplayGlobals*)value.AsPointer;
-                    break;
-            case MaterialVariantType::Types::Object:
-                m_AsAsset = Cast<GameplayGlobals>(value.AsObject);
-                    break;
-            case MaterialVariantType::Types::Asset:
-                m_AsAsset = Cast<GameplayGlobals>(value.AsAsset);
-                    break;
-        default:
-            invalidType = true;
+            case VariantTypes::Null:
+                m_AsGPUTexture = nullptr;
+                break;
+            case VariantTypes::Pointer:
+                m_AsGPUTexture = (GPUTexture*)value.AsPointer;
+                break;
+            case VariantTypes::Object:
+            {
+                GPUTexture* texture = TypeTryCast<GPUTexture>(value.AsObject);
+                if (value.AsObject != nullptr && texture == nullptr)
+                {
+                    return MaterialParameterSetResult::InvalidValueType;
+                }
+                m_AsGPUTexture = texture;
+                break;
             }
-            break;*/
-        case MaterialParameterType::GlobalSDF:
+            default:
+                return MaterialParameterSetResult::InvalidValueType;
+            }
             break;
+        case MaterialParameterType::GameplayGlobal:
+            switch (value.Type.Type)
+            {
+            case VariantTypes::Null:
+                m_AsAsset = nullptr;
+                break;
+            case VariantTypes::Pointer:
+                m_AsAsset = (Asset*)value.AsPointer;
+                break;
+            case VariantTypes::Object:
+            {
+                Asset* asset = TypeTryCast<Asset>(value.AsObject);
+                if (value.AsObject != nullptr && asset == nullptr)
+                {
+                    return MaterialParameterSetResult::InvalidValueType;
+                }
+                m_AsAsset = asset;
+                break;
+            }
+            case VariantTypes::Asset:
+                m_AsAsset = value.AsAsset;
+                break;
+            case VariantTypes::UID:
+                m_AsAsset = AssetContent::LoadAsync<Asset>(*(UID*)value.AsData);
+                break;
+            default:
+                return MaterialParameterSetResult::InvalidValueType;
+            }
+            break;
+        case MaterialParameterType::GlobalSDF:
+            return MaterialParameterSetResult::UnsupportedParameterType;
         default:
-            invalidType = true;
+            return MaterialParameterSetResult::UnsupportedParameterType;
         }
 
-        if (invalidType)
+        return MaterialParameterSetResult::Success;
+    }
+
+    void MaterialParameter::SetValue(const Variant& value)
+    {
+        const MaterialParameterSetResult result = TrySetValue(value);
+        if (result != MaterialParameterSetResult::Success)
         {
-            LOG_ERROR("Render", "Invalid material parameter value type {0} to set (param type: {1})", value.Type.ToString(), Types::GetEnumString(m_Type));
+            LOG_ERROR("Render", "Cannot set material parameter value type {0} (param type: {1}, result: {2})", value.Type.ToString(), Types::GetEnumString(m_Type), static_cast<int32>(result));
         }
     }
 
@@ -178,7 +247,7 @@ namespace SE
         switch (m_Type)
         {
         case MaterialParameterType::Bool:
-            ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= static_cast<int32>(m_Offset) + sizeof(bool));
+            ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= static_cast<int32>(m_Offset) + sizeof(int32));
             *((int32*)(meta.Constants.Get() + m_Offset)) = _asBool;
             break;
         case MaterialParameterType::Integer:
@@ -295,7 +364,7 @@ namespace SE
             break;
         }*/
         case MaterialParameterType::ChannelMask:
-            ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= (int32)m_Offset + sizeof(int32));
+            ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= (int32)m_Offset + sizeof(Float4));
             *((Float4*)(meta.Constants.Get() + m_Offset)) = Float4(_asInteger == 0, _asInteger == 1, _asInteger == 2, _asInteger == 3);
             break;
         /*case MaterialParameterType::GameplayGlobal:
@@ -371,7 +440,16 @@ namespace SE
 
     bool MaterialParameter::HasContentLoaded() const
     {
-        return m_AsAsset == nullptr || m_AsAsset->IsLoaded();
+        switch (m_Type)
+        {
+        case MaterialParameterType::NormalMap:
+        case MaterialParameterType::Texture:
+        case MaterialParameterType::CubeTexture:
+        case MaterialParameterType::GameplayGlobal:
+            return m_AsAsset == nullptr || m_AsAsset->IsLoaded();
+        default:
+            return true;
+        }
     }
 
     void MaterialParameter::clone(const MaterialParameter* param)
@@ -393,6 +471,7 @@ namespace SE
             break;
         case MaterialParameterType::Integer:
         case MaterialParameterType::SceneTexture:
+        case MaterialParameterType::ChannelMask:
         case MaterialParameterType::TextureGroupSampler:
             _asInteger = param->_asInteger;
             break;
@@ -418,7 +497,7 @@ namespace SE
             break;
         }
         m_AsAsset = param->m_AsAsset;
-        // m_AsGPUTexture = param->m_AsGPUTexture;
+        m_AsGPUTexture = param->m_AsGPUTexture;
     }
 
     bool MaterialParameter::operator==(const MaterialParameter& other) const
@@ -445,6 +524,18 @@ namespace SE
         return result;
     }
 
+    const MaterialParameter* MaterialParams::Get(const UID& id) const
+    {
+        for (int32 i = 0; i < Count(); i++)
+        {
+            if (At(i).GetParameterID() == id)
+            {
+                return &At(i);
+            }
+        }
+        return nullptr;
+    }
+
     MaterialParameter* MaterialParams::Get(const StringView& name)
     {
         MaterialParameter* result = nullptr;
@@ -457,6 +548,18 @@ namespace SE
             }
         }
         return result;
+    }
+
+    const MaterialParameter* MaterialParams::Get(const StringView& name) const
+    {
+        for (int32 i = 0; i < Count(); i++)
+        {
+            if (At(i).GetName() == name)
+            {
+                return &At(i);
+            }
+        }
+        return nullptr;
     }
 
     int32 MaterialParams::Find(const UID& id)
@@ -692,6 +795,7 @@ namespace SE
             }
                 break;
             case 3:
+            case 4:
             {
                 // Size of the collection
                 uint16 paramsCount;
@@ -756,10 +860,10 @@ namespace SE
                         /*stream->Read(id);
                         param->m_AsGPUTexture = id;*/
                         break;
-                    /*case MaterialParameterType::GameplayGlobal:
+                    case MaterialParameterType::GameplayGlobal:
                         stream->Read(id);
-                        param->m_AsAsset = AssetContent::LoadAsync<GameplayGlobals>(id);
-                        break;*/
+                        param->m_AsAsset = AssetContent::LoadAsync<Asset>(id);
+                        break;
                     default:
                         break;
                     }
@@ -785,7 +889,7 @@ namespace SE
             return;
 
         // Version
-        stream->WriteUint16(3);
+        stream->WriteUint16(4);
 
         // Size of the collection
         stream->WriteUint16(Count());
@@ -859,7 +963,7 @@ namespace SE
     void MaterialParams::Save(WriteStream* stream, const List<SerializedMaterialParam>* params)
     {
         // Version
-        stream->WriteUint16(3);
+        stream->WriteUint16(4);
 
         // Size of the collection
         stream->WriteUint16(params ? params->Count() : 0);
@@ -915,11 +1019,13 @@ namespace SE
                 case MaterialParameterType::Texture:
                 case MaterialParameterType::CubeTexture:
                 case MaterialParameterType::GameplayGlobal:
+                    stream->Write(param.AsGuid);
+                    break;
                 case MaterialParameterType::GPUTextureVolume:
                 case MaterialParameterType::GPUTextureCube:
                 case MaterialParameterType::GPUTextureArray:
                 case MaterialParameterType::GPUTexture:
-                    stream->Write(param.AsGuid);
+                    // 代码创建的 GPUTexture 仅为运行时引用，不进入 Material 资产数据。
                     break;
                 default:
                     break;

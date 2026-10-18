@@ -44,14 +44,19 @@ namespace SE
 
 	bool SLC2GPUShader::SelectProgram(const ShaderProgramSelection& selection, const SLC2ProgramRecord*& program, const SLC2TargetRecord*& target, const SLC2VariantRecord*& variant) const
 	{
+		return ResolveProgramSelection(_artifact, selection, program, target, variant);
+	}
+
+	bool SLC2GPUShader::ResolveProgramSelection(const SLC2Artifact& artifact, const ShaderProgramSelection& selection, const SLC2ProgramRecord*& program, const SLC2TargetRecord*& target, const SLC2VariantRecord*& variant)
+	{
 		program = nullptr;
 		target = nullptr;
 		variant = nullptr;
-		for (int32 index = 0; index < _artifact.Programs.Count(); index++)
+		for (int32 index = 0; index < artifact.Programs.Count(); index++)
 		{
-			if (_artifact.Programs[index].ProgramId == selection.ProgramId)
+			if (artifact.Programs[index].ProgramId == selection.ProgramId)
 			{
-				program = &_artifact.Programs[index];
+				program = &artifact.Programs[index];
 				break;
 			}
 		}
@@ -96,6 +101,11 @@ namespace SE
 			return false;
 		}
 		return true;
+	}
+
+	bool SLC2GPUShader::ResolveProgramSelection(const ShaderProgramSelection& selection, const SLC2ProgramRecord*& program, const SLC2TargetRecord*& target, const SLC2VariantRecord*& variant) const
+	{
+		return SelectProgram(selection, program, target, variant);
 	}
 
 	bool SLC2GPUShader::GetOrCreateProgram(const SLC2ProgramRecord* program, const SLC2TargetRecord* target, const SLC2VariantRecord* variant, SLC2GPUShaderProgram*& shaderProgram)

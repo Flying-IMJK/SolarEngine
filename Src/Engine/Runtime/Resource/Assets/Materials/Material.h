@@ -47,6 +47,9 @@ namespace SE
 	public:
 		// [MaterialBase]
 		bool IsMaterialInstance() const override;
+		MaterialShader* GetMaterialShaderObject() const override;
+
+		bool InstallSLC2RuntimeData(MaterialSLC2RuntimeData&& data);
 
 		// [IMaterial]
 		const MaterialInfo& GetInfo() const override;

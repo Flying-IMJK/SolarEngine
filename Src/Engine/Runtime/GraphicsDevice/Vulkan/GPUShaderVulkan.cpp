@@ -408,11 +408,13 @@ namespace SE
             }
         }
 
-        bool AddOrMergeLayoutBinding(const ShaderIRDescriptorRange& range, DescriptorSetLayoutInfoVulkan& output)
+        bool AddOrMergeLayoutBinding(const ShaderIRDescriptorRange& range, const uint32 maxBoundDescriptorSets,
+                                     DescriptorSetLayoutInfoVulkan& output)
         {
-            if (range.Set >= DescriptorSet::Max)
+            // Sparse register spaces still occupy every preceding Vulkan pipeline-layout set slot.
+            if (range.Set >= maxBoundDescriptorSets)
             {
-                LOG_ERROR("Graphic", "Descriptor set exceeds current Vulkan descriptor set layout slots.");
+                LOG_ERROR("Graphic", "SLC2 descriptor set exceeds device maxBoundDescriptorSets.");
                 return false;
             }
             if (range.DescriptorCount == 0 || range.LogicalElementStride == 0)
@@ -465,9 +467,11 @@ namespace SE
             return true;
         }
 
-        bool AddDescriptorBindingMap(const ShaderIRDescriptorRange&     range,
+        bool AddDescriptorBindingMap(const ShaderProgramReflection&     reflection,
+                                     const ShaderIRDescriptorRange&     range,
                                      const uint32                       blockId,
                                      const uint32                       rangeIndex,
+                                     const ShaderIRResourceRange*       logicalRange,
                                      const bool                         isUniformData,
                                      List<SLC2VulkanDescriptorBinding>& bindings)
         {
@@ -489,26 +493,78 @@ namespace SE
                     LOG_ERROR("Graphic", "Multiple SLC2 runtime resources map to the same Vulkan descriptor element.");
                     return false;
                 }
-                // 保留 block/range/resource 到 set/binding/arrayElement 的映射，后续写 descriptor 时不再回查反射树。
                 SLC2VulkanDescriptorBinding binding;
-                binding.BlockId        = blockId;
-                binding.RangeIndex     = rangeIndex;
-                binding.ResourceIndex  = resourceIndex;
-                binding.IsUniformData  = isUniformData;
                 binding.Set            = range.Set;
                 binding.Binding        = range.Binding;
                 binding.ArrayElement   = arrayElement;
                 binding.DescriptorType = descriptorType;
+
+                if (isUniformData)
+                {
+                    uint32 uniformBlockIndex;
+                    if (!reflection.FindUniformBlockIndex(blockId, uniformBlockIndex))
+                    {
+                        LOG_ERROR("Graphic", "Vulkan default uniform descriptor has no reflected uniform block index.");
+                        return false;
+                    }
+                    const ShaderUniformBlockLayout* uniformLayout = reflection.GetUniformBlockLayout(uniformBlockIndex);
+                    if (uniformLayout == nullptr || uniformLayout->ByteSize == 0)
+                    {
+                        LOG_ERROR("Graphic", "Vulkan default uniform descriptor has an invalid reflected byte size.");
+                        return false;
+                    }
+                    binding.Target            = SLC2VulkanDescriptorTarget::UniformBlock;
+                    binding.UniformBlockIndex = uniformBlockIndex;
+                    binding.UniformByteSize   = uniformLayout->ByteSize;
+                }
+                else
+                {
+                    if (logicalRange == nullptr)
+                    {
+                        LOG_ERROR("Graphic", "Vulkan resource descriptor has no logical resource range.");
+                        return false;
+                    }
+                    ShaderResourceKey key;
+                    key.BlockId       = blockId;
+                    key.RangeIndex    = rangeIndex;
+                    key.ResourceIndex = resourceIndex;
+                    if (!reflection.FindLogicalResourceSlotIndex(key, binding.ResourceSlotIndex))
+                    {
+                        LOG_ERROR("Graphic", "Vulkan descriptor target has no precomputed logical resource slot.");
+                        return false;
+                    }
+					if (range.Role == SE_TEXT("primary"))
+					{
+						binding.ResourceRole = SLC2VulkanResourceRole::Primary;
+					}
+					else if (range.Role == SE_TEXT("counter"))
+					{
+						if (descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+						{
+							LOG_ERROR("Graphic", "SLC2 counter descriptor must use a Vulkan storage buffer.");
+							return false;
+						}
+						binding.ResourceRole = SLC2VulkanResourceRole::Counter;
+					}
+					else
+					{
+						LOG_ERROR("Graphic", "SLC2 Vulkan resource descriptor has an unsupported physical role.");
+						return false;
+					}
+                    binding.Target = SLC2VulkanDescriptorTarget::Resource;
+                }
                 bindings.Add(binding);
             }
             return true;
         }
 
-        bool BuildBlockLayout(const ShaderReflectionIR&          layout,
+        bool BuildBlockLayout(const ShaderProgramReflection&     reflection,
                               const uint32                       blockId,
+                              const uint32                       maxBoundDescriptorSets,
                               DescriptorSetLayoutInfoVulkan&     output,
                               List<SLC2VulkanDescriptorBinding>& bindings)
         {
+            const ShaderReflectionIR& layout = reflection.GetLayout();
             if (blockId >= static_cast<uint32>(layout.ParameterBlocks.Count()))
             {
                 LOG_ERROR("Graphic", "Parameter block id is invalid for Vulkan runtime layout.");
@@ -519,19 +575,27 @@ namespace SE
             if (block.HasDefaultUniformBuffer)
             {
                 // 普通 uniform 通过编译端生成的 defaultUniformBuffer 进入 Vulkan descriptor layout。
-                if (!AddOrMergeLayoutBinding(block.DefaultUniformBuffer, output) ||
-                    !AddDescriptorBindingMap(block.DefaultUniformBuffer, block.Id, Max_uint32, true, bindings))
+                if (!AddOrMergeLayoutBinding(block.DefaultUniformBuffer, maxBoundDescriptorSets, output) ||
+                    !AddDescriptorBindingMap(reflection, block.DefaultUniformBuffer, block.Id, Max_uint32, nullptr,
+                                             true, bindings))
                 {
                     return false;
                 }
             }
 
+            const ShaderIRTypeRecord* blockType = reflection.GetType(block.ElementTypeId);
+            if (blockType == nullptr || blockType->ResourceRanges.Count() != block.RangeBindings.Count())
+            {
+                LOG_ERROR("Graphic", "Parameter block resource ranges do not match the Vulkan binding map.");
+                return false;
+            }
             for (int32 rangeIndex = 0; rangeIndex < block.RangeBindings.Count(); rangeIndex++)
             {
                 const ShaderIRRangeBinding& rangeBinding = block.RangeBindings[rangeIndex];
                 if (rangeBinding.SubBlockId >= 0)
                 {
-                    if (!BuildBlockLayout(layout, static_cast<uint32>(rangeBinding.SubBlockId), output, bindings))
+                    if (!BuildBlockLayout(reflection, static_cast<uint32>(rangeBinding.SubBlockId),
+                                          maxBoundDescriptorSets, output, bindings))
                     {
                         return false;
                     }
@@ -542,12 +606,18 @@ namespace SE
                     LOG_ERROR("Graphic", "Range binding is not a simple Vulkan descriptor mapping.");
                     return false;
                 }
+                if (rangeBinding.RangeIndex >= static_cast<uint32>(blockType->ResourceRanges.Count()))
+                {
+                    LOG_ERROR("Graphic", "Vulkan range binding index is outside the reflected resource ranges.");
+                    return false;
+                }
                 for (int32 descriptorIndex = 0; descriptorIndex < rangeBinding.DescriptorRanges.Count();
                      descriptorIndex++)
                 {
                     const ShaderIRDescriptorRange& descriptor = rangeBinding.DescriptorRanges[descriptorIndex];
-                    if (!AddOrMergeLayoutBinding(descriptor, output) ||
-                        !AddDescriptorBindingMap(descriptor, block.Id, rangeBinding.RangeIndex, false, bindings))
+                    if (!AddOrMergeLayoutBinding(descriptor, maxBoundDescriptorSets, output) ||
+                        !AddDescriptorBindingMap(reflection, descriptor, block.Id, rangeBinding.RangeIndex,
+                                                 &blockType->ResourceRanges[rangeBinding.RangeIndex], false, bindings))
                     {
                         return false;
                     }
@@ -556,17 +626,19 @@ namespace SE
             return true;
         }
 
-        bool BuildSLC2DescriptorSetLayoutInfo(const ShaderReflectionIR&          layout,
+        bool BuildSLC2DescriptorSetLayoutInfo(const ShaderProgramReflection&     reflection,
+                                              const uint32                       maxBoundDescriptorSets,
                                               DescriptorSetLayoutInfoVulkan&     output,
                                               List<SLC2VulkanDescriptorBinding>& bindings)
         {
-            output.hash           = 0;
-            output.setLayoutsHash = 0;
+            output.hash                      = 0;
+            output.setLayoutsHash            = 0;
             Platform::MemoryClear(output.layoutTypes, sizeof(output.layoutTypes));
             output.setLayouts.Clear();
             bindings.Clear();
 
-            if (!BuildBlockLayout(layout, layout.RootBlockId, output, bindings))
+            if (!BuildBlockLayout(reflection, reflection.GetLayout().RootBlockId,
+                                  maxBoundDescriptorSets, output, bindings))
             {
                 return false;
             }
@@ -575,7 +647,6 @@ namespace SE
             return true;
         }
     } // namespace
-
 
     SLC2ShaderProgramVulkan::SLC2ShaderProgramVulkan(GPUDeviceVulkan* device) : m_Device(device)
     {}
@@ -607,7 +678,8 @@ namespace SE
         }
 
         DescriptorSetLayoutInfoVulkan descriptorSetLayoutInfo;
-        if (!BuildSLC2DescriptorSetLayoutInfo(GetReflection().GetLayout(), descriptorSetLayoutInfo, m_DescriptorBindings))
+        if (!BuildSLC2DescriptorSetLayoutInfo(GetReflection(), m_Device->physicalDeviceLimits.maxBoundDescriptorSets,
+                                              descriptorSetLayoutInfo, m_DescriptorBindings))
         {
             return false;
         }
@@ -738,6 +810,11 @@ namespace SE
     bool SLC2ShaderProgramVulkan::PrepareAndBindComputeDescriptors(GPUContextVulkan*            context,
                                                                    const ShaderBindingSnapshot& snapshot)
     {
+        if (snapshot.GetProgram() != this)
+        {
+            LOG_ERROR("Graphic", "SLC2 compute descriptor snapshot belongs to a different shader program.");
+            return false;
+        }
         SLC2ComputePipelineStateVulkan* computeState = GetOrCreateComputeState();
         if (computeState == nullptr)
         {
@@ -750,6 +827,11 @@ namespace SE
                                                                     const ShaderBindingSnapshot&     snapshot,
                                                                     SLC2GraphicsPipelineStateVulkan* state)
     {
+        if (snapshot.GetProgram() != this)
+        {
+            LOG_ERROR("Graphic", "SLC2 graphics descriptor snapshot belongs to a different shader program.");
+            return false;
+        }
         if (state == nullptr)
         {
             LOG_ERROR("Graphic", "SLC2 graphics descriptor binding requires a graphics pipeline state.");

@@ -6,6 +6,8 @@ RUNTIME_ADD(
 
         MaterialParams.h
         MaterialParams.cpp
+        MaterialRuntime.h
+        MaterialRuntime.cpp
         MaterialSlot.h
 
         MaterialShader.h
