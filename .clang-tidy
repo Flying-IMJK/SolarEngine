@@ -1,7 +1,6 @@
 Checks: '-*,
     misc-throw-by-value-catch-by-reference,
     misc-misplaced-const,
-    misc-unconventional-assign-operator,
     misc-redundant-expression,
     misc-static-assert,
     misc-unconventional-assign-operator,
@@ -39,7 +38,6 @@ Checks: '-*,
     readability-container-size-empty,
     readability-convert-member-functions-to-static,
     readability-delete-null-pointer,
-    readability-deleted-default,
     readability-make-member-function-const,
     readability-misplaced-array-index,
     readability-non-const-parameter,
@@ -74,7 +72,6 @@ Checks: '-*,
     bugprone-macro-parentheses,
     bugprone-macro-repeated-side-effects,
     bugprone-misplaced-operator-in-strlen-in-alloc,
-    bugprone-misplaced-pointer-artithmetic-in-alloc,
     bugprone-misplaced-widening-cast,
     bugprone-move-forwarding-reference,
     bugprone-multiple-statement-macro,
@@ -103,7 +100,6 @@ Checks: '-*,
     bugprone-use-after-move,
     bugprone-virtual-near-miss,
 
-    cert-dcl21-cpp,
     cert-dcl50-cpp,
     cert-env33-c,
     cert-err34-c,
@@ -139,7 +135,6 @@ Checks: '-*,
     clang-analyzer-cplusplus.InnerPointer,
     clang-analyzer-cplusplus.NewDelete,
     clang-analyzer-cplusplus.NewDeleteLeaks,
-    clang-analyzer-cplusplus.PlacementNewChecker,
     clang-analyzer-cplusplus.SelfAssignment,
     clang-analyzer-deadcode.DeadStores,
     clang-analyzer-optin.cplusplus.VirtualCall,
@@ -162,7 +157,8 @@ Checks: '-*,
 
     boost-use-to-string,
 '
-WarningsAsErrors: '*'
+# Keep editor diagnostics as warnings while existing code is brought into compliance.
+WarningsAsErrors: ''
 
 CheckOptions:
   - key: readability-identifier-naming.ClassCase
@@ -170,38 +166,59 @@ CheckOptions:
   - key: readability-identifier-naming.EnumCase
     value: CamelCase
   - key: readability-identifier-naming.LocalVariableCase
-    value: lower_case
-  - key: readability-identifier-naming.StaticConstantCase
-    value: aNy_CasE
-  - key: readability-identifier-naming.MemberCase
-    value: lower_case
-  - key: readability-identifier-naming.ClassMemberPrefix
-    value: m_
-  - key: readability-identifier-naming.PrivateMemberPrefix
-    value: ''
-  - key: readability-identifier-naming.ProtectedMemberPrefix
-    value: ''
-  - key: readability-identifier-naming.PublicMemberCase
-    value: lower_case
-  - key: readability-identifier-naming.MethodCase
     value: camelBack
+  - key: readability-identifier-naming.ParameterCase
+    value: camelBack
+  - key: readability-identifier-naming.PointerParameterCase
+    value: CamelCase
+  - key: readability-identifier-naming.PointerParameterPrefix
+    value: p
+  - key: readability-identifier-naming.ConstantPointerParameterCase
+    value: CamelCase
+  - key: readability-identifier-naming.ConstantPointerParameterPrefix
+    value: p
+  - key: readability-identifier-naming.MacroDefinitionCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.EnumConstantCase
+    value: CamelCase
+  - key: readability-identifier-naming.ScopedEnumConstantCase
+    value: CamelCase
+  - key: readability-identifier-naming.NamespaceCase
+    value: CamelCase
+  - key: readability-identifier-naming.NamespaceIgnoredRegexp
+    value: '^SE$'
+  - key: readability-identifier-naming.ConstantCase
+    value: CamelCase
+  - key: readability-identifier-naming.StaticConstantCase
+    value: CamelCase
+  # Static class fields need semantic review; this check does not distinguish them.
+  - key: readability-identifier-naming.PublicMemberCase
+    value: CamelCase
+  - key: readability-identifier-naming.PrivateMemberCase
+    value: CamelCase
+  - key: readability-identifier-naming.PrivateMemberPrefix
+    value: m_
+  - key: readability-identifier-naming.ProtectedMemberCase
+    value: CamelCase
+  - key: readability-identifier-naming.ProtectedMemberPrefix
+    value: m_
+  - key: readability-identifier-naming.MethodCase
+    value: CamelCase
   - key: readability-identifier-naming.PrivateMethodPrefix
     value: ''
   - key: readability-identifier-naming.ProtectedMethodPrefix
     value: ''
   - key: readability-identifier-naming.ParameterPackCase
-    value: lower_case
+    value: camelBack
   - key: readability-identifier-naming.StructCase
     value: CamelCase
   - key: readability-identifier-naming.TemplateTemplateParameterCase
     value: CamelCase
-  - key: readability-identifier-naming.TemplateUsingCase
-    value: lower_case
+  - key: readability-identifier-naming.TypeAliasCase
+    value: CamelCase
   - key: readability-identifier-naming.TypeTemplateParameterCase
     value: CamelCase
   - key: readability-identifier-naming.TypedefCase
     value: CamelCase
   - key: readability-identifier-naming.UnionCase
-    value: CamelCase
-  - key: readability-identifier-naming.UsingCase
     value: CamelCase

@@ -1,13 +1,13 @@
 {
   "slang.predefinedMacros": [
-    "SHADER_VS(entry)=",
-    "SHADER_HS(entry)=",
-    "SHADER_DS(entry)=",
-    "SHADER_GS(entry)=",
-    "SHADER_PS(entry)=",
-    "SHADER_CS(entry)=",
+    "SHADER_VS(entry)",
+    "SHADER_HS(entry)",
+    "SHADER_DS(entry)",
+    "SHADER_GS(entry)",
+    "SHADER_PS(entry)",
+    "SHADER_CS(entry)",
     "SHADER_MACRO(...)=",
-    "SHADER_PROGRAM(name, context)=struct name {}"
+    "SHADER_PROGRAM(name, context)"
   ],
   "slang.additionalSearchPaths": [
     "Src/Engine",

@@ -60,20 +60,24 @@ ForEachMacros:
   - foreach
   - Q_FOREACH
   - BOOST_FOREACH
+# Keep existing include groups; sort headers inside each group.
 IncludeBlocks: Preserve
-IncludeCategories: 
-  - Regex:           '^"(core/pilot_prerequisites)/'
-    Priority:        -1
-  - Regex:           '^"(core)/)'
-    Priority:        5
-  - Regex:           '^"(runtime)/)'
-    Priority:        4
-  - Regex:           '^"(client|server)/)'
-    Priority:        3
-  - Regex:           '^"(sketum)/)'
-    Priority:        2
-  - Regex:           '.*'
+MainIncludeChar: AngleBracket
+IncludeCategories:
+  - Regex:           '^<[^/<>]+\.(h|hpp)>'
+    Priority:        0
+  - Regex:           '^["<]Runtime/Core/'
     Priority:        1
+  - Regex:           '^["<]Runtime/'
+    Priority:        2
+  - Regex:           '^["<]Editor/'
+    Priority:        3
+  - Regex:           '^<'
+    Priority:        4
+  - Regex:           '^"'
+    Priority:        5
+  - Regex:           '.*'
+    Priority:        6
 IndentCaseLabels: true
 IndentWidth:     4
 IndentExternBlock: AfterExternBlock

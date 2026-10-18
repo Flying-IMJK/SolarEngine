@@ -1,156 +1,123 @@
-# Visual Studio 生成了具有 C++ 设置的 .editorconfig 文件。
 root = true
 
-# C# conventions used by Runtime and Editor managed code. Generated bindings
-# are excluded because their source is owned by the Reflector generator.
+# Handwritten managed code. Generated bindings have their own section below.
 [Src/Engine/{Runtime,Editor}/**/*.cs]
+indent_style = space
+indent_size = 4
+end_of_line = crlf
+max_line_length = 120
+csharp_new_line_before_open_brace = all
 csharp_prefer_braces = true:warning
+csharp_style_namespace_declarations = block_scoped:warning
+csharp_style_var_for_built_in_types = false:warning
+csharp_style_var_when_type_is_apparent = false:warning
+csharp_style_var_elsewhere = false:warning
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = when_on_single_line:suggestion
+csharp_style_expression_bodied_accessors = when_on_single_line:suggestion
 dotnet_diagnostic.IDE0011.severity = warning
+dotnet_diagnostic.IDE0008.severity = warning
+dotnet_diagnostic.IDE0160.severity = warning
 dotnet_diagnostic.IDE1006.severity = warning
+
+# Types and callable members.
+dotnet_naming_rule.types_should_be_pascal.severity = warning
+dotnet_naming_rule.types_should_be_pascal.symbols = types
+dotnet_naming_rule.types_should_be_pascal.style = pascal
+dotnet_naming_symbols.types.applicable_kinds = class, struct, enum, delegate
+
+dotnet_naming_rule.interfaces_should_be_i_pascal.severity = warning
+dotnet_naming_rule.interfaces_should_be_i_pascal.symbols = interfaces
+dotnet_naming_rule.interfaces_should_be_i_pascal.style = i_pascal
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+
+dotnet_naming_rule.type_parameters_should_be_t_pascal.severity = warning
+dotnet_naming_rule.type_parameters_should_be_t_pascal.symbols = type_parameters
+dotnet_naming_rule.type_parameters_should_be_t_pascal.style = t_pascal
+dotnet_naming_symbols.type_parameters.applicable_kinds = type_parameter
+
+dotnet_naming_rule.members_should_be_pascal.severity = warning
+dotnet_naming_rule.members_should_be_pascal.symbols = members
+dotnet_naming_rule.members_should_be_pascal.style = pascal
+dotnet_naming_symbols.members.applicable_kinds = method, property, event
+
+# The narrower static and constant rules take precedence over instance fields.
+dotnet_naming_rule.fields_should_be_pascal.severity = warning
+dotnet_naming_rule.fields_should_be_pascal.symbols = fields
+dotnet_naming_rule.fields_should_be_pascal.style = pascal
+dotnet_naming_symbols.fields.applicable_kinds = field
+
+dotnet_naming_rule.nonpublic_fields_should_be_m_pascal.severity = warning
+dotnet_naming_rule.nonpublic_fields_should_be_m_pascal.symbols = nonpublic_fields
+dotnet_naming_rule.nonpublic_fields_should_be_m_pascal.style = m_pascal
+dotnet_naming_symbols.nonpublic_fields.applicable_kinds = field
+dotnet_naming_symbols.nonpublic_fields.applicable_accessibilities = private, protected, private_protected
+
+dotnet_naming_rule.static_fields_should_be_s_pascal.severity = warning
+dotnet_naming_rule.static_fields_should_be_s_pascal.symbols = static_fields
+dotnet_naming_rule.static_fields_should_be_s_pascal.style = s_pascal
+dotnet_naming_symbols.static_fields.applicable_kinds = field
+dotnet_naming_symbols.static_fields.required_modifiers = static
+
+dotnet_naming_rule.nonpublic_static_fields_should_be_s_pascal.severity = warning
+dotnet_naming_rule.nonpublic_static_fields_should_be_s_pascal.symbols = nonpublic_static_fields
+dotnet_naming_rule.nonpublic_static_fields_should_be_s_pascal.style = s_pascal
+dotnet_naming_symbols.nonpublic_static_fields.applicable_kinds = field
+dotnet_naming_symbols.nonpublic_static_fields.applicable_accessibilities = private, protected, private_protected
+dotnet_naming_symbols.nonpublic_static_fields.required_modifiers = static
+
+# Const is implicitly static; the intersections prevent an s_ prefix on constants.
+dotnet_naming_rule.constants_should_be_pascal.severity = warning
+dotnet_naming_rule.constants_should_be_pascal.symbols = constants
+dotnet_naming_rule.constants_should_be_pascal.style = pascal
+dotnet_naming_symbols.constants.applicable_kinds = field
+dotnet_naming_symbols.constants.required_modifiers = const
+
+dotnet_naming_rule.nonpublic_constants_should_be_pascal.severity = warning
+dotnet_naming_rule.nonpublic_constants_should_be_pascal.symbols = nonpublic_constants
+dotnet_naming_rule.nonpublic_constants_should_be_pascal.style = pascal
+dotnet_naming_symbols.nonpublic_constants.applicable_kinds = field
+dotnet_naming_symbols.nonpublic_constants.applicable_accessibilities = private, protected, private_protected
+dotnet_naming_symbols.nonpublic_constants.required_modifiers = const, static
+
+dotnet_naming_rule.static_readonly_fields_should_be_pascal.severity = warning
+dotnet_naming_rule.static_readonly_fields_should_be_pascal.symbols = static_readonly_fields
+dotnet_naming_rule.static_readonly_fields_should_be_pascal.style = pascal
+dotnet_naming_symbols.static_readonly_fields.applicable_kinds = field
+dotnet_naming_symbols.static_readonly_fields.required_modifiers = static, readonly
+
+dotnet_naming_rule.nonpublic_static_readonly_fields_should_be_pascal.severity = warning
+dotnet_naming_rule.nonpublic_static_readonly_fields_should_be_pascal.symbols = nonpublic_static_readonly_fields
+dotnet_naming_rule.nonpublic_static_readonly_fields_should_be_pascal.style = pascal
+dotnet_naming_symbols.nonpublic_static_readonly_fields.applicable_kinds = field
+dotnet_naming_symbols.nonpublic_static_readonly_fields.applicable_accessibilities = private, protected, private_protected
+dotnet_naming_symbols.nonpublic_static_readonly_fields.required_modifiers = static, readonly
+
+# Parameters and local variables.
+dotnet_naming_rule.parameters_should_be_camel.severity = warning
+dotnet_naming_rule.parameters_should_be_camel.symbols = parameters
+dotnet_naming_rule.parameters_should_be_camel.style = camel
+dotnet_naming_symbols.parameters.applicable_kinds = parameter
+
+dotnet_naming_rule.locals_should_be_camel.severity = warning
+dotnet_naming_rule.locals_should_be_camel.symbols = locals
+dotnet_naming_rule.locals_should_be_camel.style = camel
+dotnet_naming_symbols.locals.applicable_kinds = local
+
+dotnet_naming_style.pascal.capitalization = pascal_case
+dotnet_naming_style.i_pascal.required_prefix = I
+dotnet_naming_style.i_pascal.capitalization = pascal_case
+dotnet_naming_style.t_pascal.required_prefix = T
+dotnet_naming_style.t_pascal.capitalization = pascal_case
+dotnet_naming_style.m_pascal.required_prefix = m_
+dotnet_naming_style.m_pascal.capitalization = pascal_case
+dotnet_naming_style.s_pascal.required_prefix = s_
+dotnet_naming_style.s_pascal.capitalization = pascal_case
+dotnet_naming_style.camel.capitalization = camel_case
 
 [Src/Engine/**/_Generated/**/*.cs]
 generated_code = true
 
-# Types, members, and non-private fields use UpperCamelCase.
-dotnet_naming_rule.types_should_be_upper_camel_case.severity = warning
-dotnet_naming_rule.types_should_be_upper_camel_case.symbols = types
-dotnet_naming_rule.types_should_be_upper_camel_case.style = upper_camel_case
-dotnet_naming_symbols.types.applicable_kinds = class, struct, enum, delegate
-
-dotnet_naming_rule.interfaces_should_be_i_upper_camel_case.severity = warning
-dotnet_naming_rule.interfaces_should_be_i_upper_camel_case.symbols = interfaces
-dotnet_naming_rule.interfaces_should_be_i_upper_camel_case.style = i_upper_camel_case
-dotnet_naming_symbols.interfaces.applicable_kinds = interface
-
-dotnet_naming_rule.type_parameters_should_be_t_upper_camel_case.severity = warning
-dotnet_naming_rule.type_parameters_should_be_t_upper_camel_case.symbols = type_parameters
-dotnet_naming_rule.type_parameters_should_be_t_upper_camel_case.style = t_upper_camel_case
-dotnet_naming_symbols.type_parameters.applicable_kinds = type_parameter
-
-dotnet_naming_rule.members_should_be_upper_camel_case.severity = warning
-dotnet_naming_rule.members_should_be_upper_camel_case.symbols = members
-dotnet_naming_rule.members_should_be_upper_camel_case.style = upper_camel_case
-dotnet_naming_symbols.members.applicable_kinds = method, property, event
-
-dotnet_naming_rule.non_private_fields_should_be_upper_camel_case.severity = warning
-dotnet_naming_rule.non_private_fields_should_be_upper_camel_case.symbols = non_private_fields
-dotnet_naming_rule.non_private_fields_should_be_upper_camel_case.style = upper_camel_case
-dotnet_naming_symbols.non_private_fields.applicable_kinds = field
-dotnet_naming_symbols.non_private_fields.applicable_accessibilities = public, internal, protected, protected_internal, private_protected
-
-# Constant and static readonly fields use UpperCamelCase regardless of access.
-dotnet_naming_rule.constant_fields_should_be_upper_camel_case.severity = warning
-dotnet_naming_rule.constant_fields_should_be_upper_camel_case.symbols = constant_fields
-dotnet_naming_rule.constant_fields_should_be_upper_camel_case.style = upper_camel_case
-dotnet_naming_symbols.constant_fields.applicable_kinds = field
-dotnet_naming_symbols.constant_fields.required_modifiers = const
-
-dotnet_naming_rule.static_readonly_fields_should_be_upper_camel_case.severity = warning
-dotnet_naming_rule.static_readonly_fields_should_be_upper_camel_case.symbols = static_readonly_fields
-dotnet_naming_rule.static_readonly_fields_should_be_upper_camel_case.style = upper_camel_case
-dotnet_naming_symbols.static_readonly_fields.applicable_kinds = field
-dotnet_naming_symbols.static_readonly_fields.required_modifiers = static, readonly
-
-# Private static fields use s_UpperCamelCase.
-dotnet_naming_rule.private_static_fields_should_be_s_upper_camel_case.severity = warning
-dotnet_naming_rule.private_static_fields_should_be_s_upper_camel_case.symbols = private_static_fields
-dotnet_naming_rule.private_static_fields_should_be_s_upper_camel_case.style = s_upper_camel_case
-dotnet_naming_symbols.private_static_fields.applicable_kinds = field
-dotnet_naming_symbols.private_static_fields.applicable_accessibilities = private
-dotnet_naming_symbols.private_static_fields.required_modifiers = static
-dotnet_naming_style.s_upper_camel_case.required_prefix = s_
-dotnet_naming_style.s_upper_camel_case.capitalization = pascal_case
-
-# Private instance fields use m_UpperCamelCase.
-dotnet_naming_rule.private_instance_fields_should_be_m_upper_camel_case.severity = warning
-dotnet_naming_rule.private_instance_fields_should_be_m_upper_camel_case.symbols = private_instance_fields
-dotnet_naming_rule.private_instance_fields_should_be_m_upper_camel_case.style = m_upper_camel_case
-dotnet_naming_symbols.private_instance_fields.applicable_kinds = field
-dotnet_naming_symbols.private_instance_fields.applicable_accessibilities = private
-dotnet_naming_style.m_upper_camel_case.required_prefix = m_
-dotnet_naming_style.m_upper_camel_case.capitalization = pascal_case
-
-# Parameters and local variables use lowerCamelCase.
-dotnet_naming_rule.parameters_should_be_lower_camel_case.severity = warning
-dotnet_naming_rule.parameters_should_be_lower_camel_case.symbols = parameters
-dotnet_naming_rule.parameters_should_be_lower_camel_case.style = lower_camel_case
-dotnet_naming_symbols.parameters.applicable_kinds = parameter
-
-dotnet_naming_rule.local_variables_should_be_lower_camel_case.severity = warning
-dotnet_naming_rule.local_variables_should_be_lower_camel_case.symbols = local_variables
-dotnet_naming_rule.local_variables_should_be_lower_camel_case.style = lower_camel_case
-dotnet_naming_symbols.local_variables.applicable_kinds = local
-
-dotnet_naming_style.upper_camel_case.capitalization = pascal_case
-dotnet_naming_style.i_upper_camel_case.required_prefix = I
-dotnet_naming_style.i_upper_camel_case.capitalization = pascal_case
-dotnet_naming_style.t_upper_camel_case.required_prefix = T
-dotnet_naming_style.t_upper_camel_case.capitalization = pascal_case
-dotnet_naming_style.lower_camel_case.capitalization = camel_case
-
+# Documentation comment completion is a Visual Studio preference, not formatting.
 [*.{c++,cc,cpp,cppm,cxx,h,h++,hh,hpp,hxx,inl,ipp,ixx,tlh,tli}]
-
-# Visual C++ 代码样式设置
-
 cpp_generate_documentation_comments = xml
-
-# Visual C++ 格式设置
-
-cpp_indent_braces = false
-cpp_indent_multi_line_relative_to = innermost_parenthesis
-cpp_indent_within_parentheses = indent
-cpp_indent_preserve_within_parentheses = true
-cpp_indent_case_contents = true
-cpp_indent_case_labels = false
-cpp_indent_case_contents_when_block = false
-cpp_indent_lambda_braces_when_parameter = true
-cpp_indent_goto_labels = one_left
-cpp_indent_preprocessor = leftmost_column
-cpp_indent_access_specifiers = false
-cpp_indent_namespace_contents = true
-cpp_indent_preserve_comments = false
-cpp_new_line_before_open_brace_namespace = ignore
-cpp_new_line_before_open_brace_type = ignore
-cpp_new_line_before_open_brace_function = ignore
-cpp_new_line_before_open_brace_block = ignore
-cpp_new_line_before_open_brace_lambda = ignore
-cpp_new_line_scope_braces_on_separate_lines = false
-cpp_new_line_close_brace_same_line_empty_type = false
-cpp_new_line_close_brace_same_line_empty_function = false
-cpp_new_line_before_catch = true
-cpp_new_line_before_else = true
-cpp_new_line_before_while_in_do_while = false
-cpp_space_before_function_open_parenthesis = remove
-cpp_space_within_parameter_list_parentheses = false
-cpp_space_between_empty_parameter_list_parentheses = false
-cpp_space_after_keywords_in_control_flow_statements = true
-cpp_space_within_control_flow_statement_parentheses = false
-cpp_space_before_lambda_open_parenthesis = false
-cpp_space_within_cast_parentheses = false
-cpp_space_after_cast_close_parenthesis = false
-cpp_space_within_expression_parentheses = false
-cpp_space_before_block_open_brace = true
-cpp_space_between_empty_braces = false
-cpp_space_before_initializer_list_open_brace = false
-cpp_space_within_initializer_list_braces = true
-cpp_space_preserve_in_initializer_list = true
-cpp_space_before_open_square_bracket = false
-cpp_space_within_square_brackets = false
-cpp_space_before_empty_square_brackets = false
-cpp_space_between_empty_square_brackets = false
-cpp_space_group_square_brackets = true
-cpp_space_within_lambda_brackets = false
-cpp_space_between_empty_lambda_brackets = false
-cpp_space_before_comma = false
-cpp_space_after_comma = true
-cpp_space_remove_around_member_operators = true
-cpp_space_before_inheritance_colon = true
-cpp_space_before_constructor_colon = true
-cpp_space_remove_before_semicolon = true
-cpp_space_after_semicolon = true
-cpp_space_remove_around_unary_operator = true
-cpp_space_around_binary_operator = insert
-cpp_space_around_assignment_operator = insert
-cpp_space_pointer_reference_alignment = left
-cpp_space_around_ternary_operator = insert
-cpp_wrap_preserve_blocks = one_liners

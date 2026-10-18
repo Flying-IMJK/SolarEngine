@@ -12,6 +12,11 @@
                 "CMAKE_C_COMPILER": "cl.exe",
                 "CMAKE_CXX_COMPILER": "cl.exe",
                 "CMAKE_BUILD_TYPE":"Debug"
+            },
+            "vendor": {
+                "microsoft.com/VisualStudioSettings/CMake/1.0": {
+                    "enableClangTidyCodeAnalysis": true
+                }
             }
         },
         {
@@ -25,6 +30,11 @@
                 "CMAKE_C_COMPILER": "cl.exe",
                 "CMAKE_CXX_COMPILER": "cl.exe",
                 "CMAKE_BUILD_TYPE":"Release"
+            },
+            "vendor": {
+                "microsoft.com/VisualStudioSettings/CMake/1.0": {
+                    "enableClangTidyCodeAnalysis": true
+                }
             }
         }
     ],

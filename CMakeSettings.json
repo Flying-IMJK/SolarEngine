@@ -9,7 +9,8 @@
       "installRoot": "${projectDir}\\build\\install\\${name}",
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
-      "ctestCommandArgs": ""
+      "ctestCommandArgs": "",
+      "enableClangTidyCodeAnalysis": true
     }
   ]
 }
