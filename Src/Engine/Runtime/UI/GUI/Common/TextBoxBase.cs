@@ -602,7 +602,8 @@ namespace SE.GUI
         }
 
         /// <summary>
-        /// Ensures that the caret is visible in the TextBox window, by scrolling the TextBox control surface if necessary.
+        /// Ensures that the caret is visible in the TextBox window, by scrolling the TextBox control surface if
+        /// necessary.
         /// </summary>
         public virtual void ScrollToCaret()
         {
@@ -742,7 +743,8 @@ namespace SE.GUI
         /// Calculates hit character index at given location.
         /// </summary>
         /// <param name="location">The location to test.</param>
-        /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
+        /// <returns> The selected character position index (can be equal to text length if location is outside of the
+        /// layout rectangle).</returns>
         public abstract int HitTestText(Float2 location);
 
         /// <summary>

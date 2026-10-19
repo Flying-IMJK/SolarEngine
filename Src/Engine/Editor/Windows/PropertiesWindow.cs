@@ -8,25 +8,29 @@ namespace SE.Editor.GUI
 {
     public sealed class PropertiesWindow : SceneEditorWindow
     {
-        private readonly SearchBox _searchBox;
-        private readonly Button _lockButton;
-        private readonly Panel _scrollingPanel;
-        private readonly Dictionary<Guid, float> _actorScrollValues = new();
-        private bool _lockSelection;
+        private readonly SearchBox m_SearchBox;
+        private readonly Button m_LockButton;
+        private readonly Panel m_ScrollingPanel;
+        private readonly Dictionary<Guid, float> m_ActorScrollValues = new();
+        private bool m_LockSelection;
 
         public readonly CustomEditorPresenter Presenter;
 
         public bool LockSelection
         {
-            get => _lockSelection;
+            get => m_LockSelection;
             set
             {
-                if (_lockSelection == value)
+                if (m_LockSelection == value)
+                {
                     return;
-                _lockSelection = value;
-                _lockButton.Text = value ? "Unlock" : "Lock";
+                }
+                m_LockSelection = value;
+                m_LockButton.Text = value ? "Unlock" : "Lock";
                 if (!value)
+                {
                     OnSelectionChanged();
+                }
             }
         }
 
@@ -35,44 +39,45 @@ namespace SE.Editor.GUI
             Title = "Properties";
             AutoFocus = true;
 
-            var header = AddChild(new ContainerControl
+            ContainerControl header = AddChild(new ContainerControl
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 BackgroundColor = Style.Current.Background,
                 IsScrollable = false,
                 Offsets = new Margin(0, 0, 0, 24)
             });
-            _searchBox = header.AddChild(new SearchBox());
-            _searchBox.AnchorPreset = AnchorPresets.HorizontalStretchTop;
-            _searchBox.Offsets = new Margin(4, 56, 3, 18);
-            _lockButton = header.AddChild(new Button
+            m_SearchBox = header.AddChild(new SearchBox());
+            m_SearchBox.AnchorPreset = AnchorPresets.HorizontalStretchTop;
+            m_SearchBox.Offsets = new Margin(4, 56, 3, 18);
+            m_LockButton = header.AddChild(new Button
             {
                 Text = "Lock",
                 TooltipText = "Lock the current selection",
                 AnchorPreset = AnchorPresets.TopRight,
                 Bounds = new Rectangle(header.Width - 52, 3, 48, 18),
             });
-            _lockButton.Clicked += () => LockSelection = !LockSelection;
+            m_LockButton.Clicked += () => LockSelection = !LockSelection;
 
-            _scrollingPanel = AddChild(new Panel());
-            _scrollingPanel.AnchorPreset = AnchorPresets.StretchAll;
-            _scrollingPanel.Offsets = new Margin(0, 0, header.Bottom, 0);
-            _scrollingPanel.SetScrollBars(ScrollBars.Vertical);
-            if (_scrollingPanel.vScrollBar != null)
-                _scrollingPanel.vScrollBar.ValueChanged += OnScrollValueChanged;
+            m_ScrollingPanel = AddChild(new Panel());
+            m_ScrollingPanel.AnchorPreset = AnchorPresets.StretchAll;
+            m_ScrollingPanel.Offsets = new Margin(0, 0, header.Bottom, 0);
+            m_ScrollingPanel.SetScrollBars(ScrollBars.Vertical);
+            if (m_ScrollingPanel.vScrollBar != null)
+            {
+                m_ScrollingPanel.vScrollBar.ValueChanged += OnScrollValueChanged;
+            }
 
             Presenter = new CustomEditorPresenter();
             Presenter.Features |= FeatureFlags.CacheExpandedGroups;
             Presenter.Panel.Margin = new Margin(0, 0, 3, 3);
-            Presenter.Panel.Parent = _scrollingPanel;
-            _searchBox.TextChanged += () => Presenter.ApplySearchFilter(_searchBox.Text);
-            Presenter.AfterLayout += _ => Presenter.ApplySearchFilter(_searchBox.Text);
+            Presenter.Panel.Parent = m_ScrollingPanel;
+            m_SearchBox.TextChanged += () => Presenter.ApplySearchFilter(m_SearchBox.Text);
+            Presenter.AfterLayout += _ => Presenter.ApplySearchFilter(m_SearchBox.Text);
             Editor.Scene.SelectionChanged += OnSelectionChanged;
             SE.Level.SceneLoaded += OnSceneLoaded;
         }
 
         public override void OnInit() => OnSelectionChanged();
-        public override void OnUpdate() => Presenter.Update();
 
         public override void OnExit()
         {
@@ -83,36 +88,46 @@ namespace SE.Editor.GUI
         private void OnSelectionChanged()
         {
             if (LockSelection)
+            {
                 return;
-            IEnumerable<object?> objects = Editor.Scene.Selection.Select(node => node.GetEditableObject()).Distinct();
+            }
+            IEnumerable<object> objects = Editor.Scene.Selection.Select(node => node.GetEditableObject()).Distinct();
             Presenter.Select(objects);
-            if (Editor.Scene.SelectionCount == 1 && _scrollingPanel.vScrollBar != null)
-                _scrollingPanel.vScrollBar.SetTargetValue(
-                    _actorScrollValues.GetValueOrDefault(Editor.Scene.Selection[0].ID, 0));
+            if (Editor.Scene.SelectionCount == 1 && m_ScrollingPanel.vScrollBar != null)
+            {
+                m_ScrollingPanel.vScrollBar.SetTargetValue(
+                                    m_ActorScrollValues.GetValueOrDefault(Editor.Scene.Selection[0].ID, 0));
+            }
         }
 
         private void OnScrollValueChanged()
         {
-            if (Editor.Scene.SelectionCount != 1 || _scrollingPanel.vScrollBar == null)
+            if (Editor.Scene.SelectionCount != 1 || m_ScrollingPanel.vScrollBar == null)
+            {
                 return;
-            if (_actorScrollValues.Count >= 20)
+            }
+            if (m_ActorScrollValues.Count >= 20)
             {
                 int count = 0;
-                foreach (Guid key in _actorScrollValues.Keys.ToArray())
+                foreach (Guid key in m_ActorScrollValues.Keys.ToArray())
                 {
                     if (count++ >= 10)
+                    {
                         break;
-                    _actorScrollValues.Remove(key);
+                    }
+                    m_ActorScrollValues.Remove(key);
                 }
             }
-            _actorScrollValues[Editor.Scene.Selection[0].ID] = _scrollingPanel.vScrollBar.GetTargetValue();
+            m_ActorScrollValues[Editor.Scene.Selection[0].ID] = m_ScrollingPanel.vScrollBar.GetTargetValue();
         }
 
         private void OnSceneLoaded(SE.Scene scene, Guid sceneId)
         {
             if (SE.Level.ScenesCount > 1)
+            {
                 return;
-            _actorScrollValues.Clear();
+            }
+            m_ActorScrollValues.Clear();
             if (LockSelection)
             {
                 LockSelection = false;

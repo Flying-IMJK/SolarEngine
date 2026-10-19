@@ -28,13 +28,13 @@ namespace SE.Editor
         private readonly List<ContentItem> m_Items = new List<ContentItem>(256);
         private readonly List<ContentItem> m_Selection = new List<ContentItem>();
 
-        private float _viewScale = 1.0f;
-        private ContentViewType _viewType = ContentViewType.Tiles;
-        private bool _isRubberBandSpanning;
-        private Float2 _mousePressLocation;
-        private Rectangle _rubberBandRectangle;
+        private float m_ViewScale = 1.0f;
+        private ContentViewType m_ViewType = ContentViewType.Tiles;
+        private bool m_IsRubberBandSpanning;
+        private Float2 m_MousePressLocation;
+        private Rectangle m_RubberBandRectangle;
 
-        private bool _validDragOver;
+        private bool m_ValidDragOver;
 
         /// <summary>Called when user wants to open the item.</summary>
         public Action<ContentItem> OnOpen;
@@ -84,13 +84,13 @@ namespace SE.Editor
         /// <summary>Gets or sets the view scale.</summary>
         public float ViewScale
         {
-            get => _viewScale;
+            get => m_ViewScale;
             set
             {
                 value = Math.Clamp(value, 0.3f, 3.0f);
-                if (!Mathf.NearEqual(value, _viewScale))
+                if (!Mathf.NearEqual(value, m_ViewScale))
                 {
-                    _viewScale = value;
+                    m_ViewScale = value;
                     ViewScaleChanged?.Invoke();
                     PerformLayout();
                 }
@@ -100,12 +100,12 @@ namespace SE.Editor
         /// <summary>Gets or sets the type of the view.</summary>
         public ContentViewType ViewType
         {
-            get => _viewType;
+            get => m_ViewType;
             set
             {
-                if (_viewType != value)
+                if (m_ViewType != value)
                 {
-                    _viewType = value;
+                    m_ViewType = value;
                     ViewTypeChanged?.Invoke();
                     PerformLayout();
                 }
@@ -147,9 +147,12 @@ namespace SE.Editor
         /// <summary>Shows the items collection in the view.</summary>
         /// <param name="items">The items to show.</param>
         /// <param name="sortType">The sort method for items.</param>
-        /// <param name="additive">If true, items are added to the current list; otherwise, the items list is cleared first.</param>
-        /// <param name="keepSelection">If true, selected items are preserved; otherwise, the selection is cleared first.</param>
-        public void ShowItems(List<ContentItem> items, SortType sortType, bool additive = false, bool keepSelection = false)
+        /// <param name="additive"> If true, items are added to the current list; otherwise, the items list is cleared
+        /// first.</param>
+        /// <param name="keepSelection"> If true, selected items are preserved; otherwise, the selection is cleared
+        /// first.</param>
+        public void ShowItems(List<ContentItem> items, SortType sortType, bool additive = false,
+            bool keepSelection = false)
         {
             if (items.Count == 0)
             {
@@ -214,7 +217,8 @@ namespace SE.Editor
 
         /// <summary>Selects the specified items.</summary>
         /// <param name="items">The items.</param>
-        /// <param name="additive">If true, items are added to the current selection; otherwise, the selection is cleared first.</param>
+        /// <param name="additive"> If true, items are added to the current selection; otherwise, the selection is
+        /// cleared first.</param>
         public void Select(List<ContentItem> items, bool additive = false)
         {
             if (items.Count == 0)
@@ -251,7 +255,8 @@ namespace SE.Editor
 
         /// <summary>Selects the specified item.</summary>
         /// <param name="item">The item.</param>
-        /// <param name="additive">If true, the item is added to the current selection; otherwise, the selection is cleared first.</param>
+        /// <param name="additive"> If true, the item is added to the current selection; otherwise, the selection is
+        /// cleared first.</param>
         public void Select(ContentItem item, bool additive = false)
         {
             bool wasLayoutLocked = IsLayoutLocked;
@@ -460,7 +465,7 @@ namespace SE.Editor
             base.Draw();
 
             Style style = Style.Current;
-            if (IsDragOver() && _validDragOver)
+            if (IsDragOver() && m_ValidDragOver)
             {
                 Rectangle bounds = new Rectangle(Float2.One, Float2.One * 2.0f - Size);
                 Render2D.FillRectangle(bounds, style.Selection);
@@ -474,10 +479,10 @@ namespace SE.Editor
                     TextAlignment.Center, TextAlignment.Center);
             }
 
-            if (_isRubberBandSpanning)
+            if (m_IsRubberBandSpanning)
             {
-                Render2D.FillRectangle(_rubberBandRectangle, style.Selection);
-                Render2D.DrawRectangle(_rubberBandRectangle, style.SelectionBorder, 1.0f);
+                Render2D.FillRectangle(m_RubberBandRectangle, style.Selection);
+                Render2D.DrawRectangle(m_RubberBandRectangle, style.SelectionBorder, 1.0f);
             }
         }
 
@@ -491,9 +496,9 @@ namespace SE.Editor
 
             if (button == MouseButton.Left)
             {
-                _mousePressLocation = location;
-                _rubberBandRectangle = new Rectangle(_mousePressLocation.X, _mousePressLocation.Y, 0.0f, 0.0f);
-                _isRubberBandSpanning = true;
+                m_MousePressLocation = location;
+                m_RubberBandRectangle = new Rectangle(m_MousePressLocation.X, m_MousePressLocation.Y, 0.0f, 0.0f);
+                m_IsRubberBandSpanning = true;
                 StartMouseCapture();
                 return true;
             }
@@ -504,10 +509,10 @@ namespace SE.Editor
         /// <inheritdoc />
         public override void OnMouseMove(Float2 location)
         {
-            if (_isRubberBandSpanning)
+            if (m_IsRubberBandSpanning)
             {
-                _rubberBandRectangle.Width = location.X - _mousePressLocation.X;
-                _rubberBandRectangle.Height = location.Y - _mousePressLocation.Y;
+                m_RubberBandRectangle.Width = location.X - m_MousePressLocation.X;
+                m_RubberBandRectangle.Height = location.Y - m_MousePressLocation.Y;
             }
 
             base.OnMouseMove(location);
@@ -516,27 +521,27 @@ namespace SE.Editor
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (_isRubberBandSpanning)
+            if (m_IsRubberBandSpanning)
             {
-                _isRubberBandSpanning = false;
+                m_IsRubberBandSpanning = false;
                 EndMouseCapture();
-                if (_rubberBandRectangle.Width < 0 || _rubberBandRectangle.Height < 0)
+                if (m_RubberBandRectangle.Width < 0 || m_RubberBandRectangle.Height < 0)
                 {
-                    Float2 size = _rubberBandRectangle.Size;
-                    _rubberBandRectangle.X = Math.Min(_rubberBandRectangle.X,
-                        _rubberBandRectangle.X + _rubberBandRectangle.Width);
-                    _rubberBandRectangle.Y = Math.Min(_rubberBandRectangle.Y,
-                        _rubberBandRectangle.Y + _rubberBandRectangle.Height);
+                    Float2 size = m_RubberBandRectangle.Size;
+                    m_RubberBandRectangle.X = Math.Min(m_RubberBandRectangle.X,
+                        m_RubberBandRectangle.X + m_RubberBandRectangle.Width);
+                    m_RubberBandRectangle.Y = Math.Min(m_RubberBandRectangle.Y,
+                        m_RubberBandRectangle.Y + m_RubberBandRectangle.Height);
                     size.X = Math.Abs(size.X);
                     size.Y = Math.Abs(size.Y);
-                    _rubberBandRectangle.Size = size;
+                    m_RubberBandRectangle.Size = size;
                 }
 
                 List<ContentItem> itemsInRectangle = new List<ContentItem>();
                 for (int i = 0; i < m_Items.Count; i++)
                 {
                     ContentItem item = m_Items[i];
-                    if (_rubberBandRectangle.Intersects(item.Bounds))
+                    if (m_RubberBandRectangle.Intersects(item.Bounds))
                     {
                         itemsInRectangle.Add(item);
                     }
@@ -659,7 +664,7 @@ namespace SE.Editor
 
             if (data is DragDataFiles)
             {
-                _validDragOver = true;
+                m_ValidDragOver = true;
                 return DragDropEffect.Copy;
             }
 
@@ -670,7 +675,7 @@ namespace SE.Editor
         /// <inheritdoc />
         public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
-            _validDragOver = false;
+            m_ValidDragOver = false;
             DragDropEffect result = base.OnDragMove(ref location, data);
             if (result != DragDropEffect.None)
             {
@@ -679,7 +684,7 @@ namespace SE.Editor
 
             if (data is DragDataFiles)
             {
-                _validDragOver = true;
+                m_ValidDragOver = true;
                 result = DragDropEffect.Copy;
             }
             // Native actor drag branch is commented out.
@@ -709,14 +714,14 @@ namespace SE.Editor
                 result = DragDropEffect.Copy;
             }
 
-            _validDragOver = false;
+            m_ValidDragOver = false;
             return result;
         }
 
         /// <inheritdoc />
         public override void OnDragLeave()
         {
-            _validDragOver = false;
+            m_ValidDragOver = false;
             // Native actor drag leave branch is commented out.
             base.OnDragLeave();
         }
@@ -739,55 +744,55 @@ namespace SE.Editor
             float width = GetClientArea().Width;
             float x = 0.0f;
             float y = 1.0f;
-            float viewScale = _viewScale * 0.97f;
+            float viewScale = m_ViewScale * 0.97f;
 
             switch (ViewType)
             {
                 case ContentViewType.Tiles:
-                {
-                    float defaultItemsWidth = ContentItem.DefaultWidth * viewScale;
-                    int itemsToFit = (int)MathF.Floor(width / defaultItemsWidth) - 1;
-                    if (itemsToFit < 1)
                     {
-                        itemsToFit = 1;
-                    }
-                    int xSpace = 4;
-                    float itemsWidth = width / Math.Max(itemsToFit, 1) - xSpace;
-                    float itemsHeight = itemsWidth / defaultItemsWidth * (ContentItem.DefaultHeight * viewScale);
-                    float flooredItemsWidth = MathF.Floor(itemsWidth);
-                    float flooredItemsHeight = MathF.Floor(itemsHeight);
-                    x = itemsToFit == 1 ? 1.0f : itemsWidth / itemsToFit + xSpace;
-                    for (int i = 0; i < m_Children.Count; i++)
-                    {
-                        Control child = m_Children[i];
-                        child.Bounds = new Rectangle(MathF.Floor(x), MathF.Floor(y),
-                            flooredItemsWidth, flooredItemsHeight);
-
-                        x += (itemsWidth + xSpace) + (itemsWidth + xSpace) / itemsToFit;
-                        if (x + itemsWidth > width)
+                        float defaultItemsWidth = ContentItem.DefaultWidth * viewScale;
+                        int itemsToFit = (int)MathF.Floor(width / defaultItemsWidth) - 1;
+                        if (itemsToFit < 1)
                         {
-                            x = itemsToFit == 1 ? 1.0f : itemsWidth / itemsToFit + xSpace;
-                            y += itemsHeight + 7.0f;
+                            itemsToFit = 1;
                         }
+                        int xSpace = 4;
+                        float itemsWidth = width / Math.Max(itemsToFit, 1) - xSpace;
+                        float itemsHeight = itemsWidth / defaultItemsWidth * (ContentItem.DefaultHeight * viewScale);
+                        float flooredItemsWidth = MathF.Floor(itemsWidth);
+                        float flooredItemsHeight = MathF.Floor(itemsHeight);
+                        x = itemsToFit == 1 ? 1.0f : itemsWidth / itemsToFit + xSpace;
+                        for (int i = 0; i < m_Children.Count; i++)
+                        {
+                            Control child = m_Children[i];
+                            child.Bounds = new Rectangle(MathF.Floor(x), MathF.Floor(y),
+                                flooredItemsWidth, flooredItemsHeight);
+
+                            x += (itemsWidth + xSpace) + (itemsWidth + xSpace) / itemsToFit;
+                            if (x + itemsWidth > width)
+                            {
+                                x = itemsToFit == 1 ? 1.0f : itemsWidth / itemsToFit + xSpace;
+                                y += itemsHeight + 7.0f;
+                            }
+                        }
+                        if (x > 0.0f)
+                        {
+                            y += itemsHeight;
+                        }
+                        break;
                     }
-                    if (x > 0.0f)
-                    {
-                        y += itemsHeight;
-                    }
-                    break;
-                }
                 case ContentViewType.List:
-                {
-                    float itemsHeight = 50.0f * viewScale;
-                    for (int i = 0; i < m_Children.Count; i++)
                     {
-                        Control child = m_Children[i];
-                        child.Bounds = new Rectangle(x, y, width, itemsHeight);
-                        y += itemsHeight + 1.0f;
+                        float itemsHeight = 50.0f * viewScale;
+                        for (int i = 0; i < m_Children.Count; i++)
+                        {
+                            Control child = m_Children[i];
+                            child.Bounds = new Rectangle(x, y, width, itemsHeight);
+                            y += itemsHeight + 1.0f;
+                        }
+                        y += 40.0f;
+                        break;
                     }
-                    y += 40.0f;
-                    break;
-                }
             }
 
             if (HasParent)

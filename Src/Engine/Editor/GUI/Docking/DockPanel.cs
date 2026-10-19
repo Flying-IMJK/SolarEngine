@@ -36,11 +36,11 @@ namespace SE.Editor.GUI
         /// </summary>
         public const float DefaultSplitterValue = 0.25f;
 
-        private DockPanel _parentPanel;
-        private readonly List<DockPanel> _childPanels = new List<DockPanel>();
-        private readonly List<DockWindow> _tabs = new List<DockWindow>();
-        private DockWindow _selectedTab;
-        private DockPanelProxy _tabsProxy;
+        private DockPanel m_ParentPanel;
+        private readonly List<DockPanel> m_ChildPanels = new List<DockPanel>();
+        private readonly List<DockWindow> m_Tabs = new List<DockWindow>();
+        private DockWindow m_SelectedTab;
+        private DockPanelProxy m_TabsProxy;
 
         /// <summary>
         /// Returns true if this panel is a master panel.
@@ -62,7 +62,7 @@ namespace SE.Editor.GUI
                 RootControl parentWin = Root;
                 SE.Debug.Assert(parentWin != null, "Missing parent window.");
 
-                Control control = _tabsProxy != null ? (Control)_tabsProxy : this;
+                Control control = m_TabsProxy != null ? (Control)m_TabsProxy : this;
                 Float2 clientPos = control.PointToWindow(Float2.Zero);
                 return new Rectangle(parentWin.PointToScreen(clientPos), new Float2(GetDpiScale()) * control.Size);
             }
@@ -71,56 +71,56 @@ namespace SE.Editor.GUI
         /// <summary>
         /// Gets the child panels.
         /// </summary>
-        public List<DockPanel> ChildPanels => _childPanels;
+        public List<DockPanel> ChildPanels => m_ChildPanels;
 
         /// <summary>
         /// Gets the child panels count.
         /// </summary>
-        public int ChildPanelsCount => _childPanels.Count;
+        public int ChildPanelsCount => m_ChildPanels.Count;
 
         /// <summary>
         /// Gets the tabs.
         /// </summary>
-        public List<DockWindow> Tabs => _tabs;
+        public List<DockWindow> Tabs => m_Tabs;
 
         /// <summary>
         /// Gets amount of the tabs in a dock panel.
         /// </summary>
-        public int TabsCount => _tabs.Count;
+        public int TabsCount => m_Tabs.Count;
 
         /// <summary>
         /// Gets or sets the index of the selected tab.
         /// </summary>
         public int SelectedTabIndex
         {
-            get => _tabs.IndexOf(_selectedTab);
+            get => m_Tabs.IndexOf(m_SelectedTab);
             set => SelectTab(value);
         }
 
         /// <summary>
         /// Gets the selected tab.
         /// </summary>
-        public DockWindow SelectedTab => _selectedTab;
+        public DockWindow SelectedTab => m_SelectedTab;
 
         /// <summary>
         /// Gets the first tab.
         /// </summary>
-        public DockWindow FirstTab => _tabs.Count > 0 ? _tabs[0] : null;
+        public DockWindow FirstTab => m_Tabs.Count > 0 ? m_Tabs[0] : null;
 
         /// <summary>
         /// Gets the last tab.
         /// </summary>
-        public DockWindow LastTab => _tabs.Count > 0 ? _tabs[_tabs.Count - 1] : null;
+        public DockWindow LastTab => m_Tabs.Count > 0 ? m_Tabs[m_Tabs.Count - 1] : null;
 
         /// <summary>
         /// Gets the parent panel.
         /// </summary>
-        public DockPanel ParentDockPanel => _parentPanel;
+        public DockPanel ParentDockPanel => m_ParentPanel;
 
         /// <summary>
         /// Gets the tabs header proxy.
         /// </summary>
-        public DockPanelProxy TabsProxy => _tabsProxy;
+        public DockPanelProxy TabsProxy => m_TabsProxy;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DockPanel"/> class.
@@ -130,10 +130,10 @@ namespace SE.Editor.GUI
         {
             AutoFocus = false;
 
-            _parentPanel = parentPanel;
-            if (_parentPanel != null)
+            m_ParentPanel = parentPanel;
+            if (m_ParentPanel != null)
             {
-                _parentPanel._childPanels.Add(this);
+                m_ParentPanel.m_ChildPanels.Add(this);
             }
 
             AnchorPreset = AnchorPresets.StretchAll;
@@ -147,9 +147,9 @@ namespace SE.Editor.GUI
         /// <returns>True if action has been cancelled (due to window internal logic).</returns>
         public bool CloseAll(ClosingReason reason = ClosingReason.CloseEvent)
         {
-            while (_tabs.Count > 0)
+            while (m_Tabs.Count > 0)
             {
-                if (!_tabs[0].Close(reason))
+                if (!m_Tabs[0].Close(reason))
                 {
                     return false;
                 }
@@ -165,7 +165,7 @@ namespace SE.Editor.GUI
         /// <returns>The tab.</returns>
         public DockWindow GetTab(int tabIndex)
         {
-            return _tabs[tabIndex];
+            return m_Tabs[tabIndex];
         }
 
         /// <summary>
@@ -175,7 +175,7 @@ namespace SE.Editor.GUI
         /// <returns>The index of the given tab.</returns>
         public int GetTabIndex(DockWindow tab)
         {
-            return _tabs.IndexOf(tab);
+            return m_Tabs.IndexOf(tab);
         }
 
         /// <summary>
@@ -185,7 +185,7 @@ namespace SE.Editor.GUI
         /// <returns><c>true</c> if panel contains the specified tab; otherwise, <c>false</c>.</returns>
         public bool ContainsTab(DockWindow tab)
         {
-            return _tabs.Contains(tab);
+            return m_Tabs.Contains(tab);
         }
 
         /// <summary>
@@ -195,9 +195,9 @@ namespace SE.Editor.GUI
         public void SelectTab(int tabIndex)
         {
             DockWindow tab = null;
-            if (tabIndex >= 0 && _tabs.Count > tabIndex && _tabs.Count > 0)
+            if (tabIndex >= 0 && m_Tabs.Count > tabIndex && m_Tabs.Count > 0)
             {
-                tab = _tabs[tabIndex];
+                tab = m_Tabs[tabIndex];
             }
             SelectTab(tab);
         }
@@ -210,36 +210,36 @@ namespace SE.Editor.GUI
         public void SelectTab(DockWindow tab, bool autoFocus = true)
         {
             // Check if tab will change
-            if (_selectedTab != tab)
+            if (m_SelectedTab != tab)
             {
                 // Change
                 ContainerControl proxy;
-                if (_selectedTab != null)
+                if (m_SelectedTab != null)
                 {
-                    proxy = _selectedTab.Parent;
-                    _selectedTab.Parent = null;
+                    proxy = m_SelectedTab.Parent;
+                    m_SelectedTab.Parent = null;
                 }
                 else
                 {
                     CreateTabsProxy();
-                    proxy = _tabsProxy;
+                    proxy = m_TabsProxy;
                 }
 
-                _selectedTab = tab;
-                if (_selectedTab != null)
+                m_SelectedTab = tab;
+                if (m_SelectedTab != null)
                 {
-                    _selectedTab.UnlockChildrenRecursive();
-                    _selectedTab.Parent = proxy;
+                    m_SelectedTab.UnlockChildrenRecursive();
+                    m_SelectedTab.Parent = proxy;
                     if (autoFocus)
                     {
-                        _selectedTab.Focus();
+                        m_SelectedTab.Focus();
                     }
                 }
                 OnSelectedTabChanged();
             }
-            else if (autoFocus && _selectedTab != null && !_selectedTab.ContainsFocus)
+            else if (autoFocus && m_SelectedTab != null && !m_SelectedTab.ContainsFocus)
             {
-                _selectedTab.Focus();
+                m_SelectedTab.Focus();
             }
         }
 
@@ -272,9 +272,9 @@ namespace SE.Editor.GUI
             // Test all docked controls (find the smallest one)
             float sizeLengthSquared = float.MaxValue;
             DockPanel result = null;
-            for (int i = 0; i < _childPanels.Count; i++)
+            for (int i = 0; i < m_ChildPanels.Count; i++)
             {
-                DockPanel panel = _childPanels[i].HitTest(position);
+                DockPanel panel = m_ChildPanels[i].HitTest(position);
                 if (panel != null)
                 {
                     float sizeLen = panel.Size.LengthSquared;
@@ -358,39 +358,39 @@ namespace SE.Editor.GUI
             switch (state)
             {
                 case DockState.DockTop:
-                {
-                    orientation = Orientation.Vertical;
-                    c1 = dockPanel;
-                    c2 = _tabsProxy;
-                    break;
-                }
+                    {
+                        orientation = Orientation.Vertical;
+                        c1 = dockPanel;
+                        c2 = m_TabsProxy;
+                        break;
+                    }
                 case DockState.DockBottom:
-                {
-                    splitterValue = 1.0f - splitterValue;
-                    orientation = Orientation.Vertical;
-                    c1 = _tabsProxy;
-                    c2 = dockPanel;
-                    break;
-                }
+                    {
+                        splitterValue = 1.0f - splitterValue;
+                        orientation = Orientation.Vertical;
+                        c1 = m_TabsProxy;
+                        c2 = dockPanel;
+                        break;
+                    }
                 case DockState.DockLeft:
-                {
-                    orientation = Orientation.Horizontal;
-                    c1 = dockPanel;
-                    c2 = _tabsProxy;
-                    break;
-                }
+                    {
+                        orientation = Orientation.Horizontal;
+                        c1 = dockPanel;
+                        c2 = m_TabsProxy;
+                        break;
+                    }
                 case DockState.DockRight:
-                {
-                    splitterValue = 1.0f - splitterValue;
-                    orientation = Orientation.Horizontal;
-                    c1 = _tabsProxy;
-                    c2 = dockPanel;
-                    break;
-                }
+                    {
+                        splitterValue = 1.0f - splitterValue;
+                        orientation = Orientation.Horizontal;
+                        c1 = m_TabsProxy;
+                        c2 = dockPanel;
+                        break;
+                    }
             }
 
             // Create splitter and link controls
-            ContainerControl parent = _tabsProxy.Parent;
+            ContainerControl parent = m_TabsProxy.Parent;
             SplitPanel splitter = new SplitPanel(orientation, ScrollBars.None, ScrollBars.None);
             splitter.AnchorPreset = AnchorPresets.StretchAll;
             splitter.Offsets = Margin.Zero;
@@ -407,7 +407,8 @@ namespace SE.Editor.GUI
             return dockPanel;
         }
 
-        public virtual void DockWindowInternal(DockState state, DockWindow window, bool autoSelect = true, float splitterValue = 0)
+        public virtual void DockWindowInternal(DockState state, DockWindow window, bool autoSelect = true,
+            float splitterValue = 0)
         {
             DockWindow(state, window, autoSelect, splitterValue);
         }
@@ -426,38 +427,38 @@ namespace SE.Editor.GUI
         {
             if (index > 0)
             {
-                DockWindow tab = _tabs[index];
-                _tabs.RemoveAt(index);
-                _tabs.Insert(index - 1, tab);
+                DockWindow tab = m_Tabs[index];
+                m_Tabs.RemoveAt(index);
+                m_Tabs.Insert(index - 1, tab);
             }
         }
 
         public void MoveTabRight(int index)
         {
-            if (index < _tabs.Count - 2)
+            if (index < m_Tabs.Count - 2)
             {
-                DockWindow tab = _tabs[index];
-                _tabs.RemoveAt(index);
-                _tabs.Insert(index + 1, tab);
+                DockWindow tab = m_Tabs[index];
+                m_Tabs.RemoveAt(index);
+                m_Tabs.Insert(index + 1, tab);
             }
         }
 
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            if (_parentPanel != null)
+            if (m_ParentPanel != null)
             {
-                _parentPanel._childPanels.Remove(this);
+                m_ParentPanel.m_ChildPanels.Remove(this);
             }
 
             base.OnDestroy();
 
             // Clear other tabs (not in the view)
-            for (int i = 0; i < _tabs.Count; i++)
+            for (int i = 0; i < m_Tabs.Count; i++)
             {
-                if (!_tabs[i].IsDisposing)
+                if (!m_Tabs[i].IsDisposing)
                 {
-                    _tabs[i].Dispose();
+                    m_Tabs[i].Dispose();
                 }
             }
         }
@@ -473,7 +474,7 @@ namespace SE.Editor.GUI
                 if (Parent.Parent is SplitPanel splitter)
                 {
                     // Check if there is another nested dock panel inside this dock panel and extract it here
-                    List<DockPanel> childPanels = new List<DockPanel>(_childPanels);
+                    List<DockPanel> childPanels = new List<DockPanel>(m_ChildPanels);
                     if (childPanels.Count != 0)
                     {
                         // Move tabs from child panels into this one
@@ -513,7 +514,8 @@ namespace SE.Editor.GUI
                         }
 
                         SE.Debug.Assert(scrPanel.ChildrenCount == 0, "Source panel still has children.");
-                        SE.Debug.Assert(splitterParent.ChildrenCount == srcPanelChildrenCount, "Splitter parent child count differs.");
+                        SE.Debug.Assert(splitterParent.ChildrenCount == srcPanelChildrenCount,
+                            "Splitter parent child count differs.");
 
                         // Delete
                         splitter.Dispose();
@@ -533,7 +535,8 @@ namespace SE.Editor.GUI
         /// <param name="window">The window.</param>
         /// <param name="autoSelect">Whether or not to automatically select the window after docking it.</param>
         /// <param name="splitterValue">The splitter value to use when docking to window.</param>
-        protected virtual void DockWindow(DockState state, DockWindow window, bool autoSelect = true, float splitterValue = 0)
+        protected virtual void DockWindow(DockState state, DockWindow window, bool autoSelect = true,
+            float splitterValue = 0)
         {
             CreateTabsProxy();
 
@@ -546,7 +549,8 @@ namespace SE.Editor.GUI
             else
             {
                 // Create child panel
-                DockPanel dockPanel = CreateChildPanel(state, splitterValue != 0.0f ? splitterValue : DefaultSplitterValue);
+                DockPanel dockPanel = CreateChildPanel(state, splitterValue != 0.0f ? splitterValue
+                    : DefaultSplitterValue);
 
                 // Dock window as a tab in a child panel
                 dockPanel.DockWindow(DockState.DockFill, window);
@@ -577,11 +581,11 @@ namespace SE.Editor.GUI
             }
 
             // Undock
-            _tabs.RemoveAt(index);
+            m_Tabs.RemoveAt(index);
             window.ParentDockPanel = null;
 
             // Check if has no more tabs
-            if (_tabs.Count == 0)
+            if (m_Tabs.Count == 0)
             {
                 OnLastTabRemoved();
             }
@@ -599,7 +603,7 @@ namespace SE.Editor.GUI
         /// <param name="autoSelect">True if auto-select newly added tab.</param>
         protected virtual void AddTab(DockWindow window, bool autoSelect = true)
         {
-            _tabs.Add(window);
+            m_Tabs.Add(window);
             window.ParentDockPanel = this;
             if (autoSelect)
             {
@@ -616,13 +620,13 @@ namespace SE.Editor.GUI
 
         private void CreateTabsProxy()
         {
-            if (_tabsProxy == null)
+            if (m_TabsProxy == null)
             {
                 // Create proxy and make set simple full dock
-                _tabsProxy = new DockPanelProxy(this);
-                _tabsProxy.Parent = this;
+                m_TabsProxy = new DockPanelProxy(this);
+                m_TabsProxy.Parent = this;
 
-                _tabsProxy.UnlockChildrenRecursive();
+                m_TabsProxy.UnlockChildrenRecursive();
             }
         }
     }

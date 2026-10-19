@@ -7,15 +7,15 @@ namespace SE.Editor
     /// </summary>
     public class FPSCamera : ViewportCamera
     {
-        private Transform _startMove;
-        private Transform _endMove;
-        private float _moveStartTime = -1;
+        private Transform m_StartMove;
+        private Transform m_EndMove;
+        private float m_MoveStartTime = -1;
 
         public Float3 TargetPoint = new Float3(-200);
 
         public bool GetIsAnimatingMove()
         {
-            return _moveStartTime > Mathf.Epsilon;
+            return m_MoveStartTime > Mathf.Epsilon;
         }
 
         public void SetView(Float3 position, Float3 direction)
@@ -45,9 +45,9 @@ namespace SE.Editor
 
         public void MoveViewport(Transform target)
         {
-            _startMove = GetViewport().ViewTransform;
-            _endMove = target;
-            _moveStartTime = Time.GetUnscaledGameTime();
+            m_StartMove = GetViewport().ViewTransform;
+            m_EndMove = target;
+            m_MoveStartTime = Time.GetUnscaledGameTime();
         }
 
         public override void ShowSphere(ref BoundingSphere sphere, ref Quaternion orientation)
@@ -81,15 +81,15 @@ namespace SE.Editor
             {
                 float animationDuration = 0.5f;
                 float time = Time.GetUnscaledGameTime();
-                float progress = (time - _moveStartTime) / animationDuration;
+                float progress = (time - m_MoveStartTime) / animationDuration;
                 if (progress >= 1.0f)
                 {
-                    _moveStartTime = -1;
+                    m_MoveStartTime = -1;
                 }
 
                 float a = Mathf.Saturate(progress);
                 a = a * a * a;
-                Transform targetTransform = Transform.Lerp(_startMove, _endMove, a);
+                Transform targetTransform = Transform.Lerp(m_StartMove, m_EndMove, a);
                 targetTransform.Scale = Float3.Zero;
 
                 EditorViewport viewport = GetViewport();
@@ -109,8 +109,10 @@ namespace SE.Editor
             EditorViewport viewport = GetViewport();
             EditorViewport.Input input = viewport.GetInput();
             EditorViewport.Input prevInput = viewport.GetPrevInput();
-            // TransformGizmoBase transformGizmo = (Viewport as EditorGizmoViewport)?.Gizmos.Active as TransformGizmoBase;
-            bool isUsingGizmo = false; // transformGizmo != null && transformGizmo.ActiveAxis != TransformGizmoBase.Axis.None;
+            // TransformGizmoBase transformGizmo = (Viewport as EditorGizmoViewport)?.Gizmos.Active as
+            // TransformGizmoBase;
+            bool isUsingGizmo =
+                false; // transformGizmo != null && transformGizmo.ActiveAxis != TransformGizmoBase.Axis.None;
 
             float yaw = viewport.Yaw;
             float pitch = viewport.Pitch;

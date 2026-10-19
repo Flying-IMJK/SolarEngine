@@ -32,7 +32,9 @@ namespace SE.Log
         public void Log(LogType logType, Object context, string message)
         {
             if (message == null)
+            {
                 return;
+            }
 #if BUILD_RELEASE
             string stackTrace = null;
 #else
@@ -47,7 +49,7 @@ namespace SE.Log
             {
                 return;
             }
-            var logger = Debug.Logger;
+            ILogger logger = Debug.Logger;
             if (logger.IsLogTypeAllowed(logType))
             {
                 Internal_Log(logType, message, IntPtr.Zero, stackTrace);
@@ -82,19 +84,23 @@ namespace SE.Log
             Debug.Logger.LogException(exception);
         }
 
-        [LibraryImport("SERuntime", EntryPoint = "Internal_LogWrite", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        [LibraryImport("SERuntime", EntryPoint = "Internal_LogWrite", StringMarshalling = StringMarshalling.Custom,
+            StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         internal static partial void Internal_LogWrite(LogType level, string msg);
 
-        [LibraryImport("SERuntime", EntryPoint = "Internal_Log", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        [LibraryImport("SERuntime", EntryPoint = "Internal_Log", StringMarshalling = StringMarshalling.Custom,
+            StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         internal static partial void Internal_Log(LogType level, string msg, IntPtr obj, string stackTrace);
 
-        [LibraryImport("SERuntime", EntryPoint = "Internal_LogException", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
-        internal static partial void Internal_LogException([MarshalUsing(typeof(Interop.ExceptionMarshaller))] Exception exception, IntPtr obj);
+        [LibraryImport("SERuntime", EntryPoint = "Internal_LogException", StringMarshalling = StringMarshalling
+            .Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        internal static partial void Internal_LogException(
+[MarshalUsing(typeof(Interop.ExceptionMarshaller))] Exception exception, IntPtr obj);
 
         [SecuritySafeCritical]
         public static string Internal_GetStackTrace()
         {
-            var stackTrace = new StackTrace(1, true);
+            StackTrace stackTrace = new StackTrace(1, true);
             return stackTrace.ToString();
         }
     }

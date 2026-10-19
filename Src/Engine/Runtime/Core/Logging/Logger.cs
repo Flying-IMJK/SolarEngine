@@ -62,7 +62,9 @@ namespace SE.Log
         public void Log(LogType logType, object message)
         {
             if (IsLogTypeAllowed(logType))
+            {
                 LogHandler.Log(logType, null, GetString(message));
+            }
         }
 
         /// <summary>
@@ -74,7 +76,9 @@ namespace SE.Log
         public void Log(LogType logType, object message, Object context)
         {
             if (IsLogTypeAllowed(logType))
+            {
                 LogHandler.Log(logType, context, GetString(message));
+            }
         }
 
         /// <summary>
@@ -89,7 +93,9 @@ namespace SE.Log
         public void Log(LogType logType, string tag, object message)
         {
             if (IsLogTypeAllowed(logType))
+            {
                 LogHandler.Log(logType, null, string.Format(TagFormat, tag, GetString(message)));
+            }
         }
 
         /// <summary>
@@ -105,7 +111,9 @@ namespace SE.Log
         public void Log(LogType logType, string tag, object message, Object context)
         {
             if (IsLogTypeAllowed(logType))
+            {
                 LogHandler.Log(logType, context, string.Format(TagFormat, tag, GetString(message)));
+            }
         }
 
         /// <summary>
@@ -115,7 +123,9 @@ namespace SE.Log
         public void Log(object message)
         {
             if (IsLogTypeAllowed(LogType.Info))
+            {
                 LogHandler.Log(LogType.Info, null, GetString(message));
+            }
         }
 
         /// <summary>
@@ -129,7 +139,9 @@ namespace SE.Log
         public void Log(string tag, object message)
         {
             if (IsLogTypeAllowed(LogType.Info))
+            {
                 LogHandler.Log(LogType.Info, null, string.Format(TagFormat, tag, GetString(message)));
+            }
         }
 
         /// <summary>
@@ -144,7 +156,9 @@ namespace SE.Log
         public void Log(string tag, object message, Object context)
         {
             if (IsLogTypeAllowed(LogType.Info))
+            {
                 LogHandler.Log(LogType.Info, context, string.Format(TagFormat, tag, GetString(message)));
+            }
         }
 
         /// <summary>
@@ -158,7 +172,9 @@ namespace SE.Log
         public void LogError(string tag, object message)
         {
             if (IsLogTypeAllowed(LogType.Error))
+            {
                 LogHandler.Log(LogType.Error, null, string.Format(TagFormat, tag, GetString(message)));
+            }
         }
 
         /// <summary>
@@ -173,7 +189,9 @@ namespace SE.Log
         public void LogError(string tag, object message, Object context)
         {
             if (IsLogTypeAllowed(LogType.Error))
+            {
                 LogHandler.Log(LogType.Error, context, string.Format(TagFormat, tag, GetString(message)));
+            }
         }
 
         /// <summary>
@@ -183,7 +201,9 @@ namespace SE.Log
         public void LogException(Exception exception)
         {
             if (LogEnabled)
+            {
                 LogHandler.LogException(exception, null);
+            }
         }
 
         /// <summary>
@@ -194,21 +214,27 @@ namespace SE.Log
         public void LogException(Exception exception, Object context)
         {
             if (LogEnabled)
+            {
                 LogHandler.LogException(exception, context);
+            }
         }
 
         /// <inheritdoc />
         public void Log(LogType logType, Object context, string message)
         {
             if (IsLogTypeAllowed(logType))
+            {
                 LogHandler.Log(logType, context, message);
+            }
         }
 
         /// <inheritdoc />
         public void LogFormat(LogType logType, string format, params object[] args)
         {
             if (IsLogTypeAllowed(logType))
+            {
                 LogHandler.Log(logType, null, string.Format(format, args));
+            }
         }
 
         /// <summary>
@@ -220,7 +246,9 @@ namespace SE.Log
         public void Log(LogType logType, string format, params object[] args)
         {
             if (IsLogTypeAllowed(logType))
+            {
                 LogHandler.Log(logType, null, string.Format(format, args));
+            }
         }
 
         /// <summary>
@@ -233,7 +261,9 @@ namespace SE.Log
         public void Log(LogType logType, Object context, string format, params object[] args)
         {
             if (IsLogTypeAllowed(logType))
+            {
                 LogHandler.Log(logType, context, string.Format(format, args));
+            }
         }
 
         /// <summary>
@@ -247,7 +277,9 @@ namespace SE.Log
         public void LogWarning(string tag, object message)
         {
             if (IsLogTypeAllowed(LogType.Warning))
+            {
                 LogHandler.Log(LogType.Warning, null, string.Format(TagFormat, tag, GetString(message)));
+            }
         }
 
         /// <summary>
@@ -262,7 +294,9 @@ namespace SE.Log
         public void LogWarning(string tag, object message, Object context)
         {
             if (IsLogTypeAllowed(LogType.Warning))
+            {
                 LogHandler.Log(LogType.Warning, context, string.Format(TagFormat, tag, GetString(message)));
+            }
         }
     }
 }

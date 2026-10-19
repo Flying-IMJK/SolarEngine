@@ -4,7 +4,8 @@ using System;
 namespace SE.Log
 {
     /// <summary>
-    /// An exception that is thrown on a failure. To enable this feature <see cref="Assert.RaiseExceptions"/> needs to be set to true.
+    /// An exception that is thrown on a failure. To enable this feature <see cref="Assert.RaiseExceptions"/> needs to
+    /// be set to true.
     /// </summary>
     public class AssertionException : Exception
     {
@@ -17,7 +18,9 @@ namespace SE.Log
             {
                 string message = base.Message;
                 if (m_UserMessage != null)
+                {
                     message = string.Concat(message, '\n', m_UserMessage);
+                }
                 return message;
             }
         }

@@ -13,60 +13,60 @@ namespace SE.GUI
         private const float MediumFontSize = 9.0f;
         private const float SmallFontSize = 9.0f;
 
-        private static Style _current = CreateLightStyle();
+        private static Style s_Current = CreateLightStyle();
 
         /// <summary>
         /// Global GUI style used by all controls.
         /// </summary>
         public static Style Current
         {
-            get => _current;
+            get => s_Current;
             set
             {
-                _current = value;
-                _current?.EnsureDefaultFonts();
+                s_Current = value;
+                s_Current?.EnsureDefaultFonts();
             }
         }
 
-        private Font? _fontTitle;
-        private Font? _fontLarge;
-        private Font? _fontMedium;
-        private Font? _fontSmall;
+        private Font m_FontTitle;
+        private Font m_FontLarge;
+        private Font m_FontMedium;
+        private Font m_FontSmall;
 
         /// <summary>
         /// The title font.
         /// </summary>
-        public Font? FontTitle
+        public Font FontTitle
         {
-            get => _fontTitle;
-            set => _fontTitle = value;
+            get => m_FontTitle;
+            set => m_FontTitle = value;
         }
 
         /// <summary>
         /// The large font.
         /// </summary>
-        public Font? FontLarge
+        public Font FontLarge
         {
-            get => _fontLarge;
-            set => _fontLarge = value;
+            get => m_FontLarge;
+            set => m_FontLarge = value;
         }
 
         /// <summary>
         /// The medium font.
         /// </summary>
-        public Font? FontMedium
+        public Font FontMedium
         {
-            get => _fontMedium;
-            set => _fontMedium = value;
+            get => m_FontMedium;
+            set => m_FontMedium = value;
         }
 
         /// <summary>
         /// The small font.
         /// </summary>
-        public Font? FontSmall
+        public Font FontSmall
         {
-            get => _fontSmall;
-            set => _fontSmall = value;
+            get => m_FontSmall;
+            set => m_FontSmall = value;
         }
 
         /// <summary>
@@ -237,14 +237,14 @@ namespace SE.GUI
         /// <summary>
         /// The shared tooltip control used by controls if no custom tooltip is provided.
         /// </summary>
-        public Tooltip? SharedTooltip;
+        public Tooltip SharedTooltip;
 
         /// <summary>
         /// Ensures the style has all default interface fonts assigned.
         /// </summary>
         public void EnsureDefaultFonts()
         {
-            FontAsset? defaultFont = AssetContent.LoadAsyncInternal<FontAsset>(DefaultFontPath);
+            FontAsset defaultFont = AssetContent.LoadAsyncInternal<FontAsset>(DefaultFontPath);
             if (defaultFont == null)
             {
                 return;
@@ -252,10 +252,10 @@ namespace SE.GUI
 
             defaultFont.WaitForLoaded();
 
-/*            _fontTitle = defaultFont.CreateFont(TitleFontSize);
-            _fontLarge = defaultFont.CreateFont(LargeFontSize);
-            _fontMedium = defaultFont.CreateFont(MediumFontSize);
-            _fontSmall = defaultFont.CreateFont(SmallFontSize);*/
+            /*            _fontTitle = defaultFont.CreateFont(TitleFontSize);
+                        _fontLarge = defaultFont.CreateFont(LargeFontSize);
+                        _fontMedium = defaultFont.CreateFont(MediumFontSize);
+                        _fontSmall = defaultFont.CreateFont(SmallFontSize);*/
         }
 
         /// <summary>
@@ -263,7 +263,7 @@ namespace SE.GUI
         /// </summary>
         public static Style CreateDefaultStyle()
         {
-            var style = new Style
+            Style style = new Style
             {
                 Background = new Color(32, 34, 37),
                 LightBackground = new Color(41, 44, 48),
@@ -302,7 +302,7 @@ namespace SE.GUI
         /// </summary>
         public static Style CreateLightStyle()
         {
-            var style = new Style
+            Style style = new Style
             {
                 Background = new Color(241, 242, 244),
                 LightBackground = new Color(226, 229, 233),

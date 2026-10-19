@@ -20,51 +20,57 @@ namespace SE
         /// Window closing delegate.
         /// </summary>
         /// <param name="reason">The closing reason.</param>
-        /// <param name="cancel">If set to <c>true</c> operation will be cancelled, otherwise window will be closed.</param>
+        /// <param name="cancel"> If set to <c> true</c> operation will be cancelled, otherwise window will be
+        /// closed.</param>
         public delegate void ClosingDelegate(ClosingReason reason, ref bool cancel);
-        
+
 
         /// <summary>
         /// Perform input character action.
         /// </summary>
         /// <param name="c">The input character.</param>
         public delegate void CharDelegate(char c);
-        
+
         /// <summary>
         /// Perform keyboard action.
         /// </summary>
         /// <param name="key">The key.</param>
         public delegate void KeyboardDelegate(KeyboardKeys key);
-        
+
         /// <summary>
         /// Perform mouse buttons action.
         /// </summary>
         /// <param name="mouse">The mouse position.</param>
         /// <param name="button">The mouse buttons state.</param>
-        /// <param name="handled">The flag that indicated that event has been handled by the custom code and should not be passed further. By default it is set to false.</param>
+        /// <param name="handled"> The flag that indicated that event has been handled by the custom code and should not
+        /// be passed further. By default it is set to false.</param>
         public delegate void MouseButtonDelegate(ref Float2 mouse, MouseButton button, ref bool handled);
-        
+
         /// <summary>
         /// Perform mouse wheel action.
         /// </summary>
         /// <param name="mouse">The mouse position.</param>
-        /// <param name="delta">The mouse wheel move delta (can be positive or negative; normalized to [-1;1] range).</param>
-        /// <param name="handled">The flag that indicated that event has been handled by the custom code and should not be passed further. By default it is set to false.</param>
+        /// <param name="delta"> The mouse wheel move delta (can be positive or negative; normalized to [-1;1]
+        /// range).</param>
+        /// <param name="handled"> The flag that indicated that event has been handled by the custom code and should not
+        /// be passed further. By default it is set to false.</param>
         public delegate void MouseWheelDelegate(ref Float2 mouse, float delta, ref bool handled);
-        
-        
+
+
         /// <summary>
         /// Perform mouse move action.
         /// </summary>
         /// <param name="mouse">The mouse position.</param>
         public delegate void MouseMoveDelegate(ref Float2 mouse);
-        
+
         /// <summary>
         /// Perform touch action.
         /// </summary>
         /// <param name="pointerPosition">The touch pointer position.</param>
-        /// <param name="pointerId">The touch pointer identifier. Stable for the whole touch gesture/interaction.</param>
-        /// <param name="handled">The flag that indicated that event has been handled by the custom code and should not be passed further. By default it is set to false.</param>
+        /// <param name="pointerId"> The touch pointer identifier. Stable for the whole touch
+        /// gesture/interaction.</param>
+        /// <param name="handled"> The flag that indicated that event has been handled by the custom code and should not
+        /// be passed further. By default it is set to false.</param>
         public delegate void TouchDelegate(ref Float2 pointerPosition, int pointerId, ref bool handled);
 
         public event CharDelegate CharInput;
@@ -81,9 +87,9 @@ namespace SE
         public event TouchDelegate TouchUp;
         public event Action GetFocus;
         public event Action LostFocus;
-        
+
         public HitTestDelegate HitTest;
-        
+
         public Func<WindowHitCodes, bool> LeftButtonHit;
         public event ClosingDelegate Closing;
         public event Action Closed;
@@ -98,7 +104,7 @@ namespace SE
         /// The tree becomes active when its native host initializes the managed backend.
         /// </summary>
         public GUI.WindowRootControl GUI => m_GUI;
-        
+
 
         /// <summary>
         /// Creates a managed GUI window with the native platform defaults.
@@ -113,7 +119,7 @@ namespace SE
         /// </summary>
         public static Window CreateManaged(string title, Float2 clientSize)
         {
-            var settings = CreateDefaultSettings();
+            CreateWindowSettings settings = CreateDefaultSettings();
             settings.Title = title;
             settings.Size = clientSize;
             return Create(settings);
@@ -145,11 +151,11 @@ namespace SE
 
         internal void Internal_OnDraw()
         {
-            Matrix3x3.Scaling(DpiScale, out var scale);
+            Matrix3x3.Scaling(DpiScale, out Matrix3x3 scale);
             Render2D.PushTransform(scale);
             GUI.Draw();
             Render2D.PopTransform();
-        } 
+        }
 
         internal void Internal_OnCharInput(char character)
         {
@@ -171,13 +177,13 @@ namespace SE
 
         internal void Internal_OnMouseDown(Float2 position, MouseButton button)
         {
-            var pos = position / DpiScale;
+            Float2 pos = position / DpiScale;
 
             bool handled = false;
             MouseDown?.Invoke(ref pos, button, ref handled);
             if (handled)
             {
-                return; 
+                return;
             }
 
             GUI.OnMouseDown(pos, button);
@@ -185,7 +191,7 @@ namespace SE
 
         internal void Internal_OnMouseUp(Float2 position, MouseButton button)
         {
-            var pos = position / DpiScale;
+            Float2 pos = position / DpiScale;
 
             bool handled = false;
             MouseUp?.Invoke(ref pos, button, ref handled);
@@ -199,7 +205,7 @@ namespace SE
 
         internal void Internal_OnMouseDoubleClick(Float2 position, MouseButton button)
         {
-            var pos = position / DpiScale;
+            Float2 pos = position / DpiScale;
 
             bool handled = false;
             MouseDoubleClick?.Invoke(ref pos, button, ref handled);
@@ -213,19 +219,21 @@ namespace SE
 
         internal void Internal_OnMouseWheel(Float2 position, float delta)
         {
-            var pos = position / DpiScale;
+            Float2 pos = position / DpiScale;
 
             bool handled = false;
             MouseWheel?.Invoke(ref pos, delta, ref handled);
             if (handled)
+            {
                 return;
+            }
 
             GUI.OnMouseWheel(pos, delta);
         }
 
         internal void Internal_OnMouseMove(Float2 position)
         {
-            var pos = position / DpiScale;
+            Float2 pos = position / DpiScale;
 
             MouseMove?.Invoke(ref pos);
             GUI.OnMouseMove(pos);
@@ -239,36 +247,42 @@ namespace SE
 
         internal void Internal_OnTouchDown(Float2 position, int pointerId)
         {
-            var pos = position / DpiScale;
+            Float2 pos = position / DpiScale;
 
             bool handled = false;
             TouchDown?.Invoke(ref pos, pointerId, ref handled);
             if (handled)
+            {
                 return;
+            }
 
             GUI.OnTouchDown(pos, pointerId);
         }
 
         internal void Internal_OnTouchMove(Float2 position, int pointerId)
         {
-            var pos = position / DpiScale;
+            Float2 pos = position / DpiScale;
 
             bool handled = false;
             TouchMove?.Invoke(ref pos, pointerId, ref handled);
             if (handled)
+            {
                 return;
+            }
 
             GUI.OnTouchMove(pos, pointerId);
         }
 
         internal void Internal_OnTouchUp(Float2 position, int pointerId)
         {
-            var pos = position / DpiScale;
+            Float2 pos = position / DpiScale;
 
             bool handled = false;
             TouchUp?.Invoke(ref pos, pointerId, ref handled);
             if (handled)
+            {
                 return;
+            }
 
             GUI.OnTouchUp(pos, pointerId);
         }
@@ -285,7 +299,7 @@ namespace SE
                 dragData = new DragDataFiles(values);
             }
 
-            var pos = position / DpiScale;
+            Float2 pos = position / DpiScale;
             return GUI.OnDragEnter(ref pos, dragData);
         }
 
@@ -301,7 +315,7 @@ namespace SE
                 dragData = new DragDataFiles(values);
             }
 
-            var pos = position / DpiScale;
+            Float2 pos = position / DpiScale;
             return GUI.OnDragMove(ref pos, dragData);
         }
 
@@ -317,7 +331,7 @@ namespace SE
                 dragData = new DragDataFiles(values);
             }
 
-            var pos = position / DpiScale;
+            Float2 pos = position / DpiScale;
             return GUI.OnDragDrop(ref pos, dragData);
         }
 
@@ -330,7 +344,7 @@ namespace SE
         {
             if (HitTest != null)
             {
-                var pos = position / DpiScale;
+                Float2 pos = position / DpiScale;
                 result = HitTest(ref pos);
                 handled = true;
             }
@@ -360,13 +374,13 @@ namespace SE
             LostFocus?.Invoke();
             GUI.OnLostFocus();
         }
-        
+
         internal void Internal_OnClosed()
         {
             Closed?.Invoke();
-            
+
             GUI.Dispose();
-            
+
             CharInput = null;
             KeyDown = null;
             KeyUp = null;

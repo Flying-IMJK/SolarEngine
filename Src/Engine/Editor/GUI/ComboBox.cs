@@ -10,8 +10,10 @@ namespace SE.Editor.GUI
     /// Combo box control allows to choose one item or set of items from the provided collection of options.
     /// </summary>
     /// <remarks>
-    /// Difference between <see cref="ComboBox"/> and <see cref="Dropdown"/> is that ComboBox uses native window to show the items list while Dropdown uses a custom panel added to parent window.
-    /// This means that Dropdown will work on all platforms that don't support multiple native windows (eg. Android, PS4, Xbox One).
+    /// Difference between <see cref="ComboBox"/> and <see cref="Dropdown"/> is that ComboBox uses native window to show
+    /// the items list while Dropdown uses a custom panel added to parent window.
+    /// This means that Dropdown will work on all platforms that don't support multiple native windows (eg. Android,
+    /// PS4, Xbox One).
     /// </remarks>
     public class ComboBox : Control
     {
@@ -61,12 +63,14 @@ namespace SE.Editor.GUI
         public bool SupportMultiSelect;
 
         /// <summary>
-        /// Gets or sets the maximum amount of items in the view. If popup has more items to show it uses a additional scroll panel.
+        /// Gets or sets the maximum amount of items in the view. If popup has more items to show it uses a additional
+        /// scroll panel.
         /// </summary>
         public int MaximumItemsInViewCount;
 
         /// <summary>
-        /// Gets or sets the selected item (returns <see cref="string.Empty"/> if no item is being selected or more than one item is selected).
+        /// Gets or sets the selected item (returns <see cref="string.Empty"/> if no item is being selected or more than
+        /// one item is selected).
         /// </summary>
         public string SelectedItem
         {
@@ -80,7 +84,8 @@ namespace SE.Editor.GUI
         public bool HasSelection => _selectedIndices.Count != 0;
 
         /// <summary>
-        /// Gets or sets the index of the selected. If combobox has more than 1 item selected then it returns invalid index (value -1).
+        /// Gets or sets the index of the selected. If combobox has more than 1 item selected then it returns invalid
+        /// index (value -1).
         /// </summary>
         public int SelectedIndex
         {
@@ -103,7 +108,8 @@ namespace SE.Editor.GUI
         public Action<ComboBox> SelectedIndexChanged;
 
         /// <summary>
-        /// Occurs when popup is showing (before event). Can be used to update items collection before showing it to the user.
+        /// Occurs when popup is showing (before event). Can be used to update items collection before showing it to the
+        /// user.
         /// </summary>
         public Action<ComboBox> PopupShowing;
 
@@ -325,12 +331,14 @@ namespace SE.Editor.GUI
             if (_selectedIndices.Count > 0)
             {
                 string text = _selectedIndices.Count == 1
-                    ? (_selectedIndices[0] >= 0 && _selectedIndices[0] < Items.Count ? Items[_selectedIndices[0]] : string.Empty)
+                    ? (_selectedIndices[0] >= 0 && _selectedIndices[0] < Items.Count ? Items[_selectedIndices[0]]
+                        : string.Empty)
                     : "Multiple Values";
 
                 // Draw text of the selected item
                 float textScale = Height / DefaultHeight;
-                Rectangle textRect = new Rectangle(margin, 0, clientRect.Width - boxSize - 2.0f * margin, clientRect.Height);
+                Rectangle textRect = new Rectangle(margin, 0, clientRect.Width - boxSize - 2.0f * margin, clientRect
+                    .Height);
                 Render2D.PushClip(textRect);
                 Color textColor = TextColor;
                 Render2D.RenderText(Font.GetFont(), text, textRect,
@@ -342,7 +350,8 @@ namespace SE.Editor.GUI
             // Arrow
             if (ArrowImage != null)
             {
-                ArrowImage.Draw(new Rectangle(clientRect.Width - margin - boxSize, margin, boxSize, boxSize), arrowColor);
+                ArrowImage.Draw(new Rectangle(clientRect.Width - margin - boxSize, margin, boxSize, boxSize),
+                    arrowColor);
             }
         }
 
@@ -456,7 +465,8 @@ namespace SE.Editor.GUI
                 _popupMenu.VisibleChanged += cm =>
                 {
                     RootControl win = Root;
-                    _blockPopup = win != null && new Rectangle(Float2.Zero, Size).Contains(PointFromWindow(win.GetMousePosition()));
+                    _blockPopup = win != null && new Rectangle(Float2.Zero, Size).Contains(PointFromWindow(win
+                        .GetMousePosition()));
                     if (!_blockPopup)
                     {
                         Focus();

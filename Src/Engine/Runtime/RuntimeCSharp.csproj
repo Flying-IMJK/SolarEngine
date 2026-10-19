@@ -7,7 +7,6 @@
     <RollForward>latestMajor</RollForward>
     <AssemblyName>SERuntimeCSharp</AssemblyName>
     <RootNamespace>SE</RootNamespace>
-    <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Required by LibraryImport and the generated CustomMarshaller bindings. -->
     <DisableRuntimeMarshalling>true</DisableRuntimeMarshalling>

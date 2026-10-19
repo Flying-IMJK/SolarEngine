@@ -35,11 +35,13 @@ namespace SE
         }
 
         /// <inheritdoc/>
-        protected override Assembly? Load(AssemblyName assemblyName)
+        protected override Assembly Load(AssemblyName assemblyName)
         {
-            string? assemblyPath = m_Resolver.ResolveAssemblyToPath(assemblyName);
+            string assemblyPath = m_Resolver.ResolveAssemblyToPath(assemblyName);
             if (assemblyPath != null)
+            {
                 return LoadFromAssemblyPath(assemblyPath);
+            }
 
             // Fall back to the default context (BCL, engine assemblies already loaded).
             return null;
@@ -48,9 +50,11 @@ namespace SE
         /// <inheritdoc/>
         protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
         {
-            string? libraryPath = m_Resolver.ResolveUnmanagedDllToPath(unmanagedDllName);
+            string libraryPath = m_Resolver.ResolveUnmanagedDllToPath(unmanagedDllName);
             if (libraryPath != null)
+            {
                 return LoadUnmanagedDllFromPath(libraryPath);
+            }
 
             return IntPtr.Zero;
         }
@@ -75,7 +79,7 @@ namespace SE
         ///   A <see cref="WeakReference"/> to the created context, boxed as <see cref="object"/>,
         ///   so C++ can hold a GC handle to it without preventing unloading.
         /// </returns>
-        public static object? CreateScriptingContext(string assemblyPath, int isCollectible)
+        public static object CreateScriptingContext(string assemblyPath, int isCollectible)
         {
             bool collectible =
 #if SE_EDITOR
@@ -84,7 +88,7 @@ namespace SE
                 isCollectible != 0;
 #endif
 
-            var context = new ScriptingLoadContext(assemblyPath, collectible);
+            ScriptingLoadContext context = new ScriptingLoadContext(assemblyPath, collectible);
 
             try
             {
@@ -109,13 +113,15 @@ namespace SE
         /// <param name="contextRef">
         ///   The <see cref="WeakReference{T}"/> returned by <see cref="CreateScriptingContext"/>.
         /// </param>
-        public static void UnloadScriptingContext(object? contextRef)
+        public static void UnloadScriptingContext(object contextRef)
         {
             if (contextRef is WeakReference<ScriptingLoadContext> weakRef &&
-                weakRef.TryGetTarget(out var context))
+                weakRef.TryGetTarget(out ScriptingLoadContext context))
             {
                 if (context.IsCollectible)
+                {
                     context.Unload();
+                }
             }
         }
     }

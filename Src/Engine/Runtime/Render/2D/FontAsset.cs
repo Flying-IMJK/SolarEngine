@@ -7,7 +7,8 @@ namespace SE
         /// Tests for equality between two objects.
         /// </summary>
         /// <param name="other">The other object to compare.</param>
-        /// <returns><c>true</c> if this object has the same value as <paramref name="other" />; otherwise, <c>false</c> </returns>
+        /// <returns> <c> true</c> if this object has the same value as <paramref name="other" /> ; otherwise, <c>
+        /// false</c> </returns>
         public bool Equals(FontOptions other)
         {
             return Hinting == other.Hinting && Flags == other.Flags;
@@ -33,7 +34,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has the same value as <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         public static bool operator ==(FontOptions left, FontOptions right)
         {
             return left.Hinting == right.Hinting && left.Flags == right.Flags;
@@ -44,7 +46,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise,<c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has a different value than <paramref name="right" /> ;
+        /// otherwise,<c>false</c>.</returns>
         public static bool operator !=(FontOptions left, FontOptions right)
         {
             return left.Hinting != right.Hinting || left.Flags != right.Flags;

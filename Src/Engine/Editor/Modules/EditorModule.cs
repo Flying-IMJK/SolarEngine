@@ -14,9 +14,9 @@ namespace SE.Editor
         }
 
         protected Editor Editor { get; }
-        
+
         internal virtual int Order => 0;
-        
+
 
         public virtual void OnInit()
         {

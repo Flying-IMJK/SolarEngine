@@ -22,7 +22,7 @@ namespace SE.Editor.SceneGraph
 
         private readonly Dictionary<Type, NodeFactory> m_CustomNodeTypes = new();
         private readonly Dictionary<Guid, ScenesGraphNode> m_Nodes = new();
-        private RootGraphNode? m_Root;
+        private RootGraphNode m_Root;
         private bool m_IsDisposed;
 
         public SceneGraphFactory()
@@ -31,21 +31,33 @@ namespace SE.Editor.SceneGraph
             RegisterActorNode<SE.Camera, CameraGraphNode>(actor => new CameraGraphNode(this, actor));
             RegisterActorNode<SE.StaticModel, StaticModelGraphNode>(actor => new StaticModelGraphNode(this, actor));
             RegisterActorNode<SE.Sky, SkyGraphNode>(actor => new SkyGraphNode(this, actor));
-            RegisterActorNode<SE.DirectionalLight, DirectionalLightGraphNode>(actor => new DirectionalLightGraphNode(this, actor));
+            RegisterActorNode<SE.DirectionalLight,
+                DirectionalLightGraphNode>(actor => new DirectionalLightGraphNode(this, actor));
             RegisterActorNode<SE.PointLight, PointLightGraphNode>(actor => new PointLightGraphNode(this, actor));
         }
 
         public IReadOnlyDictionary<Guid, ScenesGraphNode> Nodes => m_Nodes;
         public IReadOnlyDictionary<Type, NodeFactory> CustomNodeTypes => m_CustomNodeTypes;
-        public RootGraphNode Root => m_Root ?? throw new InvalidOperationException("The scene graph root has not been assigned.");
+        public RootGraphNode Root
+        {
+            get
+            {
+                return m_Root
+                            ?? throw new InvalidOperationException("The scene graph root has not been assigned.");
+            }
+        }
 
         public void SetRoot(RootGraphNode root)
         {
             ArgumentNullException.ThrowIfNull(root);
             if (m_Root != null && !ReferenceEquals(m_Root, root))
+            {
                 throw new InvalidOperationException("The scene graph root can only be assigned once.");
+            }
             if (!ReferenceEquals(root.Factory, this))
+            {
                 throw new ArgumentException("The root belongs to another scene graph factory.", nameof(root));
+            }
 
             m_Root = root;
         }
@@ -58,14 +70,16 @@ namespace SE.Editor.SceneGraph
             m_CustomNodeTypes[typeof(TActor)] = new NodeFactory(typeof(TNode), actor => create(actor));
         }
 
-        public ScenesGraphNode? FindNode(Guid id)
+        public ScenesGraphNode FindNode(Guid id)
         {
             if (id == Guid.Empty)
+            {
                 return null;
-            return m_Nodes.TryGetValue(id, out ScenesGraphNode? node) ? node : null;
+            }
+            return m_Nodes.TryGetValue(id, out ScenesGraphNode node) ? node : null;
         }
 
-        public ScenesGraphNode? GetNode(Guid id)
+        public ScenesGraphNode GetNode(Guid id)
         {
             return FindNode(id);
         }
@@ -80,7 +94,7 @@ namespace SE.Editor.SceneGraph
         {
             ArgumentNullException.ThrowIfNull(actor);
 
-            ActorGraphNode result = m_CustomNodeTypes.TryGetValue(actor.GetType(), out NodeFactory? nodeFactory)
+            ActorGraphNode result = m_CustomNodeTypes.TryGetValue(actor.GetType(), out NodeFactory nodeFactory)
                 ? nodeFactory.Create(actor)
                 : new ActorGraphNode(this, actor);
 
@@ -89,7 +103,9 @@ namespace SE.Editor.SceneGraph
             {
                 SE.Actor child = actor.GetChild(index);
                 if (child == null)
+                {
                     continue;
+                }
 
                 ActorGraphNode childNode = BuildActorNode(child);
                 childNode.ParentNode = result;
@@ -100,8 +116,10 @@ namespace SE.Editor.SceneGraph
 
         public bool Remove(Guid id)
         {
-            if (!m_Nodes.TryGetValue(id, out ScenesGraphNode? node))
+            if (!m_Nodes.TryGetValue(id, out ScenesGraphNode node))
+            {
                 return false;
+            }
 
             node.Dispose();
             return true;
@@ -110,7 +128,9 @@ namespace SE.Editor.SceneGraph
         public void Dispose()
         {
             if (m_IsDisposed)
+            {
                 return;
+            }
 
             m_IsDisposed = true;
             m_Root?.Dispose();
@@ -122,9 +142,11 @@ namespace SE.Editor.SceneGraph
         internal void RegisterNode(ScenesGraphNode node)
         {
             if (m_IsDisposed)
+            {
                 throw new ObjectDisposedException(nameof(SceneGraphFactory));
+            }
 
-            if (m_Nodes.TryGetValue(node.ID, out ScenesGraphNode? duplicate) && duplicate != null)
+            if (m_Nodes.TryGetValue(node.ID, out ScenesGraphNode duplicate) && duplicate != null)
             {
                 SE.Debug.LogWarning(
                     $"Duplicated Scene Graph node with ID {node.ID} of type '{duplicate.GetType().FullName}'.");
@@ -135,8 +157,10 @@ namespace SE.Editor.SceneGraph
 
         internal void UnregisterNode(ScenesGraphNode node)
         {
-            if (m_Nodes.TryGetValue(node.ID, out ScenesGraphNode? registered) && ReferenceEquals(registered, node))
+            if (m_Nodes.TryGetValue(node.ID, out ScenesGraphNode registered) && ReferenceEquals(registered, node))
+            {
                 m_Nodes.Remove(node.ID);
+            }
         }
     }
 }

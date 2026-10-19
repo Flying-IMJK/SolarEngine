@@ -27,7 +27,7 @@ namespace SE
         /// <param name="rect">The target rectangle to draw.</param>
         public static void DrawMaterial(MaterialBase material, Rectangle rect)
         {
-            var color = Color.White;
+            Color color = Color.White;
             Internal_DrawMaterial(Object.GetUnmanagedPtr(material), rect, color);
         }
 
@@ -43,9 +43,12 @@ namespace SE
         /// <param name="textWrapping">Describes how wrap text inside a layout rectangle.</param>
         /// <param name="baseLinesGapScale">The scale for distance one baseline from another. Default is 1.</param>
         /// <param name="scale">The text drawing scale. Default is 1.</param>
-        public static void DrawText(Font font, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f)
+        public static void DrawText(Font font, string text, Rectangle layoutRect, Color color,
+            TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment
+                .Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f,
+                    float scale = 1.0f)
         {
-            var layout = new TextLayoutOptions
+            TextLayoutOptions layout = new TextLayoutOptions
             {
                 Bounds = layoutRect,
                 HorizontalAlignment = horizontalAlignment,
@@ -58,10 +61,12 @@ namespace SE
         }
 
         /// <summary>
-        /// Draws a text using a custom material shader. Given material must have GUI domain and a public parameter named Font (texture parameter used for a font atlas sampling).
+        /// Draws a text using a custom material shader. Given material must have GUI domain and a public parameter
+        /// named Font (texture parameter used for a font atlas sampling).
         /// </summary>
         /// <param name="font">The font to use.</param>
-        /// <param name="customMaterial">Custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
+        /// <param name="customMaterial"> Custom material for font characters rendering. It must contain texture
+        /// parameter named Font used to sample font texture.</param>
         /// <param name="text">The text to render.</param>
         /// <param name="layoutRect">The size and position of the area in which the text is drawn.</param>
         /// <param name="color">The text color.</param>
@@ -70,9 +75,12 @@ namespace SE
         /// <param name="textWrapping">Describes how wrap text inside a layout rectangle.</param>
         /// <param name="baseLinesGapScale">The scale for distance one baseline from another. Default is 1.</param>
         /// <param name="scale">The text drawing scale. Default is 1.</param>
-        public static void DrawText(Font font, MaterialBase customMaterial, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f)
+        public static void DrawText(Font font, MaterialBase customMaterial, string text, Rectangle layoutRect,
+            Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment =
+                TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f,
+                    float scale = 1.0f)
         {
-            var layout = new TextLayoutOptions
+            TextLayoutOptions layout = new TextLayoutOptions
             {
                 Bounds = layoutRect,
                 HorizontalAlignment = horizontalAlignment,
@@ -93,7 +101,9 @@ namespace SE
         public static void CallDrawing(IDrawable drawableElement, GPUContext context, GPUTexture output)
         {
             if (context == null || output == null || drawableElement == null)
+            {
                 throw new ArgumentNullException();
+            }
 
             Begin(context, output);
             try
@@ -113,18 +123,27 @@ namespace SE
         /// <param name="drawableElement">The root container for Draw methods.</param>
         /// <param name="context">The GPU context to handle graphics commands.</param>
         /// <param name="output">The output render target.</param>
-        /// <param name="depthBuffer">The depth buffer render target. It's optional parameter but if provided must match output texture.</param>
+        /// <param name="depthBuffer"> The depth buffer render target. It's optional parameter but if provided must
+        /// match output texture.</param>
         /// <param name="viewProjection">The View*Projection matrix used to transform all rendered vertices.</param>
-        public static void CallDrawing(IDrawable drawableElement, GPUContext context, GPUTexture output, GPUTexture depthBuffer, ref Matrix viewProjection)
+        public static void CallDrawing(IDrawable drawableElement, GPUContext context, GPUTexture output,
+            GPUTexture depthBuffer, ref Matrix viewProjection)
         {
             if (context == null || output == null || drawableElement == null)
+            {
                 throw new ArgumentNullException();
+            }
             if (depthBuffer != null)
             {
                 if (!depthBuffer.IsAllocated)
-                    throw new InvalidOperationException("Depth buffer is not allocated. Use GPUTexture.Init before rendering.");
+                {
+                    throw new InvalidOperationException(
+"Depth buffer is not allocated. Use GPUTexture.Init before rendering.");
+                }
                 if (output.Size != depthBuffer.Size)
+                {
                     throw new InvalidOperationException("Output buffer and depth buffer dimensions must be equal.");
+                }
             }
 
             Begin(context, output, depthBuffer, viewProjection);

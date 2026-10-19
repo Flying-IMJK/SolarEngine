@@ -1,0 +1,72 @@
+// Copyright (c) Wojciech Figat. All rights reserved.
+
+using System;
+using SE.Editor.GUI;
+using SE.GUI;
+
+namespace SE.Editor
+{
+    /// <summary>
+    /// The layout group element.
+    /// </summary>
+    /// <seealso cref="SE.Editor.LayoutElement" />
+    public class GroupElement : LayoutElementsContainer
+    {
+        /// <summary>
+        /// The drop panel.
+        /// </summary>
+        public readonly DropPanel Panel = new DropPanel
+        {
+            Pivot = Float2.Zero,
+            ArrowImageClosed = new SpriteBrush(Style.Current.ArrowRight),
+            ArrowImageOpened = new SpriteBrush(Style.Current.ArrowDown),
+            EnableDropDownIcon = true,
+            ItemsMargin = new Margin(2.0f),
+            ItemsSpacing = 2.0f,
+            HeaderHeight = 18.0f,
+            EnableContainmentLines = true,
+        };
+
+        /// <summary>
+        /// Event is fired if the group can setup a context menu and the context menu is being setup.
+        /// </summary>
+        public Action<ContextMenu, DropPanel> SetupContextMenu;
+
+        /// <inheritdoc />
+        public override ContainerControl ContainerControl => Panel;
+
+        /// <summary>
+        /// Add utility settings button to the group header.
+        /// </summary>
+        /// <returns>The created control.</returns>
+        public Image AddSettingsButton()
+        {
+            return AddHeaderButton("Settings", 0, Style.Current.Settings);
+        }
+
+        /// <summary>
+        /// Adds a button to the group header.
+        /// </summary>
+        /// <returns>The created control.</returns>
+        public Image AddHeaderButton(string tooltipText, float xOffset, SpriteHandle sprite)
+        {
+            Style style = Style.Current;
+            const float padding = 2.0f;
+            float settingsButtonSize = Panel.HeaderHeight;
+            Panel.HeaderTextMargin = Panel.HeaderTextMargin with { Right = settingsButtonSize + 2.0f };
+            return new Image
+            {
+                TooltipText = tooltipText,
+                AutoFocus = true,
+                AnchorPreset = AnchorPresets.TopRight,
+                Parent = Panel,
+                Bounds = new Rectangle(Panel.Width - settingsButtonSize - xOffset, padding * 0.5f,
+                    settingsButtonSize - padding, settingsButtonSize - padding),
+                IsScrollable = false,
+                Color = style.ForegroundGrey,
+                Margin = new Margin(1),
+                Brush = new SpriteBrush(sprite),
+            };
+        }
+    }
+}

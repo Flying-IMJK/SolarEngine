@@ -965,28 +965,35 @@ namespace SE.GUI
             set;
         }
 
-        public virtual Control GetNavTarget(NavDirection direction) => direction switch
+        public virtual Control GetNavTarget(NavDirection direction)
         {
-            NavDirection.Up => NavTargetUp,
-            NavDirection.Down => NavTargetDown,
-            NavDirection.Left => NavTargetLeft,
-            NavDirection.Right => NavTargetRight,
-            _ => null,
-        };
+            return direction switch
+            {
+                NavDirection.Up => NavTargetUp,
+                NavDirection.Down => NavTargetDown,
+                NavDirection.Left => NavTargetLeft,
+                NavDirection.Right => NavTargetRight,
+                _ => null,
+            };
+        }
 
-        public virtual Float2 GetNavOrigin(NavDirection direction) => direction switch
+        public virtual Float2 GetNavOrigin(NavDirection direction)
         {
-            NavDirection.Up => new Float2(Size.X * 0.5f, 0),
-            NavDirection.Down => new Float2(Size.X * 0.5f, Size.Y),
-            NavDirection.Left => new Float2(0, Size.Y * 0.5f),
-            // Preserve the active native Right-origin expression verbatim.
-            NavDirection.Right => new Float2(Size.Y, Size.Y * 0.5f),
-            NavDirection.Next => Float2.Zero,
-            NavDirection.Previous => Size,
-            _ => Size * 0.5f,
-        };
+            return direction switch
+            {
+                NavDirection.Up => new Float2(Size.X * 0.5f, 0),
+                NavDirection.Down => new Float2(Size.X * 0.5f, Size.Y),
+                NavDirection.Left => new Float2(0, Size.Y * 0.5f),
+                // Preserve the active native Right-origin expression verbatim.
+                NavDirection.Right => new Float2(Size.Y, Size.Y * 0.5f),
+                NavDirection.Next => Float2.Zero,
+                NavDirection.Previous => Size,
+                _ => Size * 0.5f,
+            };
+        }
 
-        public virtual Control OnNavigate(NavDirection direction, Float2 location, Control caller, List<Control> visited)
+        public virtual Control OnNavigate(NavDirection direction, Float2 location, Control caller,
+            List<Control> visited)
         {
             if (caller == m_Parent && AutoFocus && Visible)
             {
@@ -1201,7 +1208,7 @@ namespace SE.GUI
 
         protected virtual bool ShowTooltip()
         {
-            return TooltipText.Length > 0;
+            return !string.IsNullOrEmpty(TooltipText) && TooltipText.Length > 0;
         }
 
         public Control LinkTooltip(string text, Tooltip customTooltip = null)

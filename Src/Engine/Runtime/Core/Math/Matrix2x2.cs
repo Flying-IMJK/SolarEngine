@@ -83,15 +83,22 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Matrix2x2"/> struct.
         /// </summary>
-        /// <param name="values">The values to assign to the components of the Matrix2x2. This must be an array with four elements.</param>
+        /// <param name="values"> The values to assign to the components of the Matrix2x2. This must be an array with
+        /// four elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values"/> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="values"/> contains more or less than four elements.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"> Thrown when <paramref name="values"/> contains more or less
+        /// than four elements.</exception>
         public Matrix2x2(float[] values)
         {
             if (values == null)
+            {
                 throw new ArgumentNullException(nameof(values));
+            }
             if (values.Length != 4)
-                throw new ArgumentOutOfRangeException(nameof(values), "There must be sixteen and only four input values for Matrix2x2.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(values),
+                    "There must be sixteen and only four input values for Matrix2x2.");
+            }
             M11 = values[0];
             M12 = values[1];
             M21 = values[3];
@@ -174,37 +181,41 @@ namespace SE
         /// <value>The value of the Matrix2x2 component, depending on the index.</value>
         /// <param name="index">The zero-based index of the component to access.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="index"/> is out of the range [0, 3].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"> Thrown when the <paramref name="index"/> is out of the
+        /// range [0, 3].</exception>
         public float this[int index]
         {
             get
             {
                 switch (index)
                 {
-                case 0: return M11;
-                case 1: return M12;
-                case 2: return M21;
-                case 3: return M22;
+                    case 0: return M11;
+                    case 1: return M12;
+                    case 2: return M21;
+                    case 3: return M22;
                 }
-                throw new ArgumentOutOfRangeException(nameof(index), "Indices for Matrix2x2 run from 0 to 3, inclusive.");
+                throw new ArgumentOutOfRangeException(nameof(index),
+                    "Indices for Matrix2x2 run from 0 to 3, inclusive.");
             }
             set
             {
                 switch (index)
                 {
-                case 0:
-                    M11 = value;
-                    break;
-                case 1:
-                    M12 = value;
-                    break;
-                case 2:
-                    M21 = value;
-                    break;
-                case 3:
-                    M22 = value;
-                    break;
-                default: throw new ArgumentOutOfRangeException(nameof(index), "Indices for Matrix2x2 run from 0 to 3, inclusive.");
+                    case 0:
+                        M11 = value;
+                        break;
+                    case 1:
+                        M12 = value;
+                        break;
+                    case 2:
+                        M21 = value;
+                        break;
+                    case 3:
+                        M22 = value;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(index),
+                        "Indices for Matrix2x2 run from 0 to 3, inclusive.");
                 }
             }
         }
@@ -216,23 +227,36 @@ namespace SE
         /// <param name="row">The row of the Matrix2x2 to access.</param>
         /// <param name="column">The column of the Matrix2x2 to access.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="row"/> or <paramref name="column"/>is out of the range [0, 1].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"> Thrown when the <paramref name="row"/> or
+        /// <paramref name="column"/> is out of the range [0, 1].</exception>
         public float this[int row, int column]
         {
             get
             {
                 if (row < 0 || row > 1)
-                    throw new ArgumentOutOfRangeException(nameof(row), "Rows and columns for matrices run from 0 to 1, inclusive.");
+                {
+                    throw new ArgumentOutOfRangeException(nameof(row),
+                        "Rows and columns for matrices run from 0 to 1, inclusive.");
+                }
                 if (column < 0 || column > 1)
-                    throw new ArgumentOutOfRangeException(nameof(column), "Rows and columns for matrices run from 0 to 1, inclusive.");
+                {
+                    throw new ArgumentOutOfRangeException(nameof(column),
+                        "Rows and columns for matrices run from 0 to 1, inclusive.");
+                }
                 return this[(row * 2) + column];
             }
             set
             {
                 if (row < 0 || row > 1)
-                    throw new ArgumentOutOfRangeException(nameof(row), "Rows and columns for matrices run from 0 to 1, inclusive.");
+                {
+                    throw new ArgumentOutOfRangeException(nameof(row),
+                        "Rows and columns for matrices run from 0 to 1, inclusive.");
+                }
                 if (column < 0 || column > 1)
-                    throw new ArgumentOutOfRangeException(nameof(column), "Rows and columns for matrices run from 0 to 1, inclusive.");
+                {
+                    throw new ArgumentOutOfRangeException(nameof(column),
+                        "Rows and columns for matrices run from 0 to 1, inclusive.");
+                }
                 this[(row * 2) + column] = value;
             }
         }
@@ -306,8 +330,10 @@ namespace SE
         /// <param name="result">The result.</param>
         public static void Shear(ref Float2 shearAngles, out Matrix2x2 result)
         {
-            float shearX = shearAngles.X == 0 ? 0 : (1.0f / Mathf.Tan(Mathf.DegreesToRadians * (90 - Mathf.Clamp(shearAngles.X, -89.0f, 89.0f))));
-            float shearY = shearAngles.Y == 0 ? 0 : (1.0f / Mathf.Tan(Mathf.DegreesToRadians * (90 - Mathf.Clamp(shearAngles.Y, -89.0f, 89.0f))));
+            float shearX = shearAngles.X == 0 ? 0 : (1.0f / Mathf.Tan(Mathf.DegreesToRadians * (90 - Mathf
+                .Clamp(shearAngles.X, -89.0f, 89.0f))));
+            float shearY = shearAngles.Y == 0 ? 0 : (1.0f / Mathf.Tan(Mathf.DegreesToRadians * (90 - Mathf
+                .Clamp(shearAngles.Y, -89.0f, 89.0f))));
             result = new Matrix2x2(1, shearY, shearX, 1);
         }
 
@@ -331,7 +357,8 @@ namespace SE
         /// <param name="result">The result.</param>
         public static void Transform(ref Float2 vector, ref Matrix2x2 matrix, out Float2 result)
         {
-            result = new Float2(vector.X * matrix.M11 + vector.Y * matrix.M21, vector.X * matrix.M12 + vector.Y * matrix.M22);
+            result = new Float2(vector.X * matrix.M11 + vector.Y * matrix.M21, vector.X * matrix.M12 + vector.Y
+                * matrix.M22);
         }
 
         /// <summary>
@@ -342,7 +369,9 @@ namespace SE
         /// <param name="result">The product of the two matrices.</param>
         public static void Multiply(ref Matrix2x2 left, ref Matrix2x2 right, out Matrix2x2 result)
         {
-            result = new Matrix2x2((left.M11 * right.M11) + (left.M12 * right.M21), (left.M11 * right.M12) + (left.M12 * right.M22), (left.M21 * right.M11) + (left.M22 * right.M21), (left.M21 * right.M12) + (left.M22 * right.M22));
+            result = new Matrix2x2((left.M11 * right.M11) + (left.M12 * right.M21), (left.M11 * right.M12) + (left
+                .M12 * right.M22), (left.M21 * right.M11) + (left.M22 * right.M21), (left.M21 * right.M12) + (left
+                    .M22 * right.M22));
         }
 
         /// <summary>
@@ -361,7 +390,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left"/> has the same value as <paramref name="right"/>; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left"/> has the same value as <paramref name="right"/> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Matrix2x2 left, Matrix2x2 right)
         {
@@ -373,7 +403,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left"/> has a different value than <paramref name="right"/>; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left"/> has a different value than <paramref name="right"/> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Matrix2x2 left, Matrix2x2 right)
         {
@@ -433,8 +464,12 @@ namespace SE
         public string ToString(string format)
         {
             if (format == null)
+            {
                 return ToString();
-            return string.Format(format, CultureInfo.CurrentCulture, FormatString, M11.ToString(format, CultureInfo.CurrentCulture), M12.ToString(format, CultureInfo.CurrentCulture), M21.ToString(format, CultureInfo.CurrentCulture), M22.ToString(format, CultureInfo.CurrentCulture));
+            }
+            return string.Format(format, CultureInfo.CurrentCulture, FormatString, M11.ToString(format, CultureInfo
+                .CurrentCulture), M12.ToString(format, CultureInfo.CurrentCulture), M21.ToString(format, CultureInfo
+                    .CurrentCulture), M22.ToString(format, CultureInfo.CurrentCulture));
         }
 
         /// <summary>
@@ -444,7 +479,8 @@ namespace SE
         /// <returns>A <see cref="System.String"/> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, FormatString, M11.ToString(formatProvider), M12.ToString(formatProvider), M21.ToString(formatProvider), M22.ToString(formatProvider));
+            return string.Format(formatProvider, FormatString, M11.ToString(formatProvider), M12
+                .ToString(formatProvider), M21.ToString(formatProvider), M22.ToString(formatProvider));
         }
 
         /// <summary>
@@ -456,19 +492,24 @@ namespace SE
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
+            {
                 return ToString(formatProvider);
-            return string.Format(format, formatProvider, FormatString, M11.ToString(format, formatProvider), M12.ToString(format, formatProvider), M21.ToString(format, formatProvider), M22.ToString(format, formatProvider));
+            }
+            return string.Format(format, formatProvider, FormatString, M11.ToString(format, formatProvider), M12
+                .ToString(format, formatProvider), M21.ToString(format, formatProvider), M22.ToString(format,
+                    formatProvider));
         }
 
         /// <summary>
         /// Returns a hash code for this instance.
         /// </summary>
-        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. </returns>
+        /// <returns> A hash code for this instance, suitable for use in hashing algorithms and data structures like a
+        /// hash table. </returns>
         public override int GetHashCode()
         {
             unchecked
             {
-                var hashCode = M11.GetHashCode();
+                int hashCode = M11.GetHashCode();
                 hashCode = (hashCode * 397) ^ M12.GetHashCode();
                 hashCode = (hashCode * 397) ^ M21.GetHashCode();
                 hashCode = (hashCode * 397) ^ M22.GetHashCode();
@@ -480,17 +521,20 @@ namespace SE
         /// Determines whether the specified <see cref="Matrix2x2"/> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Matrix2x2"/> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Matrix2x2"/> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Matrix2x2"/> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         public bool Equals(ref Matrix2x2 other)
         {
-            return Mathf.NearEqual(other.M11, M11) && Mathf.NearEqual(other.M12, M12) && Mathf.NearEqual(other.M21, M21) && Mathf.NearEqual(other.M22, M22);
+            return Mathf.NearEqual(other.M11, M11) && Mathf.NearEqual(other.M12, M12) && Mathf.NearEqual(other.M21,
+                M21) && Mathf.NearEqual(other.M22, M22);
         }
 
         /// <summary>
         /// Determines whether the specified <see cref="Matrix2x2"/> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Matrix2x2"/> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Matrix2x2"/> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Matrix2x2"/> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Matrix2x2 other)
         {
@@ -502,14 +546,16 @@ namespace SE
         /// </summary>
         public static bool Equals(ref Matrix2x2 a, ref Matrix2x2 b)
         {
-            return Mathf.NearEqual(a.M11, b.M11) && Mathf.NearEqual(a.M12, b.M12) && Mathf.NearEqual(a.M21, b.M21) && Mathf.NearEqual(a.M22, b.M22);
+            return Mathf.NearEqual(a.M11, b.M11) && Mathf.NearEqual(a.M12, b.M12) && Mathf.NearEqual(a.M21, b.M21)
+                && Mathf.NearEqual(a.M22, b.M22);
         }
 
         /// <summary>
         /// Determines whether the specified <see cref="System.Object"/> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object"/> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="System.Object"/> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="System.Object"/> is equal to this instance; otherwise,
+        /// <c> false</c>.</returns>
         public override bool Equals(object value)
         {
             return value is Matrix2x2 other && Equals(ref other);

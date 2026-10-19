@@ -598,9 +598,14 @@ namespace SE.Editor
                 .SetChecked(m_ContentView.ViewType == ContentViewType.List);
 
             ContextMenuChildMenu show = menu.AddChildMenu("Show");
-            show.ContextMenu.AddButton("File extensions", () => m_ContentView.ShowFileExtensions = !m_ContentView.ShowFileExtensions)
+            show.ContextMenu.AddButton("File extensions", () => m_ContentView.ShowFileExtensions = !m_ContentView
+                .ShowFileExtensions)
                 .SetChecked(m_ContentView.ShowFileExtensions);
-            show.ContextMenu.AddButton("Generated files", () => { m_ShowGeneratedFiles = !m_ShowGeneratedFiles; RefreshView(); })
+            show.ContextMenu.AddButton("Generated files", () =>
+            {
+                m_ShowGeneratedFiles =
+                !m_ShowGeneratedFiles; RefreshView();
+            })
                 .SetChecked(m_ShowGeneratedFiles);
             show.ContextMenu.AddButton("All files", () => { m_ShowAllFiles = !m_ShowAllFiles; RefreshView(); })
                 .SetChecked(m_ShowAllFiles);
@@ -612,9 +617,17 @@ namespace SE.Editor
                 filters.ContextMenu.AddButton(m_ViewDropdown.Items[i], () => m_ViewDropdown.OnClicked(index));
             }
             ContextMenuChildMenu sort = menu.AddChildMenu("Sort by");
-            sort.ContextMenu.AddButton("Alphabetic Order", () => { m_SortType = SortType.AlphabeticOrder; RefreshView(); })
+            sort.ContextMenu.AddButton("Alphabetic Order", () =>
+            {
+                m_SortType = SortType
+                .AlphabeticOrder; RefreshView();
+            })
                 .SetChecked(m_SortType == SortType.AlphabeticOrder);
-            sort.ContextMenu.AddButton("Alphabetic Reverse", () => { m_SortType = SortType.AlphabeticReverse; RefreshView(); })
+            sort.ContextMenu.AddButton("Alphabetic Reverse", () =>
+            {
+                m_SortType = SortType
+                .AlphabeticReverse; RefreshView();
+            })
                 .SetChecked(m_SortType == SortType.AlphabeticReverse);
             return menu;
         }
@@ -732,7 +745,8 @@ namespace SE.Editor
         public void Delete(ContentItem item)
         {
             List<ContentItem> selected = m_ContentView.GetSelection();
-            Delete(item != null && selected.Contains(item) ? new List<ContentItem>(selected) : new List<ContentItem> { item });
+            Delete(item != null && selected.Contains(item) ? new List<ContentItem>(selected)
+                : new List<ContentItem> { item });
         }
 
         public void Delete(List<ContentItem> items)
@@ -744,7 +758,8 @@ namespace SE.Editor
             string message = items.Count == 1
                 ? $"Are you sure to delete '{items[0].Path}'?\nThis action cannot be undone. Files will be deleted permanently."
                 : $"Are you sure to delete {items.Count} selected items?\nThis action cannot be undone. Files will be deleted permanently.";
-            if (MessageBox.Show(message, "Delete asset(s)", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK)
+            if (MessageBox.Show(message, "Delete asset(s)", MessageBoxButtons.OKCancel, MessageBoxIcon.Question)
+                != DialogResult.OK)
             {
                 return;
             }
@@ -1137,7 +1152,8 @@ namespace SE.Editor
 
                 // Draw text
                 float textScale = Height / DefaultHeight;
-                Rectangle textRect = new Rectangle(margin, 0, clientRect.Width - boxSize - 2.0f * margin, clientRect.Height);
+                Rectangle textRect = new Rectangle(margin, 0, clientRect.Width - boxSize - 2.0f * margin, clientRect
+                    .Height);
                 Render2D.PushClip(textRect);
                 Color textColor = TextColor;
                 Render2D.RenderText(Font.GetFont(), "View", textRect, enabled ? textColor : textColor * 0.5f,
@@ -1147,7 +1163,8 @@ namespace SE.Editor
                 // Arrow
                 if (ArrowImage != null)
                 {
-                    ArrowImage.Draw(new Rectangle(clientRect.Width - margin - boxSize, margin, boxSize, boxSize), arrowColor);
+                    ArrowImage.Draw(new Rectangle(clientRect.Width - margin - boxSize, margin, boxSize, boxSize),
+                        arrowColor);
                 }
             }
 
@@ -1168,7 +1185,8 @@ namespace SE.Editor
                         _popupMenu.VisibleChanged += cm =>
                         {
                             RootControl win = Root;
-                            _blockPopup = win != null && new Rectangle(Float2.Zero, Size).Contains(PointFromWindow(win.GetMousePosition()));
+                            _blockPopup = win != null && new Rectangle(Float2.Zero, Size)
+                                .Contains(PointFromWindow(win.GetMousePosition()));
                             if (!_blockPopup)
                             {
                                 Focus();

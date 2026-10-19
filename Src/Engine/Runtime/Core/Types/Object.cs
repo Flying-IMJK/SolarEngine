@@ -35,7 +35,8 @@ namespace SE
         public Guid ID => __internalId;
 
         /// <summary>
-        /// Gets a full name of the object type including leading namespace and any nested types names. Uniquely identifies the object type and can be used to find it via name.
+        /// Gets a full name of the object type including leading namespace and any nested types names. Uniquely
+        /// identifies the object type and can be used to find it via name.
         /// </summary>
         public string TypeName => Internal_GetTypeName(__unmanagedPtr);
 
@@ -47,7 +48,8 @@ namespace SE
             // Construct missing native object if managed objects gets created in managed world
             if (__unmanagedPtr == IntPtr.Zero)
             {
-                Internal_ManagedInstanceCreated(this, Interop.NativeInterop.GetTypeHolder(GetType()).managedClassPointer);
+                Internal_ManagedInstanceCreated(this, Interop.NativeInterop.GetTypeHolder(GetType())
+                    .managedClassPointer);
                 if (__unmanagedPtr == IntPtr.Zero)
                 {
                     throw new Exception($"Failed to create native instance for object of type {GetType().FullName} (assembly: {GetType().Assembly.FullName}).");
@@ -170,8 +172,10 @@ namespace SE
         /// Destroys the specified object and clears the reference variable.
         /// The object obj will be destroyed now or after the time specified in seconds from now.
         /// If obj is a Script it will be removed from the Actor and deleted.
-        /// If obj is an Actor it will be removed from the Scene and deleted as well as all its Scripts and all children of the Actor.
-        /// Actual object destruction is always delayed until after the current Update loop, but will always be done before rendering.
+        /// If obj is an Actor it will be removed from the Scene and deleted as well as all its Scripts and all children
+        /// of the Actor.
+        /// Actual object destruction is always delayed until after the current Update loop, but will always be done
+        /// before rendering.
         /// </summary>
         /// <param name="obj">The object to destroy.</param>
         /// <param name="timeLeft">The time left to destroy object (in seconds).</param>
@@ -184,7 +188,8 @@ namespace SE
         /// Destroys the specified object and clears the reference variable.
         /// The object obj will be destroyed immediately.
         /// If obj is a Script it will be removed from the Actor and deleted.
-        /// If obj is an Actor it will be removed from the Scene and deleted as well as all its Scripts and all children of the Actor.
+        /// If obj is an Actor it will be removed from the Scene and deleted as well as all its Scripts and all children
+        /// of the Actor.
         /// </summary>
         /// <param name="obj">The object to destroy.</param>
         public static void DestroyNow(Object obj)
@@ -196,8 +201,10 @@ namespace SE
         /// Destroys the specified object and clears the reference variable.
         /// The object obj will be destroyed now or after the time specified in seconds from now.
         /// If obj is a Script it will be removed from the Actor and deleted.
-        /// If obj is an Actor it will be removed from the Scene and deleted as well as all its Scripts and all children of the Actor.
-        /// Actual object destruction is always delayed until after the current Update loop, but will always be done before rendering.
+        /// If obj is an Actor it will be removed from the Scene and deleted as well as all its Scripts and all children
+        /// of the Actor.
+        /// Actual object destruction is always delayed until after the current Update loop, but will always be done
+        /// before rendering.
         /// </summary>
         /// <param name="obj">The object to destroy.</param>
         /// <param name="timeLeft">The time left to destroy object (in seconds).</param>
@@ -295,7 +302,8 @@ namespace SE
         }*/
 
         /// <summary>
-        /// Gets the pointer to the native interface implementation. Handles null object reference or invalid cast (returns zero).
+        /// Gets the pointer to the native interface implementation. Handles null object reference or invalid cast
+        /// (returns zero).
         /// </summary>
         /// <param name="obj">The object.</param>
         /// <param name="type">The interface type.</param>
@@ -310,18 +318,22 @@ namespace SE
         /// </summary>
         /// <param name="ptr">The pointer to the unmanaged (native) object.</param>
         /// <returns>The object.</returns>
-        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_FromUnmanagedPtr", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_FromUnmanagedPtr",
+            StringMarshalling = StringMarshalling.Custom,
+                StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         public static partial Object FromUnmanagedPtr(IntPtr ptr);
 
         /// <summary>
-        /// Maps the object ID using the current Scripting::ObjectsLookupIdMapping (key to value). Used to map prefab object IDs into prefab instance object IDs, or when using network replication IDs table.
+        /// Maps the object ID using the current Scripting::ObjectsLookupIdMapping (key to value). Used to map prefab
+        /// object IDs into prefab instance object IDs, or when using network replication IDs table.
         /// </summary>
         /// <param name="id">Inout object identifier mapped as a result or unchanged if not mapped.</param>
         [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_MapObjectID")]
         public static partial void MapObjectID(ref Guid id);
 
         /// <summary>
-        /// Remaps the object ID using the current Scripting::ObjectsLookupIdMapping (value to key). Used to remap prefab instance IDs into prefab object IDs, or when using network replication IDs table.
+        /// Remaps the object ID using the current Scripting::ObjectsLookupIdMapping (value to key). Used to remap
+        /// prefab instance IDs into prefab object IDs, or when using network replication IDs table.
         /// </summary>
         /// <param name="id">Inout object identifier mapped as a result or unchanged if not mapped.</param>
         [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_RemapObjectID")]
@@ -335,41 +347,61 @@ namespace SE
 
         #region Internal Calls
 
-        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_Create1", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_Create1", StringMarshalling = StringMarshalling
+            .Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         internal static partial Object Internal_Create1([MarshalUsing(typeof(Interop.SystemTypeMarshaller))] Type type);
 
-        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_Create2", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_Create2", StringMarshalling = StringMarshalling
+            .Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         internal static partial Object Internal_Create2(string typeName);
 
-        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_ManagedInstanceCreated", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_ManagedInstanceCreated",
+            StringMarshalling = StringMarshalling.Custom,
+                StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         internal static partial void Internal_ManagedInstanceCreated(Object managedInstance, IntPtr typeClass);
 
-        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_ManagedInstanceDeleted", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_ManagedInstanceDeleted",
+            StringMarshalling = StringMarshalling.Custom,
+                StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         internal static partial void Internal_ManagedInstanceDeleted(IntPtr nativeInstance);
 
-        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_Destroy", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_Destroy", StringMarshalling = StringMarshalling
+            .Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         internal static partial void Internal_Destroy(IntPtr obj, float timeLeft);
 
-        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_DestroyNow", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_DestroyNow", StringMarshalling = StringMarshalling
+            .Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         internal static partial void Internal_DestroyNow(IntPtr obj);
 
-        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_GetTypeName", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_GetTypeName", StringMarshalling = StringMarshalling
+            .Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         internal static partial string Internal_GetTypeName(IntPtr obj);
 
-        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_FindObject", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
-        internal static partial Object Internal_FindObject(ref Guid id, [MarshalUsing(typeof(Interop.SystemTypeMarshaller))] Type type);
+        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_FindObject", StringMarshalling = StringMarshalling
+            .Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        internal static partial Object Internal_FindObject(ref Guid id,
+            [MarshalUsing(typeof(Interop.SystemTypeMarshaller))] Type type);
 
-        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_TryFindObject", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
-        internal static partial Object Internal_TryFindObject(ref Guid id, [MarshalUsing(typeof(Interop.SystemTypeMarshaller))] Type type);
+        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_TryFindObject",
+            StringMarshalling = StringMarshalling.Custom,
+                StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        internal static partial Object Internal_TryFindObject(ref Guid id,
+            [MarshalUsing(typeof(Interop.SystemTypeMarshaller))] Type type);
 
-        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_ChangeID", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_ChangeID", StringMarshalling = StringMarshalling
+            .Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         internal static partial void Internal_ChangeID(IntPtr obj, ref Guid id);
 
-        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_GetUnmanagedInterface", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
-        internal static partial IntPtr Internal_GetUnmanagedInterface(IntPtr obj, [MarshalUsing(typeof(Interop.SystemTypeMarshaller))] Type type);
+        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_GetUnmanagedInterface",
+            StringMarshalling = StringMarshalling.Custom,
+                StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        internal static partial IntPtr Internal_GetUnmanagedInterface(IntPtr obj,
+            [MarshalUsing(typeof(Interop.SystemTypeMarshaller))] Type type);
 
 
-        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_TypeIDToTypeName", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
+        [LibraryImport("SERuntime", EntryPoint = "ObjectInternal_TypeIDToTypeName",
+            StringMarshalling = StringMarshalling.Custom,
+                StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         internal static partial string Internal_TypeIDToTypeName(uint id);
 
         #endregion

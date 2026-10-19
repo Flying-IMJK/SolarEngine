@@ -34,7 +34,9 @@ namespace SE.Interop
             managedArray.WrapArray(arr, arr.GetType());
 
             if (pooledArrayHandles == null)
+            {
                 pooledArrayHandles = new();
+            }
             if (!pooledArrayHandles.TryGetValue(managedArray, out ManagedHandle handle))
             {
                 handle = ManagedHandle.Alloc(managedArray);
@@ -49,11 +51,14 @@ namespace SE.Interop
         /// <remarks>The resources must be released by calling FreePooled() instead of Free()-method.</remarks>
         public static ManagedHandle WrapPooledArray(Array arr, Type arrayType)
         {
-            ManagedArray managedArray = ManagedArrayPool.Get(arr.Length * NativeInterop.GetTypeSize(arr.GetType().GetElementType()));
+            ManagedArray managedArray = ManagedArrayPool.Get(arr.Length * NativeInterop.GetTypeSize(arr.GetType()
+                .GetElementType()));
             managedArray.WrapArray(arr, arrayType);
 
             if (pooledArrayHandles == null)
+            {
                 pooledArrayHandles = new();
+            }
             if (!pooledArrayHandles.TryGetValue(managedArray, out ManagedHandle handle))
             {
                 handle = ManagedHandle.Alloc(managedArray);
@@ -63,7 +68,10 @@ namespace SE.Interop
         }
 
         internal static ManagedArray AllocateNewArray(int length, Type arrayType, Type elementType)
-            => new ManagedArray((IntPtr)NativeInterop.NativeAlloc(length, NativeInterop.GetTypeSize(elementType)), length, arrayType, elementType);
+        {
+            return new ManagedArray((IntPtr)NativeInterop.NativeAlloc(length, NativeInterop.GetTypeSize(elementType)),
+                            length, arrayType, elementType);
+        }
 
         internal static ManagedArray AllocateNewArray(IntPtr ptr, int length, Type arrayType, Type elementType)
             => new ManagedArray(ptr, length, arrayType, elementType);
@@ -71,14 +79,18 @@ namespace SE.Interop
         /// <summary>
         /// Returns an instance of ManagedArray from shared pool.
         /// </summary>
-        /// <remarks>The resources must be released by calling FreePooled() instead of Free()-method. Do not release the returned ManagedHandle.</remarks>
-        public static (ManagedHandle managedHandle, ManagedArray managedArray) AllocatePooledArray<T>(int length) where T : unmanaged
+        /// <remarks> The resources must be released by calling FreePooled() instead of Free()-method. Do not release
+        /// the returned ManagedHandle.</remarks>
+        public static (ManagedHandle managedHandle,
+            ManagedArray managedArray) AllocatePooledArray<T>(int length) where T : unmanaged
         {
             ManagedArray managedArray = ManagedArrayPool.Get(length * Unsafe.SizeOf<T>());
             managedArray.Allocate<T>(length);
 
             if (pooledArrayHandles == null)
+            {
                 pooledArrayHandles = new();
+            }
             if (!pooledArrayHandles.TryGetValue(managedArray, out ManagedHandle handle))
             {
                 handle = ManagedHandle.Alloc(managedArray);
@@ -92,9 +104,13 @@ namespace SE.Interop
         internal void WrapArray(Array arr, Type arrayType)
         {
             if (m_UnmanagedData != IntPtr.Zero)
+            {
                 NativeInterop.NativeFree(m_UnmanagedData.ToPointer());
+            }
             if (m_ManagedHandle.IsAllocated)
+            {
                 m_ManagedHandle.Free();
+            }
             m_ManagedHandle = ManagedHandle.Alloc(arr, GCHandleType.Pinned);
             m_UnmanagedData = Marshal.UnsafeAddrOfPinnedArrayElement(arr, 0);
             m_UnmanagedAllocationSize = 0;
@@ -115,7 +131,9 @@ namespace SE.Interop
             if (length * m_ElementSize > m_UnmanagedAllocationSize)
             {
                 if (m_UnmanagedAllocationSize > 0)
+                {
                     NativeInterop.NativeFree(m_UnmanagedData.ToPointer());
+                }
                 m_UnmanagedData = (IntPtr)NativeInterop.NativeAlloc(length, m_ElementSize);
                 m_UnmanagedAllocationSize = m_ElementSize * length;
             }
@@ -139,7 +157,9 @@ namespace SE.Interop
         ~ManagedArray()
         {
             if (m_UnmanagedData != IntPtr.Zero)
+            {
                 Free();
+            }
         }
 
         public void Free()
@@ -182,7 +202,11 @@ namespace SE.Interop
 
         public T[] ToArray<T>() where T : struct => new Span<T>(m_UnmanagedData.ToPointer(), m_Length).ToArray();
 
-        public Array ToArray() => ArrayCast.ToArray(new Span<byte>(m_UnmanagedData.ToPointer(), m_Length * m_ElementSize), m_ElementType);
+        public Array ToArray()
+        {
+            return ArrayCast.ToArray(new Span<byte>(m_UnmanagedData.ToPointer(), m_Length
+                        * m_ElementSize), m_ElementType);
+        }
 
         /// <summary>
         /// Creates an Array of the specified type from span of bytes.
@@ -197,10 +221,14 @@ namespace SE.Interop
             internal static Array ToArray(Span<byte> span, Type type)
             {
                 if (s_Delegates == null)
-                    s_Delegates = new();
-                if (!s_Delegates.TryGetValue(type, out var deleg))
                 {
-                    deleg = typeof(ArrayCastInternal<>).MakeGenericType(type).GetMethod(nameof(ArrayCastInternal<int>.ToArray), BindingFlags.Static | BindingFlags.NonPublic).CreateDelegate<GetDelegate>();
+                    s_Delegates = new();
+                }
+                if (!s_Delegates.TryGetValue(type, out GetDelegate deleg))
+                {
+                    deleg = typeof(ArrayCastInternal<>).MakeGenericType(type)
+                        .GetMethod(nameof(ArrayCastInternal<int>.ToArray), BindingFlags.Static | BindingFlags
+                            .NonPublic).CreateDelegate<GetDelegate>();
                     s_Delegates.Add(type, deleg);
                 }
                 return deleg(span);
@@ -226,31 +254,41 @@ namespace SE.Interop
             /// <summary>
             /// Borrows an array from the pool.
             /// </summary>
-            /// <param name="minimumSize">Minimum size in bytes for the borrowed array. With value of 0, the returned array allocation is always zero.</param>
+            /// <param name="minimumSize"> Minimum size in bytes for the borrowed array. With value of 0, the returned
+            /// array allocation is always zero.</param>
             /// <remarks>The returned array size may be smaller than the requested minimumSize.</remarks>
             internal static ManagedArray Get(int minimumSize = 0)
             {
                 if (pool == null)
+                {
                     pool = new();
+                }
 
                 int smallest = -1;
                 int smallestSize = int.MaxValue;
-                var poolSpan = CollectionsMarshal.AsSpan(pool);
+                Span<(bool inUse, ManagedArray array)> poolSpan = CollectionsMarshal.AsSpan(pool);
                 for (int i = 0; i < poolSpan.Length; i++)
                 {
                     ref var tuple = ref poolSpan[i];
                     if (tuple.inUse)
+                    {
                         continue;
+                    }
 
                     // Try to get larger arrays than requested in order to avoid reallocations
                     if (minimumSize > 0)
                     {
-                        if (tuple.array.m_UnmanagedAllocationSize >= minimumSize && tuple.array.m_UnmanagedAllocationSize < smallestSize)
+                        if (tuple.array.m_UnmanagedAllocationSize >= minimumSize && tuple.array
+                            .m_UnmanagedAllocationSize < smallestSize)
+                        {
                             smallest = i;
+                        }
                         continue;
                     }
                     else if (minimumSize == 0 && tuple.Item2.m_UnmanagedAllocationSize != 0)
+                    {
                         continue;
+                    }
 
                     tuple.inUse = true;
                     return tuple.array;
@@ -262,7 +300,7 @@ namespace SE.Interop
                     return tuple.array;
                 }
 
-                var newTuple = (inUse: true, array: new ManagedArray());
+                (bool inUse, ManagedArray array) newTuple = (inUse: true, array: new ManagedArray());
                 pool.Add(newTuple);
                 return newTuple.array;
             }
@@ -276,7 +314,9 @@ namespace SE.Interop
                 foreach (ref var tuple in CollectionsMarshal.AsSpan(pool))
                 {
                     if (tuple.array != obj)
+                    {
                         continue;
+                    }
 
                     tuple.inUse = false;
                     return;
@@ -295,9 +335,13 @@ namespace SE.Interop
         public static unsafe IntPtr ToNative(string str)
         {
             if (str == null)
+            {
                 return IntPtr.Zero;
+            }
             else if (str == string.Empty)
+            {
                 return ManagedHandle.ToIntPtr(EmptyStringHandle);
+            }
             Assert.IsTrue(str.Length > 0);
             return ManagedHandle.ToIntPtr(str);
         }
@@ -306,9 +350,13 @@ namespace SE.Interop
         public static unsafe IntPtr ToNativeWeak(string str)
         {
             if (str == null)
+            {
                 return IntPtr.Zero;
+            }
             else if (str == string.Empty)
+            {
                 return ManagedHandle.ToIntPtr(EmptyStringHandle);
+            }
             Assert.IsTrue(str.Length > 0);
             return ManagedHandle.ToIntPtr(str, GCHandleType.Weak);
         }
@@ -317,7 +365,9 @@ namespace SE.Interop
         public static string ToManaged(IntPtr ptr)
         {
             if (ptr == IntPtr.Zero)
+            {
                 return null;
+            }
             return Unsafe.As<string>(ManagedHandle.FromIntPtr(ptr).Target);
         }
 
@@ -325,10 +375,14 @@ namespace SE.Interop
         public static void Free(IntPtr ptr)
         {
             if (ptr == IntPtr.Zero)
+            {
                 return;
+            }
             ManagedHandle handle = ManagedHandle.FromIntPtr(ptr);
             if (handle == EmptyStringHandle)
+            {
                 return;
+            }
             handle.Free();
         }
     }
@@ -342,7 +396,8 @@ namespace SE.Interop
 
         private ManagedHandle(IntPtr handle) => m_NativeHandle = handle;
 
-        private ManagedHandle(object value, GCHandleType type) => m_NativeHandle = ManagedHandlePool.AllocateHandle(value, type);
+        private ManagedHandle(object value, GCHandleType type) => m_NativeHandle = ManagedHandlePool
+            .AllocateHandle(value, type);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ManagedHandle Alloc(object value) => new ManagedHandle(value, GCHandleType.Normal);
@@ -353,7 +408,9 @@ namespace SE.Interop
         public void Free()
         {
             if (m_NativeHandle == IntPtr.Zero)
+            {
                 return;
+            }
             ManagedHandlePool.FreeHandle(m_NativeHandle);
             m_NativeHandle = IntPtr.Zero;
         }
@@ -406,15 +463,18 @@ namespace SE.Interop
 
             // Dictionaries for storing the valid handles.
             // Note: Using locks seems to be generally the fastest when adding or fetching from the dictionary.
-            // Concurrent dictionaries could also be considered, but they perform much slower when adding to the dictionary.
+            // Concurrent dictionaries could also be considered, but they perform much slower when adding to the
+            // dictionary.
             private static Dictionary<IntPtr, object> s_PersistentPool = new();
             private static Dictionary<IntPtr, GCHandle> s_PinnedPool = new();
 
             // TODO: Performance of pinned handles are poor at the moment due to GCHandle wrapping.
-            // TODO: .NET8: Experiment with pinned arrays for faster pinning: https://github.com/dotnet/runtime/pull/89293
+            // TODO: .NET8: Experiment with pinned arrays for faster pinning:
+            // https://github.com/dotnet/runtime/pull/89293
 
             // Manage double-buffered pool for weak handles in order to avoid collecting in-flight handles.
-            // Periodically when the pools are being accessed and conditions are met, the other pool is cleared and swapped.
+            // Periodically when the pools are being accessed and conditions are met, the other pool is cleared and
+            // swapped.
             private static Dictionary<IntPtr, object> s_WeakPool = new();
             private static Dictionary<IntPtr, object> s_WeakPoolOther = new();
             private static object s_WeakPoolLock = new object();
@@ -428,19 +488,27 @@ namespace SE.Interop
             internal static void TryCollectWeakHandles()
             {
                 if (s_WeakHandleAccumulator < s_NextWeakPoolCollection)
+                {
                     return;
+                }
 
                 s_NextWeakPoolCollection = s_WeakHandleAccumulator + 1000;
 
                 // Try to swap pools after garbage collection or whenever the pool gets too large
-                var gc0CollectionCount = GC.CollectionCount(0);
-                if (gc0CollectionCount < s_NextWeakPoolGCCollection && s_WeakPool.Count < WeakPoolCollectionSizeThreshold)
+                int gc0CollectionCount = GC.CollectionCount(0);
+                if (gc0CollectionCount < s_NextWeakPoolGCCollection && s_WeakPool.Count
+                    < WeakPoolCollectionSizeThreshold)
+                {
                     return;
+                }
                 s_NextWeakPoolGCCollection = gc0CollectionCount + 1;
 
                 // Prevent huge allocations from swapping the pools in the middle of the operation
-                if (System.Diagnostics.Stopwatch.GetElapsedTime(s_LastWeakPoolCollectionTime).TotalMilliseconds < WeakPoolCollectionTimeThreshold)
+                if (System.Diagnostics.Stopwatch.GetElapsedTime(s_LastWeakPoolCollectionTime).TotalMilliseconds
+                    < WeakPoolCollectionTimeThreshold)
+                {
                     return;
+                }
                 s_LastWeakPoolCollectionTime = System.Diagnostics.Stopwatch.GetTimestamp();
 
                 // Swap the pools and release the oldest pool for GC
@@ -449,17 +517,24 @@ namespace SE.Interop
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static IntPtr NewHandle(GCHandleType type) => type switch
+            private static IntPtr NewHandle(GCHandleType type)
             {
-                GCHandleType.Normal => (IntPtr)Interlocked.Increment(ref s_NormalHandleAccumulator),
-                GCHandleType.Pinned => (IntPtr)Interlocked.Increment(ref s_PinnedHandleAccumulator),
-                GCHandleType.Weak => (IntPtr)Interlocked.Increment(ref s_WeakHandleAccumulator),
-                GCHandleType.WeakTrackResurrection => (IntPtr)Interlocked.Increment(ref s_WeakHandleAccumulator),
-                _ => throw new NotImplementedException(type.ToString())
-            };
+                return type switch
+                {
+                    GCHandleType.Normal => (IntPtr)Interlocked.Increment(ref s_NormalHandleAccumulator),
+                    GCHandleType.Pinned => (IntPtr)Interlocked.Increment(ref s_PinnedHandleAccumulator),
+                    GCHandleType.Weak => (IntPtr)Interlocked.Increment(ref s_WeakHandleAccumulator),
+                    GCHandleType.WeakTrackResurrection => (IntPtr)Interlocked.Increment(ref s_WeakHandleAccumulator),
+                    _ => throw new NotImplementedException(type.ToString())
+                };
+            }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static GCHandleType GetHandleType(IntPtr handle) => (GCHandleType)(((ulong)handle & 0xC000000000000000) >> 62);
+            private static GCHandleType GetHandleType(IntPtr handle)
+            {
+                return (GCHandleType)(((ulong)handle
+                                & 0xC000000000000000) >> 62);
+            }
 
             internal static IntPtr AllocateHandle(object value, GCHandleType type)
             {
@@ -468,11 +543,15 @@ namespace SE.Interop
                 {
                     case GCHandleType.Normal:
                         lock (s_PersistentPool)
+                        {
                             s_PersistentPool.Add(handle, value);
+                        }
                         break;
                     case GCHandleType.Pinned:
                         lock (s_PinnedPool)
+                        {
                             s_PinnedPool.Add(handle, GCHandle.Alloc(value, GCHandleType.Pinned));
+                        }
                         break;
                     case GCHandleType.Weak:
                     case GCHandleType.WeakTrackResurrection:
@@ -494,14 +573,18 @@ namespace SE.Interop
                         lock (s_PersistentPool)
                         {
                             if (s_PersistentPool.TryGetValue(handle, out object value))
+                            {
                                 return value;
+                            }
                         }
                         break;
                     case GCHandleType.Pinned:
                         lock (s_PinnedPool)
                         {
                             if (s_PinnedPool.TryGetValue(handle, out GCHandle gcHandle))
+                            {
                                 return gcHandle.Target;
+                            }
                         }
                         break;
                     case GCHandleType.Weak:
@@ -510,9 +593,13 @@ namespace SE.Interop
                         {
                             TryCollectWeakHandles();
                             if (s_WeakPool.TryGetValue(handle, out object value))
+                            {
                                 return value;
+                            }
                             else if (s_WeakPoolOther.TryGetValue(handle, out value))
+                            {
                                 return value;
+                            }
                         }
                         break;
                 }
@@ -580,7 +667,9 @@ namespace SE.Interop
                         lock (s_PersistentPool)
                         {
                             if (s_PersistentPool.Remove(handle))
+                            {
                                 return;
+                            }
                         }
                         break;
                     case GCHandleType.Pinned:
@@ -596,7 +685,9 @@ namespace SE.Interop
                     case GCHandleType.Weak:
                     case GCHandleType.WeakTrackResurrection:
                         lock (s_WeakPoolLock)
+                        {
                             TryCollectWeakHandles();
+                        }
                         return;
                 }
                 throw new NativeInteropException("Invalid ManagedHandle");

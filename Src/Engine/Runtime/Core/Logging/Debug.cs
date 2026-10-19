@@ -40,7 +40,9 @@ namespace SE
         public static void Assert(bool condition, object message)
         {
             if (!condition)
+            {
                 Logger.Log(SE.Log.LogType.Error, message);
+            }
         }
 
         /// <summary>
@@ -52,7 +54,9 @@ namespace SE
         public static void Assert(bool condition, string message)
         {
             if (!condition)
+            {
                 Logger.Log(SE.Log.LogType.Error, message);
+            }
         }
 
         /// <summary>
@@ -65,7 +69,9 @@ namespace SE
         public static void Assert(bool condition, object message, Object context)
         {
             if (!condition)
+            {
                 Logger.Log(SE.Log.LogType.Error, message, context);
+            }
         }
 
         /// <summary>
@@ -78,7 +84,9 @@ namespace SE
         public static void Assert(bool condition, string message, Object context)
         {
             if (!condition)
+            {
                 Logger.Log(SE.Log.LogType.Error, (object)message, context);
+            }
         }
 
         /// <summary>
@@ -91,7 +99,9 @@ namespace SE
         public static void AssertFormat(bool condition, string format, params object[] args)
         {
             if (!condition)
+            {
                 Logger.LogFormat(SE.Log.LogType.Error, format, args);
+            }
         }
 
         /// <summary>
@@ -105,13 +115,16 @@ namespace SE
         public static void AssertFormat(bool condition, Object context, string format, params object[] args)
         {
             if (!condition)
+            {
                 Logger.Log(SE.Log.LogType.Error, context, string.Format(format, args));
+            }
         }
 
         /// <summary>
         /// Logs the raw message to the log.
         /// </summary>
-        /// <param name="logType">Type of the log message. Not: fatal will stop the engine. Error may show a message popup.</param>
+        /// <param name="logType"> Type of the log message. Not: fatal will stop the engine. Error may show a message
+        /// popup.</param>
         /// <param name="message">The message contents.</param>
         public static void Write(SE.Log.LogType logType, string message)
         {

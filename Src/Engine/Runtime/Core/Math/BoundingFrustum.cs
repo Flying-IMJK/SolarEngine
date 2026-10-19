@@ -32,7 +32,8 @@ using System.Runtime.InteropServices;
 namespace SE
 {
     /// <summary>
-    /// Defines a frustum which can be used in frustum culling, zoom to Extents (zoom to fit) operations, (matrix, frustum, camera) interchange, and many kind of intersection testing.
+    /// Defines a frustum which can be used in frustum culling, zoom to Extents (zoom to fit) operations, (matrix,
+    /// frustum, camera) interchange, and many kind of intersection testing.
     /// </summary>
     [Serializable]
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
@@ -55,7 +56,8 @@ namespace SE
             set
             {
                 m_PMatrix = value;
-                GetPlanesFromMatrix(ref m_PMatrix, out m_PNear, out m_PFar, out m_PLeft, out m_PRight, out m_PTop, out m_PBottom);
+                GetPlanesFromMatrix(ref m_PMatrix, out m_PNear, out m_PFar, out m_PLeft, out m_PRight, out m_PTop,
+                    out m_PBottom);
             }
         }
 
@@ -96,7 +98,8 @@ namespace SE
         public BoundingFrustum(Matrix matrix)
         {
             m_PMatrix = matrix;
-            GetPlanesFromMatrix(ref m_PMatrix, out m_PNear, out m_PFar, out m_PLeft, out m_PRight, out m_PTop, out m_PBottom);
+            GetPlanesFromMatrix(ref m_PMatrix, out m_PNear, out m_PFar, out m_PLeft, out m_PRight, out m_PTop,
+                out m_PBottom);
         }
 
         /// <summary>
@@ -106,13 +109,15 @@ namespace SE
         public BoundingFrustum(ref Matrix matrix)
         {
             m_PMatrix = matrix;
-            GetPlanesFromMatrix(ref m_PMatrix, out m_PNear, out m_PFar, out m_PLeft, out m_PRight, out m_PTop, out m_PBottom);
+            GetPlanesFromMatrix(ref m_PMatrix, out m_PNear, out m_PFar, out m_PLeft, out m_PRight, out m_PTop,
+                out m_PBottom);
         }
 
         /// <summary>
         /// Returns a hash code for this instance.
         /// </summary>
-        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
+        /// <returns> A hash code for this instance, suitable for use in hashing algorithms and data structures like a
+        /// hash table.</returns>
         public override int GetHashCode()
         {
             return m_PMatrix.GetHashCode();
@@ -122,7 +127,8 @@ namespace SE
         /// Determines whether the specified <see cref="BoundingFrustum" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="BoundingFrustum" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="BoundingFrustum" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="BoundingFrustum" /> is equal to this instance; otherwise,
+        /// <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref BoundingFrustum other)
         {
@@ -133,7 +139,8 @@ namespace SE
         /// Determines whether the specified <see cref="BoundingFrustum" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="BoundingFrustum" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="BoundingFrustum" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="BoundingFrustum" /> is equal to this instance; otherwise,
+        /// <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(BoundingFrustum other)
         {
@@ -144,7 +151,8 @@ namespace SE
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="obj">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise,
+        /// <c> false</c>.</returns>
         public override bool Equals(object obj)
         {
             return obj is BoundingFrustum other && Equals(ref other);
@@ -177,23 +185,25 @@ namespace SE
         /// <summary>
         /// Returns one of the 6 planes related to this frustum.
         /// </summary>
-        /// <param name="index">Plane index where 0 fro Left, 1 for Right, 2 for Top, 3 for Bottom, 4 for Near, 5 for Far</param>
+        /// <param name="index"> Plane index where 0 fro Left, 1 for Right, 2 for Top, 3 for Bottom, 4 for Near, 5 for
+        /// Far</param>
         /// <returns>The frustum plane.</returns>
         public Plane GetPlane(int index)
         {
             switch (index)
             {
-            case 0: return m_PLeft;
-            case 1: return m_PRight;
-            case 2: return m_PTop;
-            case 3: return m_PBottom;
-            case 4: return m_PNear;
-            case 5: return m_PFar;
-            default: return new Plane();
+                case 0: return m_PLeft;
+                case 1: return m_PRight;
+                case 2: return m_PTop;
+                case 3: return m_PBottom;
+                case 4: return m_PNear;
+                case 5: return m_PFar;
+                default: return new Plane();
             }
         }
 
-        private static void GetPlanesFromMatrix(ref Matrix matrix, out Plane near, out Plane far, out Plane left, out Plane right, out Plane top, out Plane bottom)
+        private static void GetPlanesFromMatrix(ref Matrix matrix, out Plane near, out Plane far, out Plane left,
+            out Plane right, out Plane top, out Plane bottom)
         {
             //http://www.chadvernon.com/blog/resources/directx9/frustum-culling/
 
@@ -242,14 +252,16 @@ namespace SE
 
         private static Float3 Get3PlanesInterPoint(ref Plane p1, ref Plane p2, ref Plane p3)
         {
-            Float3.Cross(ref p2.Normal, ref p3.Normal, out var n2Xn3);
-            Float3.Cross(ref p3.Normal, ref p1.Normal, out var n3Xn1);
-            Float3.Cross(ref p1.Normal, ref p2.Normal, out var n1Xn2);
-            var div1 = Float3.Dot(ref p1.Normal, ref n2Xn3);
-            var div2 = Float3.Dot(ref p2.Normal, ref n3Xn1);
-            var div3 = Float3.Dot(ref p3.Normal, ref n1Xn2);
+            Float3.Cross(ref p2.Normal, ref p3.Normal, out Float3 n2Xn3);
+            Float3.Cross(ref p3.Normal, ref p1.Normal, out Float3 n3Xn1);
+            Float3.Cross(ref p1.Normal, ref p2.Normal, out Float3 n1Xn2);
+            float div1 = Float3.Dot(ref p1.Normal, ref n2Xn3);
+            float div2 = Float3.Dot(ref p2.Normal, ref n3Xn1);
+            float div3 = Float3.Dot(ref p3.Normal, ref n1Xn2);
             if (Mathf.IsZero(div1 * div2 * div3))
+            {
                 return Float3.Zero;
+            }
             return n2Xn3 * (-p1.D / div1) - n3Xn1 * (p2.D / div2) - n1Xn2 * (p3.D / div3);
         }
 
@@ -264,7 +276,8 @@ namespace SE
         /// <param name="zfar">The Z far.</param>
         /// <param name="aspect">The aspect.</param>
         /// <returns>The bounding frustum calculated from perspective camera</returns>
-        public static BoundingFrustum FromCamera(Float3 cameraPos, Float3 lookDir, Float3 upDir, float fov, float znear, float zfar, float aspect)
+        public static BoundingFrustum FromCamera(Float3 cameraPos, Float3 lookDir, Float3 upDir, float fov,
+            float znear, float zfar, float aspect)
         {
             //http://knol.google.com/k/view-frustum
 
@@ -273,8 +286,8 @@ namespace SE
 
             Float3 nearCenter = cameraPos + lookDir * znear;
             Float3 farCenter = cameraPos + lookDir * zfar;
-            var nearHalfHeight = (float)(znear * Math.Tan(fov / 2f));
-            var farHalfHeight = (float)(zfar * Math.Tan(fov / 2f));
+            float nearHalfHeight = (float)(znear * Math.Tan(fov / 2f));
+            float farHalfHeight = (float)(zfar * Math.Tan(fov / 2f));
             float nearHalfWidth = nearHalfHeight * aspect;
             float farHalfWidth = farHalfHeight * aspect;
 
@@ -288,7 +301,7 @@ namespace SE
             Float3 far3 = farCenter + farHalfHeight * upDir - farHalfWidth * rightDir;
             Float3 far4 = farCenter - farHalfHeight * upDir - farHalfWidth * rightDir;
 
-            var result = new BoundingFrustum
+            BoundingFrustum result = new BoundingFrustum
             {
                 m_PNear = new Plane(near1, near2, near3),
                 m_PFar = new Plane(far3, far2, far1),
@@ -305,7 +318,8 @@ namespace SE
             result.m_PTop.Normalize();
             result.m_PBottom.Normalize();
 
-            result.m_PMatrix = Matrix.LookAt(cameraPos, cameraPos + lookDir * 10, upDir) * Matrix.PerspectiveFov(fov, aspect, znear, zfar);
+            result.m_PMatrix = Matrix.LookAt(cameraPos, cameraPos + lookDir * 10, upDir) * Matrix
+                .PerspectiveFov(fov, aspect, znear, zfar);
 
             return result;
         }
@@ -323,7 +337,7 @@ namespace SE
         /// <returns>The 8 corners of the frustum</returns>
         public Float3[] GetCorners()
         {
-            var corners = new Float3[8];
+            Float3[] corners = new Float3[8];
             GetCorners(corners);
             return corners;
         }
@@ -358,43 +372,43 @@ namespace SE
         /// <returns>Type of the containment</returns>
         public ContainmentType Contains(ref Float3 point)
         {
-            var result = PlaneIntersectionType.Front;
-            var planeResult = PlaneIntersectionType.Front;
-            for (var i = 0; i < 6; i++)
+            PlaneIntersectionType result = PlaneIntersectionType.Front;
+            PlaneIntersectionType planeResult = PlaneIntersectionType.Front;
+            for (int i = 0; i < 6; i++)
             {
                 switch (i)
                 {
-                case 0:
-                    planeResult = m_PNear.Intersects(ref point);
-                    break;
-                case 1:
-                    planeResult = m_PFar.Intersects(ref point);
-                    break;
-                case 2:
-                    planeResult = m_PLeft.Intersects(ref point);
-                    break;
-                case 3:
-                    planeResult = m_PRight.Intersects(ref point);
-                    break;
-                case 4:
-                    planeResult = m_PTop.Intersects(ref point);
-                    break;
-                case 5:
-                    planeResult = m_PBottom.Intersects(ref point);
-                    break;
+                    case 0:
+                        planeResult = m_PNear.Intersects(ref point);
+                        break;
+                    case 1:
+                        planeResult = m_PFar.Intersects(ref point);
+                        break;
+                    case 2:
+                        planeResult = m_PLeft.Intersects(ref point);
+                        break;
+                    case 3:
+                        planeResult = m_PRight.Intersects(ref point);
+                        break;
+                    case 4:
+                        planeResult = m_PTop.Intersects(ref point);
+                        break;
+                    case 5:
+                        planeResult = m_PBottom.Intersects(ref point);
+                        break;
                 }
                 switch (planeResult)
                 {
-                case PlaneIntersectionType.Back: return ContainmentType.Disjoint;
-                case PlaneIntersectionType.Intersecting:
-                    result = PlaneIntersectionType.Intersecting;
-                    break;
+                    case PlaneIntersectionType.Back: return ContainmentType.Disjoint;
+                    case PlaneIntersectionType.Intersecting:
+                        result = PlaneIntersectionType.Intersecting;
+                        break;
                 }
             }
             switch (result)
             {
-            case PlaneIntersectionType.Intersecting: return ContainmentType.Intersects;
-            default: return ContainmentType.Contains;
+                case PlaneIntersectionType.Intersecting: return ContainmentType.Intersects;
+                default: return ContainmentType.Contains;
             }
         }
 
@@ -408,23 +422,36 @@ namespace SE
             return Contains(ref point);
         }
 
-        private void GetBoxToPlanePVertexNVertex(ref BoundingBox box, ref Float3 planeNormal, out Float3 p, out Float3 n)
+        private void GetBoxToPlanePVertexNVertex(ref BoundingBox box, ref Float3 planeNormal, out Float3 p,
+            out Float3 n)
         {
             p = box.Minimum;
             if (planeNormal.X >= 0)
+            {
                 p.X = box.Maximum.X;
+            }
             if (planeNormal.Y >= 0)
+            {
                 p.Y = box.Maximum.Y;
+            }
             if (planeNormal.Z >= 0)
+            {
                 p.Z = box.Maximum.Z;
+            }
 
             n = box.Maximum;
             if (planeNormal.X >= 0)
+            {
                 n.X = box.Minimum.X;
+            }
             if (planeNormal.Y >= 0)
+            {
                 n.Y = box.Minimum.Y;
+            }
             if (planeNormal.Z >= 0)
+            {
                 n.Z = box.Minimum.Z;
+            }
         }
 
         /// <summary>
@@ -434,16 +461,20 @@ namespace SE
         /// <returns>Type of the containment</returns>
         public ContainmentType Contains(ref BoundingBox box)
         {
-            var result = ContainmentType.Contains;
-            for (var i = 0; i < 6; i++)
+            ContainmentType result = ContainmentType.Contains;
+            for (int i = 0; i < 6; i++)
             {
-                var plane = GetPlane(i);
-                GetBoxToPlanePVertexNVertex(ref box, ref plane.Normal, out var p, out var n);
+                Plane plane = GetPlane(i);
+                GetBoxToPlanePVertexNVertex(ref box, ref plane.Normal, out Float3 p, out Float3 n);
                 if (CollisionsHelper.PlaneIntersectsPoint(ref plane, ref p) == PlaneIntersectionType.Back)
+                {
                     return ContainmentType.Disjoint;
+                }
 
                 if (CollisionsHelper.PlaneIntersectsPoint(ref plane, ref n) == PlaneIntersectionType.Back)
+                {
                     result = ContainmentType.Intersects;
+                }
             }
             return result;
         }
@@ -475,43 +506,43 @@ namespace SE
         /// <returns>Type of the containment</returns>
         public ContainmentType Contains(ref BoundingSphere sphere)
         {
-            var result = PlaneIntersectionType.Front;
-            var planeResult = PlaneIntersectionType.Front;
-            for (var i = 0; i < 6; i++)
+            PlaneIntersectionType result = PlaneIntersectionType.Front;
+            PlaneIntersectionType planeResult = PlaneIntersectionType.Front;
+            for (int i = 0; i < 6; i++)
             {
                 switch (i)
                 {
-                case 0:
-                    planeResult = m_PNear.Intersects(ref sphere);
-                    break;
-                case 1:
-                    planeResult = m_PFar.Intersects(ref sphere);
-                    break;
-                case 2:
-                    planeResult = m_PLeft.Intersects(ref sphere);
-                    break;
-                case 3:
-                    planeResult = m_PRight.Intersects(ref sphere);
-                    break;
-                case 4:
-                    planeResult = m_PTop.Intersects(ref sphere);
-                    break;
-                case 5:
-                    planeResult = m_PBottom.Intersects(ref sphere);
-                    break;
+                    case 0:
+                        planeResult = m_PNear.Intersects(ref sphere);
+                        break;
+                    case 1:
+                        planeResult = m_PFar.Intersects(ref sphere);
+                        break;
+                    case 2:
+                        planeResult = m_PLeft.Intersects(ref sphere);
+                        break;
+                    case 3:
+                        planeResult = m_PRight.Intersects(ref sphere);
+                        break;
+                    case 4:
+                        planeResult = m_PTop.Intersects(ref sphere);
+                        break;
+                    case 5:
+                        planeResult = m_PBottom.Intersects(ref sphere);
+                        break;
                 }
                 switch (planeResult)
                 {
-                case PlaneIntersectionType.Back: return ContainmentType.Disjoint;
-                case PlaneIntersectionType.Intersecting:
-                    result = PlaneIntersectionType.Intersecting;
-                    break;
+                    case PlaneIntersectionType.Back: return ContainmentType.Disjoint;
+                    case PlaneIntersectionType.Intersecting:
+                        result = PlaneIntersectionType.Intersecting;
+                        break;
                 }
             }
             switch (result)
             {
-            case PlaneIntersectionType.Intersecting: return ContainmentType.Intersects;
-            default: return ContainmentType.Contains;
+                case PlaneIntersectionType.Intersecting: return ContainmentType.Intersects;
+                default: return ContainmentType.Contains;
             }
         }
 
@@ -578,9 +609,13 @@ namespace SE
         private PlaneIntersectionType PlaneIntersectsPoints(ref Plane plane, Float3[] points)
         {
             PlaneIntersectionType result = CollisionsHelper.PlaneIntersectsPoint(ref plane, ref points[0]);
-            for (var i = 1; i < points.Length; i++)
+            for (int i = 1; i < points.Length; i++)
+            {
                 if (CollisionsHelper.PlaneIntersectsPoint(ref plane, ref points[i]) != result)
+                {
                     return PlaneIntersectionType.Intersecting;
+                }
+            }
             return result;
         }
 
@@ -611,7 +646,7 @@ namespace SE
         /// <returns>With of the frustum at the specified depth</returns>
         public float GetWidthAtDepth(float depth)
         {
-            var hAngle = (float)(Math.PI / 2.0 - Math.Acos(Float3.Dot(m_PNear.Normal, m_PLeft.Normal)));
+            float hAngle = (float)(Math.PI / 2.0 - Math.Acos(Float3.Dot(m_PNear.Normal, m_PLeft.Normal)));
             return (float)(Math.Tan(hAngle) * depth * 2);
         }
 
@@ -622,7 +657,7 @@ namespace SE
         /// <returns>Height of the frustum at the specified depth</returns>
         public float GetHeightAtDepth(float depth)
         {
-            var vAngle = (float)(Math.PI / 2.0 - Math.Acos(Float3.Dot(m_PNear.Normal, m_PTop.Normal)));
+            float vAngle = (float)(Math.PI / 2.0 - Math.Acos(Float3.Dot(m_PNear.Normal, m_PTop.Normal)));
             return (float)(Math.Tan(vAngle) * depth * 2);
         }
 
@@ -652,19 +687,24 @@ namespace SE
         /// Checks whether the current BoundingFrustum intersects the specified Ray.
         /// </summary>
         /// <param name="ray">The Ray to check for intersection with.</param>
-        /// <param name="inDistance">The distance at which the ray enters the frustum if there is an intersection and the ray starts outside the frustum.</param>
-        /// <param name="outDistance">The distance at which the ray exits the frustum if there is an intersection.</param>
+        /// <param name="inDistance"> The distance at which the ray enters the frustum if there is an intersection and
+        /// the ray starts outside the frustum.</param>
+        /// <param name="outDistance"> The distance at which the ray exits the frustum if there is an
+        /// intersection.</param>
         /// <returns><c>true</c> if the current BoundingFrustum intersects the specified Ray.</returns>
         public bool Intersects(ref Ray ray, out float? inDistance, out float? outDistance)
         {
             if (Contains(ray.Position) != ContainmentType.Disjoint)
             {
                 float nearstPlaneDistance = float.MaxValue;
-                for (var i = 0; i < 6; i++)
+                for (int i = 0; i < 6; i++)
                 {
                     Plane plane = GetPlane(i);
-                    if (CollisionsHelper.RayIntersectsPlane(ref ray, ref plane, out float distance) && (distance < nearstPlaneDistance))
+                    if (CollisionsHelper.RayIntersectsPlane(ref ray, ref plane, out float distance) && (distance
+                        < nearstPlaneDistance))
+                    {
                         nearstPlaneDistance = distance;
+                    }
                 }
 
                 inDistance = nearstPlaneDistance;
@@ -676,7 +716,7 @@ namespace SE
             //Or outside the frustum if the ray intersects frustum planes outside it.
             float minDist = float.MaxValue;
             float maxDist = float.MinValue;
-            for (var i = 0; i < 6; i++)
+            for (int i = 0; i < 6; i++)
             {
                 Plane plane = GetPlane(i);
                 if (CollisionsHelper.RayIntersectsPlane(ref ray, ref plane, out float distance))
@@ -701,38 +741,45 @@ namespace SE
         }
 
         /// <summary>
-        /// Get the distance which when added to camera position along the lookat direction will do the effect of zoom to extents (zoom to fit) operation, so all the passed points will fit in the current view.
+        /// Get the distance which when added to camera position along the lookat direction will do the effect of zoom
+        /// to extents (zoom to fit) operation, so all the passed points will fit in the current view.
         /// if the returned value is positive, the camera will move toward the lookat direction (ZoomIn).
-        /// if the returned value is negative, the camera will move in the reverse direction of the lookat direction (ZoomOut).
+        /// if the returned value is negative, the camera will move in the reverse direction of the lookat direction
+        /// (ZoomOut).
         /// </summary>
         /// <param name="points">The points.</param>
         /// <returns>The zoom to fit distance</returns>
         public float GetZoomToExtentsShiftDistance(Float3[] points)
         {
-            var vAngle = (float)(Math.PI / 2.0 - Math.Acos(Float3.Dot(m_PNear.Normal, m_PTop.Normal)));
-            var vSin = (float)Math.Sin(vAngle);
-            var hAngle = (float)(Math.PI / 2.0 - Math.Acos(Float3.Dot(m_PNear.Normal, m_PLeft.Normal)));
-            var hSin = (float)Math.Sin(hAngle);
+            float vAngle = (float)(Math.PI / 2.0 - Math.Acos(Float3.Dot(m_PNear.Normal, m_PTop.Normal)));
+            float vSin = (float)Math.Sin(vAngle);
+            float hAngle = (float)(Math.PI / 2.0 - Math.Acos(Float3.Dot(m_PNear.Normal, m_PLeft.Normal)));
+            float hSin = (float)Math.Sin(hAngle);
             float horizontalToVerticalMapping = vSin / hSin;
 
             BoundingFrustum ioFrustrum = GetInsideOutClone();
 
-            var maxPointDist = float.MinValue;
-            for (var i = 0; i < points.Length; i++)
+            float maxPointDist = float.MinValue;
+            for (int i = 0; i < points.Length; i++)
             {
-                var pointDist = CollisionsHelper.DistancePlanePoint(ref ioFrustrum.m_PTop, ref points[i]);
-                pointDist = Mathf.Max(pointDist, CollisionsHelper.DistancePlanePoint(ref ioFrustrum.m_PBottom, ref points[i]));
-                pointDist = Mathf.Max(pointDist, CollisionsHelper.DistancePlanePoint(ref ioFrustrum.m_PLeft, ref points[i]) * horizontalToVerticalMapping);
-                pointDist = Mathf.Max(pointDist, CollisionsHelper.DistancePlanePoint(ref ioFrustrum.m_PRight, ref points[i]) * horizontalToVerticalMapping);
+                float pointDist = CollisionsHelper.DistancePlanePoint(ref ioFrustrum.m_PTop, ref points[i]);
+                pointDist = Mathf.Max(pointDist, CollisionsHelper.DistancePlanePoint(ref ioFrustrum.m_PBottom,
+                    ref points[i]));
+                pointDist = Mathf.Max(pointDist, CollisionsHelper.DistancePlanePoint(ref ioFrustrum.m_PLeft,
+                    ref points[i]) * horizontalToVerticalMapping);
+                pointDist = Mathf.Max(pointDist, CollisionsHelper.DistancePlanePoint(ref ioFrustrum.m_PRight,
+                    ref points[i]) * horizontalToVerticalMapping);
                 maxPointDist = Mathf.Max(maxPointDist, pointDist);
             }
             return -maxPointDist / vSin;
         }
 
         /// <summary>
-        /// Get the distance which when added to camera position along the lookat direction will do the effect of zoom to extents (zoom to fit) operation, so all the passed points will fit in the current view.
+        /// Get the distance which when added to camera position along the lookat direction will do the effect of zoom
+        /// to extents (zoom to fit) operation, so all the passed points will fit in the current view.
         /// if the returned value is positive, the camera will move toward the lookat direction (ZoomIn).
-        /// if the returned value is negative, the camera will move in the reverse direction of the lookat direction (ZoomOut).
+        /// if the returned value is negative, the camera will move in the reverse direction of the lookat direction
+        /// (ZoomOut).
         /// </summary>
         /// <param name="boundingBox">The bounding box.</param>
         /// <returns>The zoom to fit distance</returns>
@@ -742,7 +789,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Get the vector shift which when added to camera position will do the effect of zoom to extents (zoom to fit) operation, so all the passed points will fit in the current view.
+        /// Get the vector shift which when added to camera position will do the effect of zoom to extents (zoom to fit)
+        /// operation, so all the passed points will fit in the current view.
         /// </summary>
         /// <param name="points">The points.</param>
         /// <returns>The zoom to fit vector</returns>
@@ -752,7 +800,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Get the vector shift which when added to camera position will do the effect of zoom to extents (zoom to fit) operation, so all the passed points will fit in the current view.</summary>
+        /// Get the vector shift which when added to camera position will do the effect of zoom to extents (zoom to fit)
+        /// operation, so all the passed points will fit in the current view.</summary>
         /// <param name="boundingBox">The bounding box.</param>
         /// <returns>The zoom to fit vector</returns>
         public Float3 GetZoomToExtentsShiftVector(ref BoundingBox boundingBox)

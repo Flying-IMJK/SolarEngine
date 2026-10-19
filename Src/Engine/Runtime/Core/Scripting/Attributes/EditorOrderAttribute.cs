@@ -6,7 +6,8 @@ namespace SE
     /// Controls an item's order in the editor.
     /// </summary>
     [Serializable]
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Delegate | AttributeTargets.Event | AttributeTargets.Method)]
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Delegate
+        | AttributeTargets.Event | AttributeTargets.Method)]
     public sealed class EditorOrderAttribute : Attribute
     {
         /// <summary>

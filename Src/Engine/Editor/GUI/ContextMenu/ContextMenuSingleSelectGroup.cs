@@ -12,16 +12,16 @@ namespace SE.Editor.GUI
         {
             public required string Text { get; init; }
             public required T Value { get; init; }
-            public string? Tooltip { get; init; }
-            public Action? Selected { get; init; }
+            public string Tooltip { get; init; }
+            public Action Selected { get; init; }
             public List<ContextMenuButton> Buttons { get; } = new();
         }
 
         private readonly List<ContextMenu> m_Menus = new();
         private readonly List<Item> m_Items = new();
-        private Item? m_Selected;
+        private Item m_Selected;
 
-        public event Action<T>? SelectedChanged;
+        public event Action<T> SelectedChanged;
         public bool HasSelection => m_Selected != null;
 
         public T Selected
@@ -29,7 +29,7 @@ namespace SE.Editor.GUI
             get => m_Selected == null ? default! : m_Selected.Value;
             set
             {
-                Item? item = m_Items.Find(candidate => EqualityComparer<T>.Default.Equals(candidate.Value, value));
+                Item item = m_Items.Find(candidate => EqualityComparer<T>.Default.Equals(candidate.Value, value));
                 if (item != null)
                 {
                     SetSelected(item);
@@ -37,16 +37,17 @@ namespace SE.Editor.GUI
             }
         }
 
-        public ContextMenuSingleSelectGroup<T> AddItem(string text, T value, Action? selected = null, string? tooltip = null)
+        public ContextMenuSingleSelectGroup<T> AddItem(string text, T value, Action selected = null,
+            string tooltip = null)
         {
             Debug.Assert(!string.IsNullOrEmpty(text), "Text cannot be null or empty.");
 
-            var item = new Item 
-            { 
-                Text = text, 
-                Value = value, 
-                Selected = selected, 
-                Tooltip = tooltip 
+            Item item = new Item
+            {
+                Text = text,
+                Value = value,
+                Selected = selected,
+                Tooltip = tooltip
             };
 
             m_Items.Add(item);

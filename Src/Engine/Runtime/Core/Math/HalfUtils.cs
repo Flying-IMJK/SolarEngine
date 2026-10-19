@@ -52,9 +52,10 @@ namespace SE
         /// <returns>The float value</returns>
         public static float Unpack(ushort h)
         {
-            var conv = new FloatToUint
+            FloatToUint conv = new FloatToUint
             {
-                uintValue = HalfToFloatMantissaTable[HalfToFloatOffsetTable[h >> 10] + (((uint)h) & 0x3ff)] + HalfToFloatExponentTable[h >> 10]
+                uintValue = HalfToFloatMantissaTable[HalfToFloatOffsetTable[h >> 10] + (((uint)h) & 0x3ff)]
+                    + HalfToFloatExponentTable[h >> 10]
             };
             return conv.floatValue;
         }
@@ -70,7 +71,8 @@ namespace SE
             {
                 floatValue = f
             };
-            return (ushort)(FloatToHalfBaseTable[(conv.uintValue >> 23) & 0x1ff] + ((conv.uintValue & 0x007fffff) >> FloatToHalfShiftTable[(conv.uintValue >> 23) & 0x1ff]));
+            return (ushort)(FloatToHalfBaseTable[(conv.uintValue >> 23) & 0x1ff] + ((conv.uintValue & 0x007fffff)
+                >> FloatToHalfShiftTable[(conv.uintValue >> 23) & 0x1ff]));
         }
 
         static readonly uint[] HalfToFloatMantissaTable = new uint[2048];
@@ -103,14 +105,16 @@ namespace SE
                     e -= 0x00800000;
                     m <<= 1;
                 }
-                m &= ~ 0x00800000U;
+                m &= ~0x00800000U;
                 e += 0x38800000;
                 HalfToFloatMantissaTable[i] = m | e;
             }
 
             // Normal case
             for (i = 1024; i < 2048; i++)
+            {
                 HalfToFloatMantissaTable[i] = 0x38000000 + (((uint)(i - 1024)) << 13);
+            }
 
             // Exponent table
 
@@ -120,9 +124,13 @@ namespace SE
             for (i = 1; i < 63; i++)
             {
                 if (i < 31) // Positive Numbers
+                {
                     HalfToFloatExponentTable[i] = ((uint)i) << 23;
+                }
                 else // Negative Numbers
+                {
                     HalfToFloatExponentTable[i] = 0x80000000 + (((uint)(i - 32)) << 23);
+                }
             }
             HalfToFloatExponentTable[31] = 0x47800000;
             HalfToFloatExponentTable[32] = 0x80000000;
@@ -131,7 +139,9 @@ namespace SE
             // Offset table
             HalfToFloatOffsetTable[0] = 0;
             for (i = 1; i < 64; i++)
+            {
                 HalfToFloatOffsetTable[i] = 1024;
+            }
             HalfToFloatOffsetTable[32] = 0;
 
             // -------------------------------------------------------------------

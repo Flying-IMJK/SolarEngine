@@ -7,12 +7,12 @@ namespace SE.Editor.GUI
 {
     public class ActorTreeNode : TreeNode
     {
-        private int _orderInParent;
-        private DragActors _dragActors;
-        private DragAssets _dragAssets;
-        private DragHandlers _dragHandlers;
-        private readonly List<Rectangle> _highlights = new List<Rectangle>();
-        private bool _hasSearchFilter;
+        private int m_OrderInParent;
+        private DragActors m_DragActors;
+        private DragAssets m_DragAssets;
+        private DragHandlers m_DragHandlers;
+        private readonly List<Rectangle> m_Highlights = new List<Rectangle>();
+        private bool m_HasSearchFilter;
 
         /// <summary>
         /// The actor node that owns this node.
@@ -50,7 +50,7 @@ namespace SE.Editor.GUI
             SE.Actor actor = node.Actor;
             if (actor != null)
             {
-                _orderInParent = actor.OrderInParent;
+                m_OrderInParent = actor.OrderInParent;
                 Visible = true; // (actor.HideFlags & HideFlags.HideInHierarchy) == 0;
 
                 // Pick the correct id when inside a prefab window.
@@ -62,7 +62,7 @@ namespace SE.Editor.GUI
             }
             else
             {
-                _orderInParent = 0;
+                m_OrderInParent = 0;
             }
 
             UpdateText();
@@ -71,7 +71,7 @@ namespace SE.Editor.GUI
         public void OnParentChanged(SE.Actor actor, ActorGraphNode parentNode)
         {
             // Update cached value
-            _orderInParent = actor.OrderInParent;
+            m_OrderInParent = actor.OrderInParent;
 
             // Update UI (special case if actor is spawned and added to existing scene tree)
             ActorTreeNode parentTreeNode = null;
@@ -84,7 +84,7 @@ namespace SE.Editor.GUI
             {
                 parentTreeNode.IsLayoutLocked = true;
                 Parent = parentTreeNode;
-                IndexInParent = _orderInParent;
+                IndexInParent = m_OrderInParent;
                 parentTreeNode.IsLayoutLocked = false;
 
                 // Skip UI update if node won't be in a view
@@ -129,10 +129,10 @@ namespace SE.Editor.GUI
                     if (control is ActorTreeNode child && child.GetActor() != null)
                     {
                         int orderInParent = child.GetActor().OrderInParent;
-                        anyChanged |= child._orderInParent != orderInParent;
+                        anyChanged |= child.m_OrderInParent != orderInParent;
                         if (anyChanged)
                         {
-                            child._orderInParent = orderInParent;
+                            child.m_OrderInParent = orderInParent;
                         }
                     }
                 }
@@ -144,7 +144,7 @@ namespace SE.Editor.GUI
             }
             else if (GetActor() != null)
             {
-                _orderInParent = GetActor().OrderInParent;
+                m_OrderInParent = GetActor().OrderInParent;
             }
         }
 
@@ -170,14 +170,14 @@ namespace SE.Editor.GUI
             }
 
             bool noFilter = string.IsNullOrEmpty(filterText);
-            _hasSearchFilter = !noFilter;
+            m_HasSearchFilter = !noFilter;
 
             // Update itself
             bool isThisVisible;
             if (noFilter)
             {
                 // Clear filter
-                _highlights.Clear();
+                m_Highlights.Clear();
                 isThisVisible = true;
             }
             else
@@ -225,7 +225,7 @@ namespace SE.Editor.GUI
         {
             // Update hidden state
             SE.Actor actor = GetActor();
-            if (actor != null && !_hasSearchFilter)
+            if (actor != null && !m_HasSearchFilter)
             {
                 Visible = true; // (actor.HideFlags & HideFlags.HideInHierarchy) == 0;
             }
@@ -249,12 +249,12 @@ namespace SE.Editor.GUI
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            _dragHandlers?.Clear();
-            _highlights.Clear();
+            m_DragHandlers?.Clear();
+            m_Highlights.Clear();
 
-            _dragHandlers = null;
-            _dragActors = null;
-            _dragAssets = null;
+            m_DragHandlers = null;
+            m_DragActors = null;
+            m_DragAssets = null;
 
             base.OnDestroy();
         }
@@ -263,7 +263,7 @@ namespace SE.Editor.GUI
         {
             if (other is ActorTreeNode node)
             {
-                return _orderInParent - node._orderInParent;
+                return m_OrderInParent - node.m_OrderInParent;
             }
 
             return base.CompareTo(other);
@@ -291,11 +291,11 @@ namespace SE.Editor.GUI
             base.Draw();
 
             // Draw all highlights
-            if (_highlights.Count > 0)
+            if (m_Highlights.Count > 0)
             {
                 Style style = Style.Current;
                 Color color = style.ProgressNormal * 0.6f;
-                foreach (Rectangle highlight in _highlights)
+                foreach (Rectangle highlight in m_Highlights)
                 {
                     Render2D.FillRectangle(highlight, color);
                 }
@@ -366,31 +366,31 @@ namespace SE.Editor.GUI
         protected override DragDropEffect OnDragEnterHeader(DragData data)
         {
             /* The native scene/content editability checks are commented out. */
-            if (_dragHandlers == null)
+            if (m_DragHandlers == null)
             {
-                _dragHandlers = new DragHandlers();
+                m_DragHandlers = new DragHandlers();
             }
 
             // Check if drop actors
-            if (_dragActors == null)
+            if (m_DragActors == null)
             {
-                _dragActors = new DragActors(ValidateDragActor, FindActorNode);
-                _dragHandlers.Add(_dragActors);
+                m_DragActors = new DragActors(ValidateDragActor, FindActorNode);
+                m_DragHandlers.Add(m_DragActors);
             }
-            if (_dragActors.OnDragEnter(data))
+            if (m_DragActors.OnDragEnter(data))
             {
-                return _dragActors.Effect;
+                return m_DragActors.Effect;
             }
 
             // Check if drag assets
-            if (_dragAssets == null)
+            if (m_DragAssets == null)
             {
-                _dragAssets = new DragAssets(ValidateDragAsset, FindAsset);
-                _dragHandlers.Add(_dragAssets);
+                m_DragAssets = new DragAssets(ValidateDragAsset, FindAsset);
+                m_DragHandlers.Add(m_DragAssets);
             }
-            if (_dragAssets.OnDragEnter(data))
+            if (m_DragAssets.OnDragEnter(data))
             {
-                return _dragAssets.Effect;
+                return m_DragAssets.Effect;
             }
 
             return DragDropEffect.None;
@@ -399,13 +399,13 @@ namespace SE.Editor.GUI
         /// <inheritdoc />
         protected override DragDropEffect OnDragMoveHeader(DragData data)
         {
-            return _dragHandlers.Effect;
+            return m_DragHandlers.Effect;
         }
 
         /// <inheritdoc />
         protected override void OnDragLeaveHeader()
         {
-            _dragHandlers.OnDragLeave();
+            m_DragHandlers.OnDragLeave();
         }
 
         /// <inheritdoc />
@@ -458,13 +458,13 @@ namespace SE.Editor.GUI
             }
 
             // Drag actors
-            if (_dragActors != null && _dragActors.HasValidDrag)
+            if (m_DragActors != null && m_DragActors.HasValidDrag)
             {
                 bool worldPositionsStays = Root.GetKey(KeyboardKeys.Control) == false;
-                SE.SceneObject[] objects = new SE.SceneObject[_dragActors.Objects.Count];
-                for (int i = 0; i < _dragActors.Objects.Count; i++)
+                SE.SceneObject[] objects = new SE.SceneObject[m_DragActors.Objects.Count];
+                for (int i = 0; i < m_DragActors.Objects.Count; i++)
                 {
-                    objects[i] = _dragActors.Objects[i].Actor;
+                    objects[i] = m_DragActors.Objects[i].Actor;
                 }
                 /*var action = new ParentActorsAction(objects, newParent, newOrder, worldPositionsStays);
                 _actorNode.Root.Undo?.AddAction(action);
@@ -472,7 +472,7 @@ namespace SE.Editor.GUI
                 result = DragDropEffect.Move;
             }
             // Drag assets
-            else if (_dragAssets != null && _dragAssets.HasValidDrag)
+            else if (m_DragAssets != null && m_DragAssets.HasValidDrag)
             {
                 SE.Debug.Assert(false, "Unreachable code encountered!");
                 /* The native asset spawn block is commented out. */
@@ -480,7 +480,7 @@ namespace SE.Editor.GUI
             }
 
             // Clear cache
-            _dragHandlers.OnDragDrop(null);
+            m_DragHandlers.OnDragDrop(null);
 
             // Check if scene has been modified
             if (result != DragDropEffect.None)

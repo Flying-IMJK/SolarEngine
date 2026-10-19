@@ -15,18 +15,21 @@ namespace SE.TypeConverters
             if (value is string str)
             {
                 string[] v = GetParts(str);
-                return new Double4(double.Parse(v[0], culture), double.Parse(v[1], culture), double.Parse(v[2], culture), double.Parse(v[3], culture));
+                return new Double4(double.Parse(v[0], culture), double.Parse(v[1], culture), double.Parse(v[2],
+                    culture), double.Parse(v[3], culture));
             }
             return base.ConvertFrom(context, culture, value);
         }
 
         /// <inheritdoc />
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value,
+            Type destinationType)
         {
             if (destinationType == typeof(string))
             {
-                var v = (Double4)value;
-                return v.X.ToString(culture) + "," + v.Y.ToString(culture) + "," + v.Z.ToString(culture) + "," + v.W.ToString(culture);
+                Double4 v = (Double4)value;
+                return v.X.ToString(culture) + "," + v.Y.ToString(culture) + "," + v.Z.ToString(culture) + "," + v.W
+                    .ToString(culture);
             }
             return base.ConvertTo(context, culture, value, destinationType);
         }

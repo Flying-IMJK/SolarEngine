@@ -8,9 +8,9 @@ namespace SE.GUI
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
     public class UniformGridPanel : ContainerControl
     {
-        private Margin _slotPadding;
-        private int _slotsV, _slotsH;
-        private Float2 _slotSpacing;
+        private Margin m_SlotPadding;
+        private int m_SlotsV, m_SlotsH;
+        private Float2 m_SlotSpacing;
 
         /// <summary>
         /// Gets or sets the padding given to each slot.
@@ -18,10 +18,10 @@ namespace SE.GUI
         [EditorOrder(0), Tooltip("The padding margin applied to each item slot.")]
         public Margin SlotPadding
         {
-            get => _slotPadding;
+            get => m_SlotPadding;
             set
             {
-                _slotPadding = value;
+                m_SlotPadding = value;
                 PerformLayout();
             }
         }
@@ -32,13 +32,13 @@ namespace SE.GUI
         [EditorOrder(10), Limit(0, 100000, 0.1f), Tooltip("The amount of slots horizontally. Use 0 to don't limit it.")]
         public int SlotsHorizontally
         {
-            get => _slotsH;
+            get => m_SlotsH;
             set
             {
                 value = Mathf.Clamp(value, 0, 1000000);
-                if (value != _slotsH)
+                if (value != m_SlotsH)
                 {
-                    _slotsH = value;
+                    m_SlotsH = value;
                     PerformLayout();
                 }
             }
@@ -50,13 +50,13 @@ namespace SE.GUI
         [EditorOrder(20), Limit(0, 100000, 0.1f), Tooltip("The amount of slots vertically. Use 0 to don't limit it.")]
         public int SlotsVertically
         {
-            get => _slotsV;
+            get => m_SlotsV;
             set
             {
                 value = Mathf.Clamp(value, 0, 1000000);
-                if (value != _slotsV)
+                if (value != m_SlotsV)
                 {
-                    _slotsV = value;
+                    m_SlotsV = value;
                     PerformLayout();
                 }
             }
@@ -68,12 +68,12 @@ namespace SE.GUI
         [EditorOrder(30), Limit(0), Tooltip("The Grid slot spacing.")]
         public Float2 SlotSpacing
         {
-            get => _slotSpacing;
+            get => m_SlotSpacing;
             set
             {
-                if (!Float2.NearEqual(ref _slotSpacing, ref value))
+                if (!Float2.NearEqual(ref m_SlotSpacing, ref value))
                 {
-                    _slotSpacing = value;
+                    m_SlotSpacing = value;
                     PerformLayout();
                 }
             }
@@ -94,9 +94,9 @@ namespace SE.GUI
         public UniformGridPanel(float slotPadding)
         {
             AutoFocus = false;
-            _slotPadding = new Margin(slotPadding);
-            _slotSpacing = new Float2(2);
-            _slotsH = _slotsV = 5;
+            m_SlotPadding = new Margin(slotPadding);
+            m_SlotSpacing = new Float2(2);
+            m_SlotsH = m_SlotsV = 5;
         }
 
         /// <inheritdoc />
@@ -104,13 +104,13 @@ namespace SE.GUI
         {
             base.PerformLayoutBeforeChildren();
 
-            int slotsV = _slotsV;
-            int slotsH = _slotsH;
+            int slotsV = m_SlotsV;
+            int slotsH = m_SlotsH;
             Float2 slotSize;
             Float2 size = Size;
             bool applySpacing = true;
-            APPLY_SPACING:
-            if (_slotsV + _slotsH == 0)
+        APPLY_SPACING:
+            if (m_SlotsV + m_SlotsH == 0)
             {
                 slotSize = HasChildren ? Children[0].Size : new Float2(32);
                 slotsH = Mathf.CeilToInt(size.X / slotSize.X);
@@ -128,10 +128,10 @@ namespace SE.GUI
             {
                 slotSize = new Float2(size.X / slotsH, size.Y / slotsV);
             }
-            if (applySpacing && _slotSpacing != Float2.Zero)
+            if (applySpacing && m_SlotSpacing != Float2.Zero)
             {
                 applySpacing = false;
-                size -= _slotSpacing * new Float2(slotsH > 1 ? slotsH - 1 : 0, slotsV > 1 ? slotsV - 1 : 0);
+                size -= m_SlotSpacing * new Float2(slotsH > 1 ? slotsH - 1 : 0, slotsV > 1 ? slotsV - 1 : 0);
                 goto APPLY_SPACING;
             }
 
@@ -140,14 +140,16 @@ namespace SE.GUI
             {
                 int end = Mathf.Min(i + slotsH, m_Children.Count) - i;
                 if (end <= 0)
+                {
                     break;
+                }
 
                 for (int x = 0; x < end; x++)
                 {
-                    var slotBounds = new Rectangle((slotSize + _slotSpacing) * new Float2(x, y), slotSize);
-                    _slotPadding.ShrinkRectangle(ref slotBounds);
+                    Rectangle slotBounds = new Rectangle((slotSize + m_SlotSpacing) * new Float2(x, y), slotSize);
+                    m_SlotPadding.ShrinkRectangle(ref slotBounds);
 
-                    var c = m_Children[i++];
+                    Control c = m_Children[i++];
                     c.Bounds = slotBounds;
                 }
             }

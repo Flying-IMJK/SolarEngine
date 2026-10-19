@@ -18,7 +18,8 @@ namespace SE.Editor.GUI
         }
 
         /// <summary>
-        /// Updates the bar bounds and positions it after the last toolstrip button. Ensures to fit the toolstrip area (navigation bar horizontal scroll bar can be used to view the full path).
+        /// Updates the bar bounds and positions it after the last toolstrip button. Ensures to fit the toolstrip area
+        /// (navigation bar horizontal scroll bar can be used to view the full path).
         /// </summary>
         /// <param name="toolstrip">The toolstrip.</param>
         public void UpdateBounds(ToolStrip toolstrip)

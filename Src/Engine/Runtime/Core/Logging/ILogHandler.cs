@@ -16,7 +16,8 @@ namespace SE.Log
         /// <summary>
         /// Logs the raw message to the log.
         /// </summary>
-        /// <param name="logType">Type of the log message. Not: fatal will stop the engine. Error may show a message popup.</param>
+        /// <param name="logType"> Type of the log message. Not: fatal will stop the engine. Error may show a message
+        /// popup.</param>
         /// <param name="message">The message contents.</param>
         void LogWrite(LogType logType, string message);
 

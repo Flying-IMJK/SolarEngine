@@ -38,13 +38,18 @@ namespace SE.Editor.GUI
         public override IEnumerable<Type> FromDragData(DragData data)
         {
             if (data is not DragDataText textData || !textData.Text.StartsWith(DragPrefix, StringComparison.Ordinal))
-                yield break;
-
-            foreach (string typeName in textData.Text.Substring(DragPrefix.Length).Split('\n', StringSplitOptions.RemoveEmptyEntries))
             {
-                Type? type = Type.GetType(typeName, throwOnError: false);
+                yield break;
+            }
+
+            foreach (string typeName in textData.Text.Substring(DragPrefix.Length).Split('\n', StringSplitOptions
+                .RemoveEmptyEntries))
+            {
+                Type type = Type.GetType(typeName, throwOnError: false);
                 if (type != null)
+                {
                     yield return type;
+                }
             }
         }
     }

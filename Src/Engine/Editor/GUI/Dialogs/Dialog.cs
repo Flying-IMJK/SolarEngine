@@ -157,7 +157,7 @@ namespace SE.Editor.GUI
 
             // Create window
             m_Window = Window.Create(settings);
-            var windowGUI = m_Window.GUI;
+            WindowRootControl windowGUI = m_Window.GUI;
 
             // Attach events
             m_Window.Closing += OnClosing;
@@ -220,7 +220,7 @@ namespace SE.Editor.GUI
         {
             if (m_Window != null)
             {
-                var win = m_Window;
+                Window win = m_Window;
                 m_Window = null;
                 win.Close();
             }
@@ -282,30 +282,32 @@ namespace SE.Editor.GUI
         public override bool OnKeyDown(KeyboardKeys key)
         {
             if (base.OnKeyDown(key))
+            {
                 return true;
+            }
 
             switch (key)
             {
-            case KeyboardKeys.Return:
-                if (Root?.GetFocusedControl() != null)
-                {
-                    Root.SubmitFocused();
-                }
-                else
-                {
-                    OnSubmit();
-                }
-                return true;
-            case KeyboardKeys.Escape:
-                OnCancel();
-                return true;
-            case KeyboardKeys.Tab:
-                if (Root != null)
-                {
-                    bool shiftDown = Root.GetKey(KeyboardKeys.Shift);
-                    Root.Navigate(shiftDown ? NavDirection.Previous : NavDirection.Next);
-                }
-                return true;
+                case KeyboardKeys.Return:
+                    if (Root?.GetFocusedControl() != null)
+                    {
+                        Root.SubmitFocused();
+                    }
+                    else
+                    {
+                        OnSubmit();
+                    }
+                    return true;
+                case KeyboardKeys.Escape:
+                    OnCancel();
+                    return true;
+                case KeyboardKeys.Tab:
+                    if (Root != null)
+                    {
+                        bool shiftDown = Root.GetKey(KeyboardKeys.Shift);
+                        Root.Navigate(shiftDown ? NavDirection.Previous : NavDirection.Next);
+                    }
+                    return true;
             }
             return false;
         }

@@ -6,16 +6,19 @@ namespace SE.Editor
     [HideInEditor]
     public sealed class DictionaryValueContainer : ValueContainer
     {
-        private readonly object[]? _attributes;
+        private readonly object[] m_Attributes;
         public readonly object Key;
 
-        public DictionaryValueContainer(Type valueType, object key, ValueContainer values, object[]? attributes = null)
+        public DictionaryValueContainer(Type valueType, object key, ValueContainer values, object[] attributes = null)
             : base(valueType)
         {
             Key = key;
-            _attributes = attributes;
+            m_Attributes = attributes;
             Capacity = values.Count;
-            foreach (var value in values) Add(((IDictionary)value!)[key]);
+            foreach (object value in values)
+            {
+                Add(((IDictionary)value!)[key]);
+            }
             if (values.ReferenceValue is IDictionary reference && reference.Contains(key))
             {
                 _referenceValue = reference[key];
@@ -23,17 +26,26 @@ namespace SE.Editor
             }
         }
 
-        public override object[] GetAttributes() => _attributes ?? base.GetAttributes();
+        public override object[] GetAttributes() => m_Attributes ?? base.GetAttributes();
 
         public override void Refresh(ValueContainer instanceValues)
         {
-            if (instanceValues.Count != Count) throw new ArgumentException();
-            for (int i = 0; i < Count; i++) this[i] = ((IDictionary)instanceValues[i]!)[Key];
+            if (instanceValues.Count != Count)
+            {
+                throw new ArgumentException();
+            }
+            for (int i = 0; i < Count; i++)
+            {
+                this[i] = ((IDictionary)instanceValues[i]!)[Key];
+            }
         }
 
-        public override void Set(ValueContainer instanceValues, object? value)
+        public override void Set(ValueContainer instanceValues, object value)
         {
-            if (instanceValues.Count != Count) throw new ArgumentException();
+            if (instanceValues.Count != Count)
+            {
+                throw new ArgumentException();
+            }
             for (int i = 0; i < Count; i++)
             {
                 ((IDictionary)instanceValues[i]!)[Key] = value;
@@ -43,7 +55,10 @@ namespace SE.Editor
 
         public override void Set(ValueContainer instanceValues, ValueContainer values)
         {
-            if (instanceValues.Count != Count || values.Count != Count) throw new ArgumentException();
+            if (instanceValues.Count != Count || values.Count != Count)
+            {
+                throw new ArgumentException();
+            }
             for (int i = 0; i < Count; i++)
             {
                 ((IDictionary)instanceValues[i]!)[Key] = values[i];
@@ -53,11 +68,17 @@ namespace SE.Editor
 
         public override void Set(ValueContainer instanceValues)
         {
-            if (instanceValues.Count != Count) throw new ArgumentException();
-            for (int i = 0; i < Count; i++) ((IDictionary)instanceValues[i]!)[Key] = this[i];
+            if (instanceValues.Count != Count)
+            {
+                throw new ArgumentException();
+            }
+            for (int i = 0; i < Count; i++)
+            {
+                ((IDictionary)instanceValues[i]!)[Key] = this[i];
+            }
         }
 
-        public override void RefreshReferenceValue(object? instanceValue)
+        public override void RefreshReferenceValue(object instanceValue)
         {
             if (instanceValue is IDictionary reference && reference.Contains(Key))
             {

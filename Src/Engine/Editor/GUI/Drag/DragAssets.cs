@@ -10,9 +10,9 @@ namespace SE.Editor.GUI
     {
         public const string DragPrefix = DragItemsBase<DragEventArgs>.DragPrefix;
 
-        private readonly Func<string, ContentItem?> m_FindAsset;
+        private readonly Func<string, ContentItem> m_FindAsset;
 
-        public DragAssetsBase(Func<ContentItem, bool> validateFunction, Func<string, ContentItem?> findAsset)
+        public DragAssetsBase(Func<ContentItem, bool> validateFunction, Func<string, ContentItem> findAsset)
             : base(validateFunction)
         {
             m_FindAsset = findAsset;
@@ -47,20 +47,25 @@ namespace SE.Editor.GUI
         public override IEnumerable<ContentItem> FromDragData(DragData data)
         {
             if (data is not DragDataText textData || !textData.Text.StartsWith(DragPrefix, StringComparison.Ordinal))
-                yield break;
-
-            foreach (string path in textData.Text.Substring(DragPrefix.Length).Split('\n', StringSplitOptions.RemoveEmptyEntries))
             {
-                ContentItem? item = m_FindAsset(path);
+                yield break;
+            }
+
+            foreach (string path in textData.Text.Substring(DragPrefix.Length).Split('\n', StringSplitOptions
+                .RemoveEmptyEntries))
+            {
+                ContentItem item = m_FindAsset(path);
                 if (item != null)
+                {
                     yield return item;
+                }
             }
         }
     }
 
     public sealed class DragAssets : DragAssetsBase<DragEventArgs>
     {
-        public DragAssets(Func<ContentItem, bool> validateFunction, Func<string, ContentItem?> findAsset)
+        public DragAssets(Func<ContentItem, bool> validateFunction, Func<string, ContentItem> findAsset)
             : base(validateFunction, findAsset)
         {
         }

@@ -37,7 +37,8 @@ namespace SE.Editor
         }
 
         /// <inheritdoc />
-        public override void OnThumbnailDrawBegin(ThumbnailRequest request, ContainerControl guiRoot, GPUContext context)
+        public override void OnThumbnailDrawBegin(ThumbnailRequest request, ContainerControl guiRoot,
+            GPUContext context)
         {
             m_Preview.Asset = (Texture)request.asset;
             m_Preview.Parent = guiRoot;

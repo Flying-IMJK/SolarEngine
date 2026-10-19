@@ -90,7 +90,7 @@ namespace SE.Editor
             float margin = WidgetsMargin;
             float left = margin;
             float right = control.Width - margin;
-            var childList = control.Children;
+            System.Collections.Generic.List<Control> childList = control.Children;
             for (int i = 0; i < control.ChildrenCount; i++)
             {
                 if (childList[i] is ViewportWidgetsContainer widget && widget.Visible)

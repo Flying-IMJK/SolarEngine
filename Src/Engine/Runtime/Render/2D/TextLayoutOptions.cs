@@ -6,11 +6,17 @@ namespace SE
         /// <summary>
         /// Gets the default layout.
         /// </summary>
-        public static TextLayoutOptions Default => new TextLayoutOptions
+        public static TextLayoutOptions Default
         {
-            Bounds = new Rectangle(0, 0, float.MaxValue, float.MaxValue),
-            Scale = 1.0f,
-            BaseLinesGapScale = 1.0f,
-        };
+            get
+            {
+                return new TextLayoutOptions
+                {
+                    Bounds = new Rectangle(0, 0, float.MaxValue, float.MaxValue),
+                    Scale = 1.0f,
+                    BaseLinesGapScale = 1.0f,
+                };
+            }
+        }
     }
 }

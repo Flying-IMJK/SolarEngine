@@ -76,8 +76,8 @@ namespace SE
             get => Maximum - Minimum;
             set
             {
-                var center = Center;
-                var sizeHalf = value * 0.5f;
+                Float3 center = Center;
+                Float3 sizeHalf = value * 0.5f;
                 Minimum = center - sizeHalf;
                 Maximum = center + sizeHalf;
             }
@@ -91,7 +91,7 @@ namespace SE
             get => Minimum + (Maximum - Minimum) * 0.5f;
             set
             {
-                var sizeHalf = Size * 0.5f;
+                Float3 sizeHalf = Size * 0.5f;
                 Minimum = value - sizeHalf;
                 Maximum = value + sizeHalf;
             }
@@ -114,7 +114,7 @@ namespace SE
         /// <returns>An array of points representing the eight corners of the bounding box.</returns>
         public Float3[] GetCorners()
         {
-            var results = new Float3[8];
+            Float3[] results = new Float3[8];
             GetCorners(results);
             return results;
         }
@@ -149,7 +149,8 @@ namespace SE
         /// Determines if there is an intersection between the current object and a <see cref="Ray" />.
         /// </summary>
         /// <param name="ray">The ray to test.</param>
-        /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
+        /// <param name="distance"> When the method completes, contains the distance of the intersection, or 0 if there
+        /// was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray, out float distance)
         {
@@ -162,12 +163,13 @@ namespace SE
         /// [Deprecated on 26.05.2022, expires on 26.05.2024]
         /// </summary>
         /// <param name="ray">The ray to test.</param>
-        /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
+        /// <param name="distance"> When the method completes, contains the distance of the intersection, or 0 if there
+        /// was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
         [Obsolete("Deprecated in v1.4")]
         public bool Intersects(ref Ray ray, out float distance)
         {
-            var result = CollisionsHelper.RayIntersectsBox(ref ray, ref this, out float dst);
+            bool result = CollisionsHelper.RayIntersectsBox(ref ray, ref this, out float dst);
             distance = (float)dst;
             return result;
         }
@@ -177,7 +179,8 @@ namespace SE
         /// Determines if there is an intersection between the current object and a <see cref="Ray" />.
         /// </summary>
         /// <param name="ray">The ray to test.</param>
-        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Float3.Zero" /> if there was no intersection.</param>
+        /// <param name="point"> When the method completes, contains the point of intersection, or
+        /// <see cref="Float3.Zero" /> if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray, out Float3 point)
         {
@@ -331,10 +334,12 @@ namespace SE
         public static void FromPoints(Float3[] points, out BoundingBox result)
         {
             if (points == null)
+            {
                 throw new ArgumentNullException(nameof(points));
-            var min = Float3.Maximum;
-            var max = Float3.Minimum;
-            for (var i = 0; i < points.Length; ++i)
+            }
+            Float3 min = Float3.Maximum;
+            Float3 max = Float3.Minimum;
+            for (int i = 0; i < points.Length; ++i)
             {
                 Float3.Min(ref min, ref points[i], out min);
                 Float3.Max(ref max, ref points[i], out max);
@@ -351,10 +356,12 @@ namespace SE
         public static BoundingBox FromPoints(Float3[] points)
         {
             if (points == null)
+            {
                 throw new ArgumentNullException(nameof(points));
-            var min = Float3.Maximum;
-            var max = Float3.Minimum;
-            for (var i = 0; i < points.Length; ++i)
+            }
+            Float3 min = Float3.Maximum;
+            Float3 max = Float3.Minimum;
+            for (int i = 0; i < points.Length; ++i)
             {
                 Float3.Min(ref min, ref points[i], out min);
                 Float3.Max(ref max, ref points[i], out max);
@@ -369,8 +376,10 @@ namespace SE
         /// <param name="result">When the method completes, contains the newly constructed bounding box.</param>
         public static void FromSphere(ref BoundingSphere sphere, out BoundingBox result)
         {
-            result.Minimum = new Float3(sphere.Center.X - sphere.Radius, sphere.Center.Y - sphere.Radius, sphere.Center.Z - sphere.Radius);
-            result.Maximum = new Float3(sphere.Center.X + sphere.Radius, sphere.Center.Y + sphere.Radius, sphere.Center.Z + sphere.Radius);
+            result.Minimum = new Float3(sphere.Center.X - sphere.Radius, sphere.Center.Y - sphere.Radius, sphere
+                .Center.Z - sphere.Radius);
+            result.Maximum = new Float3(sphere.Center.X + sphere.Radius, sphere.Center.Y + sphere.Radius, sphere
+                .Center.Z + sphere.Radius);
         }
 
         /// <summary>
@@ -381,13 +390,16 @@ namespace SE
         public static BoundingBox FromSphere(BoundingSphere sphere)
         {
             BoundingBox box;
-            box.Minimum = new Float3(sphere.Center.X - sphere.Radius, sphere.Center.Y - sphere.Radius, sphere.Center.Z - sphere.Radius);
-            box.Maximum = new Float3(sphere.Center.X + sphere.Radius, sphere.Center.Y + sphere.Radius, sphere.Center.Z + sphere.Radius);
+            box.Minimum = new Float3(sphere.Center.X - sphere.Radius, sphere.Center.Y - sphere.Radius, sphere.Center
+                .Z - sphere.Radius);
+            box.Maximum = new Float3(sphere.Center.X + sphere.Radius, sphere.Center.Y + sphere.Radius, sphere.Center
+                .Z + sphere.Radius);
             return box;
         }
 
         /// <summary>
-        /// Constructs a <see cref="BoundingBox" /> that is as large as the total combined area of the two specified boxes.
+        /// Constructs a <see cref="BoundingBox" /> that is as large as the total combined area of the two specified
+        /// boxes.
         /// </summary>
         /// <param name="value1">The first box to merge.</param>
         /// <param name="value2">The second box to merge.</param>
@@ -399,7 +411,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Constructs a <see cref="BoundingBox" /> that is as large as the total combined area of the two specified boxes.
+        /// Constructs a <see cref="BoundingBox" /> that is as large as the total combined area of the two specified
+        /// boxes.
         /// </summary>
         /// <param name="value1">The first box to merge.</param>
         /// <param name="value2">The second box to merge.</param>
@@ -460,20 +473,20 @@ namespace SE
             // Reference: http://dev.theomader.com/transform-bounding-boxes/
 
             Double3 right = transform.Right;
-            var xa = right * box.Minimum.X;
-            var xb = right * box.Maximum.X;
+            Double3 xa = right * box.Minimum.X;
+            Double3 xb = right * box.Maximum.X;
 
             Double3 up = transform.Up;
-            var ya = up * box.Minimum.Y;
-            var yb = up * box.Maximum.Y;
+            Double3 ya = up * box.Minimum.Y;
+            Double3 yb = up * box.Maximum.Y;
 
             Double3 backward = transform.Backward;
-            var za = backward * box.Minimum.Z;
-            var zb = backward * box.Maximum.Z;
+            Double3 za = backward * box.Minimum.Z;
+            Double3 zb = backward * box.Maximum.Z;
 
-            var translation = transform.TranslationVector;
-            var min = Float3.Min(xa, xb) + Float3.Min(ya, yb) + Float3.Min(za, zb) + translation;
-            var max = Float3.Max(xa, xb) + Float3.Max(ya, yb) + Float3.Max(za, zb) + translation;
+            Float3 translation = transform.TranslationVector;
+            Float3 min = Float3.Min(xa, xb) + Float3.Min(ya, yb) + Float3.Min(za, zb) + translation;
+            Float3 max = Float3.Max(xa, xb) + Float3.Max(ya, yb) + Float3.Max(za, zb) + translation;
             result = new BoundingBox(min, max);
         }
 
@@ -500,24 +513,25 @@ namespace SE
             // Reference: http://dev.theomader.com/transform-bounding-boxes/
 
             Double3 right = transform.Right;
-            var xa = right * box.Minimum.X;
-            var xb = right * box.Maximum.X;
+            Double3 xa = right * box.Minimum.X;
+            Double3 xb = right * box.Maximum.X;
 
             Double3 up = transform.Up;
-            var ya = up * box.Minimum.Y;
-            var yb = up * box.Maximum.Y;
+            Double3 ya = up * box.Minimum.Y;
+            Double3 yb = up * box.Maximum.Y;
 
             Double3 backward = transform.Backward;
-            var za = backward * box.Minimum.Z;
-            var zb = backward * box.Maximum.Z;
+            Double3 za = backward * box.Minimum.Z;
+            Double3 zb = backward * box.Maximum.Z;
 
-            var min = Float3.Min(xa, xb) + Float3.Min(ya, yb) + Float3.Min(za, zb) + transform.Translation;
-            var max = Float3.Max(xa, xb) + Float3.Max(ya, yb) + Float3.Max(za, zb) + transform.Translation;
+            Float3 min = Float3.Min(xa, xb) + Float3.Min(ya, yb) + Float3.Min(za, zb) + transform.Translation;
+            Float3 max = Float3.Max(xa, xb) + Float3.Max(ya, yb) + Float3.Max(za, zb) + transform.Translation;
             result = new BoundingBox(min, max);
         }
 
         /// <summary>
-        /// Creates the bounding box that is offseted by the given vector. Adds the offset value to minimum and maximum points.
+        /// Creates the bounding box that is offseted by the given vector. Adds the offset value to minimum and maximum
+        /// points.
         /// </summary>
         /// <param name="offset">The bounds offset.</param>
         /// <returns>The offsetted bounds.</returns>
@@ -530,7 +544,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Creates the bounding box that is offseted by the given vector. Adds the offset value to minimum and maximum points.
+        /// Creates the bounding box that is offseted by the given vector. Adds the offset value to minimum and maximum
+        /// points.
         /// </summary>
         /// <param name="box">The box.</param>
         /// <param name="offset">The bounds offset.</param>
@@ -551,7 +566,7 @@ namespace SE
         /// <returns>The scaled bounds.</returns>
         public static BoundingBox MakeScaled(ref BoundingBox box, float scale)
         {
-            Float3.Subtract(ref box.Maximum, ref box.Minimum, out var size);
+            Float3.Subtract(ref box.Maximum, ref box.Minimum, out Float3 size);
             Float3 sizeHalf = size * 0.5f;
             Float3 center = box.Minimum + sizeHalf;
             sizeHalf *= scale;
@@ -576,7 +591,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has the same value as <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(BoundingBox left, BoundingBox right)
         {
@@ -588,7 +604,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has a different value than <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(BoundingBox left, BoundingBox right)
         {
@@ -601,7 +618,8 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, "Minimum:{0} Maximum:{1}", Minimum.ToString(), Maximum.ToString());
+            return string.Format(CultureInfo.CurrentCulture, "Minimum:{0} Maximum:{1}", Minimum.ToString(), Maximum
+                .ToString());
         }
 
         /// <summary>
@@ -612,8 +630,11 @@ namespace SE
         public string ToString(string format)
         {
             if (format == null)
+            {
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, "Minimum:{0} Maximum:{1}", Minimum.ToString(format, CultureInfo.CurrentCulture), Maximum.ToString(format, CultureInfo.CurrentCulture));
+            }
+            return string.Format(CultureInfo.CurrentCulture, "Minimum:{0} Maximum:{1}", Minimum.ToString(format,
+                CultureInfo.CurrentCulture), Maximum.ToString(format, CultureInfo.CurrentCulture));
         }
 
         /// <summary>
@@ -635,14 +656,18 @@ namespace SE
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
+            {
                 return ToString(formatProvider);
-            return string.Format(formatProvider, "Minimum:{0} Maximum:{1}", Minimum.ToString(format, formatProvider), Maximum.ToString(format, formatProvider));
+            }
+            return string.Format(formatProvider, "Minimum:{0} Maximum:{1}", Minimum.ToString(format,
+                formatProvider), Maximum.ToString(format, formatProvider));
         }
 
         /// <summary>
         /// Returns a hash code for this instance.
         /// </summary>
-        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
+        /// <returns> A hash code for this instance, suitable for use in hashing algorithms and data structures like a
+        /// hash table.</returns>
         public override int GetHashCode()
         {
             unchecked
@@ -655,7 +680,8 @@ namespace SE
         /// Determines whether the specified <see cref="Float4" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="Float4" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref BoundingBox value)
         {
@@ -666,7 +692,8 @@ namespace SE
         /// Determines whether the specified <see cref="Float4" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="Float4" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(BoundingBox value)
         {
@@ -677,7 +704,8 @@ namespace SE
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise,
+        /// <c> false</c>.</returns>
         public override bool Equals(object value)
         {
             return value is BoundingBox other && Equals(ref other);

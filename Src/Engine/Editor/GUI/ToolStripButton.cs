@@ -149,7 +149,8 @@ namespace SE.Editor.GUI
             if (m_Text.Length > 0)
             {
                 textRect.Size.X = Width - DefaultMargin - textRect.Left;
-                Render2D.RenderText(style.FontMedium, m_Text, textRect, enabled ? style.TextColor : style.ForegroundDisabled,
+                Render2D.RenderText(style.FontMedium, m_Text, textRect, enabled ? style.TextColor : style
+                    .ForegroundDisabled,
                     TextAlignment.Near, TextAlignment.Center);
             }
         }
@@ -169,7 +170,8 @@ namespace SE.Editor.GUI
 
             if (m_Text.Length > 0 && style != null && style.FontMedium != null)
             {
-                width += style.FontMedium.MeasureText(m_Text, TextLayoutOptions.Default).X + (hasSprite ? DefaultMargin : 0);
+                width += style.FontMedium.MeasureText(m_Text, TextLayoutOptions.Default).X + (hasSprite
+                    ? DefaultMargin : 0);
             }
 
             Width = width;

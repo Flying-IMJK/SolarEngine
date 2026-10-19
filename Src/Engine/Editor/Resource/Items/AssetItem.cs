@@ -54,7 +54,8 @@ namespace SE.Editor
         {
             base.OnTooltipShown(tooltip);
 
-            // Inject the hook control for the double-click event (if user double-clicks on tooltip over the asset item it will open that item - helps on small screens)
+            // Inject the hook control for the double-click event (if user double-clicks on tooltip over the asset item
+            // it will open that item - helps on small screens)
             var hook = tooltip.GetChild<TooltipDoubleClickHook>();
             if (hook == null)
             {
@@ -104,7 +105,8 @@ namespace SE.Editor
         /// Determines whether asset is of the specified type (included inheritance checks).
         /// </summary>
         /// <typeparam name="T">The type to check.</typeparam>
-        /// <returns><c>true</c> if asset is of the specified type (including inherited types); otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if asset is of the specified type (including inherited types); otherwise, <c>
+        /// false</c>.</returns>
         public bool IsOfType<T>()
         {
             return IsOfType(typeof(T));
@@ -114,7 +116,8 @@ namespace SE.Editor
         /// Determines whether asset is of the specified type (included inheritance checks).
         /// </summary>
         /// <param name="type">The type to check.</param>
-        /// <returns><c>true</c> if asset is of the specified type (including inherited types); otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if asset is of the specified type (including inherited types); otherwise, <c>
+        /// false</c>.</returns>
         public virtual bool IsOfType(Type type)
         {
             return false;

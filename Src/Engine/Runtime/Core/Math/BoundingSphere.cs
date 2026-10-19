@@ -99,7 +99,8 @@ namespace SE
         /// Determines if there is an intersection between the current object and a <see cref="Ray" />.
         /// </summary>
         /// <param name="ray">The ray to test.</param>
-        /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
+        /// <param name="distance"> When the method completes, contains the distance of the intersection, or 0 if there
+        /// was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray, out float distance)
         {
@@ -110,7 +111,8 @@ namespace SE
         /// Determines if there is an intersection between the current object and a <see cref="Ray" />.
         /// </summary>
         /// <param name="ray">The ray to test.</param>
-        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Float3.Zero" /> if there was no intersection.</param>
+        /// <param name="point"> When the method completes, contains the point of intersection, or
+        /// <see cref="Float3.Zero" /> if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
         public bool Intersects(ref Ray ray, out Float3 point)
         {
@@ -233,28 +235,41 @@ namespace SE
         public static void FromPoints(Float3[] points, int start, int count, out BoundingSphere result)
         {
             if (points == null)
+            {
                 throw new ArgumentNullException(nameof(points));
+            }
             if (start < 0 || start >= points.Length)
-                throw new ArgumentOutOfRangeException(nameof(start), start, string.Format("Must be in the range [0, {0}]", points.Length - 1));
+            {
+                throw new ArgumentOutOfRangeException(nameof(start), start, string
+                    .Format("Must be in the range [0, {0}]", points.Length - 1));
+            }
             if (count <= 0 || start + count > points.Length)
-                throw new ArgumentOutOfRangeException(nameof(count), count, string.Format("Must be in the range <= {0}", points.Length));
+            {
+                throw new ArgumentOutOfRangeException(nameof(count), count, string
+                    .Format("Must be in the range <= {0}", points.Length));
+            }
 
             int upperEnd = start + count;
 
             // Find the center of all points
             Float3 center = Float3.Zero;
             for (int i = start; i < upperEnd; ++i)
+            {
                 Float3.Add(ref points[i], ref center, out center);
+            }
             center /= (float)count;
 
             // Find the radius of the sphere
             float radius = 0f;
             for (int i = start; i < upperEnd; ++i)
             {
-                // We are doing a relative distance comparison to find the maximum distance from the center of our sphere
+                // We are doing a relative distance comparison to find the maximum distance from the center of our
+                // sphere
                 Float3.DistanceSquared(ref center, ref points[i], out float distance);
                 if (distance > radius)
+                {
                     radius = distance;
+                }
             }
 
             // Construct the sphere
@@ -270,7 +285,9 @@ namespace SE
         public static void FromPoints(Float3[] points, out BoundingSphere result)
         {
             if (points == null)
+            {
                 throw new ArgumentNullException(nameof(points));
+            }
             FromPoints(points, 0, points.Length, out result);
         }
 
@@ -281,7 +298,7 @@ namespace SE
         /// <returns>The newly constructed bounding sphere.</returns>
         public static BoundingSphere FromPoints(Float3[] points)
         {
-            FromPoints(points, out var result);
+            FromPoints(points, out BoundingSphere result);
             return result;
         }
 
@@ -292,9 +309,9 @@ namespace SE
         /// <param name="result">When the method completes, the newly constructed bounding sphere.</param>
         public static void FromBox(ref BoundingBox box, out BoundingSphere result)
         {
-            var x = box.Maximum.X - box.Minimum.X;
-            var y = box.Maximum.Y - box.Minimum.Y;
-            var z = box.Maximum.Z - box.Minimum.Z;
+            float x = box.Maximum.X - box.Minimum.X;
+            float y = box.Maximum.Y - box.Minimum.Y;
+            float z = box.Maximum.Z - box.Minimum.Z;
             result.Center.X = box.Minimum.X + x * 0.5f;
             result.Center.Y = box.Minimum.Y + y * 0.5f;
             result.Center.Z = box.Minimum.Z + z * 0.5f;
@@ -308,12 +325,13 @@ namespace SE
         /// <returns>The newly constructed bounding sphere.</returns>
         public static BoundingSphere FromBox(BoundingBox box)
         {
-            FromBox(ref box, out var result);
+            FromBox(ref box, out BoundingSphere result);
             return result;
         }
 
         /// <summary>
-        /// Constructs a <see cref="BoundingSphere" /> that is the as large as the total combined area of the two specified
+        /// Constructs a <see cref="BoundingSphere" /> that is the as large as the total combined area of the two
+        /// specified
         /// spheres.
         /// </summary>
         /// <param name="value1">The first sphere to merge.</param>
@@ -321,7 +339,8 @@ namespace SE
         /// <param name="result">When the method completes, contains the newly constructed bounding sphere.</param>
         public static void Merge(ref BoundingSphere value1, ref BoundingSphere value2, out BoundingSphere result)
         {
-            // Pre-exit if one of the bounding sphere by assuming that a merge with an empty sphere is equivalent at taking the non-empty sphere
+            // Pre-exit if one of the bounding sphere by assuming that a merge with an empty sphere is equivalent at
+            // taking the non-empty sphere
             if (value1 == Empty)
             {
                 result = value2;
@@ -354,15 +373,16 @@ namespace SE
             }
 
             Float3 vector = difference * (1.0f / length);
-            var min = Mathf.Min(-radius, length - radius2);
-            var max = (Mathf.Max(radius, length + radius2) - min) * 0.5f;
+            float min = Mathf.Min(-radius, length - radius2);
+            float max = (Mathf.Max(radius, length + radius2) - min) * 0.5f;
 
             result.Center = value1.Center + vector * (max + min);
             result.Radius = max;
         }
 
         /// <summary>
-        /// Constructs a <see cref="BoundingSphere" /> that is the as large as the total combined area of the two specified
+        /// Constructs a <see cref="BoundingSphere" /> that is the as large as the total combined area of the two
+        /// specified
         /// spheres.
         /// </summary>
         /// <param name="value1">The first sphere to merge.</param>
@@ -370,7 +390,7 @@ namespace SE
         /// <returns>The newly constructed bounding sphere.</returns>
         public static BoundingSphere Merge(BoundingSphere value1, BoundingSphere value2)
         {
-            Merge(ref value1, ref value2, out var result);
+            Merge(ref value1, ref value2, out BoundingSphere result);
             return result;
         }
 
@@ -382,7 +402,7 @@ namespace SE
         /// <remarks>The result transformed sphere.</remarks>
         public static BoundingSphere Transform(BoundingSphere sphere, Matrix matrix)
         {
-            Transform(ref sphere, ref matrix, out var result);
+            Transform(ref sphere, ref matrix, out BoundingSphere result);
             return result;
         }
 
@@ -403,7 +423,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has the same value as <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(BoundingSphere left, BoundingSphere right)
         {
@@ -415,7 +436,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has a different value than <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(BoundingSphere left, BoundingSphere right)
         {
@@ -428,7 +450,8 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, "Center:{0} Radius:{1}", Center.ToString(), Radius.ToString());
+            return string.Format(CultureInfo.CurrentCulture, "Center:{0} Radius:{1}", Center.ToString(), Radius
+                .ToString());
         }
 
         /// <summary>
@@ -439,7 +462,9 @@ namespace SE
         public string ToString(string format)
         {
             if (format == null)
+            {
                 return ToString();
+            }
 
             return string.Format(CultureInfo.CurrentCulture,
                                  "Center:{0} Radius:{1}",
@@ -469,7 +494,9 @@ namespace SE
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
+            {
                 return ToString(formatProvider);
+            }
 
             return string.Format(formatProvider,
                                  "Center:{0} Radius:{1}",
@@ -480,7 +507,8 @@ namespace SE
         /// <summary>
         /// Returns a hash code for this instance.
         /// </summary>
-        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
+        /// <returns> A hash code for this instance, suitable for use in hashing algorithms and data structures like a
+        /// hash table.</returns>
         public override int GetHashCode()
         {
             unchecked
@@ -493,7 +521,8 @@ namespace SE
         /// Determines whether the specified <see cref="Float4" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="Float4" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref BoundingSphere value)
         {
@@ -504,7 +533,8 @@ namespace SE
         /// Determines whether the specified <see cref="Float4" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="Float4" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(BoundingSphere value)
         {
@@ -515,7 +545,8 @@ namespace SE
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise,
+        /// <c> false</c>.</returns>
         public override bool Equals(object value)
         {
             return value is BoundingSphere other && Equals(ref other);

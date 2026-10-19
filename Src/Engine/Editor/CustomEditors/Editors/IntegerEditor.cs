@@ -7,8 +7,8 @@ namespace SE.Editor
     [CustomEditor(typeof(int)), DefaultEditor]
     public sealed class IntegerEditor : CustomEditor
     {
-        private IntValueBox? _box;
-        private SliderControl? _slider;
+        private IntValueBox m_Box;
+        private SliderControl m_Slider;
 
         public override DisplayStyle Style => DisplayStyle.Inline;
 
@@ -17,58 +17,73 @@ namespace SE.Editor
             object[] attributes = Values.GetAttributes();
             if (attributes.OfType<RangeAttribute>().FirstOrDefault() is { } range)
             {
-                _slider = new SliderControl(0) { Parent = layout.ContainerControl };
-                _slider.SetLimits(range);
-                _slider.ValueChanged += OnValueChanged;
-                _slider.SlidingEnd += ClearToken;
+                m_Slider = new SliderControl(0) { Parent = layout.ContainerControl };
+                m_Slider.SetLimits(range);
+                m_Slider.ValueChanged += OnValueChanged;
+                m_Slider.SlidingEnd += ClearToken;
                 return;
             }
-            _box = new IntValueBox { Parent = layout.ContainerControl };
+            m_Box = new IntValueBox { Parent = layout.ContainerControl };
             if (attributes.OfType<LimitAttribute>().FirstOrDefault() is { } limit)
-                _box.SetLimits(limit);
-            _box.ValueChanged += OnValueChanged;
-            _box.SlidingEnd += ClearToken;
+            {
+                m_Box.SetLimits(limit);
+            }
+            m_Box.ValueChanged += OnValueChanged;
+            m_Box.SlidingEnd += ClearToken;
         }
 
         private void OnValueChanged()
         {
-            bool sliding = _slider?.IsSliding ?? _box!.IsSliding;
-            int value = _slider != null ? (int)_slider.Value : _box!.GetValue();
+            bool sliding = m_Slider?.IsSliding ?? m_Box!.IsSliding;
+            int value = m_Slider != null ? (int)m_Slider.Value : m_Box!.GetValue();
             SetValue(value, sliding ? this : null);
         }
 
         public override void Refresh()
         {
             base.Refresh();
-            if (HasDifferentValues) return;
+            if (HasDifferentValues)
+            {
+                return;
+            }
             int value = Convert.ToInt32(Values[0]);
-            if (_slider != null) _slider.Value = value;
-            else _box!.SetValue(value);
+            if (m_Slider != null)
+            {
+                m_Slider.Value = value;
+            }
+            else
+            {
+                m_Box!.SetValue(value);
+            }
         }
     }
 
     public abstract class SignedIntegerValueEditor : CustomEditor
     {
-        private LongValueBox _box = null!;
+        private LongValueBox m_Box = null!;
 
         public override DisplayStyle Style => DisplayStyle.Inline;
 
         public override void Initialize(LayoutElementsContainer layout)
         {
             GetLimits(out long min, out long max);
-            _box = new LongValueBox { Parent = layout.ContainerControl };
+            m_Box = new LongValueBox { Parent = layout.ContainerControl };
             if (Values.GetAttributes().OfType<LimitAttribute>().FirstOrDefault() is { } limit)
-                _box.SetLimits(limit);
-            _box.SetLimits(Math.Max(_box.GetMinValue(), min), Math.Min(_box.GetMaxValue(), max));
-            _box.ValueChanged += () => SetValue(ConvertValue(_box.GetValue()), _box.IsSliding ? this : null);
-            _box.SlidingEnd += ClearToken;
+            {
+                m_Box.SetLimits(limit);
+            }
+            m_Box.SetLimits(Math.Max(m_Box.GetMinValue(), min), Math.Min(m_Box.GetMaxValue(), max));
+            m_Box.ValueChanged += () => SetValue(ConvertValue(m_Box.GetValue()), m_Box.IsSliding ? this : null);
+            m_Box.SlidingEnd += ClearToken;
         }
 
         public override void Refresh()
         {
             base.Refresh();
             if (!HasDifferentValues)
-                _box.SetValue(GetValue(Values[0]!));
+            {
+                m_Box.SetValue(GetValue(Values[0]!));
+            }
         }
 
         protected abstract void GetLimits(out long min, out long max);
@@ -102,26 +117,30 @@ namespace SE.Editor
 
     public abstract class UnsignedIntegerValueEditor : CustomEditor
     {
-        private ULongValueBox _box = null!;
+        private ULongValueBox m_Box = null!;
 
         public override DisplayStyle Style => DisplayStyle.Inline;
 
         public override void Initialize(LayoutElementsContainer layout)
         {
             GetLimits(out ulong min, out ulong max);
-            _box = new ULongValueBox { Parent = layout.ContainerControl };
+            m_Box = new ULongValueBox { Parent = layout.ContainerControl };
             if (Values.GetAttributes().OfType<LimitAttribute>().FirstOrDefault() is { } limit)
-                _box.SetLimits(limit);
-            _box.SetLimits(Math.Max(_box.GetMinValue(), min), Math.Min(_box.GetMaxValue(), max));
-            _box.ValueChanged += () => SetValue(ConvertValue(_box.GetValue()), _box.IsSliding ? this : null);
-            _box.SlidingEnd += ClearToken;
+            {
+                m_Box.SetLimits(limit);
+            }
+            m_Box.SetLimits(Math.Max(m_Box.GetMinValue(), min), Math.Min(m_Box.GetMaxValue(), max));
+            m_Box.ValueChanged += () => SetValue(ConvertValue(m_Box.GetValue()), m_Box.IsSliding ? this : null);
+            m_Box.SlidingEnd += ClearToken;
         }
 
         public override void Refresh()
         {
             base.Refresh();
             if (!HasDifferentValues)
-                _box.SetValue(GetValue(Values[0]!));
+            {
+                m_Box.SetValue(GetValue(Values[0]!));
+            }
         }
 
         protected abstract void GetLimits(out ulong min, out ulong max);
@@ -148,7 +167,11 @@ namespace SE.Editor
     [CustomEditor(typeof(ushort)), DefaultEditor]
     public sealed class UShortEditor : UnsignedIntegerValueEditor
     {
-        protected override void GetLimits(out ulong min, out ulong max) { min = ushort.MinValue; max = ushort.MaxValue; }
+        protected override void GetLimits(out ulong min, out ulong max)
+        {
+            min = ushort.MinValue; max = ushort
+            .MaxValue;
+        }
         protected override ulong GetValue(object value) => (ushort)value;
         protected override object ConvertValue(ulong value) => (ushort)value;
     }

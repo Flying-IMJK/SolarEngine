@@ -105,7 +105,8 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Viewport"/> struct.
         /// </summary>
-        /// <param name="bounds">A bounding box that defines the location and size of the viewport in a render target.</param>
+        /// <param name="bounds"> A bounding box that defines the location and size of the viewport in a render
+        /// target.</param>
         public Viewport(Rectangle bounds)
         {
             X = bounds.X;
@@ -169,7 +170,8 @@ namespace SE
         /// Determines whether the specified <see cref="Viewport"/> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Viewport"/> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Viewport"/> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Viewport"/> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         public bool Equals(ref Viewport other)
         {
             return Mathf.NearEqual(X, other.X) &&
@@ -184,7 +186,8 @@ namespace SE
         /// Determines whether the specified <see cref="Viewport"/> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Viewport"/> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Viewport"/> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Viewport"/> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Viewport other)
         {
@@ -251,7 +254,9 @@ namespace SE
         /// <returns>A <see cref="System.String"/> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, "{{X:{0} Y:{1} Width:{2} Height:{3} MinDepth:{4} MaxDepth:{5}}}", X, Y, Width, Height, MinDepth, MaxDepth);
+            return string.Format(CultureInfo.CurrentCulture,
+                "{{X:{0} Y:{1} Width:{2} Height:{3} MinDepth:{4} MaxDepth:{5}}}", X, Y, Width, Height, MinDepth,
+                    MaxDepth);
         }
 
         /// <summary>
@@ -280,7 +285,7 @@ namespace SE
         public void Project(ref Float3 source, ref Matrix matrix, out Float3 vector)
         {
             Float3.Transform(ref source, ref matrix, out vector);
-            var w = source.X * matrix.M14 + source.Y * matrix.M24 + source.Z * matrix.M34 + matrix.M44;
+            float w = source.X * matrix.M14 + source.Y * matrix.M24 + source.Z * matrix.M34 + matrix.M44;
 
             if (!Mathf.IsZero(w))
             {
@@ -322,7 +327,7 @@ namespace SE
             vector.Y = -((source.Y - Y) / Height * 2f - 1f);
             vector.Z = (source.Z - MinDepth) / (MaxDepth - MinDepth);
 
-            var w = vector.X * matrix.M14 + vector.Y * matrix.M24 + vector.Z * matrix.M34 + matrix.M44;
+            float w = vector.X * matrix.M14 + vector.Y * matrix.M24 + vector.Z * matrix.M34 + matrix.M44;
             Float3.Transform(ref vector, ref matrix, out vector);
 
             if (!Mathf.IsZero(w))

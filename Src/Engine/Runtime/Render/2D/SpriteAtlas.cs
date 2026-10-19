@@ -45,7 +45,7 @@ namespace SE
                 {
                     throw new InvalidOperationException("Cannot use invalid sprite.");
                 }
-                var sprite = Atlas.GetSprite(Index);
+                Sprite sprite = Atlas.GetSprite(Index);
                 sprite.Name = value;
                 Atlas.SetSprite(Index, sprite);
             }
@@ -59,7 +59,7 @@ namespace SE
             get => Area.Location * Atlas.Size();
             set
             {
-                var area = Area;
+                Rectangle area = Area;
                 area.Location = value / Atlas.Size();
                 Area = area;
             }
@@ -83,7 +83,7 @@ namespace SE
             }
             set
             {
-                var area = Area;
+                Rectangle area = Area;
                 area.Size = value / Atlas.Size();
                 Area = area;
             }
@@ -111,7 +111,7 @@ namespace SE
                 {
                     throw new InvalidOperationException("Cannot use invalid sprite.");
                 }
-                var sprite = Atlas.GetSprite(Index);
+                Sprite sprite = Atlas.GetSprite(Index);
                 sprite.Area = value;
                 Atlas.SetSprite(Index, sprite);
             }

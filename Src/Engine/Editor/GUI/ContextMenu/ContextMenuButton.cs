@@ -8,7 +8,7 @@ namespace SE.Editor.GUI
 {
     public class ContextMenuButton : ContextMenuItem
     {
-        private bool _isMouseDown = false;
+        private bool m_IsMouseDown = false;
 
         /// <summary>
         /// The amount to adjust the short keys and arrow image by in x coordinates.
@@ -69,7 +69,8 @@ namespace SE.Editor.GUI
         }
 
         /// <summary>
-        /// Sets the automatic check mode. In auto check mode the button sets the check sprite as an icon when user clicks it.
+        /// Sets the automatic check mode. In auto check mode the button sets the check sprite as an icon when user
+        /// clicks it.
         /// </summary>
         /// <param name="value">True if use auto check, otherwise false.</param>
         /// <returns>This button.</returns>
@@ -160,7 +161,7 @@ namespace SE.Editor.GUI
         /// <inheritdoc />
         public override void OnMouseLeave()
         {
-            _isMouseDown = false;
+            m_IsMouseDown = false;
 
             base.OnMouseLeave();
         }
@@ -173,7 +174,7 @@ namespace SE.Editor.GUI
                 return true;
             }
 
-            _isMouseDown = true;
+            m_IsMouseDown = true;
             return true;
         }
 
@@ -185,9 +186,9 @@ namespace SE.Editor.GUI
                 return true;
             }
 
-            if (_isMouseDown)
+            if (m_IsMouseDown)
             {
-                _isMouseDown = false;
+                m_IsMouseDown = false;
                 Click();
                 return true;
             }
@@ -248,7 +249,7 @@ namespace SE.Editor.GUI
         /// <inheritdoc />
         public override void OnLostFocus()
         {
-            _isMouseDown = false;
+            m_IsMouseDown = false;
 
             base.OnLostFocus();
         }

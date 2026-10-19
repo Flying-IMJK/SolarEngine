@@ -12,13 +12,13 @@ namespace SE.Editor
         /// <summary>
         /// Gets the Editor instance.
         /// </summary>
-        public static Editor? Instance { get; private set; }
+        public static Editor Instance { get; private set; }
 
         private readonly List<EditorModule> m_Modules = new List<EditorModule>();
-        private Window? m_MainWindow;
+        private Window m_MainWindow;
         private bool m_IsInitialized = false;
         private bool m_IsExiting = false;
-        
+
 
         /// <summary>
         /// Gets the single editor main window, creating it on first use.
@@ -52,7 +52,7 @@ namespace SE.Editor
             }
 
             Instance = this;
-            
+
             EnsureMainWindow();
 
             m_Modules.Clear();
@@ -64,7 +64,7 @@ namespace SE.Editor
             m_Modules.Add(AssetDatabase = new AssetDatabaseModule(this));
 
 
-            m_Modules.Sort( (left, right) => left.Order.CompareTo(right.Order));
+            m_Modules.Sort((left, right) => left.Order.CompareTo(right.Order));
 
 
             foreach (EditorModule module in m_Modules)
@@ -83,7 +83,9 @@ namespace SE.Editor
         public void Update()
         {
             if (!m_IsInitialized || m_IsExiting)
+            {
                 return;
+            }
 
             foreach (EditorModule module in m_Modules)
             {
@@ -94,7 +96,9 @@ namespace SE.Editor
         public void LateUpdate()
         {
             if (!m_IsInitialized || m_IsExiting)
+            {
                 return;
+            }
 
             foreach (EditorModule module in m_Modules)
             {
@@ -105,7 +109,9 @@ namespace SE.Editor
         public void Render()
         {
             if (!m_IsInitialized || m_IsExiting)
+            {
                 return;
+            }
 
             foreach (EditorModule module in m_Modules)
             {
@@ -116,7 +122,9 @@ namespace SE.Editor
         public void Exit()
         {
             if (m_IsExiting)
+            {
                 return;
+            }
 
             m_IsExiting = true;
             for (int index = m_Modules.Count - 1; index >= 0; index--)
@@ -153,7 +161,8 @@ namespace SE.Editor
             settings.Title = "SE Editor";
             settings.HasBorder = false;
             settings.AllowDragAndDrop = true;
-            m_MainWindow = Window.Create(settings) ?? throw new InvalidOperationException("Failed to create the editor main window.");
+            m_MainWindow = Window.Create(settings)
+                ?? throw new InvalidOperationException("Failed to create the editor main window.");
             m_MainWindow.Closed += () => EngineContext.IsRequestingExit = true;
             return m_MainWindow;
         }

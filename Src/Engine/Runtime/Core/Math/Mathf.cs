@@ -141,7 +141,9 @@ namespace SE
         public static float Saturate(float value)
         {
             if (value < 0f)
+            {
                 return 0f;
+            }
             return value > 1f ? 1f : value;
         }
 
@@ -153,7 +155,9 @@ namespace SE
         public static double Saturate(double value)
         {
             if (value < 0f)
+            {
                 return 0f;
+            }
             return value > 1f ? 1f : value;
         }
 
@@ -175,7 +179,9 @@ namespace SE
         {
             float t = Repeat(target - current, 360f);
             if (t > 180f)
+            {
                 t -= 360f;
+            }
             return t;
         }
 
@@ -229,7 +235,9 @@ namespace SE
         public static float InverseLerp(float a, float b, float value)
         {
             if (a == b)
+            {
                 return 0f;
+            }
             return Saturate((value - a) / (b - a));
         }
 
@@ -243,7 +251,9 @@ namespace SE
         {
             float c = Repeat(b - a, 360f);
             if (c > 180f)
+            {
                 c -= 360f;
+            }
             return a + c * Saturate(t);
         }
 
@@ -323,12 +333,18 @@ namespace SE
         {
             int length = values.Length;
             if (length == 0)
+            {
                 return 0f;
+            }
 
             float t = values[0];
-            for (var i = 1; i < length; i++)
+            for (int i = 1; i < length; i++)
+            {
                 if (values[i] > t)
+                {
                     t = values[i];
+                }
+            }
             return t;
         }
 
@@ -360,12 +376,18 @@ namespace SE
         {
             int length = values.Length;
             if (length == 0)
+            {
                 return 0;
+            }
 
             int t = values[0];
-            for (var i = 1; i < length; i++)
+            for (int i = 1; i < length; i++)
+            {
                 if (values[i] > t)
+                {
                     t = values[i];
+                }
+            }
             return t;
         }
 
@@ -417,12 +439,18 @@ namespace SE
         {
             int length = values.Length;
             if (length == 0)
+            {
                 return 0f;
+            }
 
             float t = values[0];
-            for (var i = 1; i < length; i++)
+            for (int i = 1; i < length; i++)
+            {
                 if (values[i] < t)
+                {
                     t = values[i];
+                }
+            }
 
             return t;
         }
@@ -455,12 +483,18 @@ namespace SE
         {
             int length = values.Length;
             if (length == 0)
+            {
                 return 0;
+            }
 
             int num = values[0];
-            for (var i = 1; i < length; i++)
+            for (int i = 1; i < length; i++)
+            {
                 if (values[i] < num)
+                {
                     num = values[i];
+                }
+            }
 
             return num;
         }
@@ -474,7 +508,9 @@ namespace SE
         public static float MoveTowards(float current, float target, float maxDelta)
         {
             if (Abs(target - current) <= maxDelta)
+            {
                 return target;
+            }
             return current + Sign(target - current) * maxDelta;
         }
 
@@ -488,7 +524,9 @@ namespace SE
         {
             float delta = DeltaAngle(current, target);
             if ((-maxDelta < delta) && (delta < maxDelta))
+            {
                 return target;
+            }
             target = current + delta;
             return MoveTowards(current, target, maxDelta);
         }
@@ -564,7 +602,8 @@ namespace SE
         /// Returns signed fractional part of a float.
         /// </summary>
         /// <param name="value">Floating point value to convert.</param>
-        /// <returns>A float between [0 ; 1) for nonnegative input. A float between [-1; 0) for negative input.</returns>
+        /// <returns> A float between [0 ; 1) for nonnegative input. A float between [-1; 0) for negative
+        /// input.</returns>
         public static float Frac(float value)
         {
             return value - (int)value;
@@ -579,7 +618,8 @@ namespace SE
         /// <param name="smoothTime">The smoothing time. Smaller values increase blending time.</param>
         /// <param name="maxSpeed">The maximum speed.</param>
         /// <returns>The smoothed value.</returns>
-        public static float SmoothDamp(float current, float target, ref float currentVelocity, float smoothTime, float maxSpeed)
+        public static float SmoothDamp(float current, float target, ref float currentVelocity, float smoothTime,
+            float maxSpeed)
         {
             return SmoothDamp(current, target, ref currentVelocity, smoothTime, maxSpeed, DefaultDeltaTime);
         }
@@ -594,7 +634,8 @@ namespace SE
         /// <returns>The smoothed value.</returns>
         public static float SmoothDamp(float current, float target, ref float currentVelocity, float smoothTime)
         {
-            return SmoothDamp(current, target, ref currentVelocity, smoothTime, float.PositiveInfinity, DefaultDeltaTime);
+            return SmoothDamp(current, target, ref currentVelocity, smoothTime, float.PositiveInfinity,
+                DefaultDeltaTime);
         }
 
         /// <summary>
@@ -607,7 +648,8 @@ namespace SE
         /// <param name="maxSpeed">The maximum speed.</param>
         /// <param name="deltaTime">The delta time (in seconds) since last update.</param>
         /// <returns>The smoothed value.</returns>
-        public static float SmoothDamp(float current, float target, ref float currentVelocity, float smoothTime, [DefaultValue("float.PositiveInfinity")] float maxSpeed, [DefaultValue("Time.DeltaTime")] float deltaTime)
+        public static float SmoothDamp(float current, float target, ref float currentVelocity, float smoothTime,
+            [DefaultValue("float.PositiveInfinity")] float maxSpeed, [DefaultValue("Time.DeltaTime")] float deltaTime)
         {
             smoothTime = Max(0.0001f, smoothTime);
             float a = 2f / smoothTime;
@@ -638,7 +680,8 @@ namespace SE
         /// <param name="smoothTime">The smoothing time. Smaller values increase blending time.</param>
         /// <param name="maxSpeed">The maximum speed.</param>
         /// <returns>The smoothed value.</returns>
-        public static float SmoothDampAngle(float current, float target, ref float currentVelocity, float smoothTime, float maxSpeed)
+        public static float SmoothDampAngle(float current, float target, ref float currentVelocity,
+            float smoothTime, float maxSpeed)
         {
             return SmoothDampAngle(current, target, ref currentVelocity, smoothTime, maxSpeed, DefaultDeltaTime);
         }
@@ -653,7 +696,8 @@ namespace SE
         /// <returns>The smoothed value.</returns>
         public static float SmoothDampAngle(float current, float target, ref float currentVelocity, float smoothTime)
         {
-            return SmoothDampAngle(current, target, ref currentVelocity, smoothTime, float.PositiveInfinity, DefaultDeltaTime);
+            return SmoothDampAngle(current, target, ref currentVelocity, smoothTime, float.PositiveInfinity,
+                DefaultDeltaTime);
         }
 
         /// <summary>
@@ -666,7 +710,9 @@ namespace SE
         /// <param name="maxSpeed">The maximum speed.</param>
         /// <param name="deltaTime">The delta time (in seconds) since last update.</param>
         /// <returns>The smoothed value.</returns>
-        public static float SmoothDampAngle(float current, float target, ref float currentVelocity, float smoothTime, [DefaultValue("float.PositiveInfinity")] float maxSpeed, [DefaultValue("Time.DeltaTime")] float deltaTime)
+        public static float SmoothDampAngle(float current, float target, ref float currentVelocity,
+            float smoothTime, [DefaultValue("float.PositiveInfinity")] float maxSpeed,
+                [DefaultValue("Time.DeltaTime")] float deltaTime)
         {
             target = current + DeltaAngle(current, target);
             return SmoothDamp(current, target, ref currentVelocity, smoothTime, maxSpeed, deltaTime);
@@ -698,7 +744,8 @@ namespace SE
         {
             float alpha2 = alpha * alpha;
             float alpha3 = alpha2 * alpha;
-            return (((2 * alpha3) - (3 * alpha2) + 1) * p0) + ((alpha3 - (2 * alpha2) + alpha) * t0) + ((alpha3 - alpha2) * t1) + (((-2 * alpha3) + (3 * alpha2)) * p1);
+            return (((2 * alpha3) - (3 * alpha2) + 1) * p0) + ((alpha3 - (2 * alpha2) + alpha) * t0) + ((alpha3
+                - alpha2) * t1) + (((-2 * alpha3) + (3 * alpha2)) * p1);
         }
 
         /// <summary>
@@ -724,7 +771,8 @@ namespace SE
         /// </summary>
         public static float InterpEaseInOut(float a, float b, float alpha, float exponent)
         {
-            return Lerp(a, b, (alpha < 0.5f) ? InterpEaseIn(0.0f, 1.0f, alpha * 2.0f, exponent) * 0.5f : InterpEaseOut(0.0f, 1.0f, alpha * 2.0f - 1.0f, exponent) * 0.5f + 0.5f);
+            return Lerp(a, b, (alpha < 0.5f) ? InterpEaseIn(0.0f, 1.0f, alpha * 2.0f, exponent) * 0.5f
+                : InterpEaseOut(0.0f, 1.0f, alpha * 2.0f - 1.0f, exponent) * 0.5f + 0.5f);
         }
 
         /// <summary>
@@ -750,7 +798,8 @@ namespace SE
         /// </summary>
         public static float InterpSinInOut(float a, float b, float alpha)
         {
-            return Lerp(a, b, (alpha < 0.5f) ? InterpSinIn(0.0f, 1.0f, alpha * 2.0f) * 0.5f : InterpSinOut(0.0f, 1.0f, alpha * 2.0f - 1.0f) * 0.5f + 0.5f);
+            return Lerp(a, b, (alpha < 0.5f) ? InterpSinIn(0.0f, 1.0f, alpha * 2.0f) * 0.5f : InterpSinOut(0.0f,
+                1.0f, alpha * 2.0f - 1.0f) * 0.5f + 0.5f);
         }
 
         /// <summary>
@@ -776,7 +825,8 @@ namespace SE
         /// </summary>
         public static float InterpExpoInOut(float a, float b, float alpha)
         {
-            return Lerp(a, b, (alpha < 0.5f) ? InterpExpoIn(0.0f, 1.0f, alpha * 2.0f) * 0.5f : InterpExpoOut(0.0f, 1.0f, alpha * 2.0f - 1.0f) * 0.5f + 0.5f);
+            return Lerp(a, b, (alpha < 0.5f) ? InterpExpoIn(0.0f, 1.0f, alpha * 2.0f) * 0.5f : InterpExpoOut(0.0f,
+                1.0f, alpha * 2.0f - 1.0f) * 0.5f + 0.5f);
         }
 
         /// <summary>
@@ -803,7 +853,8 @@ namespace SE
         /// </summary>
         public static float InterpCircularInOut(float a, float b, float alpha)
         {
-            return Lerp(a, b, (alpha < 0.5f) ? InterpCircularIn(0.0f, 1.0f, alpha * 2.0f) * 0.5f : InterpCircularOut(0.0f, 1.0f, alpha * 2.0f - 1.0f) * 0.5f + 0.5f);
+            return Lerp(a, b, (alpha < 0.5f) ? InterpCircularIn(0.0f, 1.0f, alpha * 2.0f) * 0.5f
+                : InterpCircularOut(0.0f, 1.0f, alpha * 2.0f - 1.0f) * 0.5f + 0.5f);
         }
 
         /// <summary>
@@ -861,7 +912,9 @@ namespace SE
         public static float SRgbToLinear(float sRgbValue)
         {
             if (sRgbValue < 0.04045f)
+            {
                 return sRgbValue / 12.92f;
+            }
             return (float)Math.Pow((sRgbValue + 0.055) / 1.055, 2.4);
         }
 
@@ -873,7 +926,9 @@ namespace SE
         public static float LinearToSRgb(float linearValue)
         {
             if (linearValue < 0.0031308f)
+            {
                 return linearValue * 12.92f;
+            }
             return (float)(1.055 * Math.Pow(linearValue, 1 / 2.4) - 0.055);
         }
 
@@ -935,31 +990,40 @@ namespace SE
         }
 
         /// <summary>
-        /// Checks if a and b are almost equals, taking into account the magnitude of floating point numbers (unlike <see cref="WithinEpsilon(float,float,float)" /> method).
+        /// Checks if a and b are almost equals, taking into account the magnitude of floating point numbers (unlike
+        /// <see cref="WithinEpsilon(float,float,float)" /> method).
         /// </summary>
         /// <param name="a">The left value to compare.</param>
         /// <param name="b">The right value to compare.</param>
         /// <returns><c>true</c> if a almost equal to b, <c>false</c> otherwise</returns>
-        /// <remarks>The code is using the technique described by Bruce Dawson in <a href="http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/">Comparing Floating point numbers 2012 edition</a>.</remarks>
+        /// <remarks> The code is using the technique described by Bruce Dawson in
+        /// <a href="http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/">
+        /// Comparing Floating point numbers 2012 edition</a>.</remarks>
         public static unsafe bool NearEqual(float a, float b)
         {
             // Check if the numbers are really close -- needed when comparing numbers near zero.
             if (Math.Abs(a - b) < Epsilon)
+            {
                 return true;
+            }
 
-            // Original from Bruce Dawson: http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+            // Original from Bruce Dawson:
+            // http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
             int aInt = *(int*)&a;
             int bInt = *(int*)&b;
 
             // Different signs means they do not match.
             if (aInt < 0 != bInt < 0)
+            {
                 return false;
+            }
 
             // Find the difference in ULPs.
             int ulp = Math.Abs(aInt - bInt);
 
             // Choose of maxUlp = 4
-            // according to http://code.google.com/p/googletest/source/browse/trunk/include/gtest/internal/gtest-internal.h
+            // according to
+            // http://code.google.com/p/googletest/source/browse/trunk/include/gtest/internal/gtest-internal.h
             const int maxUlp = 4;
             return ulp <= maxUlp;
         }
@@ -1176,17 +1240,19 @@ namespace SE
         /// <summary>
         /// Given a heading which may be outside the +/- PI range, 'unwind' it back into that range.
         /// </summary>
-        /// <remarks>Optimized version of <see cref="UnwindRadiansAccurate"/> that is it faster and has fixed cost but with large angle values (100 for example) starts to lose accuracy floating point problem.</remarks>
+        /// <remarks> Optimized version of <see cref="UnwindRadiansAccurate"/> that is it faster and has fixed cost but
+        /// with large angle values (100 for example) starts to lose accuracy floating point problem.</remarks>
         /// <param name="angle">Angle in radians to unwind.</param>
         /// <returns>Valid angle in radians.</returns>
         public static float UnwindRadians(float angle)
         {
-            var a = angle - (float)Math.Floor(angle / TwoPi) * TwoPi; // Loop function between 0 and TwoPi
+            float a = angle - (float)Math.Floor(angle / TwoPi) * TwoPi; // Loop function between 0 and TwoPi
             return a > Pi ? a - TwoPi : a; // Change range so it become Pi and -Pi
         }
 
         /// <summary>
-        /// The same as <see cref="UnwindRadians"/> but is more computation intensive with large <see href="angle"/> and has better accuracy with large <see href="angle"/>.
+        /// The same as <see cref="UnwindRadians"/> but is more computation intensive with large <see href="angle"/> and
+        /// has better accuracy with large <see href="angle"/> .
         /// <br>cost of this function is <see href="angle"/> % <see cref="Pi"/></br>
         /// </summary>
         /// <param name="angle">Angle in radians to unwind.</param>
@@ -1194,26 +1260,32 @@ namespace SE
         public static float UnwindRadiansAccurate(float angle)
         {
             while (angle > Pi)
+            {
                 angle -= TwoPi;
+            }
             while (angle < -Pi)
+            {
                 angle += TwoPi;
+            }
             return angle;
         }
 
         /// <summary>
         /// Utility to ensure angle is between +/- 180 degrees by unwinding.
         /// </summary>
-        /// <remarks>Optimized version of <see cref="UnwindDegreesAccurate"/> that is it faster and has fixed cost but with large angle values (100 for example) starts to lose accuracy floating point problem.</remarks>
+        /// <remarks> Optimized version of <see cref="UnwindDegreesAccurate"/> that is it faster and has fixed cost but
+        /// with large angle values (100 for example) starts to lose accuracy floating point problem.</remarks>
         /// <param name="angle">Angle in degrees to unwind.</param>
         /// <returns>Valid angle in degrees.</returns>
         public static float UnwindDegrees(float angle)
         {
-            var a = angle - (float)Math.Floor(angle / 360.0f) * 360.0f; // Loop function between 0 and 360
+            float a = angle - (float)Math.Floor(angle / 360.0f) * 360.0f; // Loop function between 0 and 360
             return a > 180 ? a - 360.0f : a; // Change range so it become 180 and -180
         }
 
         /// <summary>
-        /// The same as <see cref="UnwindDegrees"/> but is more computation intensive with large <see href="angle"/> and has better accuracy with large <see href="angle"/>.
+        /// The same as <see cref="UnwindDegrees"/> but is more computation intensive with large <see href="angle"/> and
+        /// has better accuracy with large <see href="angle"/> .
         /// <br>cost of this function is <see href="angle"/> % 180.0f</br>
         /// </summary>
         /// <param name="angle">Angle in radians to unwind.</param>
@@ -1221,9 +1293,13 @@ namespace SE
         public static float UnwindDegreesAccurate(float angle)
         {
             while (angle > 180.0f)
+            {
                 angle -= 360.0f;
+            }
             while (angle < -180.0f)
+            {
                 angle += 360.0f;
+            }
             return angle;
         }
 
@@ -1302,7 +1378,8 @@ namespace SE
         /// <summary>
         /// Interpolates between two values using a linear function by a given amount.
         /// </summary>
-        /// <remarks>See http://www.encyclopediaofmath.org/index.php/Linear_interpolation and http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/</remarks>
+        /// <remarks> See http://www.encyclopediaofmath.org/index.php/Linear_interpolation and
+        /// http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/</remarks>
         /// <param name="from">Value to interpolate from.</param>
         /// <param name="to">Value to interpolate to.</param>
         /// <param name="amount">Interpolation amount.</param>
@@ -1318,7 +1395,8 @@ namespace SE
         /// <remarks>
         /// See:
         /// <br><seealso href="http://www.encyclopediaofmath.org/index.php/Linear_interpolation"/></br>
-        /// <br><seealso href="http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/"/></br>
+        /// <br> <seealso href="http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/"/>
+        /// </br>
         /// </remarks>
         /// /// <param name="from">Value to interpolate from.</param>
         /// <param name="to">Value to interpolate to.</param>
@@ -1335,7 +1413,8 @@ namespace SE
         /// <remarks>
         /// See:
         /// <br><seealso href="http://www.encyclopediaofmath.org/index.php/Linear_interpolation"/></br>
-        /// <br><seealso href="http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/"/></br>
+        /// <br> <seealso href="http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/"/>
+        /// </br>
         /// </remarks>
         /// /// <param name="from">Value to interpolate from.</param>
         /// <param name="to">Value to interpolate to.</param>
@@ -1352,7 +1431,8 @@ namespace SE
         /// <remarks>
         /// See:
         /// <br><seealso href="http://www.encyclopediaofmath.org/index.php/Linear_interpolation"/></br>
-        /// <br><seealso href="http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/"/></br>
+        /// <br> <seealso href="http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/"/>
+        /// </br>
         /// </remarks>
         /// /// <param name="from">Value to interpolate from.</param>
         /// <param name="to">Value to interpolate to.</param>
@@ -1424,7 +1504,9 @@ namespace SE
         public static float Mod(float value, float modulo)
         {
             if (modulo == 0.0f)
+            {
                 return value;
+            }
             return value % modulo;
         }
 
@@ -1445,17 +1527,23 @@ namespace SE
         /// <param name="min">The min.</param>
         /// <param name="max">The max.</param>
         /// <returns>Result of the wrapping.</returns>
-        /// <exception cref="ArgumentException">Is thrown when <paramref name="min" /> is greater than <paramref name="max" />.</exception>
+        /// <exception cref="ArgumentException"> Is thrown when <paramref name="min" /> is greater than
+        /// <paramref name="max" /> .</exception>
         public static int Wrap(int value, int min, int max)
         {
             if (min > max)
-                throw new ArgumentException(string.Format("min {0} should be less than or equal to max {1}", min, max), nameof(min));
+            {
+                throw new ArgumentException(string.Format("min {0} should be less than or equal to max {1}", min,
+                    max), nameof(min));
+            }
 
             // Code from http://stackoverflow.com/a/707426/1356325
             int rangeSize = max - min + 1;
 
             if (value < min)
+            {
                 value += rangeSize * ((min - value) / rangeSize + 1);
+            }
 
             return min + (value - min) % rangeSize;
         }
@@ -1467,18 +1555,24 @@ namespace SE
         /// <param name="min">The min.</param>
         /// <param name="max">The max.</param>
         /// <returns>Result of the wrapping.</returns>
-        /// <exception cref="ArgumentException">Is thrown when <paramref name="min" /> is greater than <paramref name="max" />.</exception>
+        /// <exception cref="ArgumentException"> Is thrown when <paramref name="min" /> is greater than
+        /// <paramref name="max" /> .</exception>
         public static float Wrap(float value, float min, float max)
         {
             if (NearEqual(min, max))
+            {
                 return min;
+            }
 
             double mind = min;
             double maxd = max;
             double valued = value;
 
             if (mind > maxd)
-                throw new ArgumentException(string.Format("min {0} should be less than or equal to max {1}", min, max), nameof(min));
+            {
+                throw new ArgumentException(string.Format("min {0} should be less than or equal to max {1}", min,
+                    max), nameof(min));
+            }
 
             double rangeSize = maxd - mind;
             return (float)(mind + (valued - mind) - rangeSize * Math.Floor((valued - mind) / rangeSize));
@@ -1496,7 +1590,8 @@ namespace SE
         /// <param name="sigmaX">Curve sigma X.</param>
         /// <param name="sigmaY">Curve sigma Y.</param>
         /// <returns>The result of Gaussian function.</returns>
-        public static float Gauss(float amplitude, float x, float y, float centerX, float centerY, float sigmaX, float sigmaY)
+        public static float Gauss(float amplitude, float x, float y, float centerX, float centerY, float sigmaX,
+            float sigmaY)
         {
             return (float)Gauss((double)amplitude, x, y, centerX, centerY, sigmaX, sigmaY);
         }
@@ -1513,7 +1608,8 @@ namespace SE
         /// <param name="sigmaX">Curve sigma X.</param>
         /// <param name="sigmaY">Curve sigma Y.</param>
         /// <returns>The result of Gaussian function.</returns>
-        public static double Gauss(double amplitude, double x, double y, double centerX, double centerY, double sigmaX, double sigmaY)
+        public static double Gauss(double amplitude, double x, double y, double centerX, double centerY,
+            double sigmaX, double sigmaY)
         {
             double cx = x - centerX;
             double cy = y - centerY;
@@ -1534,45 +1630,45 @@ namespace SE
         {
             switch (mode)
             {
-            case AlphaBlendMode.Sinusoidal:
-                alpha = (Sin(alpha * Pi - PiOverTwo) + 1.0f) / 2.0f;
-                break;
-            case AlphaBlendMode.Cubic:
-                alpha = CubicInterp(0.0f, 0.0f, 1.0f, 0.0f, alpha);
-                break;
-            case AlphaBlendMode.QuadraticInOut:
-                alpha = InterpEaseInOut(0.0f, 1.0f, alpha, 2);
-                break;
-            case AlphaBlendMode.CubicInOut:
-                alpha = InterpEaseInOut(0.0f, 1.0f, alpha, 3);
-                break;
-            case AlphaBlendMode.HermiteCubic:
-                alpha = SmoothStep(0.0f, 1.0f, alpha);
-                break;
-            case AlphaBlendMode.QuarticInOut:
-                alpha = InterpEaseInOut(0.0f, 1.0f, alpha, 4);
-                break;
-            case AlphaBlendMode.QuinticInOut:
-                alpha = InterpEaseInOut(0.0f, 1.0f, alpha, 5);
-                break;
-            case AlphaBlendMode.CircularIn:
-                alpha = InterpCircularIn(0.0f, 1.0f, alpha);
-                break;
-            case AlphaBlendMode.CircularOut:
-                alpha = InterpCircularOut(0.0f, 1.0f, alpha);
-                break;
-            case AlphaBlendMode.CircularInOut:
-                alpha = InterpCircularInOut(0.0f, 1.0f, alpha);
-                break;
-            case AlphaBlendMode.ExpIn:
-                alpha = InterpExpoIn(0.0f, 1.0f, alpha);
-                break;
-            case AlphaBlendMode.ExpOut:
-                alpha = InterpExpoOut(0.0f, 1.0f, alpha);
-                break;
-            case AlphaBlendMode.ExpInOut:
-                alpha = InterpExpoInOut(0.0f, 1.0f, alpha);
-                break;
+                case AlphaBlendMode.Sinusoidal:
+                    alpha = (Sin(alpha * Pi - PiOverTwo) + 1.0f) / 2.0f;
+                    break;
+                case AlphaBlendMode.Cubic:
+                    alpha = CubicInterp(0.0f, 0.0f, 1.0f, 0.0f, alpha);
+                    break;
+                case AlphaBlendMode.QuadraticInOut:
+                    alpha = InterpEaseInOut(0.0f, 1.0f, alpha, 2);
+                    break;
+                case AlphaBlendMode.CubicInOut:
+                    alpha = InterpEaseInOut(0.0f, 1.0f, alpha, 3);
+                    break;
+                case AlphaBlendMode.HermiteCubic:
+                    alpha = SmoothStep(0.0f, 1.0f, alpha);
+                    break;
+                case AlphaBlendMode.QuarticInOut:
+                    alpha = InterpEaseInOut(0.0f, 1.0f, alpha, 4);
+                    break;
+                case AlphaBlendMode.QuinticInOut:
+                    alpha = InterpEaseInOut(0.0f, 1.0f, alpha, 5);
+                    break;
+                case AlphaBlendMode.CircularIn:
+                    alpha = InterpCircularIn(0.0f, 1.0f, alpha);
+                    break;
+                case AlphaBlendMode.CircularOut:
+                    alpha = InterpCircularOut(0.0f, 1.0f, alpha);
+                    break;
+                case AlphaBlendMode.CircularInOut:
+                    alpha = InterpCircularInOut(0.0f, 1.0f, alpha);
+                    break;
+                case AlphaBlendMode.ExpIn:
+                    alpha = InterpExpoIn(0.0f, 1.0f, alpha);
+                    break;
+                case AlphaBlendMode.ExpOut:
+                    alpha = InterpExpoOut(0.0f, 1.0f, alpha);
+                    break;
+                case AlphaBlendMode.ExpInOut:
+                    alpha = InterpExpoInOut(0.0f, 1.0f, alpha);
+                    break;
             }
 
             return Saturate(alpha);

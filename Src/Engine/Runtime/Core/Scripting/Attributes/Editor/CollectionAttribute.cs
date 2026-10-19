@@ -22,7 +22,7 @@ namespace SE
         /// <summary>Rejects null element values entered through the inspector.</summary>
         public bool NotNullItems;
         /// <summary>Editor alias used for each element, when present.</summary>
-        public string? OverrideEditorTypeName;
+        public string OverrideEditorTypeName;
         /// <summary>Vertical space inserted between element rows.</summary>
         public float Spacing;
         /// <summary>Minimum inspector length.</summary>

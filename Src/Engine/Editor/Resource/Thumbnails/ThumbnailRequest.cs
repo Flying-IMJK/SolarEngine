@@ -63,16 +63,17 @@ namespace SE.Editor
         public Asset asset = null;
 
         /// <summary>
-        /// The custom tag object used by the thumbnails rendering pipeline. Can be used to store the data related to the thumbnail rendering by the asset proxy.
+        /// The custom tag object used by the thumbnails rendering pipeline. Can be used to store the data related to
+        /// the thumbnail rendering by the asset proxy.
         /// </summary>
         public object Tag;
 
         /// <summary>
         /// Determines whether thumbnail can be drawn for the item.
         /// </summary>
-        public bool IsReady 
+        public bool IsReady
         {
-            get 
+            get
             {
                 return state == States.Prepared && asset && asset.IsLoaded() && operate.CanDrawThumbnail(this);
             }

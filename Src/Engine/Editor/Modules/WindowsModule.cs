@@ -15,8 +15,8 @@ namespace SE.Editor
         {
         }
 
-        public event Action<EditorWindow>? WindowAdded;
-        public event Action<EditorWindow>? WindowRemoved;
+        public event Action<EditorWindow> WindowAdded;
+        public event Action<EditorWindow> WindowRemoved;
 
         public LogWindow Log { get; private set; } = null!;
         public ContentWindow Content { get; private set; } = null!;
@@ -36,7 +36,7 @@ namespace SE.Editor
 
         internal override int Order => -90;
 
-        public bool TryGetWindow(string id, out EditorWindow? window)
+        public bool TryGetWindow(string id, out EditorWindow window)
         {
             foreach (EditorWindow candidate in m_Windows)
             {

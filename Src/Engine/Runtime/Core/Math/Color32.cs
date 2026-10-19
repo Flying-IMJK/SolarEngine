@@ -56,31 +56,33 @@ namespace SE
         /// Gets or sets the component at the specified index.
         /// </summary>
         /// <value>The value of the red, green, blue, and alpha components, depending on the index.</value>
-        /// <param name="index">The index of the component to access. Use 0 for the alpha component, 1 for the red component, 2 for the green component, and 3 for the blue component.</param>
+        /// <param name="index"> The index of the component to access. Use 0 for the alpha component, 1 for the red
+        /// component, 2 for the green component, and 3 for the blue component.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.IndexOutOfRangeException">Thrown when the <paramref name="index"/> is out of the range [0, 3].</exception>
+        /// <exception cref="System.IndexOutOfRangeException"> Thrown when the <paramref name="index"/> is out of the
+        /// range [0, 3].</exception>
         public byte this[int index]
         {
             get
             {
                 switch (index)
                 {
-                case 0:
-                {
-                    return R;
-                }
-                case 1:
-                {
-                    return G;
-                }
-                case 2:
-                {
-                    return B;
-                }
-                case 3:
-                {
-                    return A;
-                }
+                    case 0:
+                        {
+                            return R;
+                        }
+                    case 1:
+                        {
+                            return G;
+                        }
+                    case 2:
+                        {
+                            return B;
+                        }
+                    case 3:
+                        {
+                            return A;
+                        }
                 }
                 throw new IndexOutOfRangeException("Invalid Color32 index!");
             }
@@ -88,30 +90,30 @@ namespace SE
             {
                 switch (index)
                 {
-                case 0:
-                {
-                    R = value;
-                    break;
-                }
-                case 1:
-                {
-                    G = value;
-                    break;
-                }
-                case 2:
-                {
-                    B = value;
-                    break;
-                }
-                case 3:
-                {
-                    A = value;
-                    break;
-                }
-                default:
-                {
-                    throw new IndexOutOfRangeException("Invalid Color32 index!");
-                }
+                    case 0:
+                        {
+                            R = value;
+                            break;
+                        }
+                    case 1:
+                        {
+                            G = value;
+                            break;
+                        }
+                    case 2:
+                        {
+                            B = value;
+                            break;
+                        }
+                    case 3:
+                        {
+                            A = value;
+                            break;
+                        }
+                    default:
+                        {
+                            throw new IndexOutOfRangeException("Invalid Color32 index!");
+                        }
                 }
             }
         }
@@ -139,7 +141,8 @@ namespace SE
         /// <param name="t">Float for combining a and b</param>
         public static Color32 Lerp(Color32 a, Color32 b, float t)
         {
-            return new Color32((byte)(a.R + (b.R - a.R) * t), (byte)(a.G + (b.G - a.G) * t), (byte)(a.B + (b.B - a.B) * t), (byte)(a.A + (b.A - a.A) * t));
+            return new Color32((byte)(a.R + (b.R - a.R) * t), (byte)(a.G + (b.G - a.G) * t), (byte)(a.B + (b.B - a
+                .B) * t), (byte)(a.A + (b.A - a.A) * t));
         }
 
         /// <summary>
@@ -151,7 +154,8 @@ namespace SE
         /// <param name="result">Result</param>
         public static void Lerp(ref Color32 a, ref Color32 b, float t, out Color32 result)
         {
-            result = new Color32((byte)(a.R + (b.R - a.R) * t), (byte)(a.G + (b.G - a.G) * t), (byte)(a.B + (b.B - a.B) * t), (byte)(a.A + (b.A - a.A) * t));
+            result = new Color32((byte)(a.R + (b.R - a.R) * t), (byte)(a.G + (b.G - a.G) * t), (byte)(a.B + (b.B - a
+                .B) * t), (byte)(a.A + (b.A - a.A) * t));
         }
 
         /// <summary>
@@ -229,7 +233,8 @@ namespace SE
         /// </returns>
         public static implicit operator Color32(Color c)
         {
-            return new Color32((byte)(Mathf.Saturate(c.R) * 255f), (byte)(Mathf.Saturate(c.G) * 255f), (byte)(Mathf.Saturate(c.B) * 255f), (byte)(Mathf.Saturate(c.A) * 255f));
+            return new Color32((byte)(Mathf.Saturate(c.R) * 255f), (byte)(Mathf.Saturate(c.G) * 255f), (byte)(Mathf
+                .Saturate(c.B) * 255f), (byte)(Mathf.Saturate(c.A) * 255f));
         }
 
         /// <summary>
@@ -278,7 +283,8 @@ namespace SE
         /// <param name="format"></param>
         public string ToString(string format)
         {
-            return string.Format("RGBA({0}, {1}, {2}, {3})", R.ToString(format), G.ToString(format), B.ToString(format), A.ToString(format));
+            return string.Format("RGBA({0}, {1}, {2}, {3})", R.ToString(format), G.ToString(format), B
+                .ToString(format), A.ToString(format));
         }
     }
 }

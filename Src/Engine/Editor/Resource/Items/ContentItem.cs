@@ -82,11 +82,11 @@ namespace SE.Editor
         /// <summary>The default height.</summary>
         public const int DefaultHeight = DefaultThumbnailSize + 2 * DefaultMarginSize + DefaultTextHeight;
 
-        private ContentFolder _parentFolder;
-        private bool _isMouseDown;
-        private Float2 _mouseDownStartPos;
-        private readonly List<IContentItemOwner> _references = new(4);
-        private SpriteHandle _shadowIcon = SpriteHandle.Invalid;
+        private ContentFolder m_ParentFolder;
+        private bool m_IsMouseDown;
+        private Float2 m_MouseDownStartPos;
+        private readonly List<IContentItemOwner> m_References = new(4);
+        private SpriteHandle m_ShadowIcon = SpriteHandle.Invalid;
 
         /// <summary>Gets the type of the item.</summary>
         public abstract ContentItemType ItemType { get; }
@@ -107,24 +107,24 @@ namespace SE.Editor
         /// <summary>Gets the parent folder.</summary>
         public ContentFolder ParentFolder
         {
-            get => _parentFolder;
+            get => m_ParentFolder;
             set
             {
-                if (_parentFolder == value)
+                if (m_ParentFolder == value)
                 {
                     return;
                 }
 
-                if (_parentFolder != null)
+                if (m_ParentFolder != null)
                 {
-                    _parentFolder.Children.Remove(this);
+                    m_ParentFolder.Children.Remove(this);
                 }
 
-                _parentFolder = value;
+                m_ParentFolder = value;
 
-                if (_parentFolder != null)
+                if (m_ParentFolder != null)
                 {
-                    _parentFolder.Children.Add(this);
+                    m_ParentFolder.Children.Add(this);
                 }
 
                 OnParentFolderChanged();
@@ -169,9 +169,9 @@ namespace SE.Editor
             ShortName = System.IO.Path.GetFileNameWithoutExtension(value);
 
             OnPathChanged();
-            for (int i = 0; i < _references.Count; i++)
+            for (int i = 0; i < m_References.Count; i++)
             {
-                _references[i].OnItemRenamed(this);
+                m_References[i].OnItemRenamed(this);
             }
         }
 
@@ -189,7 +189,7 @@ namespace SE.Editor
             thumbnails.DeletePreview(this);
 
             // Request new one (if need to)
-            if (_references.Count() > 0)
+            if (m_References.Count() > 0)
             {
                 thumbnails.RequestPreview(this);
             }
@@ -246,18 +246,18 @@ namespace SE.Editor
                 switch (viewType)
                 {
                     case ContentViewType.Tiles:
-                    {
-                        float textHeight = DefaultTextHeight * size.X / DefaultWidth;
-                        return new Rectangle(0, size.Y - textHeight, size.X, textHeight);
-                    }
+                        {
+                            float textHeight = DefaultTextHeight * size.X / DefaultWidth;
+                            return new Rectangle(0, size.Y - textHeight, size.X, textHeight);
+                        }
                     case ContentViewType.List:
-                    {
-                        float thumbnailSize = size.Y - 2 * DefaultMarginSize;
-                        float textHeight = Math.Min(size.Y, 24.0f);
-                        return new Rectangle(thumbnailSize + DefaultMarginSize * 2,
-                            (size.Y - textHeight) * 0.5f,
-                            size.X - textHeight - DefaultMarginSize * 3.0f, textHeight);
-                    }
+                        {
+                            float thumbnailSize = size.Y - 2 * DefaultMarginSize;
+                            float textHeight = Math.Min(size.Y, 24.0f);
+                            return new Rectangle(thumbnailSize + DefaultMarginSize * 2,
+                                (size.Y - textHeight) * 0.5f,
+                                size.X - textHeight - DefaultMarginSize * 3.0f, textHeight);
+                        }
                 }
 
                 return Rectangle.Empty;
@@ -289,11 +289,11 @@ namespace SE.Editor
                 const float thumbnailInShadowSize = 50.0f;
                 Rectangle shadowRect = rectangle.MakeExpanded(
                     (DefaultThumbnailSize - thumbnailInShadowSize) * rectangle.Width / DefaultThumbnailSize * 1.3f);
-                if (!_shadowIcon.IsValid)
+                if (!m_ShadowIcon.IsValid)
                 {
-                    _shadowIcon = EditorIcons.AssetShadow128;
+                    m_ShadowIcon = EditorIcons.AssetShadow128;
                 }
-                    Render2D.DrawSprite(_shadowIcon, shadowRect, Color.White);
+                Render2D.DrawSprite(m_ShadowIcon, shadowRect, Color.White);
             }
 
             if (Thumbnail.IsValid)
@@ -307,17 +307,17 @@ namespace SE.Editor
         }
 
         /// <summary>Gets the amount of references to that item.</summary>
-        public int ReferencesCount => _references.Count;
+        public int ReferencesCount => m_References.Count;
 
         /// <summary>Adds the reference to the item.</summary>
         /// <param name="obj">The object.</param>
         public void AddReference(IContentItemOwner obj)
         {
             SE.Debug.Assert(obj != null, "Invalid content item owner.");
-            SE.Debug.Assert(!_references.Contains(obj), "Content item owner already exists.");
-            _references.Add(obj);
+            SE.Debug.Assert(!m_References.Contains(obj), "Content item owner already exists.");
+            m_References.Add(obj);
 
-            if (_references.Count == 1 && !Thumbnail.IsValid)
+            if (m_References.Count == 1 && !Thumbnail.IsValid)
             {
                 RequestThumbnail();
             }
@@ -327,9 +327,9 @@ namespace SE.Editor
         /// <param name="obj">The object.</param>
         public void RemoveReference(IContentItemOwner obj)
         {
-            if (_references.Remove(obj))
+            if (m_References.Remove(obj))
             {
-                if (_references.Count == 0 && Thumbnail.IsValid)
+                if (m_References.Count == 0 && Thumbnail.IsValid)
                 {
                     ReleaseThumbnail();
                 }
@@ -350,9 +350,9 @@ namespace SE.Editor
         /// <summary>Called when content item gets removed (by the user or externally).</summary>
         public virtual void OnDelete()
         {
-            while (_references.Count > 0)
+            while (m_References.Count > 0)
             {
-                IContentItemOwner reference = _references[0];
+                IContentItemOwner reference = m_References[0];
                 reference.OnItemDeleted(this);
                 RemoveReference(reference);
             }
@@ -397,21 +397,70 @@ namespace SE.Editor
             switch (view.ViewType)
             {
                 case ContentViewType.Tiles:
-                {
-                    float thumbnailSize = size.X;
-                    thumbnailRect = new Rectangle(0, 0, thumbnailSize, thumbnailSize);
-                    nameAlignment = TextAlignment.Center;
-
-                    if (this is ContentFolder)
                     {
-                        Rectangle shadowRect = new Rectangle(2, 2, clientRect.Width + 1, clientRect.Height + 1);
-                        Color color = Color.Black.AlphaMultiplied(0.2f);
-                        Render2D.FillRectangle(shadowRect, color);
-                        Render2D.FillRectangle(clientRect, style.Background.RGBMultiplied(1.25f));
+                        float thumbnailSize = size.X;
+                        thumbnailRect = new Rectangle(0, 0, thumbnailSize, thumbnailSize);
+                        nameAlignment = TextAlignment.Center;
 
-                        float accentHeight = 2 * view.ViewScale;
-                        Rectangle barRect = new Rectangle(0, thumbnailRect.Height - accentHeight, clientRect.Width, accentHeight);
-                        Render2D.FillRectangle(barRect, Color.DimGray);
+                        if (this is ContentFolder)
+                        {
+                            Rectangle shadowRect = new Rectangle(2, 2, clientRect.Width + 1, clientRect.Height + 1);
+                            Color color = Color.Black.AlphaMultiplied(0.2f);
+                            Render2D.FillRectangle(shadowRect, color);
+                            Render2D.FillRectangle(clientRect, style.Background.RGBMultiplied(1.25f));
+
+                            float accentHeight = 2 * view.ViewScale;
+                            Rectangle barRect = new Rectangle(0, thumbnailRect.Height - accentHeight, clientRect
+                                .Width, accentHeight);
+                            Render2D.FillRectangle(barRect, Color.DimGray);
+
+                            if (isSelected)
+                            {
+                                Render2D.FillRectangle(clientRect,
+                                    Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
+                            }
+                            else if (IsMouseOver)
+                            {
+                                Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
+                            }
+
+                            DrawThumbnail(thumbnailRect, false);
+                        }
+                        else
+                        {
+                            Rectangle shadowRect = new Rectangle(2, 2, clientRect.Width + 1, clientRect.Height + 1);
+                            Color color = Color.Black.AlphaMultiplied(0.2f);
+                            Render2D.FillRectangle(shadowRect, color);
+                            Render2D.FillRectangle(clientRect, style.Background.RGBMultiplied(1.25f));
+                            Render2D.FillRectangle(TextRectangle, style.LightBackground);
+                            DrawThumbnail(thumbnailRect, false);
+
+                            float accentHeight = 2 * view.ViewScale;
+                            Rectangle barRect = new Rectangle(0, thumbnailRect.Height - accentHeight, clientRect
+                                .Width, accentHeight);
+                            Render2D.FillRectangle(barRect, Color.DimGray);
+
+                            if (isSelected)
+                            {
+                                Render2D.FillRectangle(textRect,
+                                    Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
+                                Render2D.DrawRectangle(clientRect,
+                                    Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground, 1.0f);
+                            }
+                            else if (IsMouseOver)
+                            {
+                                Render2D.FillRectangle(textRect, style.BackgroundHighlighted);
+                                Render2D.DrawRectangle(clientRect, style.BackgroundHighlighted, 1.0f);
+                            }
+                        }
+                        break;
+                    }
+                case ContentViewType.List:
+                    {
+                        float thumbnailSize = size.Y - 2 * DefaultMarginSize;
+                        thumbnailRect = new Rectangle(DefaultMarginSize, DefaultMarginSize, thumbnailSize,
+                            thumbnailSize);
+                        nameAlignment = TextAlignment.Near;
 
                         if (isSelected)
                         {
@@ -423,55 +472,9 @@ namespace SE.Editor
                             Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
                         }
 
-                        DrawThumbnail(thumbnailRect, false);
+                        DrawThumbnail(thumbnailRect);
+                        break;
                     }
-                    else
-                    {
-                        Rectangle shadowRect = new Rectangle(2, 2, clientRect.Width + 1, clientRect.Height + 1);
-                        Color color = Color.Black.AlphaMultiplied(0.2f);
-                        Render2D.FillRectangle(shadowRect, color);
-                        Render2D.FillRectangle(clientRect, style.Background.RGBMultiplied(1.25f));
-                        Render2D.FillRectangle(TextRectangle, style.LightBackground);
-                        DrawThumbnail(thumbnailRect, false);
-
-                        float accentHeight = 2 * view.ViewScale;
-                        Rectangle barRect = new Rectangle(0, thumbnailRect.Height - accentHeight, clientRect.Width, accentHeight);
-                        Render2D.FillRectangle(barRect, Color.DimGray);
-
-                        if (isSelected)
-                        {
-                            Render2D.FillRectangle(textRect,
-                                Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
-                            Render2D.DrawRectangle(clientRect,
-                                Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground, 1.0f);
-                        }
-                        else if (IsMouseOver)
-                        {
-                            Render2D.FillRectangle(textRect, style.BackgroundHighlighted);
-                            Render2D.DrawRectangle(clientRect, style.BackgroundHighlighted, 1.0f);
-                        }
-                    }
-                    break;
-                }
-                case ContentViewType.List:
-                {
-                    float thumbnailSize = size.Y - 2 * DefaultMarginSize;
-                    thumbnailRect = new Rectangle(DefaultMarginSize, DefaultMarginSize, thumbnailSize, thumbnailSize);
-                    nameAlignment = TextAlignment.Near;
-
-                    if (isSelected)
-                    {
-                        Render2D.FillRectangle(clientRect,
-                            Parent.ContainsFocus ? style.BackgroundSelected : style.LightBackground);
-                    }
-                    else if (IsMouseOver)
-                    {
-                        Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
-                    }
-
-                    DrawThumbnail(thumbnailRect);
-                    break;
-                }
             }
 
             Render2D.PushClip(textRect);
@@ -487,17 +490,17 @@ namespace SE.Editor
             Focus();
             if (button == MouseButton.Left)
             {
-                _isMouseDown = true;
-                _mouseDownStartPos = location;
+                m_IsMouseDown = true;
+                m_MouseDownStartPos = location;
             }
             return true;
         }
 
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (button == MouseButton.Left && _isMouseDown)
+            if (button == MouseButton.Left && m_IsMouseDown)
             {
-                _isMouseDown = false;
+                m_IsMouseDown = false;
 
                 // Mirrors the native TypeTryCast<ContentView>(this) expression.
                 ContentView otherItem = (object)this as ContentView;
@@ -523,9 +526,9 @@ namespace SE.Editor
 
         public override void OnMouseMove(Float2 location)
         {
-            if (_isMouseDown && Float2.Distance(_mouseDownStartPos, location) > 10.0f)
+            if (m_IsMouseDown && Float2.Distance(m_MouseDownStartPos, location) > 10.0f)
             {
-                _isMouseDown = false;
+                m_IsMouseDown = false;
                 DoDrag();
             }
         }
@@ -533,9 +536,9 @@ namespace SE.Editor
         /// <inheritdoc />
         public override void OnMouseLeave()
         {
-            if (_isMouseDown)
+            if (m_IsMouseDown)
             {
-                _isMouseDown = false;
+                m_IsMouseDown = false;
                 DoDrag();
             }
 
@@ -567,9 +570,9 @@ namespace SE.Editor
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            while (_references.Count > 0)
+            while (m_References.Count > 0)
             {
-                IContentItemOwner reference = _references[0];
+                IContentItemOwner reference = m_References[0];
                 reference.OnItemDispose(this);
                 RemoveReference(reference);
             }
@@ -614,9 +617,9 @@ namespace SE.Editor
         /// <summary>Called when item gets reimported or reloaded.</summary>
         protected virtual void OnReimport()
         {
-            for (int i = 0; i < _references.Count; i++)
+            for (int i = 0; i < m_References.Count; i++)
             {
-                _references[i].OnItemReimported(this);
+                m_References[i].OnItemReimported(this);
             }
             RefreshThumbnail();
         }

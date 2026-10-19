@@ -34,8 +34,8 @@ namespace SE.Editor
 
     public class ContentFolder : ContentItem
     {
-        private DragItems _dragOverItems;
-        private bool _validDragOver;
+        private DragItems m_DragOverItems;
+        private bool m_ValidDragOver;
 
         /// <summary>Gets the type of the folder.</summary>
         public ContentFolderType FolderType;
@@ -174,7 +174,7 @@ namespace SE.Editor
         {
             base.Draw();
 
-            if (IsDragOver() && _validDragOver)
+            if (IsDragOver() && m_ValidDragOver)
             {
                 Style style = Style.Current;
                 Rectangle bounds = new Rectangle(Float2.Zero, Size);
@@ -190,13 +190,13 @@ namespace SE.Editor
 
             if (data is DragDataFiles && CanHaveAssets)
             {
-                _validDragOver = true;
+                m_ValidDragOver = true;
                 return DragDropEffect.Copy;
             }
-            _dragOverItems ??= new DragItems(ValidateDragItem, Editor.Instance.AssetDatabase.Find);
-            _dragOverItems.OnDragEnter(data);
-            _validDragOver = _dragOverItems.HasValidDrag;
-            return _dragOverItems.Effect;
+            m_DragOverItems ??= new DragItems(ValidateDragItem, Editor.Instance.AssetDatabase.Find);
+            m_DragOverItems.OnDragEnter(data);
+            m_ValidDragOver = m_DragOverItems.HasValidDrag;
+            return m_DragOverItems.Effect;
         }
 
         /// <inheritdoc />
@@ -208,7 +208,7 @@ namespace SE.Editor
             {
                 return DragDropEffect.Copy;
             }
-            return _dragOverItems?.Effect ?? DragDropEffect.None;
+            return m_DragOverItems?.Effect ?? DragDropEffect.None;
         }
 
         /// <inheritdoc />
@@ -221,17 +221,17 @@ namespace SE.Editor
                 Editor.Instance.Importing.Import(files.Files, this);
                 result = DragDropEffect.Copy;
             }
-            else if (_dragOverItems?.HasValidDrag == true)
+            else if (m_DragOverItems?.HasValidDrag == true)
             {
-                Editor.Instance.AssetDatabase.Move(_dragOverItems.Objects, this);
+                Editor.Instance.AssetDatabase.Move(m_DragOverItems.Objects, this);
                 result = DragDropEffect.Move;
             }
 
-            if (_dragOverItems != null)
+            if (m_DragOverItems != null)
             {
-                _dragOverItems.OnDragDrop();
+                m_DragOverItems.OnDragDrop();
             }
-            _validDragOver = false;
+            m_ValidDragOver = false;
 
             return result;
         }
@@ -239,11 +239,11 @@ namespace SE.Editor
         /// <inheritdoc />
         public override void OnDragLeave()
         {
-            if (_dragOverItems != null)
+            if (m_DragOverItems != null)
             {
-                _dragOverItems.OnDragLeave();
+                m_DragOverItems.OnDragLeave();
             }
-            _validDragOver = false;
+            m_ValidDragOver = false;
 
             base.OnDragLeave();
         }

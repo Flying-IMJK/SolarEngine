@@ -133,8 +133,8 @@ namespace SE
         /// <param name="result">When the method completes, contains the closest point between the two objects.</param>
         public static void ClosestPointPointLine(ref Float2 point, ref Float2 p0, ref Float2 p1, out Float2 result)
         {
-            var p = point - p0;
-            var n = p1 - p0;
+            Float2 p = point - p0;
+            Float2 n = p1 - p0;
 
             float length = n.Length;
             if (length < 1e-10)
@@ -203,7 +203,8 @@ namespace SE
         /// <param name="vertex2">The second vertex to test.</param>
         /// <param name="vertex3">The third vertex to test.</param>
         /// <param name="result">When the method completes, contains the closest point between the two objects.</param>
-        public static void ClosestPointPointTriangle(ref Float3 point, ref Float3 vertex1, ref Float3 vertex2, ref Float3 vertex3, out Float3 result)
+        public static void ClosestPointPointTriangle(ref Float3 point, ref Float3 vertex1, ref Float3 vertex2,
+            ref Float3 vertex3, out Float3 result)
         {
             //Source: float-Time Collision Detection by Christer Ericson
             //Reference: Page 136
@@ -316,7 +317,7 @@ namespace SE
         public static void ClosestPointRectanglePoint(ref Rectangle rect, ref Float2 point, out Float2 result)
         {
             Float2 end = rect.Location + rect.Size;
-            Float2.Max(ref point, ref rect.Location, out var temp);
+            Float2.Max(ref point, ref rect.Location, out Float2 temp);
             Float2.Min(ref temp, ref end, out result);
         }
 
@@ -325,7 +326,8 @@ namespace SE
         /// </summary>
         /// <param name="sphere"></param>
         /// <param name="point">The point to test.</param>
-        /// <param name="result">When the method completes, contains the closest point between the two objects; or, if the point is directly in the center of the sphere, contains <see cref="Float3.Zero" />.
+        /// <param name="result"> When the method completes, contains the closest point between the two objects; or, if
+        /// the point is directly in the center of the sphere, contains <see cref="Float3.Zero" /> .
         /// </param>
         public static void ClosestPointSpherePoint(ref BoundingSphere sphere, ref Float3 point, out Float3 result)
         {
@@ -349,13 +351,15 @@ namespace SE
         /// </summary>
         /// <param name="sphere1">The first sphere to test.</param>
         /// <param name="sphere2">The second sphere to test.</param>
-        /// <param name="result">When the method completes, contains the closest point between the two objects; or, if the point is directly in the center of the sphere, contains <see cref="Float3.Zero" />.</param>
+        /// <param name="result"> When the method completes, contains the closest point between the two objects; or, if
+        /// the point is directly in the center of the sphere, contains <see cref="Float3.Zero" /> .</param>
         /// <remarks>
         /// If the two spheres are overlapping, but not directly on top of each other, the closest point
         /// is the 'closest' point of intersection. This can also be considered is the deepest point of
         /// intersection.
         /// </remarks>
-        public static void ClosestPointSphereSphere(ref BoundingSphere sphere1, ref BoundingSphere sphere2, out Float3 result)
+        public static void ClosestPointSphereSphere(ref BoundingSphere sphere1, ref BoundingSphere sphere2,
+            out Float3 result)
         {
             //Source: Jorgy343
             //Reference: None
@@ -400,19 +404,31 @@ namespace SE
 
             float distance = 0f;
             if (point.X < box.Minimum.X)
+            {
                 distance += (box.Minimum.X - point.X) * (box.Minimum.X - point.X);
+            }
             if (point.X > box.Maximum.X)
+            {
                 distance += (point.X - box.Maximum.X) * (point.X - box.Maximum.X);
+            }
 
             if (point.Y < box.Minimum.Y)
+            {
                 distance += (box.Minimum.Y - point.Y) * (box.Minimum.Y - point.Y);
+            }
             if (point.Y > box.Maximum.Y)
+            {
                 distance += (point.Y - box.Maximum.Y) * (point.Y - box.Maximum.Y);
+            }
 
             if (point.Z < box.Minimum.Z)
+            {
                 distance += (box.Minimum.Z - point.Z) * (box.Minimum.Z - point.Z);
+            }
             if (point.Z > box.Maximum.Z)
+            {
                 distance += (point.Z - box.Maximum.Z) * (point.Z - box.Maximum.Z);
+            }
 
             return (float)Math.Sqrt(distance);
         }
@@ -518,10 +534,14 @@ namespace SE
             float b = Float3.Dot(m, ray.Direction);
             float c = Float3.Dot(m, m) - Mathf.Epsilon;
             if ((c > 0f) && (b > 0f))
+            {
                 return false;
+            }
             float discriminant = b * b - c;
             if (discriminant < 0f)
+            {
                 return false;
+            }
             return true;
         }
 
@@ -530,7 +550,8 @@ namespace SE
         /// </summary>
         /// <param name="ray1">The first ray to test.</param>
         /// <param name="ray2">The second ray to test.</param>
-        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Float3.Zero" /> if there was no intersection.</param>
+        /// <param name="point"> When the method completes, contains the point of intersection, or
+        /// <see cref="Float3.Zero" /> if there was no intersection.</param>
         /// <returns>Whether the two objects intersect.</returns>
         /// <remarks>
         /// This method performs a ray vs ray intersection test based on the following formula
@@ -552,13 +573,15 @@ namespace SE
 
             //Lines are parallel.
             if (Mathf.IsZero(denominator))
+            {
                 if (Mathf.NearEqual(ray2.Position.X, ray1.Position.X) &&
-                    Mathf.NearEqual(ray2.Position.Y, ray1.Position.Y) &&
-                    Mathf.NearEqual(ray2.Position.Z, ray1.Position.Z))
+                                    Mathf.NearEqual(ray2.Position.Y, ray1.Position.Y) &&
+                                    Mathf.NearEqual(ray2.Position.Z, ray1.Position.Z))
                 {
                     point = Float3.Zero;
                     return true;
                 }
+            }
 
             denominator *= denominator;
 
@@ -622,7 +645,8 @@ namespace SE
         /// </summary>
         /// <param name="ray">The ray to test.</param>
         /// <param name="plane">The plane to test.</param>
-        /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
+        /// <param name="distance"> When the method completes, contains the distance of the intersection, or 0 if there
+        /// was no intersection.</param>
         /// <returns>Whether the two objects intersect.</returns>
         public static bool RayIntersectsPlane(ref Ray ray, ref Plane plane, out float distance)
         {
@@ -652,7 +676,8 @@ namespace SE
         /// </summary>
         /// <param name="ray">The ray to test.</param>
         /// <param name="plane">The plane to test.</param>
-        /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
+        /// <param name="distance"> When the method completes, contains the distance of the intersection, or 0 if there
+        /// was no intersection.</param>
         /// <returns>Whether the two objects intersect.</returns>
         [Obsolete("Deprecated in 1.4")]
         public static bool RayIntersectsPlane(ref Ray ray, ref Plane plane, out float distance)
@@ -682,7 +707,8 @@ namespace SE
         /// </summary>
         /// <param name="ray">The ray to test.</param>
         /// <param name="plane">The plane to test</param>
-        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Float3.Zero" /> if there was no intersection.</param>
+        /// <param name="point"> When the method completes, contains the point of intersection, or
+        /// <see cref="Float3.Zero" /> if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
         public static bool RayIntersectsPlane(ref Ray ray, ref Plane plane, out Float3 point)
         {
@@ -704,7 +730,8 @@ namespace SE
         /// <param name="vertex1">The first vertex of the triangle to test.</param>
         /// <param name="vertex2">The second vertex of the triangle to test.</param>
         /// <param name="vertex3">The third vertex of the triangle to test.</param>
-        /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
+        /// <param name="distance"> When the method completes, contains the distance of the intersection, or 0 if there
+        /// was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
         /// <remarks>
         /// This method tests if the ray intersects either the front or back of the triangle.
@@ -713,10 +740,12 @@ namespace SE
         /// the ray, no intersection is assumed to have happened. In both cases of assumptions,
         /// this method returns false.
         /// </remarks>
-        public static bool RayIntersectsTriangle(ref Ray ray, ref Float3 vertex1, ref Float3 vertex2, ref Float3 vertex3, out float distance)
+        public static bool RayIntersectsTriangle(ref Ray ray, ref Float3 vertex1, ref Float3 vertex2,
+            ref Float3 vertex3, out float distance)
         {
             //Source: Fast Minimum Storage Ray / Triangle Intersection
-            //Reference: http://www.cs.virginia.edu/~gfx/Courses/2003/ImageSynthesis/papers/Acceleration/Fast%20MinimumStorage%20RayTriangle%20Intersection.pdf
+            //Reference:
+            //http://www.cs.virginia.edu/~gfx/Courses/2003/ImageSynthesis/papers/Acceleration/Fast%20MinimumStorage%20RayTriangle%20Intersection.pdf
 
             //Compute vectors along two edges of the triangle.
             Float3 edge1, edge2;
@@ -740,7 +769,8 @@ namespace SE
             //Compute the determinant.
             float determinant;
             //Dot product of edge1 and the first part of determinant.
-            determinant = edge1.X * directioncrossedge2.X + edge1.Y * directioncrossedge2.Y + edge1.Z * directioncrossedge2.Z;
+            determinant = edge1.X * directioncrossedge2.X + edge1.Y * directioncrossedge2.Y + edge1.Z
+                * directioncrossedge2.Z;
 
             //If the ray is parallel to the triangle plane, there is no collision.
             //This also means that we are not culling, the ray may hit both the
@@ -760,7 +790,8 @@ namespace SE
             distanceVector.Z = ray.Position.Z - vertex1.Z;
 
             float triangleU;
-            triangleU = distanceVector.X * directioncrossedge2.X + distanceVector.Y * directioncrossedge2.Y + distanceVector.Z * directioncrossedge2.Z;
+            triangleU = distanceVector.X * directioncrossedge2.X + distanceVector.Y * directioncrossedge2.Y
+                + distanceVector.Z * directioncrossedge2.Z;
             triangleU *= inversedeterminant;
 
             //Make sure it is inside the triangle.
@@ -777,7 +808,8 @@ namespace SE
             distancecrossedge1.Z = distanceVector.X * edge1.Y - distanceVector.Y * edge1.X;
 
             float triangleV;
-            triangleV = ray.Direction.X * distancecrossedge1.X + ray.Direction.Y * distancecrossedge1.Y + ray.Direction.Z * distancecrossedge1.Z;
+            triangleV = ray.Direction.X * distancecrossedge1.X + ray.Direction.Y * distancecrossedge1.Y + ray
+                .Direction.Z * distancecrossedge1.Z;
             triangleV *= inversedeterminant;
 
             //Make sure it is inside the triangle.
@@ -789,7 +821,8 @@ namespace SE
 
             //Compute the distance along the ray to the triangle.
             float raydistance;
-            raydistance = edge2.X * distancecrossedge1.X + edge2.Y * distancecrossedge1.Y + edge2.Z * distancecrossedge1.Z;
+            raydistance = edge2.X * distancecrossedge1.X + edge2.Y * distancecrossedge1.Y + edge2.Z
+                * distancecrossedge1.Z;
             raydistance *= inversedeterminant;
 
             //Is the triangle behind the ray origin?
@@ -813,7 +846,8 @@ namespace SE
         /// <param name="point">When the method completes, contains the point of intersection,
         /// or <see cref="Float3.Zero" /> if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public static bool RayIntersectsTriangle(ref Ray ray, ref Float3 vertex1, ref Float3 vertex2, ref Float3 vertex3, out Float3 point)
+        public static bool RayIntersectsTriangle(ref Ray ray, ref Float3 vertex1, ref Float3 vertex2,
+            ref Float3 vertex3, out Float3 point)
         {
             if (!RayIntersectsTriangle(ref ray, ref vertex1, ref vertex2, ref vertex3, out float distance))
             {
@@ -829,7 +863,8 @@ namespace SE
         /// </summary>
         /// <param name="ray">The ray to test.</param>
         /// <param name="box">The box to test.</param>
-        /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.
+        /// <param name="distance"> When the method completes, contains the distance of the intersection, or 0 if there
+        /// was no intersection.
         /// </param>
         /// <returns>Whether the two objects intersected.</returns>
         public static bool RayIntersectsBox(ref Ray ray, ref BoundingBox box, out float distance)
@@ -941,7 +976,8 @@ namespace SE
         /// </summary>
         /// <param name="ray">The ray to test.</param>
         /// <param name="box">The box to test.</param>
-        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Float3.Zero" /> if there was no intersection.</param>
+        /// <param name="point"> When the method completes, contains the point of intersection, or
+        /// <see cref="Float3.Zero" /> if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
         public static bool RayIntersectsBox(ref Ray ray, ref BoundingBox box, out Float3 point)
         {
@@ -956,11 +992,13 @@ namespace SE
         }
 
         /// <summary>
-        /// Determines whether there is an intersection between a <see cref="Ray" /> and a <see cref="BoundingSphere" />.
+        /// Determines whether there is an intersection between a <see cref="Ray" /> and a <see cref="BoundingSphere" />
+        /// .
         /// </summary>
         /// <param name="ray">The ray to test.</param>
         /// <param name="sphere">The sphere to test.</param>
-        /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
+        /// <param name="distance"> When the method completes, contains the distance of the intersection, or 0 if there
+        /// was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
         public static bool RayIntersectsSphere(ref Ray ray, ref BoundingSphere sphere, out float distance)
         {
@@ -989,17 +1027,21 @@ namespace SE
             distance = -b - (float)Math.Sqrt(discriminant);
 
             if (distance < 0f)
+            {
                 distance = 0f;
+            }
 
             return true;
         }
 
         /// <summary>
-        /// Determines whether there is an intersection between a <see cref="Ray" /> and a <see cref="BoundingSphere" />.
+        /// Determines whether there is an intersection between a <see cref="Ray" /> and a <see cref="BoundingSphere" />
+        /// .
         /// </summary>
         /// <param name="ray">The ray to test.</param>
         /// <param name="sphere">The sphere to test.</param>
-        /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Float3.Zero" /> if there was no intersection.</param>
+        /// <param name="point"> When the method completes, contains the point of intersection, or
+        /// <see cref="Float3.Zero" /> if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
         public static bool RayIntersectsSphere(ref Ray ray, ref BoundingSphere sphere, out Float3 point)
         {
@@ -1025,10 +1067,14 @@ namespace SE
             distance += plane.D;
 
             if (distance > 0f)
+            {
                 return PlaneIntersectionType.Front;
+            }
 
             if (distance < 0f)
+            {
                 return PlaneIntersectionType.Back;
+            }
 
             return PlaneIntersectionType.Intersecting;
         }
@@ -1048,7 +1094,9 @@ namespace SE
             Float3.Dot(ref direction, ref direction, out float denominator);
 
             if (Mathf.IsZero(denominator))
+            {
                 return false;
+            }
 
             return true;
         }
@@ -1058,7 +1106,8 @@ namespace SE
         /// </summary>
         /// <param name="plane1">The first plane to test.</param>
         /// <param name="plane2">The second plane to test.</param>
-        /// <param name="line">When the method completes, contains the line of intersection as a <see cref="Ray" />, or a zero ray if there was no intersection.</param>
+        /// <param name="line"> When the method completes, contains the line of intersection as a <see cref="Ray" /> ,
+        /// or a zero ray if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
         /// <remarks>
         /// Although a ray is set to have an origin, the ray returned by this method is really
@@ -1103,7 +1152,8 @@ namespace SE
         /// <param name="vertex2">The second vertex of the triangle to test.</param>
         /// <param name="vertex3">The third vertex of the triangle to test.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public static PlaneIntersectionType PlaneIntersectsTriangle(ref Plane plane, ref Float3 vertex1, ref Float3 vertex2, ref Float3 vertex3)
+        public static PlaneIntersectionType PlaneIntersectsTriangle(ref Plane plane, ref Float3 vertex1,
+            ref Float3 vertex2, ref Float3 vertex3)
         {
             //Source: float-Time Collision Detection by Christer Ericson
             //Reference: Page 207
@@ -1112,11 +1162,17 @@ namespace SE
             PlaneIntersectionType test2 = PlaneIntersectsPoint(ref plane, ref vertex2);
             PlaneIntersectionType test3 = PlaneIntersectsPoint(ref plane, ref vertex3);
 
-            if ((test1 == PlaneIntersectionType.Front) && (test2 == PlaneIntersectionType.Front) && (test3 == PlaneIntersectionType.Front))
+            if ((test1 == PlaneIntersectionType.Front) && (test2 == PlaneIntersectionType.Front) && (test3
+                == PlaneIntersectionType.Front))
+            {
                 return PlaneIntersectionType.Front;
+            }
 
-            if ((test1 == PlaneIntersectionType.Back) && (test2 == PlaneIntersectionType.Back) && (test3 == PlaneIntersectionType.Back))
+            if ((test1 == PlaneIntersectionType.Back) && (test2 == PlaneIntersectionType.Back) && (test3
+                == PlaneIntersectionType.Back))
+            {
                 return PlaneIntersectionType.Back;
+            }
 
             return PlaneIntersectionType.Intersecting;
         }
@@ -1145,18 +1201,23 @@ namespace SE
             Float3.Dot(ref plane.Normal, ref max, out float distance);
 
             if (distance + plane.D > 0.0f)
+            {
                 return PlaneIntersectionType.Front;
+            }
 
             distance = Float3.Dot(plane.Normal, min);
 
             if (distance + plane.D < 0.0f)
+            {
                 return PlaneIntersectionType.Back;
+            }
 
             return PlaneIntersectionType.Intersecting;
         }
 
         /// <summary>
-        /// Determines whether there is an intersection between a <see cref="Plane" /> and a <see cref="BoundingSphere" />.
+        /// Determines whether there is an intersection between a <see cref="Plane" /> and a
+        /// <see cref="BoundingSphere" /> .
         /// </summary>
         /// <param name="plane">The plane to test.</param>
         /// <param name="sphere">The sphere to test.</param>
@@ -1170,10 +1231,14 @@ namespace SE
             distance += plane.D;
 
             if (distance > sphere.Radius)
+            {
                 return PlaneIntersectionType.Front;
+            }
 
             if (distance < -sphere.Radius)
+            {
                 return PlaneIntersectionType.Back;
+            }
 
             return PlaneIntersectionType.Intersecting;
         }
@@ -1203,7 +1268,8 @@ namespace SE
         */
 
         /// <summary>
-        /// Determines whether there is an intersection between a <see cref="BoundingBox" /> and a <see cref="BoundingBox" />.
+        /// Determines whether there is an intersection between a <see cref="BoundingBox" /> and a
+        /// <see cref="BoundingBox" /> .
         /// </summary>
         /// <param name="box1">The first box to test.</param>
         /// <param name="box2">The second box to test.</param>
@@ -1211,19 +1277,26 @@ namespace SE
         public static bool BoxIntersectsBox(ref BoundingBox box1, ref BoundingBox box2)
         {
             if ((box1.Minimum.X > box2.Maximum.X) || (box2.Minimum.X > box1.Maximum.X))
+            {
                 return false;
+            }
 
             if ((box1.Minimum.Y > box2.Maximum.Y) || (box2.Minimum.Y > box1.Maximum.Y))
+            {
                 return false;
+            }
 
             if ((box1.Minimum.Z > box2.Maximum.Z) || (box2.Minimum.Z > box1.Maximum.Z))
+            {
                 return false;
+            }
 
             return true;
         }
 
         /// <summary>
-        /// Determines whether there is an intersection between a <see cref="BoundingBox" /> and a <see cref="BoundingSphere" />.
+        /// Determines whether there is an intersection between a <see cref="BoundingBox" /> and a
+        /// <see cref="BoundingSphere" /> .
         /// </summary>
         /// <param name="box">The box to test.</param>
         /// <param name="sphere">The sphere to test.</param>
@@ -1246,7 +1319,8 @@ namespace SE
         /// <param name="vertex2">The second vertex of the triangle to test.</param>
         /// <param name="vertex3">The third vertex of the triangle to test.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        public static bool SphereIntersectsTriangle(ref BoundingSphere sphere, ref Float3 vertex1, ref Float3 vertex2, ref Float3 vertex3)
+        public static bool SphereIntersectsTriangle(ref BoundingSphere sphere, ref Float3 vertex1,
+            ref Float3 vertex2, ref Float3 vertex3)
         {
             //Source: float-Time Collision Detection by Christer Ericson
             //Reference: Page 167
@@ -1283,7 +1357,9 @@ namespace SE
             if ((box.Minimum.X <= point.X) && (box.Maximum.X >= point.X) &&
                 (box.Minimum.Y <= point.Y) && (box.Maximum.Y >= point.Y) &&
                 (box.Minimum.Z <= point.Z) && (box.Maximum.Z >= point.Z))
+            {
                 return ContainmentType.Contains;
+            }
 
             return ContainmentType.Disjoint;
         }
@@ -1322,16 +1398,26 @@ namespace SE
         public static ContainmentType BoxContainsBox(ref BoundingBox box1, ref BoundingBox box2)
         {
             if ((box1.Maximum.X < box2.Minimum.X) || (box1.Minimum.X > box2.Maximum.X))
+            {
                 return ContainmentType.Disjoint;
+            }
 
             if ((box1.Maximum.Y < box2.Minimum.Y) || (box1.Minimum.Y > box2.Maximum.Y))
+            {
                 return ContainmentType.Disjoint;
+            }
 
             if ((box1.Maximum.Z < box2.Minimum.Z) || (box1.Minimum.Z > box2.Maximum.Z))
+            {
                 return ContainmentType.Disjoint;
+            }
 
-            if ((box1.Minimum.X <= box2.Minimum.X) && (box2.Maximum.X <= box1.Maximum.X) && (box1.Minimum.Y <= box2.Minimum.Y) && (box2.Maximum.Y <= box1.Maximum.Y) && (box1.Minimum.Z <= box2.Minimum.Z) && (box2.Maximum.Z <= box1.Maximum.Z))
+            if ((box1.Minimum.X <= box2.Minimum.X) && (box2.Maximum.X <= box1.Maximum.X) && (box1.Minimum.Y <= box2
+                .Minimum.Y) && (box2.Maximum.Y <= box1.Maximum.Y) && (box1.Minimum.Z <= box2.Minimum.Z) && (box2
+                    .Maximum.Z <= box1.Maximum.Z))
+            {
                 return ContainmentType.Contains;
+            }
 
             return ContainmentType.Intersects;
         }
@@ -1348,10 +1434,19 @@ namespace SE
             float distance = Float3.DistanceSquared(ref sphere.Center, ref vector);
 
             if (distance > sphere.Radius * sphere.Radius)
+            {
                 return ContainmentType.Disjoint;
+            }
 
-            if ((box.Minimum.X + sphere.Radius <= sphere.Center.X) && (sphere.Center.X <= box.Maximum.X - sphere.Radius) && (box.Maximum.X - box.Minimum.X > sphere.Radius) && (box.Minimum.Y + sphere.Radius <= sphere.Center.Y) && (sphere.Center.Y <= box.Maximum.Y - sphere.Radius) && (box.Maximum.Y - box.Minimum.Y > sphere.Radius) && (box.Minimum.Z + sphere.Radius <= sphere.Center.Z) && (sphere.Center.Z <= box.Maximum.Z - sphere.Radius) && (box.Maximum.Z - box.Minimum.Z > sphere.Radius))
+            if ((box.Minimum.X + sphere.Radius <= sphere.Center.X) && (sphere.Center.X <= box.Maximum.X - sphere
+                .Radius) && (box.Maximum.X - box.Minimum.X > sphere.Radius) && (box.Minimum.Y + sphere.Radius
+                    <= sphere.Center.Y) && (sphere.Center.Y <= box.Maximum.Y - sphere.Radius) && (box.Maximum.Y
+                        - box.Minimum.Y > sphere.Radius) && (box.Minimum.Z + sphere.Radius <= sphere.Center.Z)
+                            && (sphere.Center.Z <= box.Maximum.Z - sphere.Radius) && (box.Maximum.Z - box.Minimum.Z
+                                > sphere.Radius))
+            {
                 return ContainmentType.Contains;
+            }
 
             return ContainmentType.Intersects;
         }
@@ -1365,7 +1460,9 @@ namespace SE
         public static ContainmentType SphereContainsPoint(ref BoundingSphere sphere, ref Float3 point)
         {
             if (Float3.DistanceSquared(ref point, ref sphere.Center) <= sphere.Radius * sphere.Radius)
+            {
                 return ContainmentType.Contains;
+            }
 
             return ContainmentType.Disjoint;
         }
@@ -1378,7 +1475,8 @@ namespace SE
         /// <param name="vertex2">The second vertex of the triangle to test.</param>
         /// <param name="vertex3">The third vertex of the triangle to test.</param>
         /// <returns>The type of containment the two objects have.</returns>
-        public static ContainmentType SphereContainsTriangle(ref BoundingSphere sphere, ref Float3 vertex1, ref Float3 vertex2, ref Float3 vertex3)
+        public static ContainmentType SphereContainsTriangle(ref BoundingSphere sphere, ref Float3 vertex1,
+            ref Float3 vertex2, ref Float3 vertex3)
         {
             //Source: Jorgy343
             //Reference: None
@@ -1387,11 +1485,16 @@ namespace SE
             ContainmentType test2 = SphereContainsPoint(ref sphere, ref vertex2);
             ContainmentType test3 = SphereContainsPoint(ref sphere, ref vertex3);
 
-            if ((test1 == ContainmentType.Contains) && (test2 == ContainmentType.Contains) && (test3 == ContainmentType.Contains))
+            if ((test1 == ContainmentType.Contains) && (test2 == ContainmentType.Contains) && (test3
+                == ContainmentType.Contains))
+            {
                 return ContainmentType.Contains;
+            }
 
             if (SphereIntersectsTriangle(ref sphere, ref vertex1, ref vertex2, ref vertex3))
+            {
                 return ContainmentType.Intersects;
+            }
 
             return ContainmentType.Disjoint;
         }
@@ -1407,7 +1510,9 @@ namespace SE
             Float3 vector;
 
             if (!BoxIntersectsSphere(ref box, ref sphere))
+            {
                 return ContainmentType.Disjoint;
+            }
 
             float radiusSquared = sphere.Radius * sphere.Radius;
 
@@ -1415,49 +1520,65 @@ namespace SE
             vector.Y = sphere.Center.Y - box.Maximum.Y;
             vector.Z = sphere.Center.Z - box.Maximum.Z;
             if (vector.LengthSquared > radiusSquared)
+            {
                 return ContainmentType.Intersects;
+            }
 
             vector.X = sphere.Center.X - box.Maximum.X;
             vector.Y = sphere.Center.Y - box.Maximum.Y;
             vector.Z = sphere.Center.Z - box.Maximum.Z;
             if (vector.LengthSquared > radiusSquared)
+            {
                 return ContainmentType.Intersects;
+            }
 
             vector.X = sphere.Center.X - box.Maximum.X;
             vector.Y = sphere.Center.Y - box.Minimum.Y;
             vector.Z = sphere.Center.Z - box.Maximum.Z;
             if (vector.LengthSquared > radiusSquared)
+            {
                 return ContainmentType.Intersects;
+            }
 
             vector.X = sphere.Center.X - box.Minimum.X;
             vector.Y = sphere.Center.Y - box.Minimum.Y;
             vector.Z = sphere.Center.Z - box.Maximum.Z;
             if (vector.LengthSquared > radiusSquared)
+            {
                 return ContainmentType.Intersects;
+            }
 
             vector.X = sphere.Center.X - box.Minimum.X;
             vector.Y = sphere.Center.Y - box.Maximum.Y;
             vector.Z = sphere.Center.Z - box.Minimum.Z;
             if (vector.LengthSquared > radiusSquared)
+            {
                 return ContainmentType.Intersects;
+            }
 
             vector.X = sphere.Center.X - box.Maximum.X;
             vector.Y = sphere.Center.Y - box.Maximum.Y;
             vector.Z = sphere.Center.Z - box.Minimum.Z;
             if (vector.LengthSquared > radiusSquared)
+            {
                 return ContainmentType.Intersects;
+            }
 
             vector.X = sphere.Center.X - box.Maximum.X;
             vector.Y = sphere.Center.Y - box.Minimum.Y;
             vector.Z = sphere.Center.Z - box.Minimum.Z;
             if (vector.LengthSquared > radiusSquared)
+            {
                 return ContainmentType.Intersects;
+            }
 
             vector.X = sphere.Center.X - box.Minimum.X;
             vector.Y = sphere.Center.Y - box.Minimum.Y;
             vector.Z = sphere.Center.Z - box.Minimum.Z;
             if (vector.LengthSquared > radiusSquared)
+            {
                 return ContainmentType.Intersects;
+            }
 
             return ContainmentType.Contains;
         }
@@ -1473,10 +1594,14 @@ namespace SE
             float distance = Float3.Distance(ref sphere1.Center, ref sphere2.Center);
 
             if (sphere1.Radius + sphere2.Radius < distance)
+            {
                 return ContainmentType.Disjoint;
+            }
 
             if (sphere1.Radius - sphere2.Radius < distance)
+            {
                 return ContainmentType.Intersects;
+            }
 
             return ContainmentType.Contains;
         }
@@ -1494,7 +1619,9 @@ namespace SE
             float q = (l1p1.Y - l2p1.Y) * (l2p2.X - l2p1.X) - (l1p1.X - l2p1.X) * (l2p2.Y - l2p1.Y);
             float d = (l1p2.X - l1p1.X) * (l2p2.Y - l2p1.Y) - (l1p2.Y - l1p1.Y) * (l2p2.X - l2p1.X);
             if (Mathf.IsZero(d))
+            {
                 return false;
+            }
             float r = q / d;
             q = (l1p1.Y - l2p1.Y) * (l1p2.X - l1p1.X) - (l1p1.X - l2p1.X) * (l1p2.Y - l1p1.Y);
             float s = q / d;
@@ -1511,9 +1638,9 @@ namespace SE
         public static bool LineIntersectsRect(ref Float2 p1, ref Float2 p2, ref Rectangle rect)
         {
             // TODO: optimize it
-            var pA = new Float2(rect.Right, rect.Y);
-            var pB = new Float2(rect.Right, rect.Bottom);
-            var pC = new Float2(rect.X, rect.Bottom);
+            Float2 pA = new Float2(rect.Right, rect.Y);
+            Float2 pB = new Float2(rect.Right, rect.Bottom);
+            Float2 pC = new Float2(rect.X, rect.Bottom);
             return LineIntersectsLine(ref p1, ref p2, ref rect.Location, ref pA) ||
                    LineIntersectsLine(ref p1, ref p2, ref pA, ref pB) ||
                    LineIntersectsLine(ref p1, ref p2, ref pB, ref pC) ||
@@ -1531,12 +1658,14 @@ namespace SE
         /// <returns><c>true</c> if point is inside the triangle; otherwise, <c>false</c>.</returns>
         public static bool IsPointInTriangle(ref Float2 point, ref Float2 a, ref Float2 b, ref Float2 c)
         {
-            var an = a - point;
-            var bn = b - point;
-            var cn = c - point;
+            Float2 an = a - point;
+            Float2 bn = b - point;
+            Float2 cn = c - point;
             bool orientation = Float2.Cross(an, bn) > 0;
             if (Float2.Cross(bn, cn) > 0 != orientation)
+            {
                 return false;
+            }
             return Float2.Cross(cn, an) > 0 == orientation;
         }
     }

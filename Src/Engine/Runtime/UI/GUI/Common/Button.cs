@@ -26,7 +26,8 @@ namespace SE.GUI
         public string Text = string.Empty;
 
         /// <summary>
-        /// Gets or sets the custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.
+        /// Gets or sets the custom material used to render the text. It must has domain set to GUI and have a public
+        /// texture parameter named Font used to sample font atlas texture with font characters data.
         /// </summary>
         public MaterialBase TextMaterial;
 
@@ -232,7 +233,8 @@ namespace SE.GUI
             }
 
             // Draw text
-            Render2D.RenderText(Font, TextMaterial, Text, clientRect, textColor, TextAlignment.Center, TextAlignment.Center);
+            Render2D.RenderText(Font, TextMaterial, Text, clientRect, textColor, TextAlignment.Center, TextAlignment
+                .Center);
         }
 
         /// <inheritdoc />

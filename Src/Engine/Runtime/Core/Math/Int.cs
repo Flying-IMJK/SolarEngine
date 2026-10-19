@@ -16,7 +16,7 @@ namespace SE
 #endif
     public partial struct Int2 : IEquatable<Int2>, IFormattable
     {
-        private static readonly string s_FormatString = "X:{0} Y:{1}";
+        private static readonly string FormatString = "X:{0} Y:{1}";
 
         /// <summary>
         /// The size of the <see cref="Int2" /> type, in bytes.
@@ -97,16 +97,23 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Int2" /> struct.
         /// </summary>
-        /// <param name="values">The values to assign to the X and Y components of the vector. This must be an array with two elements.</param>
+        /// <param name="values"> The values to assign to the X and Y components of the vector. This must be an array
+        /// with two elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="values" /> contains more or less than two elements.
+        /// <exception cref="ArgumentOutOfRangeException"> Thrown when <paramref name="values" /> contains more or less
+        /// than two elements.
         /// </exception>
         public Int2(int[] values)
         {
             if (values == null)
+            {
                 throw new ArgumentNullException(nameof(values));
+            }
             if (values.Length != 2)
-                throw new ArgumentOutOfRangeException(nameof(values), "There must be two and only two input values for Int2.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(values),
+                    "There must be two and only two input values for Int2.");
+            }
             X = values[0];
             Y = values[1];
         }
@@ -140,17 +147,19 @@ namespace SE
         /// Gets or sets the component at the specified index.
         /// </summary>
         /// <value>The value of the X or Y component, depending on the index.</value>
-        /// <param name="index">The index of the component to access. Use 0 for the X component and 1 for the Y component.</param>
+        /// <param name="index"> The index of the component to access. Use 0 for the X component and 1 for the Y
+        /// component.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="index" /> is out of the range [0, 1].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"> Thrown when the <paramref name="index" /> is out of
+        /// the range [0, 1].</exception>
         public int this[int index]
         {
             get
             {
                 switch (index)
                 {
-                case 0: return X;
-                case 1: return Y;
+                    case 0: return X;
+                    case 1: return Y;
                 }
                 throw new ArgumentOutOfRangeException(nameof(index), "Indices for Int2 run from 0 to 1, inclusive.");
             }
@@ -158,13 +167,15 @@ namespace SE
             {
                 switch (index)
                 {
-                case 0:
-                    X = value;
-                    break;
-                case 1:
-                    Y = value;
-                    break;
-                default: throw new ArgumentOutOfRangeException(nameof(index), "Indices for Int2 run from 0 to 1, inclusive.");
+                    case 0:
+                        X = value;
+                        break;
+                    case 1:
+                        Y = value;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(index),
+                        "Indices for Int2 run from 0 to 1, inclusive.");
                 }
             }
         }
@@ -173,14 +184,16 @@ namespace SE
         /// Calculates the length of the vector.
         /// </summary>
         /// <returns>The length of the vector.</returns>
-        /// <remarks><see cref="Int2.LengthSquared" /> may be preferred when only the relative length is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Int2.LengthSquared" /> may be preferred when only the relative length is needed and
+        /// speed is of the essence.</remarks>
         public float Length => (float)Math.Sqrt(X * X + Y * Y);
 
         /// <summary>
         /// Calculates the squared length of the vector.
         /// </summary>
         /// <returns>The squared length of the vector.</returns>
-        /// <remarks>This method may be preferred to <see cref="Int2.Length" /> when only a relative length is needed and speed is of the essence.</remarks>
+        /// <remarks> This method may be preferred to <see cref="Int2.Length" /> when only a relative length is needed
+        /// and speed is of the essence.</remarks>
         public int LengthSquared => X * X + Y * Y;
 
         /// <summary>
@@ -449,7 +462,8 @@ namespace SE
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <param name="result">When the method completes, contains the distance between the two vectors.</param>
-        /// <remarks><see cref="Int2.DistanceSquared(ref Int2, ref Int2, out int)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Int2.DistanceSquared(ref Int2, ref Int2, out int)" /> may be preferred when only the
+        /// relative distance is needed and speed is of the essence.</remarks>
         public static void Distance(ref Int2 value1, ref Int2 value2, out float result)
         {
             int x = value1.X - value2.X;
@@ -463,7 +477,8 @@ namespace SE
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <returns>The distance between the two vectors.</returns>
-        /// <remarks><see cref="Int2.DistanceSquared(Int2, Int2)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Int2.DistanceSquared(Int2, Int2)" /> may be preferred when only the relative distance
+        /// is needed and speed is of the essence.</remarks>
         public static float Distance(Int2 value1, Int2 value2)
         {
             int x = value1.X - value2.X;
@@ -476,7 +491,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector</param>
-        /// <param name="result">When the method completes, contains the squared distance between the two vectors.</param>
+        /// <param name="result"> When the method completes, contains the squared distance between the two
+        /// vectors.</param>
         /// <remarks>
         /// Distance squared is the value before taking the square root.
         /// Distance squared can often be used in place of distance if relative comparisons are being made.
@@ -541,7 +557,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">When the method completes, contains an new vector composed of the largest components of the source vectors.</param>
+        /// <param name="result"> When the method completes, contains an new vector composed of the largest components
+        /// of the source vectors.</param>
         public static void Max(ref Int2 left, ref Int2 right, out Int2 result)
         {
             result = default;
@@ -566,7 +583,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">When the method completes, contains an new vector composed of the smallest components of the source vectors.</param>
+        /// <param name="result"> When the method completes, contains an new vector composed of the smallest components
+        /// of the source vectors.</param>
         public static void Min(ref Int2 left, ref Int2 right, out Int2 result)
         {
             result = default;
@@ -787,7 +805,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has the same value as <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Int2 left, Int2 right)
         {
@@ -799,7 +818,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has a different value than <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Int2 left, Int2 right)
         {
@@ -862,7 +882,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X, Y);
+            return string.Format(CultureInfo.CurrentCulture, FormatString, X, Y);
         }
 
         /// <summary>
@@ -873,8 +893,11 @@ namespace SE
         public string ToString(string format)
         {
             if (format == null)
+            {
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture));
+            }
+            return string.Format(CultureInfo.CurrentCulture, FormatString, X.ToString(format, CultureInfo
+                .CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture));
         }
 
         /// <summary>
@@ -884,7 +907,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, s_FormatString, X, Y);
+            return string.Format(formatProvider, FormatString, X, Y);
         }
 
         /// <summary>
@@ -896,14 +919,18 @@ namespace SE
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
+            {
                 return ToString(formatProvider);
-            return string.Format(formatProvider, s_FormatString, X.ToString(format, formatProvider), Y.ToString(format, formatProvider));
+            }
+            return string.Format(formatProvider, FormatString, X.ToString(format, formatProvider), Y
+                .ToString(format, formatProvider));
         }
 
         /// <summary>
         /// Returns a hash code for this instance.
         /// </summary>
-        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
+        /// <returns> A hash code for this instance, suitable for use in hashing algorithms and data structures like a
+        /// hash table.</returns>
         public override int GetHashCode()
         {
             unchecked
@@ -916,7 +943,8 @@ namespace SE
         /// Determines whether the specified <see cref="Int2" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Int2" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Int2" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Int2" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Int2 other)
         {
@@ -935,7 +963,8 @@ namespace SE
         /// Determines whether the specified <see cref="Int2" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Int2" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Int2" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Int2" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Int2 other)
         {
@@ -946,14 +975,15 @@ namespace SE
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise,
+        /// <c> false</c>.</returns>
         public override bool Equals(object value)
         {
             return value is Int2 other && Equals(ref other);
         }
     }
 
-        /// <summary>
+    /// <summary>
     /// Represents a three dimensional mathematical vector (signed integers).
     /// </summary>
     [Serializable]
@@ -962,7 +992,7 @@ namespace SE
 #endif
     public partial struct Int3 : IEquatable<Int3>, IFormattable
     {
-        private static readonly string s_FormatString = "X:{0} Y:{1} Z:{2}";
+        private static readonly string FormatString = "X:{0} Y:{1} Z:{2}";
 
         /// <summary>
         /// The size of the <see cref="Int3" /> type, in bytes.
@@ -1043,7 +1073,8 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Int3" /> struct.
         /// </summary>
-        /// <param name="value">A vector containing the values with which to initialize the X, Y and Z components.</param>
+        /// <param name="value"> A vector containing the values with which to initialize the X, Y and Z
+        /// components.</param>
         public Int3(Int4 value)
         {
             X = value.X;
@@ -1054,16 +1085,23 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Int3" /> struct.
         /// </summary>
-        /// <param name="values">The values to assign to the X, Y, and Z components of the vector. This must be an array with three elements.
+        /// <param name="values"> The values to assign to the X, Y, and Z components of the vector. This must be an
+        /// array with three elements.
         /// </param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="values" /> contains more or less than three elements.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"> Thrown when <paramref name="values" /> contains more or less
+        /// than three elements.</exception>
         public Int3(int[] values)
         {
             if (values == null)
+            {
                 throw new ArgumentNullException(nameof(values));
+            }
             if (values.Length != 3)
-                throw new ArgumentOutOfRangeException(nameof(values), "There must be three and only three input values for Int3.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(values),
+                    "There must be three and only three input values for Int3.");
+            }
             X = values[0];
             Y = values[1];
             Z = values[2];
@@ -1098,18 +1136,20 @@ namespace SE
         /// Gets or sets the component at the specified index.
         /// </summary>
         /// <value>The value of the X, Y, or Z component, depending on the index.</value>
-        /// <param name="index">The index of the component to access. Use 0 for the X component, 1 for the Y component, and 2 for the Z component.</param>
+        /// <param name="index"> The index of the component to access. Use 0 for the X component, 1 for the Y component,
+        /// and 2 for the Z component.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="index" /> is out of the range [0, 2].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"> Thrown when the <paramref name="index" /> is out of
+        /// the range [0, 2].</exception>
         public int this[int index]
         {
             get
             {
                 switch (index)
                 {
-                case 0: return X;
-                case 1: return Y;
-                case 2: return Z;
+                    case 0: return X;
+                    case 1: return Y;
+                    case 2: return Z;
                 }
 
                 throw new ArgumentOutOfRangeException(nameof(index), "Indices for Int3 run from 0 to 2, inclusive.");
@@ -1118,16 +1158,18 @@ namespace SE
             {
                 switch (index)
                 {
-                case 0:
-                    X = value;
-                    break;
-                case 1:
-                    Y = value;
-                    break;
-                case 2:
-                    Z = value;
-                    break;
-                default: throw new ArgumentOutOfRangeException(nameof(index), "Indices for Int3 run from 0 to 2, inclusive.");
+                    case 0:
+                        X = value;
+                        break;
+                    case 1:
+                        Y = value;
+                        break;
+                    case 2:
+                        Z = value;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(index),
+                        "Indices for Int3 run from 0 to 2, inclusive.");
                 }
             }
         }
@@ -1136,14 +1178,16 @@ namespace SE
         /// Calculates the length of the vector.
         /// </summary>
         /// <returns>The length of the vector.</returns>
-        /// <remarks><see cref="Int3.LengthSquared" /> may be preferred when only the relative length is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Int3.LengthSquared" /> may be preferred when only the relative length is needed and
+        /// speed is of the essence.</remarks>
         public float Length => (float)Math.Sqrt(X * X + Y * Y + Z * Z);
 
         /// <summary>
         /// Calculates the squared length of the vector.
         /// </summary>
         /// <returns>The squared length of the vector.</returns>
-        /// <remarks>This method may be preferred to <see cref="Int3.Length" /> when only a relative length is needed and speed is of the essence.</remarks>
+        /// <remarks> This method may be preferred to <see cref="Int3.Length" /> when only a relative length is needed
+        /// and speed is of the essence.</remarks>
         public int LengthSquared => X * X + Y * Y + Z * Z;
 
         /// <summary>
@@ -1438,7 +1482,8 @@ namespace SE
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <param name="result">When the method completes, contains the distance between the two vectors.</param>
-        /// <remarks><see cref="Int3.DistanceSquared(ref Int3, ref Int3, out int)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Int3.DistanceSquared(ref Int3, ref Int3, out int)" /> may be preferred when only the
+        /// relative distance is needed and speed is of the essence.</remarks>
         public static void Distance(ref Int3 value1, ref Int3 value2, out float result)
         {
             int x = value1.X - value2.X;
@@ -1453,7 +1498,8 @@ namespace SE
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <returns>The distance between the two vectors.</returns>
-        /// <remarks><see cref="Int3.DistanceSquared(Int3, Int3)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Int3.DistanceSquared(Int3, Int3)" /> may be preferred when only the relative distance
+        /// is needed and speed is of the essence.</remarks>
         public static float Distance(Int3 value1, Int3 value2)
         {
             int x = value1.X - value2.X;
@@ -1467,7 +1513,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
-        /// <param name="result">When the method completes, contains the squared distance between the two vectors.</param>
+        /// <param name="result"> When the method completes, contains the squared distance between the two
+        /// vectors.</param>
         /// <remarks>
         /// Distance squared is the value before taking the square root.
         /// Distance squared can often be used in place of distance if relative comparisons are being made.
@@ -1511,7 +1558,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
-        /// <param name="result">When the method completes, contains the distance between the two vectors in the XZ plane.</param>
+        /// <param name="result"> When the method completes, contains the distance between the two vectors in the XZ
+        /// plane.</param>
         public static void Distance2D(ref Int2 value1, ref Int2 value2, out float result)
         {
             int x = value1.X - value2.X;
@@ -1537,7 +1585,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector</param>
-        /// <param name="result">When the method completes, contains the squared distance between the two vectors in the XZ plane.</param>
+        /// <param name="result"> When the method completes, contains the squared distance between the two vectors in
+        /// the XZ plane.</param>
         public static void Distance2DSquared(ref Int2 value1, ref Int2 value2, out int result)
         {
             int x = value1.X - value2.X;
@@ -1564,7 +1613,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">When the method completes, contains an new vector composed of the largest components of the source vectors.
+        /// <param name="result"> When the method completes, contains an new vector composed of the largest components
+        /// of the source vectors.
         /// </param>
         public static void Max(ref Int3 left, ref Int3 right, out Int3 result)
         {
@@ -1591,7 +1641,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">When the method completes, contains an new vector composed of the smallest components of the source vectors.</param>
+        /// <param name="result"> When the method completes, contains an new vector composed of the smallest components
+        /// of the source vectors.</param>
         public static void Min(ref Int3 left, ref Int3 right, out Int3 result)
         {
             result = default;
@@ -1813,7 +1864,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has the same value as <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Int3 left, Int3 right)
         {
@@ -1825,7 +1877,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has a different value than <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Int3 left, Int3 right)
         {
@@ -1888,7 +1941,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X, Y, Z);
+            return string.Format(CultureInfo.CurrentCulture, FormatString, X, Y, Z);
         }
 
         /// <summary>
@@ -1899,8 +1952,12 @@ namespace SE
         public string ToString(string format)
         {
             if (format == null)
+            {
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture), Z.ToString(format, CultureInfo.CurrentCulture));
+            }
+            return string.Format(CultureInfo.CurrentCulture, FormatString, X.ToString(format, CultureInfo
+                .CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture), Z.ToString(format, CultureInfo
+                    .CurrentCulture));
         }
 
         /// <summary>
@@ -1910,7 +1967,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, s_FormatString, X, Y, Z);
+            return string.Format(formatProvider, FormatString, X, Y, Z);
         }
 
         /// <summary>
@@ -1922,14 +1979,18 @@ namespace SE
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
+            {
                 return ToString(formatProvider);
-            return string.Format(formatProvider, s_FormatString, X.ToString(format, formatProvider), Y.ToString(format, formatProvider), Z.ToString(format, formatProvider));
+            }
+            return string.Format(formatProvider, FormatString, X.ToString(format, formatProvider), Y
+                .ToString(format, formatProvider), Z.ToString(format, formatProvider));
         }
 
         /// <summary>
         /// Returns a hash code for this instance.
         /// </summary>
-        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
+        /// <returns> A hash code for this instance, suitable for use in hashing algorithms and data structures like a
+        /// hash table.</returns>
         public override int GetHashCode()
         {
             unchecked
@@ -1945,7 +2006,8 @@ namespace SE
         /// Determines whether the specified <see cref="Int3" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Int3" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Int3" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Int3" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Int3 other)
         {
@@ -1956,7 +2018,8 @@ namespace SE
         /// Determines whether the specified <see cref="Int3" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Int3" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Int3" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Int3" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Int3 other)
         {
@@ -1967,14 +2030,15 @@ namespace SE
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise,
+        /// <c> false</c>.</returns>
         public override bool Equals(object value)
         {
             return value is Int3 other && Equals(ref other);
         }
     }
 
-            /// <summary>
+    /// <summary>
     /// Represents a four dimensional mathematical vector (signed integers).
     /// </summary>
     [Serializable]
@@ -1983,7 +2047,7 @@ namespace SE
 #endif
     public partial struct Int4 : IEquatable<Int4>, IFormattable
     {
-        private static readonly string s_FormatString = "X:{0} Y:{1} Z:{2} W:{3}";
+        private static readonly string FormatString = "X:{0} Y:{1} Z:{2} W:{3}";
 
         /// <summary>
         /// The size of the <see cref="Int4" /> type, in bytes.
@@ -2060,7 +2124,8 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Int4" /> struct.
         /// </summary>
-        /// <param name="value">A vector containing the values with which to initialize the X, Y, and Z components.</param>
+        /// <param name="value"> A vector containing the values with which to initialize the X, Y, and Z
+        /// components.</param>
         /// <param name="w">Initial value for the W component of the vector.</param>
         public Int4(Int3 value, int w)
         {
@@ -2087,15 +2152,22 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Int4" /> struct.
         /// </summary>
-        /// <param name="values">The values to assign to the X, Y, Z, and W components of the vector. This must be an array with four elements.</param>
+        /// <param name="values"> The values to assign to the X, Y, Z, and W components of the vector. This must be an
+        /// array with four elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="values" /> contains more or less than four elements.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"> Thrown when <paramref name="values" /> contains more or less
+        /// than four elements.</exception>
         public Int4(int[] values)
         {
             if (values == null)
+            {
                 throw new ArgumentNullException(nameof(values));
+            }
             if (values.Length != 4)
-                throw new ArgumentOutOfRangeException(nameof(values), "There must be four and only four input values for Int4.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(values),
+                    "There must be four and only four input values for Int4.");
+            }
             X = values[0];
             Y = values[1];
             Z = values[2];
@@ -2131,19 +2203,21 @@ namespace SE
         /// Gets or sets the component at the specified index.
         /// </summary>
         /// <value>The value of the X, Y, Z, or W component, depending on the index.</value>
-        /// <param name="index">The index of the component to access. Use 0 for the X component, 1 for the Y component, 2 for the Z component, and 3 for the W component.</param>
+        /// <param name="index"> The index of the component to access. Use 0 for the X component, 1 for the Y component,
+        /// 2 for the Z component, and 3 for the W component.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="index" /> is out of the range [0,3].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"> Thrown when the <paramref name="index" /> is out of
+        /// the range [0,3].</exception>
         public int this[int index]
         {
             get
             {
                 switch (index)
                 {
-                case 0: return X;
-                case 1: return Y;
-                case 2: return Z;
-                case 3: return W;
+                    case 0: return X;
+                    case 1: return Y;
+                    case 2: return Z;
+                    case 3: return W;
                 }
                 throw new ArgumentOutOfRangeException(nameof(index), "Indices for Int4 run from 0 to 3, inclusive.");
             }
@@ -2151,19 +2225,21 @@ namespace SE
             {
                 switch (index)
                 {
-                case 0:
-                    X = value;
-                    break;
-                case 1:
-                    Y = value;
-                    break;
-                case 2:
-                    Z = value;
-                    break;
-                case 3:
-                    W = value;
-                    break;
-                default: throw new ArgumentOutOfRangeException(nameof(index), "Indices for Int4 run from 0 to 3, inclusive.");
+                    case 0:
+                        X = value;
+                        break;
+                    case 1:
+                        Y = value;
+                        break;
+                    case 2:
+                        Z = value;
+                        break;
+                    case 3:
+                        W = value;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(index),
+                        "Indices for Int4 run from 0 to 3, inclusive.");
                 }
             }
         }
@@ -2441,7 +2517,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">When the method completes, contains an new vector composed of the largest components of the source vectors.</param>
+        /// <param name="result"> When the method completes, contains an new vector composed of the largest components
+        /// of the source vectors.</param>
         public static void Max(ref Int4 left, ref Int4 right, out Int4 result)
         {
             result = default;
@@ -2468,7 +2545,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">When the method completes, contains an new vector composed of the smallest components of the source vectors.</param>
+        /// <param name="result"> When the method completes, contains an new vector composed of the smallest components
+        /// of the source vectors.</param>
         public static void Min(ref Int4 left, ref Int4 right, out Int4 result)
         {
             result = default;
@@ -2617,7 +2695,8 @@ namespace SE
         /// <returns>The remained vector.</returns>
         public static Int4 operator %(Int4 value, float scale)
         {
-            return new Int4((int)(value.X % scale), (int)(value.Y % scale), (int)(value.Z % scale), (int)(value.W % scale));
+            return new Int4((int)(value.X % scale), (int)(value.Y % scale), (int)(value.Z % scale), (int)(value.W
+                % scale));
         }
 
         /// <summary>
@@ -2628,7 +2707,8 @@ namespace SE
         /// <returns>The remained vector.</returns>
         public static Int4 operator %(float value, Int4 scale)
         {
-            return new Int4((int)(value % scale.X), (int)(value % scale.Y), (int)(value % scale.Z), (int)(value % scale.W));
+            return new Int4((int)(value % scale.X), (int)(value % scale.Y), (int)(value % scale.Z), (int)(value
+                % scale.W));
         }
 
         /// <summary>
@@ -2691,7 +2771,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has the same value as <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Int4 left, Int4 right)
         {
@@ -2703,7 +2784,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has a different value than <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Int4 left, Int4 right)
         {
@@ -2766,7 +2848,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X, Y, Z, W);
+            return string.Format(CultureInfo.CurrentCulture, FormatString, X, Y, Z, W);
         }
 
         /// <summary>
@@ -2777,8 +2859,12 @@ namespace SE
         public string ToString(string format)
         {
             if (format == null)
+            {
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture), Z.ToString(format, CultureInfo.CurrentCulture), W.ToString(format, CultureInfo.CurrentCulture));
+            }
+            return string.Format(CultureInfo.CurrentCulture, FormatString, X.ToString(format, CultureInfo
+                .CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture), Z.ToString(format, CultureInfo
+                    .CurrentCulture), W.ToString(format, CultureInfo.CurrentCulture));
         }
 
         /// <summary>
@@ -2788,7 +2874,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, s_FormatString, X, Y, Z, W);
+            return string.Format(formatProvider, FormatString, X, Y, Z, W);
         }
 
         /// <summary>
@@ -2800,14 +2886,19 @@ namespace SE
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
+            {
                 return ToString(formatProvider);
-            return string.Format(formatProvider, "X:{0} Y:{1} Z:{2} W:{3}", X.ToString(format, formatProvider), Y.ToString(format, formatProvider), Z.ToString(format, formatProvider), W.ToString(format, formatProvider));
+            }
+            return string.Format(formatProvider, "X:{0} Y:{1} Z:{2} W:{3}", X.ToString(format, formatProvider), Y
+                .ToString(format, formatProvider), Z.ToString(format, formatProvider), W.ToString(format,
+                    formatProvider));
         }
 
         /// <summary>
         /// Returns a hash code for this instance.
         /// </summary>
-        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
+        /// <returns> A hash code for this instance, suitable for use in hashing algorithms and data structures like a
+        /// hash table.</returns>
         public override int GetHashCode()
         {
             unchecked
@@ -2824,7 +2915,8 @@ namespace SE
         /// Determines whether the specified <see cref="Int4" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Int4" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Int4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Int4" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         public bool Equals(ref Int4 other)
         {
             return other.X == X && other.Y == Y && other.Z == Z && other.W == W;
@@ -2834,7 +2926,8 @@ namespace SE
         /// Determines whether the specified <see cref="Int4" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Int4" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Int4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Int4" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Int4 other)
         {
@@ -2845,7 +2938,8 @@ namespace SE
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise,
+        /// <c> false</c>.</returns>
         public override bool Equals(object value)
         {
             return value is Int4 other && Equals(ref other);

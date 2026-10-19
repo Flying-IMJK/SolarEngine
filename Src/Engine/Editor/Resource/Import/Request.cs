@@ -23,7 +23,8 @@ namespace SE.Editor
         public bool IsInBuilt;
 
         /// <summary>
-        /// Flag used to skip showing import settings dialog to used. Can be used for importing assets from code by plugins.
+        /// Flag used to skip showing import settings dialog to used. Can be used for importing assets from code by
+        /// plugins.
         /// </summary>
         public bool SkipSettingsDialog;
 

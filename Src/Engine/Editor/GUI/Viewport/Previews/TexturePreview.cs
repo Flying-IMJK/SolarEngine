@@ -305,7 +305,7 @@ namespace SE.Editor.GUI
     /// <seealso cref="TexturePreviewBase" />
     public class SimpleSpriteAtlasPreview : TexturePreviewBase
     {
-        private SpriteAtlas _asset;
+        private SpriteAtlas m_Asset;
 
         /// <summary>
         /// Gets or sets the asset to preview.
@@ -314,13 +314,13 @@ namespace SE.Editor.GUI
         {
             get
             {
-                return _asset;
+                return m_Asset;
             }
             set
             {
-                if (_asset != value)
+                if (m_Asset != value)
                 {
-                    _asset = value;
+                    m_Asset = value;
                     UpdateTextureRect();
                 }
             }
@@ -334,7 +334,7 @@ namespace SE.Editor.GUI
         /// <inheritdoc />
         protected override void CalculateTextureRect(ref Rectangle rect)
         {
-            CalculateTextureRect(_asset != null ? _asset.Size() : new Float2(100), Size, ref rect);
+            CalculateTextureRect(m_Asset != null ? m_Asset.Size() : new Float2(100), Size, ref rect);
         }
 
         /// <inheritdoc />
@@ -344,9 +344,9 @@ namespace SE.Editor.GUI
             Render2D.FillRectangle(rect, SE.Color.Gray);
 
             // Check if has loaded asset
-            if (_asset != null && _asset.IsLoaded())
+            if (m_Asset != null && m_Asset.IsLoaded())
             {
-                Render2D.DrawTexture(_asset, rect, Color);
+                Render2D.DrawTexture(m_Asset, rect, Color);
             }
         }
     }

@@ -23,7 +23,9 @@ namespace SE.Editor.SceneGraph
             set
             {
                 if (ParentNode != null)
+                {
                     ParentNode.Transform = value;
+                }
             }
         }
 
@@ -36,7 +38,9 @@ namespace SE.Editor.SceneGraph
         public override void Dispose()
         {
             if (ParentNode is ActorGraphNode parentActorNode)
+            {
                 parentActorNode.ActorChildNodes.Remove(this);
+            }
 
             base.Dispose();
         }
@@ -47,7 +51,7 @@ namespace SE.Editor.SceneGraph
     /// </summary>
     public abstract class ActorChildNode<T> : ActorChildNode where T : ActorGraphNode
     {
-        protected T? Node;
+        protected T Node;
 
         protected ActorChildNode(T node, Guid id, int index)
             : base(node, id, index)

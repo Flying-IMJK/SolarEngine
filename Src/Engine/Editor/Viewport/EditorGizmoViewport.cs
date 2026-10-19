@@ -8,7 +8,7 @@ namespace SE.Editor
     /// </summary>
     public class EditorGizmoViewport : EditorViewport
     {
-        private RootGraphNode SceneGraphRoot;
+        private RootGraphNode m_SceneGraphRoot;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EditorGizmoViewport"/> class.
@@ -19,7 +19,7 @@ namespace SE.Editor
             : base(task, new FPSCamera(), true)
         {
             // Undo = undo;
-            SceneGraphRoot = sceneGraphRoot;
+            m_SceneGraphRoot = sceneGraphRoot;
             // Gizmos = new GizmosCollection(this);
             // SetUpdate(_update, OnUpdate);
         }

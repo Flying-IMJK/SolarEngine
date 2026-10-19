@@ -23,13 +23,14 @@ namespace SE
                 return Array.Empty<FontLineCache>();
             }
 
-            var nativeLines = new FontLineCacheMarshaller.FontLineCacheInternal[count];
+            FontLineCacheMarshaller.FontLineCacheInternal[] nativeLines =
+                new FontLineCacheMarshaller.FontLineCacheInternal[count];
             fixed (FontLineCacheMarshaller.FontLineCacheInternal* output = nativeLines)
             {
                 Internal_ProcessTextLines(__unmanagedPtr, text, layout, output, count);
             }
 
-            var result = new FontLineCache[count];
+            FontLineCache[] result = new FontLineCache[count];
             for (int i = 0; i < count; i++)
             {
                 result[i] = FontLineCacheMarshaller.ConvertToManaged(nativeLines[i]);

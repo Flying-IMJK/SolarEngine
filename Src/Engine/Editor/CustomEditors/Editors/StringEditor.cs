@@ -6,10 +6,10 @@ namespace SE.Editor
     [CustomEditor(typeof(string)), DefaultEditor]
     public sealed class StringEditor : CustomEditor
     {
-        private TextBox _textBox = null!;
-        private string _watermarkText = string.Empty;
-        private Color _watermarkColor;
-        private Color _defaultWatermarkColor;
+        private TextBox m_TextBox = null!;
+        private string m_WatermarkText = string.Empty;
+        private Color m_WatermarkColor;
+        private Color m_DefaultWatermarkColor;
 
         public override DisplayStyle Style => DisplayStyle.Inline;
 
@@ -17,22 +17,22 @@ namespace SE.Editor
         {
             object[] attributes = Values.GetAttributes();
             bool isMultiline = attributes.Any(x => x is MultilineTextAttribute);
-            _textBox = new TextBox(isMultiline, 0, 0)
+            m_TextBox = new TextBox(isMultiline, 0, 0)
             {
                 Height = isMultiline ? TextBox.DefaultHeight * 4 : TextBox.DefaultHeight,
                 Parent = layout.ContainerControl,
             };
-            _watermarkColor = _defaultWatermarkColor = _textBox.WatermarkTextColor;
+            m_WatermarkColor = m_DefaultWatermarkColor = m_TextBox.WatermarkTextColor;
             if (attributes.OfType<WatermarkAttribute>().FirstOrDefault() is { } watermark)
             {
-                _watermarkText = watermark.WatermarkText;
-                _watermarkColor = watermark.WatermarkColor > 0
+                m_WatermarkText = watermark.WatermarkText;
+                m_WatermarkColor = watermark.WatermarkColor > 0
                     ? Color.FromRGB(watermark.WatermarkColor)
                     : SE.GUI.Style.Current.ForegroundDisabled;
-                _textBox.WatermarkText = _watermarkText;
-                _textBox.WatermarkTextColor = _watermarkColor;
+                m_TextBox.WatermarkText = m_WatermarkText;
+                m_TextBox.WatermarkTextColor = m_WatermarkColor;
             }
-            _textBox.EditEnd += () => SetValue(_textBox.Text);
+            m_TextBox.EditEnd += () => SetValue(m_TextBox.Text);
         }
 
         public override void Refresh()
@@ -40,15 +40,15 @@ namespace SE.Editor
             base.Refresh();
             if (HasDifferentValues)
             {
-                _textBox.Text = string.Empty;
-                _textBox.WatermarkTextColor = _defaultWatermarkColor;
-                _textBox.WatermarkText = "Different values";
+                m_TextBox.Text = string.Empty;
+                m_TextBox.WatermarkTextColor = m_DefaultWatermarkColor;
+                m_TextBox.WatermarkText = "Different values";
             }
             else
             {
-                _textBox.Text = (string?)Values[0] ?? string.Empty;
-                _textBox.WatermarkTextColor = _watermarkColor;
-                _textBox.WatermarkText = _watermarkText;
+                m_TextBox.Text = (string)Values[0] ?? string.Empty;
+                m_TextBox.WatermarkTextColor = m_WatermarkColor;
+                m_TextBox.WatermarkText = m_WatermarkText;
             }
         }
     }

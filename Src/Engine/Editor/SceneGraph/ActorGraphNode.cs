@@ -9,55 +9,60 @@ namespace SE.Editor.SceneGraph
     /// </summary>
     public class ActorGraphNode : ScenesGraphNode
     {
-        private SE.Actor? m_Actor;
+        private SE.Actor m_Actor;
         private readonly ActorTreeNode m_TreeNode;
         private bool m_IsTreeNodeLinked;
 
         public ActorGraphNode(SceneGraphFactory factory, SE.Actor actor)
-            : this(factory, actor, actor?.SceneObjectId ?? throw new ArgumentNullException(nameof(actor)), new ActorTreeNode())
+            : this(factory, actor, actor?.SceneObjectId ?? throw new ArgumentNullException(nameof(actor)),
+                new ActorTreeNode())
         {
         }
 
-        internal ActorGraphNode(SceneGraphFactory factory, SE.Actor? actor, Guid id)
+        internal ActorGraphNode(SceneGraphFactory factory, SE.Actor actor, Guid id)
             : this(factory, actor, id, new ActorTreeNode())
         {
         }
 
-        protected ActorGraphNode(SceneGraphFactory factory, SE.Actor? actor, Guid id, ActorTreeNode treeNode)
+        protected ActorGraphNode(SceneGraphFactory factory, SE.Actor actor, Guid id, ActorTreeNode treeNode)
             : base(factory, id)
         {
             m_Actor = actor;
             m_TreeNode = treeNode ?? throw new ArgumentNullException(nameof(treeNode));
         }
 
-        public SE.Actor? Actor => m_Actor;
+        public SE.Actor Actor => m_Actor;
         public ActorTreeNode TreeNode => m_TreeNode;
         public List<ActorChildNode> ActorChildNodes { get; } = new();
 
         public override string Name => m_Actor?.Name ?? string.Empty;
 
-        public override SceneGraphNode? ParentScene
+        public override SceneGraphNode ParentScene
         {
             get
             {
-                SE.Scene? scene = m_Actor?.Scene;
+                SE.Scene scene = m_Actor?.Scene;
                 return scene != null ? Factory.FindNode(scene.SceneObjectId) as SceneGraphNode : null;
             }
         }
 
-        public ActorGraphNode? Find(SE.Actor actor)
+        public ActorGraphNode Find(SE.Actor actor)
         {
             ArgumentNullException.ThrowIfNull(actor);
             if (ReferenceEquals(m_Actor, actor) || m_Actor?.SceneObjectId == actor.SceneObjectId)
+            {
                 return this;
+            }
 
             foreach (ScenesGraphNode child in ChildNodes)
             {
                 if (child is ActorGraphNode actorNode)
                 {
-                    ActorGraphNode? result = actorNode.Find(actor);
+                    ActorGraphNode result = actorNode.Find(actor);
                     if (result != null)
+                    {
                         return result;
+                    }
                 }
             }
 
@@ -76,11 +81,13 @@ namespace SE.Editor.SceneGraph
         {
             ActorChildNode[] childNodes = ActorChildNodes.ToArray();
             foreach (ActorChildNode child in childNodes)
+            {
                 child.Dispose();
+            }
             ActorChildNodes.Clear();
         }
 
-        public ActorGraphNode? FindChildActor(SE.Actor actor)
+        public ActorGraphNode FindChildActor(SE.Actor actor)
         {
             ArgumentNullException.ThrowIfNull(actor);
             foreach (ScenesGraphNode child in ChildNodes)
@@ -95,7 +102,7 @@ namespace SE.Editor.SceneGraph
             return null;
         }
 
-        public override SE.Object? GetEditableObject()
+        public override SE.Object GetEditableObject()
         {
             return m_Actor;
         }
@@ -103,7 +110,9 @@ namespace SE.Editor.SceneGraph
         public void LinkTreeNode()
         {
             if (m_IsTreeNodeLinked)
+            {
                 return;
+            }
 
             m_IsTreeNodeLinked = true;
             m_TreeNode.LinkNode(this);
@@ -123,7 +132,9 @@ namespace SE.Editor.SceneGraph
         public override void Dispose()
         {
             if (IsDisposed)
+            {
                 return;
+            }
 
             m_TreeNode.Parent = null;
 
@@ -135,7 +146,9 @@ namespace SE.Editor.SceneGraph
         public override void OnDispose()
         {
             if (IsDisposed)
+            {
                 return;
+            }
 
             ActorChildNodes.Clear();
             m_Actor = null;

@@ -7,7 +7,6 @@
     <RollForward>latestMajor</RollForward>
     <AssemblyName>SEEditorCSharp</AssemblyName>
     <RootNamespace>SE</RootNamespace>
-    <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DisableRuntimeMarshalling>true</DisableRuntimeMarshalling>
     <Optimize>false</Optimize>

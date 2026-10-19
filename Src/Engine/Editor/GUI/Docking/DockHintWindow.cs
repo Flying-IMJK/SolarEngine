@@ -22,7 +22,7 @@ namespace SE.Editor.GUI
         {
             m_ToMove = toMove ?? throw new ArgumentNullException(nameof(toMove));
             TargetState = DockState.Float;
-            SE.Window? host = toMove.Window?.Window;
+            SE.Window host = toMove.Window?.Window;
             if (host == null)
             {
                 throw new InvalidOperationException("Floating dock panel has no host window.");
@@ -65,9 +65,9 @@ namespace SE.Editor.GUI
             Proxy.Show();
         }
 
-        public static DockHintWindow? Active { get; private set; }
+        public static DockHintWindow Active { get; private set; }
         public FloatWindowDockPanel ToMove => m_ToMove;
-        public DockPanel? TargetPanel { get; private set; }
+        public DockPanel TargetPanel { get; private set; }
         public DockState TargetState { get; private set; }
         public Rectangle PreviewBounds => m_WindowRect;
         public bool IsDisposed { get; private set; }
@@ -92,7 +92,7 @@ namespace SE.Editor.GUI
 
             toMove.ShowFloating();
             Float2 mouseScreen = SE.Platform.MousePosition;
-            FloatWindowDockPanel? floating = toMove.ParentDockPanel as FloatWindowDockPanel;
+            FloatWindowDockPanel floating = toMove.ParentDockPanel as FloatWindowDockPanel;
             if (floating == null)
             {
                 throw new InvalidOperationException("The window did not create a floating dock panel.");
@@ -111,11 +111,15 @@ namespace SE.Editor.GUI
             {
                 DockState.DockFill => new Rectangle(rect.X, rect.Y + DockPanel.DefaultHeaderHeight,
                     rect.Width, Math.Max(0.0f, rect.Height - DockPanel.DefaultHeaderHeight)),
-                DockState.DockTop => new Rectangle(rect.X, rect.Y, rect.Width, rect.Height * DockPanel.DefaultSplitterValue),
-                DockState.DockBottom => new Rectangle(rect.X, rect.Y + rect.Height * (1.0f - DockPanel.DefaultSplitterValue),
+                DockState.DockTop => new Rectangle(rect.X, rect.Y, rect.Width, rect.Height * DockPanel
+                    .DefaultSplitterValue),
+                DockState.DockBottom => new Rectangle(rect.X, rect.Y + rect.Height * (1.0f - DockPanel
+                    .DefaultSplitterValue),
                     rect.Width, rect.Height * DockPanel.DefaultSplitterValue),
-                DockState.DockLeft => new Rectangle(rect.X, rect.Y, rect.Width * DockPanel.DefaultSplitterValue, rect.Height),
-                DockState.DockRight => new Rectangle(rect.X + rect.Width * (1.0f - DockPanel.DefaultSplitterValue), rect.Y,
+                DockState.DockLeft => new Rectangle(rect.X, rect.Y, rect.Width * DockPanel.DefaultSplitterValue,
+                    rect.Height),
+                DockState.DockRight => new Rectangle(rect.X + rect.Width * (1.0f - DockPanel.DefaultSplitterValue),
+                    rect.Y,
                     rect.Width * DockPanel.DefaultSplitterValue, rect.Height),
                 _ => rect,
             };
@@ -135,11 +139,15 @@ namespace SE.Editor.GUI
                 m_DockRect = TargetPanel.DockAreaBounds;
                 float hintSize = Proxy.HintWindowsSize * (TargetPanel.Root?.GetDpiScale() ?? 1.0f);
                 Float2 center = m_DockRect.Location + m_DockRect.Size * 0.5f;
-                m_UpperRect = new Rectangle(center.X - hintSize * 0.5f, m_DockRect.Y + BorderMargin, hintSize, hintSize);
-                m_BottomRect = new Rectangle(center.X - hintSize * 0.5f, m_DockRect.Bottom - hintSize - BorderMargin, hintSize, hintSize);
+                m_UpperRect = new Rectangle(center.X - hintSize * 0.5f, m_DockRect.Y + BorderMargin, hintSize,
+                    hintSize);
+                m_BottomRect = new Rectangle(center.X - hintSize * 0.5f, m_DockRect.Bottom - hintSize
+                    - BorderMargin, hintSize, hintSize);
                 m_LeftRect = new Rectangle(m_DockRect.X + BorderMargin, center.Y - hintSize * 0.5f, hintSize, hintSize);
-                m_RightRect = new Rectangle(m_DockRect.Right - hintSize - BorderMargin, center.Y - hintSize * 0.5f, hintSize, hintSize);
-                m_CenterRect = new Rectangle(center.X - hintSize * 0.5f, center.Y - hintSize * 0.5f, hintSize, hintSize);
+                m_RightRect = new Rectangle(m_DockRect.Right - hintSize - BorderMargin, center.Y - hintSize * 0.5f,
+                    hintSize, hintSize);
+                m_CenterRect = new Rectangle(center.X - hintSize * 0.5f, center.Y - hintSize * 0.5f, hintSize,
+                    hintSize);
 
                 if (m_ToMove.ChildPanelsCount == 0)
                 {
@@ -192,7 +200,7 @@ namespace SE.Editor.GUI
         }
         public void OnLostFocus() => Dispose(true);
 
-        public void SetTarget(DockPanel? panel, DockState state)
+        public void SetTarget(DockPanel panel, DockState state)
         {
             TargetPanel = panel;
             TargetState = state;
@@ -227,7 +235,7 @@ namespace SE.Editor.GUI
                 }
                 else
                 {
-                    DockWindow? selected = m_ToMove.SelectedTab;
+                    DockWindow selected = m_ToMove.SelectedTab;
                     DockWindow first = m_ToMove.GetTab(0);
                     first.Show(TargetState, TargetPanel);
                     while (m_ToMove.TabsCount > 0)
@@ -251,7 +259,7 @@ namespace SE.Editor.GUI
 
             TargetPanel = null;
             TargetState = DockState.Unknown;
-            if (Active == this)  
+            if (Active == this)
             {
                 Active = null;
             }
@@ -267,23 +275,23 @@ namespace SE.Editor.GUI
 
         public static class Proxy
         {
-            private static SE.Window? s_Window;
-            private static SE.Window? s_Left;
-            private static SE.Window? s_Right;
-            private static SE.Window? s_Up;
-            private static SE.Window? s_Down;
-            private static SE.Window? s_Center;
+            private static SE.Window s_Window;
+            private static SE.Window s_Left;
+            private static SE.Window s_Right;
+            private static SE.Window s_Up;
+            private static SE.Window s_Down;
+            private static SE.Window s_Center;
 
             public const float HintWindowsSize = 32.0f;
             public static bool IsInitialized { get; private set; }
             public static Float2 Size { get; private set; }
             public static Rectangle PreviewBounds { get; private set; }
-            public static SE.Window? Window => s_Window;
-            public static SE.Window? Left => s_Left;
-            public static SE.Window? Right => s_Right;
-            public static SE.Window? Up => s_Up;
-            public static SE.Window? Down => s_Down;
-            public static SE.Window? Center => s_Center;
+            public static SE.Window Window => s_Window;
+            public static SE.Window Left => s_Left;
+            public static SE.Window Right => s_Right;
+            public static SE.Window Up => s_Up;
+            public static SE.Window Down => s_Down;
+            public static SE.Window Center => s_Center;
 
             public static void InitHitProxy()
             {
@@ -399,7 +407,7 @@ namespace SE.Editor.GUI
                 return window;
             }
 
-            private static void SetHint(SE.Window? window, Rectangle bounds, bool visible)
+            private static void SetHint(SE.Window window, Rectangle bounds, bool visible)
             {
                 if (window == null)
                 {
@@ -417,7 +425,7 @@ namespace SE.Editor.GUI
                 }
             }
 
-            private static void CloseProxy(ref SE.Window? window)
+            private static void CloseProxy(ref SE.Window window)
             {
                 if (window == null)
                 {

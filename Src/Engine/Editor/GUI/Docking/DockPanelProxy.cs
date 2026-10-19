@@ -57,7 +57,7 @@ namespace SE.Editor.GUI
             RootControl window = Root;
             bool containsFocus = ContainsFocus && ((WindowRootControl)window).Window.IsFocused;
             Rectangle headerRect = GetHeaderRectangle();
-            int tabsCount = _panel.TabsCount;
+            int tabsCount = m_Panel.TabsCount;
 
             if (tabsCount > 0)
             {
@@ -70,7 +70,7 @@ namespace SE.Editor.GUI
             // Check if has only one window docked
             if (tabsCount == 1)
             {
-                DockWindow tab = _panel.GetTab(0);
+                DockWindow tab = m_Panel.GetTab(0);
 
                 string tabTitle = tab.Title;
                 Float2 tabTitleSize = style.FontMedium.MeasureText(tabTitle, TextLayoutOptions.Default);
@@ -85,7 +85,8 @@ namespace SE.Editor.GUI
                 bool isMouseOver = headerRect.Contains(MousePosition);
                 // A quiet surface and two thin edges give the active tab depth in both palettes.
                 Render2D.FillRectangle(tabRect, containsFocus ? style.BackgroundSelected : style.BackgroundNormal);
-                Render2D.FillRectangle(new Rectangle(tabRect.Left, tabRect.Top, tabRect.Width, 1), style.BorderHighlighted);
+                Render2D.FillRectangle(new Rectangle(tabRect.Left, tabRect.Top, tabRect.Width, 1), style
+                    .BorderHighlighted);
                 Render2D.FillRectangle(
                     new Rectangle(tabRect.Left, tabRect.Bottom - 2, tabRect.Width, 2),
                     containsFocus ? style.BorderSelected : style.BorderNormal);
@@ -135,7 +136,7 @@ namespace SE.Editor.GUI
                 for (int i = 0; i < tabsCount; i++)
                 {
                     // Cache data
-                    DockWindow tab = _panel.GetTab(i);
+                    DockWindow tab = m_Panel.GetTab(i);
                     Color tabColor = Color.Black;
                     Float2 titleSize = tab.TitleSize;
                     float iconWidth = tab.Icon.IsValid
@@ -146,7 +147,7 @@ namespace SE.Editor.GUI
                         DockPanel.DefaultTextMargin + DockPanel.DefaultTextMargin + iconWidth;
                     Rectangle tabRect = new Rectangle(x, 0, width, DockPanel.DefaultHeaderHeight);
                     bool isMouseOver = tabRect.Contains(MousePosition);
-                    bool isSelected = _panel.SelectedTab == tab;
+                    bool isSelected = m_Panel.SelectedTab == tab;
 
                     // Check if tab is selected
                     if (isSelected)
@@ -273,17 +274,17 @@ namespace SE.Editor.GUI
         /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            bool IsMouseDownOverCross;
-            MouseDownWindow = GetTabAtPos(location, out IsMouseDownOverCross);
+            bool isMouseDownOverCross;
+            MouseDownWindow = GetTabAtPos(location, out isMouseDownOverCross);
 
             // Check buttons
             if (button == MouseButton.Left)
             {
                 // Cache data
                 IsMouseLeftButtonDown = true;
-                if (!IsMouseDownOverCross && MouseDownWindow != null)
+                if (!isMouseDownOverCross && MouseDownWindow != null)
                 {
-                    _panel.SelectTab(MouseDownWindow);
+                    m_Panel.SelectTab(MouseDownWindow);
                 }
             }
             else if (button == MouseButton.Right)
@@ -292,7 +293,7 @@ namespace SE.Editor.GUI
                 IsMouseRightButtonDown = true;
                 if (MouseDownWindow != null)
                 {
-                    _panel.SelectTab(MouseDownWindow, false);
+                    m_Panel.SelectTab(MouseDownWindow, false);
                 }
             }
             else if (button == MouseButton.Middle)
@@ -368,28 +369,28 @@ namespace SE.Editor.GUI
                     MouseDownWindow = null;
                 }
                 // Check if has more than one tab to change order
-                else if (MouseDownWindow != null && _panel.TabsCount > 1)
+                else if (MouseDownWindow != null && m_Panel.TabsCount > 1)
                 {
                     // Check if mouse left current tab rect
                     Rectangle currWinRect = GetTabRect(MouseDownWindow);
                     if (!currWinRect.Contains(location))
                     {
-                        int index = _panel.GetTabIndex(MouseDownWindow);
+                        int index = m_Panel.GetTabIndex(MouseDownWindow);
 
                         // Check if move right or left
                         if (location.X < currWinRect.X)
                         {
                             // Move left
-                            _panel.MoveTabLeft(index);
+                            m_Panel.MoveTabLeft(index);
                         }
-                        else if (_panel.LastTab != MouseDownWindow)
+                        else if (m_Panel.LastTab != MouseDownWindow)
                         {
                             // Move right
-                            _panel.MoveTabRight(index);
+                            m_Panel.MoveTabRight(index);
                         }
 
                         // Update
-                        _panel.PerformLayout();
+                        m_Panel.PerformLayout();
                     }
                 }
             }
@@ -443,7 +444,7 @@ namespace SE.Editor.GUI
         /// <inheritdoc />
         public override void OnDragLeave()
         {
-            _dragEnterTime = -1;
+            m_DragEnterTime = -1;
 
             base.OnDragLeave();
         }
@@ -463,13 +464,13 @@ namespace SE.Editor.GUI
         {
             AutoFocus = false;
 
-            _panel = panel;
+            m_Panel = panel;
             AnchorPreset = AnchorPresets.StretchAll;
             Offsets = Margin.Zero;
         }
 
-        private DockPanel _panel = null;
-        private double _dragEnterTime = -1;
+        private DockPanel m_Panel = null;
+        private double m_DragEnterTime = -1;
 
         private Rectangle GetHeaderRectangle()
         {
@@ -481,7 +482,7 @@ namespace SE.Editor.GUI
             DockWindow result = null;
             closeButton = false;
 
-            int tabsCount = _panel.TabsCount;
+            int tabsCount = m_Panel.TabsCount;
             if (tabsCount == 1)
             {
                 Rectangle crossRect = new Rectangle(
@@ -492,7 +493,7 @@ namespace SE.Editor.GUI
                 if (GetHeaderRectangle().Contains(position))
                 {
                     closeButton = crossRect.Contains(position);
-                    result = _panel.GetTab(0);
+                    result = m_Panel.GetTab(0);
                 }
             }
             else
@@ -500,7 +501,7 @@ namespace SE.Editor.GUI
                 float x = 0;
                 for (int i = 0; i < tabsCount; i++)
                 {
-                    DockWindow tab = _panel.GetTab(i);
+                    DockWindow tab = m_Panel.GetTab(i);
                     Float2 titleSize = tab.TitleSize;
                     float iconWidth = tab.Icon.IsValid
                         ? DockPanel.DefaultButtonsSize + DockPanel.DefaultTextMargin
@@ -530,9 +531,9 @@ namespace SE.Editor.GUI
 
         private Rectangle GetTabRect(DockWindow win)
         {
-            SE.Debug.Assert(_panel.ContainsTab(win), "Window is not a tab of this panel.");
+            SE.Debug.Assert(m_Panel.ContainsTab(win), "Window is not a tab of this panel.");
 
-            int tabsCount = _panel.TabsCount;
+            int tabsCount = m_Panel.TabsCount;
             if (tabsCount == 1)
             {
                 return GetHeaderRectangle();
@@ -542,7 +543,7 @@ namespace SE.Editor.GUI
                 float x = 0;
                 for (int i = 0; i < tabsCount; i++)
                 {
-                    DockWindow tab = _panel.GetTab(i);
+                    DockWindow tab = m_Panel.GetTab(i);
                     Float2 titleSize = tab.TitleSize;
                     float width = titleSize.X + DockPanel.DefaultButtonsSize +
                         2 * DockPanel.DefaultButtonsMargin +
@@ -564,7 +565,8 @@ namespace SE.Editor.GUI
             MouseDownWindow = null;
             StartDragAsyncWindow = win;
 
-            // Register for late update in an async manner (to prevent from crash due to changing UI structure on window undock)
+            // Register for late update in an async manner (to prevent from crash due to changing UI structure on window
+            // undock)
             StartDragAsync();
         }
 
@@ -576,20 +578,20 @@ namespace SE.Editor.GUI
                 StartDragAsyncWindow = null;
 
                 // Check if has only one window docked and is floating
-                if (_panel.ChildPanelsCount == 0 && _panel.TabsCount == 1 && _panel.IsFloating)
+                if (m_Panel.ChildPanelsCount == 0 && m_Panel.TabsCount == 1 && m_Panel.IsFloating)
                 {
                     // Create docking hint window but in an async manner
-                    DockHintWindow.Create(_panel as FloatWindowDockPanel);
+                    DockHintWindow.Create(m_Panel as FloatWindowDockPanel);
                 }
                 else
                 {
                     // Select another tab
-                    int index = _panel.GetTabIndex(win);
+                    int index = m_Panel.GetTabIndex(win);
                     if (index == 0)
                     {
-                        index = _panel.TabsCount;
+                        index = m_Panel.TabsCount;
                     }
-                    _panel.SelectTab(index - 1);
+                    m_Panel.SelectTab(index - 1);
 
                     // Create docking hint window
                     DockHintWindow.Create(win);
@@ -605,21 +607,21 @@ namespace SE.Editor.GUI
             {
                 // Auto-select tab only if drag takes some time
                 double time = Environment.TickCount64 * 0.001;
-                if (_dragEnterTime < 0)
+                if (m_DragEnterTime < 0)
                 {
-                    _dragEnterTime = time;
+                    m_DragEnterTime = time;
                 }
-                if (time - _dragEnterTime < 0.3f)
+                if (time - m_DragEnterTime < 0.3f)
                 {
                     return DragDropEffect.Link;
                 }
-                _dragEnterTime = -1;
+                m_DragEnterTime = -1;
 
-                _panel.SelectTab(tab);
+                m_Panel.SelectTab(tab);
                 Update(0); // Fake update
                 return DragDropEffect.Move;
             }
-            _dragEnterTime = -1;
+            m_DragEnterTime = -1;
             return DragDropEffect.None;
         }
 
@@ -632,11 +634,11 @@ namespace SE.Editor.GUI
             menu.AddButton("Close", OnTabMenuCloseClicked);
             menu.AddButton("Close All", OnTabMenuCloseAllClicked);
             menu.AddButton("Close All But This", OnTabMenuCloseAllButThisClicked);
-            if (_panel.Tabs.IndexOf(tab) + 1 < _panel.TabsCount)
+            if (m_Panel.Tabs.IndexOf(tab) + 1 < m_Panel.TabsCount)
             {
                 menu.AddButton("Close All To The Right", OnTabMenuCloseAllToTheRightClicked);
             }
-            if (!_panel.IsFloating)
+            if (!m_Panel.IsFloating)
             {
                 menu.AddSeparator();
                 menu.AddButton("Undock", OnTabMenuUndockClicked);
@@ -666,13 +668,13 @@ namespace SE.Editor.GUI
 
         private void OnTabMenuCloseAllClicked(ContextMenuButton button)
         {
-            _panel.CloseAll();
+            m_Panel.CloseAll();
         }
 
         private void OnTabMenuCloseAllButThisClicked(ContextMenuButton button)
         {
             DockWindow tab = (DockWindow)button.ParentContextMenu.Tag;
-            List<DockWindow> windows = _panel.Tabs;
+            List<DockWindow> windows = m_Panel.Tabs;
             for (int i = 0; i < windows.Count; i++)
             {
                 if (windows[i] != tab)
@@ -685,8 +687,8 @@ namespace SE.Editor.GUI
         private void OnTabMenuCloseAllToTheRightClicked(ContextMenuButton button)
         {
             DockWindow tab = (DockWindow)button.ParentContextMenu.Tag;
-            List<DockWindow> windows = _panel.Tabs;
-            for (int i = _panel.Tabs.IndexOf(tab) + 1; i < windows.Count; i++)
+            List<DockWindow> windows = m_Panel.Tabs;
+            for (int i = m_Panel.Tabs.IndexOf(tab) + 1; i < windows.Count; i++)
             {
                 windows[i].Close();
             }

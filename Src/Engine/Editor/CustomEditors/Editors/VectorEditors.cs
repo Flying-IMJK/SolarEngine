@@ -13,7 +13,7 @@ namespace SE.Editor
         protected abstract int ComponentCount { get; }
         protected virtual int Columns => ComponentCount;
         protected virtual int Rows => 1;
-        protected abstract ValueBox<TScalar> CreateBox(LimitAttribute? limit);
+        protected abstract ValueBox<TScalar> CreateBox(LimitAttribute limit);
         protected abstract TScalar[] ReadComponents(object value);
         protected abstract object CreateValue(TScalar[] values);
 
@@ -21,7 +21,7 @@ namespace SE.Editor
 
         public override void Initialize(LayoutElementsContainer layout)
         {
-            var grid = new UniformGridPanel
+            UniformGridPanel grid = new UniformGridPanel
             {
                 Parent = layout.ContainerControl,
                 Height = TextBox.DefaultHeight * Rows,
@@ -29,11 +29,11 @@ namespace SE.Editor
                 SlotsVertically = Rows,
                 ClipChildren = false,
             };
-            var limit = Values.GetAttributes().OfType<LimitAttribute>().FirstOrDefault();
+            LimitAttribute limit = Values.GetAttributes().OfType<LimitAttribute>().FirstOrDefault();
             Components = new ValueBox<TScalar>[ComponentCount];
             for (int i = 0; i < ComponentCount; i++)
             {
-                var box = CreateBox(limit);
+                ValueBox<TScalar> box = CreateBox(limit);
                 box.Parent = grid;
                 int index = i;
                 box.ValueChanged += () => OnComponentChanged(index);
@@ -47,7 +47,9 @@ namespace SE.Editor
         protected virtual void OnComponentChanged(int index)
         {
             if (IsSetBlocked || Values == null)
+            {
                 return;
+            }
             bool sliding = Components.Any(x => x.IsSliding);
             SetValue(CreateValue(Components.Select(x => x.GetValue()).ToArray()), sliding ? this : null);
         }
@@ -56,39 +58,52 @@ namespace SE.Editor
         {
             base.Refresh();
             if (HasDifferentValues || Values[0] == null)
+            {
                 return;
-            var values = ReadComponents(Values[0]!);
+            }
+            TScalar[] values = ReadComponents(Values[0]!);
             for (int i = 0; i < Components.Length; i++)
+            {
                 Components[i].SetValue(values[i]);
+            }
         }
     }
 
     public abstract class FloatComponentVectorEditor : ComponentVectorEditor<float>
     {
-        protected override ValueBox<float> CreateBox(LimitAttribute? limit)
+        protected override ValueBox<float> CreateBox(LimitAttribute limit)
         {
-            var box = new FloatValueBox(0);
-            if (limit != null) box.SetLimits(limit);
+            FloatValueBox box = new FloatValueBox(0);
+            if (limit != null)
+            {
+                box.SetLimits(limit);
+            }
             return box;
         }
     }
 
     public abstract class DoubleComponentVectorEditor : ComponentVectorEditor<double>
     {
-        protected override ValueBox<double> CreateBox(LimitAttribute? limit)
+        protected override ValueBox<double> CreateBox(LimitAttribute limit)
         {
-            var box = new DoubleValueBox(0);
-            if (limit != null) box.SetLimits(limit);
+            DoubleValueBox box = new DoubleValueBox(0);
+            if (limit != null)
+            {
+                box.SetLimits(limit);
+            }
             return box;
         }
     }
 
     public abstract class IntComponentVectorEditor : ComponentVectorEditor<int>
     {
-        protected override ValueBox<int> CreateBox(LimitAttribute? limit)
+        protected override ValueBox<int> CreateBox(LimitAttribute limit)
         {
-            var box = new IntValueBox();
-            if (limit != null) box.SetLimits(limit);
+            IntValueBox box = new IntValueBox();
+            if (limit != null)
+            {
+                box.SetLimits(limit);
+            }
             return box;
         }
     }
@@ -97,7 +112,7 @@ namespace SE.Editor
     public sealed class Float2Editor : FloatComponentVectorEditor
     {
         protected override int ComponentCount => 2;
-        protected override float[] ReadComponents(object value) { var v = (Float2)value; return new[] { v.X, v.Y }; }
+        protected override float[] ReadComponents(object value) { Float2 v = (Float2)value; return new[] { v.X, v.Y }; }
         protected override object CreateValue(float[] v) => new Float2(v[0], v[1]);
     }
 
@@ -105,7 +120,11 @@ namespace SE.Editor
     public sealed class Double2Editor : DoubleComponentVectorEditor
     {
         protected override int ComponentCount => 2;
-        protected override double[] ReadComponents(object value) { var v = (Double2)value; return new[] { v.X, v.Y }; }
+        protected override double[] ReadComponents(object value)
+        {
+            Double2 v = (Double2)value; return new[] { v.X, v
+            .Y };
+        }
         protected override object CreateValue(double[] v) => new Double2(v[0], v[1]);
     }
 
@@ -113,7 +132,7 @@ namespace SE.Editor
     public sealed class Int2Editor : IntComponentVectorEditor
     {
         protected override int ComponentCount => 2;
-        protected override int[] ReadComponents(object value) { var v = (Int2)value; return new[] { v.X, v.Y }; }
+        protected override int[] ReadComponents(object value) { Int2 v = (Int2)value; return new[] { v.X, v.Y }; }
         protected override object CreateValue(int[] v) => new Int2(v[0], v[1]);
     }
 
@@ -121,7 +140,11 @@ namespace SE.Editor
     public sealed class Float4Editor : FloatComponentVectorEditor
     {
         protected override int ComponentCount => 4;
-        protected override float[] ReadComponents(object value) { var v = (Float4)value; return new[] { v.X, v.Y, v.Z, v.W }; }
+        protected override float[] ReadComponents(object value)
+        {
+            Float4 v = (Float4)value; return new[] { v.X, v.Y,
+            v.Z, v.W };
+        }
         protected override object CreateValue(float[] v) => new Float4(v[0], v[1], v[2], v[3]);
     }
 
@@ -129,7 +152,11 @@ namespace SE.Editor
     public sealed class Double4Editor : DoubleComponentVectorEditor
     {
         protected override int ComponentCount => 4;
-        protected override double[] ReadComponents(object value) { var v = (Double4)value; return new[] { v.X, v.Y, v.Z, v.W }; }
+        protected override double[] ReadComponents(object value)
+        {
+            Double4 v = (Double4)value; return new[] { v.X, v
+            .Y, v.Z, v.W };
+        }
         protected override object CreateValue(double[] v) => new Double4(v[0], v[1], v[2], v[3]);
     }
 
@@ -137,7 +164,11 @@ namespace SE.Editor
     public sealed class Int4Editor : IntComponentVectorEditor
     {
         protected override int ComponentCount => 4;
-        protected override int[] ReadComponents(object value) { var v = (Int4)value; return new[] { v.X, v.Y, v.Z, v.W }; }
+        protected override int[] ReadComponents(object value)
+        {
+            Int4 v = (Int4)value; return new[] { v.X, v.Y, v.Z,
+            v.W };
+        }
         protected override object CreateValue(int[] v) => new Int4(v[0], v[1], v[2], v[3]);
     }
 
@@ -145,7 +176,7 @@ namespace SE.Editor
     public sealed class Int3Editor : IntComponentVectorEditor
     {
         protected override int ComponentCount => 3;
-        protected override int[] ReadComponents(object value) { var v = (Int3)value; return new[] { v.X, v.Y, v.Z }; }
+        protected override int[] ReadComponents(object value) { Int3 v = (Int3)value; return new[] { v.X, v.Y, v.Z }; }
         protected override object CreateValue(int[] v) => new Int3(v[0], v[1], v[2]);
     }
 }

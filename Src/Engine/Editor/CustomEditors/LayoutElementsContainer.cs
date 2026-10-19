@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
 using SE.GUI;
 using SE.Editor.GUI;
 
@@ -11,7 +9,7 @@ namespace SE.Editor
     public abstract class LayoutElementsContainer : LayoutElement
     {
         internal bool isRootGroup = true;
-        internal LayoutElementsContainer? _parent;
+        internal LayoutElementsContainer _parent;
         public readonly List<LayoutElement> Children = new();
         public readonly List<CustomEditor> Editors = new();
         public abstract ContainerControl ContainerControl { get; }
@@ -23,405 +21,263 @@ namespace SE.Editor
             {
                 LayoutElementsContainer current = this;
                 while (current._parent != null)
+                {
                     current = current._parent;
+                }
                 return (CustomEditorPresenter)current;
             }
         }
 
-        public LayoutElementsContainer VerticalPanel()
+        public VerticalPanelElement VerticalPanel()
         {
-            var result = new PanelElement(new VerticalPanel());
+            VerticalPanelElement result = new VerticalPanelElement();
             Add(result);
             return result;
         }
 
-        public LayoutElementsContainer Group(string title)
+        public GroupElement Group(string title, CustomEditor linkedEditor, bool useTransparentHeader = false)
+        {
+            GroupElement element = Group(title, useTransparentHeader);
+            element.Panel.Tag = linkedEditor;
+            element.Panel.MouseButtonRightClicked += (panel, location) =>
+                OnGroupPanelMouseButtonRightClicked(element, panel, location);
+            return element;
+        }
+
+        public GroupElement Group(string title, bool useTransparentHeader = false)
         {
             string path = GetLayoutCachePath(title);
             bool cache = (Presenter.Features & FeatureFlags.CacheExpandedGroups) != 0;
-            var result = new GroupElement(title, cache ? Presenter.GetGroupClosed(path, !isRootGroup) : !isRootGroup);
+            GroupElement result = new GroupElement();
+            result.Panel.HeaderText = title;
+            result.Panel.IsClosed = cache ? Presenter.GetGroupClosed(path, !isRootGroup) : !isRootGroup;
             if (cache)
-                result.ClosedChanged += closed => Presenter.SetGroupClosed(path, closed);
+            {
+                result.Panel.IsClosedChanged += panel => Presenter.SetGroupClosed(path, panel.IsClosed);
+            }
+            if (useTransparentHeader)
+            {
+                result.Panel.EnableDropDownIcon = true;
+                result.Panel.EnableContainmentLines = false;
+                result.Panel.HeaderColor = result.Panel.HeaderColorMouseOver = Color.Transparent;
+            }
             result.isRootGroup = false;
-            Add(result);
+            AddElement(result);
             return result;
+        }
+
+        private void OnGroupPanelMouseButtonRightClicked(GroupElement element, DropPanel groupPanel, Float2 location)
+        {
+            CustomEditor linkedEditor = (CustomEditor)groupPanel.Tag;
+            ContextMenu menu = new ContextMenu();
+
+            ContextMenuButton revertToPrefab = menu.AddButton("Revert to Prefab", linkedEditor.RevertToReferenceValue);
+            revertToPrefab.Enabled = linkedEditor.CanRevertReferenceValue;
+            ContextMenuButton resetToDefault = menu.AddButton("Reset to default", linkedEditor.RevertToDefaultValue);
+            resetToDefault.Enabled = linkedEditor.CanRevertDefaultValue;
+            menu.AddSeparator();
+            menu.AddButton("Copy", linkedEditor.Copy);
+            ContextMenuButton paste = menu.AddButton("Paste", linkedEditor.Paste);
+            paste.Enabled = linkedEditor.CanPaste;
+            element.SetupContextMenu?.Invoke(menu, groupPanel);
+
+            menu.Show(groupPanel, location);
         }
 
         private string GetLayoutCachePath(string name)
         {
-            LayoutElementsContainer? container = this;
+            LayoutElementsContainer container = this;
             while (container != null && container is not CustomEditorPresenter)
             {
                 if (container is GroupElement group)
-                    name = group.Title + "/" + name;
+                {
+                    name = group.Panel.HeaderText + "/" + name;
+                }
                 container = container._parent;
             }
             return name;
         }
 
-        public LayoutElement Label(string text)
+        public LabelElement Label(string text, TextAlignment horizontalAlignment = TextAlignment.Near)
         {
-            var label = new Label { Text = text, Height = 18, HorizontalAlignment = TextAlignment.Near };
-            return AddControl(label);
+            LabelElement element = new LabelElement();
+            element.Label.Text = text;
+            element.Label.HorizontalAlignment = horizontalAlignment;
+            AddElement(element);
+            return element;
         }
 
-        public LayoutElement Header(string text)
+        public LabelElement Header(string text)
         {
-            var result = Label(text);
+            LabelElement result = Label(text);
             ((Label)result.Control).Font = new FontReference(SE.GUI.Style.Current.FontLarge);
             return result;
         }
 
-        public LayoutElement Header(HeaderAttribute header)
+        public LabelElement Header(HeaderAttribute header)
         {
-            var element = Header(header.Text);
-            var label = (Label)element.Control;
+            LabelElement element = Header(header.Text);
+            Label label = (Label)element.Control;
             if (header.FontSize > 0)
             {
-                var font = label.Font;
+                FontReference font = label.Font;
                 font.Size = header.FontSize;
                 label.Font = font;
             }
             if (header.Color > 0)
+            {
                 label.TextColor = Color.FromRGB(header.Color);
+            }
             if (label.Font.GetFont() is { } resolvedFont)
+            {
                 label.Height = resolvedFont.MeasureText(header.Text, TextLayoutOptions.Default).Y;
+            }
             return element;
         }
 
-        public LayoutElementsContainer Space(float height)
+        public SpaceElement Space(float height)
         {
-            var result = new PanelElement(new VerticalPanel { Height = height, AutoSize = false });
-            Add(result);
-            return result;
+            SpaceElement element = new SpaceElement();
+            element.Init(height);
+            AddElement(element);
+            return element;
         }
 
-        public CustomEditor Property(string name, ValueContainer values, CustomEditor? overrideEditor = null,
-            string? tooltip = null, DisplayStyle? displayStyle = null)
+        /// <summary>Adds an editor for values directly into this container.</summary>
+        public CustomEditor Object(ValueContainer values, CustomEditor overrideEditor = null)
         {
-            CustomEditor editor = overrideEditor ?? CustomEditorsUtil.CreateEditor(values);
-            DisplayStyle style = displayStyle ?? editor.Style;
-            if (style == DisplayStyle.Group)
-            {
-                var group = (GroupElement)Group(name);
-                group.Control.TooltipText = tooltip ?? string.Empty;
-                group.LinkEditor(editor);
-                Editors.Add(editor);
-                editor.Initialize(Presenter, group, values);
-                return editor;
-            }
-            if (style == DisplayStyle.InlineIntoParent || name == EditorDisplayAttribute.InlineStyle)
-            {
-                Editors.Add(editor);
-                editor.Initialize(Presenter, this, values);
-                return editor;
-            }
-            var propertyLayout = new RowElement(new PropertyRowControl());
-            Add(propertyLayout);
-            var label = new PropertyNameLabel(name)
-            {
-                TooltipText = tooltip ?? string.Empty,
-                Parent = propertyLayout.ContainerControl,
-            };
-            propertyLayout.Children.Add(new ControlElement(label));
-            Editors.Add(editor);
-            label.LinkEditor(editor);
-            editor.Initialize(Presenter, propertyLayout, values);
+            CustomEditor editor = CustomEditorsUtil.CreateEditor(values, overrideEditor);
+            OnAddEditor(editor);
+            editor.Initialize(Presenter, this, values);
             return editor;
         }
 
-        public void ClearLayout()
+        /// <summary>Adds a named property using its editor's display style.</summary>
+        public CustomEditor Property(string name, ValueContainer values, CustomEditor overrideEditor = null,
+            string tooltip = null, DisplayStyle? displayStyle = null)
+        {
+            CustomEditor editor = CustomEditorsUtil.CreateEditor(values, overrideEditor);
+            DisplayStyle style = displayStyle ?? editor.Style;
+            if (style == DisplayStyle.InlineIntoParent || name == EditorDisplayAttribute.InlineStyle)
+            {
+                return Object(values, editor);
+            }
+            if (style == DisplayStyle.Group)
+            {
+                GroupElement group = Group(name, editor, true);
+                group.Control.TooltipText = tooltip ?? string.Empty;
+                return group.Object(values, editor);
+            }
+            PropertiesListElement property = AddPropertyItem(name, tooltip);
+            int start = property.Properties.Children.Count;
+            CustomEditor result = property.Object(values, editor);
+            if (this is PropertiesListElement && editor.ParentEditor?.LinkedLabel is { } parentLabel &&
+                parentLabel.FirstChildControlContainer == null)
+            {
+                parentLabel.FirstChildControlIndex = start;
+                parentLabel.FirstChildControlContainer = property.Properties;
+            }
+            return result;
+        }
+
+        private PropertiesListElement AddPropertyItem()
+        {
+            if (Children.Count > 0 && Children[^1] is PropertiesListElement previous)
+            {
+                return previous;
+            }
+            PropertiesListElement element = new PropertiesListElement();
+            AddElement(element);
+            return element;
+        }
+
+        public PropertiesListElement AddPropertyItem(string name, string tooltip = null)
+        {
+            PropertiesListElement element = AddPropertyItem();
+            element.OnAddProperty(name, tooltip);
+            return element;
+        }
+
+        public PropertiesListElement AddPropertyItem(PropertyNameLabel label, string tooltip = null)
+        {
+            ArgumentNullException.ThrowIfNull(label);
+            PropertiesListElement element = AddPropertyItem();
+            element.OnAddProperty(label, tooltip);
+            return element;
+        }
+
+        protected virtual void OnAddEditor(CustomEditor editor)
+        {
+            CustomEditor.CurrentCustomEditor?.OnChildCreated(editor);
+            Editors.Add(editor);
+        }
+
+        /// <summary>Adds a caller-defined control.</summary>
+        public CustomElement<T> Custom<T>() where T : Control, new()
+        {
+            CustomElement<T> element = new CustomElement<T>();
+            AddElement(element);
+            return element;
+        }
+
+        /// <summary>Adds a caller-defined container with layout helpers.</summary>
+        public CustomElementsContainer<T> CustomContainer<T>() where T : ContainerControl, new()
+        {
+            CustomElementsContainer<T> element = new CustomElementsContainer<T>();
+            AddElement(element);
+            return element;
+        }
+
+        /// <summary>Adds a button.</summary>
+        public ButtonElement Button(string text, string tooltip = null)
+        {
+            ButtonElement element = new ButtonElement();
+            element.Button.Text = text;
+            element.Button.TooltipText = tooltip ?? string.Empty;
+            AddElement(element);
+            return element;
+        }
+
+        /// <summary>Adds a single-line or multiline text box.</summary>
+        public TextBoxElement TextBox(bool multiline = false)
+        {
+            TextBoxElement element = new TextBoxElement(multiline);
+            AddElement(element);
+            return element;
+        }
+
+        /// <summary>Adds a checkbox.</summary>
+        public CheckBoxElement Checkbox()
+        {
+            CheckBoxElement element = new CheckBoxElement();
+            AddElement(element);
+            return element;
+        }
+
+        public virtual void ClearLayout()
         {
             Children.Clear();
             Editors.Clear();
         }
 
-        private void Add(LayoutElementsContainer element)
+        /// <summary>Registers and parents a layout element.</summary>
+        public void AddElement(LayoutElement element)
         {
-            element._parent = this;
+            ArgumentNullException.ThrowIfNull(element);
+            OnAddElement(element);
+        }
+
+        protected virtual void OnAddElement(LayoutElement element)
+        {
+            if (element is LayoutElementsContainer container)
+            {
+                container._parent = this;
+            }
             Children.Add(element);
             element.Control.Parent = ContainerControl;
         }
 
-        private LayoutElement AddControl(Control control)
-        {
-            var element = new ControlElement(control);
-            Children.Add(element);
-            control.Parent = ContainerControl;
-            return element;
-        }
+        private void Add(LayoutElementsContainer element) => AddElement(element);
 
-        private sealed class ControlElement : LayoutElement
-        {
-            public ControlElement(Control control) => Control = control;
-            public override Control Control { get; }
-        }
-
-        private sealed class PanelElement : LayoutElementsContainer
-        {
-            public PanelElement(VerticalPanel panel) => ContainerControl = panel;
-            public override ContainerControl ContainerControl { get; }
-        }
-
-        private sealed class RowElement : LayoutElementsContainer
-        {
-            public RowElement(PropertyRowControl row) => ContainerControl = row;
-            public override ContainerControl ContainerControl { get; }
-        }
-
-        private sealed class PropertyRowControl : ContainerControl
-        {
-            public PropertyRowControl() => Height = 20;
-
-            protected override void PerformLayoutBeforeChildren()
-            {
-                base.PerformLayoutBeforeChildren();
-                float valuesHeight = 0;
-                for (int i = 1; i < ChildrenCount; i++)
-                    valuesHeight += Children[i].Height + (i > 1 ? 2 : 0);
-                Height = Mathf.Max(20, valuesHeight);
-                float labelWidth = Width * 0.42f;
-                if (ChildrenCount > 0)
-                    Children[0].Bounds = new Rectangle(0, 0, labelWidth, Height);
-                float valueY = 0;
-                for (int i = 1; i < ChildrenCount; i++)
-                {
-                    Control child = Children[i];
-                    child.Bounds = new Rectangle(labelWidth, valueY, Width - labelWidth, child.Height);
-                    valueY += child.Height + 2;
-                }
-            }
-        }
-
-        internal sealed class GroupElement : LayoutElementsContainer
-        {
-            private readonly VerticalPanel _outer;
-            private readonly VerticalPanel _body;
-            private readonly GroupHeaderButton _header;
-            private CustomEditor? _linkedEditor;
-            public readonly string Title;
-            public event Action<bool>? ClosedChanged;
-            public event Action<ContextMenu>? SetupContextMenu;
-            public bool IsClosed { get; private set; }
-
-            public GroupElement(string title, bool closed)
-            {
-                Title = title;
-                _outer = new VerticalPanel { Margin = new Margin(0, 0, 2, 2) };
-                _outer.Tag = this;
-                _header = new GroupHeaderButton(this) { Text = title, Height = 22, Parent = _outer };
-                _body = new VerticalPanel { Margin = new Margin(7, 7, 2, 2), Parent = _outer };
-                _body.Tag = this;
-                _header.Clicked += () => SetClosed(!IsClosed);
-                _header.RightClicked += ShowContextMenu;
-                SetClosed(closed);
-            }
-
-            public override Control Control => _outer;
-            public override ContainerControl ContainerControl => _body;
-
-            public void Open() => SetClosed(false);
-            public void Close() => SetClosed(true);
-
-            public void LinkEditor(CustomEditor editor)
-            {
-                _linkedEditor = editor;
-            }
-
-            public Button AddHeaderButton(string tooltip)
-            {
-                return new Button
-                {
-                    Text = "×",
-                    TooltipText = tooltip,
-                    Size = new Float2(18, 18),
-                    AnchorPreset = AnchorPresets.MiddleRight,
-                    Parent = _header,
-                };
-            }
-
-            private void ShowContextMenu(Float2 location)
-            {
-                var menu = new ContextMenu();
-                if (_linkedEditor != null)
-                {
-                    PropertyNameLabel.PopulateEditorActions(menu, _linkedEditor);
-                }
-                else
-                {
-                    var editors = GetAllEditors(this).ToArray();
-                    var revertReference = menu.AddButton("Revert to Prefab", () => Revert(editors, false));
-                    revertReference.Enabled = editors.Any(editor => editor.CanRevertReferenceValue);
-                    var revertDefault = menu.AddButton("Reset to default", () => Revert(editors, true));
-                    revertDefault.Enabled = editors.Any(editor => editor.CanRevertDefaultValue);
-                    menu.AddSeparator();
-                    var copy = menu.AddButton("Copy", () => CopyGroup(this));
-                    copy.Enabled = CanCopyGroup(this);
-                    var paste = menu.AddButton("Paste", () => PasteGroup(this));
-                    paste.Enabled = CanPasteGroup(this);
-                }
-                SetupContextMenu?.Invoke(menu);
-                menu.Show(_header, location);
-            }
-
-            private static IEnumerable<CustomEditor> GetAllEditors(LayoutElementsContainer layout)
-            {
-                foreach (var editor in layout.Editors)
-                {
-                    yield return editor;
-                }
-
-                foreach (var child in layout.Children)
-                {
-                    if (child is LayoutElementsContainer nested)
-                    {
-                        foreach (var editor in GetAllEditors(nested))
-                        {
-                            yield return editor;
-                        }
-                    }
-                }
-            }
-
-            private static void Revert(IEnumerable<CustomEditor> editors, bool toDefault)
-            {
-                foreach (var editor in editors)
-                {
-                    if (toDefault && editor.CanRevertDefaultValue)
-                        editor.RevertToDefaultValue();
-                    else if (!toDefault && editor.CanRevertReferenceValue)
-                        editor.RevertToReferenceValue();
-                }
-            }
-
-            private static LayoutElementsContainer? FirstNested(LayoutElementsContainer layout) =>
-                layout.Children.OfType<LayoutElementsContainer>().FirstOrDefault();
-
-            private static bool CanCopyGroup(LayoutElementsContainer layout) =>
-                layout.Editors.Count != 0 || FirstNested(layout) != null;
-
-            private static bool CanPasteGroup(LayoutElementsContainer layout)
-            {
-                if (layout.Editors.Count == 1)
-                    return layout.Editors[0].CanPaste;
-                if (layout.Editors.Count != 0)
-                    return !string.IsNullOrEmpty(Clipboard.Text);
-                return FirstNested(layout) is { } child && CanPasteGroup(child);
-            }
-
-            private static void CopyGroup(LayoutElementsContainer layout)
-            {
-                if (layout.Editors.Count == 1)
-                {
-                    layout.Editors[0].Copy();
-                }
-                else if (layout.Editors.Count != 0)
-                {
-                    var values = new string[layout.Editors.Count];
-                    for (int i = 0; i < values.Length; i++)
-                    {
-                        layout.Editors[i].Copy();
-                        values[i] = Clipboard.Text;
-                    }
-                    Clipboard.Text = JsonSerializer.Serialize(values);
-                }
-                else if (FirstNested(layout) is { } child)
-                {
-                    CopyGroup(child);
-                }
-            }
-
-            private static void PasteGroup(LayoutElementsContainer layout)
-            {
-                if (layout.Editors.Count == 1)
-                {
-                    layout.Editors[0].Paste();
-                }
-                else if (layout.Editors.Count != 0)
-                {
-                    string text = Clipboard.Text;
-                    if (string.IsNullOrEmpty(text))
-                        return;
-                    try
-                    {
-                        string[]? values = JsonSerializer.Deserialize<string[]>(text);
-                        if (values == null || values.Length != layout.Editors.Count)
-                            return;
-                        for (int i = 0; i < values.Length; i++)
-                        {
-                            Clipboard.Text = values[i];
-                            layout.Editors[i].Paste();
-                        }
-                    }
-                    catch (JsonException)
-                    {
-                    }
-                    finally
-                    {
-                        Clipboard.Text = text;
-                    }
-                }
-                else if (FirstNested(layout) is { } child)
-                {
-                    PasteGroup(child);
-                }
-            }
-
-            private void SetClosed(bool closed)
-            {
-                if (IsClosed == closed)
-                {
-                    return;
-                }
-                IsClosed = closed;
-                _body.Visible = !closed;
-                ClosedChanged?.Invoke(closed);
-            }
-
-            private sealed class GroupHeaderButton : Button
-            {
-                private readonly GroupElement _group;
-                public event Action<Float2>? RightClicked;
-
-                public GroupHeaderButton(GroupElement group)
-                {
-                    _group = group;
-                    HasBorder = false;
-                }
-
-                public override void DrawSelf()
-                {
-                    var style = SE.GUI.Style.Current;
-                    var background = isPressed ? BackgroundColorSelected :
-                        IsMouseOver || IsNavFocused ? BackgroundColorHighlighted : BackgroundColor;
-                    var foreground = EnabledInHierarchy ? TextColor : style.ForegroundDisabled;
-                    var bounds = new Rectangle(Float2.Zero, Size);
-                    Render2D.FillRectangle(bounds, background);
-                    Render2D.FillRectangle(new Rectangle(0, Height - 1, Width, 1), BorderColor);
-
-                    const float arrowSize = 12;
-                    Render2D.DrawSprite(_group.IsClosed ? style.ArrowRight : style.ArrowDown,
-                        new Rectangle(5, (Height - arrowSize) * 0.5f, arrowSize, arrowSize),
-                        EnabledInHierarchy ? style.ForegroundGrey : style.ForegroundDisabled);
-
-                    float textWidth = Mathf.Max(0, Width - 26 - (ChildrenCount > 0 ? 22 : 0));
-                    var textBounds = new Rectangle(24, 0, textWidth, Height);
-                    Render2D.PushClip(textBounds);
-                    Render2D.RenderText(Font, TextMaterial, Text, textBounds, foreground,
-                        TextAlignment.Near, TextAlignment.Center);
-                    Render2D.PopClip();
-                }
-
-                public override bool OnMouseUp(Float2 location, MouseButton button)
-                {
-                    if (button == MouseButton.Right)
-                    {
-                        RightClicked?.Invoke(location);
-                        return true;
-                    }
-                    return base.OnMouseUp(location, button);
-                }
-            }
-        }
     }
 }

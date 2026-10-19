@@ -24,11 +24,15 @@ namespace SE.Editor.GUI
         public override IEnumerable<string> FromDragData(DragData data)
         {
             if (data is not DragDataText text || !text.Text.StartsWith(DragPrefix, StringComparison.Ordinal))
+            {
                 yield break;
+            }
 
             string[] values = text.Text.Substring(DragPrefix.Length).Split('\n', StringSplitOptions.RemoveEmptyEntries);
             for (int index = 0; index < values.Length; index++)
+            {
                 yield return values[index];
+            }
         }
 
         public static DragData GetDragData(string prefix, string name)

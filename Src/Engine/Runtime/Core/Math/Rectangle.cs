@@ -149,7 +149,8 @@ namespace SE
         /// <returns>True if point is inside rectangle's area</returns>
         public bool Contains(Float2 location)
         {
-            return (location.X >= Location.X && location.Y >= Location.Y) && (location.X <= Location.X + Size.X && location.Y <= Location.Y + Size.Y);
+            return (location.X >= Location.X && location.Y >= Location.Y) && (location.X <= Location.X + Size.X
+                && location.Y <= Location.Y + Size.Y);
         }
 
         /// <summary>
@@ -159,7 +160,8 @@ namespace SE
         /// <returns>True if point is inside rectangle's area</returns>
         public bool Contains(ref Float2 location)
         {
-            return (location.X >= Location.X && location.Y >= Location.Y) && (location.X <= Location.X + Size.X && location.Y <= Location.Y + Size.Y);
+            return (location.X >= Location.X && location.Y >= Location.Y) && (location.X <= Location.X + Size.X
+                && location.Y <= Location.Y + Size.Y);
         }
 
         /// <summary>
@@ -169,7 +171,8 @@ namespace SE
         /// <returns>True if this rectangle entirely contains the specified rectangle, or false if not</returns>
         public bool Contains(Rectangle value)
         {
-            return (Location.X <= value.Location.X) && (value.Right <= Right) && (Location.Y <= value.Location.Y) && (value.Bottom <= Bottom);
+            return (Location.X <= value.Location.X) && (value.Right <= Right) && (Location.Y <= value.Location.Y)
+                && (value.Bottom <= Bottom);
         }
 
         /// <summary>
@@ -179,7 +182,8 @@ namespace SE
         /// <returns>True if this rectangle entirely contains the specified rectangle, or false if not</returns>
         public bool Contains(ref Rectangle value)
         {
-            return (Location.X <= value.Location.X) && (value.Right <= Right) && (Location.Y <= value.Location.Y) && (value.Bottom <= Bottom);
+            return (Location.X <= value.Location.X) && (value.Right <= Right) && (Location.Y <= value.Location.Y)
+                && (value.Bottom <= Bottom);
         }
 
         /// <summary>
@@ -189,7 +193,8 @@ namespace SE
         /// <returns>True if the specified rectangle intersects with this one, otherwise false</returns>
         public bool Intersects(Rectangle value)
         {
-            return (value.Location.X <= Right) && (Location.X <= value.Right) && (value.Location.Y <= Bottom) && (Location.Y <= value.Bottom);
+            return (value.Location.X <= Right) && (Location.X <= value.Right) && (value.Location.Y <= Bottom)
+                && (Location.Y <= value.Bottom);
         }
 
         /// <summary>
@@ -199,7 +204,8 @@ namespace SE
         /// <returns>True if the specified rectangle intersects with this one, otherwise false</returns>
         public bool Intersects(ref Rectangle value)
         {
-            return (value.Location.X <= Right) && (Location.X <= value.Right) && (value.Location.Y <= Bottom) && (Location.Y <= value.Bottom);
+            return (value.Location.X <= Right) && (Location.X <= value.Right) && (value.Location.Y <= Bottom)
+                && (Location.Y <= value.Bottom);
         }
 
         /// <summary>
@@ -304,9 +310,9 @@ namespace SE
         /// <returns>The resulting distance, 0 if point is inside the rectangle.</returns>
         public static float Distance(Rectangle rect, Float2 p)
         {
-            var max = rect.Location + rect.Size;
-            var dx = Mathf.Max(Mathf.Max(rect.Location.X - p.X, p.X - max.X), 0);
-            var dy = Mathf.Max(Math.Max(rect.Location.Y - p.Y, p.Y - max.Y), 0);
+            Float2 max = rect.Location + rect.Size;
+            float dx = Mathf.Max(Mathf.Max(rect.Location.X - p.X, p.X - max.X), 0);
+            float dy = Mathf.Max(Math.Max(rect.Location.Y - p.Y, p.Y - max.Y), 0);
             return Mathf.Sqrt(dx * dx + dy * dy);
         }
 
@@ -373,7 +379,8 @@ namespace SE
         /// </summary>
         /// <param name="a">The first rectangle.</param>
         /// <param name="b">The second rectangle.</param>
-        /// <param name="result">When the method completes, contains the rectangle that shared part of a and b rectangles.</param>
+        /// <param name="result"> When the method completes, contains the rectangle that shared part of a and b
+        /// rectangles.</param>
         public static void Shared(ref Rectangle a, ref Rectangle b, out Rectangle result)
         {
             float left = Mathf.Max(a.Left, b.Left);
@@ -391,8 +398,8 @@ namespace SE
         /// <returns>Rectangle that contains both p1 and p2</returns>
         public static Rectangle FromPoints(Float2 p1, Float2 p2)
         {
-            Float2.Min(ref p1, ref p2, out var upperLeft);
-            Float2.Max(ref p1, ref p2, out var rightBottom);
+            Float2.Min(ref p1, ref p2, out Float2 upperLeft);
+            Float2.Max(ref p1, ref p2, out Float2 rightBottom);
             return new Rectangle(upperLeft, Float2.Max(rightBottom - upperLeft, Float2.Zero));
         }
 
@@ -402,11 +409,12 @@ namespace SE
         /// <param name="p1">First point</param>
         /// <param name="p2">Second point</param>
         /// <returns>Rectangle that contains both p1 and p2</returns>
-        /// <param name="result">When the method completes, contains the rectangle that contains both p1 and p2 points.</param>
+        /// <param name="result"> When the method completes, contains the rectangle that contains both p1 and p2
+        /// points.</param>
         public static void FromPoints(ref Float2 p1, ref Float2 p2, out Rectangle result)
         {
-            Float2.Min(ref p1, ref p2, out var upperLeft);
-            Float2.Max(ref p1, ref p2, out var rightBottom);
+            Float2.Min(ref p1, ref p2, out Float2 upperLeft);
+            Float2.Max(ref p1, ref p2, out Float2 rightBottom);
             result = new Rectangle(upperLeft, Float2.Max(rightBottom - upperLeft, Float2.Zero));
         }
 
@@ -450,7 +458,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has the same value as <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Rectangle left, Rectangle right)
         {
@@ -462,7 +471,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has a different value than <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Rectangle left, Rectangle right)
         {
@@ -475,7 +485,8 @@ namespace SE
         /// Determines whether the specified <see cref="Rectangle" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Rectangle" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Rectangle" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Rectangle" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Rectangle other)
         {
@@ -492,7 +503,9 @@ namespace SE
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj))
+            {
                 return false;
+            }
             return obj is Rectangle && Equals((Rectangle)obj);
         }
 

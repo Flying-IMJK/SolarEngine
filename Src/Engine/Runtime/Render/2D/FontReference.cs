@@ -103,9 +103,13 @@ namespace SE
         public Font GetFont()
         {
             if (m_CachedFont)
+            {
                 return m_CachedFont;
+            }
             if (m_Font)
+            {
                 m_CachedFont = m_Font.CreateFont(m_Size);
+            }
             return m_CachedFont;
         }
 
@@ -131,7 +135,8 @@ namespace SE
         /// Determines whether the specified <see cref="FontReference" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="FontReference" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="FontReference" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="FontReference" /> is equal to this instance; otherwise,
+        /// <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(FontReference other)
         {
@@ -147,7 +152,9 @@ namespace SE
         public static bool operator ==(FontReference lhs, FontReference rhs)
         {
             if (lhs is null)
+            {
                 return rhs is null;
+            }
             return lhs.Equals(rhs);
         }
 
@@ -160,7 +167,9 @@ namespace SE
         public static bool operator !=(FontReference lhs, FontReference rhs)
         {
             if (lhs is null)
+            {
                 return !(rhs is null);
+            }
             return !lhs.Equals(rhs);
         }
 
@@ -168,8 +177,10 @@ namespace SE
         public override bool Equals(object other)
         {
             if (!(other is FontReference))
+            {
                 return false;
-            var fontReference = (FontReference)other;
+            }
+            FontReference fontReference = (FontReference)other;
             return Equals(fontReference);
         }
 

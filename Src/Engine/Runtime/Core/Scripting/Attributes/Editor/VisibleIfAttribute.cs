@@ -4,7 +4,9 @@ using System;
 namespace SE
 {
     /// <summary>
-    /// Shows property/field in the editor only if the specified member has a given value. Can be used to hide properties based on other properties (also private properties). The given member has to be bool type. Multiple VisibleIf attributes can be added for additional conditions to be met.
+    /// Shows property/field in the editor only if the specified member has a given value. Can be used to hide
+    /// properties based on other properties (also private properties). The given member has to be bool type. Multiple
+    /// VisibleIf attributes can be added for additional conditions to be met.
     /// </summary>
     /// <seealso cref="System.Attribute" />
     [Serializable]

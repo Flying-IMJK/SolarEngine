@@ -50,7 +50,8 @@ namespace SE.GUI
         public float TimeToShow = 0.3f; // 300ms by default
 
         /// <summary>
-        /// Gets or sets the maximum width of the tooltip. Used to wrap text that overflows and ensure that tooltip stays readable.
+        /// Gets or sets the maximum width of the tooltip. Used to wrap text that overflows and ensure that tooltip
+        /// stays readable.
         /// </summary>
         public float MaxWidth = 500.0f;
 
@@ -230,7 +231,8 @@ namespace SE.GUI
             Style style = Style.Current;
 
             // Background
-            Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), Color.Lerp(style.BackgroundSelected, style.Background, 0.6f));
+            Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), Color.Lerp(style.BackgroundSelected, style
+                .Background, 0.6f));
             Render2D.FillRectangle(new Rectangle(1.1f, 1.1f, Width - 2, Height - 2), style.Background);
 
             // Padding for text

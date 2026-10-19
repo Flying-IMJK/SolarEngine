@@ -8,11 +8,15 @@ using System.Runtime.InteropServices;
 namespace SE.Interop
 {
 
-    [CustomMarshaller(typeof(object), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedHandleMarshaller.ManagedToNative))]
-    [CustomMarshaller(typeof(object), MarshalMode.UnmanagedToManagedOut, typeof(ManagedHandleMarshaller.ManagedToNative))]
+    [CustomMarshaller(typeof(object), MarshalMode.ManagedToUnmanagedIn,
+        typeof(ManagedHandleMarshaller.ManagedToNative))]
+    [CustomMarshaller(typeof(object), MarshalMode.UnmanagedToManagedOut,
+        typeof(ManagedHandleMarshaller.ManagedToNative))]
     [CustomMarshaller(typeof(object), MarshalMode.ElementIn, typeof(ManagedHandleMarshaller.ManagedToNative))]
-    [CustomMarshaller(typeof(object), MarshalMode.ManagedToUnmanagedOut, typeof(ManagedHandleMarshaller.NativeToManaged))]
-    [CustomMarshaller(typeof(object), MarshalMode.UnmanagedToManagedIn, typeof(ManagedHandleMarshaller.NativeToManaged))]
+    [CustomMarshaller(typeof(object), MarshalMode.ManagedToUnmanagedOut,
+        typeof(ManagedHandleMarshaller.NativeToManaged))]
+    [CustomMarshaller(typeof(object), MarshalMode.UnmanagedToManagedIn,
+        typeof(ManagedHandleMarshaller.NativeToManaged))]
     [CustomMarshaller(typeof(object), MarshalMode.ElementOut, typeof(ManagedHandleMarshaller.NativeToManaged))]
     [CustomMarshaller(typeof(object), MarshalMode.ManagedToUnmanagedRef, typeof(ManagedHandleMarshaller.Bidirectional))]
     [CustomMarshaller(typeof(object), MarshalMode.UnmanagedToManagedRef, typeof(ManagedHandleMarshaller.Bidirectional))]
@@ -21,8 +25,16 @@ namespace SE.Interop
     {
         public static class NativeToManaged
         {
-            public static object ConvertToManaged(IntPtr unmanaged) => unmanaged == IntPtr.Zero ? null : ManagedHandle.FromIntPtr(unmanaged).Target;
-            public static IntPtr ConvertToUnmanaged(object managed) => managed != null ? ManagedHandle.ToIntPtr(managed, GCHandleType.Weak) : IntPtr.Zero;
+            public static object ConvertToManaged(IntPtr unmanaged)
+            {
+                return unmanaged == IntPtr.Zero ? null
+                                : ManagedHandle.FromIntPtr(unmanaged).Target;
+            }
+            public static IntPtr ConvertToUnmanaged(object managed)
+            {
+                return managed != null ? ManagedHandle
+                                .ToIntPtr(managed, GCHandleType.Weak) : IntPtr.Zero;
+            }
 
             public static void Free(IntPtr unmanaged)
             {
@@ -32,8 +44,16 @@ namespace SE.Interop
 
         public static class ManagedToNative
         {
-            public static object ConvertToManaged(IntPtr unmanaged) => unmanaged == IntPtr.Zero ? null : ManagedHandle.FromIntPtr(unmanaged).Target;
-            public static IntPtr ConvertToUnmanaged(object managed) => managed != null ? ManagedHandle.ToIntPtr(managed, GCHandleType.Weak) : IntPtr.Zero;
+            public static object ConvertToManaged(IntPtr unmanaged)
+            {
+                return unmanaged == IntPtr.Zero ? null
+                                : ManagedHandle.FromIntPtr(unmanaged).Target;
+            }
+            public static IntPtr ConvertToUnmanaged(object managed)
+            {
+                return managed != null ? ManagedHandle
+                                .ToIntPtr(managed, GCHandleType.Weak) : IntPtr.Zero;
+            }
 
             public static void Free(IntPtr unmanaged)
             {
@@ -86,13 +106,23 @@ namespace SE.Interop
 
         public static object ConvertToManaged(IntPtr unmanaged) => ToManaged(unmanaged);
         public static IntPtr ConvertToUnmanaged(object managed) => ToNative(managed);
-        public static object ToManaged(IntPtr managed) => managed != IntPtr.Zero ? ManagedHandle.FromIntPtr(managed).Target : null;
-        public static IntPtr ToNative(object managed) => managed != null ? ManagedHandle.ToIntPtr(managed) : IntPtr.Zero;
+        public static object ToManaged(IntPtr managed)
+        {
+            return managed != IntPtr.Zero ? ManagedHandle.FromIntPtr(managed)
+                        .Target : null;
+        }
+        public static IntPtr ToNative(object managed)
+        {
+            return managed != null ? ManagedHandle.ToIntPtr(managed) : IntPtr
+                        .Zero;
+        }
 
         public static void Free(IntPtr unmanaged)
         {
             if (unmanaged == IntPtr.Zero)
+            {
                 return;
+            }
             ManagedHandle.FromIntPtr(unmanaged).Free();
         }
     }
@@ -101,7 +131,11 @@ namespace SE.Interop
     [CustomMarshaller(typeof(Type), MarshalMode.Default, typeof(SystemTypeMarshaller))]
     public static class SystemTypeMarshaller
     {
-        public static Type ConvertToManaged(IntPtr unmanaged) => unmanaged != IntPtr.Zero ? Unsafe.As<NativeInterop.TypeHolder>(ManagedHandleMarshaller.ConvertToManaged(unmanaged)).type : null;
+        public static Type ConvertToManaged(IntPtr unmanaged)
+        {
+            return unmanaged != IntPtr.Zero ? Unsafe
+                        .As<NativeInterop.TypeHolder>(ManagedHandleMarshaller.ConvertToManaged(unmanaged)).type : null;
+        }
 
         public static IntPtr ConvertToUnmanaged(Type managed)
         {
@@ -124,8 +158,16 @@ namespace SE.Interop
     [CustomMarshaller(typeof(Exception), MarshalMode.Default, typeof(ExceptionMarshaller))]
     public static class ExceptionMarshaller
     {
-        public static Exception ConvertToManaged(IntPtr unmanaged) => Unsafe.As<Exception>(ManagedHandleMarshaller.ConvertToManaged(unmanaged));
-        public static IntPtr ConvertToUnmanaged(Exception managed) => ManagedHandleMarshaller.ConvertToUnmanaged(managed);
+        public static Exception ConvertToManaged(IntPtr unmanaged)
+        {
+            return Unsafe.As<Exception>(ManagedHandleMarshaller
+                        .ConvertToManaged(unmanaged));
+        }
+        public static IntPtr ConvertToUnmanaged(Exception managed)
+        {
+            return ManagedHandleMarshaller
+                        .ConvertToUnmanaged(managed);
+        }
         public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.Free(unmanaged);
     }
 
@@ -138,16 +180,32 @@ namespace SE.Interop
     [CustomMarshaller(typeof(SE.Object), MarshalMode.ElementOut, typeof(ObjectMarshaller))]
     public static class ObjectMarshaller
     {
-        public static SE.Object ConvertToManaged(IntPtr unmanaged) => unmanaged != IntPtr.Zero ? Unsafe.As<SE.Object>(ManagedHandle.FromIntPtr(unmanaged).Target) : null;
-        public static IntPtr ConvertToUnmanaged(SE.Object managed) => Unsafe.As<object>(managed) != null ? ManagedHandle.ToIntPtr(managed) : IntPtr.Zero;
+        public static SE.Object ConvertToManaged(IntPtr unmanaged)
+        {
+            return unmanaged != IntPtr.Zero ? Unsafe
+                        .As<SE.Object>(ManagedHandle.FromIntPtr(unmanaged).Target) : null;
+        }
+        public static IntPtr ConvertToUnmanaged(SE.Object managed)
+        {
+            return Unsafe.As<object>(managed) != null
+                        ? ManagedHandle.ToIntPtr(managed) : IntPtr.Zero;
+        }
     }
 
 
     [CustomMarshaller(typeof(CultureInfo), MarshalMode.Default, typeof(CultureInfoMarshaller))]
     public static class CultureInfoMarshaller
     {
-        public static CultureInfo ConvertToManaged(IntPtr unmanaged) => Unsafe.As<CultureInfo>(ManagedHandleMarshaller.ConvertToManaged(unmanaged));
-        public static IntPtr ConvertToUnmanaged(CultureInfo managed) => ManagedHandleMarshaller.ConvertToUnmanaged(managed);
+        public static CultureInfo ConvertToManaged(IntPtr unmanaged)
+        {
+            return Unsafe
+                        .As<CultureInfo>(ManagedHandleMarshaller.ConvertToManaged(unmanaged));
+        }
+        public static IntPtr ConvertToUnmanaged(CultureInfo managed)
+        {
+            return ManagedHandleMarshaller
+                        .ConvertToUnmanaged(managed);
+        }
         public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.Free(unmanaged);
     }
 
@@ -166,20 +224,26 @@ namespace SE.Interop
             public void FromManaged(Array managed)
             {
                 if (managed != null)
+                {
                     (handle, managedArray) = ManagedArray.WrapPooledArray(managed);
+                }
             }
 
             public IntPtr ToUnmanaged()
             {
                 if (managedArray == null)
+                {
                     return IntPtr.Zero;
+                }
                 return ManagedHandle.ToIntPtr(handle);
             }
 
             public void Free()
             {
                 if (managedArray == null)
+                {
                     return;
+                }
                 managedArray.FreePooled();
             }
         }
@@ -192,14 +256,18 @@ namespace SE.Interop
             public void FromUnmanaged(IntPtr unmanaged)
             {
                 if (unmanaged == IntPtr.Zero)
+                {
                     return;
+                }
                 handle = ManagedHandle.FromIntPtr(unmanaged);
             }
 
             public Array ToManaged()
             {
                 if (!handle.IsAllocated)
+                {
                     return null;
+                }
                 managedArray = Unsafe.As<ManagedArray>(handle.Target);
                 return managedArray.ToArray();
             }
@@ -207,7 +275,9 @@ namespace SE.Interop
             public void Free()
             {
                 if (!handle.IsAllocated)
+                {
                     return;
+                }
                 managedArray.Free();
                 handle.Free();
             }
@@ -215,10 +285,14 @@ namespace SE.Interop
     }
 
 
-    [CustomMarshaller(typeof(object[]), MarshalMode.ManagedToUnmanagedIn, typeof(SystemObjectArrayMarshaller.ManagedToNative))]
-    [CustomMarshaller(typeof(object[]), MarshalMode.UnmanagedToManagedOut, typeof(SystemObjectArrayMarshaller.ManagedToNative))]
-    [CustomMarshaller(typeof(object[]), MarshalMode.ManagedToUnmanagedOut, typeof(SystemObjectArrayMarshaller.NativeToManaged))]
-    [CustomMarshaller(typeof(object[]), MarshalMode.UnmanagedToManagedIn, typeof(SystemObjectArrayMarshaller.NativeToManaged))]
+    [CustomMarshaller(typeof(object[]), MarshalMode.ManagedToUnmanagedIn,
+        typeof(SystemObjectArrayMarshaller.ManagedToNative))]
+    [CustomMarshaller(typeof(object[]), MarshalMode.UnmanagedToManagedOut,
+        typeof(SystemObjectArrayMarshaller.ManagedToNative))]
+    [CustomMarshaller(typeof(object[]), MarshalMode.ManagedToUnmanagedOut,
+        typeof(SystemObjectArrayMarshaller.NativeToManaged))]
+    [CustomMarshaller(typeof(object[]), MarshalMode.UnmanagedToManagedIn,
+        typeof(SystemObjectArrayMarshaller.NativeToManaged))]
     public static unsafe class SystemObjectArrayMarshaller
     {
         public struct ManagedToNative
@@ -229,7 +303,7 @@ namespace SE.Interop
             {
                 if (managed != null)
                 {
-                    var managedArray = NativeInterop.ManagedArrayToGCHandleWrappedArray(managed);
+                    ManagedArray managedArray = NativeInterop.ManagedArrayToGCHandleWrappedArray(managed);
                     handle = ManagedHandle.Alloc(managedArray, GCHandleType.Weak);
                 }
             }
@@ -253,7 +327,9 @@ namespace SE.Interop
             public void FromUnmanaged(IntPtr unmanaged)
             {
                 if (unmanaged == IntPtr.Zero)
+                {
                     return;
+                }
                 handle = ManagedHandle.FromIntPtr(unmanaged);
             }
 
@@ -262,7 +338,7 @@ namespace SE.Interop
                 object[] result = null;
                 if (handle.IsAllocated)
                 {
-                    var managedArray = Unsafe.As<ManagedArray>(handle.Target);
+                    ManagedArray managedArray = Unsafe.As<ManagedArray>(handle.Target);
                     result = NativeInterop.GCHandleArrayToManagedArray<object>(managedArray);
                 }
                 return result;
@@ -276,28 +352,50 @@ namespace SE.Interop
     }
 
 
-    [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.ManagedToUnmanagedIn, typeof(DictionaryMarshaller<,>.ManagedToNative))]
-    [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.UnmanagedToManagedOut, typeof(DictionaryMarshaller<,>.ManagedToNative))]
+    [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.ManagedToUnmanagedIn, typeof(DictionaryMarshaller<,
+>.ManagedToNative))]
+    [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.UnmanagedToManagedOut, typeof(DictionaryMarshaller<,
+>.ManagedToNative))]
     [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.ElementIn, typeof(DictionaryMarshaller<,>.ManagedToNative))]
-    [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.ManagedToUnmanagedOut, typeof(DictionaryMarshaller<,>.NativeToManaged))]
-    [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.UnmanagedToManagedIn, typeof(DictionaryMarshaller<,>.NativeToManaged))]
+    [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.ManagedToUnmanagedOut, typeof(DictionaryMarshaller<,
+>.NativeToManaged))]
+    [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.UnmanagedToManagedIn, typeof(DictionaryMarshaller<,
+>.NativeToManaged))]
     [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.ElementOut, typeof(DictionaryMarshaller<,>.NativeToManaged))]
-    [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.ManagedToUnmanagedRef, typeof(DictionaryMarshaller<,>.Bidirectional))]
-    [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.UnmanagedToManagedRef, typeof(DictionaryMarshaller<,>.Bidirectional))]
+    [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.ManagedToUnmanagedRef, typeof(DictionaryMarshaller<,
+>.Bidirectional))]
+    [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.UnmanagedToManagedRef, typeof(DictionaryMarshaller<,
+>.Bidirectional))]
     [CustomMarshaller(typeof(Dictionary<,>), MarshalMode.ElementRef, typeof(DictionaryMarshaller<,>))]
     public static unsafe class DictionaryMarshaller<T, U>
     {
         public static class NativeToManaged
         {
-            public static Dictionary<T, U> ConvertToManaged(IntPtr unmanaged) => DictionaryMarshaller<T, U>.ToManaged(unmanaged);
-            public static IntPtr ConvertToUnmanaged(Dictionary<T, U> managed) => DictionaryMarshaller<T, U>.ToNative(managed, GCHandleType.Weak);
+            public static Dictionary<T, U> ConvertToManaged(IntPtr unmanaged)
+            {
+                return DictionaryMarshaller<T, U>
+                                .ToManaged(unmanaged);
+            }
+            public static IntPtr ConvertToUnmanaged(Dictionary<T, U> managed)
+            {
+                return DictionaryMarshaller<T, U>
+                                .ToNative(managed, GCHandleType.Weak);
+            }
             public static void Free(IntPtr unmanaged) => DictionaryMarshaller<T, U>.Free(unmanaged);
         }
 
         public static class ManagedToNative
         {
-            public static Dictionary<T, U> ConvertToManaged(IntPtr unmanaged) => DictionaryMarshaller<T, U>.ToManaged(unmanaged);
-            public static IntPtr ConvertToUnmanaged(Dictionary<T, U> managed) => DictionaryMarshaller<T, U>.ToNative(managed, GCHandleType.Weak);
+            public static Dictionary<T, U> ConvertToManaged(IntPtr unmanaged)
+            {
+                return DictionaryMarshaller<T, U>
+                                .ToManaged(unmanaged);
+            }
+            public static IntPtr ConvertToUnmanaged(Dictionary<T, U> managed)
+            {
+                return DictionaryMarshaller<T, U>
+                                .ToNative(managed, GCHandleType.Weak);
+            }
             public static void Free(IntPtr unmanaged)
             {
                 //DictionaryMarshaller<T, U>.Free(unmanaged); // No need to free weak handles
@@ -329,28 +427,51 @@ namespace SE.Interop
             public void Free() => DictionaryMarshaller<T, U>.Free(unmanaged);
         }
 
-        public static Dictionary<T, U> ConvertToManaged(IntPtr unmanaged) => unmanaged != IntPtr.Zero ? Unsafe.As<Dictionary<T, U>>(ManagedHandle.FromIntPtr(unmanaged).Target) : null;
-        public static IntPtr ConvertToUnmanaged(Dictionary<T, U> managed) => managed != null ? ManagedHandle.ToIntPtr(managed) : IntPtr.Zero;
+        public static Dictionary<T, U> ConvertToManaged(IntPtr unmanaged)
+        {
+            return unmanaged != IntPtr.Zero ? Unsafe
+                        .As<Dictionary<T, U>>(ManagedHandle.FromIntPtr(unmanaged).Target) : null;
+        }
+        public static IntPtr ConvertToUnmanaged(Dictionary<T, U> managed)
+        {
+            return managed != null ? ManagedHandle
+                        .ToIntPtr(managed) : IntPtr.Zero;
+        }
 
-        public static Dictionary<T, U> ToManaged(IntPtr unmanaged) => unmanaged != IntPtr.Zero ? Unsafe.As<Dictionary<T, U>>(ManagedHandle.FromIntPtr(unmanaged).Target) : null;
-        public static IntPtr ToNative(Dictionary<T, U> managed, GCHandleType handleType = GCHandleType.Normal) => managed != null ? ManagedHandle.ToIntPtr(managed, handleType) : IntPtr.Zero;
+        public static Dictionary<T, U> ToManaged(IntPtr unmanaged)
+        {
+            return unmanaged != IntPtr.Zero ? Unsafe
+                        .As<Dictionary<T, U>>(ManagedHandle.FromIntPtr(unmanaged).Target) : null;
+        }
+        public static IntPtr ToNative(Dictionary<T, U> managed, GCHandleType handleType = GCHandleType
+            .Normal) => managed != null ? ManagedHandle.ToIntPtr(managed, handleType) : IntPtr.Zero;
 
         public static void Free(IntPtr unmanaged)
         {
             if (unmanaged != IntPtr.Zero)
+            {
                 ManagedHandle.FromIntPtr(unmanaged).Free();
+            }
         }
     }
 
 
-    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ManagedToUnmanagedIn, typeof(ArrayMarshaller<,>.ManagedToNative))]
-    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.UnmanagedToManagedOut, typeof(ArrayMarshaller<,>.ManagedToNative))]
-    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ManagedToUnmanagedOut, typeof(ArrayMarshaller<,>.NativeToManaged))]
-    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.UnmanagedToManagedIn, typeof(ArrayMarshaller<,>.NativeToManaged))]
-    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ElementOut, typeof(ArrayMarshaller<,>.NativeToManaged))]
-    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ManagedToUnmanagedRef, typeof(ArrayMarshaller<,>.Bidirectional))]
-    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.UnmanagedToManagedRef, typeof(ArrayMarshaller<,>.Bidirectional))]
-    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ElementRef, typeof(ArrayMarshaller<,>))]
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ManagedToUnmanagedIn,
+        typeof(ArrayMarshaller<,>.ManagedToNative))]
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.UnmanagedToManagedOut,
+        typeof(ArrayMarshaller<,>.ManagedToNative))]
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ManagedToUnmanagedOut,
+        typeof(ArrayMarshaller<,>.NativeToManaged))]
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.UnmanagedToManagedIn,
+        typeof(ArrayMarshaller<,>.NativeToManaged))]
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ElementOut,
+        typeof(ArrayMarshaller<,>.NativeToManaged))]
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ManagedToUnmanagedRef,
+        typeof(ArrayMarshaller<,>.Bidirectional))]
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.UnmanagedToManagedRef,
+        typeof(ArrayMarshaller<,>.Bidirectional))]
+    [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder[]), MarshalMode.ElementRef,
+        typeof(ArrayMarshaller<,>))]
     [ContiguousCollectionMarshaller]
     public static unsafe class ArrayMarshaller<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
     {
@@ -360,7 +481,9 @@ namespace SE.Interop
             public static T[] AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements)
             {
                 if (unmanaged is null)
+                {
                     return null;
+                }
                 return new T[numElements];
             }
 
@@ -372,7 +495,8 @@ namespace SE.Interop
                     return null;
                 }
                 numElements = managed.Length;
-                (ManagedHandle managedArrayHandle, _) = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
+                (ManagedHandle managedArrayHandle, _) = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed
+                    .Length);
                 return (TUnmanagedElement*)ManagedHandle.ToIntPtr(managedArrayHandle);
             }
 
@@ -381,35 +505,48 @@ namespace SE.Interop
             public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged)
             {
                 if (unmanaged == null)
+                {
                     return Span<TUnmanagedElement>.Empty;
-                ManagedArray managedArray = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
+                }
+                ManagedArray managedArray = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged))
+                    .Target);
                 return managedArray.ToSpan<TUnmanagedElement>();
             }
 
             public static Span<T> GetManagedValuesDestination(T[] managed) => managed;
 
-            public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanaged, int numElements)
+            public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanaged,
+                int numElements)
             {
                 if (unmanaged == null)
+                {
                     return ReadOnlySpan<TUnmanagedElement>.Empty;
-                ManagedArray managedArray = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
+                }
+                ManagedArray managedArray = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged))
+                    .Target);
                 return managedArray.ToSpan<TUnmanagedElement>();
             }
 
             public static void Free(TUnmanagedElement* unmanaged)
             {
                 if (unmanaged == null)
+                {
                     return;
+                }
                 ManagedHandle handle = ManagedHandle.FromIntPtr(new IntPtr(unmanaged));
                 (Unsafe.As<ManagedArray>(handle.Target)).Free();
                 handle.Free();
             }
 
-            public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
+            public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged,
+                int numElements)
             {
                 if (unmanaged == null)
+                {
                     return Span<TUnmanagedElement>.Empty;
-                ManagedArray managedArray = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
+                }
+                ManagedArray managedArray = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged))
+                    .Target);
                 return managedArray.ToSpan<TUnmanagedElement>();
             }
         }
@@ -424,14 +561,20 @@ namespace SE.Interop
             public void FromManaged(T[] managed)
             {
                 if (managed is null)
+                {
                     return;
+                }
                 sourceArray = managed;
                 (managedHandle, managedArray) = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
             }
 
             public ReadOnlySpan<T> GetManagedValuesSource() => sourceArray;
 
-            public Span<TUnmanagedElement> GetUnmanagedValuesDestination() => managedArray != null ? managedArray.ToSpan<TUnmanagedElement>() : Span<TUnmanagedElement>.Empty;
+            public Span<TUnmanagedElement> GetUnmanagedValuesDestination()
+            {
+                return managedArray != null ? managedArray
+                                .ToSpan<TUnmanagedElement>() : Span<TUnmanagedElement>.Empty;
+            }
 
             public TUnmanagedElement* ToUnmanaged() => (TUnmanagedElement*)ManagedHandle.ToIntPtr(managedHandle);
 
@@ -448,7 +591,9 @@ namespace SE.Interop
             public void FromManaged(T[] managed)
             {
                 if (managed == null)
+                {
                     return;
+                }
                 sourceArray = managed;
                 (handle, managedArray) = ManagedArray.AllocatePooledArray<TUnmanagedElement>(managed.Length);
             }
@@ -458,7 +603,9 @@ namespace SE.Interop
             public Span<TUnmanagedElement> GetUnmanagedValuesDestination()
             {
                 if (managedArray == null)
+                {
                     return Span<TUnmanagedElement>.Empty;
+                }
                 return managedArray.ToSpan<TUnmanagedElement>();
             }
 
@@ -468,13 +615,17 @@ namespace SE.Interop
             {
                 ManagedArray arr = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
                 if (sourceArray == null || sourceArray.Length != arr.Length)
+                {
                     sourceArray = new T[arr.Length];
+                }
             }
 
             public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements)
             {
                 if (managedArray == null)
+                {
                     return ReadOnlySpan<TUnmanagedElement>.Empty;
+                }
                 return managedArray.ToSpan<TUnmanagedElement>();
             }
 
@@ -499,22 +650,30 @@ namespace SE.Interop
 
         public static ReadOnlySpan<T> GetManagedValuesSource(T[] managed) => managed;
 
-        public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
+        public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged,
+            int numElements)
         {
             if (unmanaged == null)
+            {
                 return Span<TUnmanagedElement>.Empty;
-            ManagedArray unmanagedArray = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
+            }
+            ManagedArray unmanagedArray = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged))
+                .Target);
             return unmanagedArray.ToSpan<TUnmanagedElement>();
         }
 
-        public static T[] AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements) => unmanaged is null ? null : new T[numElements];
+        public static T[] AllocateContainerForManagedElements(TUnmanagedElement* unmanaged,
+            int numElements) => unmanaged is null ? null : new T[numElements];
 
         public static Span<T> GetManagedValuesDestination(T[] managed) => managed;
 
-        public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanaged, int numElements)
+        public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanaged,
+            int numElements)
         {
             if (unmanaged == null)
+            {
                 return ReadOnlySpan<TUnmanagedElement>.Empty;
+            }
             ManagedArray array = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
             return array.ToSpan<TUnmanagedElement>();
         }
@@ -522,7 +681,9 @@ namespace SE.Interop
         public static void Free(TUnmanagedElement* unmanaged)
         {
             if (unmanaged == null)
+            {
                 return;
+            }
             ManagedHandle handle = ManagedHandle.FromIntPtr(new IntPtr(unmanaged));
             Unsafe.As<ManagedArray>(handle.Target).FreePooled();
         }
@@ -543,7 +704,11 @@ namespace SE.Interop
         public static class NativeToManaged
         {
             public static string ConvertToManaged(IntPtr unmanaged) => ManagedString.ToManaged(unmanaged);
-            public static unsafe IntPtr ConvertToUnmanaged(string managed) => managed == null ? IntPtr.Zero : ManagedHandle.ToIntPtr(managed, GCHandleType.Weak);
+            public static unsafe IntPtr ConvertToUnmanaged(string managed)
+            {
+                return managed == null ? IntPtr.Zero
+                                : ManagedHandle.ToIntPtr(managed, GCHandleType.Weak);
+            }
             public static void Free(IntPtr unmanaged) => ManagedString.Free(unmanaged);
         }
 
@@ -551,7 +716,11 @@ namespace SE.Interop
         public static class ManagedToNative
         {
             public static string ConvertToManaged(IntPtr unmanaged) => ManagedString.ToManaged(unmanaged);
-            public static unsafe IntPtr ConvertToUnmanaged(string managed) => managed == null ? IntPtr.Zero : ManagedHandle.ToIntPtr(managed, GCHandleType.Weak);
+            public static unsafe IntPtr ConvertToUnmanaged(string managed)
+            {
+                return managed == null ? IntPtr.Zero
+                                : ManagedHandle.ToIntPtr(managed, GCHandleType.Weak);
+            }
             public static void Free(IntPtr unmanaged)
             {
                 //ManagedString.Free(unmanaged); // No need to free weak handles

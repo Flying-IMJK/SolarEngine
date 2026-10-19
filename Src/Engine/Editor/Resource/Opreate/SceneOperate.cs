@@ -16,7 +16,7 @@ namespace SE.Editor
         public override bool IsProxyFor(ContentItem item) => item is SceneItem;
         public override bool CanCreate(ContentFolder targetLocation) => targetLocation.CanHaveAssets;
 
-        public override void Create(string outputPath, object? argument = null)
+        public override void Create(string outputPath, object argument = null)
         {
             Editor.Instance.Scene.CreateSceneFile(outputPath);
         }

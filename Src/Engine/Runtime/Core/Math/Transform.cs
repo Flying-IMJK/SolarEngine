@@ -13,7 +13,7 @@ namespace SE
     [Serializable]
     public partial struct Transform : IEquatable<Transform>, IFormattable
     {
-        private static readonly string s_FormatString = "Translation:{0} Orientation:{1} Scale:{2}";
+        private static readonly string FormatString = "Translation:{0} Orientation:{1} Scale:{2}";
 
         /// <summary>
         /// The size of the <see cref="Transform" /> type, in bytes
@@ -122,7 +122,7 @@ namespace SE
         /// <returns>Rotation matrix</returns>
         public Matrix GetRotation()
         {
-            Matrix.RotationQuaternion(ref Orientation, out var result);
+            Matrix.RotationQuaternion(ref Orientation, out Matrix result);
             return result;
         }
 
@@ -156,19 +156,21 @@ namespace SE
         /// <summary>
         /// Gets world matrix that describes transformation as a 4 by 4 matrix.
         /// </summary>
-        /// <remarks>Doesn't work in large worlds because <see cref="Matrix"/> contains 32-bit precision while <see cref="Translation"/> can have 64-bit precision.</remarks>
+        /// <remarks> Doesn't work in large worlds because <see cref="Matrix"/> contains 32-bit precision while
+        /// <see cref="Translation"/> can have 64-bit precision.</remarks>
         /// <returns>World matrix</returns>
         public Matrix GetWorld()
         {
             Float3 translation = Translation;
-            Matrix.Transformation(ref Scale, ref Orientation, ref translation, out var result);
+            Matrix.Transformation(ref Scale, ref Orientation, ref translation, out Matrix result);
             return result;
         }
 
         /// <summary>
         /// Gets world matrix that describes transformation as a 4 by 4 matrix.
         /// </summary>
-        /// <remarks>Doesn't work in large worlds because <see cref="Matrix"/> contains 32-bit precision while <see cref="Translation"/> can have 64-bit precision.</remarks>
+        /// <remarks> Doesn't work in large worlds because <see cref="Matrix"/> contains 32-bit precision while
+        /// <see cref="Translation"/> can have 64-bit precision.</remarks>
         /// <param name="result">World matrix</param>
         public void GetWorld(out Matrix result)
         {
@@ -300,13 +302,19 @@ namespace SE
         /// <returns>Local space transform</returns>
         public Transform WorldToLocal(Transform other)
         {
-            var invScale = Scale;
+            Float3 invScale = Scale;
             if (invScale.X != 0.0f)
+            {
                 invScale.X = 1.0f / invScale.X;
+            }
             if (invScale.Y != 0.0f)
+            {
                 invScale.Y = 1.0f / invScale.Y;
+            }
             if (invScale.Z != 0.0f)
+            {
                 invScale.Z = 1.0f / invScale.Z;
+            }
             Transform result;
             result.Orientation = Orientation;
             result.Orientation.Invert();
@@ -323,13 +331,19 @@ namespace SE
         /// <returns>Local space point</returns>
         public Float3 WorldToLocal(Float3 point)
         {
-            var invScale = Scale;
+            Float3 invScale = Scale;
             if (invScale.X != 0.0f)
+            {
                 invScale.X = 1.0f / invScale.X;
+            }
             if (invScale.Y != 0.0f)
+            {
                 invScale.Y = 1.0f / invScale.Y;
+            }
             if (invScale.Z != 0.0f)
+            {
                 invScale.Z = 1.0f / invScale.Z;
+            }
             Quaternion invRotation = Orientation.Conjugated();
             Float3 result = point - Translation;
             Float3.Transform(ref result, ref invRotation, out result);
@@ -343,15 +357,21 @@ namespace SE
         /// <returns>Local space vector</returns>
         public Float3 WorldToLocalVector(Float3 vector)
         {
-            var invScale = Scale;
+            Float3 invScale = Scale;
             if (invScale.X != 0.0f)
+            {
                 invScale.X = 1.0f / invScale.X;
+            }
             if (invScale.Y != 0.0f)
+            {
                 invScale.Y = 1.0f / invScale.Y;
+            }
             if (invScale.Z != 0.0f)
+            {
                 invScale.Z = 1.0f / invScale.Z;
+            }
             Quaternion invRotation = Orientation.Conjugated();
-            Float3.Transform(ref vector, ref invRotation, out var result);
+            Float3.Transform(ref vector, ref invRotation, out Float3 result);
             return result * invScale;
         }
 
@@ -363,13 +383,19 @@ namespace SE
         /// <returns>Local space point</returns>
         public void WorldToLocal(ref Float3 point, out Float3 result)
         {
-            var invScale = Scale;
+            Float3 invScale = Scale;
             if (invScale.X != 0.0f)
+            {
                 invScale.X = 1.0f / invScale.X;
+            }
             if (invScale.Y != 0.0f)
+            {
                 invScale.Y = 1.0f / invScale.Y;
+            }
             if (invScale.Z != 0.0f)
+            {
                 invScale.Z = 1.0f / invScale.Z;
+            }
             Quaternion invRotation = Orientation.Conjugated();
             Float3 tmp = point - Translation;
             Float3.Transform(ref tmp, ref invRotation, out result);
@@ -383,13 +409,19 @@ namespace SE
         /// <param name="result">Local space vector</param>
         public void WorldToLocalVector(ref Float3 vector, out Float3 result)
         {
-            var invScale = Scale;
+            Float3 invScale = Scale;
             if (invScale.X != 0.0f)
+            {
                 invScale.X = 1.0f / invScale.X;
+            }
             if (invScale.Y != 0.0f)
+            {
                 invScale.Y = 1.0f / invScale.Y;
+            }
             if (invScale.Z != 0.0f)
+            {
                 invScale.Z = 1.0f / invScale.Z;
+            }
             Quaternion invRotation = Orientation.Conjugated();
             Float3.Transform(ref vector, ref invRotation, out result);
             result *= invScale;
@@ -402,13 +434,19 @@ namespace SE
         /// <param name="result">Local space points</param>
         public void WorldToLocal(Float3[] points, Float3[] result)
         {
-            var invScale = Scale;
+            Float3 invScale = Scale;
             if (invScale.X != 0.0f)
+            {
                 invScale.X = 1.0f / invScale.X;
+            }
             if (invScale.Y != 0.0f)
+            {
                 invScale.Y = 1.0f / invScale.Y;
+            }
             if (invScale.Z != 0.0f)
+            {
                 invScale.Z = 1.0f / invScale.Z;
+            }
             Quaternion invRotation = Orientation.Conjugated();
             for (int i = 0; i < points.Length; i++)
             {
@@ -421,19 +459,22 @@ namespace SE
         /// <summary>
         /// Transforms the direction vector from the local space to the world space.
         /// </summary>
-        /// <remarks>This operation is not affected by scale or position of the transform. The returned vector has the same length as direction. Use <see cref="TransformPoint"/> for the conversion if the vector represents a position rather than a direction.</remarks>
+        /// <remarks> This operation is not affected by scale or position of the transform. The returned vector has the
+        /// same length as direction. Use <see cref="TransformPoint"/> for the conversion if the vector represents a
+        /// position rather than a direction.</remarks>
         /// <param name="direction">The direction.</param>
         /// <returns>The transformed direction vector.</returns>
         public Float3 TransformDirection(Float3 direction)
         {
-            Float3.Transform(ref direction, ref Orientation, out var result);
+            Float3.Transform(ref direction, ref Orientation, out Float3 result);
             return result;
         }
 
         /// <summary>
         /// Transforms the position from the local space to the world space.
         /// </summary>
-        /// <remarks>Use <see cref="TransformDirection"/> for the conversion if the vector represents a direction rather than a position.</remarks>
+        /// <remarks> Use <see cref="TransformDirection"/> for the conversion if the vector represents a direction
+        /// rather than a position.</remarks>
         /// <param name="position">The position.</param>
         /// <returns>The transformed position.</returns>
         public Float3 TransformPoint(Float3 position)
@@ -448,7 +489,8 @@ namespace SE
         /// <param name="end">End transformation.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
         /// <returns>The linear interpolation of the two transformations.</returns>
-        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
+        /// <remarks> Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be
+        /// returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static Transform Lerp(Transform start, Transform end, float amount)
         {
             Transform result;
@@ -464,8 +506,10 @@ namespace SE
         /// <param name="start">Start transformation.</param>
         /// <param name="end">End transformation.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
-        /// <param name="result">When the method completes, contains the linear interpolation of the two transformations.</param>
-        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
+        /// <param name="result"> When the method completes, contains the linear interpolation of the two
+        /// transformations.</param>
+        /// <remarks> Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be
+        /// returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static void Lerp(ref Transform start, ref Transform end, float amount, out Transform result)
         {
             Float3.Lerp(ref start.Translation, ref end.Translation, amount, out result.Translation);
@@ -478,7 +522,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has the same value as <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Transform left, Transform right)
         {
@@ -490,7 +535,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has a different value than <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Transform left, Transform right)
         {
@@ -525,7 +571,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString, Translation, Orientation, Scale);
+            return string.Format(CultureInfo.CurrentCulture, FormatString, Translation, Orientation, Scale);
         }
 
         /// <summary>
@@ -536,8 +582,12 @@ namespace SE
         public string ToString(string format)
         {
             if (format == null)
+            {
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString, Translation.ToString(format, CultureInfo.CurrentCulture), Orientation.ToString(format, CultureInfo.CurrentCulture), Scale.ToString(format, CultureInfo.CurrentCulture));
+            }
+            return string.Format(CultureInfo.CurrentCulture, FormatString, Translation.ToString(format, CultureInfo
+                .CurrentCulture), Orientation.ToString(format, CultureInfo.CurrentCulture), Scale.ToString(format,
+                    CultureInfo.CurrentCulture));
         }
 
         /// <summary>
@@ -547,7 +597,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, s_FormatString, Translation, Orientation, Scale);
+            return string.Format(formatProvider, FormatString, Translation, Orientation, Scale);
         }
 
         /// <summary>
@@ -559,14 +609,18 @@ namespace SE
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
+            {
                 return ToString(formatProvider);
-            return string.Format(formatProvider, s_FormatString, Translation.ToString(format, formatProvider), Orientation.ToString(format, formatProvider), Scale.ToString(format, formatProvider));
+            }
+            return string.Format(formatProvider, FormatString, Translation.ToString(format, formatProvider),
+                Orientation.ToString(format, formatProvider), Scale.ToString(format, formatProvider));
         }
 
         /// <summary>
         /// Returns a hash code for this instance.
         /// </summary>
-        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
+        /// <returns> A hash code for this instance, suitable for use in hashing algorithms and data structures like a
+        /// hash table.</returns>
         public override int GetHashCode()
         {
             unchecked
@@ -599,14 +653,17 @@ namespace SE
         /// <returns><c>true</c> if left and right are near another, <c>false</c> otherwise</returns>
         public static bool NearEqual(ref Transform left, ref Transform right, float epsilon = Mathf.Epsilon)
         {
-            return Float3.NearEqual(ref left.Translation, ref right.Translation, epsilon) && Quaternion.NearEqual(ref left.Orientation, ref right.Orientation, epsilon) && Float3.NearEqual(ref left.Scale, ref right.Scale, epsilon);
+            return Float3.NearEqual(ref left.Translation, ref right.Translation, epsilon) && Quaternion
+                .NearEqual(ref left.Orientation, ref right.Orientation, epsilon) && Float3.NearEqual(ref left.Scale,
+                    ref right.Scale, epsilon);
         }
 
         /// <summary>
         /// Determines whether the specified <see cref="Transform" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Transform" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Transform" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Transform" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Transform other)
         {
@@ -617,7 +674,8 @@ namespace SE
         /// Determines whether the specified <see cref="Transform" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Transform" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Transform" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Transform" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Transform other)
         {
@@ -628,7 +686,8 @@ namespace SE
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise,
+        /// <c> false</c>.</returns>
         public override bool Equals(object value)
         {
             return value is Transform other && Equals(ref other);

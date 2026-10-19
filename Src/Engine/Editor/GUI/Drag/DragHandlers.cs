@@ -11,7 +11,9 @@ namespace SE.Editor.GUI
             foreach (DragHelperBase helper in this)
             {
                 if (helper.OnDragEnter(data) && result == DragDropEffect.None)
+                {
                     result = helper.Effect;
+                }
             }
 
             return result;
@@ -41,12 +43,14 @@ namespace SE.Editor.GUI
             }
         }
 
-        public DragHelperBase? WithValidDrag()
+        public DragHelperBase WithValidDrag()
         {
             foreach (DragHelperBase helper in this)
             {
                 if (helper.HasValidDrag)
+                {
                     return helper;
+                }
             }
 
             return null;

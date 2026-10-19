@@ -8,7 +8,7 @@ namespace SE.Editor.GUI
     /// <seealso cref="float" />
     public class FloatValueBox : ValueBox<float>
     {
-        private Utils.ValueCategory _category = Utils.ValueCategory.None;
+        private Utils.ValueCategory m_Category = Utils.ValueCategory.None;
         public override float GetValue()
         {
             return _value;
@@ -66,7 +66,7 @@ namespace SE.Editor.GUI
         /// <param name="max">The maximum value.</param>
         /// <param name="slideSpeed">The slide speed.</param>
         public FloatValueBox(float value, float x = 0, float y = 0, float width = 120,
-            float min = float.MinValue, float max = float.MaxValue,float slideSpeed = 1) 
+            float min = float.MinValue, float max = float.MaxValue, float slideSpeed = 1)
             : base(min > max ? value : Mathf.Clamp(value, min, max),
                 x, y, width, min, max, slideSpeed)
         {
@@ -118,18 +118,19 @@ namespace SE.Editor.GUI
         }
 
         /// <summary>
-        /// Gets or sets the category of the value. This can be none for just a number or a more specific one like a distance.
+        /// Gets or sets the category of the value. This can be none for just a number or a more specific one like a
+        /// distance.
         /// </summary>
         public Utils.ValueCategory Category
         {
-            get => _category;
+            get => m_Category;
             set
             {
-                if (_category == value)
+                if (m_Category == value)
                 {
                     return;
                 }
-                _category = value;
+                m_Category = value;
                 UpdateText();
             }
         }

@@ -30,8 +30,8 @@ namespace SE.Editor
         public TextureImportEntry(ref Request request) : base(ref request)
         {
             // Try to guess format type based on file name
-            var snl = System.IO.Path.GetFileNameWithoutExtension(SourceUrl).ToLower();
-            var extension = System.IO.Path.GetExtension(SourceUrl).ToLower();
+            string snl = System.IO.Path.GetFileNameWithoutExtension(SourceUrl).ToLower();
+            string extension = System.IO.Path.GetExtension(SourceUrl).ToLower();
             if (extension == ".raw")
             {
                 // Raw image data in 16bit gray-scale, preserve the quality
@@ -115,14 +115,16 @@ namespace SE.Editor
         {
             if (settings is TextureImportSettings s)
             {
-                var sprites = s.Settings.Sprites ?? m_Settings.Settings.Sprites; // Preserve sprites if not specified to override
+                Sprite[] sprites = s.Settings.Sprites ?? m_Settings.Settings
+                    .Sprites; // Preserve sprites if not specified to override
                 m_Settings.Settings = s.Settings;
                 m_Settings.Settings.Sprites = sprites;
                 return true;
             }
             if (settings is TextureUtilsOptions o)
             {
-                var sprites = o.Sprites ?? m_Settings.Settings.Sprites; // Preserve sprites if not specified to override
+                Sprite[] sprites = o.Sprites ?? m_Settings.Settings
+                    .Sprites; // Preserve sprites if not specified to override
                 m_Settings.Settings = o;
                 m_Settings.Settings.Sprites = sprites;
                 return true;

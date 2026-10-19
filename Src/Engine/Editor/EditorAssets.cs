@@ -42,9 +42,13 @@ namespace SE.Editor
                 // FontReference is a class in managed code, so copy it to preserve
                 // the value semantics of the native EditorAssets implementation.
                 if (value is null || !value.Font)
+                {
                     s_TitleFont.Font = GetDefaultFont();
+                }
                 else
+                {
                     s_TitleFont = new FontReference(value);
+                }
             }
         }
 
@@ -57,9 +61,13 @@ namespace SE.Editor
             set
             {
                 if (value is null || !value.Font)
+                {
                     s_LargeFont.Font = GetDefaultFont();
+                }
                 else
+                {
                     s_LargeFont = new FontReference(value);
+                }
             }
         }
 
@@ -72,9 +80,13 @@ namespace SE.Editor
             set
             {
                 if (value is null || !value.Font)
+                {
                     s_MediumFont.Font = GetDefaultFont();
+                }
                 else
+                {
                     s_MediumFont = new FontReference(value);
+                }
             }
         }
 
@@ -87,9 +99,13 @@ namespace SE.Editor
             set
             {
                 if (value is null || !value.Font)
+                {
                     s_SmallFont.Font = GetDefaultFont();
+                }
                 else
+                {
                     s_SmallFont = new FontReference(value);
+                }
             }
         }
 

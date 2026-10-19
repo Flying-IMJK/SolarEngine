@@ -296,7 +296,8 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Matrix" /> struct.
         /// </summary>
-        /// <param name="values">The values to assign to the components of the matrix. This must be an array with sixteen elements.</param>
+        /// <param name="values"> The values to assign to the components of the matrix. This must be an array with
+        /// sixteen elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when <paramref name="values" /> contains more or less than sixteen
@@ -305,9 +306,14 @@ namespace SE
         public Matrix(float[] values)
         {
             if (values == null)
+            {
                 throw new ArgumentNullException(nameof(values));
+            }
             if (values.Length != 16)
-                throw new ArgumentOutOfRangeException(nameof(values), "There must be sixteen and only sixteen input values for Matrix.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(values),
+                    "There must be sixteen and only sixteen input values for Matrix.");
+            }
 
             M11 = values[0];
             M12 = values[1];
@@ -512,29 +518,30 @@ namespace SE
         /// </summary>
         /// <param name="index">The zero-based index of the component to access.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="index" /> is out of the range [0, 15].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"> Thrown when the <paramref name="index" /> is out of
+        /// the range [0, 15].</exception>
         public float this[int index]
         {
             get
             {
                 switch (index)
                 {
-                case 0: return M11;
-                case 1: return M12;
-                case 2: return M13;
-                case 3: return M14;
-                case 4: return M21;
-                case 5: return M22;
-                case 6: return M23;
-                case 7: return M24;
-                case 8: return M31;
-                case 9: return M32;
-                case 10: return M33;
-                case 11: return M34;
-                case 12: return M41;
-                case 13: return M42;
-                case 14: return M43;
-                case 15: return M44;
+                    case 0: return M11;
+                    case 1: return M12;
+                    case 2: return M13;
+                    case 3: return M14;
+                    case 4: return M21;
+                    case 5: return M22;
+                    case 6: return M23;
+                    case 7: return M24;
+                    case 8: return M31;
+                    case 9: return M32;
+                    case 10: return M33;
+                    case 11: return M34;
+                    case 12: return M41;
+                    case 13: return M42;
+                    case 14: return M43;
+                    case 15: return M44;
                 }
                 throw new ArgumentOutOfRangeException(nameof(index), "Indices for Matrix run from 0 to 15, inclusive.");
             }
@@ -543,55 +550,57 @@ namespace SE
             {
                 switch (index)
                 {
-                case 0:
-                    M11 = value;
-                    break;
-                case 1:
-                    M12 = value;
-                    break;
-                case 2:
-                    M13 = value;
-                    break;
-                case 3:
-                    M14 = value;
-                    break;
-                case 4:
-                    M21 = value;
-                    break;
-                case 5:
-                    M22 = value;
-                    break;
-                case 6:
-                    M23 = value;
-                    break;
-                case 7:
-                    M24 = value;
-                    break;
-                case 8:
-                    M31 = value;
-                    break;
-                case 9:
-                    M32 = value;
-                    break;
-                case 10:
-                    M33 = value;
-                    break;
-                case 11:
-                    M34 = value;
-                    break;
-                case 12:
-                    M41 = value;
-                    break;
-                case 13:
-                    M42 = value;
-                    break;
-                case 14:
-                    M43 = value;
-                    break;
-                case 15:
-                    M44 = value;
-                    break;
-                default: throw new ArgumentOutOfRangeException(nameof(index), "Indices for Matrix run from 0 to 15, inclusive.");
+                    case 0:
+                        M11 = value;
+                        break;
+                    case 1:
+                        M12 = value;
+                        break;
+                    case 2:
+                        M13 = value;
+                        break;
+                    case 3:
+                        M14 = value;
+                        break;
+                    case 4:
+                        M21 = value;
+                        break;
+                    case 5:
+                        M22 = value;
+                        break;
+                    case 6:
+                        M23 = value;
+                        break;
+                    case 7:
+                        M24 = value;
+                        break;
+                    case 8:
+                        M31 = value;
+                        break;
+                    case 9:
+                        M32 = value;
+                        break;
+                    case 10:
+                        M33 = value;
+                        break;
+                    case 11:
+                        M34 = value;
+                        break;
+                    case 12:
+                        M41 = value;
+                        break;
+                    case 13:
+                        M42 = value;
+                        break;
+                    case 14:
+                        M43 = value;
+                        break;
+                    case 15:
+                        M44 = value;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(index),
+                        "Indices for Matrix run from 0 to 15, inclusive.");
                 }
             }
         }
@@ -603,23 +612,36 @@ namespace SE
         /// <param name="row">The row of the matrix to access.</param>
         /// <param name="column">The column of the matrix to access.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="row" /> or <paramref name="column" />is out of the range [0, 3].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"> Thrown when the <paramref name="row" /> or
+        /// <paramref name="column" /> is out of the range [0, 3].</exception>
         public float this[int row, int column]
         {
             get
             {
                 if (row < 0 || row > 3)
-                    throw new ArgumentOutOfRangeException(nameof(row), "Rows and columns for matrices run from 0 to 3, inclusive.");
+                {
+                    throw new ArgumentOutOfRangeException(nameof(row),
+                        "Rows and columns for matrices run from 0 to 3, inclusive.");
+                }
                 if (column < 0 || column > 3)
-                    throw new ArgumentOutOfRangeException(nameof(column), "Rows and columns for matrices run from 0 to 3, inclusive.");
+                {
+                    throw new ArgumentOutOfRangeException(nameof(column),
+                        "Rows and columns for matrices run from 0 to 3, inclusive.");
+                }
                 return this[row * 4 + column];
             }
             set
             {
                 if (row < 0 || row > 3)
-                    throw new ArgumentOutOfRangeException(nameof(row), "Rows and columns for matrices run from 0 to 3, inclusive.");
+                {
+                    throw new ArgumentOutOfRangeException(nameof(row),
+                        "Rows and columns for matrices run from 0 to 3, inclusive.");
+                }
                 if (column < 0 || column > 3)
-                    throw new ArgumentOutOfRangeException(nameof(column), "Rows and columns for matrices run from 0 to 3, inclusive.");
+                {
+                    throw new ArgumentOutOfRangeException(nameof(column),
+                        "Rows and columns for matrices run from 0 to 3, inclusive.");
+                }
                 this[row * 4 + column] = value;
             }
         }
@@ -636,7 +658,9 @@ namespace SE
             float temp4 = M31 * M44 - M34 * M41;
             float temp5 = M31 * M43 - M33 * M41;
             float temp6 = M31 * M42 - M32 * M41;
-            return M11 * (M22 * temp1 - M23 * temp2 + M24 * temp3) - M12 * (M21 * temp1 - M23 * temp4 + M24 * temp5) + M13 * (M21 * temp2 - M22 * temp4 + M24 * temp6) - M14 * (M21 * temp3 - M22 * temp5 + M23 * temp6);
+            return M11 * (M22 * temp1 - M23 * temp2 + M24 * temp3) - M12 * (M21 * temp1 - M23 * temp4 + M24
+                * temp5) + M13 * (M21 * temp2 - M22 * temp4 + M24 * temp6) - M14 * (M21 * temp3 - M22 * temp5 + M23
+                    * temp6);
         }
 
         /// <summary>
@@ -711,7 +735,8 @@ namespace SE
         /// Decomposes a matrix into an orthonormalized matrix Q and a right triangular matrix R.
         /// </summary>
         /// <param name="Q">When the method completes, contains the orthonormalized matrix of the decomposition.</param>
-        /// <param name="R">When the method completes, contains the right triangular matrix of the decomposition.</param>
+        /// <param name="R"> When the method completes, contains the right triangular matrix of the
+        /// decomposition.</param>
         public void DecomposeQR(out Matrix Q, out Matrix R)
         {
             Matrix temp = this;
@@ -740,7 +765,8 @@ namespace SE
         /// <summary>
         /// Decomposes a matrix into a lower triangular matrix L and an orthonormalized matrix Q.
         /// </summary>
-        /// <param name="L">When the method completes, contains the lower triangular matrix of the decomposition.</param>
+        /// <param name="L"> When the method completes, contains the lower triangular matrix of the
+        /// decomposition.</param>
         /// <param name="Q">When the method completes, contains the orthonormalized matrix of the decomposition.</param>
         public void DecomposeLQ(out Matrix L, out Matrix Q)
         {
@@ -767,7 +793,8 @@ namespace SE
         /// <summary>
         /// Decomposes a matrix into a scale, rotation, and translation.
         /// </summary>
-        /// <param name="transform">When the method completes, contains the transformation of the decomposed matrix.</param>
+        /// <param name="transform"> When the method completes, contains the transformation of the decomposed
+        /// matrix.</param>
         /// <remarks>This method is designed to decompose an SRT transformation matrix only.</remarks>
         public void Decompose(out Transform transform)
         {
@@ -779,9 +806,12 @@ namespace SE
         /// <summary>
         /// Decomposes a matrix into a scale, rotation, and translation.
         /// </summary>
-        /// <param name="scale">When the method completes, contains the scaling component of the decomposed matrix.</param>
-        /// <param name="rotation">When the method completes, contains the rotation component of the decomposed matrix.</param>
-        /// <param name="translation">When the method completes, contains the translation component of the decomposed matrix.</param>
+        /// <param name="scale"> When the method completes, contains the scaling component of the decomposed
+        /// matrix.</param>
+        /// <param name="rotation"> When the method completes, contains the rotation component of the decomposed
+        /// matrix.</param>
+        /// <param name="translation"> When the method completes, contains the translation component of the decomposed
+        /// matrix.</param>
         /// <remarks>This method is designed to decompose an SRT transformation matrix only.</remarks>
         public void Decompose(out Float3 scale, out Matrix3x3 rotation, out Float3 translation)
         {
@@ -824,9 +854,12 @@ namespace SE
         /// Decomposes a matrix into a scale, rotation, and translation.
         /// [Deprecated on 20.02.2024, expires on 20.02.2026]
         /// </summary>
-        /// <param name="scale">When the method completes, contains the scaling component of the decomposed matrix.</param>
-        /// <param name="rotation">When the method completes, contains the rotation component of the decomposed matrix.</param>
-        /// <param name="translation">When the method completes, contains the translation component of the decomposed matrix.</param>
+        /// <param name="scale"> When the method completes, contains the scaling component of the decomposed
+        /// matrix.</param>
+        /// <param name="rotation"> When the method completes, contains the rotation component of the decomposed
+        /// matrix.</param>
+        /// <param name="translation"> When the method completes, contains the translation component of the decomposed
+        /// matrix.</param>
         /// <remarks>This method is designed to decompose an SRT transformation matrix only.</remarks>
         [Obsolete("Deprecated in v1.8")]
         public void Decompose(out Float3 scale, out Matrix rotation, out Float3 translation)
@@ -838,9 +871,12 @@ namespace SE
         /// <summary>
         /// Decomposes a matrix into a scale, rotation, and translation.
         /// </summary>
-        /// <param name="scale">When the method completes, contains the scaling component of the decomposed matrix.</param>
-        /// <param name="rotation">When the method completes, contains the rotation component of the decomposed matrix.</param>
-        /// <param name="translation">When the method completes, contains the translation component of the decomposed matrix.</param>
+        /// <param name="scale"> When the method completes, contains the scaling component of the decomposed
+        /// matrix.</param>
+        /// <param name="rotation"> When the method completes, contains the rotation component of the decomposed
+        /// matrix.</param>
+        /// <param name="translation"> When the method completes, contains the translation component of the decomposed
+        /// matrix.</param>
         /// <remarks>This method is designed to decompose an SRT transformation matrix only.</remarks>
         public void Decompose(out Float3 scale, out Quaternion rotation, out Float3 translation)
         {
@@ -852,9 +888,12 @@ namespace SE
         /// Decomposes a uniform scale matrix into a scale, rotation, and translation.
         /// A uniform scale matrix has the same scale in every axis.
         /// </summary>
-        /// <param name="scale">When the method completes, contains the scaling component of the decomposed matrix.</param>
-        /// <param name="rotation">When the method completes, contains the rotation component of the decomposed matrix.</param>
-        /// <param name="translation">When the method completes, contains the translation component of the decomposed matrix.</param>
+        /// <param name="scale"> When the method completes, contains the scaling component of the decomposed
+        /// matrix.</param>
+        /// <param name="rotation"> When the method completes, contains the rotation component of the decomposed
+        /// matrix.</param>
+        /// <param name="translation"> When the method completes, contains the translation component of the decomposed
+        /// matrix.</param>
         /// <remarks>This method is designed to decompose an SRT transformation matrix only.</remarks>
         public void DecomposeUniformScale(out float scale, out Quaternion rotation, out Float3 translation)
         {
@@ -878,7 +917,7 @@ namespace SE
 
             // The rotation is the left over matrix after dividing out the scaling
             float invScale = 1f / scale;
-            var rotationMatrix = new Matrix
+            Matrix rotationMatrix = new Matrix
             {
                 M11 = M11 * invScale,
                 M12 = M12 * invScale,
@@ -902,15 +941,29 @@ namespace SE
         public void ExchangeRows(int firstRow, int secondRow)
         {
             if (firstRow < 0)
-                throw new ArgumentOutOfRangeException(nameof(firstRow), "The parameter firstRow must be greater than or equal to zero.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(firstRow),
+                    "The parameter firstRow must be greater than or equal to zero.");
+            }
             if (firstRow > 3)
-                throw new ArgumentOutOfRangeException(nameof(firstRow), "The parameter firstRow must be less than or equal to three.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(firstRow),
+                    "The parameter firstRow must be less than or equal to three.");
+            }
             if (secondRow < 0)
-                throw new ArgumentOutOfRangeException(nameof(secondRow), "The parameter secondRow must be greater than or equal to zero.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(secondRow),
+                    "The parameter secondRow must be greater than or equal to zero.");
+            }
             if (secondRow > 3)
-                throw new ArgumentOutOfRangeException(nameof(secondRow), "The parameter secondRow must be less than or equal to three.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(secondRow),
+                    "The parameter secondRow must be less than or equal to three.");
+            }
             if (firstRow == secondRow)
+            {
                 return;
+            }
 
             float temp0 = this[secondRow, 0];
             float temp1 = this[secondRow, 1];
@@ -931,20 +984,36 @@ namespace SE
         /// <summary>
         /// Exchanges two columns in the matrix.
         /// </summary>
-        /// <param name="firstColumn">The first column to exchange. This is an index of the column starting at zero.</param>
-        /// <param name="secondColumn">The second column to exchange. This is an index of the column starting at zero.</param>
+        /// <param name="firstColumn"> The first column to exchange. This is an index of the column starting at
+        /// zero.</param>
+        /// <param name="secondColumn"> The second column to exchange. This is an index of the column starting at
+        /// zero.</param>
         public void ExchangeColumns(int firstColumn, int secondColumn)
         {
             if (firstColumn < 0)
-                throw new ArgumentOutOfRangeException(nameof(firstColumn), "The parameter firstColumn must be greater than or equal to zero.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(firstColumn),
+                    "The parameter firstColumn must be greater than or equal to zero.");
+            }
             if (firstColumn > 3)
-                throw new ArgumentOutOfRangeException(nameof(firstColumn), "The parameter firstColumn must be less than or equal to three.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(firstColumn),
+                    "The parameter firstColumn must be less than or equal to three.");
+            }
             if (secondColumn < 0)
-                throw new ArgumentOutOfRangeException(nameof(secondColumn), "The parameter secondColumn must be greater than or equal to zero.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(secondColumn),
+                    "The parameter secondColumn must be greater than or equal to zero.");
+            }
             if (secondColumn > 3)
-                throw new ArgumentOutOfRangeException(nameof(secondColumn), "The parameter secondColumn must be less than or equal to three.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(secondColumn),
+                    "The parameter secondColumn must be less than or equal to three.");
+            }
             if (firstColumn == secondColumn)
+            {
                 return;
+            }
 
             float temp0 = this[0, secondColumn];
             float temp1 = this[1, secondColumn];
@@ -1023,7 +1092,7 @@ namespace SE
         /// <returns>The sum of the two matrices.</returns>
         public static Matrix Add(Matrix left, Matrix right)
         {
-            Add(ref left, ref right, out var result);
+            Add(ref left, ref right, out Matrix result);
             return result;
         }
 
@@ -1061,7 +1130,7 @@ namespace SE
         /// <returns>The difference between the two matrices.</returns>
         public static Matrix Subtract(Matrix left, Matrix right)
         {
-            Subtract(ref left, ref right, out var result);
+            Subtract(ref left, ref right, out Matrix result);
             return result;
         }
 
@@ -1099,7 +1168,7 @@ namespace SE
         /// <returns>The scaled matrix.</returns>
         public static Matrix Multiply(Matrix left, float right)
         {
-            Multiply(ref left, right, out var result);
+            Multiply(ref left, right, out Matrix result);
             return result;
         }
 
@@ -1140,7 +1209,7 @@ namespace SE
         /// <returns>The product of the two matrices.</returns>
         public static Matrix Multiply(Matrix left, Matrix right)
         {
-            Multiply(ref left, ref right, out var result);
+            Multiply(ref left, ref right, out Matrix result);
             return result;
         }
 
@@ -1179,7 +1248,7 @@ namespace SE
         /// <returns>The scaled matrix.</returns>
         public static Matrix Divide(Matrix left, float right)
         {
-            Divide(ref left, right, out var result);
+            Divide(ref left, right, out Matrix result);
             return result;
         }
 
@@ -1217,7 +1286,7 @@ namespace SE
         /// <returns>The quotient of the two matrices.</returns>
         public static Matrix Divide(Matrix left, Matrix right)
         {
-            Divide(ref left, ref right, out var result);
+            Divide(ref left, ref right, out Matrix result);
             return result;
         }
 
@@ -1227,14 +1296,17 @@ namespace SE
         /// <param name="value">The matrix to perform the operation on.</param>
         /// <param name="exponent">The exponent to raise the matrix to.</param>
         /// <param name="result">When the method completes, contains the exponential matrix.</param>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="exponent" /> is negative.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"> Thrown when the <paramref name="exponent" /> is
+        /// negative.</exception>
         public static void Exponent(ref Matrix value, int exponent, out Matrix result)
         {
             // Source: http://rosettacode.org
             // Reference: http://rosettacode.org/wiki/Matrix-exponentiation_operator
 
             if (exponent < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(exponent), "The exponent can not be negative.");
+            }
             if (exponent == 0)
             {
                 result = Identity;
@@ -1252,14 +1324,20 @@ namespace SE
             while (true)
             {
                 if ((exponent & 1) != 0)
+                {
                     identity *= temp;
+                }
 
                 exponent /= 2;
 
                 if (exponent > 0)
+                {
                     temp *= temp;
+                }
                 else
+                {
                     break;
+                }
             }
 
             result = identity;
@@ -1271,10 +1349,11 @@ namespace SE
         /// <param name="value">The matrix to perform the operation on.</param>
         /// <param name="exponent">The exponent to raise the matrix to.</param>
         /// <returns>The exponential matrix.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="exponent" /> is negative.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"> Thrown when the <paramref name="exponent" /> is
+        /// negative.</exception>
         public static Matrix Exponent(Matrix value, int exponent)
         {
-            Exponent(ref value, exponent, out var result);
+            Exponent(ref value, exponent, out Matrix result);
             return result;
         }
 
@@ -1310,7 +1389,7 @@ namespace SE
         /// <returns>The negated matrix.</returns>
         public static Matrix Negate(Matrix value)
         {
-            Negate(ref value, out var result);
+            Negate(ref value, out Matrix result);
             return result;
         }
 
@@ -1320,9 +1399,11 @@ namespace SE
         /// <param name="start">Start matrix.</param>
         /// <param name="end">End matrix.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
-        /// <param name="result">When the method completes, contains the linear interpolation of the two matrices.</param>
+        /// <param name="result"> When the method completes, contains the linear interpolation of the two
+        /// matrices.</param>
         /// <remarks>
-        /// Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1
+        /// Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value
+        /// of 1
         /// will cause <paramref name="end" /> to be returned.
         /// </remarks>
         public static void Lerp(ref Matrix start, ref Matrix end, float amount, out Matrix result)
@@ -1353,12 +1434,13 @@ namespace SE
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
         /// <returns>The linear interpolation of the two matrices.</returns>
         /// <remarks>
-        /// Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1
+        /// Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value
+        /// of 1
         /// will cause <paramref name="end" /> to be returned.
         /// </remarks>
         public static Matrix Lerp(Matrix start, Matrix end, float amount)
         {
-            Lerp(ref start, ref end, amount, out var result);
+            Lerp(ref start, ref end, amount, out Matrix result);
             return result;
         }
 
@@ -1368,7 +1450,8 @@ namespace SE
         /// <param name="start">Start matrix.</param>
         /// <param name="end">End matrix.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
-        /// <param name="result">When the method completes, contains the cubic interpolation of the two matrices.</param>
+        /// <param name="result"> When the method completes, contains the cubic interpolation of the two
+        /// matrices.</param>
         public static void SmoothStep(ref Matrix start, ref Matrix end, float amount, out Matrix result)
         {
             amount = Mathf.SmoothStep(amount);
@@ -1384,7 +1467,7 @@ namespace SE
         /// <returns>The cubic interpolation of the two matrices.</returns>
         public static Matrix SmoothStep(Matrix start, Matrix end, float amount)
         {
-            SmoothStep(ref start, ref end, amount, out var result);
+            SmoothStep(ref start, ref end, amount, out Matrix result);
             return result;
         }
 
@@ -1448,7 +1531,7 @@ namespace SE
         /// <returns>The transpose of the specified matrix.</returns>
         public static Matrix Transpose(Matrix value)
         {
-            Transpose(ref value, out var result);
+            Transpose(ref value, out Matrix result);
             return result;
         }
 
@@ -1598,7 +1681,7 @@ namespace SE
         /// </remarks>
         public static Matrix Orthogonalize(Matrix value)
         {
-            Orthogonalize(ref value, out var result);
+            Orthogonalize(ref value, out Matrix result);
             return result;
         }
 
@@ -1634,7 +1717,8 @@ namespace SE
             //q1 = m1 / |m1|
             //q2 = (m2 - (q1 ⋅ m2) * q1) / |m2 - (q1 ⋅ m2) * q1|
             //q3 = (m3 - (q1 ⋅ m3) * q1 - (q2 ⋅ m3) * q2) / |m3 - (q1 ⋅ m3) * q1 - (q2 ⋅ m3) * q2|
-            //q4 = (m4 - (q1 ⋅ m4) * q1 - (q2 ⋅ m4) * q2 - (q3 ⋅ m4) * q3) / |m4 - (q1 ⋅ m4) * q1 - (q2 ⋅ m4) * q2 - (q3 ⋅ m4) * q3|
+            //q4 = (m4 - (q1 ⋅ m4) * q1 - (q2 ⋅ m4) * q2 - (q3 ⋅ m4) * q3) / |m4 - (q1 ⋅ m4) * q1 - (q2 ⋅ m4) * q2 - (q3
+            //⋅ m4) * q3|
 
             //By separating the above algorithm into multiple lines, we actually increase accuracy.
             result = value;
@@ -1680,7 +1764,7 @@ namespace SE
         /// </remarks>
         public static Matrix Orthonormalize(Matrix value)
         {
-            Orthonormalize(ref value, out var result);
+            Orthonormalize(ref value, out Matrix result);
             return result;
         }
 
@@ -1699,14 +1783,16 @@ namespace SE
         {
             // Adapted from the row echelon code
             result = value;
-            var lead = 0;
-            var rowCount = 4;
-            var columnCount = 4;
+            int lead = 0;
+            int rowCount = 4;
+            int columnCount = 4;
 
-            for (var r = 0; r < rowCount; ++r)
+            for (int r = 0; r < rowCount; ++r)
             {
                 if (columnCount <= lead)
+                {
                     return;
+                }
 
                 int i = r;
 
@@ -1720,16 +1806,21 @@ namespace SE
                         lead++;
 
                         if (lead == columnCount)
+                        {
                             return;
+                        }
                     }
                 }
 
                 if (i != r)
+                {
                     result.ExchangeRows(i, r);
+                }
 
                 float multiplier = 1f / result[r, lead];
 
                 for (; i < rowCount; ++i)
+                {
                     if (i != r)
                     {
                         result[i, 0] -= result[r, 0] * multiplier * result[i, lead];
@@ -1737,6 +1828,7 @@ namespace SE
                         result[i, 2] -= result[r, 2] * multiplier * result[i, lead];
                         result[i, 3] -= result[r, 3] * multiplier * result[i, lead];
                     }
+                }
 
                 lead++;
             }
@@ -1755,7 +1847,7 @@ namespace SE
         /// </remarks>
         public static Matrix UpperTriangularForm(Matrix value)
         {
-            UpperTriangularForm(ref value, out var result);
+            UpperTriangularForm(ref value, out Matrix result);
             return result;
         }
 
@@ -1776,14 +1868,16 @@ namespace SE
             Matrix temp = value;
             Transpose(ref temp, out result);
 
-            var lead = 0;
-            var rowCount = 4;
-            var columnCount = 4;
+            int lead = 0;
+            int rowCount = 4;
+            int columnCount = 4;
 
-            for (var r = 0; r < rowCount; ++r)
+            for (int r = 0; r < rowCount; ++r)
             {
                 if (columnCount <= lead)
+                {
                     return;
+                }
 
                 int i = r;
 
@@ -1797,16 +1891,21 @@ namespace SE
                         lead++;
 
                         if (lead == columnCount)
+                        {
                             return;
+                        }
                     }
                 }
 
                 if (i != r)
+                {
                     result.ExchangeRows(i, r);
+                }
 
                 float multiplier = 1f / result[r, lead];
 
                 for (; i < rowCount; ++i)
+                {
                     if (i != r)
                     {
                         result[i, 0] -= result[r, 0] * multiplier * result[i, lead];
@@ -1814,6 +1913,7 @@ namespace SE
                         result[i, 2] -= result[r, 2] * multiplier * result[i, lead];
                         result[i, 3] -= result[r, 3] * multiplier * result[i, lead];
                     }
+                }
 
                 lead++;
             }
@@ -1834,7 +1934,7 @@ namespace SE
         /// </remarks>
         public static Matrix LowerTriangularForm(Matrix value)
         {
-            LowerTriangularForm(ref value, out var result);
+            LowerTriangularForm(ref value, out Matrix result);
             return result;
         }
 
@@ -1849,14 +1949,16 @@ namespace SE
             // Reference: http://en.wikipedia.org/wiki/Row_echelon_form#Pseudocode
 
             result = value;
-            var lead = 0;
-            var rowCount = 4;
-            var columnCount = 4;
+            int lead = 0;
+            int rowCount = 4;
+            int columnCount = 4;
 
-            for (var r = 0; r < rowCount; ++r)
+            for (int r = 0; r < rowCount; ++r)
             {
                 if (columnCount <= lead)
+                {
                     return;
+                }
 
                 int i = r;
 
@@ -1870,12 +1972,16 @@ namespace SE
                         lead++;
 
                         if (lead == columnCount)
+                        {
                             return;
+                        }
                     }
                 }
 
                 if (i != r)
+                {
                     result.ExchangeRows(i, r);
+                }
 
                 float multiplier = 1f / result[r, lead];
                 result[r, 0] *= multiplier;
@@ -1884,6 +1990,7 @@ namespace SE
                 result[r, 3] *= multiplier;
 
                 for (; i < rowCount; ++i)
+                {
                     if (i != r)
                     {
                         result[i, 0] -= result[r, 0] * result[i, lead];
@@ -1891,6 +1998,7 @@ namespace SE
                         result[i, 2] -= result[r, 2] * result[i, lead];
                         result[i, 3] -= result[r, 3] * result[i, lead];
                     }
+                }
 
                 lead++;
             }
@@ -1903,7 +2011,7 @@ namespace SE
         /// <returns>When the method completes, contains the row echelon form of the matrix.</returns>
         public static Matrix RowEchelonForm(Matrix value)
         {
-            RowEchelonForm(ref value, out var result);
+            RowEchelonForm(ref value, out Matrix result);
             return result;
         }
 
@@ -1913,7 +2021,8 @@ namespace SE
         /// <param name="value">The matrix to put into reduced row echelon form.</param>
         /// <param name="augment">The fifth column of the matrix.</param>
         /// <param name="result">When the method completes, contains the resultant matrix after the operation.</param>
-        /// <param name="augmentResult">When the method completes, contains the resultant fifth column of the matrix.</param>
+        /// <param name="augmentResult"> When the method completes, contains the resultant fifth column of the
+        /// matrix.</param>
         /// <remarks>
         /// <para>
         ///   The fifth column is often called the augmented part of the matrix. This is because the fifth
@@ -1930,7 +2039,8 @@ namespace SE
         ///   to analyze both the input and the result to determine if a solution really exists.
         /// </para>
         /// </remarks>
-        public static void ReducedRowEchelonForm(ref Matrix value, ref Float4 augment, out Matrix result, out Float4 augmentResult)
+        public static void ReducedRowEchelonForm(ref Matrix value, ref Float4 augment, out Matrix result,
+            out Float4 augmentResult)
         {
             augment = default;
             result = default;
@@ -1938,7 +2048,7 @@ namespace SE
             // Source: http://rosettacode.org
             // Reference: http://rosettacode.org/wiki/Reduced_row_echelon_form
 
-            var matrix = new float[4, 5];
+            float[,] matrix = new float[4, 5];
 
             matrix[0, 0] = value[0, 0];
             matrix[0, 1] = value[0, 1];
@@ -1964,14 +2074,16 @@ namespace SE
             matrix[3, 3] = value[3, 3];
             matrix[3, 4] = augment[3];
 
-            var lead = 0;
-            var rowCount = 4;
-            var columnCount = 5;
+            int lead = 0;
+            int rowCount = 4;
+            int columnCount = 5;
 
-            for (var r = 0; r < rowCount; r++)
+            for (int r = 0; r < rowCount; r++)
             {
                 if (columnCount <= lead)
+                {
                     break;
+                }
 
                 int i = r;
 
@@ -1985,11 +2097,13 @@ namespace SE
                         lead++;
 
                         if (columnCount == lead)
+                        {
                             break;
+                        }
                     }
                 }
 
-                for (var j = 0; j < columnCount; j++)
+                for (int j = 0; j < columnCount; j++)
                 {
                     float temp = matrix[r, j];
                     matrix[r, j] = matrix[i, j];
@@ -1998,16 +2112,22 @@ namespace SE
 
                 float div = matrix[r, lead];
 
-                for (var j = 0; j < columnCount; j++)
+                for (int j = 0; j < columnCount; j++)
+                {
                     matrix[r, j] /= div;
+                }
 
-                for (var j = 0; j < rowCount; j++)
+                for (int j = 0; j < rowCount; j++)
+                {
                     if (j != r)
                     {
                         float sub = matrix[j, lead];
-                        for (var k = 0; k < columnCount; k++)
+                        for (int k = 0; k < columnCount; k++)
+                        {
                             matrix[j, k] -= sub * matrix[r, k];
+                        }
                     }
+                }
 
                 lead++;
             }
@@ -2046,19 +2166,24 @@ namespace SE
         /// <param name="cameraUpFloat">The up vector of the camera.</param>
         /// <param name="cameraForwardFloat">The forward vector of the camera.</param>
         /// <param name="result">When the method completes, contains the created billboard matrix.</param>
-        public static void Billboard(ref Float3 objectPosition, ref Float3 cameraPosition, ref Float3 cameraUpFloat, ref Float3 cameraForwardFloat, out Matrix result)
+        public static void Billboard(ref Float3 objectPosition, ref Float3 cameraPosition, ref Float3 cameraUpFloat,
+            ref Float3 cameraForwardFloat, out Matrix result)
         {
             Float3 difference = cameraPosition - objectPosition;
 
             float lengthSq = difference.LengthSquared;
             if (Mathf.IsZero(lengthSq))
+            {
                 difference = -cameraForwardFloat;
+            }
             else
+            {
                 difference *= (float)(1.0 / Math.Sqrt(lengthSq));
+            }
 
-            Float3.Cross(ref cameraUpFloat, ref difference, out var crossed);
+            Float3.Cross(ref cameraUpFloat, ref difference, out Float3 crossed);
             crossed.Normalize();
-            Float3.Cross(ref difference, ref crossed, out var final);
+            Float3.Cross(ref difference, ref crossed, out Float3 final);
 
             result.M11 = crossed.X;
             result.M12 = crossed.Y;
@@ -2086,9 +2211,11 @@ namespace SE
         /// <param name="cameraUpFloat">The up vector of the camera.</param>
         /// <param name="cameraForwardFloat">The forward vector of the camera.</param>
         /// <returns>The created billboard matrix.</returns>
-        public static Matrix Billboard(Float3 objectPosition, Float3 cameraPosition, Float3 cameraUpFloat, Float3 cameraForwardFloat)
+        public static Matrix Billboard(Float3 objectPosition, Float3 cameraPosition, Float3 cameraUpFloat,
+            Float3 cameraForwardFloat)
         {
-            Billboard(ref objectPosition, ref cameraPosition, ref cameraUpFloat, ref cameraForwardFloat, out var result);
+            Billboard(ref objectPosition, ref cameraPosition, ref cameraUpFloat, ref cameraForwardFloat,
+                out Matrix result);
             return result;
         }
 
@@ -2101,11 +2228,11 @@ namespace SE
         /// <param name="result">When the method completes, contains the created look-at matrix.</param>
         public static void LookAt(ref Float3 eye, ref Float3 target, ref Float3 up, out Matrix result)
         {
-            Float3.Subtract(ref target, ref eye, out var zaxis);
+            Float3.Subtract(ref target, ref eye, out Float3 zaxis);
             zaxis.Normalize();
-            Float3.Cross(ref up, ref zaxis, out var xaxis);
+            Float3.Cross(ref up, ref zaxis, out Float3 xaxis);
             xaxis.Normalize();
-            Float3.Cross(ref zaxis, ref xaxis, out var yaxis);
+            Float3.Cross(ref zaxis, ref xaxis, out Float3 yaxis);
 
             result = Identity;
             result.M11 = xaxis.X;
@@ -2136,7 +2263,7 @@ namespace SE
         /// <returns>The created look-at matrix.</returns>
         public static Matrix LookAt(Float3 eye, Float3 target, Float3 up)
         {
-            LookAt(ref eye, ref target, ref up, out var result);
+            LookAt(ref eye, ref target, ref up, out Matrix result);
             return result;
         }
 
@@ -2165,7 +2292,7 @@ namespace SE
         /// <returns>The created projection matrix.</returns>
         public static Matrix Ortho(float width, float height, float znear, float zfar)
         {
-            Ortho(width, height, znear, zfar, out var result);
+            Ortho(width, height, znear, zfar, out Matrix result);
             return result;
         }
 
@@ -2179,7 +2306,8 @@ namespace SE
         /// <param name="znear">Minimum z-value of the viewing volume.</param>
         /// <param name="zfar">Maximum z-value of the viewing volume.</param>
         /// <param name="result">When the method completes, contains the created projection matrix.</param>
-        public static void OrthoOffCenter(float left, float right, float bottom, float top, float znear, float zfar, out Matrix result)
+        public static void OrthoOffCenter(float left, float right, float bottom, float top, float znear, float zfar,
+            out Matrix result)
         {
             float zRange = 1.0f / (zfar - znear);
             result = Identity;
@@ -2203,7 +2331,7 @@ namespace SE
         /// <returns>The created projection matrix.</returns>
         public static Matrix OrthoOffCenter(float left, float right, float bottom, float top, float znear, float zfar)
         {
-            OrthoOffCenter(left, right, bottom, top, znear, zfar, out var result);
+            OrthoOffCenter(left, right, bottom, top, znear, zfar, out Matrix result);
             return result;
         }
 
@@ -2232,7 +2360,7 @@ namespace SE
         /// <returns>The created projection matrix.</returns>
         public static Matrix Perspective(float width, float height, float znear, float zfar)
         {
-            Perspective(width, height, znear, zfar, out var result);
+            Perspective(width, height, znear, zfar, out Matrix result);
             return result;
         }
 
@@ -2246,8 +2374,8 @@ namespace SE
         /// <param name="result">When the method completes, contains the created projection matrix.</param>
         public static void PerspectiveFov(float fov, float aspect, float znear, float zfar, out Matrix result)
         {
-            var yScale = (float)(1.0f / Math.Tan(fov * 0.5f));
-            var q = zfar / (zfar - znear);
+            float yScale = (float)(1.0f / Math.Tan(fov * 0.5f));
+            float q = zfar / (zfar - znear);
             result = new Matrix
             {
                 M11 = yScale / aspect,
@@ -2268,7 +2396,7 @@ namespace SE
         /// <returns>The created projection matrix.</returns>
         public static Matrix PerspectiveFov(float fov, float aspect, float znear, float zfar)
         {
-            PerspectiveFov(fov, aspect, znear, zfar, out var result);
+            PerspectiveFov(fov, aspect, znear, zfar, out Matrix result);
             return result;
         }
 
@@ -2282,7 +2410,8 @@ namespace SE
         /// <param name="znear">Minimum z-value of the viewing volume.</param>
         /// <param name="zfar">Maximum z-value of the viewing volume.</param>
         /// <param name="result">When the method completes, contains the created projection matrix.</param>
-        public static void PerspectiveOffCenter(float left, float right, float bottom, float top, float znear, float zfar, out Matrix result)
+        public static void PerspectiveOffCenter(float left, float right, float bottom, float top, float znear,
+            float zfar, out Matrix result)
         {
             float zRange = zfar / (zfar - znear);
             result = new Matrix
@@ -2307,9 +2436,10 @@ namespace SE
         /// <param name="znear">Minimum z-value of the viewing volume.</param>
         /// <param name="zfar">Maximum z-value of the viewing volume.</param>
         /// <returns>The created projection matrix.</returns>
-        public static Matrix PerspectiveOffCenter(float left, float right, float bottom, float top, float znear, float zfar)
+        public static Matrix PerspectiveOffCenter(float left, float right, float bottom, float top, float znear,
+            float zfar)
         {
-            PerspectiveOffCenter(left, right, bottom, top, znear, zfar, out var result);
+            PerspectiveOffCenter(left, right, bottom, top, znear, zfar, out Matrix result);
             return result;
         }
 
@@ -2330,7 +2460,7 @@ namespace SE
         /// <returns>The created scaling matrix.</returns>
         public static Matrix Scaling(Float3 scale)
         {
-            Scaling(ref scale, out var result);
+            Scaling(ref scale, out Matrix result);
             return result;
         }
 
@@ -2358,7 +2488,7 @@ namespace SE
         /// <returns>The created scaling matrix.</returns>
         public static Matrix Scaling(float x, float y, float z)
         {
-            Scaling(x, y, z, out var result);
+            Scaling(x, y, z, out Matrix result);
             return result;
         }
 
@@ -2380,7 +2510,7 @@ namespace SE
         /// <returns>The created scaling matrix.</returns>
         public static Matrix Scaling(float scale)
         {
-            Scaling(scale, out var result);
+            Scaling(scale, out Matrix result);
             return result;
         }
 
@@ -2394,8 +2524,8 @@ namespace SE
         /// <param name="result">When the method completes, contains the created rotation matrix.</param>
         public static void RotationX(float angle, out Matrix result)
         {
-            var cos = (float)Math.Cos(angle);
-            var sin = (float)Math.Sin(angle);
+            float cos = (float)Math.Cos(angle);
+            float sin = (float)Math.Sin(angle);
             result = Identity;
             result.M22 = cos;
             result.M23 = sin;
@@ -2413,7 +2543,7 @@ namespace SE
         /// <returns>The created rotation matrix.</returns>
         public static Matrix RotationX(float angle)
         {
-            RotationX(angle, out var result);
+            RotationX(angle, out Matrix result);
             return result;
         }
 
@@ -2427,8 +2557,8 @@ namespace SE
         /// <param name="result">When the method completes, contains the created rotation matrix.</param>
         public static void RotationY(float angle, out Matrix result)
         {
-            var cos = (float)Math.Cos(angle);
-            var sin = (float)Math.Sin(angle);
+            float cos = (float)Math.Cos(angle);
+            float sin = (float)Math.Sin(angle);
             result = Identity;
             result.M11 = cos;
             result.M13 = -sin;
@@ -2446,7 +2576,7 @@ namespace SE
         /// <returns>The created rotation matrix.</returns>
         public static Matrix RotationY(float angle)
         {
-            RotationY(angle, out var result);
+            RotationY(angle, out Matrix result);
             return result;
         }
 
@@ -2460,8 +2590,8 @@ namespace SE
         /// <param name="result">When the method completes, contains the created rotation matrix.</param>
         public static void RotationZ(float angle, out Matrix result)
         {
-            var cos = (float)Math.Cos(angle);
-            var sin = (float)Math.Sin(angle);
+            float cos = (float)Math.Cos(angle);
+            float sin = (float)Math.Sin(angle);
             result = Identity;
             result.M11 = cos;
             result.M12 = sin;
@@ -2479,7 +2609,7 @@ namespace SE
         /// <returns>The created rotation matrix.</returns>
         public static Matrix RotationZ(float angle)
         {
-            RotationZ(angle, out var result);
+            RotationZ(angle, out Matrix result);
             return result;
         }
 
@@ -2487,15 +2617,16 @@ namespace SE
         /// Creates a matrix that rotates around an arbitrary axis.
         /// </summary>
         /// <param name="axis">The axis around which to rotate. This parameter is assumed to be normalized.</param>
-        /// <param name="angle">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
+        /// <param name="angle"> Angle of rotation in radians. Angles are measured clockwise when looking along the
+        /// rotation axis toward the origin.</param>
         /// <param name="result">When the method completes, contains the created rotation matrix.</param>
         public static void RotationAxis(ref Float3 axis, float angle, out Matrix result)
         {
             float x = axis.X;
             float y = axis.Y;
             float z = axis.Z;
-            var cos = (float)Math.Cos(angle);
-            var sin = (float)Math.Sin(angle);
+            float cos = (float)Math.Cos(angle);
+            float sin = (float)Math.Sin(angle);
             float xx = x * x;
             float yy = y * y;
             float zz = z * z;
@@ -2519,11 +2650,12 @@ namespace SE
         /// Creates a matrix that rotates around an arbitrary axis.
         /// </summary>
         /// <param name="axis">The axis around which to rotate. This parameter is assumed to be normalized.</param>
-        /// <param name="angle">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
+        /// <param name="angle"> Angle of rotation in radians. Angles are measured clockwise when looking along the
+        /// rotation axis toward the origin.</param>
         /// <returns>The created rotation matrix.</returns>
         public static Matrix RotationAxis(Float3 axis, float angle)
         {
-            RotationAxis(ref axis, angle, out var result);
+            RotationAxis(ref axis, angle, out Matrix result);
             return result;
         }
 
@@ -2563,7 +2695,7 @@ namespace SE
         /// <returns>The created rotation matrix.</returns>
         public static Matrix RotationQuaternion(Quaternion rotation)
         {
-            RotationQuaternion(ref rotation, out var result);
+            RotationQuaternion(ref rotation, out Matrix result);
             return result;
         }
 
@@ -2576,7 +2708,7 @@ namespace SE
         /// <param name="result">When the method completes, contains the created rotation matrix.</param>
         public static void RotationYawPitchRoll(float yaw, float pitch, float roll, out Matrix result)
         {
-            Quaternion.RotationYawPitchRoll(yaw, pitch, roll, out var quaternion);
+            Quaternion.RotationYawPitchRoll(yaw, pitch, roll, out Quaternion quaternion);
             RotationQuaternion(ref quaternion, out result);
         }
 
@@ -2589,7 +2721,7 @@ namespace SE
         /// <returns>The created rotation matrix.</returns>
         public static Matrix RotationYawPitchRoll(float yaw, float pitch, float roll)
         {
-            RotationYawPitchRoll(yaw, pitch, roll, out var result);
+            RotationYawPitchRoll(yaw, pitch, roll, out Matrix result);
             return result;
         }
 
@@ -2610,7 +2742,7 @@ namespace SE
         /// <returns>The created translation matrix.</returns>
         public static Matrix Translation(Float3 value)
         {
-            Translation(ref value, out var result);
+            Translation(ref value, out Matrix result);
             return result;
         }
 
@@ -2638,13 +2770,14 @@ namespace SE
         /// <returns>The created translation matrix.</returns>
         public static Matrix Translation(float x, float y, float z)
         {
-            Translation(x, y, z, out var result);
+            Translation(x, y, z, out Matrix result);
             return result;
         }
 
         /// <summary>
         /// Creates a skew/shear matrix by means of a translation vector, a rotation vector, and a rotation angle.
-        /// shearing is performed in the direction of translation vector, where translation vector and rotation vector define the
+        /// shearing is performed in the direction of translation vector, where translation vector and rotation vector
+        /// define the
         /// shearing plane.
         /// The effect is such that the skewed rotation vector has the specified angle with rotation itself.
         /// </summary>
@@ -2655,18 +2788,20 @@ namespace SE
         public static void Skew(float angle, ref Float3 rotationVec, ref Float3 transVec, out Matrix matrix)
         {
             // http://elckerlyc.ewi.utwente.nl/browser/Elckerlyc/Hmi/HmiMath/src/hmi/math/Mat3f.java
-            var MINIMAL_SKEW_ANGLE = 0.000001f;
+            float minimalSkewAngle = 0.000001f;
             Float3 e0 = rotationVec;
             Float3 e1 = Float3.Normalize(transVec);
-            Float3.Dot(ref rotationVec, ref e1, out var rv1);
+            Float3.Dot(ref rotationVec, ref e1, out float rv1);
             e0 += rv1 * e1;
-            Float3.Dot(ref rotationVec, ref e0, out var rv0);
-            var cosA = (float)Math.Cos(angle);
-            var sinA = (float)Math.Sin(angle);
+            Float3.Dot(ref rotationVec, ref e0, out float rv0);
+            float cosA = (float)Math.Cos(angle);
+            float sinA = (float)Math.Sin(angle);
             float rr0 = rv0 * cosA - rv1 * sinA;
             float rr1 = rv0 * sinA + rv1 * cosA;
-            if (rr0 < MINIMAL_SKEW_ANGLE)
+            if (rr0 < minimalSkewAngle)
+            {
                 throw new ArgumentException("Illegal skew angle");
+            }
             float d = rr1 / rr0 - rv1 / rv0;
             matrix = Identity;
             matrix.M11 = d * e1[0] * e0[0] + 1.0f;
@@ -2687,7 +2822,8 @@ namespace SE
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <param name="result">When the method completes, contains the created affine transformation matrix.</param>
-        public static void AffineTransformation(float scaling, ref Quaternion rotation, ref Float3 translation, out Matrix result)
+        public static void AffineTransformation(float scaling, ref Quaternion rotation, ref Float3 translation,
+            out Matrix result)
         {
             result = Scaling(scaling) * RotationQuaternion(rotation) * Translation(translation);
         }
@@ -2701,7 +2837,7 @@ namespace SE
         /// <returns>The created affine transformation matrix.</returns>
         public static Matrix AffineTransformation(float scaling, Quaternion rotation, Float3 translation)
         {
-            AffineTransformation(scaling, ref rotation, ref translation, out var result);
+            AffineTransformation(scaling, ref rotation, ref translation, out Matrix result);
             return result;
         }
 
@@ -2713,7 +2849,8 @@ namespace SE
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <param name="result">When the method completes, contains the created affine transformation matrix.</param>
-        public static void AffineTransformation(float scaling, ref Float3 rotationCenter, ref Quaternion rotation, ref Float3 translation, out Matrix result)
+        public static void AffineTransformation(float scaling, ref Float3 rotationCenter, ref Quaternion rotation,
+            ref Float3 translation, out Matrix result)
         {
             result = Scaling(scaling) * Translation(-rotationCenter) * RotationQuaternion(rotation) *
                      Translation(rotationCenter) * Translation(translation);
@@ -2727,9 +2864,10 @@ namespace SE
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <returns>The created affine transformation matrix.</returns>
-        public static Matrix AffineTransformation(float scaling, Float3 rotationCenter, Quaternion rotation, Float3 translation)
+        public static Matrix AffineTransformation(float scaling, Float3 rotationCenter, Quaternion rotation,
+            Float3 translation)
         {
-            AffineTransformation(scaling, ref rotationCenter, ref rotation, ref translation, out var result);
+            AffineTransformation(scaling, ref rotationCenter, ref rotation, ref translation, out Matrix result);
             return result;
         }
 
@@ -2740,7 +2878,8 @@ namespace SE
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <param name="result">When the method completes, contains the created affine transformation matrix.</param>
-        public static void AffineTransformation2D(float scaling, float rotation, ref Float2 translation, out Matrix result)
+        public static void AffineTransformation2D(float scaling, float rotation, ref Float2 translation,
+            out Matrix result)
         {
             result = Scaling(scaling, scaling, 1.0f) * RotationZ(rotation) * Translation((Float3)translation);
         }
@@ -2754,7 +2893,7 @@ namespace SE
         /// <returns>The created affine transformation matrix.</returns>
         public static Matrix AffineTransformation2D(float scaling, float rotation, Float2 translation)
         {
-            AffineTransformation2D(scaling, rotation, ref translation, out var result);
+            AffineTransformation2D(scaling, rotation, ref translation, out Matrix result);
             return result;
         }
 
@@ -2766,9 +2905,11 @@ namespace SE
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <param name="result">When the method completes, contains the created affine transformation matrix.</param>
-        public static void AffineTransformation2D(float scaling, ref Float2 rotationCenter, float rotation, ref Float2 translation, out Matrix result)
+        public static void AffineTransformation2D(float scaling, ref Float2 rotationCenter, float rotation,
+            ref Float2 translation, out Matrix result)
         {
-            result = Scaling(scaling, scaling, 1.0f) * Translation((Float3)(-rotationCenter)) * RotationZ(rotation) * Translation((Float3)rotationCenter) * Translation((Float3)translation);
+            result = Scaling(scaling, scaling, 1.0f) * Translation((Float3)(-rotationCenter)) * RotationZ(rotation)
+                * Translation((Float3)rotationCenter) * Translation((Float3)translation);
         }
 
         /// <summary>
@@ -2779,9 +2920,10 @@ namespace SE
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <returns>The created affine transformation matrix.</returns>
-        public static Matrix AffineTransformation2D(float scaling, Float2 rotationCenter, float rotation, Float2 translation)
+        public static Matrix AffineTransformation2D(float scaling, Float2 rotationCenter, float rotation,
+            Float2 translation)
         {
-            AffineTransformation2D(scaling, ref rotationCenter, rotation, ref translation, out var result);
+            AffineTransformation2D(scaling, ref rotationCenter, rotation, ref translation, out Matrix result);
             return result;
         }
 
@@ -2789,12 +2931,13 @@ namespace SE
         /// Creates a matrix that contains both the X, Y and Z rotation, as well as scaling and translation.
         /// </summary>
         /// <param name="translation">The translation.</param>
-        /// <param name="rotation">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
+        /// <param name="rotation"> Angle of rotation in radians. Angles are measured clockwise when looking along the
+        /// rotation axis toward the origin.</param>
         /// <param name="scaling">The scaling.</param>
         /// <returns>The created transformation matrix.</returns>
         public static Matrix Transformation(Float3 scaling, Quaternion rotation, Float3 translation)
         {
-            Transformation(ref scaling, ref rotation, ref translation, out var result);
+            Transformation(ref scaling, ref rotation, ref translation, out Matrix result);
             return result;
         }
 
@@ -2802,10 +2945,12 @@ namespace SE
         /// Creates a matrix that contains both the X, Y and Z rotation, as well as scaling and translation.
         /// </summary>
         /// <param name="translation">The translation.</param>
-        /// <param name="rotation">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
+        /// <param name="rotation"> Angle of rotation in radians. Angles are measured clockwise when looking along the
+        /// rotation axis toward the origin.</param>
         /// <param name="scaling">The scaling.</param>
         /// <param name="result">When the method completes, contains the created transformation matrix.</param>
-        public static void Transformation(ref Float3 scaling, ref Quaternion rotation, ref Float3 translation, out Matrix result)
+        public static void Transformation(ref Float3 scaling, ref Quaternion rotation, ref Float3 translation,
+            out Matrix result)
         {
             // Equivalent to:
             //result =
@@ -2867,10 +3012,14 @@ namespace SE
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <param name="result">When the method completes, contains the created transformation matrix.</param>
-        public static void Transformation(ref Float3 scalingCenter, ref Quaternion scalingRotation, ref Float3 scaling, ref Float3 rotationCenter, ref Quaternion rotation, ref Float3 translation, out Matrix result)
+        public static void Transformation(ref Float3 scalingCenter, ref Quaternion scalingRotation,
+            ref Float3 scaling, ref Float3 rotationCenter, ref Quaternion rotation, ref Float3 translation,
+                out Matrix result)
         {
             Matrix sr = RotationQuaternion(scalingRotation);
-            result = Translation(-scalingCenter) * Transpose(sr) * Scaling(scaling) * sr * Translation(scalingCenter) * Translation(-rotationCenter) * RotationQuaternion(rotation) * Translation(rotationCenter) * Translation(translation);
+            result = Translation(-scalingCenter) * Transpose(sr) * Scaling(scaling) * sr
+                * Translation(scalingCenter) * Translation(-rotationCenter) * RotationQuaternion(rotation)
+                    * Translation(rotationCenter) * Translation(translation);
         }
 
         /// <summary>
@@ -2883,9 +3032,11 @@ namespace SE
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <returns>The created transformation matrix.</returns>
-        public static Matrix Transformation(Float3 scalingCenter, Quaternion scalingRotation, Float3 scaling, Float3 rotationCenter, Quaternion rotation, Float3 translation)
+        public static Matrix Transformation(Float3 scalingCenter, Quaternion scalingRotation, Float3 scaling,
+            Float3 rotationCenter, Quaternion rotation, Float3 translation)
         {
-            Transformation(ref scalingCenter, ref scalingRotation, ref scaling, ref rotationCenter, ref rotation, ref translation, out var result);
+            Transformation(ref scalingCenter, ref scalingRotation, ref scaling, ref rotationCenter, ref rotation,
+                ref translation, out Matrix result);
             return result;
         }
 
@@ -2899,9 +3050,13 @@ namespace SE
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <param name="result">When the method completes, contains the created transformation matrix.</param>
-        public static void Transformation2D(ref Float2 scalingCenter, float scalingRotation, ref Float2 scaling, ref Float2 rotationCenter, float rotation, ref Float2 translation, out Matrix result)
+        public static void Transformation2D(ref Float2 scalingCenter, float scalingRotation, ref Float2 scaling,
+            ref Float2 rotationCenter, float rotation, ref Float2 translation, out Matrix result)
         {
-            result = Translation((Float3)(-scalingCenter)) * RotationZ(-scalingRotation) * Scaling((Float3)scaling) * RotationZ(scalingRotation) * Translation((Float3)scalingCenter) * Translation((Float3)(-rotationCenter)) * RotationZ(rotation) * Translation((Float3)rotationCenter) * Translation((Float3)translation);
+            result = Translation((Float3)(-scalingCenter)) * RotationZ(-scalingRotation) * Scaling((Float3)scaling)
+                * RotationZ(scalingRotation) * Translation((Float3)scalingCenter)
+                    * Translation((Float3)(-rotationCenter)) * RotationZ(rotation)
+                        * Translation((Float3)rotationCenter) * Translation((Float3)translation);
             result.M33 = 1f;
             result.M44 = 1f;
         }
@@ -2916,9 +3071,11 @@ namespace SE
         /// <param name="rotation">The rotation of the transformation.</param>
         /// <param name="translation">The translation factor of the transformation.</param>
         /// <returns>The created transformation matrix.</returns>
-        public static Matrix Transformation2D(Float2 scalingCenter, float scalingRotation, Float2 scaling, Float2 rotationCenter, float rotation, Float2 translation)
+        public static Matrix Transformation2D(Float2 scalingCenter, float scalingRotation, Float2 scaling,
+            Float2 rotationCenter, float rotation, Float2 translation)
         {
-            Transformation2D(ref scalingCenter, scalingRotation, ref scaling, ref rotationCenter, rotation, ref translation, out var result);
+            Transformation2D(ref scalingCenter, scalingRotation, ref scaling, ref rotationCenter, rotation,
+                ref translation, out Matrix result);
             return result;
         }
 
@@ -2931,7 +3088,7 @@ namespace SE
         /// <returns>The created world matrix of given transformation world</returns>
         public static Matrix CreateWorld(Float3 position, Float3 forward, Float3 up)
         {
-            CreateWorld(ref position, ref forward, ref up, out var result);
+            CreateWorld(ref position, ref forward, ref up, out Matrix result);
             return result;
         }
 
@@ -2941,14 +3098,15 @@ namespace SE
         /// <param name="position">The position of the object. This value is used in translation operations.</param>
         /// <param name="forward">The forward direction of the object.</param>
         /// <param name="up">The upward direction of the object; usually [0, 1, 0].</param>
-        /// <param name="result">>When the method completes, contains the created world matrix of given transformation world.</param>
+        /// <param name="result"> >When the method completes, contains the created world matrix of given transformation
+        /// world.</param>
         public static void CreateWorld(ref Float3 position, ref Float3 forward, ref Float3 up, out Matrix result)
         {
-            Float3.Normalize(ref forward, out var vector3);
+            Float3.Normalize(ref forward, out Float3 vector3);
             vector3 = vector3.Negative;
             Float3 vector31 = Float3.Cross(up, vector3);
             vector31.Normalize();
-            Float3.Cross(ref vector3, ref vector31, out var vector32);
+            Float3.Cross(ref vector3, ref vector31, out Float3 vector32);
             result = new Matrix
             (
              vector31.X,
@@ -2978,7 +3136,7 @@ namespace SE
         /// <returns>The created rotation matrix.</returns>
         public static Matrix CreateFromAxisAngle(Float3 axis, float angle)
         {
-            CreateFromAxisAngle(ref axis, angle, out var result);
+            CreateFromAxisAngle(ref axis, angle, out Matrix result);
             return result;
         }
 
@@ -3030,7 +3188,7 @@ namespace SE
         /// <returns>The sum of the two matrices.</returns>
         public static Matrix operator +(Matrix left, Matrix right)
         {
-            Add(ref left, ref right, out var result);
+            Add(ref left, ref right, out Matrix result);
             return result;
         }
 
@@ -3052,7 +3210,7 @@ namespace SE
         /// <returns>The difference between the two matrices.</returns>
         public static Matrix operator -(Matrix left, Matrix right)
         {
-            Subtract(ref left, ref right, out var result);
+            Subtract(ref left, ref right, out Matrix result);
             return result;
         }
 
@@ -3063,7 +3221,7 @@ namespace SE
         /// <returns>The negated matrix.</returns>
         public static Matrix operator -(Matrix value)
         {
-            Negate(ref value, out var result);
+            Negate(ref value, out Matrix result);
             return result;
         }
 
@@ -3075,7 +3233,7 @@ namespace SE
         /// <returns>The scaled matrix.</returns>
         public static Matrix operator *(float left, Matrix right)
         {
-            Multiply(ref right, left, out var result);
+            Multiply(ref right, left, out Matrix result);
             return result;
         }
 
@@ -3087,7 +3245,7 @@ namespace SE
         /// <returns>The scaled matrix.</returns>
         public static Matrix operator *(Matrix left, float right)
         {
-            Multiply(ref left, right, out var result);
+            Multiply(ref left, right, out Matrix result);
             return result;
         }
 
@@ -3099,7 +3257,7 @@ namespace SE
         /// <returns>The product of the two matrices.</returns>
         public static Matrix operator *(Matrix left, Matrix right)
         {
-            Multiply(ref left, ref right, out var result);
+            Multiply(ref left, ref right, out Matrix result);
             return result;
         }
 
@@ -3111,7 +3269,7 @@ namespace SE
         /// <returns>The scaled matrix.</returns>
         public static Matrix operator /(Matrix left, float right)
         {
-            Divide(ref left, right, out var result);
+            Divide(ref left, right, out Matrix result);
             return result;
         }
 
@@ -3123,7 +3281,7 @@ namespace SE
         /// <returns>The quotient of the two matrices.</returns>
         public static Matrix operator /(Matrix left, Matrix right)
         {
-            Divide(ref left, ref right, out var result);
+            Divide(ref left, ref right, out Matrix result);
             return result;
         }
 
@@ -3132,7 +3290,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise,<c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has the same value as <paramref name="right" /> ;
+        /// otherwise,<c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Matrix left, Matrix right)
         {
@@ -3144,7 +3303,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise,<c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has a different value than <paramref name="right" /> ;
+        /// otherwise,<c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Matrix left, Matrix right)
         {
@@ -3157,7 +3317,8 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, "[M11:{0} M12:{1} M13:{2} M14:{3}] [M21:{4} M22:{5} M23:{6} M24:{7}] [M31:{8} M32:{9} M33:{10} M34:{11}] [M41:{12} M42:{13} M43:{14} M44:{15}]",
+            return string.Format(CultureInfo.CurrentCulture,
+                "[M11:{0} M12:{1} M13:{2} M14:{3}] [M21:{4} M22:{5} M23:{6} M24:{7}] [M31:{8} M32:{9} M33:{10} M34:{11}] [M41:{12} M42:{13} M43:{14} M44:{15}]",
                                  M11, M12, M13, M14, M21, M22, M23, M24, M31, M32, M33, M34, M41, M42, M43, M44);
         }
 
@@ -3169,13 +3330,24 @@ namespace SE
         public string ToString(string format)
         {
             if (format == null)
+            {
                 return ToString();
+            }
 
-            return string.Format(format, CultureInfo.CurrentCulture, "[M11:{0} M12:{1} M13:{2} M14:{3}] [M21:{4} M22:{5} M23:{6} M24:{7}] [M31:{8} M32:{9} M33:{10} M34:{11}] [M41:{12} M42:{13} M43:{14} M44:{15}]",
-                                 M11.ToString(format, CultureInfo.CurrentCulture), M12.ToString(format, CultureInfo.CurrentCulture), M13.ToString(format, CultureInfo.CurrentCulture), M14.ToString(format, CultureInfo.CurrentCulture),
-                                 M21.ToString(format, CultureInfo.CurrentCulture), M22.ToString(format, CultureInfo.CurrentCulture), M23.ToString(format, CultureInfo.CurrentCulture), M24.ToString(format, CultureInfo.CurrentCulture),
-                                 M31.ToString(format, CultureInfo.CurrentCulture), M32.ToString(format, CultureInfo.CurrentCulture), M33.ToString(format, CultureInfo.CurrentCulture), M34.ToString(format, CultureInfo.CurrentCulture),
-                                 M41.ToString(format, CultureInfo.CurrentCulture), M42.ToString(format, CultureInfo.CurrentCulture), M43.ToString(format, CultureInfo.CurrentCulture), M44.ToString(format, CultureInfo.CurrentCulture));
+            return string.Format(format, CultureInfo.CurrentCulture,
+                "[M11:{0} M12:{1} M13:{2} M14:{3}] [M21:{4} M22:{5} M23:{6} M24:{7}] [M31:{8} M32:{9} M33:{10} M34:{11}] [M41:{12} M42:{13} M43:{14} M44:{15}]",
+                                 M11.ToString(format, CultureInfo.CurrentCulture), M12.ToString(format, CultureInfo
+                                     .CurrentCulture), M13.ToString(format, CultureInfo.CurrentCulture), M14
+                                         .ToString(format, CultureInfo.CurrentCulture),
+                                 M21.ToString(format, CultureInfo.CurrentCulture), M22.ToString(format, CultureInfo
+                                     .CurrentCulture), M23.ToString(format, CultureInfo.CurrentCulture), M24
+                                         .ToString(format, CultureInfo.CurrentCulture),
+                                 M31.ToString(format, CultureInfo.CurrentCulture), M32.ToString(format, CultureInfo
+                                     .CurrentCulture), M33.ToString(format, CultureInfo.CurrentCulture), M34
+                                         .ToString(format, CultureInfo.CurrentCulture),
+                                 M41.ToString(format, CultureInfo.CurrentCulture), M42.ToString(format, CultureInfo
+                                     .CurrentCulture), M43.ToString(format, CultureInfo.CurrentCulture), M44
+                                         .ToString(format, CultureInfo.CurrentCulture));
         }
 
         /// <summary>
@@ -3185,11 +3357,16 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, "[M11:{0} M12:{1} M13:{2} M14:{3}] [M21:{4} M22:{5} M23:{6} M24:{7}] [M31:{8} M32:{9} M33:{10} M34:{11}] [M41:{12} M42:{13} M43:{14} M44:{15}]",
-                                 M11.ToString(formatProvider), M12.ToString(formatProvider), M13.ToString(formatProvider), M14.ToString(formatProvider),
-                                 M21.ToString(formatProvider), M22.ToString(formatProvider), M23.ToString(formatProvider), M24.ToString(formatProvider),
-                                 M31.ToString(formatProvider), M32.ToString(formatProvider), M33.ToString(formatProvider), M34.ToString(formatProvider),
-                                 M41.ToString(formatProvider), M42.ToString(formatProvider), M43.ToString(formatProvider), M44.ToString(formatProvider));
+            return string.Format(formatProvider,
+                "[M11:{0} M12:{1} M13:{2} M14:{3}] [M21:{4} M22:{5} M23:{6} M24:{7}] [M31:{8} M32:{9} M33:{10} M34:{11}] [M41:{12} M42:{13} M43:{14} M44:{15}]",
+                                 M11.ToString(formatProvider), M12.ToString(formatProvider), M13
+                                     .ToString(formatProvider), M14.ToString(formatProvider),
+                                 M21.ToString(formatProvider), M22.ToString(formatProvider), M23
+                                     .ToString(formatProvider), M24.ToString(formatProvider),
+                                 M31.ToString(formatProvider), M32.ToString(formatProvider), M33
+                                     .ToString(formatProvider), M34.ToString(formatProvider),
+                                 M41.ToString(formatProvider), M42.ToString(formatProvider), M43
+                                     .ToString(formatProvider), M44.ToString(formatProvider));
         }
 
         /// <summary>
@@ -3201,19 +3378,27 @@ namespace SE
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
+            {
                 return ToString(formatProvider);
+            }
 
-            return string.Format(format, formatProvider, "[M11:{0} M12:{1} M13:{2} M14:{3}] [M21:{4} M22:{5} M23:{6} M24:{7}] [M31:{8} M32:{9} M33:{10} M34:{11}] [M41:{12} M42:{13} M43:{14} M44:{15}]",
-                                 M11.ToString(format, formatProvider), M12.ToString(format, formatProvider), M13.ToString(format, formatProvider), M14.ToString(format, formatProvider),
-                                 M21.ToString(format, formatProvider), M22.ToString(format, formatProvider), M23.ToString(format, formatProvider), M24.ToString(format, formatProvider),
-                                 M31.ToString(format, formatProvider), M32.ToString(format, formatProvider), M33.ToString(format, formatProvider), M34.ToString(format, formatProvider),
-                                 M41.ToString(format, formatProvider), M42.ToString(format, formatProvider), M43.ToString(format, formatProvider), M44.ToString(format, formatProvider));
+            return string.Format(format, formatProvider,
+                "[M11:{0} M12:{1} M13:{2} M14:{3}] [M21:{4} M22:{5} M23:{6} M24:{7}] [M31:{8} M32:{9} M33:{10} M34:{11}] [M41:{12} M42:{13} M43:{14} M44:{15}]",
+                                 M11.ToString(format, formatProvider), M12.ToString(format, formatProvider), M13
+                                     .ToString(format, formatProvider), M14.ToString(format, formatProvider),
+                                 M21.ToString(format, formatProvider), M22.ToString(format, formatProvider), M23
+                                     .ToString(format, formatProvider), M24.ToString(format, formatProvider),
+                                 M31.ToString(format, formatProvider), M32.ToString(format, formatProvider), M33
+                                     .ToString(format, formatProvider), M34.ToString(format, formatProvider),
+                                 M41.ToString(format, formatProvider), M42.ToString(format, formatProvider), M43
+                                     .ToString(format, formatProvider), M44.ToString(format, formatProvider));
         }
 
         /// <summary>
         /// Returns a hash code for this instance.
         /// </summary>
-        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
+        /// <returns> A hash code for this instance, suitable for use in hashing algorithms and data structures like a
+        /// hash table.</returns>
         public override int GetHashCode()
         {
             unchecked
@@ -3242,7 +3427,8 @@ namespace SE
         /// Determines whether the specified <see cref="Matrix" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Matrix" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Matrix" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Matrix" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         public bool Equals(ref Matrix other)
         {
             return Mathf.NearEqual(other.M11, M11) &&
@@ -3267,7 +3453,8 @@ namespace SE
         /// Determines whether the specified <see cref="Matrix" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Matrix" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Matrix" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Matrix" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Matrix other)
         {
@@ -3278,12 +3465,15 @@ namespace SE
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise,
+        /// <c> false</c>.</returns>
         public override bool Equals(object value)
         {
             if (!(value is Matrix))
+            {
                 return false;
-            var v = (Matrix)value;
+            }
+            Matrix v = (Matrix)value;
             return Equals(ref v);
         }
     }

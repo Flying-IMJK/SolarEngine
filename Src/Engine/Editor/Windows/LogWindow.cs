@@ -47,7 +47,7 @@ namespace SE.Editor
         private readonly object m_PendingEntriesLock = new();
         private readonly int[] m_LogCountPerGroup = new int[(int)LogGroup.Max];
         private readonly Regex m_LogRegex = new("at (.*) in (.*):(line (\\d*)|(\\d*))", RegexOptions.Compiled);
-        private LogEntry? m_Selected;
+        private LogEntry m_Selected;
 
         public LogWindow(Editor editor)
             : base(editor, true, ScrollBars.None)
@@ -66,11 +66,17 @@ namespace SE.Editor
             m_PauseOnErrorButton = m_ToolStrip.AddButton("Pause on Error").SetAutoCheck(true);
             m_PauseOnErrorButton.TooltipText = "Performs auto pause on error";
             m_ToolStrip.AddSeparator();
-            m_GroupButtons[(int)LogGroup.Error] = m_ToolStrip.AddButton("0 Errors", () => UpdateLogTypeVisibility(LogGroup.Error, m_GroupButtons[(int)LogGroup.Error].Checked)).SetAutoCheck(true).SetChecked(true);
+            m_GroupButtons[(int)LogGroup.Error] = m_ToolStrip.AddButton("0 Errors",
+                () => UpdateLogTypeVisibility(LogGroup.Error, m_GroupButtons[(int)LogGroup.Error].Checked))
+                    .SetAutoCheck(true).SetChecked(true);
             m_GroupButtons[(int)LogGroup.Error].TooltipText = "Shows/hides error messages";
-            m_GroupButtons[(int)LogGroup.Warning] = m_ToolStrip.AddButton("0 Warnings", () => UpdateLogTypeVisibility(LogGroup.Warning, m_GroupButtons[(int)LogGroup.Warning].Checked)).SetAutoCheck(true).SetChecked(true);
+            m_GroupButtons[(int)LogGroup.Warning] = m_ToolStrip.AddButton("0 Warnings",
+                () => UpdateLogTypeVisibility(LogGroup.Warning, m_GroupButtons[(int)LogGroup.Warning].Checked))
+                    .SetAutoCheck(true).SetChecked(true);
             m_GroupButtons[(int)LogGroup.Warning].TooltipText = "Shows/hides warning messages";
-            m_GroupButtons[(int)LogGroup.Info] = m_ToolStrip.AddButton("0 Messages", () => UpdateLogTypeVisibility(LogGroup.Info, m_GroupButtons[(int)LogGroup.Info].Checked)).SetAutoCheck(true).SetChecked(true);
+            m_GroupButtons[(int)LogGroup.Info] = m_ToolStrip.AddButton("0 Messages",
+                () => UpdateLogTypeVisibility(LogGroup.Info, m_GroupButtons[(int)LogGroup.Info].Checked))
+                    .SetAutoCheck(true).SetChecked(true);
             m_GroupButtons[(int)LogGroup.Info].TooltipText = "Shows/hides info messages";
 
             m_Split = new SplitPanel(Orientation.Vertical)
@@ -146,7 +152,7 @@ namespace SE.Editor
                 maximumScrollOffsetY = verticalScrollBar.Maximum;
             }
             bool scrollView = maximumScrollOffsetY + panelScroll.GetViewOffset().Y < LogEntry.DefaultHeight * 1.5f;
-            LogEntry? lastEntry = null;
+            LogEntry lastEntry = null;
             bool anyVisible = false;
             for (int i = 0; i < pendingEntries.Count; i++)
             {
@@ -194,11 +200,12 @@ namespace SE.Editor
 
             m_ToolStrip.SetBounds(0.0f, 0.0f, Width, ToolStripHeight);
             m_Split.SetBounds(0.0f, ToolStripHeight, Width, MathF.Max(0.0f, Height - ToolStripHeight));
-            m_LogInfo.SetBounds(4.0f, 4.0f, MathF.Max(0.0f, m_Split.Panel2.Width - 8.0f), MathF.Max(0.0f, m_Split.Panel2.Height - 8.0f));
+            m_LogInfo.SetBounds(4.0f, 4.0f, MathF.Max(0.0f, m_Split.Panel2.Width - 8.0f), MathF.Max(0.0f, m_Split
+                .Panel2.Height - 8.0f));
             LayoutEntries(m_Split.Panel1.Width);
         }
 
-        private LogEntry? Selected
+        private LogEntry Selected
         {
             get => m_Selected;
             set
@@ -368,8 +375,8 @@ namespace SE.Editor
 
         private class LogEntry : Control
         {
-            private bool _isRightMouseDown;
-            private LogWindow _window;
+            private bool m_IsRightMouseDown;
+            private LogWindow m_Window;
 
             /// <summary>
             /// The default height of the entries.
@@ -388,7 +395,7 @@ namespace SE.Editor
                 IsScrollable = true;
                 AutoFocus = true;
 
-                _window = window;
+                m_Window = window;
                 Desc = desc;
                 switch (desc.Level)
                 {
@@ -423,7 +430,7 @@ namespace SE.Editor
                 Rectangle clientRect = new(Float2.Zero, Size);
 
                 // Background
-                if (_window.Selected == this)
+                if (m_Window.Selected == this)
                 {
                     Render2D.FillRectangle(clientRect, IsFocused ? style.BackgroundSelected : style.LightBackground);
                 }
@@ -470,7 +477,8 @@ namespace SE.Editor
                     text = string.Format("{0} ({1})", Desc.Description, LogCount);
                 }
 
-                Render2D.RenderText(style.FontMedium, text, textRect, style.TextColor, TextAlignment.Near, TextAlignment.Center);
+                Render2D.RenderText(style.FontMedium, text, textRect, style.TextColor, TextAlignment.Near,
+                    TextAlignment.Center);
 
                 Render2D.PopClip();
             }
@@ -480,7 +488,7 @@ namespace SE.Editor
             {
                 base.OnGetFocus();
 
-                _window.Selected = this;
+                m_Window.Selected = this;
             }
 
             /// <inheritdoc />
@@ -573,7 +581,7 @@ namespace SE.Editor
                 {
                     Focus();
 
-                    _isRightMouseDown = true;
+                    m_IsRightMouseDown = true;
                     return true;
                 }
 
@@ -588,13 +596,14 @@ namespace SE.Editor
                     return true;
                 }
 
-                if (_isRightMouseDown && button == MouseButton.Right)
+                if (m_IsRightMouseDown && button == MouseButton.Right)
                 {
                     Focus();
 
                     ContextMenu menu = new();
                     menu.AddButton("Copy", Copy);
-                    menu.AddButton("Open", Open).Enabled = Desc.LocationFile.Length > 0 && File.Exists(Desc.LocationFile);
+                    menu.AddButton("Open", Open).Enabled = Desc.LocationFile.Length > 0 && File.Exists(Desc
+                        .LocationFile);
                     menu.Show(this, location);
                 }
 
@@ -604,7 +613,7 @@ namespace SE.Editor
             /// <inheritdoc />
             public override void OnMouseLeave()
             {
-                _isRightMouseDown = false;
+                m_IsRightMouseDown = false;
 
                 base.OnMouseLeave();
             }
@@ -613,9 +622,9 @@ namespace SE.Editor
             protected override void OnVisibleChanged()
             {
                 // Deselect on hide
-                if (!Visible && _window.Selected == this)
+                if (!Visible && m_Window.Selected == this)
                 {
-                    _window.Selected = null;
+                    m_Window.Selected = null;
                 }
 
                 base.OnVisibleChanged();

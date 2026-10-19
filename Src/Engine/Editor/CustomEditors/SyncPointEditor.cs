@@ -6,7 +6,7 @@ namespace SE.Editor
     public class SyncPointEditor : CustomEditor
     {
         protected bool m_IsDirty;
-        protected object? m_SetValueToken;
+        protected object m_SetValueToken;
 
         public override void Initialize(LayoutElementsContainer layout) => m_IsDirty = false;
 
@@ -24,15 +24,15 @@ namespace SE.Editor
         public override void Refresh()
         {
             base.Refresh();
-            foreach (var child in ChildrenEditors)
+            for (int i = 0; i < ChildrenEditors.Count; i++)
             {
-                child.RefreshInternal();
+                ChildrenEditors[i].RefreshInternal();
             }
         }
 
         protected virtual void OnModified() => Presenter.OnModified();
 
-        protected override bool OnDirty(CustomEditor editor, object? value, object? token = null)
+        protected override bool OnDirty(CustomEditor editor, object value, object token = null)
         {
             m_SetValueToken = token;
             m_IsDirty = true;

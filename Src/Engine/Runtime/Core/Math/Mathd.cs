@@ -123,7 +123,9 @@ namespace SE
         public static double Saturate(double value)
         {
             if (value < 0d)
+            {
                 return 0d;
+            }
             return value > 1d ? 1d : value;
         }
 
@@ -145,7 +147,9 @@ namespace SE
         {
             double t = Repeat(target - current, 360f);
             if (t > 180d)
+            {
                 t -= 360d;
+            }
             return t;
         }
 
@@ -199,7 +203,9 @@ namespace SE
         public static double InverseLerp(double a, double b, double value)
         {
             if (a == b)
+            {
                 return 0d;
+            }
             return Saturate((value - a) / (b - a));
         }
 
@@ -213,7 +219,9 @@ namespace SE
         {
             double c = Repeat(b - a, 360d);
             if (c > 180d)
+            {
                 c -= 360d;
+            }
             return a + c * Saturate(t);
         }
 
@@ -264,12 +272,18 @@ namespace SE
         {
             int length = values.Length;
             if (length == 0)
+            {
                 return 0d;
+            }
 
             double t = values[0];
-            for (var i = 1; i < length; i++)
+            for (int i = 1; i < length; i++)
+            {
                 if (values[i] > t)
+                {
                     t = values[i];
+                }
+            }
             return t;
         }
 
@@ -293,12 +307,18 @@ namespace SE
         {
             int length = values.Length;
             if (length == 0)
+            {
                 return 0d;
+            }
 
             double t = values[0];
-            for (var i = 1; i < length; i++)
+            for (int i = 1; i < length; i++)
+            {
                 if (values[i] < t)
+                {
                     t = values[i];
+                }
+            }
 
             return t;
         }
@@ -312,7 +332,9 @@ namespace SE
         public static double MoveTowards(double current, double target, double maxDelta)
         {
             if (Abs(target - current) <= maxDelta)
+            {
                 return target;
+            }
             return current + Sign(target - current) * maxDelta;
         }
 
@@ -326,7 +348,9 @@ namespace SE
         {
             double delta = DeltaAngle(current, target);
             if ((-maxDelta < delta) && (delta < maxDelta))
+            {
                 return target;
+            }
             target = current + delta;
             return MoveTowards(current, target, maxDelta);
         }
@@ -416,7 +440,8 @@ namespace SE
         /// <param name="smoothTime">The smoothing time. Smaller values increase blending time.</param>
         /// <param name="maxSpeed">The maximum speed.</param>
         /// <returns>The smoothed value.</returns>
-        public static double SmoothDamp(double current, double target, ref double currentVelocity, double smoothTime, double maxSpeed)
+        public static double SmoothDamp(double current, double target, ref double currentVelocity,
+            double smoothTime, double maxSpeed)
         {
             return SmoothDamp(current, target, ref currentVelocity, smoothTime, maxSpeed, DefaultDeltaTime);
         }
@@ -431,7 +456,8 @@ namespace SE
         /// <returns>The smoothed value.</returns>
         public static double SmoothDamp(double current, double target, ref double currentVelocity, double smoothTime)
         {
-            return SmoothDamp(current, target, ref currentVelocity, smoothTime, double.PositiveInfinity, DefaultDeltaTime);
+            return SmoothDamp(current, target, ref currentVelocity, smoothTime, double.PositiveInfinity,
+                DefaultDeltaTime);
         }
 
         /// <summary>
@@ -444,7 +470,9 @@ namespace SE
         /// <param name="maxSpeed">The maximum speed.</param>
         /// <param name="deltaTime">The delta time (in seconds) since last update.</param>
         /// <returns>The smoothed value.</returns>
-        public static double SmoothDamp(double current, double target, ref double currentVelocity, double smoothTime, [DefaultValue("double.PositiveInfinity")] double maxSpeed, [DefaultValue("Time.DeltaTime")] double deltaTime)
+        public static double SmoothDamp(double current, double target, ref double currentVelocity,
+            double smoothTime, [DefaultValue("double.PositiveInfinity")] double maxSpeed,
+                [DefaultValue("Time.DeltaTime")] double deltaTime)
         {
             smoothTime = Max(0.0001d, smoothTime);
             double a = 2d / smoothTime;
@@ -475,7 +503,8 @@ namespace SE
         /// <param name="smoothTime">The smoothing time. Smaller values increase blending time.</param>
         /// <param name="maxSpeed">The maximum speed.</param>
         /// <returns>The smoothed value.</returns>
-        public static double SmoothDampAngle(double current, double target, ref double currentVelocity, double smoothTime, double maxSpeed)
+        public static double SmoothDampAngle(double current, double target, ref double currentVelocity,
+            double smoothTime, double maxSpeed)
         {
             return SmoothDampAngle(current, target, ref currentVelocity, smoothTime, maxSpeed, DefaultDeltaTime);
         }
@@ -488,9 +517,11 @@ namespace SE
         /// <param name="currentVelocity">The current velocity.</param>
         /// <param name="smoothTime">The smoothing time. Smaller values increase blending time.</param>
         /// <returns>The smoothed value.</returns>
-        public static double SmoothDampAngle(double current, double target, ref double currentVelocity, double smoothTime)
+        public static double SmoothDampAngle(double current, double target, ref double currentVelocity,
+            double smoothTime)
         {
-            return SmoothDampAngle(current, target, ref currentVelocity, smoothTime, double.PositiveInfinity, DefaultDeltaTime);
+            return SmoothDampAngle(current, target, ref currentVelocity, smoothTime, double.PositiveInfinity,
+                DefaultDeltaTime);
         }
 
         /// <summary>
@@ -503,7 +534,9 @@ namespace SE
         /// <param name="maxSpeed">The maximum speed.</param>
         /// <param name="deltaTime">The delta time (in seconds) since last update.</param>
         /// <returns>The smoothed value.</returns>
-        public static double SmoothDampAngle(double current, double target, ref double currentVelocity, double smoothTime, [DefaultValue("double.PositiveInfinity")] double maxSpeed, [DefaultValue("Time.DeltaTime")] double deltaTime)
+        public static double SmoothDampAngle(double current, double target, ref double currentVelocity,
+            double smoothTime, [DefaultValue("double.PositiveInfinity")] double maxSpeed,
+                [DefaultValue("Time.DeltaTime")] double deltaTime)
         {
             target = current + DeltaAngle(current, target);
             return SmoothDamp(current, target, ref currentVelocity, smoothTime, maxSpeed, deltaTime);
@@ -535,7 +568,8 @@ namespace SE
         {
             double alpha2 = alpha * alpha;
             double alpha3 = alpha2 * alpha;
-            return (((2d * alpha3) - (3d * alpha2) + 1d) * p0) + ((alpha3 - (2d * alpha2) + alpha) * t0) + ((alpha3 - alpha2) * t1) + (((-2d * alpha3) + (3d * alpha2)) * p1);
+            return (((2d * alpha3) - (3d * alpha2) + 1d) * p0) + ((alpha3 - (2d * alpha2) + alpha) * t0) + ((alpha3
+                - alpha2) * t1) + (((-2d * alpha3) + (3d * alpha2)) * p1);
         }
 
         /// <summary>
@@ -561,7 +595,8 @@ namespace SE
         /// </summary>
         public static double InterpEaseInOut(double a, double b, double alpha, double exponent)
         {
-            return Lerp(a, b, (alpha < 0.5d) ? InterpEaseIn(0d, 1d, alpha * 2d, exponent) * 0.5d : InterpEaseOut(0d, 1d, alpha * 2d - 1d, exponent) * 0.5d + 0.5d);
+            return Lerp(a, b, (alpha < 0.5d) ? InterpEaseIn(0d, 1d, alpha * 2d, exponent) * 0.5d : InterpEaseOut(0d,
+                1d, alpha * 2d - 1d, exponent) * 0.5d + 0.5d);
         }
 
         /// <summary>
@@ -587,7 +622,8 @@ namespace SE
         /// </summary>
         public static double InterpSinInOut(double a, double b, double alpha)
         {
-            return Lerp(a, b, (alpha < 0.5d) ? InterpSinIn(0d, 1d, alpha * 2d) * 0.5d : InterpSinOut(0d, 1d, alpha * 2d - 1d) * 0.5d + 0.5d);
+            return Lerp(a, b, (alpha < 0.5d) ? InterpSinIn(0d, 1d, alpha * 2d) * 0.5d : InterpSinOut(0d, 1d, alpha
+                * 2d - 1d) * 0.5d + 0.5d);
         }
 
         /// <summary>
@@ -613,7 +649,8 @@ namespace SE
         /// </summary>
         public static double InterpExpoInOut(double a, double b, double alpha)
         {
-            return Lerp(a, b, (alpha < 0.5d) ? InterpExpoIn(0d, 1d, alpha * 2d) * 0.5d : InterpExpoOut(0d, 1d, alpha * 2d - 1d) * 0.5d + 0.5d);
+            return Lerp(a, b, (alpha < 0.5d) ? InterpExpoIn(0d, 1d, alpha * 2d) * 0.5d : InterpExpoOut(0d, 1d,
+                alpha * 2d - 1d) * 0.5d + 0.5d);
         }
 
         /// <summary>
@@ -640,7 +677,8 @@ namespace SE
         /// </summary>
         public static double InterpCircularInOut(double a, double b, double alpha)
         {
-            return Lerp(a, b, (alpha < 0.5d) ? InterpCircularIn(0d, 1d, alpha * 2d) * 0.5d : InterpCircularOut(0d, 1d, alpha * 2d - 1d) * 0.5d + 0.5d);
+            return Lerp(a, b, (alpha < 0.5d) ? InterpCircularIn(0d, 1d, alpha * 2d) * 0.5d : InterpCircularOut(0d,
+                1d, alpha * 2d - 1d) * 0.5d + 0.5d);
         }
 
         /// <summary>
@@ -678,7 +716,9 @@ namespace SE
         public static double SRgbToLinear(double sRgbValue)
         {
             if (sRgbValue < 0.04045d)
+            {
                 return sRgbValue / 12.92d;
+            }
             return Math.Pow((sRgbValue + 0.055d) / 1.055d, 2.4d);
         }
 
@@ -690,7 +730,9 @@ namespace SE
         public static double LinearToSRgb(double linearValue)
         {
             if (linearValue < 0.0031308d)
+            {
                 return linearValue * 12.92d;
+            }
             return 1.055d * Math.Pow(linearValue, 1d / 2.4d) - 0.055d;
         }
 
@@ -723,32 +765,41 @@ namespace SE
         }
 
         /// <summary>
-        /// Checks if a and b are almost equals, taking into account the magnitude of floating point numbers (unlike <see cref="WithinEpsilon" /> method). See Remarks. See remarks.
+        /// Checks if a and b are almost equals, taking into account the magnitude of floating point numbers (unlike
+        /// <see cref="WithinEpsilon" /> method). See Remarks. See remarks.
         /// </summary>
         /// <param name="a">The left value to compare.</param>
         /// <param name="b">The right value to compare.</param>
         /// <returns><c>true</c> if a almost equal to b, <c>false</c> otherwise</returns>
-        /// <remarks>The code is using the technique described by Bruce Dawson in <a href="http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/">Comparing Floating point numbers 2012 edition</a>.</remarks>
+        /// <remarks> The code is using the technique described by Bruce Dawson in
+        /// <a href="http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/">
+        /// Comparing Floating point numbers 2012 edition</a>.</remarks>
         public static unsafe bool NearEqual(double a, double b)
         {
             // Check if the numbers are really close -- needed
             // when comparing numbers near zero.
             if (IsZero(a - b))
+            {
                 return true;
+            }
 
-            // Original from Bruce Dawson: http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+            // Original from Bruce Dawson:
+            // http://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
             long aInt = *(long*)&a;
             long bInt = *(long*)&b;
 
             // Different signs means they do not match.
             if (aInt < 0 != bInt < 0)
+            {
                 return false;
+            }
 
             // Find the difference in ULPs.
             long ulp = Math.Abs(aInt - bInt);
 
             // Choose of maxUlp = 4
-            // according to http://code.google.com/p/googletest/source/browse/trunk/include/gtest/internal/gtest-internal.h
+            // according to
+            // http://code.google.com/p/googletest/source/browse/trunk/include/gtest/internal/gtest-internal.h
             const long maxUlp = 4;
             return ulp <= maxUlp;
         }
@@ -876,17 +927,19 @@ namespace SE
         /// <summary>
         /// Given a heading which may be outside the +/- PI range, 'unwind' it back into that range.
         /// </summary>
-        /// <remarks>Optimized version of <see cref="UnwindRadiansAccurate"/> that is it faster and has fixed cost but with large angle values (100 for example) starts to lose accuracy floating point problem.</remarks>
+        /// <remarks> Optimized version of <see cref="UnwindRadiansAccurate"/> that is it faster and has fixed cost but
+        /// with large angle values (100 for example) starts to lose accuracy floating point problem.</remarks>
         /// <param name="angle">Angle in radians to unwind.</param>
         /// <returns>Valid angle in radians.</returns>
         public static double UnwindRadians(double angle)
         {
-            var a = angle - Math.Floor(angle / TwoPi) * TwoPi; // Loop function between 0 and TwoPi
+            double a = angle - Math.Floor(angle / TwoPi) * TwoPi; // Loop function between 0 and TwoPi
             return a > Pi ? a - TwoPi : a; // Change range so it become Pi and -Pi
         }
 
         /// <summary>
-        /// The same as <see cref="UnwindRadians"/> but is more computation intensive with large <see href="angle"/> and has better accuracy with large <see href="angle"/>.
+        /// The same as <see cref="UnwindRadians"/> but is more computation intensive with large <see href="angle"/> and
+        /// has better accuracy with large <see href="angle"/> .
         /// <br>cost of this function is <see href="angle"/> % <see cref="Pi"/></br>
         /// </summary>
         /// <param name="angle">Angle in radians to unwind.</param>
@@ -894,26 +947,32 @@ namespace SE
         public static double UnwindRadiansAccurate(double angle)
         {
             while (angle > Pi)
+            {
                 angle -= TwoPi;
+            }
             while (angle < -Pi)
+            {
                 angle += TwoPi;
+            }
             return angle;
         }
 
         /// <summary>
         /// Utility to ensure angle is between +/- 180 degrees by unwinding.
         /// </summary>
-        /// <remarks>Optimized version of <see cref="UnwindDegreesAccurate"/> that is it faster and has fixed cost but with large angle values (100 for example) starts to lose accuracy floating point problem.</remarks>
+        /// <remarks> Optimized version of <see cref="UnwindDegreesAccurate"/> that is it faster and has fixed cost but
+        /// with large angle values (100 for example) starts to lose accuracy floating point problem.</remarks>
         /// <param name="angle">Angle in degrees to unwind.</param>
         /// <returns>Valid angle in degrees.</returns>
         public static double UnwindDegrees(double angle)
         {
-            var a = angle - Math.Floor(angle / 360.0) * 360.0; // Loop function between 0 and 360
+            double a = angle - Math.Floor(angle / 360.0) * 360.0; // Loop function between 0 and 360
             return a > 180 ? a - 360.0 : a; // Change range so it become 180 and -180
         }
 
         /// <summary>
-        /// The same as <see cref="UnwindDegrees"/> but is more computation intensive with large <see href="angle"/> and has better accuracy with large <see href="angle"/>.
+        /// The same as <see cref="UnwindDegrees"/> but is more computation intensive with large <see href="angle"/> and
+        /// has better accuracy with large <see href="angle"/> .
         /// <br>cost of this function is <see href="angle"/> % 180.0f</br>
         /// </summary>
         /// <param name="angle">Angle in radians to unwind.</param>
@@ -921,9 +980,13 @@ namespace SE
         public static double UnwindDegreesAccurate(double angle)
         {
             while (angle > 180.0)
+            {
                 angle -= 360.0;
+            }
             while (angle < -180.0)
+            {
                 angle += 360.0;
+            }
             return angle;
         }
 
@@ -945,7 +1008,8 @@ namespace SE
         /// <remarks>
         /// See:
         /// <br><seealso href="http://www.encyclopediaofmath.org/index.php/Linear_interpolation"/></br>
-        /// <br><seealso href="http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/"/></br>
+        /// <br> <seealso href="http://fgiesen.wordpress.com/2012/08/15/linear-interpolation-past-present-and-future/"/>
+        /// </br>
         /// </remarks>
         /// <param name="from">Value to interpolate from.</param>
         /// <param name="to">Value to interpolate to.</param>
@@ -980,7 +1044,8 @@ namespace SE
         /// <param name="amount">Value between 0 and 1 indicating interpolation amount.</param>
         public static double SmootherStep(double amount)
         {
-            return amount <= 0d ? 0d : amount >= 1d ? 1d : amount * amount * amount * (amount * (amount * 6d - 15d) + 10d);
+            return amount <= 0d ? 0d : amount >= 1d ? 1d : amount * amount * amount * (amount * (amount * 6d - 15d)
+                + 10d);
         }
 
         /// <summary>
@@ -992,7 +1057,9 @@ namespace SE
         public static double Mod(double value, double modulo)
         {
             if (modulo == 0d)
+            {
                 return value;
+            }
             return value % modulo;
         }
 
@@ -1013,18 +1080,24 @@ namespace SE
         /// <param name="min">The min.</param>
         /// <param name="max">The max.</param>
         /// <returns>Result of the wrapping.</returns>
-        /// <exception cref="ArgumentException">Is thrown when <paramref name="min" /> is greater than <paramref name="max" />.</exception>
+        /// <exception cref="ArgumentException"> Is thrown when <paramref name="min" /> is greater than
+        /// <paramref name="max" /> .</exception>
         public static double Wrap(double value, double min, double max)
         {
             if (NearEqual(min, max))
+            {
                 return min;
+            }
 
             double mind = min;
             double maxd = max;
             double valued = value;
 
             if (mind > maxd)
-                throw new ArgumentException(string.Format("min {0} should be less than or equal to max {1}", min, max), nameof(min));
+            {
+                throw new ArgumentException(string.Format("min {0} should be less than or equal to max {1}", min,
+                    max), nameof(min));
+            }
 
             double rangeSize = maxd - mind;
             return mind + (valued - mind) - rangeSize * Math.Floor((valued - mind) / rangeSize);
@@ -1042,7 +1115,8 @@ namespace SE
         /// <param name="sigmaX">Curve sigma X.</param>
         /// <param name="sigmaY">Curve sigma Y.</param>
         /// <returns>The result of Gaussian function.</returns>
-        public static double Gauss(double amplitude, double x, double y, double centerX, double centerY, double sigmaX, double sigmaY)
+        public static double Gauss(double amplitude, double x, double y, double centerX, double centerY,
+            double sigmaX, double sigmaY)
         {
             double cx = x - centerX;
             double cy = y - centerY;
@@ -1063,45 +1137,45 @@ namespace SE
         {
             switch (mode)
             {
-            case AlphaBlendMode.Sinusoidal:
-                alpha = (Sin(alpha * Pi - PiOverTwo) + 1d) / 2d;
-                break;
-            case AlphaBlendMode.Cubic:
-                alpha = CubicInterp(0d, 0d, 1d, 0d, alpha);
-                break;
-            case AlphaBlendMode.QuadraticInOut:
-                alpha = InterpEaseInOut(0d, 1d, alpha, 2d);
-                break;
-            case AlphaBlendMode.CubicInOut:
-                alpha = InterpEaseInOut(0d, 1d, alpha, 3d);
-                break;
-            case AlphaBlendMode.HermiteCubic:
-                alpha = SmoothStep(0d, 1d, alpha);
-                break;
-            case AlphaBlendMode.QuarticInOut:
-                alpha = InterpEaseInOut(0d, 1d, alpha, 4d);
-                break;
-            case AlphaBlendMode.QuinticInOut:
-                alpha = InterpEaseInOut(0d, 1d, alpha, 5d);
-                break;
-            case AlphaBlendMode.CircularIn:
-                alpha = InterpCircularIn(0d, 1d, alpha);
-                break;
-            case AlphaBlendMode.CircularOut:
-                alpha = InterpCircularOut(0d, 1d, alpha);
-                break;
-            case AlphaBlendMode.CircularInOut:
-                alpha = InterpCircularInOut(0d, 1d, alpha);
-                break;
-            case AlphaBlendMode.ExpIn:
-                alpha = InterpExpoIn(0d, 1d, alpha);
-                break;
-            case AlphaBlendMode.ExpOut:
-                alpha = InterpExpoOut(0d, 1d, alpha);
-                break;
-            case AlphaBlendMode.ExpInOut:
-                alpha = InterpExpoInOut(0d, 1d, alpha);
-                break;
+                case AlphaBlendMode.Sinusoidal:
+                    alpha = (Sin(alpha * Pi - PiOverTwo) + 1d) / 2d;
+                    break;
+                case AlphaBlendMode.Cubic:
+                    alpha = CubicInterp(0d, 0d, 1d, 0d, alpha);
+                    break;
+                case AlphaBlendMode.QuadraticInOut:
+                    alpha = InterpEaseInOut(0d, 1d, alpha, 2d);
+                    break;
+                case AlphaBlendMode.CubicInOut:
+                    alpha = InterpEaseInOut(0d, 1d, alpha, 3d);
+                    break;
+                case AlphaBlendMode.HermiteCubic:
+                    alpha = SmoothStep(0d, 1d, alpha);
+                    break;
+                case AlphaBlendMode.QuarticInOut:
+                    alpha = InterpEaseInOut(0d, 1d, alpha, 4d);
+                    break;
+                case AlphaBlendMode.QuinticInOut:
+                    alpha = InterpEaseInOut(0d, 1d, alpha, 5d);
+                    break;
+                case AlphaBlendMode.CircularIn:
+                    alpha = InterpCircularIn(0d, 1d, alpha);
+                    break;
+                case AlphaBlendMode.CircularOut:
+                    alpha = InterpCircularOut(0d, 1d, alpha);
+                    break;
+                case AlphaBlendMode.CircularInOut:
+                    alpha = InterpCircularInOut(0d, 1d, alpha);
+                    break;
+                case AlphaBlendMode.ExpIn:
+                    alpha = InterpExpoIn(0d, 1d, alpha);
+                    break;
+                case AlphaBlendMode.ExpOut:
+                    alpha = InterpExpoOut(0d, 1d, alpha);
+                    break;
+                case AlphaBlendMode.ExpInOut:
+                    alpha = InterpExpoInOut(0d, 1d, alpha);
+                    break;
             }
 
             return Saturate(alpha);

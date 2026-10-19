@@ -22,7 +22,7 @@ namespace SE.Editor.GUI
         public override DragData ToDragData(IEnumerable<Type> items)
         {
             ArgumentNullException.ThrowIfNull(items);
-            var names = new List<string>();
+            List<string> names = new List<string>();
             foreach (Type item in items)
             {
                 names.Add(item.AssemblyQualifiedName ?? item.FullName ?? item.Name);
@@ -33,14 +33,18 @@ namespace SE.Editor.GUI
         public override IEnumerable<Type> FromDragData(DragData data)
         {
             if (data is not DragDataText text || !text.Text.StartsWith(DragPrefix, StringComparison.Ordinal))
+            {
                 yield break;
+            }
 
             string[] names = text.Text.Substring(DragPrefix.Length).Split('\n', StringSplitOptions.RemoveEmptyEntries);
             for (int index = 0; index < names.Length; index++)
             {
-                Type? type = Type.GetType(names[index], throwOnError: false);
+                Type type = Type.GetType(names[index], throwOnError: false);
                 if (type != null)
+                {
                     yield return type;
+                }
             }
         }
 

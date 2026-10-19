@@ -27,6 +27,8 @@ namespace SE
 		NormalMap,
 		// The gray scale (R channel).
 		GrayScale,
+		HdrRGBA,
+		HdrRGB,
 		// Six faces of a cube texture.
 		CubeMap
 	};

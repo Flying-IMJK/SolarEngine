@@ -26,14 +26,17 @@ namespace SE
             internal set
             {
                 if (m_Order > 5)
+                {
                     throw new NotSupportedException("Only orders inferior or equal to 5 are supported");
+                }
 
                 m_Order = Math.Max(1, value);
             }
         }
 
         /// <summary>
-        /// Get the coefficients defining the spherical harmonics (the spherical coordinates x{l,m} multiplying the spherical base Y{l,m}).
+        /// Get the coefficients defining the spherical harmonics (the spherical coordinates x{l,m} multiplying the
+        /// spherical base Y{l,m}).
         /// </summary>
         public TDataType[] Coefficients { get; internal set; }
 
@@ -62,7 +65,8 @@ namespace SE
         public abstract TDataType Evaluate(Float3 direction);
 
         /// <summary>
-        /// Returns the coefficient x{l,m} of the spherical harmonics (the {l,m} spherical coordinate corresponding to the spherical base Y{l,m}).
+        /// Returns the coefficient x{l,m} of the spherical harmonics (the {l,m} spherical coordinate corresponding to
+        /// the spherical base Y{l,m}).
         /// </summary>
         /// <param name="l">the l index of the coefficient</param>
         /// <param name="m">the m index of the coefficient</param>
@@ -86,10 +90,15 @@ namespace SE
         // ReSharper restore UnusedParameter.Local
         {
             if (l > maxOrder - 1)
-                throw new IndexOutOfRangeException(string.Format("'l' parameter should be between '0' and '{0}' (order-1).", maxOrder - 1));
+            {
+                throw new IndexOutOfRangeException(string
+                    .Format("'l' parameter should be between '0' and '{0}' (order-1).", maxOrder - 1));
+            }
 
             if (Math.Abs(m) > l)
+            {
                 throw new IndexOutOfRangeException("'m' parameter should be between '-l' and '+l'.");
+            }
         }
 
         private static int LmToCoefficientIndex(int l, int m)
@@ -167,19 +176,19 @@ namespace SE
         /// <returns>The color computed for this direction.</returns>
         public override Color Evaluate(Float3 direction)
         {
-            var x = direction.X;
-            var y = direction.Y;
-            var z = direction.Z;
+            float x = direction.X;
+            float y = direction.Y;
+            float z = direction.Z;
 
-            var x2 = x * x;
-            var y2 = y * y;
-            var z2 = z * z;
+            float x2 = x * x;
+            float y2 = y * y;
+            float z2 = z * z;
 
-            var z3 = (float)Math.Pow(z, 3.0);
+            float z3 = (float)Math.Pow(z, 3.0);
 
-            var x4 = (float)Math.Pow(x, 4.0);
-            var y4 = (float)Math.Pow(y, 4.0);
-            var z4 = (float)Math.Pow(z, 4.0);
+            float x4 = (float)Math.Pow(x, 4.0);
+            float y4 = (float)Math.Pow(y, 4.0);
+            float z4 = (float)Math.Pow(z, 4.0);
 
             //Equations based on data from: http://ppsloan.org/publications/StupidSH36.pdf
             m_BaseValues[0] = 1 / (2 * SqrtPi);
@@ -224,10 +233,12 @@ namespace SE
                 }
             }
 
-            var data = new Color();
+            Color data = new Color();
 
             for (int i = 0; i < m_BaseValues.Length; i++)
+            {
                 data += Coefficients[i] * m_BaseValues[i];
+            }
 
             return data;
         }

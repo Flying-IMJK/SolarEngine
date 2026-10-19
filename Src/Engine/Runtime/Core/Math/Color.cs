@@ -22,31 +22,33 @@ namespace SE
         /// Gets or sets the component at the specified index.
         /// </summary>
         /// <value>The value of the red, green, blue, and alpha components, depending on the index.</value>
-        /// <param name="index">The index of the component to access. Use 0 for the alpha component, 1 for the red component, 2 for the green component, and 3 for the blue component.</param>
+        /// <param name="index"> The index of the component to access. Use 0 for the alpha component, 1 for the red
+        /// component, 2 for the green component, and 3 for the blue component.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.IndexOutOfRangeException">Thrown when the <paramref name="index"/> is out of the range [0, 3].</exception>
+        /// <exception cref="System.IndexOutOfRangeException"> Thrown when the <paramref name="index"/> is out of the
+        /// range [0, 3].</exception>
         public float this[int index]
         {
             get
             {
                 switch (index)
                 {
-                case 0:
-                {
-                    return R;
-                }
-                case 1:
-                {
-                    return G;
-                }
-                case 2:
-                {
-                    return B;
-                }
-                case 3:
-                {
-                    return A;
-                }
+                    case 0:
+                        {
+                            return R;
+                        }
+                    case 1:
+                        {
+                            return G;
+                        }
+                    case 2:
+                        {
+                            return B;
+                        }
+                    case 3:
+                        {
+                            return A;
+                        }
                 }
                 throw new IndexOutOfRangeException("Invalid Color index!");
             }
@@ -54,30 +56,30 @@ namespace SE
             {
                 switch (index)
                 {
-                case 0:
-                {
-                    R = value;
-                    break;
-                }
-                case 1:
-                {
-                    G = value;
-                    break;
-                }
-                case 2:
-                {
-                    B = value;
-                    break;
-                }
-                case 3:
-                {
-                    A = value;
-                    break;
-                }
-                default:
-                {
-                    throw new IndexOutOfRangeException("Invalid Color index!");
-                }
+                    case 0:
+                        {
+                            R = value;
+                            break;
+                        }
+                    case 1:
+                        {
+                            G = value;
+                            break;
+                        }
+                    case 2:
+                        {
+                            B = value;
+                            break;
+                        }
+                    case 3:
+                        {
+                            A = value;
+                            break;
+                        }
+                    default:
+                        {
+                            throw new IndexOutOfRangeException("Invalid Color index!");
+                        }
                 }
             }
         }
@@ -181,15 +183,22 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Color"/> struct.
         /// </summary>
-        /// <param name="values">The values to assign to the red, green, blue, and alpha components of the color. This must be an array with four elements.</param>
+        /// <param name="values"> The values to assign to the red, green, blue, and alpha components of the color. This
+        /// must be an array with four elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values"/> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="values"/> contains more or less than four elements.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"> Thrown when <paramref name="values"/> contains more or less
+        /// than four elements.</exception>
         public Color(float[] values)
         {
             if (values == null)
+            {
                 throw new ArgumentNullException(nameof(values));
+            }
             if (values.Length != 4)
-                throw new ArgumentOutOfRangeException(nameof(values), "There must be four and only four input values for Color.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(values),
+                    "There must be four and only four input values for Color.");
+            }
             R = values[0];
             G = values[1];
             B = values[2];
@@ -200,8 +209,10 @@ namespace SE
         public override bool Equals(object other)
         {
             if (!(other is Color))
+            {
                 return false;
-            var color = (Color)other;
+            }
+            Color color = (Color)other;
             return Equals(ref color);
         }
 
@@ -209,11 +220,13 @@ namespace SE
         /// Determines whether the specified <see cref="Color" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Color" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Color" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Color" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Color other)
         {
-            return Mathf.NearEqual(other.R, R) && Mathf.NearEqual(other.G, G) && Mathf.NearEqual(other.B, B) && Mathf.NearEqual(other.A, A);
+            return Mathf.NearEqual(other.R, R) && Mathf.NearEqual(other.G, G) && Mathf.NearEqual(other.B, B)
+                && Mathf.NearEqual(other.A, A);
         }
 
         /// <inheritdoc />
@@ -247,7 +260,8 @@ namespace SE
         /// <returns>The color.</returns>
         public static Color FromARGB(uint argb)
         {
-            return new Color(((argb >> 16) & 0xff) / 255.0f, ((argb >> 8) & 0xff) / 255.0f, ((argb >> 0) & 0xff) / 255.0f, ((argb >> 24) & 0xff) / 255.0f);
+            return new Color(((argb >> 16) & 0xff) / 255.0f, ((argb >> 8) & 0xff) / 255.0f, ((argb >> 0) & 0xff)
+                / 255.0f, ((argb >> 24) & 0xff) / 255.0f);
         }
 
         /// <summary>
@@ -257,7 +271,8 @@ namespace SE
         /// <returns>The color.</returns>
         public static Color FromRGBA(uint rgba)
         {
-            return new Color(((rgba >> 24) & 0xff) / 255.0f, ((rgba >> 16) & 0xff) / 255.0f, ((rgba >> 8) & 0xff) / 255.0f, ((rgba >> 0) & 0xff) / 255.0f);
+            return new Color(((rgba >> 24) & 0xff) / 255.0f, ((rgba >> 16) & 0xff) / 255.0f, ((rgba >> 8) & 0xff)
+                / 255.0f, ((rgba >> 0) & 0xff) / 255.0f);
         }
 
         /// <summary>
@@ -267,7 +282,7 @@ namespace SE
         /// <returns>The output color value.</returns>
         public static Color FromHex(string hex)
         {
-            FromHex(hex, out var color);
+            FromHex(hex, out Color color);
             return color;
         }
 
@@ -329,7 +344,7 @@ namespace SE
             byte b = (byte)(B * 255);
             byte a = (byte)(A * 255);
 
-            var result = new char[8];
+            char[] result = new char[8];
 
             result[0] = digits[(r >> 4) & 0x0f];
             result[1] = digits[(r) & 0x0f];
@@ -354,7 +369,9 @@ namespace SE
         public static Color Parse(string text)
         {
             if (TryParse(text, out Color value))
+            {
                 return value;
+            }
             throw new FormatException();
         }
 
@@ -368,13 +385,15 @@ namespace SE
         {
             // Try hexadecimal
             if (text.StartsWith("#") && TryParseHex(text, out value))
+            {
                 return true;
+            }
 
             // Try named color
             if (text.Length > 2)
             {
-                var fieldName = char.ToUpperInvariant(text[0]) + text.Substring(1).ToLowerInvariant();
-                var field = typeof(Color).GetField(fieldName, BindingFlags.Public | BindingFlags.Static);
+                string fieldName = char.ToUpperInvariant(text[0]) + text.Substring(1).ToLowerInvariant();
+                FieldInfo field = typeof(Color).GetField(fieldName, BindingFlags.Public | BindingFlags.Static);
                 if (field != null && fieldName != "Zero")
                 {
                     value = (Color)field.GetValue(null);
@@ -410,7 +429,9 @@ namespace SE
         {
             value = Black;
             if (string.IsNullOrEmpty(hexString))
+            {
                 return false;
+            }
 
             int r = 0, g = 0, b = 0, a = 255;
             int startIndex = hexString[0] == '#' ? 1 : 0;
@@ -453,11 +474,17 @@ namespace SE
         private static int HexDigit(char c)
         {
             if (c >= '0' && c <= '9')
+            {
                 return c - '0';
+            }
             if (c >= 'A' && c <= 'F')
+            {
                 return c - 'A' + 10;
+            }
             if (c >= 'a' && c <= 'f')
+            {
                 return c - 'a' + 10;
+            }
             return -1;
         }
 
@@ -468,7 +495,8 @@ namespace SE
         /// <returns>A color.</returns>
         public static Color FromBgra(int color)
         {
-            return new Color((byte)((color >> 16) & 255), (byte)((color >> 8) & 255), (byte)(color & 255), (byte)((color >> 24) & 255));
+            return new Color((byte)((color >> 16) & 255), (byte)((color >> 8) & 255), (byte)(color & 255),
+                (byte)((color >> 24) & 255));
         }
 
         /// <summary>
@@ -647,7 +675,8 @@ namespace SE
         /// <param name="t">Float for combining a and b</param>
         public static Color Lerp(Color a, Color b, float t)
         {
-            return new Color(a.R + (b.R - a.R) * t, a.G + (b.G - a.G) * t, a.B + (b.B - a.B) * t, a.A + (b.A - a.A) * t);
+            return new Color(a.R + (b.R - a.R) * t, a.G + (b.G - a.G) * t, a.B + (b.B - a.B) * t, a.A + (b.A - a.A)
+                * t);
         }
 
         /// <summary>
@@ -659,7 +688,8 @@ namespace SE
         /// <param name="result">The result.</param>
         public static void Lerp(ref Color a, ref Color b, float t, out Color result)
         {
-            result = new Color(a.R + (b.R - a.R) * t, a.G + (b.G - a.G) * t, a.B + (b.B - a.B) * t, a.A + (b.A - a.A) * t);
+            result = new Color(a.R + (b.R - a.R) * t, a.G + (b.G - a.G) * t, a.B + (b.B - a.B) * t, a.A + (b.A - a
+                .A) * t);
         }
 
         /// <summary>
@@ -791,7 +821,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Returns the color with RGB channels multiplied by the given scale factor. The alpha channel remains the same.
+        /// Returns the color with RGB channels multiplied by the given scale factor. The alpha channel remains the
+        /// same.
         /// </summary>
         /// <param name="multiplier">The multiplier.</param>
         /// <returns>The modified color.</returns>
@@ -832,15 +863,25 @@ namespace SE
 
             float hue;
             if (Mathf.NearEqual(rgbMax, rgbMin))
+            {
                 hue = 0.0f;
+            }
             else if (Mathf.NearEqual(rgbMax, R))
+            {
                 hue = ((((G - B) / rgbRange) * 60.0f) + 360.0f) % 360.0f;
+            }
             else if (Mathf.NearEqual(rgbMax, G))
+            {
                 hue = (((B - R) / rgbRange) * 60.0f) + 120.0f;
+            }
             else if (Mathf.NearEqual(rgbMax, B))
+            {
                 hue = (((R - G) / rgbRange) * 60.0f) + 240.0f;
+            }
             else
+            {
                 hue = 0.0f;
+            }
 
             float saturation = Mathf.IsZero(rgbMax) ? 0.0f : rgbRange / rgbMax;
             float value = rgbMax;
@@ -858,14 +899,21 @@ namespace SE
         public static void RGBToHSV(Color rgbColor, out float h, out float s, out float v)
         {
             if ((rgbColor.B > rgbColor.G) && (rgbColor.B > rgbColor.R))
+            {
                 RGBToHSVHelper(4f, rgbColor.B, rgbColor.R, rgbColor.G, out h, out s, out v);
+            }
             else if (rgbColor.G <= rgbColor.R)
+            {
                 RGBToHSVHelper(0f, rgbColor.R, rgbColor.G, rgbColor.B, out h, out s, out v);
+            }
             else
+            {
                 RGBToHSVHelper(2f, rgbColor.G, rgbColor.B, rgbColor.R, out h, out s, out v);
+            }
         }
 
-        private static void RGBToHSVHelper(float offset, float dominantcolor, float colorone, float colortwo, out float h, out float s, out float v)
+        private static void RGBToHSVHelper(float offset, float dominantcolor, float colorone, float colortwo,
+            out float h, out float s, out float v)
         {
             v = dominantcolor;
             if (Mathf.IsZero(v))
@@ -875,7 +923,7 @@ namespace SE
             }
             else
             {
-                var single = colorone <= colortwo ? colorone : colortwo;
+                float single = colorone <= colortwo ? colorone : colortwo;
                 float vv = v - single;
                 if (Mathf.IsZero(vv))
                 {
@@ -889,7 +937,9 @@ namespace SE
                 }
                 h /= 6f;
                 if (h < 0f)
+                {
                     h++;
+                }
             }
         }
 
@@ -970,7 +1020,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first source color.</param>
         /// <param name="right">The second source color.</param>
-        /// <param name="result">When the method completes, contains an new color composed of the largest components of the source colors.</param>
+        /// <param name="result"> When the method completes, contains an new color composed of the largest components of
+        /// the source colors.</param>
         public static void Max(ref Color left, ref Color right, out Color result)
         {
             result = new Color(
@@ -989,7 +1040,7 @@ namespace SE
         /// <returns>A color containing the largest components of the source colors.</returns>
         public static Color Max(Color left, Color right)
         {
-            Max(ref left, ref right, out var result);
+            Max(ref left, ref right, out Color result);
             return result;
         }
 
@@ -998,7 +1049,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first source color.</param>
         /// <param name="right">The second source color.</param>
-        /// <param name="result">When the method completes, contains an new color composed of the smallest components of the source colors.</param>
+        /// <param name="result"> When the method completes, contains an new color composed of the smallest components
+        /// of the source colors.</param>
         public static void Min(ref Color left, ref Color right, out Color result)
         {
             result = new Color(
@@ -1017,7 +1069,7 @@ namespace SE
         /// <returns>A color containing the smallest components of the source colors.</returns>
         public static Color Min(Color left, Color right)
         {
-            Min(ref left, ref right, out var result);
+            Min(ref left, ref right, out Color result);
             return result;
         }
 

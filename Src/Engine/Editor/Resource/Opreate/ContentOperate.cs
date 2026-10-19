@@ -30,7 +30,7 @@ namespace SE.Editor
         public virtual bool CanCreate(ContentFolder targetLocation) => false;
         public virtual bool CanReimport(ContentItem item) => false;
         public virtual bool IsFileNameValid(string filename) => !string.IsNullOrWhiteSpace(filename);
-        public virtual void Create(string outputPath, object? argument = null)
+        public virtual void Create(string outputPath, object argument = null)
         {
 
         }

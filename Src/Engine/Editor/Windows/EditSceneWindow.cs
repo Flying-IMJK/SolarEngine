@@ -11,17 +11,17 @@ namespace SE.Editor.GUI
         /// <summary>Camera preview output control.</summary>
         public sealed class CameraPreview : RenderOutputViewport
         {
-            private bool _isPinned;
-            private Button _pinButton;
+            private bool m_IsPinned;
+            private Button m_PinButton;
 
             public bool IsPinned
             {
-                get => _isPinned;
+                get => m_IsPinned;
                 set
                 {
-                    if (_isPinned != value)
+                    if (m_IsPinned != value)
                     {
-                        _isPinned = value;
+                        m_IsPinned = value;
                         UpdatePinButton();
                     }
                 }
@@ -39,13 +39,13 @@ namespace SE.Editor.GUI
 
                 const float pinSize = 12.0f;
                 const float pinMargin = 2.0f;
-                _pinButton = new Button
+                m_PinButton = new Button
                 {
                     AnchorPreset = AnchorPresets.TopRight,
                     Parent = this,
                     Bounds = new Rectangle(Width - pinSize - pinMargin, pinMargin, pinSize, pinSize)
                 };
-                _pinButton.Clicked += () => IsPinned = !IsPinned;
+                m_PinButton.Clicked += () => IsPinned = !IsPinned;
                 UpdatePinButton();
 
                 m_Task.Begin += OnTaskBegin;
@@ -64,15 +64,15 @@ namespace SE.Editor.GUI
 
             private void UpdatePinButton()
             {
-                if (_isPinned)
+                if (m_IsPinned)
                 {
-                    _pinButton.Text = "-";
-                    _pinButton.TooltipText = "Unpin preview";
+                    m_PinButton.Text = "-";
+                    m_PinButton.TooltipText = "Unpin preview";
                 }
                 else
                 {
-                    _pinButton.Text = "+";
-                    _pinButton.TooltipText = "Pin preview";
+                    m_PinButton.Text = "+";
+                    m_PinButton.TooltipText = "Pin preview";
                 }
             }
 
@@ -86,15 +86,15 @@ namespace SE.Editor.GUI
             {
                 IsPinned = false;
                 Camera = null;
-                _pinButton = null;
+                m_PinButton = null;
                 base.OnDestroy();
             }
         }
 
-        private readonly List<CameraPreview> _previews = new();
-        private Actor _pilotActor;
-        private BoundingBox _pilotBounds;
-        private Transform _pilotStart;
+        private readonly List<CameraPreview> m_Previews = new();
+        private Actor m_PilotActor;
+        private BoundingBox m_PilotBounds;
+        private Transform m_PilotStart;
 
         public EditorGizmoViewport Viewport;
 

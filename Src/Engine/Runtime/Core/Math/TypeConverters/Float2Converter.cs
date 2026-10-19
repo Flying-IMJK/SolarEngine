@@ -21,11 +21,12 @@ namespace SE.TypeConverters
         }
 
         /// <inheritdoc />
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value,
+            Type destinationType)
         {
             if (destinationType == typeof(string))
             {
-                var v = (Float2)value;
+                Float2 v = (Float2)value;
                 return v.X.ToString(culture) + "," + v.Y.ToString(culture);
             }
             return base.ConvertTo(context, culture, value, destinationType);

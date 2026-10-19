@@ -162,15 +162,22 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Matrix3x3"/> struct.
         /// </summary>
-        /// <param name="values">The values to assign to the components of the Matrix3x3. This must be an array with nine elements.</param>
+        /// <param name="values"> The values to assign to the components of the Matrix3x3. This must be an array with
+        /// nine elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values"/> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="values"/> contains more or less than nine elements.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"> Thrown when <paramref name="values"/> contains more or less
+        /// than nine elements.</exception>
         public Matrix3x3(float[] values)
         {
             if (values == null)
+            {
                 throw new ArgumentNullException(nameof(values));
+            }
             if (values.Length != 9)
-                throw new ArgumentOutOfRangeException(nameof(values), "There must be sixteen and only nine input values for Matrix3x3.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(values),
+                    "There must be sixteen and only nine input values for Matrix3x3.");
+            }
 
             M11 = values[0];
             M12 = values[1];
@@ -314,58 +321,62 @@ namespace SE
         /// <value>The value of the Matrix3x3 component, depending on the index.</value>
         /// <param name="index">The zero-based index of the component to access.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="index"/> is out of the range [0, 15].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"> Thrown when the <paramref name="index"/> is out of the
+        /// range [0, 15].</exception>
         public float this[int index]
         {
             get
             {
                 switch (index)
                 {
-                case 0: return M11;
-                case 1: return M12;
-                case 2: return M13;
-                case 3: return M21;
-                case 4: return M22;
-                case 5: return M23;
-                case 6: return M31;
-                case 7: return M32;
-                case 8: return M33;
+                    case 0: return M11;
+                    case 1: return M12;
+                    case 2: return M13;
+                    case 3: return M21;
+                    case 4: return M22;
+                    case 5: return M23;
+                    case 6: return M31;
+                    case 7: return M32;
+                    case 8: return M33;
                 }
 
-                throw new ArgumentOutOfRangeException(nameof(index), "Indices for Matrix3x3 run from 0 to 8, inclusive.");
+                throw new ArgumentOutOfRangeException(nameof(index),
+                    "Indices for Matrix3x3 run from 0 to 8, inclusive.");
             }
             set
             {
                 switch (index)
                 {
-                case 0:
-                    M11 = value;
-                    break;
-                case 1:
-                    M12 = value;
-                    break;
-                case 2:
-                    M13 = value;
-                    break;
-                case 3:
-                    M21 = value;
-                    break;
-                case 4:
-                    M22 = value;
-                    break;
-                case 5:
-                    M23 = value;
-                    break;
-                case 6:
-                    M31 = value;
-                    break;
-                case 7:
-                    M32 = value;
-                    break;
-                case 8:
-                    M33 = value;
-                    break;
-                default: throw new ArgumentOutOfRangeException(nameof(index), "Indices for Matrix3x3 run from 0 to 8, inclusive.");
+                    case 0:
+                        M11 = value;
+                        break;
+                    case 1:
+                        M12 = value;
+                        break;
+                    case 2:
+                        M13 = value;
+                        break;
+                    case 3:
+                        M21 = value;
+                        break;
+                    case 4:
+                        M22 = value;
+                        break;
+                    case 5:
+                        M23 = value;
+                        break;
+                    case 6:
+                        M31 = value;
+                        break;
+                    case 7:
+                        M32 = value;
+                        break;
+                    case 8:
+                        M33 = value;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(index),
+                        "Indices for Matrix3x3 run from 0 to 8, inclusive.");
                 }
             }
         }
@@ -377,24 +388,37 @@ namespace SE
         /// <param name="row">The row of the Matrix3x3 to access.</param>
         /// <param name="column">The column of the Matrix3x3 to access.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="row"/> or <paramref name="column"/>is out of the range [0, 3].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"> Thrown when the <paramref name="row"/> or
+        /// <paramref name="column"/> is out of the range [0, 3].</exception>
         public float this[int row, int column]
         {
             get
             {
                 if (row < 0 || row > 2)
-                    throw new ArgumentOutOfRangeException(nameof(row), "Rows and columns for matrices run from 0 to 2, inclusive.");
+                {
+                    throw new ArgumentOutOfRangeException(nameof(row),
+                        "Rows and columns for matrices run from 0 to 2, inclusive.");
+                }
                 if (column < 0 || column > 2)
-                    throw new ArgumentOutOfRangeException(nameof(column), "Rows and columns for matrices run from 0 to 2, inclusive.");
+                {
+                    throw new ArgumentOutOfRangeException(nameof(column),
+                        "Rows and columns for matrices run from 0 to 2, inclusive.");
+                }
 
                 return this[(row * 3) + column];
             }
             set
             {
                 if (row < 0 || row > 2)
-                    throw new ArgumentOutOfRangeException(nameof(row), "Rows and columns for matrices run from 0 to 2, inclusive.");
+                {
+                    throw new ArgumentOutOfRangeException(nameof(row),
+                        "Rows and columns for matrices run from 0 to 2, inclusive.");
+                }
                 if (column < 0 || column > 2)
-                    throw new ArgumentOutOfRangeException(nameof(column), "Rows and columns for matrices run from 0 to 2, inclusive.");
+                {
+                    throw new ArgumentOutOfRangeException(nameof(column),
+                        "Rows and columns for matrices run from 0 to 2, inclusive.");
+                }
 
                 this[(row * 3) + column] = value;
             }
@@ -406,7 +430,8 @@ namespace SE
         /// <returns>The determinant of the Matrix3x3.</returns>
         public float Determinant()
         {
-            return M11 * M22 * M33 + M12 * M23 * M31 + M13 * M21 * M32 - M13 * M22 * M31 - M12 * M21 * M33 - M11 * M23 * M32;
+            return M11 * M22 * M33 + M12 * M23 * M31 + M13 * M21 * M32 - M13 * M22 * M31 - M12 * M21 * M33 - M11
+                * M23 * M32;
         }
 
         /// <summary>
@@ -468,8 +493,10 @@ namespace SE
         /// <summary>
         /// Decomposes a Matrix3x3 into an orthonormalized Matrix3x3 q and a right triangular Matrix3x3 r.
         /// </summary>
-        /// <param name="q">When the method completes, contains the orthonormalized Matrix3x3 of the decomposition.</param>
-        /// <param name="r">When the method completes, contains the right triangular Matrix3x3 of the decomposition.</param>
+        /// <param name="q"> When the method completes, contains the orthonormalized Matrix3x3 of the
+        /// decomposition.</param>
+        /// <param name="r"> When the method completes, contains the right triangular Matrix3x3 of the
+        /// decomposition.</param>
         // ReSharper disable once InconsistentNaming
         public void DecomposeQR(out Matrix3x3 q, out Matrix3x3 r)
         {
@@ -492,8 +519,10 @@ namespace SE
         /// <summary>
         /// Decomposes a Matrix3x3 into a lower triangular Matrix3x3 l and an orthonormalized Matrix3x3 q.
         /// </summary>
-        /// <param name="l">When the method completes, contains the lower triangular Matrix3x3 of the decomposition.</param>
-        /// <param name="q">When the method completes, contains the orthonormalized Matrix3x3 of the decomposition.</param>
+        /// <param name="l"> When the method completes, contains the lower triangular Matrix3x3 of the
+        /// decomposition.</param>
+        /// <param name="q"> When the method completes, contains the orthonormalized Matrix3x3 of the
+        /// decomposition.</param>
         // ReSharper disable once InconsistentNaming
         public void DecomposeLQ(out Matrix3x3 l, out Matrix3x3 q)
         {
@@ -513,8 +542,10 @@ namespace SE
         /// <summary>
         /// Decomposes a Matrix3x3 into a scale, rotation, and translation.
         /// </summary>
-        /// <param name="scale">When the method completes, contains the scaling component of the decomposed Matrix3x3.</param>
-        /// <param name="rotation">When the method completes, contains the rotation component of the decomposed Matrix3x3.</param>
+        /// <param name="scale"> When the method completes, contains the scaling component of the decomposed
+        /// Matrix3x3.</param>
+        /// <param name="rotation"> When the method completes, contains the rotation component of the decomposed
+        /// Matrix3x3.</param>
         /// <remarks>
         /// This method is designed to decompose an SRT transformation Matrix3x3 only.
         /// </remarks>
@@ -561,16 +592,19 @@ namespace SE
         /// Decomposes a uniform scale matrix into a scale, rotation, and translation.
         /// A uniform scale matrix has the same scale in every axis.
         /// </summary>
-        /// <param name="scale">When the method completes, contains the scaling component of the decomposed matrix.</param>
-        /// <param name="rotation">When the method completes, contains the rotation component of the decomposed matrix.</param>
+        /// <param name="scale"> When the method completes, contains the scaling component of the decomposed
+        /// matrix.</param>
+        /// <param name="rotation"> When the method completes, contains the rotation component of the decomposed
+        /// matrix.</param>
         /// <remarks>
-        /// This method is designed to decompose only an SRT transformation matrix that has the same scale in every axis.
+        /// This method is designed to decompose only an SRT transformation matrix that has the same scale in every
+        /// axis.
         /// </remarks>
         public bool DecomposeUniformScale(out float scale, out Quaternion rotation)
         {
             //Scaling is the length of the rows. ( just take one row since this is a uniform matrix)
             scale = (float)Math.Sqrt((M11 * M11) + (M12 * M12) + (M13 * M13));
-            var invScale = 1f / scale;
+            float invScale = 1f / scale;
 
             //If any of the scaling factors are zero, then the rotation matrix can not exist.
             if (Math.Abs(scale) < Mathf.Epsilon)
@@ -605,16 +639,30 @@ namespace SE
         public void ExchangeRows(int firstRow, int secondRow)
         {
             if (firstRow < 0)
-                throw new ArgumentOutOfRangeException(nameof(firstRow), "The parameter firstRow must be greater than or equal to zero.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(firstRow),
+                    "The parameter firstRow must be greater than or equal to zero.");
+            }
             if (firstRow > 2)
-                throw new ArgumentOutOfRangeException(nameof(firstRow), "The parameter firstRow must be less than or equal to two.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(firstRow),
+                    "The parameter firstRow must be less than or equal to two.");
+            }
             if (secondRow < 0)
-                throw new ArgumentOutOfRangeException(nameof(secondRow), "The parameter secondRow must be greater than or equal to zero.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(secondRow),
+                    "The parameter secondRow must be greater than or equal to zero.");
+            }
             if (secondRow > 2)
-                throw new ArgumentOutOfRangeException(nameof(secondRow), "The parameter secondRow must be less than or equal to two.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(secondRow),
+                    "The parameter secondRow must be less than or equal to two.");
+            }
 
             if (firstRow == secondRow)
+            {
                 return;
+            }
 
             float temp0 = this[secondRow, 0];
             float temp1 = this[secondRow, 1];
@@ -632,21 +680,37 @@ namespace SE
         /// <summary>
         /// Exchanges two columns in the Matrix3x3.
         /// </summary>
-        /// <param name="firstColumn">The first column to exchange. This is an index of the column starting at zero.</param>
-        /// <param name="secondColumn">The second column to exchange. This is an index of the column starting at zero.</param>
+        /// <param name="firstColumn"> The first column to exchange. This is an index of the column starting at
+        /// zero.</param>
+        /// <param name="secondColumn"> The second column to exchange. This is an index of the column starting at
+        /// zero.</param>
         public void ExchangeColumns(int firstColumn, int secondColumn)
         {
             if (firstColumn < 0)
-                throw new ArgumentOutOfRangeException(nameof(firstColumn), "The parameter firstColumn must be greater than or equal to zero.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(firstColumn),
+                    "The parameter firstColumn must be greater than or equal to zero.");
+            }
             if (firstColumn > 2)
-                throw new ArgumentOutOfRangeException(nameof(firstColumn), "The parameter firstColumn must be less than or equal to two.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(firstColumn),
+                    "The parameter firstColumn must be less than or equal to two.");
+            }
             if (secondColumn < 0)
-                throw new ArgumentOutOfRangeException(nameof(secondColumn), "The parameter secondColumn must be greater than or equal to zero.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(secondColumn),
+                    "The parameter secondColumn must be greater than or equal to zero.");
+            }
             if (secondColumn > 2)
-                throw new ArgumentOutOfRangeException(nameof(secondColumn), "The parameter secondColumn must be less than or equal to two.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(secondColumn),
+                    "The parameter secondColumn must be less than or equal to two.");
+            }
 
             if (firstColumn == secondColumn)
+            {
                 return;
+            }
 
             float temp0 = this[0, secondColumn];
             float temp1 = this[1, secondColumn];
@@ -879,14 +943,17 @@ namespace SE
         /// <param name="value">The Matrix3x3 to perform the operation on.</param>
         /// <param name="exponent">The exponent to raise the Matrix3x3 to.</param>
         /// <param name="result">When the method completes, contains the exponential Matrix3x3.</param>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="exponent"/> is negative.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"> Thrown when the <paramref name="exponent"/> is
+        /// negative.</exception>
         public static void Exponent(ref Matrix3x3 value, int exponent, out Matrix3x3 result)
         {
             //Source: http://rosettacode.org
             //Reference: http://rosettacode.org/wiki/Matrix3x3-exponentiation_operator
 
             if (exponent < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(exponent), "The exponent can not be negative.");
+            }
 
             if (exponent == 0)
             {
@@ -906,14 +973,20 @@ namespace SE
             while (true)
             {
                 if ((exponent & 1) != 0)
+                {
                     identity *= temp;
+                }
 
                 exponent /= 2;
 
                 if (exponent > 0)
+                {
                     temp *= temp;
+                }
                 else
+                {
                     break;
+                }
             }
 
             result = identity;
@@ -925,7 +998,8 @@ namespace SE
         /// <param name="value">The Matrix3x3 to perform the operation on.</param>
         /// <param name="exponent">The exponent to raise the Matrix3x3 to.</param>
         /// <returns>The exponential Matrix3x3.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="exponent"/> is negative.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"> Thrown when the <paramref name="exponent"/> is
+        /// negative.</exception>
         public static Matrix3x3 Exponent(Matrix3x3 value, int exponent)
         {
             Exponent(ref value, exponent, out Matrix3x3 result);
@@ -967,9 +1041,11 @@ namespace SE
         /// <param name="start">Start Matrix3x3.</param>
         /// <param name="end">End Matrix3x3.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end"/>.</param>
-        /// <param name="result">When the method completes, contains the linear interpolation of the two matrices.</param>
+        /// <param name="result"> When the method completes, contains the linear interpolation of the two
+        /// matrices.</param>
         /// <remarks>
-        /// Passing <paramref name="amount"/> a value of 0 will cause <paramref name="start"/> to be returned; a value of 1 will cause <paramref name="end"/> to be returned.
+        /// Passing <paramref name="amount"/> a value of 0 will cause <paramref name="start"/> to be returned; a value
+        /// of 1 will cause <paramref name="end"/> to be returned.
         /// </remarks>
         public static void Lerp(ref Matrix3x3 start, ref Matrix3x3 end, float amount, out Matrix3x3 result)
         {
@@ -992,7 +1068,8 @@ namespace SE
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end"/>.</param>
         /// <returns>The linear interpolation of the two matrices.</returns>
         /// <remarks>
-        /// Passing <paramref name="amount"/> a value of 0 will cause <paramref name="start"/> to be returned; a value of 1 will cause <paramref name="end"/> to be returned.
+        /// Passing <paramref name="amount"/> a value of 0 will cause <paramref name="start"/> to be returned; a value
+        /// of 1 will cause <paramref name="end"/> to be returned.
         /// </remarks>
         public static Matrix3x3 Lerp(Matrix3x3 start, Matrix3x3 end, float amount)
         {
@@ -1006,7 +1083,8 @@ namespace SE
         /// <param name="start">Start Matrix3x3.</param>
         /// <param name="end">End Matrix3x3.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end"/>.</param>
-        /// <param name="result">When the method completes, contains the cubic interpolation of the two matrices.</param>
+        /// <param name="result"> When the method completes, contains the cubic interpolation of the two
+        /// matrices.</param>
         public static void SmoothStep(ref Matrix3x3 start, ref Matrix3x3 end, float amount, out Matrix3x3 result)
         {
             amount = Mathf.SmoothStep(amount);
@@ -1268,7 +1346,9 @@ namespace SE
             for (int r = 0; r < rowcount; ++r)
             {
                 if (columncount <= lead)
+                {
                     return;
+                }
 
                 int i = r;
 
@@ -1282,7 +1362,9 @@ namespace SE
                         lead++;
 
                         if (lead == columncount)
+                        {
                             return;
+                        }
                     }
                 }
 
@@ -1348,7 +1430,9 @@ namespace SE
             for (int r = 0; r < rowcount; ++r)
             {
                 if (columncount <= lead)
+                {
                     return;
+                }
 
                 int i = r;
 
@@ -1362,7 +1446,9 @@ namespace SE
                         lead++;
 
                         if (lead == columncount)
+                        {
                             return;
+                        }
                     }
                 }
 
@@ -1424,7 +1510,9 @@ namespace SE
             for (int r = 0; r < rowcount; ++r)
             {
                 if (columncount <= lead)
+                {
                     return;
+                }
 
                 int i = r;
 
@@ -1438,7 +1526,9 @@ namespace SE
                         lead++;
 
                         if (lead == columncount)
+                        {
                             return;
+                        }
                     }
                 }
 
@@ -1485,15 +1575,20 @@ namespace SE
         /// <param name="cameraUpFloat">The up vector of the camera.</param>
         /// <param name="cameraForwardFloat">The forward vector of the camera.</param>
         /// <param name="result">When the method completes, contains the created billboard Matrix3x3.</param>
-        public static void Billboard(ref Float3 objectPosition, ref Float3 cameraPosition, ref Float3 cameraUpFloat, ref Float3 cameraForwardFloat, out Matrix3x3 result)
+        public static void Billboard(ref Float3 objectPosition, ref Float3 cameraPosition, ref Float3 cameraUpFloat,
+            ref Float3 cameraForwardFloat, out Matrix3x3 result)
         {
             Float3 difference = cameraPosition - objectPosition;
 
             float lengthSq = difference.LengthSquared;
             if (Mathf.IsZero(lengthSq))
+            {
                 difference = -cameraForwardFloat;
+            }
             else
+            {
                 difference *= (float)(1.0 / Math.Sqrt(lengthSq));
+            }
 
             Float3.Cross(ref cameraUpFloat, ref difference, out Float3 crossed);
             crossed.Normalize();
@@ -1518,9 +1613,11 @@ namespace SE
         /// <param name="cameraUpFloat">The up vector of the camera.</param>
         /// <param name="cameraForwardFloat">The forward vector of the camera.</param>
         /// <returns>The created billboard Matrix3x3.</returns>
-        public static Matrix3x3 Billboard(Float3 objectPosition, Float3 cameraPosition, Float3 cameraUpFloat, Float3 cameraForwardFloat)
+        public static Matrix3x3 Billboard(Float3 objectPosition, Float3 cameraPosition, Float3 cameraUpFloat,
+            Float3 cameraForwardFloat)
         {
-            Billboard(ref objectPosition, ref cameraPosition, ref cameraUpFloat, ref cameraForwardFloat, out Matrix3x3 result);
+            Billboard(ref objectPosition, ref cameraPosition, ref cameraUpFloat, ref cameraForwardFloat,
+                out Matrix3x3 result);
             return result;
         }
 
@@ -1647,8 +1744,10 @@ namespace SE
         /// <param name="result">The result.</param>
         public static void Shear(ref Float2 shearAngles, out Matrix3x3 result)
         {
-            float shearX = shearAngles.X == 0 ? 0 : (1.0f / Mathf.Tan(Mathf.DegreesToRadians * (90 - Mathf.Clamp(shearAngles.X, -89.0f, 89.0f))));
-            float shearY = shearAngles.Y == 0 ? 0 : (1.0f / Mathf.Tan(Mathf.DegreesToRadians * (90 - Mathf.Clamp(shearAngles.Y, -89.0f, 89.0f))));
+            float shearX = shearAngles.X == 0 ? 0 : (1.0f / Mathf.Tan(Mathf.DegreesToRadians * (90 - Mathf
+                .Clamp(shearAngles.X, -89.0f, 89.0f))));
+            float shearY = shearAngles.Y == 0 ? 0 : (1.0f / Mathf.Tan(Mathf.DegreesToRadians * (90 - Mathf
+                .Clamp(shearAngles.Y, -89.0f, 89.0f))));
 
             result = Identity;
             result.M21 = shearX;
@@ -1658,7 +1757,8 @@ namespace SE
         /// <summary>
         /// Creates a Matrix3x3 that rotates around the x-axis.
         /// </summary>
-        /// <param name="angle">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
+        /// <param name="angle"> Angle of rotation in radians. Angles are measured clockwise when looking along the
+        /// rotation axis toward the origin.</param>
         /// <param name="result">When the method completes, contains the created rotation Matrix3x3.</param>
         public static void RotationX(float angle, out Matrix3x3 result)
         {
@@ -1675,7 +1775,8 @@ namespace SE
         /// <summary>
         /// Creates a Matrix3x3 that rotates around the x-axis.
         /// </summary>
-        /// <param name="angle">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
+        /// <param name="angle"> Angle of rotation in radians. Angles are measured clockwise when looking along the
+        /// rotation axis toward the origin.</param>
         /// <returns>The created rotation Matrix3x3.</returns>
         public static Matrix3x3 RotationX(float angle)
         {
@@ -1686,7 +1787,8 @@ namespace SE
         /// <summary>
         /// Creates a Matrix3x3 that rotates around the y-axis.
         /// </summary>
-        /// <param name="angle">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
+        /// <param name="angle"> Angle of rotation in radians. Angles are measured clockwise when looking along the
+        /// rotation axis toward the origin.</param>
         /// <param name="result">When the method completes, contains the created rotation Matrix3x3.</param>
         public static void RotationY(float angle, out Matrix3x3 result)
         {
@@ -1703,7 +1805,8 @@ namespace SE
         /// <summary>
         /// Creates a Matrix3x3 that rotates around the y-axis.
         /// </summary>
-        /// <param name="angle">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
+        /// <param name="angle"> Angle of rotation in radians. Angles are measured clockwise when looking along the
+        /// rotation axis toward the origin.</param>
         /// <returns>The created rotation Matrix3x3.</returns>
         public static Matrix3x3 RotationY(float angle)
         {
@@ -1714,7 +1817,8 @@ namespace SE
         /// <summary>
         /// Creates a Matrix3x3 that rotates around the z-axis.
         /// </summary>
-        /// <param name="angle">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
+        /// <param name="angle"> Angle of rotation in radians. Angles are measured clockwise when looking along the
+        /// rotation axis toward the origin.</param>
         /// <param name="result">When the method completes, contains the created rotation Matrix3x3.</param>
         public static void RotationZ(float angle, out Matrix3x3 result)
         {
@@ -1731,7 +1835,8 @@ namespace SE
         /// <summary>
         /// Creates a Matrix3x3 that rotates around the z-axis.
         /// </summary>
-        /// <param name="angle">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
+        /// <param name="angle"> Angle of rotation in radians. Angles are measured clockwise when looking along the
+        /// rotation axis toward the origin.</param>
         /// <returns>The created rotation Matrix3x3.</returns>
         public static Matrix3x3 RotationZ(float angle)
         {
@@ -1743,7 +1848,8 @@ namespace SE
         /// Creates a Matrix3x3 that rotates around an arbitrary axis.
         /// </summary>
         /// <param name="axis">The axis around which to rotate. This parameter is assumed to be normalized.</param>
-        /// <param name="angle">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
+        /// <param name="angle"> Angle of rotation in radians. Angles are measured clockwise when looking along the
+        /// rotation axis toward the origin.</param>
         /// <param name="result">When the method completes, contains the created rotation Matrix3x3.</param>
         public static void RotationAxis(ref Float3 axis, float angle, out Matrix3x3 result)
         {
@@ -1775,7 +1881,8 @@ namespace SE
         /// Creates a Matrix3x3 that rotates around an arbitrary axis.
         /// </summary>
         /// <param name="axis">The axis around which to rotate. This parameter is assumed to be normalized.</param>
-        /// <param name="angle">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
+        /// <param name="angle"> Angle of rotation in radians. Angles are measured clockwise when looking along the
+        /// rotation axis toward the origin.</param>
         /// <returns>The created rotation Matrix3x3.</returns>
         public static Matrix3x3 RotationAxis(Float3 axis, float angle)
         {
@@ -1856,7 +1963,7 @@ namespace SE
         /// <param name="result">The result.</param>
         public static void Translation2D(ref Float2 translation, out Matrix3x3 result)
         {
-            result = new Matrix3x3(    1, 0, 0, 0, 1, 0, translation.X, translation.Y, 1);
+            result = new Matrix3x3(1, 0, 0, 0, 1, 0, translation.X, translation.Y, 1);
         }
 
         /// <summary>
@@ -1888,7 +1995,8 @@ namespace SE
         /// <param name="result">The result.</param>
         public static void Transform2D(ref Float2 vector, ref Matrix3x3 transform, out Float2 result)
         {
-            result = new Float2((vector.X * transform.M11) + (vector.Y * transform.M21) + transform.M31, (vector.X * transform.M12) + (vector.Y * transform.M22) + transform.M32);
+            result = new Float2((vector.X * transform.M11) + (vector.Y * transform.M21) + transform.M31, (vector.X
+                * transform.M12) + (vector.Y * transform.M22) + transform.M32);
         }
 
         /// <summary>
@@ -2013,7 +2121,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left"/> has the same value as <paramref name="right"/>; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left"/> has the same value as <paramref name="right"/> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Matrix3x3 left, Matrix3x3 right)
         {
@@ -2025,7 +2134,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left"/> has a different value than <paramref name="right"/>; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left"/> has a different value than <paramref name="right"/> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Matrix3x3 left, Matrix3x3 right)
         {
@@ -2038,7 +2148,8 @@ namespace SE
         /// <returns>A 4x4 Matrix with zero translation and M44=1</returns>
         public static explicit operator Matrix(Matrix3x3 value)
         {
-            return new Matrix(value.M11, value.M12, value.M13, 0, value.M21, value.M22, value.M23, 0, value.M31, value.M32, value.M33, 0, 0, 0, 0, 1);
+            return new Matrix(value.M11, value.M12, value.M13, 0, value.M21, value.M22, value.M23, 0, value.M31,
+                value.M32, value.M33, 0, 0, 0, 0, 1);
         }
 
         /// <summary>
@@ -2047,7 +2158,8 @@ namespace SE
         /// <returns>A 3x3 Matrix</returns>
         public static explicit operator Matrix3x3(Matrix value)
         {
-            return new Matrix3x3(value.M11, value.M12, value.M13, value.M21, value.M22, value.M23, value.M31, value.M32, value.M33);
+            return new Matrix3x3(value.M11, value.M12, value.M13, value.M21, value.M22, value.M23, value.M31, value
+                .M32, value.M33);
         }
 
         /// <summary>
@@ -2056,7 +2168,9 @@ namespace SE
         /// <returns>A <see cref="System.String"/> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, "[M11:{0} M12:{1} M13:{2}] [M21:{3} M22:{4} M23:{5}] [M31:{6} M32:{7} M33:{8}]", M11, M12, M13, M21, M22, M23, M31, M32, M33);
+            return string.Format(CultureInfo.CurrentCulture,
+                "[M11:{0} M12:{1} M13:{2}] [M21:{3} M22:{4} M23:{5}] [M31:{6} M32:{7} M33:{8}]", M11, M12, M13, M21,
+                    M22, M23, M31, M32, M33);
         }
 
         /// <summary>
@@ -2067,11 +2181,17 @@ namespace SE
         public string ToString(string format)
         {
             if (format == null)
+            {
                 return ToString();
-            return string.Format(format, CultureInfo.CurrentCulture, "[M11:{0} M12:{1} M13:{2}] [M21:{3} M22:{4} M23:{5}] [M31:{6} M32:{7} M33:{8}]",
-                                 M11.ToString(format, CultureInfo.CurrentCulture), M12.ToString(format, CultureInfo.CurrentCulture), M13.ToString(format, CultureInfo.CurrentCulture),
-                                 M21.ToString(format, CultureInfo.CurrentCulture), M22.ToString(format, CultureInfo.CurrentCulture), M23.ToString(format, CultureInfo.CurrentCulture),
-                                 M31.ToString(format, CultureInfo.CurrentCulture), M32.ToString(format, CultureInfo.CurrentCulture), M33.ToString(format, CultureInfo.CurrentCulture));
+            }
+            return string.Format(format, CultureInfo.CurrentCulture,
+                "[M11:{0} M12:{1} M13:{2}] [M21:{3} M22:{4} M23:{5}] [M31:{6} M32:{7} M33:{8}]",
+                                 M11.ToString(format, CultureInfo.CurrentCulture), M12.ToString(format, CultureInfo
+                                     .CurrentCulture), M13.ToString(format, CultureInfo.CurrentCulture),
+                                 M21.ToString(format, CultureInfo.CurrentCulture), M22.ToString(format, CultureInfo
+                                     .CurrentCulture), M23.ToString(format, CultureInfo.CurrentCulture),
+                                 M31.ToString(format, CultureInfo.CurrentCulture), M32.ToString(format, CultureInfo
+                                     .CurrentCulture), M33.ToString(format, CultureInfo.CurrentCulture));
         }
 
         /// <summary>
@@ -2081,10 +2201,14 @@ namespace SE
         /// <returns>A <see cref="System.String"/> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, "[M11:{0} M12:{1} M13:{2}] [M21:{3} M22:{4} M23:{5}] [M31:{6} M32:{7} M33:{8}]",
-                                 M11.ToString(formatProvider), M12.ToString(formatProvider), M13.ToString(formatProvider),
-                                 M21.ToString(formatProvider), M22.ToString(formatProvider), M23.ToString(formatProvider),
-                                 M31.ToString(formatProvider), M32.ToString(formatProvider), M33.ToString(formatProvider));
+            return string.Format(formatProvider,
+                "[M11:{0} M12:{1} M13:{2}] [M21:{3} M22:{4} M23:{5}] [M31:{6} M32:{7} M33:{8}]",
+                                 M11.ToString(formatProvider), M12.ToString(formatProvider), M13
+                                     .ToString(formatProvider),
+                                 M21.ToString(formatProvider), M22.ToString(formatProvider), M23
+                                     .ToString(formatProvider),
+                                 M31.ToString(formatProvider), M32.ToString(formatProvider), M33
+                                     .ToString(formatProvider));
         }
 
         /// <summary>
@@ -2096,22 +2220,29 @@ namespace SE
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
+            {
                 return ToString(formatProvider);
-            return string.Format(format, formatProvider, "[M11:{0} M12:{1} M13:{2}] [M21:{3} M22:{4} M23:{5}] [M31:{6} M32:{7} M33:{8}]",
-                                 M11.ToString(format, formatProvider), M12.ToString(format, formatProvider), M13.ToString(format, formatProvider),
-                                 M21.ToString(format, formatProvider), M22.ToString(format, formatProvider), M23.ToString(format, formatProvider),
-                                 M31.ToString(format, formatProvider), M32.ToString(format, formatProvider), M33.ToString(format, formatProvider));
+            }
+            return string.Format(format, formatProvider,
+                "[M11:{0} M12:{1} M13:{2}] [M21:{3} M22:{4} M23:{5}] [M31:{6} M32:{7} M33:{8}]",
+                                 M11.ToString(format, formatProvider), M12.ToString(format, formatProvider), M13
+                                     .ToString(format, formatProvider),
+                                 M21.ToString(format, formatProvider), M22.ToString(format, formatProvider), M23
+                                     .ToString(format, formatProvider),
+                                 M31.ToString(format, formatProvider), M32.ToString(format, formatProvider), M33
+                                     .ToString(format, formatProvider));
         }
 
         /// <summary>
         /// Returns a hash code for this instance.
         /// </summary>
-        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
+        /// <returns> A hash code for this instance, suitable for use in hashing algorithms and data structures like a
+        /// hash table.</returns>
         public override int GetHashCode()
         {
             unchecked
             {
-                var hashCode = M11.GetHashCode();
+                int hashCode = M11.GetHashCode();
                 hashCode = (hashCode * 397) ^ M12.GetHashCode();
                 hashCode = (hashCode * 397) ^ M13.GetHashCode();
                 hashCode = (hashCode * 397) ^ M21.GetHashCode();
@@ -2128,7 +2259,8 @@ namespace SE
         /// Determines whether the specified <see cref="Matrix3x3"/> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Matrix3x3"/> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Matrix3x3"/> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Matrix3x3"/> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         public bool Equals(ref Matrix3x3 other)
         {
             return (Mathf.NearEqual(other.M11, M11) &&
@@ -2146,7 +2278,8 @@ namespace SE
         /// Determines whether the specified <see cref="Matrix3x3"/> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Matrix3x3"/> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Matrix3x3"/> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Matrix3x3"/> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Matrix3x3 other)
         {
@@ -2175,7 +2308,8 @@ namespace SE
         /// Determines whether the specified <see cref="System.Object"/> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object"/> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="System.Object"/> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="System.Object"/> is equal to this instance; otherwise,
+        /// <c> false</c>.</returns>
         public override bool Equals(object value)
         {
             return value is Matrix3x3 other && Equals(ref other);

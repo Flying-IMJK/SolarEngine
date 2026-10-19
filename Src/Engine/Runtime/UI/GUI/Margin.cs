@@ -12,7 +12,7 @@ namespace SE
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
     public struct Margin : IEquatable<Margin>, IFormattable
     {
-        private static readonly string s_FormatString = "Left:{0:F2} Right:{1:F2} Top:{2:F2} Bottom:{3:F2}";
+        private static readonly string FormatString = "Left:{0:F2} Right:{1:F2} Top:{2:F2} Bottom:{3:F2}";
 
         public static readonly int SizeInBytes = Marshal.SizeOf(typeof(Margin));
         public static readonly Margin Zero;
@@ -62,12 +62,14 @@ namespace SE
 
         public static Margin operator +(Margin left, Margin right)
         {
-            return new Margin(left.Left + right.Left, left.Right + right.Right, left.Top + right.Top, left.Bottom + right.Bottom);
+            return new Margin(left.Left + right.Left, left.Right + right.Right, left.Top + right.Top, left.Bottom
+                + right.Bottom);
         }
 
         public static Margin operator -(Margin left, Margin right)
         {
-            return new Margin(left.Left - right.Left, left.Right - right.Right, left.Top - right.Top, left.Bottom - right.Bottom);
+            return new Margin(left.Left - right.Left, left.Right - right.Right, left.Top - right.Top, left.Bottom
+                - right.Bottom);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -84,14 +86,17 @@ namespace SE
 
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, "Left:{0} Right:{1} Top:{2} Bottom:{3}", Left, Right, Top, Bottom);
+            return string.Format(CultureInfo.CurrentCulture, "Left:{0} Right:{1} Top:{2} Bottom:{3}", Left, Right,
+                Top, Bottom);
         }
 
         public string ToString(string format)
         {
             if (format == null)
+            {
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString,
+            }
+            return string.Format(CultureInfo.CurrentCulture, FormatString,
                 Left.ToString(format, CultureInfo.CurrentCulture),
                 Right.ToString(format, CultureInfo.CurrentCulture),
                 Top.ToString(format, CultureInfo.CurrentCulture),
@@ -100,14 +105,16 @@ namespace SE
 
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, s_FormatString, Left, Right, Top, Bottom);
+            return string.Format(formatProvider, FormatString, Left, Right, Top, Bottom);
         }
 
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
+            {
                 return ToString(formatProvider);
-            return string.Format(formatProvider, s_FormatString,
+            }
+            return string.Format(formatProvider, FormatString,
                 Left.ToString(format, formatProvider),
                 Right.ToString(format, formatProvider),
                 Top.ToString(format, formatProvider),

@@ -61,7 +61,7 @@ namespace SE
 #endif
     public partial struct Double2 : IEquatable<Double2>, IFormattable
     {
-        private static readonly string s_FormatString = "X:{0:F2} Y:{1:F2}";
+        private static readonly string FormatString = "X:{0:F2} Y:{1:F2}";
 
         /// <summary>
         /// The size of the <see cref="Double2" /> type, in bytes.
@@ -157,16 +157,22 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Double2" /> struct.
         /// </summary>
-        /// <param name="values">The values to assign to the X and Y components of the vector. This must be an array with two elements.</param>
+        /// <param name="values"> The values to assign to the X and Y components of the vector. This must be an array
+        /// with two elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="values" /> contains more or less than two elements.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"> Thrown when <paramref name="values" /> contains more or less
+        /// than two elements.</exception>
         public Double2(double[] values)
         {
             if (values == null)
+            {
                 throw new ArgumentNullException(nameof(values));
+            }
             if (values.Length != 2)
+            {
                 throw new ArgumentOutOfRangeException(nameof(values),
-                    "There must be two and only two input values for Double2.");
+                                    "There must be two and only two input values for Double2.");
+            }
             X = values[0];
             Y = values[1];
         }
@@ -215,9 +221,11 @@ namespace SE
         /// Gets or sets the component at the specified index.
         /// </summary>
         /// <value>The value of the X or Y component, depending on the index.</value>
-        /// <param name="index">The index of the component to access. Use 0 for the X component and 1 for the Y component.</param>
+        /// <param name="index"> The index of the component to access. Use 0 for the X component and 1 for the Y
+        /// component.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="index" /> is out of the range [0,1].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"> Thrown when the <paramref name="index" /> is out of
+        /// the range [0,1].</exception>
         public double this[int index]
         {
             get
@@ -251,14 +259,16 @@ namespace SE
         /// Calculates the length of the vector.
         /// </summary>
         /// <returns>The length of the vector.</returns>
-        /// <remarks><see cref="Double2.LengthSquared" /> may be preferred when only the relative length is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Double2.LengthSquared" /> may be preferred when only the relative length is needed and
+        /// speed is of the essence.</remarks>
         public double Length => Math.Sqrt(X * X + Y * Y);
 
         /// <summary>
         /// Calculates the squared length of the vector.
         /// </summary>
         /// <returns>The squared length of the vector.</returns>
-        /// <remarks>This method may be preferred to <see cref="Double2.Length" /> when only a relative length is needed and speed is of the essence.</remarks>
+        /// <remarks> This method may be preferred to <see cref="Double2.Length" /> when only a relative length is
+        /// needed and speed is of the essence.</remarks>
         public double LengthSquared => X * X + Y * Y;
 
         /// <summary>
@@ -505,12 +515,18 @@ namespace SE
         /// Returns a <see cref="Double2" /> containing the 2D Cartesian coordinates of a point specified in Barycentric
         /// coordinates relative to a 2D triangle.
         /// </summary>
-        /// <param name="value1">A <see cref="Double2" /> containing the 2D Cartesian coordinates of vertex 1 of the triangle.</param>
-        /// <param name="value2">A <see cref="Double2" /> containing the 2D Cartesian coordinates of vertex 2 of the triangle.</param>
-        /// <param name="value3">A <see cref="Double2" /> containing the 2D Cartesian coordinates of vertex 3 of the triangle.</param>
-        /// <param name="amount1">Barycentric coordinate b2, which expresses the weighting factor toward vertex 2 (specified in <paramref name="value2" />).</param>
-        /// <param name="amount2">Barycentric coordinate b3, which expresses the weighting factor toward vertex 3 (specified in <paramref name="value3" />).</param>
-        /// <param name="result">When the method completes, contains the 2D Cartesian coordinates of the specified point.</param>
+        /// <param name="value1"> A <see cref="Double2" /> containing the 2D Cartesian coordinates of vertex 1 of the
+        /// triangle.</param>
+        /// <param name="value2"> A <see cref="Double2" /> containing the 2D Cartesian coordinates of vertex 2 of the
+        /// triangle.</param>
+        /// <param name="value3"> A <see cref="Double2" /> containing the 2D Cartesian coordinates of vertex 3 of the
+        /// triangle.</param>
+        /// <param name="amount1"> Barycentric coordinate b2, which expresses the weighting factor toward vertex 2
+        /// (specified in <paramref name="value2" /> ).</param>
+        /// <param name="amount2"> Barycentric coordinate b3, which expresses the weighting factor toward vertex 3
+        /// (specified in <paramref name="value3" /> ).</param>
+        /// <param name="result"> When the method completes, contains the 2D Cartesian coordinates of the specified
+        /// point.</param>
         public static void Barycentric(ref Double2 value1, ref Double2 value2, ref Double2 value3, double amount1,
             double amount2, out Double2 result)
         {
@@ -522,12 +538,18 @@ namespace SE
         /// Returns a <see cref="Double2" /> containing the 2D Cartesian coordinates of a point specified in Barycentric
         /// coordinates relative to a 2D triangle.
         /// </summary>
-        /// <param name="value1">A <see cref="Double2" /> containing the 2D Cartesian coordinates of vertex 1 of the triangle.</param>
-        /// <param name="value2">A <see cref="Double2" /> containing the 2D Cartesian coordinates of vertex 2 of the triangle.</param>
-        /// <param name="value3">A <see cref="Double2" /> containing the 2D Cartesian coordinates of vertex 3 of the triangle.</param>
-        /// <param name="amount1">Barycentric coordinate b2, which expresses the weighting factor toward vertex 2 (specified in <paramref name="value2" />).</param>
-        /// <param name="amount2">Barycentric coordinate b3, which expresses the weighting factor toward vertex 3 (specified in <paramref name="value3" />).</param>
-        /// <returns>A new <see cref="Double2" /> containing the 2D Cartesian coordinates of the specified point.</returns>
+        /// <param name="value1"> A <see cref="Double2" /> containing the 2D Cartesian coordinates of vertex 1 of the
+        /// triangle.</param>
+        /// <param name="value2"> A <see cref="Double2" /> containing the 2D Cartesian coordinates of vertex 2 of the
+        /// triangle.</param>
+        /// <param name="value3"> A <see cref="Double2" /> containing the 2D Cartesian coordinates of vertex 3 of the
+        /// triangle.</param>
+        /// <param name="amount1"> Barycentric coordinate b2, which expresses the weighting factor toward vertex 2
+        /// (specified in <paramref name="value2" /> ).</param>
+        /// <param name="amount2"> Barycentric coordinate b3, which expresses the weighting factor toward vertex 3
+        /// (specified in <paramref name="value3" /> ).</param>
+        /// <returns> A new <see cref="Double2" /> containing the 2D Cartesian coordinates of the specified
+        /// point.</returns>
         public static Double2 Barycentric(Double2 value1, Double2 value2, Double2 value3, double amount1,
             double amount2)
         {
@@ -593,7 +615,8 @@ namespace SE
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <param name="result">When the method completes, contains the distance between the two vectors.</param>
-        /// <remarks><see cref="Double2.DistanceSquared(ref Double2, ref Double2, out double)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Double2.DistanceSquared(ref Double2, ref Double2, out double)" /> may be preferred when
+        /// only the relative distance is needed and speed is of the essence.</remarks>
         public static void Distance(ref Double2 value1, ref Double2 value2, out double result)
         {
             double x = value1.X - value2.X;
@@ -607,7 +630,8 @@ namespace SE
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <returns>The distance between the two vectors.</returns>
-        /// <remarks><see cref="Double2.DistanceSquared(Double2, Double2)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Double2.DistanceSquared(Double2, Double2)" /> may be preferred when only the relative
+        /// distance is needed and speed is of the essence.</remarks>
         public static double Distance(Double2 value1, Double2 value2)
         {
             double x = value1.X - value2.X;
@@ -621,7 +645,8 @@ namespace SE
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <returns>The distance between the two vectors.</returns>
-        /// <remarks><see cref="Double2.DistanceSquared(ref Double2, ref Double2, out double)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Double2.DistanceSquared(ref Double2, ref Double2, out double)" /> may be preferred when
+        /// only the relative distance is needed and speed is of the essence.</remarks>
         public static double Distance(ref Double2 value1, ref Double2 value2)
         {
             double x = value1.X - value2.X;
@@ -634,7 +659,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector</param>
-        /// <param name="result">When the method completes, contains the squared distance between the two vectors.</param>
+        /// <param name="result"> When the method completes, contains the squared distance between the two
+        /// vectors.</param>
         public static void DistanceSquared(ref Double2 value1, ref Double2 value2, out double result)
         {
             double x = value1.X - value2.X;
@@ -839,7 +865,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Returns the vector with components containing the smallest integer greater to or equal to the original value.
+        /// Returns the vector with components containing the smallest integer greater to or equal to the original
+        /// value.
         /// </summary>
         /// <param name="v">The value.</param>
         /// <returns>The result.</returns>
@@ -849,7 +876,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Breaks the components of the vector into an integral and a fractional part. Returns vector made of fractional parts.
+        /// Breaks the components of the vector into an integral and a fractional part. Returns vector made of
+        /// fractional parts.
         /// </summary>
         /// <param name="v">The value.</param>
         /// <returns>The result.</returns>
@@ -864,8 +892,10 @@ namespace SE
         /// <param name="start">Start vector.</param>
         /// <param name="end">End vector.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
-        /// <param name="result">When the method completes, contains the linear interpolation of the two vectors.</param>
-        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
+        /// <param name="result"> When the method completes, contains the linear interpolation of the two
+        /// vectors.</param>
+        /// <remarks> Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be
+        /// returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static void Lerp(ref Double2 start, ref Double2 end, double amount, out Double2 result)
         {
             result = default;
@@ -880,7 +910,8 @@ namespace SE
         /// <param name="end">End vector.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
         /// <returns>The linear interpolation of the two vectors.</returns>
-        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
+        /// <remarks> Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be
+        /// returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static Double2 Lerp(Double2 start, Double2 end, double amount)
         {
             Lerp(ref start, ref end, amount, out Double2 result);
@@ -893,8 +924,10 @@ namespace SE
         /// <param name="start">Start vector.</param>
         /// <param name="end">End vector.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
-        /// <param name="result">When the method completes, contains the linear interpolation of the two vectors.</param>
-        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
+        /// <param name="result"> When the method completes, contains the linear interpolation of the two
+        /// vectors.</param>
+        /// <remarks> Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be
+        /// returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static void Lerp(ref Double2 start, ref Double2 end, ref Double2 amount, out Double2 result)
         {
             result = default;
@@ -909,7 +942,8 @@ namespace SE
         /// <param name="end">End vector.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
         /// <returns>The linear interpolation of the two vectors.</returns>
-        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
+        /// <remarks> Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be
+        /// returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static Double2 Lerp(Double2 start, Double2 end, Double2 amount)
         {
             Lerp(ref start, ref end, ref amount, out Double2 result);
@@ -950,7 +984,8 @@ namespace SE
         /// <param name="value2">Second source position vector.</param>
         /// <param name="tangent2">Second source tangent vector.</param>
         /// <param name="amount">Weighting factor.</param>
-        /// <param name="result">When the method completes, contains the result of the Hermite spline interpolation.</param>
+        /// <param name="result"> When the method completes, contains the result of the Hermite spline
+        /// interpolation.</param>
         public static void Hermite(ref Double2 value1, ref Double2 tangent1, ref Double2 value2, ref Double2 tangent2,
             double amount, out Double2 result)
         {
@@ -981,7 +1016,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Calculates the 2D vector perpendicular to the given 2D vector. The result is always rotated 90-degrees in a counter-clockwise direction for a 2D coordinate system where the positive Y axis goes up.
+        /// Calculates the 2D vector perpendicular to the given 2D vector. The result is always rotated 90-degrees in a
+        /// counter-clockwise direction for a 2D coordinate system where the positive Y axis goes up.
         /// </summary>
         /// <param name="inDirection">The input direction.</param>
         /// <returns>The result.</returns>
@@ -991,7 +1027,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Calculates the 2D vector perpendicular to the given 2D vector. The result is always rotated 90-degrees in a counter-clockwise direction for a 2D coordinate system where the positive Y axis goes up.
+        /// Calculates the 2D vector perpendicular to the given 2D vector. The result is always rotated 90-degrees in a
+        /// counter-clockwise direction for a 2D coordinate system where the positive Y axis goes up.
         /// </summary>
         /// <param name="inDirection">The in direction.</param>
         /// <param name="result">When the method completes, contains the result of the calculation.</param>
@@ -1008,7 +1045,8 @@ namespace SE
         /// <param name="value3">The third position in the interpolation.</param>
         /// <param name="value4">The fourth position in the interpolation.</param>
         /// <param name="amount">Weighting factor.</param>
-        /// <param name="result">When the method completes, contains the result of the Catmull-Rom interpolation.</param>
+        /// <param name="result"> When the method completes, contains the result of the Catmull-Rom
+        /// interpolation.</param>
         public static void CatmullRom(ref Double2 value1, ref Double2 value2, ref Double2 value3, ref Double2 value4,
             double amount, out Double2 result)
         {
@@ -1043,7 +1081,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">When the method completes, contains an new vector composed of the largest components of the source vectors.</param>
+        /// <param name="result"> When the method completes, contains an new vector composed of the largest components
+        /// of the source vectors.</param>
         public static void Max(ref Double2 left, ref Double2 right, out Double2 result)
         {
             result = default;
@@ -1068,7 +1107,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">When the method completes, contains an new vector composed of the smallest components of the source vectors.</param>
+        /// <param name="result"> When the method completes, contains an new vector composed of the smallest components
+        /// of the source vectors.</param>
         public static void Min(ref Double2 left, ref Double2 right, out Double2 result)
         {
             result = default;
@@ -1104,7 +1144,8 @@ namespace SE
         /// <param name="vector">The source vector.</param>
         /// <param name="normal">Normal of the surface.</param>
         /// <param name="result">When the method completes, contains the reflected vector.</param>
-        /// <remarks>Reflect only gives the direction of a reflection off a surface, it does not determine whether the original vector was close enough to the surface to hit it.</remarks>
+        /// <remarks> Reflect only gives the direction of a reflection off a surface, it does not determine whether the
+        /// original vector was close enough to the surface to hit it.</remarks>
         public static void Reflect(ref Double2 vector, ref Double2 normal, out Double2 result)
         {
             result = default;
@@ -1119,7 +1160,8 @@ namespace SE
         /// <param name="vector">The source vector.</param>
         /// <param name="normal">Normal of the surface.</param>
         /// <returns>The reflected vector.</returns>
-        /// <remarks>Reflect only gives the direction of a reflection off a surface, it does not determine whether the original vector was close enough to the surface to hit it.</remarks>
+        /// <remarks> Reflect only gives the direction of a reflection off a surface, it does not determine whether the
+        /// original vector was close enough to the surface to hit it.</remarks>
         public static Double2 Reflect(Double2 vector, Double2 normal)
         {
             Reflect(ref vector, ref normal, out Double2 result);
@@ -1199,7 +1241,7 @@ namespace SE
         /// </remarks>
         public static void TransformCoordinate(ref Double2 coordinate, ref Matrix transform, out Double2 result)
         {
-            var vector = new Double4
+            Double4 vector = new Double4
             {
                 X = coordinate.X * transform.M11 + coordinate.Y * transform.M21 + transform.M41,
                 Y = coordinate.X * transform.M12 + coordinate.Y * transform.M22 + transform.M42,
@@ -1291,7 +1333,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Multiplies a vector with another by performing component-wise multiplication equivalent to <see cref="Multiply(ref Double2,ref Double2,out Double2)" />.
+        /// Multiplies a vector with another by performing component-wise multiplication equivalent to
+        /// <see cref="Multiply(ref Double2,ref Double2,out Double2)" /> .
         /// </summary>
         /// <param name="left">The first vector to multiply.</param>
         /// <param name="right">The second vector to multiply.</param>
@@ -1469,7 +1512,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise,<c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has the same value as <paramref name="right" /> ;
+        /// otherwise,<c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Double2 left, Double2 right)
         {
@@ -1481,7 +1525,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise,<c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has a different value than <paramref name="right" /> ;
+        /// otherwise,<c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Double2 left, Double2 right)
         {
@@ -1535,8 +1580,10 @@ namespace SE
         public string ToString(string format)
         {
             if (format == null)
+            {
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString,
+            }
+            return string.Format(CultureInfo.CurrentCulture, FormatString,
                 X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture));
         }
 
@@ -1547,7 +1594,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, s_FormatString, X, Y);
+            return string.Format(formatProvider, FormatString, X, Y);
         }
 
         /// <summary>
@@ -1559,8 +1606,10 @@ namespace SE
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
+            {
                 return ToString(formatProvider);
-            return string.Format(formatProvider, s_FormatString, X.ToString(format, formatProvider),
+            }
+            return string.Format(formatProvider, FormatString, X.ToString(format, formatProvider),
                 Y.ToString(format, formatProvider));
         }
 
@@ -1579,7 +1628,8 @@ namespace SE
         /// Determines whether the specified <see cref="Double2" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Double2" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Double2" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Double2" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Double2 other)
         {
@@ -1598,7 +1648,8 @@ namespace SE
         /// Determines whether the specified <see cref="Double2" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Double2" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Double2" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Double2" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Double2 other)
         {
@@ -1609,7 +1660,8 @@ namespace SE
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise,
+        /// <c> false</c>.</returns>
         public override bool Equals(object value)
         {
             return value is Double2 other && Mathd.NearEqual(other.X, X) && Mathd.NearEqual(other.Y, Y);
@@ -1622,7 +1674,7 @@ namespace SE
 #endif
     public partial struct Double3 : IEquatable<Double3>, IFormattable
     {
-        private static readonly string s_FormatString = "X:{0:F2} Y:{1:F2} Z:{2:F2}";
+        private static readonly string FormatString = "X:{0:F2} Y:{1:F2} Z:{2:F2}";
 
         /// <summary>
         /// The size of the <see cref="Double3" /> type, in bytes.
@@ -1738,7 +1790,8 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Double3" /> struct.
         /// </summary>
-        /// <param name="value">A vector containing the values with which to initialize the X, Y and Z components.</param>
+        /// <param name="value"> A vector containing the values with which to initialize the X, Y and Z
+        /// components.</param>
         public Double3(Float3 value)
         {
             X = value.X;
@@ -1749,7 +1802,8 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Double3" /> struct.
         /// </summary>
-        /// <param name="value">A vector containing the values with which to initialize the X, Y and Z components.</param>
+        /// <param name="value"> A vector containing the values with which to initialize the X, Y and Z
+        /// components.</param>
         public Double3(Double4 value)
         {
             X = value.X;
@@ -1760,16 +1814,22 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Double3" /> struct.
         /// </summary>
-        /// <param name="values">The values to assign to the X, Y, and Z components of the vector. This must be an array with three elements.</param>
+        /// <param name="values"> The values to assign to the X, Y, and Z components of the vector. This must be an
+        /// array with three elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"> Thrown when <paramref name="values" /> contains more or less than three elements.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"> Thrown when <paramref name="values" /> contains more or less
+        /// than three elements.</exception>
         public Double3(double[] values)
         {
             if (values == null)
+            {
                 throw new ArgumentNullException(nameof(values));
+            }
             if (values.Length != 3)
+            {
                 throw new ArgumentOutOfRangeException(nameof(values),
-                    "There must be three and only three input values for Double3.");
+                                    "There must be three and only three input values for Double3.");
+            }
             X = values[0];
             Y = values[1];
             Z = values[2];
@@ -1837,9 +1897,11 @@ namespace SE
         /// Gets or sets the component at the specified index.
         /// </summary>
         /// <value>The value of the X, Y, or Z component, depending on the index.</value>
-        /// <param name="index">The index of the component to access. Use 0 for the X component, 1 for the Y component, and 2 for the Z component.</param>
+        /// <param name="index"> The index of the component to access. Use 0 for the X component, 1 for the Y component,
+        /// and 2 for the Z component.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="index" /> is out of the range [0, 2].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"> Thrown when the <paramref name="index" /> is out of
+        /// the range [0, 2].</exception>
         public double this[int index]
         {
             get
@@ -1877,14 +1939,16 @@ namespace SE
         /// Calculates the length of the vector.
         /// </summary>
         /// <returns>The length of the vector.</returns>
-        /// <remarks><see cref="Double3.LengthSquared" /> may be preferred when only the relative length is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Double3.LengthSquared" /> may be preferred when only the relative length is needed and
+        /// speed is of the essence.</remarks>
         public double Length => Math.Sqrt(X * X + Y * Y + Z * Z);
 
         /// <summary>
         /// Calculates the squared length of the vector.
         /// </summary>
         /// <returns>The squared length of the vector.</returns>
-        /// <remarks>This method may be preferred to <see cref="Double3.Length" /> when only a relative length is needed and speed is of the essence.</remarks>
+        /// <remarks> This method may be preferred to <see cref="Double3.Length" /> when only a relative length is
+        /// needed and speed is of the essence.</remarks>
         public double LengthSquared => X * X + Y * Y + Z * Z;
 
         /// <summary>
@@ -2162,14 +2226,21 @@ namespace SE
         }
 
         /// <summary>
-        /// Returns a <see cref="Double3" /> containing the 3D Cartesian coordinates of a point specified in Barycentric coordinates relative to a 3D triangle.
+        /// Returns a <see cref="Double3" /> containing the 3D Cartesian coordinates of a point specified in Barycentric
+        /// coordinates relative to a 3D triangle.
         /// </summary>
-        /// <param name="value1">A <see cref="Double3" /> containing the 3D Cartesian coordinates of vertex 1 of the triangle.</param>
-        /// <param name="value2">A <see cref="Double3" /> containing the 3D Cartesian coordinates of vertex 2 of the triangle.</param>
-        /// <param name="value3">A <see cref="Double3" /> containing the 3D Cartesian coordinates of vertex 3 of the triangle.</param>
-        /// <param name="amount1">Barycentric coordinate b2, which expresses the weighting factor toward vertex 2 (specified in <paramref name="value2" />).</param>
-        /// <param name="amount2">Barycentric coordinate b3, which expresses the weighting factor toward vertex 3 (specified in <paramref name="value3" />).</param>
-        /// <param name="result">When the method completes, contains the 3D Cartesian coordinates of the specified point.</param>
+        /// <param name="value1"> A <see cref="Double3" /> containing the 3D Cartesian coordinates of vertex 1 of the
+        /// triangle.</param>
+        /// <param name="value2"> A <see cref="Double3" /> containing the 3D Cartesian coordinates of vertex 2 of the
+        /// triangle.</param>
+        /// <param name="value3"> A <see cref="Double3" /> containing the 3D Cartesian coordinates of vertex 3 of the
+        /// triangle.</param>
+        /// <param name="amount1"> Barycentric coordinate b2, which expresses the weighting factor toward vertex 2
+        /// (specified in <paramref name="value2" /> ).</param>
+        /// <param name="amount2"> Barycentric coordinate b3, which expresses the weighting factor toward vertex 3
+        /// (specified in <paramref name="value3" /> ).</param>
+        /// <param name="result"> When the method completes, contains the 3D Cartesian coordinates of the specified
+        /// point.</param>
         public static void Barycentric(ref Double3 value1, ref Double3 value2, ref Double3 value3, double amount1,
             double amount2, out Double3 result)
         {
@@ -2179,18 +2250,25 @@ namespace SE
         }
 
         /// <summary>
-        /// Returns a <see cref="Double3" /> containing the 3D Cartesian coordinates of a point specified in Barycentric coordinates relative to a 3D triangle.
+        /// Returns a <see cref="Double3" /> containing the 3D Cartesian coordinates of a point specified in Barycentric
+        /// coordinates relative to a 3D triangle.
         /// </summary>
-        /// <param name="value1">A <see cref="Double3" /> containing the 3D Cartesian coordinates of vertex 1 of the triangle.</param>
-        /// <param name="value2">A <see cref="Double3" /> containing the 3D Cartesian coordinates of vertex 2 of the triangle.</param>
-        /// <param name="value3">A <see cref="Double3" /> containing the 3D Cartesian coordinates of vertex 3 of the triangle.</param>
-        /// <param name="amount1">Barycentric coordinate b2, which expresses the weighting factor toward vertex 2 (specified in <paramref name="value2" />).</param>
-        /// <param name="amount2">Barycentric coordinate b3, which expresses the weighting factor toward vertex 3 (specified in <paramref name="value3" />).</param>
-        /// <returns>A new <see cref="Double3" /> containing the 3D Cartesian coordinates of the specified point.</returns>
+        /// <param name="value1"> A <see cref="Double3" /> containing the 3D Cartesian coordinates of vertex 1 of the
+        /// triangle.</param>
+        /// <param name="value2"> A <see cref="Double3" /> containing the 3D Cartesian coordinates of vertex 2 of the
+        /// triangle.</param>
+        /// <param name="value3"> A <see cref="Double3" /> containing the 3D Cartesian coordinates of vertex 3 of the
+        /// triangle.</param>
+        /// <param name="amount1"> Barycentric coordinate b2, which expresses the weighting factor toward vertex 2
+        /// (specified in <paramref name="value2" /> ).</param>
+        /// <param name="amount2"> Barycentric coordinate b3, which expresses the weighting factor toward vertex 3
+        /// (specified in <paramref name="value3" /> ).</param>
+        /// <returns> A new <see cref="Double3" /> containing the 3D Cartesian coordinates of the specified
+        /// point.</returns>
         public static Double3 Barycentric(Double3 value1, Double3 value2, Double3 value3, double amount1,
             double amount2)
         {
-            Barycentric(ref value1, ref value2, ref value3, amount1, amount2, out var result);
+            Barycentric(ref value1, ref value2, ref value3, amount1, amount2, out Double3 result);
             return result;
         }
 
@@ -2224,7 +2302,7 @@ namespace SE
         /// <returns>The clamped value.</returns>
         public static Double3 Clamp(Double3 value, Double3 min, Double3 max)
         {
-            Clamp(ref value, ref min, ref max, out var result);
+            Clamp(ref value, ref min, ref max, out Double3 result);
             return result;
         }
 
@@ -2249,7 +2327,7 @@ namespace SE
         /// <returns>The cross product of the two vectors.</returns>
         public static Double3 Cross(Double3 left, Double3 right)
         {
-            Cross(ref left, ref right, out var result);
+            Cross(ref left, ref right, out Double3 result);
             return result;
         }
 
@@ -2259,7 +2337,8 @@ namespace SE
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <param name="result">When the method completes, contains the distance between the two vectors.</param>
-        /// <remarks><see cref="Double3.DistanceSquared(ref Double3, ref Double3, out double)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Double3.DistanceSquared(ref Double3, ref Double3, out double)" /> may be preferred when
+        /// only the relative distance is needed and speed is of the essence.</remarks>
         public static void Distance(ref Double3 value1, ref Double3 value2, out double result)
         {
             double x = value1.X - value2.X;
@@ -2274,7 +2353,8 @@ namespace SE
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <returns>The distance between the two vectors.</returns>
-        /// <remarks><see cref="Double3.DistanceSquared(ref Double3, ref Double3, out double)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Double3.DistanceSquared(ref Double3, ref Double3, out double)" /> may be preferred when
+        /// only the relative distance is needed and speed is of the essence.</remarks>
         public static double Distance(ref Double3 value1, ref Double3 value2)
         {
             double x = value1.X - value2.X;
@@ -2289,7 +2369,8 @@ namespace SE
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <returns>The distance between the two vectors.</returns>
-        /// <remarks><see cref="Double3.DistanceSquared(Double3, Double3)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Double3.DistanceSquared(Double3, Double3)" /> may be preferred when only the relative
+        /// distance is needed and speed is of the essence.</remarks>
         public static double Distance(Double3 value1, Double3 value2)
         {
             double x = value1.X - value2.X;
@@ -2303,7 +2384,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
-        /// <param name="result">When the method completes, contains the squared distance between the two vectors.</param>
+        /// <param name="result"> When the method completes, contains the squared distance between the two
+        /// vectors.</param>
         public static void DistanceSquared(ref Double3 value1, ref Double3 value2, out double result)
         {
             double x = value1.X - value2.X;
@@ -2345,7 +2427,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
-        /// <param name="result">When the method completes, contains the distance between the two vectors in the XY plane.</param>
+        /// <param name="result"> When the method completes, contains the distance between the two vectors in the XY
+        /// plane.</param>
         public static void DistanceXY(ref Double3 value1, ref Double3 value2, out double result)
         {
             double x = value1.X - value2.X;
@@ -2358,7 +2441,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector</param>
-        /// <param name="result">When the method completes, contains the squared distance between the two vectors in the XY plane.</param>
+        /// <param name="result"> When the method completes, contains the squared distance between the two vectors in
+        /// the XY plane.</param>
         public static void DistanceXYSquared(ref Double3 value1, ref Double3 value2, out double result)
         {
             double x = value1.X - value2.X;
@@ -2371,7 +2455,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
-        /// <param name="result">When the method completes, contains the distance between the two vectors in the XY plane.</param>
+        /// <param name="result"> When the method completes, contains the distance between the two vectors in the XY
+        /// plane.</param>
         public static void DistanceXZ(ref Double3 value1, ref Double3 value2, out double result)
         {
             double x = value1.X - value2.X;
@@ -2384,7 +2469,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector</param>
-        /// <param name="result">When the method completes, contains the squared distance between the two vectors in the XY plane.</param>
+        /// <param name="result"> When the method completes, contains the squared distance between the two vectors in
+        /// the XY plane.</param>
         public static void DistanceXZSquared(ref Double3 value1, ref Double3 value2, out double result)
         {
             double x = value1.X - value2.X;
@@ -2397,7 +2483,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
-        /// <param name="result">When the method completes, contains the distance between the two vectors in the YZ plane.</param>
+        /// <param name="result"> When the method completes, contains the distance between the two vectors in the YZ
+        /// plane.</param>
         public static void DistanceYZ(ref Double3 value1, ref Double3 value2, out double result)
         {
             double y = value1.Y - value2.Y;
@@ -2410,7 +2497,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector</param>
-        /// <param name="result">When the method completes, contains the squared distance between the two vectors in the YZ plane.</param>
+        /// <param name="result"> When the method completes, contains the squared distance between the two vectors in
+        /// the YZ plane.</param>
         public static void DistanceYZSquared(ref Double3 value1, ref Double3 value2, out double result)
         {
             double y = value1.Y - value2.Y;
@@ -2557,8 +2645,10 @@ namespace SE
         /// <param name="start">Start vector.</param>
         /// <param name="end">End vector.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
-        /// <param name="result">When the method completes, contains the linear interpolation of the two vectors.</param>
-        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
+        /// <param name="result"> When the method completes, contains the linear interpolation of the two
+        /// vectors.</param>
+        /// <remarks> Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be
+        /// returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static void Lerp(ref Double3 start, ref Double3 end, double amount, out Double3 result)
         {
             result = default;
@@ -2574,10 +2664,11 @@ namespace SE
         /// <param name="end">End vector.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
         /// <returns>The linear interpolation of the two vectors.</returns>
-        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
+        /// <remarks> Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be
+        /// returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static Double3 Lerp(Double3 start, Double3 end, double amount)
         {
-            Lerp(ref start, ref end, amount, out var result);
+            Lerp(ref start, ref end, amount, out Double3 result);
             return result;
         }
 
@@ -2603,7 +2694,7 @@ namespace SE
         /// <returns>The cubic interpolation of the two vectors.</returns>
         public static Double3 SmoothStep(Double3 start, Double3 end, double amount)
         {
-            SmoothStep(ref start, ref end, amount, out var result);
+            SmoothStep(ref start, ref end, amount, out Double3 result);
             return result;
         }
 
@@ -2616,11 +2707,13 @@ namespace SE
         /// <returns>The new position.</returns>
         public static Double3 MoveTowards(Double3 current, Double3 target, double maxDistanceDelta)
         {
-            var to = target - current;
-            var distanceSq = to.LengthSquared;
+            Double3 to = target - current;
+            double distanceSq = to.LengthSquared;
             if (distanceSq == 0 || (maxDistanceDelta >= 0 && distanceSq <= maxDistanceDelta * maxDistanceDelta))
+            {
                 return target;
-            var scale = maxDistanceDelta / Mathd.Sqrt(distanceSq);
+            }
+            double scale = maxDistanceDelta / Mathd.Sqrt(distanceSq);
             return new Double3(current.X + to.X * scale, current.Y + to.Y * scale, current.Z + to.Z * scale);
         }
 
@@ -2632,7 +2725,8 @@ namespace SE
         /// <param name="value2">Second source position vector.</param>
         /// <param name="tangent2">Second source tangent vector.</param>
         /// <param name="amount">Weighting factor.</param>
-        /// <param name="result">When the method completes, contains the result of the Hermite spline interpolation.</param>
+        /// <param name="result"> When the method completes, contains the result of the Hermite spline
+        /// interpolation.</param>
         public static void Hermite(ref Double3 value1, ref Double3 tangent1, ref Double3 value2, ref Double3 tangent2,
             double amount, out Double3 result)
         {
@@ -2659,7 +2753,7 @@ namespace SE
         /// <returns>The result of the Hermite spline interpolation.</returns>
         public static Double3 Hermite(Double3 value1, Double3 tangent1, Double3 value2, Double3 tangent2, double amount)
         {
-            Hermite(ref value1, ref tangent1, ref value2, ref tangent2, amount, out var result);
+            Hermite(ref value1, ref tangent1, ref value2, ref tangent2, amount, out Double3 result);
             return result;
         }
 
@@ -2671,7 +2765,8 @@ namespace SE
         /// <param name="value3">The third position in the interpolation.</param>
         /// <param name="value4">The fourth position in the interpolation.</param>
         /// <param name="amount">Weighting factor.</param>
-        /// <param name="result">When the method completes, contains the result of the Catmull-Rom interpolation.</param>
+        /// <param name="result"> When the method completes, contains the result of the Catmull-Rom
+        /// interpolation.</param>
         public static void CatmullRom(ref Double3 value1, ref Double3 value2, ref Double3 value3, ref Double3 value4,
             double amount, out Double3 result)
         {
@@ -2700,7 +2795,7 @@ namespace SE
         /// <returns>A vector that is the result of the Catmull-Rom interpolation.</returns>
         public static Double3 CatmullRom(Double3 value1, Double3 value2, Double3 value3, Double3 value4, double amount)
         {
-            CatmullRom(ref value1, ref value2, ref value3, ref value4, amount, out var result);
+            CatmullRom(ref value1, ref value2, ref value3, ref value4, amount, out Double3 result);
             return result;
         }
 
@@ -2709,7 +2804,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">When the method completes, contains an new vector composed of the largest components of the source vectors.</param>
+        /// <param name="result"> When the method completes, contains an new vector composed of the largest components
+        /// of the source vectors.</param>
         public static void Max(ref Double3 left, ref Double3 right, out Double3 result)
         {
             result = default;
@@ -2726,7 +2822,7 @@ namespace SE
         /// <returns>A vector containing the largest components of the source vectors.</returns>
         public static Double3 Max(Double3 left, Double3 right)
         {
-            Max(ref left, ref right, out var result);
+            Max(ref left, ref right, out Double3 result);
             return result;
         }
 
@@ -2735,7 +2831,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">When the method completes, contains an new vector composed of the smallest components of the source vectors.</param>
+        /// <param name="result"> When the method completes, contains an new vector composed of the smallest components
+        /// of the source vectors.</param>
         public static void Min(ref Double3 left, ref Double3 right, out Double3 result)
         {
             result = default;
@@ -2752,7 +2849,7 @@ namespace SE
         /// <returns>A vector containing the smallest components of the source vectors.</returns>
         public static Double3 Min(Double3 left, Double3 right)
         {
-            Min(ref left, ref right, out var result);
+            Min(ref left, ref right, out Double3 result);
             return result;
         }
 
@@ -2776,7 +2873,9 @@ namespace SE
         {
             double sqrMag = Dot(onNormal, onNormal);
             if (sqrMag < Mathd.Epsilon)
+            {
                 return Zero;
+            }
             return onNormal * Dot(vector, onNormal) / sqrMag;
         }
 
@@ -2792,7 +2891,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Calculates the angle (in degrees) between <paramref name="from"/> and <paramref name="to"/>. This is always the smallest value.
+        /// Calculates the angle (in degrees) between <paramref name="from"/> and <paramref name="to"/> . This is always
+        /// the smallest value.
         /// </summary>
         /// <param name="from">The first vector.</param>
         /// <param name="to">The second vector.</param>
@@ -2801,7 +2901,9 @@ namespace SE
         {
             double dot = Mathd.Clamp(Dot(from.Normalized, to.Normalized), -1.0, 1.0);
             if (Math.Abs(dot) > (1 - Mathd.Epsilon))
+            {
                 return dot > 0.0 ? 0.0 : 180.0;
+            }
             return Math.Acos(dot) * Mathd.RadiansToDegrees;
         }
 
@@ -2820,7 +2922,7 @@ namespace SE
         public static void Project(ref Double3 vector, double x, double y, double width, double height, double minZ,
             double maxZ, ref Matrix worldViewProjection, out Double3 result)
         {
-            TransformCoordinate(ref vector, ref worldViewProjection, out var v);
+            TransformCoordinate(ref vector, ref worldViewProjection, out Double3 v);
             result = new Double3((1.0 + v.X) * 0.5f * width + x, (1.0 - v.Y) * 0.5f * height + y,
                 v.Z * (maxZ - minZ) + minZ);
         }
@@ -2840,7 +2942,7 @@ namespace SE
         public static Double3 Project(Double3 vector, double x, double y, double width, double height, double minZ,
             double maxZ, Matrix worldViewProjection)
         {
-            Project(ref vector, x, y, width, height, minZ, maxZ, ref worldViewProjection, out var result);
+            Project(ref vector, x, y, width, height, minZ, maxZ, ref worldViewProjection, out Double3 result);
             return result;
         }
 
@@ -2859,8 +2961,8 @@ namespace SE
         public static void Unproject(ref Double3 vector, double x, double y, double width, double height, double minZ,
             double maxZ, ref Matrix worldViewProjection, out Double3 result)
         {
-            Matrix.Invert(ref worldViewProjection, out var matrix);
-            var v = new Double3
+            Matrix.Invert(ref worldViewProjection, out Matrix matrix);
+            Double3 v = new Double3
             {
                 X = (vector.X - x) / width * 2.0 - 1.0,
                 Y = -((vector.Y - y) / height * 2.0 - 1.0),
@@ -2884,7 +2986,7 @@ namespace SE
         public static Double3 Unproject(Double3 vector, double x, double y, double width, double height, double minZ,
             double maxZ, Matrix worldViewProjection)
         {
-            Unproject(ref vector, x, y, width, height, minZ, maxZ, ref worldViewProjection, out var result);
+            Unproject(ref vector, x, y, width, height, minZ, maxZ, ref worldViewProjection, out Double3 result);
             return result;
         }
 
@@ -2894,7 +2996,8 @@ namespace SE
         /// <param name="vector">The source vector.</param>
         /// <param name="normal">Normal of the surface.</param>
         /// <param name="result">When the method completes, contains the reflected vector.</param>
-        /// <remarks>Reflect only gives the direction of a reflection off a surface, it does not determine whether the original vector was close enough to the surface to hit it.</remarks>
+        /// <remarks> Reflect only gives the direction of a reflection off a surface, it does not determine whether the
+        /// original vector was close enough to the surface to hit it.</remarks>
         public static void Reflect(ref Double3 vector, ref Double3 normal, out Double3 result)
         {
             result = default;
@@ -2910,10 +3013,11 @@ namespace SE
         /// <param name="vector">The source vector.</param>
         /// <param name="normal">Normal of the surface.</param>
         /// <returns>The reflected vector.</returns>
-        /// <remarks>Reflect only gives the direction of a reflection off a surface, it does not determine whether the original vector was close enough to the surface to hit it.</remarks>
+        /// <remarks> Reflect only gives the direction of a reflection off a surface, it does not determine whether the
+        /// original vector was close enough to the surface to hit it.</remarks>
         public static Double3 Reflect(Double3 vector, Double3 normal)
         {
-            Reflect(ref vector, ref normal, out var result);
+            Reflect(ref vector, ref normal, out Double3 result);
             return result;
         }
 
@@ -2950,7 +3054,7 @@ namespace SE
         /// <returns>The transformed <see cref="Double3" />.</returns>
         public static Double3 Transform(Double3 vector, Quaternion rotation)
         {
-            Transform(ref vector, ref rotation, out var result);
+            Transform(ref vector, ref rotation, out Double3 result);
             return result;
         }
 
@@ -2975,7 +3079,7 @@ namespace SE
         /// <returns>The transformed <see cref="Double3"/>.</returns>
         public static Double3 Transform(Double3 vector, Matrix3x3 transform)
         {
-            Transform(ref vector, ref transform, out var result);
+            Transform(ref vector, ref transform, out Double3 result);
             return result;
         }
 
@@ -3035,7 +3139,7 @@ namespace SE
         /// </remarks>
         public static void TransformCoordinate(ref Double3 coordinate, ref Matrix transform, out Double3 result)
         {
-            var vector = new Double4
+            Double4 vector = new Double4
             {
                 X = coordinate.X * transform.M11 + coordinate.Y * transform.M21 + coordinate.Z * transform.M31 +
                     transform.M41,
@@ -3064,7 +3168,7 @@ namespace SE
         /// </remarks>
         public static Double3 TransformCoordinate(Double3 coordinate, Matrix transform)
         {
-            TransformCoordinate(ref coordinate, ref transform, out var result);
+            TransformCoordinate(ref coordinate, ref transform, out Double3 result);
             return result;
         }
 
@@ -3103,7 +3207,7 @@ namespace SE
         /// </remarks>
         public static Double3 TransformNormal(Double3 normal, Matrix transform)
         {
-            TransformNormal(ref normal, ref transform, out var result);
+            TransformNormal(ref normal, ref transform, out Double3 result);
             return result;
         }
 
@@ -3133,7 +3237,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Multiplies a vector with another by performing component-wise multiplication equivalent to <see cref="Multiply(ref Double3,ref Double3,out Double3)" />.
+        /// Multiplies a vector with another by performing component-wise multiplication equivalent to
+        /// <see cref="Multiply(ref Double3,ref Double3,out Double3)" /> .
         /// </summary>
         /// <param name="left">The first vector to multiply.</param>
         /// <param name="right">The second vector to multiply.</param>
@@ -3182,7 +3287,7 @@ namespace SE
         /// <returns>The scaled vector.</returns>
         public static Double3 operator *(Double3 vector, Quaternion rotation)
         {
-            Transform(ref vector, ref rotation, out var result);
+            Transform(ref vector, ref rotation, out Double3 result);
             return result;
         }
 
@@ -3323,7 +3428,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has the same value as <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Double3 left, Double3 right)
         {
@@ -3336,7 +3442,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has a different value than <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Double3 left, Double3 right)
         {
@@ -3380,7 +3487,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X, Y, Z);
+            return string.Format(CultureInfo.CurrentCulture, FormatString, X, Y, Z);
         }
 
         /// <summary>
@@ -3391,8 +3498,10 @@ namespace SE
         public string ToString(string format)
         {
             if (format == null)
+            {
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString,
+            }
+            return string.Format(CultureInfo.CurrentCulture, FormatString,
                 X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture),
                 Z.ToString(format, CultureInfo.CurrentCulture));
         }
@@ -3404,7 +3513,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, s_FormatString, X, Y, Z);
+            return string.Format(formatProvider, FormatString, X, Y, Z);
         }
 
         /// <summary>
@@ -3416,7 +3525,9 @@ namespace SE
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
+            {
                 return ToString(formatProvider);
+            }
             return string.Format(formatProvider, "X:{0} Y:{1} Z:{2}", X.ToString(format, formatProvider),
                 Y.ToString(format, formatProvider), Z.ToString(format, formatProvider));
         }
@@ -3439,7 +3550,8 @@ namespace SE
         /// Determines whether the specified <see cref="Double3" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Double3" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Double3" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Double3" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Double3 other)
         {
@@ -3450,7 +3562,8 @@ namespace SE
         /// Determines whether the specified <see cref="Double3" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Double3" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Double3" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Double3" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Double3 other)
         {
@@ -3461,7 +3574,8 @@ namespace SE
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise,
+        /// <c> false</c>.</returns>
         public override bool Equals(object value)
         {
             return value is Double3 other && Mathd.NearEqual(other.X, X) && Mathd.NearEqual(other.Y, Y) &&
@@ -3475,7 +3589,7 @@ namespace SE
 #endif
     public partial struct Double4 : IEquatable<Double4>, IFormattable
     {
-        private static readonly string s_FormatString = "X:{0:F2} Y:{1:F2} Z:{2:F2} W:{3:F2}";
+        private static readonly string FormatString = "X:{0:F2} Y:{1:F2} Z:{2:F2} W:{3:F2}";
 
         /// <summary>
         /// The size of the <see cref="Double4" /> type, in bytes.
@@ -3557,7 +3671,8 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Double4" /> struct.
         /// </summary>
-        /// <param name="value">A vector containing the values with which to initialize the X, Y, Z, and W components.</param>
+        /// <param name="value"> A vector containing the values with which to initialize the X, Y, Z, and W
+        /// components.</param>
         public Double4(Float4 value)
         {
             X = value.X;
@@ -3569,7 +3684,8 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Double4" /> struct.
         /// </summary>
-        /// <param name="value">A vector containing the values with which to initialize the X, Y, and Z components.</param>
+        /// <param name="value"> A vector containing the values with which to initialize the X, Y, and Z
+        /// components.</param>
         /// <param name="w">Initial value for the W component of the vector.</param>
         public Double4(Double3 value, double w)
         {
@@ -3609,16 +3725,22 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Double4" /> struct.
         /// </summary>
-        /// <param name="values">The values to assign to the X, Y, Z, and W components of the vector. This must be an array with four elements.</param>
+        /// <param name="values"> The values to assign to the X, Y, Z, and W components of the vector. This must be an
+        /// array with four elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="values" /> contains more or less than four elements.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"> Thrown when <paramref name="values" /> contains more or less
+        /// than four elements.</exception>
         public Double4(double[] values)
         {
             if (values == null)
+            {
                 throw new ArgumentNullException(nameof(values));
+            }
             if (values.Length != 4)
+            {
                 throw new ArgumentOutOfRangeException(nameof(values),
-                    "There must be four and only four input values for Double4.");
+                                    "There must be four and only four input values for Double4.");
+            }
             X = values[0];
             Y = values[1];
             Z = values[2];
@@ -3674,9 +3796,11 @@ namespace SE
         /// Gets or sets the component at the specified index.
         /// </summary>
         /// <value>The value of the X, Y, Z, or W component, depending on the index.</value>
-        /// <param name="index">The index of the component to access. Use 0 for the X component, 1 for the Y component, 2 for the Z component, and 3 for the W component.</param>
+        /// <param name="index"> The index of the component to access. Use 0 for the X component, 1 for the Y component,
+        /// 2 for the Z component, and 3 for the W component.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="index" /> is out of the range [0,3].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"> Thrown when the <paramref name="index" /> is out of
+        /// the range [0,3].</exception>
         public double this[int index]
         {
             get
@@ -3718,14 +3842,16 @@ namespace SE
         /// Calculates the length of the vector.
         /// </summary>
         /// <returns>The length of the vector.</returns>
-        /// <remarks><see cref="Double4.LengthSquared" /> may be preferred when only the relative length is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Double4.LengthSquared" /> may be preferred when only the relative length is needed and
+        /// speed is of the essence.</remarks>
         public double Length => Math.Sqrt(X * X + Y * Y + Z * Z + W * W);
 
         /// <summary>
         /// Calculates the squared length of the vector.
         /// </summary>
         /// <returns>The squared length of the vector.</returns>
-        /// <remarks>This method may be preferred to <see cref="Double4.Length" /> when only a relative length is needed and speed is of the essence.</remarks>
+        /// <remarks> This method may be preferred to <see cref="Double4.Length" /> when only a relative length is
+        /// needed and speed is of the essence.</remarks>
         public double LengthSquared => X * X + Y * Y + Z * Z + W * W;
 
         /// <summary>
@@ -3972,14 +4098,21 @@ namespace SE
         }
 
         /// <summary>
-        /// Returns a <see cref="Double4" /> containing the 4D Cartesian coordinates of a point specified in Barycentric coordinates relative to a 4D triangle.
+        /// Returns a <see cref="Double4" /> containing the 4D Cartesian coordinates of a point specified in Barycentric
+        /// coordinates relative to a 4D triangle.
         /// </summary>
-        /// <param name="value1">A <see cref="Double4" /> containing the 4D Cartesian coordinates of vertex 1 of the triangle.</param>
-        /// <param name="value2">A <see cref="Double4" /> containing the 4D Cartesian coordinates of vertex 2 of the triangle.</param>
-        /// <param name="value3">A <see cref="Double4" /> containing the 4D Cartesian coordinates of vertex 3 of the triangle.</param>
-        /// <param name="amount1">Barycentric coordinate b2, which expresses the weighting factor toward vertex 2 (specified in <paramref name="value2" />).</param>
-        /// <param name="amount2">Barycentric coordinate b3, which expresses the weighting factor toward vertex 3 (specified in <paramref name="value3" />).</param>
-        /// <param name="result">When the method completes, contains the 4D Cartesian coordinates of the specified point.</param>
+        /// <param name="value1"> A <see cref="Double4" /> containing the 4D Cartesian coordinates of vertex 1 of the
+        /// triangle.</param>
+        /// <param name="value2"> A <see cref="Double4" /> containing the 4D Cartesian coordinates of vertex 2 of the
+        /// triangle.</param>
+        /// <param name="value3"> A <see cref="Double4" /> containing the 4D Cartesian coordinates of vertex 3 of the
+        /// triangle.</param>
+        /// <param name="amount1"> Barycentric coordinate b2, which expresses the weighting factor toward vertex 2
+        /// (specified in <paramref name="value2" /> ).</param>
+        /// <param name="amount2"> Barycentric coordinate b3, which expresses the weighting factor toward vertex 3
+        /// (specified in <paramref name="value3" /> ).</param>
+        /// <param name="result"> When the method completes, contains the 4D Cartesian coordinates of the specified
+        /// point.</param>
         public static void Barycentric(ref Double4 value1, ref Double4 value2, ref Double4 value3, double amount1,
             double amount2, out Double4 result)
         {
@@ -3990,14 +4123,21 @@ namespace SE
         }
 
         /// <summary>
-        /// Returns a <see cref="Double4" /> containing the 4D Cartesian coordinates of a point specified in Barycentric coordinates relative to a 4D triangle.
+        /// Returns a <see cref="Double4" /> containing the 4D Cartesian coordinates of a point specified in Barycentric
+        /// coordinates relative to a 4D triangle.
         /// </summary>
-        /// <param name="value1">A <see cref="Double4" /> containing the 4D Cartesian coordinates of vertex 1 of the triangle.</param>
-        /// <param name="value2">A <see cref="Double4" /> containing the 4D Cartesian coordinates of vertex 2 of the triangle.</param>
-        /// <param name="value3">A <see cref="Double4" /> containing the 4D Cartesian coordinates of vertex 3 of the triangle.</param>
-        /// <param name="amount1">Barycentric coordinate b2, which expresses the weighting factor toward vertex 2 (specified in <paramref name="value2" />).</param>
-        /// <param name="amount2">Barycentric coordinate b3, which expresses the weighting factor toward vertex 3 (specified in <paramref name="value3" />).</param>
-        /// <returns>A new <see cref="Double4" /> containing the 4D Cartesian coordinates of the specified point.</returns>
+        /// <param name="value1"> A <see cref="Double4" /> containing the 4D Cartesian coordinates of vertex 1 of the
+        /// triangle.</param>
+        /// <param name="value2"> A <see cref="Double4" /> containing the 4D Cartesian coordinates of vertex 2 of the
+        /// triangle.</param>
+        /// <param name="value3"> A <see cref="Double4" /> containing the 4D Cartesian coordinates of vertex 3 of the
+        /// triangle.</param>
+        /// <param name="amount1"> Barycentric coordinate b2, which expresses the weighting factor toward vertex 2
+        /// (specified in <paramref name="value2" /> ).</param>
+        /// <param name="amount2"> Barycentric coordinate b3, which expresses the weighting factor toward vertex 3
+        /// (specified in <paramref name="value3" /> ).</param>
+        /// <returns> A new <see cref="Double4" /> containing the 4D Cartesian coordinates of the specified
+        /// point.</returns>
         public static Double4 Barycentric(Double4 value1, Double4 value2, Double4 value3, double amount1,
             double amount2)
         {
@@ -4048,7 +4188,8 @@ namespace SE
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <param name="result">When the method completes, contains the distance between the two vectors.</param>
-        /// <remarks><see cref="Double4.DistanceSquared(ref Double4, ref Double4, out double)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Double4.DistanceSquared(ref Double4, ref Double4, out double)" /> may be preferred when
+        /// only the relative distance is needed and speed is of the essence.</remarks>
         public static void Distance(ref Double4 value1, ref Double4 value2, out double result)
         {
             double x = value1.X - value2.X;
@@ -4064,7 +4205,8 @@ namespace SE
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <returns>The distance between the two vectors.</returns>
-        /// <remarks><see cref="Double4.DistanceSquared(Double4, Double4)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Double4.DistanceSquared(Double4, Double4)" /> may be preferred when only the relative
+        /// distance is needed and speed is of the essence.</remarks>
         public static double Distance(Double4 value1, Double4 value2)
         {
             double x = value1.X - value2.X;
@@ -4079,7 +4221,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
-        /// <param name="result">When the method completes, contains the squared distance between the two vectors.</param>
+        /// <param name="result"> When the method completes, contains the squared distance between the two
+        /// vectors.</param>
         public static void DistanceSquared(ref Double4 value1, ref Double4 value2, out double result)
         {
             double x = value1.X - value2.X;
@@ -4231,8 +4374,10 @@ namespace SE
         /// <param name="start">Start vector.</param>
         /// <param name="end">End vector.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
-        /// <param name="result">When the method completes, contains the linear interpolation of the two vectors.</param>
-        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
+        /// <param name="result"> When the method completes, contains the linear interpolation of the two
+        /// vectors.</param>
+        /// <remarks> Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be
+        /// returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static void Lerp(ref Double4 start, ref Double4 end, double amount, out Double4 result)
         {
             result = default;
@@ -4249,7 +4394,8 @@ namespace SE
         /// <param name="end">End vector.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
         /// <returns>The linear interpolation of the two vectors.</returns>
-        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
+        /// <remarks> Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be
+        /// returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static Double4 Lerp(Double4 start, Double4 end, double amount)
         {
             Lerp(ref start, ref end, amount, out Double4 result);
@@ -4290,7 +4436,8 @@ namespace SE
         /// <param name="value2">Second source position vector.</param>
         /// <param name="tangent2">Second source tangent vector.</param>
         /// <param name="amount">Weighting factor.</param>
-        /// <param name="result">When the method completes, contains the result of the Hermite spline interpolation.</param>
+        /// <param name="result"> When the method completes, contains the result of the Hermite spline
+        /// interpolation.</param>
         public static void Hermite(ref Double4 value1, ref Double4 tangent1, ref Double4 value2, ref Double4 tangent2,
             double amount, out Double4 result)
         {
@@ -4329,7 +4476,8 @@ namespace SE
         /// <param name="value3">The third position in the interpolation.</param>
         /// <param name="value4">The fourth position in the interpolation.</param>
         /// <param name="amount">Weighting factor.</param>
-        /// <param name="result">When the method completes, contains the result of the Catmull-Rom interpolation.</param>
+        /// <param name="result"> When the method completes, contains the result of the Catmull-Rom
+        /// interpolation.</param>
         public static void CatmullRom(ref Double4 value1, ref Double4 value2, ref Double4 value3, ref Double4 value4,
             double amount, out Double4 result)
         {
@@ -4370,7 +4518,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">When the method completes, contains an new vector composed of the largest components of the source vectors.</param>
+        /// <param name="result"> When the method completes, contains an new vector composed of the largest components
+        /// of the source vectors.</param>
         public static void Max(ref Double4 left, ref Double4 right, out Double4 result)
         {
             result = default;
@@ -4397,7 +4546,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">When the method completes, contains an new vector composed of the smallest components of the source vectors.</param>
+        /// <param name="result"> When the method completes, contains an new vector composed of the smallest components
+        /// of the source vectors.</param>
         public static void Min(ref Double4 left, ref Double4 right, out Double4 result)
         {
             result = default;
@@ -4510,7 +4660,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Multiplies a vector with another by performing component-wise multiplication equivalent to <see cref="Multiply(ref Double4,ref Double4,out Double4)" />.
+        /// Multiplies a vector with another by performing component-wise multiplication equivalent to
+        /// <see cref="Multiply(ref Double4,ref Double4,out Double4)" /> .
         /// </summary>
         /// <param name="left">The first vector to multiply.</param>
         /// <param name="right">The second vector to multiply.</param>
@@ -4688,7 +4839,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has the same value as <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Double4 left, Double4 right)
         {
@@ -4701,7 +4853,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has a different value than <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Double4 left, Double4 right)
         {
@@ -4744,7 +4897,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X, Y, Z, W);
+            return string.Format(CultureInfo.CurrentCulture, FormatString, X, Y, Z, W);
         }
 
         /// <summary>
@@ -4755,8 +4908,10 @@ namespace SE
         public string ToString(string format)
         {
             if (format == null)
+            {
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString,
+            }
+            return string.Format(CultureInfo.CurrentCulture, FormatString,
                 X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture),
                 Z.ToString(format, CultureInfo.CurrentCulture), W.ToString(format, CultureInfo.CurrentCulture));
         }
@@ -4768,7 +4923,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, s_FormatString, X, Y, Z, W);
+            return string.Format(formatProvider, FormatString, X, Y, Z, W);
         }
 
         /// <summary>
@@ -4780,7 +4935,9 @@ namespace SE
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
+            {
                 return ToString(formatProvider);
+            }
             return string.Format(formatProvider, "X:{0} Y:{1} Z:{2} W:{3}", X.ToString(format, formatProvider),
                 Y.ToString(format, formatProvider), Z.ToString(format, formatProvider),
                 W.ToString(format, formatProvider));
@@ -4805,7 +4962,8 @@ namespace SE
         /// Determines whether the specified <see cref="Double4" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Double4" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Double4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Double4" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         public bool Equals(ref Double4 other)
         {
             return Mathd.NearEqual(other.X, X) && Mathd.NearEqual(other.Y, Y) && Mathd.NearEqual(other.Z, Z) &&
@@ -4816,7 +4974,8 @@ namespace SE
         /// Determines whether the specified <see cref="Double4" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Double4" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Double4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Double4" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Double4 other)
         {
@@ -4828,7 +4987,8 @@ namespace SE
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise,
+        /// <c> false</c>.</returns>
         public override bool Equals(object value)
         {
             return value is Double4 other && Mathd.NearEqual(other.X, X) && Mathd.NearEqual(other.Y, Y) &&

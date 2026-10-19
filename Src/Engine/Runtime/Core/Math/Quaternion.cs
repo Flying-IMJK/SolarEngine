@@ -62,7 +62,7 @@ namespace SE
 #endif
     public partial struct Quaternion : IEquatable<Quaternion>, IFormattable
     {
-        private static readonly string s_FormatString = "X:{0:F2} Y:{1:F2} Z:{2:F2} W:{3:F2}";
+        private static readonly string FormatString = "X:{0:F2} Y:{1:F2} Z:{2:F2} W:{3:F2}";
 
         /// <summary>
         /// The size of the <see cref="Quaternion" /> type, in bytes.
@@ -99,7 +99,8 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Quaternion" /> struct.
         /// </summary>
-        /// <param name="value">A vector containing the values with which to initialize the X, Y, and Z components.</param>
+        /// <param name="value"> A vector containing the values with which to initialize the X, Y, and Z
+        /// components.</param>
         /// <param name="w">Initial value for the W component of the quaternion.</param>
         public Quaternion(Float3 value, float w)
         {
@@ -127,15 +128,22 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Quaternion" /> struct.
         /// </summary>
-        /// <param name="values">The values to assign to the X, Y, Z, and W components of the quaternion. This must be an array with four elements.</param>
+        /// <param name="values"> The values to assign to the X, Y, Z, and W components of the quaternion. This must be
+        /// an array with four elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="values" /> contains more or less than four elements.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"> Thrown when <paramref name="values" /> contains more or less
+        /// than four elements.</exception>
         public Quaternion(float[] values)
         {
             if (values == null)
+            {
                 throw new ArgumentNullException(nameof(values));
+            }
             if (values.Length != 4)
-                throw new ArgumentOutOfRangeException(nameof(values), "There must be four and only four input values for Quaternion.");
+            {
+                throw new ArgumentOutOfRangeException(nameof(values),
+                    "There must be four and only four input values for Quaternion.");
+            }
 
             X = values[0];
             Y = values[1];
@@ -189,14 +197,15 @@ namespace SE
                 else
                 {
                     // yaw pitch roll
-                    var q = new Quaternion(W, Z, X, Y);
+                    Quaternion q = new Quaternion(W, Z, X, Y);
                     result.Y = Mathf.Atan2(2.0f * q.X * q.W + 2.0f * q.Y * q.Z, 1 - 2.0f * (q.Z * q.Z + q.W * q.W));
                     result.X = Mathf.Asin(2.0f * (q.X * q.Z - q.W * q.Y));
                     result.Z = Mathf.Atan2(2.0f * q.X * q.Y + 2.0f * q.Z * q.W, 1 - 2.0f * (q.Y * q.Y + q.Z * q.Z));
                 }
 
                 result *= Mathf.RadiansToDegrees;
-                return new Float3(Mathf.UnwindDegrees(result.X), Mathf.UnwindDegrees(result.Y), Mathf.UnwindDegrees(result.Z));
+                return new Float3(Mathf.UnwindDegrees(result.X), Mathf.UnwindDegrees(result.Y), Mathf
+                    .UnwindDegrees(result.Z));
             }
         }
 
@@ -209,7 +218,9 @@ namespace SE
             {
                 float length = X * X + Y * Y + Z * Z;
                 if (Mathf.IsZero(length))
+                {
                     return 0.0f;
+                }
                 return (float)(2.0 * Math.Acos(Mathf.Clamp(W, -1f, 1f)));
             }
         }
@@ -223,7 +234,9 @@ namespace SE
             {
                 float length = X * X + Y * Y + Z * Z;
                 if (Mathf.IsZero(length))
+                {
                     return Float3.UnitX;
+                }
                 float inv = 1.0f / (float)Math.Sqrt(length);
                 return new Float3(X * inv, Y * inv, Z * inv);
             }
@@ -233,39 +246,44 @@ namespace SE
         /// Gets or sets the component at the specified index.
         /// </summary>
         /// <value>The value of the X, Y, Z, or W component, depending on the index.</value>
-        /// <param name="index">The index of the component to access. Use 0 for the X component, 1 for the Y component, 2 for the Z component, and 3 for the W component.</param>
+        /// <param name="index"> The index of the component to access. Use 0 for the X component, 1 for the Y component,
+        /// 2 for the Z component, and 3 for the W component.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="index" /> is out of the range [0, 3].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"> Thrown when the <paramref name="index" /> is out of
+        /// the range [0, 3].</exception>
         public float this[int index]
         {
             get
             {
                 switch (index)
                 {
-                case 0: return X;
-                case 1: return Y;
-                case 2: return Z;
-                case 3: return W;
+                    case 0: return X;
+                    case 1: return Y;
+                    case 2: return Z;
+                    case 3: return W;
                 }
-                throw new ArgumentOutOfRangeException(nameof(index), "Indices for Quaternion run from 0 to 3, inclusive.");
+                throw new ArgumentOutOfRangeException(nameof(index),
+                    "Indices for Quaternion run from 0 to 3, inclusive.");
             }
             set
             {
                 switch (index)
                 {
-                case 0:
-                    X = value;
-                    break;
-                case 1:
-                    Y = value;
-                    break;
-                case 2:
-                    Z = value;
-                    break;
-                case 3:
-                    W = value;
-                    break;
-                default: throw new ArgumentOutOfRangeException(nameof(index), "Indices for Quaternion run from 0 to 3, inclusive.");
+                    case 0:
+                        X = value;
+                        break;
+                    case 1:
+                        Y = value;
+                        break;
+                    case 2:
+                        Z = value;
+                        break;
+                    case 3:
+                        W = value;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(index),
+                        "Indices for Quaternion run from 0 to 3, inclusive.");
                 }
             }
         }
@@ -309,14 +327,16 @@ namespace SE
         /// Calculates the length of the quaternion.
         /// </summary>
         /// <returns>The length of the quaternion.</returns>
-        /// <remarks><see cref="Quaternion.LengthSquared" /> may be preferred when only the relative length is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Quaternion.LengthSquared" /> may be preferred when only the relative length is needed
+        /// and speed is of the essence.</remarks>
         public float Length => (float)Math.Sqrt(X * X + Y * Y + Z * Z + W * W);
 
         /// <summary>
         /// Calculates the squared length of the quaternion.
         /// </summary>
         /// <returns>The squared length of the quaternion.</returns>
-        /// <remarks>This method may be preferred to <see cref="Quaternion.Length" /> when only a relative length is needed and speed is of the essence.</remarks>
+        /// <remarks> This method may be preferred to <see cref="Quaternion.Length" /> when only a relative length is
+        /// needed and speed is of the essence.</remarks>
         public float LengthSquared => X * X + Y * Y + Z * Z + W * W;
 
         /// <summary>
@@ -372,7 +392,7 @@ namespace SE
         /// <returns>The sum of the two quaternions.</returns>
         public static Quaternion Add(Quaternion left, Quaternion right)
         {
-            Add(ref left, ref right, out var result);
+            Add(ref left, ref right, out Quaternion result);
             return result;
         }
 
@@ -398,7 +418,7 @@ namespace SE
         /// <returns>The difference of the two quaternions.</returns>
         public static Quaternion Subtract(Quaternion left, Quaternion right)
         {
-            Subtract(ref left, ref right, out var result);
+            Subtract(ref left, ref right, out Quaternion result);
             return result;
         }
 
@@ -424,7 +444,7 @@ namespace SE
         /// <returns>The scaled quaternion.</returns>
         public static Quaternion Multiply(Quaternion value, float scale)
         {
-            Multiply(ref value, scale, out var result);
+            Multiply(ref value, scale, out Quaternion result);
             return result;
         }
 
@@ -454,7 +474,7 @@ namespace SE
         /// <returns>The multiplied quaternion.</returns>
         public static Quaternion Multiply(Quaternion left, Quaternion right)
         {
-            Multiply(ref left, ref right, out var result);
+            Multiply(ref left, ref right, out Quaternion result);
             return result;
         }
 
@@ -462,7 +482,8 @@ namespace SE
         /// Reverses the direction of a given quaternion.
         /// </summary>
         /// <param name="value">The quaternion to negate.</param>
-        /// <param name="result">When the method completes, contains a quaternion facing in the opposite direction.</param>
+        /// <param name="result"> When the method completes, contains a quaternion facing in the opposite
+        /// direction.</param>
         public static void Negate(ref Quaternion value, out Quaternion result)
         {
             result.X = -value.X;
@@ -478,38 +499,54 @@ namespace SE
         /// <returns>A quaternion facing in the opposite direction.</returns>
         public static Quaternion Negate(Quaternion value)
         {
-            Negate(ref value, out var result);
+            Negate(ref value, out Quaternion result);
             return result;
         }
 
         /// <summary>
-        /// Returns a <see cref="Quaternion" /> containing the 4D Cartesian coordinates of a point specified in Barycentric coordinates relative to a 2D triangle.
+        /// Returns a <see cref="Quaternion" /> containing the 4D Cartesian coordinates of a point specified in
+        /// Barycentric coordinates relative to a 2D triangle.
         /// </summary>
-        /// <param name="value1">A <see cref="Quaternion" /> containing the 4D Cartesian coordinates of vertex 1 of the triangle.</param>
-        /// <param name="value2">A <see cref="Quaternion" /> containing the 4D Cartesian coordinates of vertex 2 of the triangle.</param>
-        /// <param name="value3">A <see cref="Quaternion" /> containing the 4D Cartesian coordinates of vertex 3 of the triangle.</param>
-        /// <param name="amount1">Barycentric coordinate b2, which expresses the weighting factor toward vertex 2 (specified in <paramref name="value2" />).</param>
-        /// <param name="amount2">Barycentric coordinate b3, which expresses the weighting factor toward vertex 3 (specified in <paramref name="value3" />).</param>
-        /// <param name="result">When the method completes, contains a new <see cref="Quaternion" /> containing the 4D Cartesian coordinates of the specified point.</param>
-        public static void Barycentric(ref Quaternion value1, ref Quaternion value2, ref Quaternion value3, float amount1, float amount2, out Quaternion result)
+        /// <param name="value1"> A <see cref="Quaternion" /> containing the 4D Cartesian coordinates of vertex 1 of the
+        /// triangle.</param>
+        /// <param name="value2"> A <see cref="Quaternion" /> containing the 4D Cartesian coordinates of vertex 2 of the
+        /// triangle.</param>
+        /// <param name="value3"> A <see cref="Quaternion" /> containing the 4D Cartesian coordinates of vertex 3 of the
+        /// triangle.</param>
+        /// <param name="amount1"> Barycentric coordinate b2, which expresses the weighting factor toward vertex 2
+        /// (specified in <paramref name="value2" /> ).</param>
+        /// <param name="amount2"> Barycentric coordinate b3, which expresses the weighting factor toward vertex 3
+        /// (specified in <paramref name="value3" /> ).</param>
+        /// <param name="result"> When the method completes, contains a new <see cref="Quaternion" /> containing the 4D
+        /// Cartesian coordinates of the specified point.</param>
+        public static void Barycentric(ref Quaternion value1, ref Quaternion value2, ref Quaternion value3,
+            float amount1, float amount2, out Quaternion result)
         {
-            Slerp(ref value1, ref value2, amount1 + amount2, out var start);
-            Slerp(ref value1, ref value3, amount1 + amount2, out var end);
+            Slerp(ref value1, ref value2, amount1 + amount2, out Quaternion start);
+            Slerp(ref value1, ref value3, amount1 + amount2, out Quaternion end);
             Slerp(ref start, ref end, amount2 / (amount1 + amount2), out result);
         }
 
         /// <summary>
-        /// Returns a <see cref="Quaternion" /> containing the 4D Cartesian coordinates of a point specified in Barycentric coordinates relative to a 2D triangle.
+        /// Returns a <see cref="Quaternion" /> containing the 4D Cartesian coordinates of a point specified in
+        /// Barycentric coordinates relative to a 2D triangle.
         /// </summary>
-        /// <param name="value1">A <see cref="Quaternion" /> containing the 4D Cartesian coordinates of vertex 1 of the triangle.</param>
-        /// <param name="value2">A <see cref="Quaternion" /> containing the 4D Cartesian coordinates of vertex 2 of the triangle.</param>
-        /// <param name="value3">A <see cref="Quaternion" /> containing the 4D Cartesian coordinates of vertex 3 of the triangle.</param>
-        /// <param name="amount1">Barycentric coordinate b2, which expresses the weighting factor toward vertex 2 (specified in <paramref name="value2" />).</param>
-        /// <param name="amount2">Barycentric coordinate b3, which expresses the weighting factor toward vertex 3 (specified in <paramref name="value3" />).</param>
-        /// <returns>A new <see cref="Quaternion" /> containing the 4D Cartesian coordinates of the specified point.</returns>
-        public static Quaternion Barycentric(Quaternion value1, Quaternion value2, Quaternion value3, float amount1, float amount2)
+        /// <param name="value1"> A <see cref="Quaternion" /> containing the 4D Cartesian coordinates of vertex 1 of the
+        /// triangle.</param>
+        /// <param name="value2"> A <see cref="Quaternion" /> containing the 4D Cartesian coordinates of vertex 2 of the
+        /// triangle.</param>
+        /// <param name="value3"> A <see cref="Quaternion" /> containing the 4D Cartesian coordinates of vertex 3 of the
+        /// triangle.</param>
+        /// <param name="amount1"> Barycentric coordinate b2, which expresses the weighting factor toward vertex 2
+        /// (specified in <paramref name="value2" /> ).</param>
+        /// <param name="amount2"> Barycentric coordinate b3, which expresses the weighting factor toward vertex 3
+        /// (specified in <paramref name="value3" /> ).</param>
+        /// <returns> A new <see cref="Quaternion" /> containing the 4D Cartesian coordinates of the specified
+        /// point.</returns>
+        public static Quaternion Barycentric(Quaternion value1, Quaternion value2, Quaternion value3, float amount1,
+            float amount2)
         {
-            Barycentric(ref value1, ref value2, ref value3, amount1, amount2, out var result);
+            Barycentric(ref value1, ref value2, ref value3, amount1, amount2, out Quaternion result);
             return result;
         }
 
@@ -533,7 +570,7 @@ namespace SE
         /// <returns>The conjugated quaternion.</returns>
         public static Quaternion Conjugate(Quaternion value)
         {
-            Conjugate(ref value, out var result);
+            Conjugate(ref value, out Quaternion result);
             return result;
         }
 
@@ -578,8 +615,8 @@ namespace SE
         /// <param name="result">When the method completes, contains the exponentiated quaternion.</param>
         public static void Exponential(ref Quaternion value, out Quaternion result)
         {
-            var angle = (float)Math.Sqrt(value.X * value.X + value.Y * value.Y + value.Z * value.Z);
-            var sin = (float)Math.Sin(angle);
+            float angle = (float)Math.Sqrt(value.X * value.X + value.Y * value.Y + value.Z * value.Z);
+            float sin = (float)Math.Sin(angle);
 
             if (!Mathf.IsZero(sin))
             {
@@ -603,7 +640,7 @@ namespace SE
         /// <returns>The exponentiated quaternion.</returns>
         public static Quaternion Exponential(Quaternion value)
         {
-            Exponential(ref value, out var result);
+            Exponential(ref value, out Quaternion result);
             return result;
         }
 
@@ -625,7 +662,7 @@ namespace SE
         /// <returns>The conjugated and renormalized quaternion.</returns>
         public static Quaternion Invert(Quaternion value)
         {
-            var result = value;
+            Quaternion result = value;
             result.Invert();
             return result;
         }
@@ -644,8 +681,8 @@ namespace SE
             }
             else
             {
-                var right = Float3.Cross(direction, Float3.Up);
-                var up = Float3.Cross(right, direction);
+                Float3 right = Float3.Cross(direction, Float3.Up);
+                Float3 up = Float3.Cross(right, direction);
                 orientation = LookRotation(direction, up);
             }
             return orientation;
@@ -657,11 +694,13 @@ namespace SE
         /// <param name="start">Start quaternion.</param>
         /// <param name="end">End quaternion.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
-        /// <param name="result">When the method completes, contains the linear interpolation of the two quaternions.</param>
+        /// <param name="result"> When the method completes, contains the linear interpolation of the two
+        /// quaternions.</param>
         /// <remarks>
         /// This method performs the linear interpolation based on the following formula.
         /// <code>start + (end - start) * amount</code>
-        /// Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1
+        /// Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value
+        /// of 1
         /// will cause <paramref name="end" /> to be returned.
         /// </remarks>
         public static void Lerp(ref Quaternion start, ref Quaternion end, float amount, out Quaternion result)
@@ -696,12 +735,13 @@ namespace SE
         /// <remarks>
         /// This method performs the linear interpolation based on the following formula.
         /// <code>start + (end - start) * amount</code>
-        /// Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1
+        /// Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value
+        /// of 1
         /// will cause <paramref name="end" /> to be returned.
         /// </remarks>
         public static Quaternion Lerp(Quaternion start, Quaternion end, float amount)
         {
-            Lerp(ref start, ref end, amount, out var result);
+            Lerp(ref start, ref end, amount, out Quaternion result);
             return result;
         }
 
@@ -714,8 +754,8 @@ namespace SE
         {
             if (Math.Abs(value.W) < 1.0)
             {
-                var angle = (float)Math.Acos(value.W);
-                var sin = (float)Math.Sin(angle);
+                float angle = (float)Math.Acos(value.W);
+                float sin = (float)Math.Sin(angle);
 
                 if (!Mathf.IsZero(sin))
                 {
@@ -744,7 +784,7 @@ namespace SE
         /// <returns>The natural logarithm of the quaternion.</returns>
         public static Quaternion Logarithm(Quaternion value)
         {
-            Logarithm(ref value, out var result);
+            Logarithm(ref value, out Quaternion result);
             return result;
         }
 
@@ -779,11 +819,11 @@ namespace SE
         /// <param name="result">When the method completes, contains the newly created quaternion.</param>
         public static void RotationAxis(ref Float3 axis, float angle, out Quaternion result)
         {
-            Float3.Normalize(ref axis, out var normalized);
+            Float3.Normalize(ref axis, out Float3 normalized);
 
             float half = angle * 0.5f;
-            var sin = (float)Math.Sin(half);
-            var cos = (float)Math.Cos(half);
+            float sin = (float)Math.Sin(half);
+            float cos = (float)Math.Cos(half);
 
             result.X = normalized.X * sin;
             result.Y = normalized.Y * sin;
@@ -799,7 +839,7 @@ namespace SE
         /// <returns>The newly created quaternion.</returns>
         public static Quaternion RotationAxis(Float3 axis, float angle)
         {
-            RotationAxis(ref axis, angle, out var result);
+            RotationAxis(ref axis, angle, out Quaternion result);
             return result;
         }
 
@@ -918,7 +958,7 @@ namespace SE
         /// <param name="result">When the method completes, contains the created look-at quaternion.</param>
         public static void LookAt(ref Float3 eye, ref Float3 target, ref Float3 up, out Quaternion result)
         {
-            Matrix3x3.LookAt(ref eye, ref target, ref up, out var matrix);
+            Matrix3x3.LookAt(ref eye, ref target, ref up, out Matrix3x3 matrix);
             RotationMatrix(ref matrix, out result);
         }
 
@@ -942,7 +982,7 @@ namespace SE
         /// <returns>The created look-at quaternion.</returns>
         public static Quaternion LookAt(Float3 eye, Float3 target, Float3 up)
         {
-            LookAt(ref eye, ref target, ref up, out var result);
+            LookAt(ref eye, ref target, ref up, out Quaternion result);
             return result;
         }
 
@@ -954,7 +994,7 @@ namespace SE
         /// <param name="result">When the method completes, contains the created look-at quaternion.</param>
         public static void RotationLookAt(ref Float3 forward, ref Float3 up, out Quaternion result)
         {
-            var eye = Float3.Zero;
+            Float3 eye = Float3.Zero;
             LookAt(ref eye, ref forward, ref up, out result);
         }
 
@@ -976,7 +1016,7 @@ namespace SE
         /// <returns>The created look-at quaternion.</returns>
         public static Quaternion RotationLookAt(Float3 forward, Float3 up)
         {
-            RotationLookAt(ref forward, ref up, out var result);
+            RotationLookAt(ref forward, ref up, out Quaternion result);
             return result;
         }
 
@@ -994,11 +1034,12 @@ namespace SE
         /// Creates a rotation with the specified forward and upwards directions.
         /// </summary>
         /// <param name="forward">The forward direction. Direction to orient towards.</param>
-        /// <param name="up">Up direction. Constrains y axis orientation to a plane this vector lies on. This rule might be broken if forward and up direction are nearly parallel.</param>
+        /// <param name="up"> Up direction. Constrains y axis orientation to a plane this vector lies on. This rule
+        /// might be broken if forward and up direction are nearly parallel.</param>
         /// <returns>The calculated quaternion.</returns>
         public static Quaternion LookRotation(Float3 forward, Float3 up)
         {
-            LookRotation(ref forward, ref up, out var result);
+            LookRotation(ref forward, ref up, out Quaternion result);
             return result;
         }
 
@@ -1006,15 +1047,16 @@ namespace SE
         /// Creates a rotation with the specified forward and upwards directions.
         /// </summary>
         /// <param name="forward">The forward direction. Direction to orient towards.</param>
-        /// <param name="up">The up direction. Constrains y axis orientation to a plane this vector lies on. This rule might be broken if forward and up direction are nearly parallel.</param>
+        /// <param name="up"> The up direction. Constrains y axis orientation to a plane this vector lies on. This rule
+        /// might be broken if forward and up direction are nearly parallel.</param>
         /// <param name="result">The calculated quaternion.</param>
         public static void LookRotation(ref Float3 forward, ref Float3 up, out Quaternion result)
         {
             Float3 forwardNorm = forward;
             forwardNorm.Normalize();
-            Float3.Cross(ref up, ref forwardNorm, out var rightNorm);
+            Float3.Cross(ref up, ref forwardNorm, out Float3 rightNorm);
             rightNorm.Normalize();
-            Float3.Cross(ref forwardNorm, ref rightNorm, out var upNorm);
+            Float3.Cross(ref forwardNorm, ref rightNorm, out Float3 upNorm);
 
             float m00 = rightNorm.X;
             float m01 = rightNorm.Y;
@@ -1072,7 +1114,8 @@ namespace SE
         /// <param name="to">The destination vector.</param>
         /// <param name="result">The result.</param>
         /// <param name="fallbackAxis">The fallback axis.</param>
-        public static void GetRotationFromTo(ref Float3 from, ref Float3 to, out Quaternion result, ref Float3 fallbackAxis)
+        public static void GetRotationFromTo(ref Float3 from, ref Float3 to, out Quaternion result,
+            ref Float3 fallbackAxis)
         {
             // Based on Stan Melax's article in Game Programming Gems
 
@@ -1101,7 +1144,9 @@ namespace SE
                     // Generate an axis
                     Float3 axis = Float3.Cross(Float3.UnitX, from);
                     if (axis.LengthSquared < Mathf.Epsilon) // Pick another if colinear
+                    {
                         axis = Float3.Cross(Float3.UnitY, from);
+                    }
                     axis.Normalize();
                     RotationAxis(ref axis, Mathf.Pi, out result);
                 }
@@ -1110,7 +1155,7 @@ namespace SE
             {
                 float s = Mathf.Sqrt((1 + d) * 2);
                 float invS = 1 / s;
-                Float3.Cross(ref v0, ref v1, out var c);
+                Float3.Cross(ref v0, ref v1, out Float3 c);
                 result.X = c.X * invS;
                 result.Y = c.Y * invS;
                 result.Z = c.Z * invS;
@@ -1128,12 +1173,13 @@ namespace SE
         /// <returns>The rotation.</returns>
         public static Quaternion GetRotationFromTo(Float3 from, Float3 to, Float3 fallbackAxis)
         {
-            GetRotationFromTo(ref from, ref to, out var result, ref fallbackAxis);
+            GetRotationFromTo(ref from, ref to, out Quaternion result, ref fallbackAxis);
             return result;
         }
 
         /// <summary>
-        /// Gets the quaternion that will rotate vector from into vector to, around their plan perpendicular axis.The input vectors don't need to be normalized.
+        /// Gets the quaternion that will rotate vector from into vector to, around their plan perpendicular axis.The
+        /// input vectors don't need to be normalized.
         /// </summary>
         /// <param name="from">The source vector.</param>
         /// <param name="to">The destination vector.</param>
@@ -1148,7 +1194,7 @@ namespace SE
                 return;
             }
             float w = normFromNormTo + Float3.Dot(from, to);
-            if (w < 1.0-6f * normFromNormTo)
+            if (w < 1.0 - 6f * normFromNormTo)
             {
                 result = Mathf.Abs(from.X) > Mathf.Abs(from.Z)
                          ? new Quaternion(-from.Y, from.X, 0.0f, 0.0f)
@@ -1163,14 +1209,15 @@ namespace SE
         }
 
         /// <summary>
-        /// Gets the quaternion that will rotate vector from into vector to, around their plan perpendicular axis.The input vectors don't need to be normalized.
+        /// Gets the quaternion that will rotate vector from into vector to, around their plan perpendicular axis.The
+        /// input vectors don't need to be normalized.
         /// </summary>
         /// <param name="from">The source vector.</param>
         /// <param name="to">The destination vector.</param>
         /// <returns>The rotation.</returns>
         public static Quaternion FindBetween(Float3 from, Float3 to)
         {
-            FindBetween(ref from, ref to, out var result);
+            FindBetween(ref from, ref to, out Quaternion result);
             return result;
         }
 
@@ -1182,9 +1229,11 @@ namespace SE
         /// <param name="cameraUpVector">The up vector of the camera.</param>
         /// <param name="cameraForwardVector">The forward vector of the camera.</param>
         /// <param name="result">When the method completes, contains the created billboard quaternion.</param>
-        public static void Billboard(ref Float3 objectPosition, ref Float3 cameraPosition, ref Float3 cameraUpVector, ref Float3 cameraForwardVector, out Quaternion result)
+        public static void Billboard(ref Float3 objectPosition, ref Float3 cameraPosition,
+            ref Float3 cameraUpVector, ref Float3 cameraForwardVector, out Quaternion result)
         {
-            Matrix3x3.Billboard(ref objectPosition, ref cameraPosition, ref cameraUpVector, ref cameraForwardVector, out var matrix);
+            Matrix3x3.Billboard(ref objectPosition, ref cameraPosition, ref cameraUpVector, ref cameraForwardVector,
+                out Matrix3x3 matrix);
             RotationMatrix(ref matrix, out result);
         }
 
@@ -1196,9 +1245,11 @@ namespace SE
         /// <param name="cameraUpVector">The up vector of the camera.</param>
         /// <param name="cameraForwardVector">The forward vector of the camera.</param>
         /// <returns>The created billboard quaternion.</returns>
-        public static Quaternion Billboard(Float3 objectPosition, Float3 cameraPosition, Float3 cameraUpVector, Float3 cameraForwardVector)
+        public static Quaternion Billboard(Float3 objectPosition, Float3 cameraPosition, Float3 cameraUpVector,
+            Float3 cameraForwardVector)
         {
-            Billboard(ref objectPosition, ref cameraPosition, ref cameraUpVector, ref cameraForwardVector, out var result);
+            Billboard(ref objectPosition, ref cameraPosition, ref cameraUpVector, ref cameraForwardVector,
+                out Quaternion result);
             return result;
         }
 
@@ -1209,7 +1260,7 @@ namespace SE
         /// <returns>The newly created quaternion.</returns>
         public static Quaternion RotationMatrix(Matrix matrix)
         {
-            RotationMatrix(ref matrix, out var result);
+            RotationMatrix(ref matrix, out Quaternion result);
             return result;
         }
 
@@ -1231,7 +1282,7 @@ namespace SE
         /// <returns>The created rotation quaternion.</returns>
         public static Quaternion RotationX(float angle)
         {
-            RotationX(angle, out var result);
+            RotationX(angle, out Quaternion result);
             return result;
         }
 
@@ -1253,7 +1304,7 @@ namespace SE
         /// <returns>The created rotation quaternion.</returns>
         public static Quaternion RotationY(float angle)
         {
-            RotationY(angle, out var result);
+            RotationY(angle, out Quaternion result);
             return result;
         }
 
@@ -1275,7 +1326,7 @@ namespace SE
         /// <returns>The created rotation quaternion.</returns>
         public static Quaternion RotationZ(float angle)
         {
-            RotationZ(angle, out var result);
+            RotationZ(angle, out Quaternion result);
             return result;
         }
 
@@ -1286,7 +1337,8 @@ namespace SE
         /// <returns>When the method completes, contains the newly created quaternion.</returns>
         public static Quaternion Euler(Float3 eulerAngles)
         {
-            RotationYawPitchRoll(eulerAngles.Y * Mathf.DegreesToRadians, eulerAngles.X * Mathf.DegreesToRadians, eulerAngles.Z * Mathf.DegreesToRadians, out var result);
+            RotationYawPitchRoll(eulerAngles.Y * Mathf.DegreesToRadians, eulerAngles.X * Mathf.DegreesToRadians,
+                eulerAngles.Z * Mathf.DegreesToRadians, out Quaternion result);
             return result;
         }
 
@@ -1297,7 +1349,8 @@ namespace SE
         /// <param name="result">When the method completes, contains the newly created quaternion.</param>
         public static void Euler(ref Float3 eulerAngles, out Quaternion result)
         {
-            RotationYawPitchRoll(eulerAngles.Y * Mathf.DegreesToRadians, eulerAngles.X * Mathf.DegreesToRadians, eulerAngles.Z * Mathf.DegreesToRadians, out result);
+            RotationYawPitchRoll(eulerAngles.Y * Mathf.DegreesToRadians, eulerAngles.X * Mathf.DegreesToRadians,
+                eulerAngles.Z * Mathf.DegreesToRadians, out result);
         }
 
         /// <summary>
@@ -1309,7 +1362,8 @@ namespace SE
         /// <returns>When the method completes, contains the newly created quaternion.</returns>
         public static Quaternion Euler(float x, float y, float z)
         {
-            RotationYawPitchRoll(y * Mathf.DegreesToRadians, x * Mathf.DegreesToRadians, z * Mathf.DegreesToRadians, out var result);
+            RotationYawPitchRoll(y * Mathf.DegreesToRadians, x * Mathf.DegreesToRadians, z * Mathf.DegreesToRadians,
+                out Quaternion result);
             return result;
         }
 
@@ -1322,11 +1376,13 @@ namespace SE
         /// <param name="result">When the method completes, contains the newly created quaternion.</param>
         public static void Euler(float x, float y, float z, out Quaternion result)
         {
-            RotationYawPitchRoll(y * Mathf.DegreesToRadians, x * Mathf.DegreesToRadians, z * Mathf.DegreesToRadians, out result);
+            RotationYawPitchRoll(y * Mathf.DegreesToRadians, x * Mathf.DegreesToRadians, z * Mathf.DegreesToRadians,
+                out result);
         }
 
         /// <summary>
-        /// Creates a quaternion given a yaw, pitch, and roll value. Angles are in radians. Use <see cref="Mathf.RadiansToDegrees"/> to convert degrees to radians.
+        /// Creates a quaternion given a yaw, pitch, and roll value. Angles are in radians. Use
+        /// <see cref="Mathf.RadiansToDegrees"/> to convert degrees to radians.
         /// </summary>
         /// <param name="yaw">The yaw of rotation (in radians).</param>
         /// <param name="pitch">The pitch of rotation (in radians).</param>
@@ -1338,12 +1394,12 @@ namespace SE
             float halfPitch = pitch * 0.5f;
             float halfYaw = yaw * 0.5f;
 
-            var sinRoll = (float)Math.Sin(halfRoll);
-            var cosRoll = (float)Math.Cos(halfRoll);
-            var sinPitch = (float)Math.Sin(halfPitch);
-            var cosPitch = (float)Math.Cos(halfPitch);
-            var sinYaw = (float)Math.Sin(halfYaw);
-            var cosYaw = (float)Math.Cos(halfYaw);
+            float sinRoll = (float)Math.Sin(halfRoll);
+            float cosRoll = (float)Math.Cos(halfRoll);
+            float sinPitch = (float)Math.Sin(halfPitch);
+            float cosPitch = (float)Math.Cos(halfPitch);
+            float sinYaw = (float)Math.Sin(halfYaw);
+            float cosYaw = (float)Math.Cos(halfYaw);
 
             result.X = cosYaw * sinPitch * cosRoll + sinYaw * cosPitch * sinRoll;
             result.Y = sinYaw * cosPitch * cosRoll - cosYaw * sinPitch * sinRoll;
@@ -1360,7 +1416,7 @@ namespace SE
         /// <returns>The newly created quaternion (in radians).</returns>
         public static Quaternion RotationYawPitchRoll(float yaw, float pitch, float roll)
         {
-            RotationYawPitchRoll(yaw, pitch, roll, out var result);
+            RotationYawPitchRoll(yaw, pitch, roll, out Quaternion result);
             return result;
         }
 
@@ -1370,7 +1426,8 @@ namespace SE
         /// <param name="start">Start quaternion.</param>
         /// <param name="end">End quaternion.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
-        /// <param name="result">When the method completes, contains the spherical linear interpolation of the two quaternions.</param>
+        /// <param name="result"> When the method completes, contains the spherical linear interpolation of the two
+        /// quaternions.</param>
         public static void Slerp(ref Quaternion start, ref Quaternion end, float amount, out Quaternion result)
         {
             float opposite;
@@ -1384,8 +1441,8 @@ namespace SE
             }
             else
             {
-                var acos = (float)Math.Acos(Math.Abs(dot));
-                var invSin = (float)(1.0 / Math.Sin(acos));
+                float acos = (float)Math.Acos(Math.Abs(dot));
+                float invSin = (float)(1.0 / Math.Sin(acos));
 
                 inverse = (float)Math.Sin((1.0f - amount) * acos) * invSin;
                 opposite = (float)Math.Sin(amount * acos) * invSin * Math.Sign(dot);
@@ -1406,7 +1463,7 @@ namespace SE
         /// <returns>The spherical linear interpolation of the two quaternions.</returns>
         public static Quaternion Slerp(Quaternion start, Quaternion end, float amount)
         {
-            Slerp(ref start, ref end, amount, out var result);
+            Slerp(ref start, ref end, amount, out Quaternion result);
             return result;
         }
 
@@ -1418,11 +1475,13 @@ namespace SE
         /// <param name="value3">Third source quaternion.</param>
         /// <param name="value4">Fourth source quaternion.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of interpolation.</param>
-        /// <param name="result">When the method completes, contains the spherical quadrangle interpolation of the quaternions.</param>
-        public static void Squad(ref Quaternion value1, ref Quaternion value2, ref Quaternion value3, ref Quaternion value4, float amount, out Quaternion result)
+        /// <param name="result"> When the method completes, contains the spherical quadrangle interpolation of the
+        /// quaternions.</param>
+        public static void Squad(ref Quaternion value1, ref Quaternion value2, ref Quaternion value3,
+            ref Quaternion value4, float amount, out Quaternion result)
         {
-            Slerp(ref value1, ref value4, amount, out var start);
-            Slerp(ref value2, ref value3, amount, out var end);
+            Slerp(ref value1, ref value4, amount, out Quaternion start);
+            Slerp(ref value2, ref value3, amount, out Quaternion end);
             Slerp(ref start, ref end, 2.0f * amount * (1.0f - amount), out result);
         }
 
@@ -1435,9 +1494,10 @@ namespace SE
         /// <param name="value4">Fourth source quaternion.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of interpolation.</param>
         /// <returns>The spherical quadrangle interpolation of the quaternions.</returns>
-        public static Quaternion Squad(Quaternion value1, Quaternion value2, Quaternion value3, Quaternion value4, float amount)
+        public static Quaternion Squad(Quaternion value1, Quaternion value2, Quaternion value3, Quaternion value4,
+            float amount)
         {
-            Squad(ref value1, ref value2, ref value3, ref value4, amount, out var result);
+            Squad(ref value1, ref value2, ref value3, ref value4, amount, out Quaternion result);
             return result;
         }
 
@@ -1448,18 +1508,20 @@ namespace SE
         /// <param name="value2">Second source quaternion.</param>
         /// <param name="value3">Third source quaternion.</param>
         /// <param name="value4">Fourth source quaternion.</param>
-        /// <returns>An array of three quaternions that represent control points for spherical quadrangle interpolation.</returns>
-        public static Quaternion[] SquadSetup(Quaternion value1, Quaternion value2, Quaternion value3, Quaternion value4)
+        /// <returns> An array of three quaternions that represent control points for spherical quadrangle
+        /// interpolation.</returns>
+        public static Quaternion[] SquadSetup(Quaternion value1, Quaternion value2, Quaternion value3,
+            Quaternion value4)
         {
             Quaternion q0 = (value1 + value2).LengthSquared < (value1 - value2).LengthSquared ? -value1 : value1;
             Quaternion q2 = (value2 + value3).LengthSquared < (value2 - value3).LengthSquared ? -value3 : value3;
             Quaternion q3 = (value3 + value4).LengthSquared < (value3 - value4).LengthSquared ? -value4 : value4;
             Quaternion q1 = value2;
 
-            Exponential(ref q1, out var q1Exp);
-            Exponential(ref q2, out var q2Exp);
+            Exponential(ref q1, out Quaternion q1Exp);
+            Exponential(ref q2, out Quaternion q2Exp);
 
-            var results = new Quaternion[3];
+            Quaternion[] results = new Quaternion[3];
             results[0] = q1 * Exponential(-0.25f * (Logarithm(q1Exp * q2) + Logarithm(q1Exp * q0)));
             results[1] = q2 * Exponential(-0.25f * (Logarithm(q2Exp * q3) + Logarithm(q2Exp * q1)));
             results[2] = q2;
@@ -1475,7 +1537,7 @@ namespace SE
         /// <returns>The sum of the two quaternions.</returns>
         public static Quaternion operator +(Quaternion left, Quaternion right)
         {
-            Add(ref left, ref right, out var result);
+            Add(ref left, ref right, out Quaternion result);
             return result;
         }
 
@@ -1487,7 +1549,7 @@ namespace SE
         /// <returns>The difference of the two quaternions.</returns>
         public static Quaternion operator -(Quaternion left, Quaternion right)
         {
-            Subtract(ref left, ref right, out var result);
+            Subtract(ref left, ref right, out Quaternion result);
             return result;
         }
 
@@ -1498,7 +1560,7 @@ namespace SE
         /// <returns>A quaternion facing in the opposite direction.</returns>
         public static Quaternion operator -(Quaternion value)
         {
-            Negate(ref value, out var result);
+            Negate(ref value, out Quaternion result);
             return result;
         }
 
@@ -1510,7 +1572,7 @@ namespace SE
         /// <returns>The scaled quaternion.</returns>
         public static Quaternion operator *(float scale, Quaternion value)
         {
-            Multiply(ref value, scale, out var result);
+            Multiply(ref value, scale, out Quaternion result);
             return result;
         }
 
@@ -1522,7 +1584,7 @@ namespace SE
         /// <returns>The scaled quaternion.</returns>
         public static Quaternion operator *(Quaternion value, float scale)
         {
-            Multiply(ref value, scale, out var result);
+            Multiply(ref value, scale, out Quaternion result);
             return result;
         }
 
@@ -1534,7 +1596,7 @@ namespace SE
         /// <returns>The multiplied quaternion.</returns>
         public static Quaternion operator *(Quaternion left, Quaternion right)
         {
-            Multiply(ref left, ref right, out var result);
+            Multiply(ref left, ref right, out Quaternion result);
             return result;
         }
 
@@ -1543,7 +1605,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has the same value as <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Quaternion left, Quaternion right)
         {
@@ -1555,7 +1618,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has a different value than <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Quaternion left, Quaternion right)
         {
@@ -1568,7 +1632,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X, Y, Z, W);
+            return string.Format(CultureInfo.CurrentCulture, FormatString, X, Y, Z, W);
         }
 
         /// <summary>
@@ -1579,10 +1643,14 @@ namespace SE
         public string ToString(string format)
         {
             if (format == null)
+            {
                 return ToString();
+            }
 
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X.ToString(format, CultureInfo.CurrentCulture),
-                                 Y.ToString(format, CultureInfo.CurrentCulture), Z.ToString(format, CultureInfo.CurrentCulture), W.ToString(format, CultureInfo.CurrentCulture));
+            return string.Format(CultureInfo.CurrentCulture, FormatString, X.ToString(format, CultureInfo
+                .CurrentCulture),
+                                 Y.ToString(format, CultureInfo.CurrentCulture), Z.ToString(format, CultureInfo
+                                     .CurrentCulture), W.ToString(format, CultureInfo.CurrentCulture));
         }
 
         /// <summary>
@@ -1592,7 +1660,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, s_FormatString, X, Y, Z, W);
+            return string.Format(formatProvider, FormatString, X, Y, Z, W);
         }
 
         /// <summary>
@@ -1604,16 +1672,20 @@ namespace SE
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
+            {
                 return ToString(formatProvider);
+            }
 
-            return string.Format(formatProvider, s_FormatString, X.ToString(format, formatProvider),
-                                 Y.ToString(format, formatProvider), Z.ToString(format, formatProvider), W.ToString(format, formatProvider));
+            return string.Format(formatProvider, FormatString, X.ToString(format, formatProvider),
+                                 Y.ToString(format, formatProvider), Z.ToString(format, formatProvider), W
+                                     .ToString(format, formatProvider));
         }
 
         /// <summary>
         /// Returns a hash code for this instance.
         /// </summary>
-        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
+        /// <returns> A hash code for this instance, suitable for use in hashing algorithms and data structures like a
+        /// hash table.</returns>
         public override int GetHashCode()
         {
             unchecked
@@ -1648,26 +1720,30 @@ namespace SE
         public static bool NearEqual(ref Quaternion left, ref Quaternion right, float epsilon = Mathf.Epsilon)
         {
             //return Dot(ref left, ref right) > 1.0f - epsilon;
-            return Mathf.WithinEpsilon(left.X, right.X, epsilon) && Mathf.WithinEpsilon(left.Y, right.Y, epsilon) && Mathf.WithinEpsilon(left.Z, right.Z, epsilon) && Mathf.WithinEpsilon(left.W, right.W, epsilon);
+            return Mathf.WithinEpsilon(left.X, right.X, epsilon) && Mathf.WithinEpsilon(left.Y, right.Y, epsilon)
+                && Mathf.WithinEpsilon(left.Z, right.Z, epsilon) && Mathf.WithinEpsilon(left.W, right.W, epsilon);
         }
 
         /// <summary>
         /// Determines whether the specified <see cref="Quaternion" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Quaternion" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Quaternion" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Quaternion" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Quaternion other)
         {
             //return Dot(ref this, ref other) > 0.9999999f;
-            return Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y) && Mathf.NearEqual(other.Z, Z) && Mathf.NearEqual(other.W, W);
+            return Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y) && Mathf.NearEqual(other.Z, Z)
+                && Mathf.NearEqual(other.W, W);
         }
 
         /// <summary>
         /// Determines whether the specified <see cref="Quaternion" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Quaternion" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Quaternion" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Quaternion" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Quaternion other)
         {
@@ -1678,12 +1754,15 @@ namespace SE
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise,
+        /// <c> false</c>.</returns>
         public override bool Equals(object value)
         {
             if (!(value is Quaternion))
+            {
                 return false;
-            var strongValue = (Quaternion)value;
+            }
+            Quaternion strongValue = (Quaternion)value;
             return Equals(ref strongValue);
         }
     }

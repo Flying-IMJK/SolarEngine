@@ -20,10 +20,13 @@ namespace SE
         public static bool RaiseExceptions = true;
 
         /// <summary>
-        /// Asserts that the values are approximately equal. An absolute error check is used for approximate equality check
+        /// Asserts that the values are approximately equal. An absolute error check is used for approximate equality
+        /// check
         /// (|a-b| &lt; tolerance). Default tolerance is 0.00001f.
-        /// Note: Every time you call the method with tolerance specified, a new instance of Assertions.Comparers.FloatComparer
-        /// is created. For performance reasons you might want to instance your own comparer and pass it to the AreEqual method.
+        /// Note: Every time you call the method with tolerance specified, a new instance of
+        /// Assertions.Comparers.FloatComparer
+        /// is created. For performance reasons you might want to instance your own comparer and pass it to the AreEqual
+        /// method.
         /// If the tolerance is not specifies, a default comparer is used and the issue does not occur.
         /// </summary>
         /// <param name="expected"></param>
@@ -35,10 +38,13 @@ namespace SE
         }
 
         /// <summary>
-        /// Asserts that the values are approximately equal. An absolute error check is used for approximate equality check
+        /// Asserts that the values are approximately equal. An absolute error check is used for approximate equality
+        /// check
         /// (|a-b| &lt; tolerance). Default tolerance is 0.00001f.
-        /// Note: Every time you call the method with tolerance specified, a new instance of Assertions.Comparers.FloatComparer
-        /// is created. For performance reasons you might want to instance your own comparer and pass it to the AreEqual method.
+        /// Note: Every time you call the method with tolerance specified, a new instance of
+        /// Assertions.Comparers.FloatComparer
+        /// is created. For performance reasons you might want to instance your own comparer and pass it to the AreEqual
+        /// method.
         /// If the tolerance is not specifies, a default comparer is used and the issue does not occur.
         /// </summary>
         /// <param name="expected"></param>
@@ -51,10 +57,13 @@ namespace SE
         }
 
         /// <summary>
-        /// Asserts that the values are approximately equal. An absolute error check is used for approximate equality check
+        /// Asserts that the values are approximately equal. An absolute error check is used for approximate equality
+        /// check
         /// (|a-b| &lt; tolerance). Default tolerance is 0.00001f.
-        /// Note: Every time you call the method with tolerance specified, a new instance of Assertions.Comparers.FloatComparer
-        /// is created. For performance reasons you might want to instance your own comparer and pass it to the AreEqual method.
+        /// Note: Every time you call the method with tolerance specified, a new instance of
+        /// Assertions.Comparers.FloatComparer
+        /// is created. For performance reasons you might want to instance your own comparer and pass it to the AreEqual
+        /// method.
         /// If the tolerance is not specifies, a default comparer is used and the issue does not occur.
         /// </summary>
         /// <param name="tolerance">Tolerance of approximation.</param>
@@ -67,10 +76,13 @@ namespace SE
         }
 
         /// <summary>
-        /// Asserts that the values are approximately equal. An absolute error check is used for approximate equality check
+        /// Asserts that the values are approximately equal. An absolute error check is used for approximate equality
+        /// check
         /// (|a-b| &lt; tolerance). Default tolerance is 0.00001f.
-        /// Note: Every time you call the method with tolerance specified, a new instance of Assertions.Comparers.FloatComparer
-        /// is created. For performance reasons you might want to instance your own comparer and pass it to the AreEqual method.
+        /// Note: Every time you call the method with tolerance specified, a new instance of
+        /// Assertions.Comparers.FloatComparer
+        /// is created. For performance reasons you might want to instance your own comparer and pass it to the AreEqual
+        /// method.
         /// If the tolerance is not specifies, a default comparer is used and the issue does not occur.
         /// </summary>
         /// <param name="tolerance">Tolerance of approximation.</param>
@@ -125,7 +137,9 @@ namespace SE
                 return;
             }
             if (!comparer.Equals(actual, expected))
+            {
                 Fail(GetEqualityMessage(actual, expected, true), message);
+            }
         }
 
         /// <summary>
@@ -138,11 +152,14 @@ namespace SE
         public static void AreEqual(Object expected, Object actual, string message)
         {
             if (actual != expected)
+            {
                 Fail(GetEqualityMessage(actual, expected, true), message);
+            }
         }
 
         /// <summary>
-        /// Asserts that the values are approximately not equal. An absolute error check is used for approximate equality check
+        /// Asserts that the values are approximately not equal. An absolute error check is used for approximate
+        /// equality check
         /// (|a-b| &lt; tolerance). Default tolerance is 0.00001f.
         /// </summary>
         /// <param name="expected"></param>
@@ -154,7 +171,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Asserts that the values are approximately not equal. An absolute error check is used for approximate equality check
+        /// Asserts that the values are approximately not equal. An absolute error check is used for approximate
+        /// equality check
         /// (|a-b| &lt; tolerance). Default tolerance is 0.00001f.
         /// </summary>
         /// <param name="expected"></param>
@@ -167,7 +185,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Asserts that the values are approximately not equal. An absolute error check is used for approximate equality check
+        /// Asserts that the values are approximately not equal. An absolute error check is used for approximate
+        /// equality check
         /// (|a-b| &lt; tolerance). Default tolerance is 0.00001f.
         /// </summary>
         /// <param name="tolerance">Tolerance of approximation.</param>
@@ -180,7 +199,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Asserts that the values are approximately not equal. An absolute error check is used for approximate equality check
+        /// Asserts that the values are approximately not equal. An absolute error check is used for approximate
+        /// equality check
         /// (|a-b| &lt; tolerance). Default tolerance is 0.00001f.
         /// </summary>
         /// <param name="tolerance">Tolerance of approximation.</param>
@@ -214,24 +234,34 @@ namespace SE
                 return;
             }
             if (comparer.Equals(actual, expected))
+            {
                 Fail(GetEqualityMessage(actual, expected, false), message);
+            }
         }
 
         [Conditional("SE_ASSERTIONS")]
         public static void AreNotEqual(Object expected, Object actual, string message)
         {
             if (actual == expected)
+            {
                 Fail(GetEqualityMessage(actual, expected, false), message);
+            }
         }
 
         public static void Fail(string message = "", string userMessage = "")
         {
             if (RaiseExceptions)
+            {
                 throw new Log.AssertionException(message, userMessage);
+            }
             if (message == null)
+            {
                 message = "Assertion has failed\n";
+            }
             if (userMessage != null)
+            {
                 message = string.Concat(userMessage, '\n', message);
+            }
             Debug.LogAssertion(message);
         }
 
@@ -254,7 +284,9 @@ namespace SE
         public static void IsFalse(bool condition, string message)
         {
             if (condition)
+            {
                 Fail(BooleanFailureMessage(false), message);
+            }
         }
 
         [Conditional("SE_ASSERTIONS")]
@@ -269,16 +301,22 @@ namespace SE
         where T : class
         {
             if (typeof(Object).IsAssignableFrom(typeof(T)))
+            {
                 IsNotNull((object)value as Object, message);
+            }
             else if (value == null)
+            {
                 Fail(NullFailureMessage(null, false), message);
+            }
         }
 
         [Conditional("SE_ASSERTIONS")]
         public static void IsNotNull(Object value, string message)
         {
             if (value == null)
+            {
                 Fail(NullFailureMessage(null, false), message);
+            }
         }
 
         [Conditional("SE_ASSERTIONS")]
@@ -293,16 +331,22 @@ namespace SE
         where T : class
         {
             if (typeof(Object).IsAssignableFrom(typeof(T)))
+            {
                 IsNull((object)value as Object, message);
+            }
             else if (value != null)
+            {
                 Fail(NullFailureMessage(value, true), message);
+            }
         }
 
         [Conditional("SE_ASSERTIONS")]
         public static void IsNull(Object value, string message)
         {
             if (value != null)
+            {
                 Fail(NullFailureMessage(value, true), message);
+            }
         }
 
         /// <summary>
@@ -324,7 +368,9 @@ namespace SE
         public static void IsTrue(bool condition, string message)
         {
             if (!condition)
+            {
                 Fail(BooleanFailureMessage(true), message);
+            }
         }
 
         /// <summary>
@@ -344,7 +390,8 @@ namespace SE
             {
                 if (exceptionType != e.GetType())
                 {
-                    Fail(GetMessage("Expected exception of type " + exceptionType.FullName + " got " + e.GetType().FullName), message);
+                    Fail(GetMessage("Expected exception of type " + exceptionType.FullName + " got " + e.GetType()
+                        .FullName), message);
                 }
                 return;
             }
@@ -385,7 +432,8 @@ namespace SE
 
         public static string NullFailureMessage(object value, bool expectNull)
         {
-            return GetMessage(string.Format("Value was {0}Null", new object[] { !expectNull ? string.Empty : "not " }), string.Format("Value was {0}Null", new object[] { !expectNull ? "not " : string.Empty }));
+            return GetMessage(string.Format("Value was {0}Null", new object[] { !expectNull ? string.Empty
+                : "not " }), string.Format("Value was {0}Null", new object[] { !expectNull ? "not " : string.Empty }));
         }
     }
 }

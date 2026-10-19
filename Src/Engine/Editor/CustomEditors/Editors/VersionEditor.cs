@@ -16,7 +16,7 @@ namespace SE.Editor
 
         public override void Initialize(LayoutElementsContainer layout)
         {
-            var grid = new UniformGridPanel
+            UniformGridPanel grid = new UniformGridPanel
             {
                 Height = TextBox.DefaultHeight,
                 SlotsHorizontally = 4,
@@ -32,7 +32,7 @@ namespace SE.Editor
 
         private IntValueBox CreateBox(UniformGridPanel grid, int min, int max)
         {
-            var box = new IntValueBox { Parent = grid };
+            IntValueBox box = new IntValueBox { Parent = grid };
             box.SetLimits(min, max);
             box.ValueChanged += OnValueChanged;
             box.SlidingEnd += ClearToken;
@@ -41,7 +41,10 @@ namespace SE.Editor
 
         private void OnValueChanged()
         {
-            if (IsSetBlocked) return;
+            if (IsSetBlocked)
+            {
+                return;
+            }
             bool sliding = Major.IsSliding || Minor.IsSliding || Build.IsSliding || Revision.IsSliding;
             int major = Major.GetValue();
             int minor = Minor.GetValue();

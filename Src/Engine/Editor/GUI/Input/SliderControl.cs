@@ -40,23 +40,23 @@ namespace SE.Editor.GUI
             /// </summary>
             public const float Maximum = 100.0f;
 
-            private float _value;
-            private Rectangle _thumbRect;
-            private float _thumbCenter, _thumbSize;
-            private bool _isSliding;
+            private float m_Value;
+            private Rectangle m_ThumbRect;
+            private float m_ThumbCenter, m_ThumbSize;
+            private bool m_IsSliding;
 
             /// <summary>
             /// Gets or sets the value (normalized to range 0-100).
             /// </summary>
             public float Value
             {
-                get => _value;
+                get => m_Value;
                 set
                 {
                     value = Mathf.Clamp(value, Minimum, Maximum);
-                    if (value != _value)
+                    if (value != m_Value)
                     {
-                        _value = value;
+                        m_Value = value;
 
                         // Update
                         UpdateThumb();
@@ -93,7 +93,7 @@ namespace SE.Editor.GUI
             /// <summary>
             /// Gets a value indicating whether user is using a slider.
             /// </summary>
-            public bool IsSliding => _isSliding;
+            public bool IsSliding => m_IsSliding;
 
             /// <summary>
             /// Occurs when sliding starts.
@@ -113,7 +113,7 @@ namespace SE.Editor.GUI
             public Slider(float width, float height)
             : base(0, 0, width, height)
             {
-                var style = Style.Current;
+                Style style = Style.Current;
                 TrackLineColor = style.BackgroundHighlighted;
                 ThumbColor = style.BackgroundNormal;
                 ThumbColorSelected = style.BackgroundSelected;
@@ -125,17 +125,18 @@ namespace SE.Editor.GUI
                 // Cache data
                 float trackSize = TrackSize;
                 float range = Maximum - Minimum;
-                _thumbSize = Mathf.Min(trackSize, Mathf.Max(trackSize / range * 10.0f, 30.0f));
-                float pixelRange = trackSize - _thumbSize;
-                float perc = (_value - Minimum) / range;
+                m_ThumbSize = Mathf.Min(trackSize, Mathf.Max(trackSize / range * 10.0f, 30.0f));
+                float pixelRange = trackSize - m_ThumbSize;
+                float perc = (m_Value - Minimum) / range;
                 float thumbPosition = (int)(perc * pixelRange);
-                _thumbCenter = thumbPosition + _thumbSize / 2;
-                _thumbRect = new Rectangle(thumbPosition + 4, (Height - DefaultThickness) / 2, _thumbSize - 8, DefaultThickness);
+                m_ThumbCenter = thumbPosition + m_ThumbSize / 2;
+                m_ThumbRect = new Rectangle(thumbPosition + 4, (Height - DefaultThickness) / 2, m_ThumbSize - 8,
+                    DefaultThickness);
             }
 
             private void EndSliding()
             {
-                _isSliding = false;
+                m_IsSliding = false;
                 EndMouseCapture();
                 SlidingEnd?.Invoke();
                 Defocus();
@@ -153,18 +154,19 @@ namespace SE.Editor.GUI
                 base.Draw();
 
                 // Draw track line
-                var lineRect = new Rectangle(4, Height / 2, Width - 8, 1);
+                Rectangle lineRect = new Rectangle(4, Height / 2, Width - 8, 1);
                 Render2D.FillRectangle(lineRect, TrackLineColor);
 
                 // Draw thumb
-                bool mouseOverThumb = _thumbRect.Contains(PointFromWindow(Root.GetMousePosition()));
-                Render2D.FillRectangle(_thumbRect, _isSliding ? ThumbColorSelected : mouseOverThumb ? ThumbColorHovered : ThumbColor);
+                bool mouseOverThumb = m_ThumbRect.Contains(PointFromWindow(Root.GetMousePosition()));
+                Render2D.FillRectangle(m_ThumbRect, m_IsSliding ? ThumbColorSelected : mouseOverThumb
+                    ? ThumbColorHovered : ThumbColor);
             }
 
             /// <inheritdoc />
             public override void OnLostFocus()
             {
-                if (_isSliding)
+                if (m_IsSliding)
                 {
                     EndSliding();
                 }
@@ -180,10 +182,10 @@ namespace SE.Editor.GUI
                     Focus();
                     float mousePosition = location.X;
 
-                    if (_thumbRect.Contains(ref location))
+                    if (m_ThumbRect.Contains(ref location))
                     {
                         // Start sliding
-                        _isSliding = true;
+                        m_IsSliding = true;
                         StartMouseCapture();
                         SlidingStart?.Invoke();
                         return true;
@@ -191,7 +193,7 @@ namespace SE.Editor.GUI
                     else
                     {
                         // Click change
-                        Value += (mousePosition < _thumbCenter ? -1 : 1) * 10;
+                        Value += (mousePosition < m_ThumbCenter ? -1 : 1) * 10;
                         Defocus();
                         Parent?.Focus();
                     }
@@ -203,15 +205,19 @@ namespace SE.Editor.GUI
             /// <inheritdoc />
             public override void OnMouseMove(Float2 location)
             {
-                if (_isSliding)
+                if (m_IsSliding)
                 {
                     // Update sliding
-                    var slidePosition = location + Root.GetTrackingMouseOffset();
+                    Float2 slidePosition = location + Root.GetTrackingMouseOffset();
                     Value = Mathf.Remap(slidePosition.X, 4, TrackSize - 4, Minimum, Maximum);
                     if (Mathf.NearEqual(Value, Maximum))
+                    {
                         Value = Maximum;
+                    }
                     else if (Mathf.NearEqual(Value, Minimum))
+                    {
                         Value = Minimum;
+                    }
                 }
                 else
                 {
@@ -222,7 +228,7 @@ namespace SE.Editor.GUI
             /// <inheritdoc />
             public override bool OnMouseUp(Float2 location, MouseButton button)
             {
-                if (button == MouseButton.Left && _isSliding)
+                if (button == MouseButton.Left && m_IsSliding)
                 {
                     EndSliding();
                     return true;
@@ -235,7 +241,7 @@ namespace SE.Editor.GUI
             public override void OnEndMouseCapture()
             {
                 // Check if was sliding
-                if (_isSliding)
+                if (m_IsSliding)
                 {
                     EndSliding();
                 }
@@ -269,10 +275,10 @@ namespace SE.Editor.GUI
         /// </summary>
         protected const float TextBoxSize = 30.0f;
 
-        private float _value;
-        private float _min, _max;
+        private float m_Value;
+        private float m_Min, m_Max;
 
-        private bool _valueIsChanging;
+        private bool m_ValueIsChanging;
 
         /// <summary>
         /// Occurs when value gets changed.
@@ -284,20 +290,20 @@ namespace SE.Editor.GUI
         /// </summary>
         public float Value
         {
-            get => _value;
+            get => m_Value;
             set
             {
-                value = Mathf.Clamp(value, _min, _max);
-                if (Math.Abs(_value - value) > Mathf.Epsilon)
+                value = Mathf.Clamp(value, m_Min, m_Max);
+                if (Math.Abs(m_Value - value) > Mathf.Epsilon)
                 {
                     // Set value
-                    _value = value;
+                    m_Value = value;
 
                     // Update
-                    _valueIsChanging = true;
+                    m_ValueIsChanging = true;
                     UpdateText();
                     UpdateSlider();
-                    _valueIsChanging = false;
+                    m_ValueIsChanging = false;
                     OnValueChanged();
                 }
             }
@@ -308,15 +314,17 @@ namespace SE.Editor.GUI
         /// </summary>
         public float MinValue
         {
-            get => _min;
+            get => m_Min;
             set
             {
-                if (_min != value)
+                if (m_Min != value)
                 {
-                    if (value > _max)
+                    if (value > m_Max)
+                    {
                         throw new ArgumentException();
+                    }
 
-                    _min = value;
+                    m_Min = value;
                     Value = Value;
                 }
             }
@@ -327,15 +335,17 @@ namespace SE.Editor.GUI
         /// </summary>
         public float MaxValue
         {
-            get => _max;
+            get => m_Max;
             set
             {
-                if (_max != value)
+                if (m_Max != value)
                 {
-                    if (value < _min)
+                    if (value < m_Min)
+                    {
                         throw new ArgumentException();
+                    }
 
-                    _max = value;
+                    m_Max = value;
                     Value = Value;
                 }
             }
@@ -365,14 +375,15 @@ namespace SE.Editor.GUI
         /// <param name="width">The width.</param>
         /// <param name="min">The minimum value.</param>
         /// <param name="max">The maximum value.</param>
-        public SliderControl(float value, float x = 0, float y = 0, float width = 120, float min = float.MinValue, float max = float.MaxValue)
+        public SliderControl(float value, float x = 0, float y = 0, float width = 120, float min = float.MinValue,
+            float max = float.MaxValue)
         : base(x, y, width, TextBox.DefaultHeight)
         {
             AutoFocus = true;
 
-            _min = min;
-            _max = max;
-            _value = Mathf.Clamp(value, min, max);
+            m_Min = min;
+            m_Max = max;
+            m_Value = Mathf.Clamp(value, min, max);
 
             float split = Width - TextBoxSize;
             _slider = new Slider(split, Height)
@@ -384,7 +395,7 @@ namespace SE.Editor.GUI
             _slider.SlidingEnd += SliderOnSliderEnd;
             _textBox = new TextBox(false, split, 0)
             {
-                Text = _value.ToString(CultureInfo.InvariantCulture),
+                Text = m_Value.ToString(CultureInfo.InvariantCulture),
                 Parent = this,
                 Location = new Float2(split, 0),
                 Size = new Float2(Height, TextBoxSize),
@@ -401,19 +412,24 @@ namespace SE.Editor.GUI
 
         private void SliderOnValueChanged()
         {
-            if (_valueIsChanging)
+            if (m_ValueIsChanging)
+            {
                 return;
+            }
 
             Value = Mathf.Remap(_slider.Value, Slider.Minimum, Slider.Maximum, MinValue, MaxValue);
         }
 
         private void OnTextBoxEditEnd()
         {
-            if (_valueIsChanging)
+            if (m_ValueIsChanging)
+            {
                 return;
+            }
 
-            var text = _textBox.Text.Replace(',', '.');
-            if (double.TryParse(text, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var value))
+            string text = _textBox.Text.Replace(',', '.');
+            if (double.TryParse(text, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo
+                .InvariantCulture, out double value))
             {
                 Value = (float)Math.Round(value, 5);
             }
@@ -431,8 +447,8 @@ namespace SE.Editor.GUI
         /// <param name="limits">The limits.</param>
         public void SetLimits(RangeAttribute limits)
         {
-            _min = limits.Min;
-            _max = Mathf.Max(_min, limits.Max);
+            m_Min = limits.Min;
+            m_Max = Mathf.Max(m_Min, limits.Max);
             Value = Value;
         }
 
@@ -442,8 +458,8 @@ namespace SE.Editor.GUI
         /// <param name="limits">The limits.</param>
         public void SetLimits(LimitAttribute limits)
         {
-            _min = limits.Min;
-            _max = Mathf.Max(_min, limits.Max);
+            m_Min = limits.Min;
+            m_Max = Mathf.Max(m_Min, limits.Max);
             Value = Value;
         }
 
@@ -452,7 +468,7 @@ namespace SE.Editor.GUI
         /// </summary>
         protected virtual void UpdateText()
         {
-            _textBox.Text = _value.ToString(CultureInfo.InvariantCulture);
+            _textBox.Text = m_Value.ToString(CultureInfo.InvariantCulture);
         }
 
         /// <summary>
@@ -460,7 +476,7 @@ namespace SE.Editor.GUI
         /// </summary>
         protected virtual void UpdateSlider()
         {
-            _slider.Value = Mathf.Remap(_value, MinValue, MaxValue, Slider.Minimum, Slider.Maximum);
+            _slider.Value = Mathf.Remap(m_Value, MinValue, MaxValue, Slider.Minimum, Slider.Maximum);
         }
 
         /// <summary>

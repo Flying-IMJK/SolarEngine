@@ -10,7 +10,7 @@ namespace SE.Editor
     /// </summary>
     public class MainContentTreeNode : ContentTreeNode
     {
-        private FileSystemWatcher _watcher;
+        private FileSystemWatcher m_Watcher;
 
         private void OnEvent(object sender, FileSystemEventArgs eventArgs)
         {
@@ -38,24 +38,25 @@ namespace SE.Editor
         public MainContentTreeNode(ProjectTreeNode parent, ContentFolderType type, string path)
             : base(parent, type, path)
         {
-            _watcher = new FileSystemWatcher(path)
+            m_Watcher = new FileSystemWatcher(path)
             {
                 IncludeSubdirectories = true,
                 EnableRaisingEvents = true,
-                NotifyFilter = NotifyFilters.CreationTime | NotifyFilters.Size | NotifyFilters.FileName | NotifyFilters.DirectoryName,
+                NotifyFilter = NotifyFilters.CreationTime | NotifyFilters.Size | NotifyFilters.FileName
+                    | NotifyFilters.DirectoryName,
             };
-            _watcher.Changed += OnEvent;
-            _watcher.Created += OnEvent;
-            _watcher.Deleted += OnEvent;
-            _watcher.Renamed += OnEvent;
+            m_Watcher.Changed += OnEvent;
+            m_Watcher.Created += OnEvent;
+            m_Watcher.Deleted += OnEvent;
+            m_Watcher.Renamed += OnEvent;
         }
 
         /// <inheritdoc />
         public override void OnDestroy()
         {
             // _watcher.EnableRaisingEvents = false;
-            _watcher.Dispose();
-            _watcher = null;
+            m_Watcher.Dispose();
+            m_Watcher = null;
 
             base.OnDestroy();
         }

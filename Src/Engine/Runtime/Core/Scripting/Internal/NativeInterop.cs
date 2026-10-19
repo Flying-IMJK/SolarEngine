@@ -58,8 +58,10 @@ namespace SE.Interop
         {
             if (!s_LoadedNativeLibraries.TryGetValue(libraryName, out IntPtr nativeLibrary))
             {
-                if (!s_LibraryPaths.TryGetValue(libraryName, out var nativeLibraryPath))
+                if (!s_LibraryPaths.TryGetValue(libraryName, out string nativeLibraryPath))
+                {
                     nativeLibraryPath = libraryName;
+                }
 
                 nativeLibrary = NativeLibrary.Load(nativeLibraryPath, assembly, dllImportSearchPath);
                 s_LoadedNativeLibraries.Add(libraryName, nativeLibrary);
@@ -72,9 +74,9 @@ namespace SE.Interop
         private static void InitScriptingAssemblyLoadContext()
         {
 #if SE_EDITOR
-            var isCollectible = true;
+            bool isCollectible = true;
 #else
-            var isCollectible = false;
+            bool isCollectible = false;
 #endif
             s_ScriptingAssemblyLoadContext = new AssemblyLoadContext("SE", isCollectible);
 #if SE_EDITOR
@@ -86,7 +88,7 @@ namespace SE.Interop
         internal static unsafe void Init()
         {
             NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), NativeLibraryImportResolver);
-            
+
             // Change default culture to match with Mono runtime default culture
             CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
             CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
@@ -100,16 +102,20 @@ namespace SE.Interop
 
 
 #if SE_EDITOR
-        private static Assembly OnScriptingAssemblyLoadContextResolving(AssemblyLoadContext assemblyLoadContext, AssemblyName assemblyName)
+        private static Assembly OnScriptingAssemblyLoadContextResolving(AssemblyLoadContext assemblyLoadContext,
+            AssemblyName assemblyName)
         {
-            // FIXME: There should be a better way to resolve the path to EditorTargetPath where the dependencies are stored
+            // FIXME: There should be a better way to resolve the path to EditorTargetPath where the dependencies are
+            // stored
             foreach (string libraryPath in s_LibraryPaths.Values)
             {
                 string editorTargetPath = Path.GetDirectoryName(libraryPath);
 
-                var assemblyPath = Path.Combine(editorTargetPath, assemblyName.Name + ".dll");
+                string assemblyPath = Path.Combine(editorTargetPath, assemblyName.Name + ".dll");
                 if (File.Exists(assemblyPath))
+                {
                     return assemblyLoadContext.LoadFromAssemblyPath(assemblyPath);
+                }
             }
             return null;
         }
@@ -124,22 +130,33 @@ namespace SE.Interop
 
 
         // Cache offsets to frequently accessed fields of FlaxEngine.Object
-        private static int s_UnmanagedPtrFieldOffset = IntPtr.Size + (Unsafe.Read<int>((typeof(SE.Object).GetField("__unmanagedPtr", BindingFlags.Instance | BindingFlags.NonPublic).FieldHandle.Value + 4 + IntPtr.Size).ToPointer()) & 0xFFFFFF);
-        private static int s_InternalIdFieldOffset = IntPtr.Size + (Unsafe.Read<int>((typeof(SE.Object).GetField("__internalId", BindingFlags.Instance | BindingFlags.NonPublic).FieldHandle.Value + 4 + IntPtr.Size).ToPointer()) & 0xFFFFFF);
+        private static int s_UnmanagedPtrFieldOffset = IntPtr.Size + (Unsafe.Read<int>((typeof(SE.Object)
+            .GetField("__unmanagedPtr", BindingFlags.Instance | BindingFlags.NonPublic).FieldHandle.Value + 4
+                + IntPtr.Size).ToPointer()) & 0xFFFFFF);
+        private static int s_InternalIdFieldOffset = IntPtr.Size + (Unsafe.Read<int>((typeof(SE.Object)
+            .GetField("__internalId", BindingFlags.Instance | BindingFlags.NonPublic).FieldHandle.Value + 4 + IntPtr
+                .Size).ToPointer()) & 0xFFFFFF);
 
         [UnmanagedCallersOnly]
         internal static void ScriptingObjectSetInternalValues(ManagedHandle objectHandle, IntPtr unmanagedPtr, IntPtr idPtr)
         {
             object obj = objectHandle.Target;
-            if (obj is not SE.Object) return;
+            if (obj is not SE.Object)
             {
-                ref IntPtr fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<IntPtr>(s_UnmanagedPtrFieldOffset, ref obj);
+                return;
+            }
+
+            {
+                ref IntPtr fieldRef = ref FieldHelper
+                    .GetReferenceTypeFieldReference<IntPtr>(s_UnmanagedPtrFieldOffset, ref obj);
                 fieldRef = unmanagedPtr;
             }
+
             if (idPtr != IntPtr.Zero)
             {
                 ref Guid nativeId = ref Unsafe.AsRef<Guid>(idPtr.ToPointer());
-                ref Guid fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<Guid>(s_InternalIdFieldOffset, ref obj);
+                ref Guid fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<Guid>(s_InternalIdFieldOffset,
+                    ref obj);
                 fieldRef = nativeId;
             }
         }
@@ -173,7 +190,9 @@ namespace SE.Interop
         internal static IntPtr NativeAllocStringAnsi(string str)
         {
             if (str is null)
+            {
                 return IntPtr.Zero;
+            }
 
             int length = str.Length + 1;
             void* ptr = NativeMemory.AlignedAlloc((UIntPtr)length, 16);
@@ -191,14 +210,18 @@ namespace SE.Interop
 
 
         /// <summary>
-        /// Converts a delegate into a function pointer that is callable from unmanaged code via <see cref="Marshal.GetFunctionPointerForDelegate{TDelegate}"/> but cached <paramref name="d"/> delegate to prevent collecting it by GC.
+        /// Converts a delegate into a function pointer that is callable from unmanaged code via
+        /// <see cref="Marshal.GetFunctionPointerForDelegate{TDelegate}"/> but cached <paramref name="d"/> delegate to
+        /// prevent collecting it by GC.
         /// </summary>
         /// <typeparam name="TDelegate">The type of delegate to convert.</typeparam>
         /// <param name="d">The delegate to be passed to unmanaged code.</param>
-        /// <returns>A value that can be passed to unmanaged code, which, in turn, can use it to call the underlying managed delegate.</returns>
+        /// <returns> A value that can be passed to unmanaged code, which, in turn, can use it to call the underlying
+        /// managed delegate.</returns>
         public static IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d) where TDelegate : notnull
         {
-            // Example use-case: C# script runs actions via JobSystem.Dispatch which causes crash due to GC collecting Delegate object
+            // Example use-case: C# script runs actions via JobSystem.Dispatch which causes crash due to GC collecting
+            // Delegate object
             ManagedHandle.Alloc(d, GCHandleType.Weak);
 
             return Marshal.GetFunctionPointerForDelegate<TDelegate>(d);
@@ -215,7 +238,9 @@ namespace SE.Interop
             Span<IntPtr> span = ptrArray.ToSpan<IntPtr>();
             T[] managedArray = new T[ptrArray.Length];
             for (int i = 0; i < managedArray.Length; i++)
+            {
                 managedArray[i] = span[i] != IntPtr.Zero ? (T)ManagedHandle.FromIntPtr(span[i]).Target : default;
+            }
             return managedArray;
         }
 
@@ -227,13 +252,17 @@ namespace SE.Interop
         public static IntPtr[] ManagedArrayToGCHandleArray(Array array)
         {
             if (array.Length == 0)
+            {
                 return Array.Empty<IntPtr>();
+            }
             IntPtr[] pointerArray = new IntPtr[array.Length];
             for (int i = 0; i < pointerArray.Length; i++)
             {
-                var obj = array.GetValue(i);
+                object obj = array.GetValue(i);
                 if (obj != null)
+                {
                     pointerArray.SetValue(ManagedHandle.ToIntPtr(obj), i);
+                }
             }
             return pointerArray;
         }
@@ -261,7 +290,9 @@ namespace SE.Interop
         {
             TDst[] dst = new TDst[src.Length];
             for (int i = 0; i < src.Length; i++)
+            {
                 dst[i] = convertFunc(src[i]);
+            }
             return dst;
         }
 
@@ -277,18 +308,24 @@ namespace SE.Interop
         {
             TDst[] dst = new TDst[src.Length];
             for (int i = 0; i < src.Length; i++)
+            {
                 dst[i] = convertFunc(src[i]);
+            }
             return dst;
         }
 
         private static Type FindType(string typeName)
         {
             if (s_TypeCache.TryGetValue(typeName, out Type type))
+            {
                 return type;
+            }
 
             type = Type.GetType(typeName, ResolveAssembly, null);
             if (type == null)
+            {
                 type = ResolveSlow(typeName);
+            }
 
             if (type == null)
             {
@@ -296,7 +333,9 @@ namespace SE.Interop
                 typeName = typeName.Substring(0, typeName.IndexOf(','));
                 type = Type.GetType(typeName, ResolveAssembly, null);
                 if (type == null)
+                {
                     type = ResolveSlow(typeName);
+                }
 
                 typeName = fullTypeName;
             }
@@ -307,16 +346,19 @@ namespace SE.Interop
 
             static Type ResolveSlow(string typeName)
             {
-                foreach (var assembly in s_ScriptingAssemblyLoadContext.Assemblies)
+                foreach (Assembly assembly in s_ScriptingAssemblyLoadContext.Assemblies)
                 {
-                    var type = assembly.GetType(typeName);
+                    Type type = assembly.GetType(typeName);
                     if (type != null)
+                    {
                         return type;
+                    }
                 }
                 return null;
             }
 
-            static Assembly ResolveAssembly(AssemblyName name) => ResolveScriptingAssemblyByName(name, allowPartial: false);
+            static Assembly ResolveAssembly(AssemblyName name) => ResolveScriptingAssemblyByName(name,
+                allowPartial: false);
         }
 
         /// <summary>Find <paramref name="assemblyName"/> among the scripting assemblies.</summary>
@@ -325,17 +367,21 @@ namespace SE.Interop
         /// <returns>The resolved assembly, or null if none could be found.</returns>
         internal static Assembly ResolveScriptingAssemblyByName(AssemblyName assemblyName, bool allowPartial = false)
         {
-            var lc = s_ScriptingAssemblyLoadContext;
+            AssemblyLoadContext lc = s_ScriptingAssemblyLoadContext;
 
             if (lc is null)
+            {
                 return null;
+            }
 
             foreach (Assembly assembly in lc.Assemblies)
             {
-                var curName = assembly.GetName();
+                AssemblyName curName = assembly.GetName();
 
                 if (curName == assemblyName)
+                {
                     return assembly;
+                }
             }
 
             if (allowPartial) // Check partial names if full name isn't found
@@ -344,10 +390,12 @@ namespace SE.Interop
 
                 foreach (Assembly assembly in lc.Assemblies)
                 {
-                    var curName = assembly.GetName();
+                    AssemblyName curName = assembly.GetName();
 
                     if (curName.Name == partialName)
+                    {
                         return assembly;
+                    }
                 }
             }
             return null;
@@ -356,20 +404,31 @@ namespace SE.Interop
         internal static bool IsBlittable(Type type)
         {
             if (type.IsPrimitive || type.IsEnum)
+            {
                 return true;
+            }
             if (type.IsArray && IsBlittable(type.GetElementType()))
+            {
                 return true;
+            }
             if (type.IsPointer && type.HasElementType && type.GetElementType().IsPrimitive)
+            {
                 return true;
+            }
             if (type.IsClass)
+            {
                 return false;
+            }
             if (type.IsValueType)
             {
-                var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags
+                    .NonPublic);
                 foreach (FieldInfo field in fields)
                 {
                     if (!IsBlittable(field.FieldType))
+                    {
                         return false;
+                    }
                 }
             }
             return true;
@@ -390,7 +449,8 @@ namespace SE.Interop
                 className = className.Substring(parentClassName.Length);
             }
             string marshallerName = className + "Marshaller";
-            string internalAssemblyQualifiedName = $"{@namespace}.{parentClassName}{marshallerName}+{className}Internal,{String.Join(',', splits.Skip(1))}";
+            string internalAssemblyQualifiedName =
+                $"{@namespace}.{parentClassName}{marshallerName}+{className}Internal,{String.Join(',', splits.Skip(1))}";
             return FindType(internalAssemblyQualifiedName);
         }
 
@@ -399,11 +459,15 @@ namespace SE.Interop
 
         internal delegate object MarshalToManagedDelegate(IntPtr nativePtr, bool byRef);
         internal delegate void MarshalToNativeDelegate(object managedObject, IntPtr nativePtr);
-        internal delegate void MarshalToNativeFieldDelegate(FieldInfo field, int fieldOffset, object fieldOwner, IntPtr nativePtr, out int fieldSize);
+        internal delegate void MarshalToNativeFieldDelegate(FieldInfo field, int fieldOffset, object fieldOwner,
+            IntPtr nativePtr, out int fieldSize);
 
-        internal static ConcurrentDictionary<Type, MarshalToManagedDelegate> toManagedMarshallers = new ConcurrentDictionary<Type, MarshalToManagedDelegate>(1, 3);
-        internal static ConcurrentDictionary<Type, MarshalToNativeDelegate> toNativeMarshallers = new ConcurrentDictionary<Type, MarshalToNativeDelegate>(1, 3);
-        internal static ConcurrentDictionary<Type, MarshalToNativeFieldDelegate> toNativeFieldMarshallers = new ConcurrentDictionary<Type, MarshalToNativeFieldDelegate>(1, 3);
+        internal static ConcurrentDictionary<Type, MarshalToManagedDelegate> toManagedMarshallers =
+            new ConcurrentDictionary<Type, MarshalToManagedDelegate>(1, 3);
+        internal static ConcurrentDictionary<Type, MarshalToNativeDelegate> toNativeMarshallers =
+            new ConcurrentDictionary<Type, MarshalToNativeDelegate>(1, 3);
+        internal static ConcurrentDictionary<Type, MarshalToNativeFieldDelegate> toNativeFieldMarshallers =
+            new ConcurrentDictionary<Type, MarshalToNativeFieldDelegate>(1, 3);
 
         internal static object MarshalToManaged(IntPtr nativePtr, Type type)
         {
@@ -411,16 +475,24 @@ namespace SE.Interop
             {
                 Type marshalType = type;
                 if (marshalType.IsByRef)
+                {
                     marshalType = marshalType.GetElementType();
+                }
                 else if (marshalType.IsPointer)
+                {
                     marshalType = typeof(IntPtr);
+                }
 
-                MethodInfo method = typeof(MarshalHelper<>).MakeGenericType(marshalType).GetMethod(nameof(MarshalHelper<ReferenceTypePlaceholder>.ToManagedWrapper), BindingFlags.Static | BindingFlags.NonPublic);
+                MethodInfo method = typeof(MarshalHelper<>).MakeGenericType(marshalType)
+                    .GetMethod(nameof(MarshalHelper<ReferenceTypePlaceholder>.ToManagedWrapper), BindingFlags
+                        .Static | BindingFlags.NonPublic);
                 return method.CreateDelegate<MarshalToManagedDelegate>();
             }
 
-            if (!toManagedMarshallers.TryGetValue(type, out var deleg))
+            if (!toManagedMarshallers.TryGetValue(type, out MarshalToManagedDelegate deleg))
+            {
                 deleg = toManagedMarshallers.GetOrAdd(type, Factory);
+            }
             return deleg(nativePtr, type.IsByRef);
         }
 
@@ -430,14 +502,24 @@ namespace SE.Interop
             {
                 MethodInfo method;
                 if (type.IsValueType)
-                    method = typeof(MarshalHelperValueType<>).MakeGenericType(type).GetMethod(nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToNativeWrapper), BindingFlags.Static | BindingFlags.NonPublic);
+                {
+                    method = typeof(MarshalHelperValueType<>).MakeGenericType(type)
+                        .GetMethod(nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToNativeWrapper),
+                            BindingFlags.Static | BindingFlags.NonPublic);
+                }
                 else
-                    method = typeof(MarshalHelperReferenceType<>).MakeGenericType(type).GetMethod(nameof(MarshalHelperReferenceType<ReferenceTypePlaceholder>.ToNativeWrapper), BindingFlags.Static | BindingFlags.NonPublic);
+                {
+                    method = typeof(MarshalHelperReferenceType<>).MakeGenericType(type)
+                        .GetMethod(nameof(MarshalHelperReferenceType<ReferenceTypePlaceholder>.ToNativeWrapper),
+                            BindingFlags.Static | BindingFlags.NonPublic);
+                }
                 return method.CreateDelegate<MarshalToNativeDelegate>();
             }
 
-            if (!toNativeMarshallers.TryGetValue(type, out var deleg))
+            if (!toNativeMarshallers.TryGetValue(type, out MarshalToNativeDelegate deleg))
+            {
                 deleg = toNativeMarshallers.GetOrAdd(type, Factory);
+            }
             deleg(managedObject, nativePtr);
         }
 
@@ -447,14 +529,24 @@ namespace SE.Interop
             {
                 MethodInfo method;
                 if (type.IsValueType)
-                    method = typeof(MarshalHelperValueType<>).MakeGenericType(type).GetMethod(nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToNativeFieldWrapper), BindingFlags.Static | BindingFlags.NonPublic);
+                {
+                    method = typeof(MarshalHelperValueType<>).MakeGenericType(type)
+                        .GetMethod(nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToNativeFieldWrapper),
+                            BindingFlags.Static | BindingFlags.NonPublic);
+                }
                 else
-                    method = typeof(MarshalHelperReferenceType<>).MakeGenericType(type).GetMethod(nameof(MarshalHelperReferenceType<ReferenceTypePlaceholder>.ToNativeFieldWrapper), BindingFlags.Static | BindingFlags.NonPublic);
+                {
+                    method = typeof(MarshalHelperReferenceType<>).MakeGenericType(type)
+                        .GetMethod(nameof(MarshalHelperReferenceType<ReferenceTypePlaceholder>
+                            .ToNativeFieldWrapper), BindingFlags.Static | BindingFlags.NonPublic);
+                }
                 return method.CreateDelegate<MarshalToNativeFieldDelegate>();
             }
 
-            if (toNativeFieldMarshallers.TryGetValue(type, out var deleg))
+            if (toNativeFieldMarshallers.TryGetValue(type, out MarshalToNativeFieldDelegate deleg))
+            {
                 return deleg;
+            }
             return toNativeFieldMarshallers.GetOrAdd(type, Factory);
         }
 
@@ -466,12 +558,16 @@ namespace SE.Interop
             internal static int GetFieldOffset(FieldInfo field, Type type)
             {
                 if (field.IsLiteral)
+                {
                     return 0;
+                }
 
                 // Get the address of the field, source: https://stackoverflow.com/a/56512720
                 int fieldOffset = Unsafe.Read<int>((field.FieldHandle.Value + 4 + IntPtr.Size).ToPointer()) & 0xFFFFFF;
                 if (!type.IsValueType)
+                {
                     fieldOffset += IntPtr.Size;
+                }
                 return fieldOffset;
             }
 
@@ -489,7 +585,9 @@ namespace SE.Interop
                     fieldOwner = (T)fieldOwnerBoxed;
                 }
                 else
+                {
                     field.SetValue(fieldOwner, fieldValue);
+                }
             }
 #else
             /// <summary>
@@ -504,7 +602,8 @@ namespace SE.Interop
             /// <summary>
             /// Returns a reference to the value of the field.
             /// </summary>
-            internal static ref TField GetValueTypeFieldReference<T, TField>(int fieldOffset, ref T fieldOwner) //where T : struct
+            internal static ref TField GetValueTypeFieldReference<T, TField>(int fieldOffset,
+                ref T fieldOwner) //where T : struct
             {
                 byte* fieldPtr = (byte*)Unsafe.AsPointer(ref fieldOwner) + fieldOffset;
                 return ref Unsafe.AsRef<TField>(fieldPtr);
@@ -513,7 +612,8 @@ namespace SE.Interop
             /// <summary>
             /// Returns a reference to the value of the field.
             /// </summary>
-            internal static ref TField GetReferenceTypeFieldReference<T, TField>(int fieldOffset, ref T fieldOwner) //where T : class
+            internal static ref TField GetReferenceTypeFieldReference<T, TField>(int fieldOffset,
+                ref T fieldOwner) //where T : class
             {
                 byte* fieldPtr = (byte*)Unsafe.As<T, IntPtr>(ref fieldOwner) + fieldOffset;
                 return ref Unsafe.AsRef<TField>(fieldPtr);
@@ -528,7 +628,8 @@ namespace SE.Interop
         {
             private delegate void MarshalToNativeTypedDelegate(ref T managedValue, IntPtr nativePtr);
             private delegate void MarshalToManagedTypedDelegate(ref T managedValue, IntPtr nativePtr, bool byRef);
-            internal delegate void MarshalFieldTypedDelegate(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize);
+            internal delegate void MarshalFieldTypedDelegate(FieldInfo field, int fieldOffset, ref T fieldOwner,
+                IntPtr nativeFieldPtr, out int fieldSize);
             internal delegate void* GetBasePointer(ref T fieldOwner);
 
             internal static FieldInfo[] marshallableFields;
@@ -546,11 +647,17 @@ namespace SE.Interop
                 // Setup field-by-field marshallers for reference types or structures containing references
                 if (!type.IsPrimitive && !type.IsPointer && type != typeof(bool))
                 {
-                    marshallableFields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                    if (type.IsValueType && !marshallableFields.Any(x => (x.FieldType.IsClass && !x.FieldType.IsPointer) || x.FieldType.Name == "Boolean"))
+                    marshallableFields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags
+                        .NonPublic);
+                    if (type.IsValueType && !marshallableFields.Any(x => (x.FieldType.IsClass && !x.FieldType
+                        .IsPointer) || x.FieldType.Name == "Boolean"))
+                    {
                         marshallableFields = null;
+                    }
                     else if (!type.IsValueType && !marshallableFields.Any())
+                    {
                         marshallableFields = null;
+                    }
 
                     if (marshallableFields != null)
                     {
@@ -569,33 +676,58 @@ namespace SE.Interop
                             {
                                 if (type.IsValueType)
                                 {
-                                    toManagedFieldMethod = typeof(MarshalHelper<>).MakeGenericType(type).GetMethod(nameof(MarshalHelper<T>.ToManagedFieldPointerValueType), bindingFlags);
-                                    toNativeFieldMethod = typeof(MarshalHelper<>).MakeGenericType(type).GetMethod(nameof(MarshalHelper<T>.ToNativeFieldPointerValueType), bindingFlags);
+                                    toManagedFieldMethod = typeof(MarshalHelper<>).MakeGenericType(type)
+                                        .GetMethod(nameof(MarshalHelper<T>.ToManagedFieldPointerValueType),
+                                            bindingFlags);
+                                    toNativeFieldMethod = typeof(MarshalHelper<>).MakeGenericType(type)
+                                        .GetMethod(nameof(MarshalHelper<T>.ToNativeFieldPointerValueType),
+                                            bindingFlags);
                                 }
                                 else
                                 {
-                                    toManagedFieldMethod = typeof(MarshalHelper<>).MakeGenericType(type).GetMethod(nameof(MarshalHelper<T>.ToManagedFieldPointerReferenceType), bindingFlags);
-                                    toNativeFieldMethod = typeof(MarshalHelper<>).MakeGenericType(type).GetMethod(nameof(MarshalHelper<T>.ToNativeFieldPointerReferenceType), bindingFlags);
+                                    toManagedFieldMethod = typeof(MarshalHelper<>).MakeGenericType(type)
+                                        .GetMethod(nameof(MarshalHelper<T>.ToManagedFieldPointerReferenceType),
+                                            bindingFlags);
+                                    toNativeFieldMethod = typeof(MarshalHelper<>).MakeGenericType(type)
+                                        .GetMethod(nameof(MarshalHelper<T>.ToNativeFieldPointerReferenceType),
+                                            bindingFlags);
                                 }
                             }
                             else if (fieldType.IsValueType)
                             {
                                 if (Nullable.GetUnderlyingType(fieldType) != null)
                                 {
-                                    toManagedFieldMethod = typeof(MarshalHelper<>.NullableValueTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.NullableValueTypeField<ValueTypePlaceholder>.ToManagedField), bindingFlags);
-                                    toNativeFieldMethod = typeof(MarshalHelper<>.NullableValueTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.NullableValueTypeField<ValueTypePlaceholder>.ToNativeField), bindingFlags);
+                                    toManagedFieldMethod = typeof(MarshalHelper<>.NullableValueTypeField<>)
+                                        .MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>
+                                            .NullableValueTypeField<ValueTypePlaceholder>.ToManagedField),
+                                                bindingFlags);
+                                    toNativeFieldMethod = typeof(MarshalHelper<>.NullableValueTypeField<>)
+                                        .MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>
+                                            .NullableValueTypeField<ValueTypePlaceholder>.ToNativeField), bindingFlags);
                                 }
                                 else
                                 {
                                     if (type.IsValueType)
                                     {
-                                        toManagedFieldMethod = typeof(MarshalHelper<>.ValueTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ValueTypeField<ValueTypePlaceholder>.ToManagedFieldValueType), bindingFlags);
-                                        toNativeFieldMethod = typeof(MarshalHelper<>.ValueTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ValueTypeField<ValueTypePlaceholder>.ToNativeFieldValueType), bindingFlags);
+                                        toManagedFieldMethod = typeof(MarshalHelper<>.ValueTypeField<>)
+                                            .MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>
+                                                .ValueTypeField<ValueTypePlaceholder>.ToManagedFieldValueType),
+                                                    bindingFlags);
+                                        toNativeFieldMethod = typeof(MarshalHelper<>.ValueTypeField<>)
+                                            .MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>
+                                                .ValueTypeField<ValueTypePlaceholder>.ToNativeFieldValueType),
+                                                    bindingFlags);
                                     }
                                     else
                                     {
-                                        toManagedFieldMethod = typeof(MarshalHelper<>.ValueTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ValueTypeField<ValueTypePlaceholder>.ToManagedFieldReferenceType), bindingFlags);
-                                        toNativeFieldMethod = typeof(MarshalHelper<>.ValueTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ValueTypeField<ValueTypePlaceholder>.ToNativeFieldReferenceType), bindingFlags);
+                                        toManagedFieldMethod = typeof(MarshalHelper<>.ValueTypeField<>)
+                                            .MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>
+                                                .ValueTypeField<ValueTypePlaceholder>.ToManagedFieldReferenceType),
+                                                    bindingFlags);
+                                        toNativeFieldMethod = typeof(MarshalHelper<>.ValueTypeField<>)
+                                            .MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>
+                                                .ValueTypeField<ValueTypePlaceholder>.ToNativeFieldReferenceType),
+                                                    bindingFlags);
                                     }
                                 }
                             }
@@ -606,26 +738,54 @@ namespace SE.Interop
                                 {
                                     if (type.IsValueType)
                                     {
-                                        toManagedFieldMethod = typeof(MarshalHelper<>.ValueTypeField<>).MakeGenericType(type, arrayElementType).GetMethod(nameof(MarshalHelper<T>.ValueTypeField<ValueTypePlaceholder>.ToManagedFieldArrayValueType), bindingFlags);
-                                        toNativeFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToNativeFieldValueType), bindingFlags);
+                                        toManagedFieldMethod = typeof(MarshalHelper<>.ValueTypeField<>)
+                                            .MakeGenericType(type, arrayElementType)
+                                                .GetMethod(nameof(MarshalHelper<T>
+                                                    .ValueTypeField<ValueTypePlaceholder>
+                                                        .ToManagedFieldArrayValueType), bindingFlags);
+                                        toNativeFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>)
+                                            .MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>
+                                                .ReferenceTypeField<ReferenceTypePlaceholder>
+                                                    .ToNativeFieldValueType), bindingFlags);
                                     }
                                     else
                                     {
-                                        toManagedFieldMethod = typeof(MarshalHelper<>.ValueTypeField<>).MakeGenericType(type, arrayElementType).GetMethod(nameof(MarshalHelper<T>.ValueTypeField<ValueTypePlaceholder>.ToManagedFieldArrayReferenceType), bindingFlags);
-                                        toNativeFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToNativeFieldReferenceType), bindingFlags);
+                                        toManagedFieldMethod = typeof(MarshalHelper<>.ValueTypeField<>)
+                                            .MakeGenericType(type, arrayElementType)
+                                                .GetMethod(nameof(MarshalHelper<T>
+                                                    .ValueTypeField<ValueTypePlaceholder>
+                                                        .ToManagedFieldArrayReferenceType), bindingFlags);
+                                        toNativeFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>)
+                                            .MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>
+                                                .ReferenceTypeField<ReferenceTypePlaceholder>
+                                                    .ToNativeFieldReferenceType), bindingFlags);
                                     }
                                 }
                                 else
                                 {
                                     if (type.IsValueType)
                                     {
-                                        toManagedFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, arrayElementType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToManagedFieldArrayValueType), bindingFlags);
-                                        toNativeFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToNativeFieldValueType), bindingFlags);
+                                        toManagedFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>)
+                                            .MakeGenericType(type, arrayElementType)
+                                                .GetMethod(nameof(MarshalHelper<T>
+                                                    .ReferenceTypeField<ReferenceTypePlaceholder>
+                                                        .ToManagedFieldArrayValueType), bindingFlags);
+                                        toNativeFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>)
+                                            .MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>
+                                                .ReferenceTypeField<ReferenceTypePlaceholder>
+                                                    .ToNativeFieldValueType), bindingFlags);
                                     }
                                     else
                                     {
-                                        toManagedFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, arrayElementType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToManagedFieldArrayReferenceType), bindingFlags);
-                                        toNativeFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToNativeFieldReferenceType), bindingFlags);
+                                        toManagedFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>)
+                                            .MakeGenericType(type, arrayElementType)
+                                                .GetMethod(nameof(MarshalHelper<T>
+                                                    .ReferenceTypeField<ReferenceTypePlaceholder>
+                                                        .ToManagedFieldArrayReferenceType), bindingFlags);
+                                        toNativeFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>)
+                                            .MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>
+                                                .ReferenceTypeField<ReferenceTypePlaceholder>
+                                                    .ToNativeFieldReferenceType), bindingFlags);
                                     }
                                 }
                             }
@@ -633,17 +793,31 @@ namespace SE.Interop
                             {
                                 if (type.IsValueType)
                                 {
-                                    toManagedFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToManagedFieldValueType), bindingFlags);
-                                    toNativeFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToNativeFieldValueType), bindingFlags);
+                                    toManagedFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>)
+                                        .MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>
+                                            .ReferenceTypeField<ReferenceTypePlaceholder>.ToManagedFieldValueType),
+                                                bindingFlags);
+                                    toNativeFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>)
+                                        .MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>
+                                            .ReferenceTypeField<ReferenceTypePlaceholder>.ToNativeFieldValueType),
+                                                bindingFlags);
                                 }
                                 else
                                 {
-                                    toManagedFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToManagedFieldReferenceType), bindingFlags);
-                                    toNativeFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>).MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>.ReferenceTypeField<ReferenceTypePlaceholder>.ToNativeFieldReferenceType), bindingFlags);
+                                    toManagedFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>)
+                                        .MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>
+                                            .ReferenceTypeField<ReferenceTypePlaceholder>
+                                                .ToManagedFieldReferenceType), bindingFlags);
+                                    toNativeFieldMethod = typeof(MarshalHelper<>.ReferenceTypeField<>)
+                                        .MakeGenericType(type, fieldType).GetMethod(nameof(MarshalHelper<T>
+                                            .ReferenceTypeField<ReferenceTypePlaceholder>
+                                                .ToNativeFieldReferenceType), bindingFlags);
                                 }
                             }
-                            toManagedFieldMarshallers[i] = toManagedFieldMethod.CreateDelegate<MarshalFieldTypedDelegate>();
-                            toNativeFieldMarshallers[i] = toNativeFieldMethod.CreateDelegate<MarshalFieldTypedDelegate>();
+                            toManagedFieldMarshallers[i] = toManagedFieldMethod
+                                .CreateDelegate<MarshalFieldTypedDelegate>();
+                            toNativeFieldMarshallers[i] = toNativeFieldMethod
+                                .CreateDelegate<MarshalFieldTypedDelegate>();
                             marshallableFieldOffsets[i] = FieldHelper.GetFieldOffset(field, type);
                         }
                     }
@@ -655,14 +829,24 @@ namespace SE.Interop
                 {
                     string methodName;
                     if (type == typeof(IntPtr))
+                    {
                         methodName = nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToManagedPointer);
+                    }
                     else if (type == typeof(ManagedHandle))
+                    {
                         methodName = nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToManagedHandle);
+                    }
                     else if (marshallableFields != null)
-                        methodName = nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToManagedWithMarshallableFields);
+                    {
+                        methodName = nameof(MarshalHelperValueType<ValueTypePlaceholder>
+                            .ToManagedWithMarshallableFields);
+                    }
                     else
+                    {
                         methodName = nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToManaged);
-                    toManagedMethod = typeof(MarshalHelperValueType<>).MakeGenericType(type).GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
+                    }
+                    toManagedMethod = typeof(MarshalHelperValueType<>).MakeGenericType(type).GetMethod(methodName,
+                        BindingFlags.Static | BindingFlags.NonPublic);
                 }
                 else if (type.IsArray)
                 {
@@ -671,28 +855,48 @@ namespace SE.Interop
                     {
                         string methodName;
                         if (ArrayFactory.GetMarshalledType(elementType) == elementType)
+                        {
                             methodName = nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToManagedArray);
+                        }
                         else
+                        {
                             methodName = nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToManagedArrayMarshalled);
-                        toManagedMethod = typeof(MarshalHelperValueType<>).MakeGenericType(type.GetElementType()).GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
+                        }
+                        toManagedMethod = typeof(MarshalHelperValueType<>).MakeGenericType(type.GetElementType())
+                            .GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
                     }
                     else
-                        toManagedMethod = typeof(MarshalHelperReferenceType<>).MakeGenericType(type.GetElementType()).GetMethod(nameof(MarshalHelperReferenceType<ReferenceTypePlaceholder>.ToManagedArray), BindingFlags.Static | BindingFlags.NonPublic);
+                    {
+                        toManagedMethod = typeof(MarshalHelperReferenceType<>).MakeGenericType(type
+                            .GetElementType()).GetMethod(nameof(MarshalHelperReferenceType<ReferenceTypePlaceholder>
+                                .ToManagedArray), BindingFlags.Static | BindingFlags.NonPublic);
+                    }
                 }
                 else
                 {
                     string methodName;
                     if (type == typeof(string))
+                    {
                         methodName = nameof(MarshalHelperReferenceType<ReferenceTypePlaceholder>.ToManagedString);
+                    }
                     else if (type == typeof(Type))
+                    {
                         methodName = nameof(MarshalHelperReferenceType<ReferenceTypePlaceholder>.ToManagedType);
+                    }
                     else if (type.IsClass)
+                    {
                         methodName = nameof(MarshalHelperReferenceType<ReferenceTypePlaceholder>.ToManagedClass);
+                    }
                     else if (type.IsInterface) // Dictionary
+                    {
                         methodName = nameof(MarshalHelperReferenceType<ReferenceTypePlaceholder>.ToManagedInterface);
+                    }
                     else
+                    {
                         throw new NativeInteropException($"Unsupported type '{type.FullName}'");
-                    toManagedMethod = typeof(MarshalHelperReferenceType<>).MakeGenericType(type).GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
+                    }
+                    toManagedMethod = typeof(MarshalHelperReferenceType<>).MakeGenericType(type)
+                        .GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
                 }
                 s_ToManagedTypedMarshaller = toManagedMethod.CreateDelegate<MarshalToManagedTypedDelegate>();
 
@@ -700,26 +904,47 @@ namespace SE.Interop
                 if (type.IsValueType)
                 {
                     if (type.IsByRef)
-                        throw new NotImplementedException(); // Is this possible?
+                    {
+                        throw new NotImplementedException();
+                    } // Is this possible?
                     if (marshallableFields != null)
-                        toNativeMethod = typeof(MarshalHelperValueType<>).MakeGenericType(type).GetMethod(nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToNativeWithMarshallableFields), BindingFlags.Static | BindingFlags.NonPublic);
+                    {
+                        toNativeMethod = typeof(MarshalHelperValueType<>).MakeGenericType(type)
+                            .GetMethod(nameof(MarshalHelperValueType<ValueTypePlaceholder>
+                                .ToNativeWithMarshallableFields), BindingFlags.Static | BindingFlags.NonPublic);
+                    }
                     else
-                        toNativeMethod = typeof(MarshalHelperValueType<>).MakeGenericType(type).GetMethod(nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToNative), BindingFlags.Static | BindingFlags.NonPublic);
+                    {
+                        toNativeMethod = typeof(MarshalHelperValueType<>).MakeGenericType(type)
+                            .GetMethod(nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToNative), BindingFlags
+                                .Static | BindingFlags.NonPublic);
+                    }
                 }
                 else
                 {
                     string methodName;
                     if (type == typeof(string))
+                    {
                         methodName = nameof(MarshalHelperReferenceType<ReferenceTypePlaceholder>.ToNativeString);
+                    }
                     else if (type == typeof(Type))
+                    {
                         methodName = nameof(MarshalHelperReferenceType<ReferenceTypePlaceholder>.ToNativeType);
+                    }
                     else if (type.IsPointer)
+                    {
                         methodName = nameof(MarshalHelperReferenceType<ReferenceTypePlaceholder>.ToNativePointer);
+                    }
                     else if (type.IsArray)
+                    {
                         methodName = nameof(MarshalHelperReferenceType<ReferenceTypePlaceholder>.ToNativeArray);
+                    }
                     else
+                    {
                         methodName = nameof(MarshalHelperReferenceType<ReferenceTypePlaceholder>.ToNative);
-                    toNativeMethod = typeof(MarshalHelperReferenceType<>).MakeGenericType(type).GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
+                    }
+                    toNativeMethod = typeof(MarshalHelperReferenceType<>).MakeGenericType(type)
+                        .GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
                 }
                 s_ToNativeTypedMarshaller = toNativeMethod.CreateDelegate<MarshalToNativeTypedDelegate>();
             }
@@ -741,11 +966,17 @@ namespace SE.Interop
             {
                 T value = default;
                 if (nativePtr == IntPtr.Zero)
+                {
                     return value;
+                }
                 if (typeof(T).IsValueType)
+                {
                     value = (T)ManagedHandle.FromIntPtr(nativePtr).Target;
+                }
                 else
+                {
                     MarshalHelper<T>.ToManaged(ref value, nativePtr, false);
+                }
                 return value;
             }
 
@@ -753,7 +984,9 @@ namespace SE.Interop
             {
                 T[] arr = new T[ptrSpan.Length];
                 for (int i = 0; i < arr.Length; i++)
+                {
                     s_ToManagedTypedMarshaller(ref arr[i], ptrSpan[i], false);
+                }
                 return arr;
             }
 
@@ -774,7 +1007,8 @@ namespace SE.Interop
                 s_ToNativeTypedMarshaller(ref managedValue, nativePtr);
             }
 
-            internal static void ToNativeField(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativePtr, out int fieldSize)
+            internal static void ToNativeField(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativePtr,
+                out int fieldSize)
             {
                 if (marshallableFields != null)
                 {
@@ -787,34 +1021,40 @@ namespace SE.Interop
                         }
                     }
                 }
-                throw new NativeInteropException($"Invalid field with offset {fieldOffset} to marshal for type {typeof(T).Name}");
+                throw new NativeInteropException(
+$"Invalid field with offset {fieldOffset} to marshal for type {typeof(T).Name}");
             }
 
-            private static void ToManagedFieldPointerValueType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
+            private static void ToManagedFieldPointerValueType(FieldInfo field, int fieldOffset, ref T fieldOwner,
+                IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
             {
 #if USE_AOT
                 IntPtr fieldValue = Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer());
                 FieldHelper.SetReferenceTypeField(field, ref fieldOwner, fieldValue);
 #else
-                ref IntPtr fieldValueRef = ref FieldHelper.GetValueTypeFieldReference<T, IntPtr>(fieldOffset, ref fieldOwner);
+                ref IntPtr fieldValueRef = ref FieldHelper.GetValueTypeFieldReference<T, IntPtr>(fieldOffset,
+                    ref fieldOwner);
                 fieldValueRef = Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer());
 #endif
                 fieldSize = IntPtr.Size;
             }
 
-            private static void ToManagedFieldPointerReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
+            private static void ToManagedFieldPointerReferenceType(FieldInfo field, int fieldOffset,
+                ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
             {
 #if USE_AOT
                 IntPtr fieldValue = Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer());
                 FieldHelper.SetReferenceTypeField(field, ref fieldOwner, fieldValue);
 #else
-                ref IntPtr fieldValueRef = ref FieldHelper.GetReferenceTypeFieldReference<T, IntPtr>(fieldOffset, ref fieldOwner);
+                ref IntPtr fieldValueRef = ref FieldHelper.GetReferenceTypeFieldReference<T, IntPtr>(fieldOffset,
+                    ref fieldOwner);
                 fieldValueRef = Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer());
 #endif
                 fieldSize = IntPtr.Size;
             }
 
-            private static void ToNativeFieldPointerValueType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
+            private static void ToNativeFieldPointerValueType(FieldInfo field, int fieldOffset, ref T fieldOwner,
+                IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
             {
 #if USE_AOT
                 object boxed = field.GetValue(fieldOwner);
@@ -826,7 +1066,8 @@ namespace SE.Interop
                 fieldSize = IntPtr.Size;
             }
 
-            private static void ToNativeFieldPointerReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
+            private static void ToNativeFieldPointerReferenceType(FieldInfo field, int fieldOffset,
+                ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
             {
 #if USE_AOT
                 object boxed = field.GetValue(fieldOwner);
@@ -841,7 +1082,9 @@ namespace SE.Interop
             private static IntPtr EnsureAlignment(IntPtr ptr, int alignment)
             {
                 if (ptr % alignment != 0)
+                {
                     ptr = IntPtr.Add(ptr, alignment - (int)(ptr % alignment));
+                }
                 return ptr;
             }
 
@@ -853,20 +1096,29 @@ namespace SE.Interop
                 {
                     Type fieldType = typeof(TField);
                     if (fieldType.IsEnum)
+                    {
                         fieldType = fieldType.GetEnumUnderlyingType();
+                    }
                     else if (fieldType == typeof(bool))
+                    {
                         fieldType = typeof(byte);
+                    }
 
                     if (fieldType.IsValueType && !fieldType.IsEnum && !fieldType.IsPrimitive) // Is it a structure?
                     {
                     }
                     else if (fieldType.IsClass || fieldType.IsPointer)
+                    {
                         s_FieldAlignment = IntPtr.Size;
+                    }
                     else
+                    {
                         s_FieldAlignment = GetTypeSize(fieldType);
+                    }
                 }
 
-                internal static void ToManagedFieldValueType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
+                internal static void ToManagedFieldValueType(FieldInfo field, int fieldOffset, ref T fieldOwner,
+                    IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
                 {
                     fieldSize = Unsafe.SizeOf<TField>();
                     if (s_FieldAlignment > 1)
@@ -879,7 +1131,8 @@ namespace SE.Interop
 #if USE_AOT
                     TField fieldValue = default;
 #else
-                    ref TField fieldValue = ref FieldHelper.GetValueTypeFieldReference<T, TField>(fieldOffset, ref fieldOwner);
+                    ref TField fieldValue = ref FieldHelper.GetValueTypeFieldReference<T, TField>(fieldOffset,
+                        ref fieldOwner);
 #endif
                     MarshalHelper<TField>.ToManaged(ref fieldValue, nativeFieldPtr, false);
 #if USE_AOT
@@ -887,7 +1140,8 @@ namespace SE.Interop
 #endif
                 }
 
-                internal static void ToManagedFieldReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
+                internal static void ToManagedFieldReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner,
+                    IntPtr nativeFieldPtr, out int fieldSize) // where T : class
                 {
                     fieldSize = Unsafe.SizeOf<TField>();
                     if (s_FieldAlignment > 1)
@@ -900,7 +1154,8 @@ namespace SE.Interop
 #if USE_AOT
                     TField fieldValue = default;
 #else
-                    ref TField fieldValue = ref FieldHelper.GetReferenceTypeFieldReference<T, TField>(fieldOffset, ref fieldOwner);
+                    ref TField fieldValue = ref FieldHelper.GetReferenceTypeFieldReference<T, TField>(fieldOffset,
+                        ref fieldOwner);
 #endif
                     MarshalHelper<TField>.ToManaged(ref fieldValue, nativeFieldPtr, false);
 #if USE_AOT
@@ -908,7 +1163,8 @@ namespace SE.Interop
 #endif
                 }
 
-                internal static void ToManagedFieldArrayValueType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
+                internal static void ToManagedFieldArrayValueType(FieldInfo field, int fieldOffset,
+                    ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
                 {
                     // Follows the same marshalling semantics with reference types
                     fieldSize = Unsafe.SizeOf<IntPtr>();
@@ -919,15 +1175,18 @@ namespace SE.Interop
 #if USE_AOT
                     TField[] fieldValue = (TField[])field.GetValue(fieldOwner);
 #else
-                    ref TField[] fieldValue = ref FieldHelper.GetValueTypeFieldReference<T, TField[]>(fieldOffset, ref fieldOwner);
+                    ref TField[] fieldValue = ref FieldHelper.GetValueTypeFieldReference<T, TField[]>(fieldOffset,
+                        ref fieldOwner);
 #endif
-                    MarshalHelper<TField[]>.ToManaged(ref fieldValue, Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer()), false);
+                    MarshalHelper<TField[]>.ToManaged(ref fieldValue, Unsafe.Read<IntPtr>(nativeFieldPtr
+                        .ToPointer()), false);
 #if USE_AOT
                     FieldHelper.SetReferenceTypeField(field, ref fieldOwner, fieldValue);
 #endif
                 }
 
-                internal static void ToManagedFieldArrayReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
+                internal static void ToManagedFieldArrayReferenceType(FieldInfo field, int fieldOffset,
+                    ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
                 {
                     // Follows the same marshalling semantics with reference types
                     fieldSize = Unsafe.SizeOf<IntPtr>();
@@ -938,15 +1197,18 @@ namespace SE.Interop
 #if USE_AOT
                     TField[] fieldValue = null;
 #else
-                    ref TField[] fieldValue = ref FieldHelper.GetReferenceTypeFieldReference<T, TField[]>(fieldOffset, ref fieldOwner);
+                    ref TField[] fieldValue = ref FieldHelper.GetReferenceTypeFieldReference<T,
+                        TField[]>(fieldOffset, ref fieldOwner);
 #endif
-                    MarshalHelper<TField[]>.ToManaged(ref fieldValue, Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer()), false);
+                    MarshalHelper<TField[]>.ToManaged(ref fieldValue, Unsafe.Read<IntPtr>(nativeFieldPtr
+                        .ToPointer()), false);
 #if USE_AOT
                     FieldHelper.SetReferenceTypeField(field, ref fieldOwner, fieldValue);
 #endif
                 }
 
-                internal static void ToNativeFieldValueType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
+                internal static void ToNativeFieldValueType(FieldInfo field, int fieldOffset, ref T fieldOwner,
+                    IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
                 {
                     fieldSize = Unsafe.SizeOf<TField>();
                     if (s_FieldAlignment > 1)
@@ -959,12 +1221,14 @@ namespace SE.Interop
 #if USE_AOT
                     TField fieldValue = (TField)field.GetValue(fieldOwner);
 #else
-                    ref TField fieldValue = ref FieldHelper.GetValueTypeFieldReference<T, TField>(fieldOffset, ref fieldOwner);
+                    ref TField fieldValue = ref FieldHelper.GetValueTypeFieldReference<T, TField>(fieldOffset,
+                        ref fieldOwner);
 #endif
                     MarshalHelper<TField>.ToNative(ref fieldValue, nativeFieldPtr);
                 }
 
-                internal static void ToNativeFieldReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
+                internal static void ToNativeFieldReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner,
+                    IntPtr nativeFieldPtr, out int fieldSize) // where T : class
                 {
                     fieldSize = Unsafe.SizeOf<TField>();
                     if (s_FieldAlignment > 1)
@@ -977,7 +1241,8 @@ namespace SE.Interop
 #if USE_AOT
                     TField fieldValue = (TField)field.GetValue(fieldOwner);
 #else
-                    ref TField fieldValue = ref FieldHelper.GetReferenceTypeFieldReference<T, TField>(fieldOffset, ref fieldOwner);
+                    ref TField fieldValue = ref FieldHelper.GetReferenceTypeFieldReference<T, TField>(fieldOffset,
+                        ref fieldOwner);
 #endif
                     MarshalHelper<TField>.ToNative(ref fieldValue, nativeFieldPtr);
                 }
@@ -989,12 +1254,14 @@ namespace SE.Interop
                 {
                 }
 
-                internal static void ToManagedField(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize)
+                internal static void ToManagedField(FieldInfo field, int fieldOffset, ref T fieldOwner,
+                    IntPtr nativeFieldPtr, out int fieldSize)
                 {
                     fieldSize = 0;
                 }
 
-                internal static void ToNativeField(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize)
+                internal static void ToNativeField(FieldInfo field, int fieldOffset, ref T fieldOwner,
+                    IntPtr nativeFieldPtr, out int fieldSize)
                 {
                     fieldSize = 0;
                 }
@@ -1002,7 +1269,8 @@ namespace SE.Interop
 
             private static class ReferenceTypeField<TField> where TField : class
             {
-                internal static void ToManagedFieldValueType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
+                internal static void ToManagedFieldValueType(FieldInfo field, int fieldOffset, ref T fieldOwner,
+                    IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
                 {
                     fieldSize = Unsafe.SizeOf<IntPtr>();
                     IntPtr fieldStartPtr = nativeFieldPtr;
@@ -1012,15 +1280,18 @@ namespace SE.Interop
 #if USE_AOT
                     TField fieldValue = null;
 #else
-                    ref TField fieldValue = ref FieldHelper.GetValueTypeFieldReference<T, TField>(fieldOffset, ref fieldOwner);
+                    ref TField fieldValue = ref FieldHelper.GetValueTypeFieldReference<T, TField>(fieldOffset,
+                        ref fieldOwner);
 #endif
-                    MarshalHelper<TField>.ToManaged(ref fieldValue, Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer()), false);
+                    MarshalHelper<TField>.ToManaged(ref fieldValue, Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer()),
+                        false);
 #if USE_AOT
                     FieldHelper.SetReferenceTypeField(field, ref fieldOwner, fieldValue);
 #endif
                 }
 
-                internal static void ToManagedFieldReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
+                internal static void ToManagedFieldReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner,
+                    IntPtr nativeFieldPtr, out int fieldSize) // where T : class
                 {
                     fieldSize = Unsafe.SizeOf<IntPtr>();
                     IntPtr fieldStartPtr = nativeFieldPtr;
@@ -1030,15 +1301,18 @@ namespace SE.Interop
 #if USE_AOT
                     TField fieldValue = default;
 #else
-                    ref TField fieldValue = ref FieldHelper.GetReferenceTypeFieldReference<T, TField>(fieldOffset, ref fieldOwner);
+                    ref TField fieldValue = ref FieldHelper.GetReferenceTypeFieldReference<T, TField>(fieldOffset,
+                        ref fieldOwner);
 #endif
-                    MarshalHelper<TField>.ToManaged(ref fieldValue, Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer()), false);
+                    MarshalHelper<TField>.ToManaged(ref fieldValue, Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer()),
+                        false);
 #if USE_AOT
                     FieldHelper.SetReferenceTypeField(field, ref fieldOwner, fieldValue);
 #endif
                 }
 
-                internal static void ToManagedFieldArrayValueType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
+                internal static void ToManagedFieldArrayValueType(FieldInfo field, int fieldOffset,
+                    ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
                 {
                     fieldSize = Unsafe.SizeOf<IntPtr>();
                     IntPtr fieldStartPtr = nativeFieldPtr;
@@ -1048,15 +1322,18 @@ namespace SE.Interop
 #if USE_AOT
                     TField[] fieldValue = null;
 #else
-                    ref TField[] fieldValue = ref FieldHelper.GetValueTypeFieldReference<T, TField[]>(fieldOffset, ref fieldOwner);
+                    ref TField[] fieldValue = ref FieldHelper.GetValueTypeFieldReference<T, TField[]>(fieldOffset,
+                        ref fieldOwner);
 #endif
-                    MarshalHelper<TField[]>.ToManaged(ref fieldValue, Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer()), false);
+                    MarshalHelper<TField[]>.ToManaged(ref fieldValue, Unsafe.Read<IntPtr>(nativeFieldPtr
+                        .ToPointer()), false);
 #if USE_AOT
                     FieldHelper.SetReferenceTypeField(field, ref fieldOwner, fieldValue);
 #endif
                 }
 
-                internal static void ToManagedFieldArrayReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
+                internal static void ToManagedFieldArrayReferenceType(FieldInfo field, int fieldOffset,
+                    ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
                 {
                     fieldSize = Unsafe.SizeOf<IntPtr>();
                     IntPtr fieldStartPtr = nativeFieldPtr;
@@ -1066,15 +1343,18 @@ namespace SE.Interop
 #if USE_AOT
                     TField[] fieldValue = null;
 #else
-                    ref TField[] fieldValue = ref FieldHelper.GetReferenceTypeFieldReference<T, TField[]>(fieldOffset, ref fieldOwner);
+                    ref TField[] fieldValue = ref FieldHelper.GetReferenceTypeFieldReference<T,
+                        TField[]>(fieldOffset, ref fieldOwner);
 #endif
-                    MarshalHelper<TField[]>.ToManaged(ref fieldValue, Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer()), false);
+                    MarshalHelper<TField[]>.ToManaged(ref fieldValue, Unsafe.Read<IntPtr>(nativeFieldPtr
+                        .ToPointer()), false);
 #if USE_AOT
                     FieldHelper.SetReferenceTypeField(field, ref fieldOwner, fieldValue);
 #endif
                 }
 
-                internal static void ToNativeFieldValueType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
+                internal static void ToNativeFieldValueType(FieldInfo field, int fieldOffset, ref T fieldOwner,
+                    IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
                 {
                     fieldSize = Unsafe.SizeOf<IntPtr>();
                     IntPtr fieldStartPtr = nativeFieldPtr;
@@ -1084,12 +1364,14 @@ namespace SE.Interop
 #if USE_AOT
                     TField fieldValue = (TField)field.GetValue(fieldOwner);
 #else
-                    ref TField fieldValue = ref FieldHelper.GetValueTypeFieldReference<T, TField>(fieldOffset, ref fieldOwner);
+                    ref TField fieldValue = ref FieldHelper.GetValueTypeFieldReference<T, TField>(fieldOffset,
+                        ref fieldOwner);
 #endif
                     MarshalHelper<TField>.ToNative(ref fieldValue, nativeFieldPtr);
                 }
 
-                internal static void ToNativeFieldReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
+                internal static void ToNativeFieldReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner,
+                    IntPtr nativeFieldPtr, out int fieldSize) // where T : class
                 {
                     fieldSize = Unsafe.SizeOf<IntPtr>();
                     IntPtr fieldStartPtr = nativeFieldPtr;
@@ -1099,7 +1381,8 @@ namespace SE.Interop
 #if USE_AOT
                     TField fieldValue = (TField)field.GetValue(fieldOwner);
 #else
-                    ref TField fieldValue = ref FieldHelper.GetReferenceTypeFieldReference<T, TField>(fieldOffset, ref fieldOwner);
+                    ref TField fieldValue = ref FieldHelper.GetReferenceTypeFieldReference<T, TField>(fieldOffset,
+                        ref fieldOwner);
 #endif
                     MarshalHelper<TField>.ToNative(ref fieldValue, nativeFieldPtr);
                 }
@@ -1113,9 +1396,11 @@ namespace SE.Interop
                 MarshalHelper<T>.ToNative(ref Unsafe.Unbox<T>(managedObject), nativePtr);
             }
 
-            internal static void ToNativeFieldWrapper(FieldInfo field, int fieldOffset, object fieldOwner, IntPtr nativePtr, out int fieldSize)
+            internal static void ToNativeFieldWrapper(FieldInfo field, int fieldOffset, object fieldOwner,
+                IntPtr nativePtr, out int fieldSize)
             {
-                MarshalHelper<T>.ToNativeField(field, fieldOffset, ref Unsafe.Unbox<T>(fieldOwner), nativePtr, out fieldSize);
+                MarshalHelper<T>.ToNativeField(field, fieldOffset, ref Unsafe.Unbox<T>(fieldOwner), nativePtr,
+                    out fieldSize);
             }
 
             internal static void ToManagedPointer(ref IntPtr managedValue, IntPtr nativePtr, bool byRef)
@@ -1132,9 +1417,9 @@ namespace SE.Interop
             internal static void ToManagedWithMarshallableFields(ref T managedValue, IntPtr nativePtr, bool byRef)
             {
                 IntPtr fieldPtr = nativePtr;
-                var fields = MarshalHelper<T>.marshallableFields;
-                var offsets = MarshalHelper<T>.marshallableFieldOffsets;
-                var marshallers = MarshalHelper<T>.toManagedFieldMarshallers;
+                FieldInfo[] fields = MarshalHelper<T>.marshallableFields;
+                int[] offsets = MarshalHelper<T>.marshallableFieldOffsets;
+                MarshalHelper<T>.MarshalFieldTypedDelegate[] marshallers = MarshalHelper<T>.toManagedFieldMarshallers;
                 for (int i = 0; i < fields.Length; i++)
                 {
                     marshallers[i](fields[i], offsets[i], ref managedValue, fieldPtr, out int fieldSize);
@@ -1151,7 +1436,9 @@ namespace SE.Interop
             internal static void ToManagedArray(ref T[] managedValue, IntPtr nativePtr, bool byRef)
             {
                 if (byRef)
+                {
                     nativePtr = Unsafe.Read<IntPtr>(nativePtr.ToPointer());
+                }
 
                 if (nativePtr != IntPtr.Zero)
                 {
@@ -1159,13 +1446,17 @@ namespace SE.Interop
                     managedValue = Unsafe.As<T[]>(managedArray.ToArray<T>());
                 }
                 else
+                {
                     managedValue = null;
+                }
             }
 
             internal static void ToManagedArrayMarshalled(ref T[] managedValue, IntPtr nativePtr, bool byRef)
             {
                 if (byRef)
+                {
                     nativePtr = Unsafe.Read<IntPtr>(nativePtr.ToPointer());
+                }
 
                 if (nativePtr != IntPtr.Zero)
                 {
@@ -1173,15 +1464,17 @@ namespace SE.Interop
                     managedValue = Unsafe.As<T[]>(MarshalHelper<T>.ToManagedArray(managedArray));
                 }
                 else
+                {
                     managedValue = null;
+                }
             }
 
             internal static void ToNativeWithMarshallableFields(ref T managedValue, IntPtr nativePtr)
             {
                 IntPtr fieldPtr = nativePtr;
-                var fields = MarshalHelper<T>.marshallableFields;
-                var offsets = MarshalHelper<T>.marshallableFieldOffsets;
-                var marshallers = MarshalHelper<T>.toNativeFieldMarshallers;
+                FieldInfo[] fields = MarshalHelper<T>.marshallableFields;
+                int[] offsets = MarshalHelper<T>.marshallableFieldOffsets;
+                MarshalHelper<T>.MarshalFieldTypedDelegate[] marshallers = MarshalHelper<T>.toNativeFieldMarshallers;
                 for (int i = 0; i < fields.Length; i++)
                 {
                     marshallers[i](fields[i], offsets[i], ref managedValue, nativePtr, out int fieldSize);
@@ -1204,7 +1497,8 @@ namespace SE.Interop
                 MarshalHelper<T>.ToNative(ref managedValue, nativePtr);
             }
 
-            internal static void ToNativeFieldWrapper(FieldInfo field, int fieldOffset, object fieldOwner, IntPtr nativePtr, out int fieldSize)
+            internal static void ToNativeFieldWrapper(FieldInfo field, int fieldOffset, object fieldOwner,
+                IntPtr nativePtr, out int fieldSize)
             {
                 T managedValue = Unsafe.As<T>(fieldOwner);
                 MarshalHelper<T>.ToNativeField(field, fieldOffset, ref managedValue, nativePtr, out fieldSize);
@@ -1213,35 +1507,48 @@ namespace SE.Interop
             internal static void ToManagedString(ref string managedValue, IntPtr nativePtr, bool byRef)
             {
                 if (byRef)
+                {
                     nativePtr = Unsafe.Read<IntPtr>(nativePtr.ToPointer());
+                }
                 managedValue = ManagedString.ToManaged(nativePtr);
             }
 
             internal static void ToManagedType(ref Type managedValue, IntPtr nativePtr, bool byRef)
             {
                 if (byRef)
+                {
                     nativePtr = Unsafe.Read<IntPtr>(nativePtr.ToPointer());
-                managedValue = nativePtr == IntPtr.Zero ? null : Unsafe.As<TypeHolder>(ManagedHandle.FromIntPtr(nativePtr).Target);
+                }
+                managedValue = nativePtr == IntPtr.Zero ? null : Unsafe.As<TypeHolder>(ManagedHandle
+                    .FromIntPtr(nativePtr).Target);
             }
 
             internal static void ToManagedClass(ref T managedValue, IntPtr nativePtr, bool byRef)
             {
                 if (byRef)
+                {
                     nativePtr = Unsafe.Read<IntPtr>(nativePtr.ToPointer());
-                managedValue = nativePtr == IntPtr.Zero ? null : Unsafe.As<T>(ManagedHandle.FromIntPtr(nativePtr).Target);
+                }
+                managedValue = nativePtr == IntPtr.Zero ? null : Unsafe.As<T>(ManagedHandle.FromIntPtr(nativePtr)
+                    .Target);
             }
 
             internal static void ToManagedInterface(ref T managedValue, IntPtr nativePtr, bool byRef) // Dictionary
             {
                 if (byRef)
+                {
                     nativePtr = Unsafe.Read<IntPtr>(nativePtr.ToPointer());
-                managedValue = nativePtr == IntPtr.Zero ? null : Unsafe.As<T>(ManagedHandle.FromIntPtr(nativePtr).Target);
+                }
+                managedValue = nativePtr == IntPtr.Zero ? null : Unsafe.As<T>(ManagedHandle.FromIntPtr(nativePtr)
+                    .Target);
             }
 
             internal static void ToManagedArray(ref T[] managedValue, IntPtr nativePtr, bool byRef)
             {
                 if (byRef)
+                {
                     nativePtr = Unsafe.Read<IntPtr>(nativePtr.ToPointer());
+                }
 
                 if (nativePtr != IntPtr.Zero)
                 {
@@ -1249,7 +1556,9 @@ namespace SE.Interop
                     managedValue = Unsafe.As<T[]>(MarshalHelper<T>.ToManagedArray(managedArray.ToSpan<IntPtr>()));
                 }
                 else
+                {
                     managedValue = null;
+                }
             }
 
 
@@ -1260,18 +1569,25 @@ namespace SE.Interop
 
             internal static void ToNativeType(ref Type managedValue, IntPtr nativePtr)
             {
-                Unsafe.Write<IntPtr>(nativePtr.ToPointer(), managedValue != null ? ManagedHandle.ToIntPtr(GetTypeManagedHandle(managedValue)) : IntPtr.Zero);
+                Unsafe.Write<IntPtr>(nativePtr.ToPointer(), managedValue != null ? ManagedHandle
+                    .ToIntPtr(GetTypeManagedHandle(managedValue)) : IntPtr.Zero);
             }
 
             internal static void ToNativePointer(ref T managedValue, IntPtr nativePtr)
             {
                 IntPtr managedPtr;
                 if (Pointer.Unbox(managedValue) == null)
+                {
                     managedPtr = IntPtr.Zero;
+                }
                 else if (managedValue is SE.Object obj)
+                {
                     managedPtr = SE.Object.GetUnmanagedPtr(obj);
+                }
                 else
+                {
                     managedPtr = ManagedHandle.ToIntPtr(managedValue, GCHandleType.Weak);
+                }
                 Unsafe.Write<IntPtr>(nativePtr.ToPointer(), managedPtr);
             }
 
@@ -1279,16 +1595,20 @@ namespace SE.Interop
             {
                 IntPtr managedPtr;
                 if (managedValue == null)
+                {
                     managedPtr = IntPtr.Zero;
+                }
                 else
                 {
                     Type type = typeof(T);
-                    var elementType = type.GetElementType();
-                    var arr = Unsafe.As<Array>(managedValue);
-                    var marshalledType = ArrayFactory.GetMarshalledType(elementType);
+                    Type elementType = type.GetElementType();
+                    Array arr = Unsafe.As<Array>(managedValue);
+                    Type marshalledType = ArrayFactory.GetMarshalledType(elementType);
                     ManagedArray managedArray;
                     if (marshalledType == elementType)
+                    {
                         managedArray = ManagedArray.WrapNewArray(arr, type);
+                    }
                     else if (elementType.IsValueType)
                     {
                         // Convert array of custom structures into internal native layout
@@ -1301,7 +1621,9 @@ namespace SE.Interop
                         }
                     }
                     else
+                    {
                         managedArray = ManagedArrayToGCHandleWrappedArray(arr);
+                    }
                     managedPtr = ManagedHandle.ToIntPtr(managedArray, GCHandleType.Weak);
                 }
                 Unsafe.Write<IntPtr>(nativePtr.ToPointer(), managedPtr);
@@ -1309,7 +1631,8 @@ namespace SE.Interop
 
             internal static void ToNative(ref T managedValue, IntPtr nativePtr)
             {
-                Unsafe.Write<IntPtr>(nativePtr.ToPointer(), managedValue != null ? ManagedHandle.ToIntPtr(managedValue, GCHandleType.Weak) : IntPtr.Zero);
+                Unsafe.Write<IntPtr>(nativePtr.ToPointer(), managedValue != null ? ManagedHandle
+                    .ToIntPtr(managedValue, GCHandleType.Weak) : IntPtr.Zero);
             }
         }
 
@@ -1333,7 +1656,8 @@ namespace SE.Interop
 #if !USE_AOT
             internal bool TryGetDelegate(out Invoker.MarshalAndInvokeDelegate outDeleg, out object outDelegInvoke)
             {
-                // Skip using in-built delegate for value types (eg. Transform) to properly handle instance value passing to method
+                // Skip using in-built delegate for value types (eg. Transform) to properly handle instance value
+                // passing to method
                 if (m_InvokeDelegate == null && !method.DeclaringType.IsValueType)
                 {
                     // Thread-safe creation
@@ -1352,32 +1676,48 @@ namespace SE.Interop
 
             private void TryCreateDelegate()
             {
-                var methodTypes = new List<Type>();
+                List<Type> methodTypes = new List<Type>();
                 if (!method.IsStatic)
+                {
                     methodTypes.Add(method.DeclaringType);
+                }
                 if (returnType != typeof(void))
+                {
                     methodTypes.Add(returnType);
+                }
                 methodTypes.AddRange(parameterTypes);
 
-                var genericParamTypes = new List<Type>();
-                foreach (var type in methodTypes)
+                List<Type> genericParamTypes = new List<Type>();
+                foreach (Type type in methodTypes)
                 {
                     if (type.IsByRef)
+                    {
                         genericParamTypes.Add(type.GetElementType());
+                    }
                     else if (type.IsPointer)
+                    {
                         genericParamTypes.Add(typeof(IntPtr));
+                    }
                     else
+                    {
                         genericParamTypes.Add(type);
+                    }
                 }
 
-                string invokerTypeName = $"{typeof(Invoker).FullName}+Invoker{(method.IsStatic ? "Static" : "")}{(returnType != typeof(void) ? "Ret" : "NoRet")}{parameterTypes.Length}{(genericParamTypes.Count > 0 ? "`" + genericParamTypes.Count : "")}";
+                string invokerTypeName =
+                    $"{typeof(Invoker).FullName}+Invoker{(method.IsStatic ? "Static" : "")}{(returnType != typeof(void) ? "Ret" : "NoRet")}{parameterTypes.Length}{(genericParamTypes.Count > 0 ? "`" + genericParamTypes.Count : "")}";
                 Type invokerType = Type.GetType(invokerTypeName);
                 if (invokerType != null)
                 {
                     if (genericParamTypes.Count != 0)
+                    {
                         invokerType = invokerType.MakeGenericType(genericParamTypes.ToArray());
-                    m_DelegInvoke = invokerType.GetMethod(nameof(Invoker.InvokerStaticNoRet0.CreateDelegate), BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { method });
-                    m_InvokeDelegate = invokerType.GetMethod(nameof(Invoker.InvokerStaticNoRet0.MarshalAndInvoke), BindingFlags.Static | BindingFlags.NonPublic).CreateDelegate<Invoker.MarshalAndInvokeDelegate>();
+                    }
+                    m_DelegInvoke = invokerType.GetMethod(nameof(Invoker.InvokerStaticNoRet0.CreateDelegate),
+                        BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { method });
+                    m_InvokeDelegate = invokerType.GetMethod(nameof(Invoker.InvokerStaticNoRet0.MarshalAndInvoke),
+                        BindingFlags.Static | BindingFlags.NonPublic)
+                            .CreateDelegate<Invoker.MarshalAndInvokeDelegate>();
                 }
             }
 #endif
@@ -1389,7 +1729,9 @@ namespace SE.Interop
             ManagedHandle handle = ManagedHandle.Alloc(methodHolder);
 #if SE_EDITOR
             if (methodHolder.parameterTypes.Any(x => x.IsCollectible) || method.IsCollectible)
+            {
                 s_MethodHandlesCollectible.Add(handle);
+            }
             else
 #endif
             {
@@ -1442,13 +1784,17 @@ namespace SE.Interop
 
                 if (type.IsAbstract)
                 {
-                    // Dotnet doesn't allow to instantiate abstract type thus allow to use generated mock class usage (eg. for Script or GPUResource) for generated abstract types
-                    var abstractWrapper = type.GetNestedType("AbstractWrapper", BindingFlags.NonPublic);
+                    // Dotnet doesn't allow to instantiate abstract type thus allow to use generated mock class usage
+                    // (eg. for Script or GPUResource) for generated abstract types
+                    Type abstractWrapper = type.GetNestedType("AbstractWrapper", BindingFlags.NonPublic);
                     if (abstractWrapper != null)
+                    {
                         wrappedType = abstractWrapper;
+                    }
                 }
 
-                ctor = wrappedType.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null);
+                ctor = wrappedType.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags
+                    .Instance, null, Type.EmptyTypes, null);
             }
 
             internal object CreateObject()
@@ -1462,22 +1808,29 @@ namespace SE.Interop
                 object obj = RuntimeHelpers.GetUninitializedObject(wrappedType);
                 if (obj is Object)
                 {
-                    // TODO: use UnsafeAccessorAttribute on .NET 8 and use this path on all platforms (including non-Desktop, see MCore::ScriptingObject::CreateScriptingObject)
+                    // TODO: use UnsafeAccessorAttribute on .NET 8 and use this path on all platforms (including
+                    // non-Desktop, see MCore::ScriptingObject::CreateScriptingObject)
                     {
-                        ref IntPtr fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<IntPtr>(s_UnmanagedPtrFieldOffset, ref obj);
+                        ref IntPtr fieldRef = ref FieldHelper
+                            .GetReferenceTypeFieldReference<IntPtr>(s_UnmanagedPtrFieldOffset, ref obj);
                         fieldRef = unmanagedPtr;
                     }
                     if (idPtr != IntPtr.Zero)
                     {
                         ref Guid nativeId = ref Unsafe.AsRef<Guid>(idPtr.ToPointer());
-                        ref Guid fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<Guid>(s_InternalIdFieldOffset, ref obj);
+                        ref Guid fieldRef = ref FieldHelper
+                            .GetReferenceTypeFieldReference<Guid>(s_InternalIdFieldOffset, ref obj);
                         fieldRef = nativeId;
                     }
                 }
                 if (ctor != null)
+                {
                     ctor.Invoke(obj, null);
+                }
                 else
+                {
                     throw new NativeInteropException($"Missing empty constructor in type '{wrappedType}'.");
+                }
                 return obj;
             }
 #endif
@@ -1492,9 +1845,11 @@ namespace SE.Interop
         {
             private delegate Array CreateArrayDelegate(long size);
 
-            private static ConcurrentDictionary<Type, Type> s_MarshalledTypes = new ConcurrentDictionary<Type, Type>(1, 3);
+            private static ConcurrentDictionary<Type, Type> s_MarshalledTypes = new ConcurrentDictionary<Type,
+                Type>(1, 3);
             private static ConcurrentDictionary<Type, Type> s_ArrayTypes = new ConcurrentDictionary<Type, Type>(1, 3);
-            private static ConcurrentDictionary<Type, CreateArrayDelegate> s_CreateArrayDelegates = new ConcurrentDictionary<Type, CreateArrayDelegate>(1, 3);
+            private static ConcurrentDictionary<Type, CreateArrayDelegate> s_CreateArrayDelegates =
+                new ConcurrentDictionary<Type, CreateArrayDelegate>(1, 3);
 
             internal static Type GetMarshalledType(Type elementType)
             {
@@ -1502,14 +1857,20 @@ namespace SE.Interop
                 {
                     Type marshalType;
                     if (IsBlittable(type))
+                    {
                         marshalType = type;
+                    }
                     else
+                    {
                         marshalType = GetInternalType(type) ?? typeof(IntPtr);
+                    }
                     return marshalType;
                 }
 
-                if (s_MarshalledTypes.TryGetValue(elementType, out var marshalledType))
+                if (s_MarshalledTypes.TryGetValue(elementType, out Type marshalledType))
+                {
                     return marshalledType;
+                }
                 return s_MarshalledTypes.GetOrAdd(elementType, Factory);
             }
 
@@ -1517,8 +1878,10 @@ namespace SE.Interop
             {
                 static Type Factory(Type type) => type.MakeArrayType();
 
-                if (s_ArrayTypes.TryGetValue(elementType, out var arrayType))
+                if (s_ArrayTypes.TryGetValue(elementType, out Type arrayType))
+                {
                     return arrayType;
+                }
                 return s_ArrayTypes.GetOrAdd(elementType, Factory);
             }
 
@@ -1527,12 +1890,16 @@ namespace SE.Interop
                 static CreateArrayDelegate Factory(Type type)
                 {
                     Type marshalledType = GetMarshalledType(type);
-                    MethodInfo method = typeof(Internal<>).MakeGenericType(marshalledType).GetMethod(nameof(Internal<ValueTypePlaceholder>.CreateArrayDelegate), BindingFlags.Static | BindingFlags.NonPublic);
+                    MethodInfo method = typeof(Internal<>).MakeGenericType(marshalledType)
+                        .GetMethod(nameof(Internal<ValueTypePlaceholder>.CreateArrayDelegate), BindingFlags.Static
+                            | BindingFlags.NonPublic);
                     return method.CreateDelegate<CreateArrayDelegate>();
                 }
 
-                if (s_CreateArrayDelegates.TryGetValue(type, out var deleg))
+                if (s_CreateArrayDelegates.TryGetValue(type, out CreateArrayDelegate deleg))
+                {
                     return deleg(size);
+                }
                 return s_CreateArrayDelegates.GetOrAdd(type, Factory)(size);
             }
 
@@ -1554,21 +1921,30 @@ namespace SE.Interop
 
             private delegate IntPtr UnboxerDelegate(object value, object converter);
 
-            private static ConcurrentDictionary<Type, (UnboxerDelegate deleg, object toNativeDeleg)> unboxers = new(1, 3);
-            private static MethodInfo s_UnboxerMethod = typeof(ValueTypeUnboxer).GetMethod(nameof(ValueTypeUnboxer.UnboxPointer), BindingFlags.Static | BindingFlags.NonPublic);
-            private static MethodInfo s_UnboxerToNativeMethod = typeof(ValueTypeUnboxer).GetMethod(nameof(ValueTypeUnboxer.UnboxPointerWithConverter), BindingFlags.Static | BindingFlags.NonPublic);
+            private static ConcurrentDictionary<Type, (UnboxerDelegate deleg, object toNativeDeleg)> unboxers =
+                new(1, 3);
+            private static MethodInfo s_UnboxerMethod = typeof(ValueTypeUnboxer).GetMethod(nameof(ValueTypeUnboxer
+                .UnboxPointer), BindingFlags.Static | BindingFlags.NonPublic);
+            private static MethodInfo s_UnboxerToNativeMethod = typeof(ValueTypeUnboxer)
+                .GetMethod(nameof(ValueTypeUnboxer.UnboxPointerWithConverter), BindingFlags.Static | BindingFlags
+                    .NonPublic);
 
             internal static IntPtr GetPointer(object value, Type type)
             {
-                if (!unboxers.TryGetValue(type, out var tuple))
+                if (!unboxers.TryGetValue(type, out (UnboxerDelegate deleg, object toNativeDeleg) tuple))
                 {
-                    // Non-POD structures use internal layout (eg. SpriteHandleManaged in C++ with SpriteHandleMarshaller.SpriteHandleInternal in C#) so convert C# data into C++ data
-                    var attr = type.GetCustomAttribute<System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute>();
-                    var toNativeMethod = attr?.NativeType.GetMethod("ToNative", BindingFlags.Static | BindingFlags.NonPublic);
+                    // Non-POD structures use internal layout (eg. SpriteHandleManaged in C++ with
+                    // SpriteHandleMarshaller.SpriteHandleInternal in C#) so convert C# data into C++ data
+                    System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute attr = type
+                        .GetCustomAttribute<System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute>();
+                    MethodInfo toNativeMethod = attr?.NativeType.GetMethod("ToNative", BindingFlags.Static
+                        | BindingFlags.NonPublic);
                     if (toNativeMethod != null)
                     {
-                        tuple.deleg = s_UnboxerToNativeMethod.MakeGenericMethod(type, toNativeMethod.ReturnType).CreateDelegate<UnboxerDelegate>();
-                        tuple.toNativeDeleg = toNativeMethod.CreateDelegate(typeof(ToNativeDelegate<,>).MakeGenericType(type, toNativeMethod.ReturnType));
+                        tuple.deleg = s_UnboxerToNativeMethod.MakeGenericMethod(type, toNativeMethod.ReturnType)
+                            .CreateDelegate<UnboxerDelegate>();
+                        tuple.toNativeDeleg = toNativeMethod.CreateDelegate(typeof(ToNativeDelegate<,>)
+                            .MakeGenericType(type, toNativeMethod.ReturnType));
                     }
                     else
                     {
@@ -1586,7 +1962,9 @@ namespace SE.Interop
                 uint index = Interlocked.Increment(ref s_PinnedBoxedValuesPointer) % (uint)s_PinnedBoxedValues.Length;
                 ref GCHandle handle = ref s_PinnedBoxedValues[index];
                 if (handle.IsAllocated)
+                {
                     handle.Free();
+                }
                 handle = GCHandle.Alloc(value, GCHandleType.Pinned);
             }
 
@@ -1599,7 +1977,9 @@ namespace SE.Interop
                 if (alloc.size < size)
                 {
                     if (alloc.ptr != IntPtr.Zero)
+                    {
                         NativeFree(alloc.ptr.ToPointer());
+                    }
                     alloc.ptr = new IntPtr(NativeAlloc(size));
                     alloc.size = size;
                 }
@@ -1610,34 +1990,40 @@ namespace SE.Interop
             private static IntPtr UnboxPointer<T>(object value, object converter) where T : struct
             {
                 if (RuntimeHelpers.IsReferenceOrContainsReferences<T>()) // Cannot pin structure with references
+                {
                     return IntPtr.Zero;
+                }
                 PinValue(value);
                 return new IntPtr(Unsafe.AsPointer(ref Unsafe.Unbox<T>(value)));
             }
 
-            private static IntPtr UnboxPointerWithConverter<T, TInternal>(object value, object converter) where T : struct
-                                                                                                          where TInternal : struct
+            private static IntPtr UnboxPointerWithConverter<T, TInternal>(object value,
+                object converter) where T : struct
+                where TInternal : struct
             {
                 ToNativeDelegate<T, TInternal> toNative = Unsafe.As<ToNativeDelegate<T, TInternal>>(converter);
                 return PinValue<TInternal>(toNative(Unsafe.Unbox<T>(value)));
             }
         }
 
-        private delegate IntPtr InvokeThunkDelegate(ManagedHandle instanceHandle, IntPtr param1, IntPtr param2, IntPtr param3, IntPtr param4, IntPtr param5, IntPtr param6, IntPtr param7);
+        private delegate IntPtr InvokeThunkDelegate(ManagedHandle instanceHandle, IntPtr param1, IntPtr param2,
+            IntPtr param3, IntPtr param4, IntPtr param5, IntPtr param6, IntPtr param7);
 
         /// <summary>
         /// Returns all types owned by this assembly.
         /// </summary>
         private static Type[] GetAssemblyTypes(Assembly assembly)
         {
-            var referencedAssemblies = assembly.GetReferencedAssemblies();
-            var allAssemblies = NativeInteropUtils.GetAssemblies();
-            var referencedTypes = new List<string>();
-            foreach (var assemblyName in referencedAssemblies)
+            AssemblyName[] referencedAssemblies = assembly.GetReferencedAssemblies();
+            Assembly[] allAssemblies = NativeInteropUtils.GetAssemblies();
+            List<string> referencedTypes = new List<string>();
+            foreach (AssemblyName assemblyName in referencedAssemblies)
             {
-                var asm = allAssemblies.FirstOrDefault(x => x.GetName().Name == assemblyName.Name);
+                Assembly asm = allAssemblies.FirstOrDefault(x => x.GetName().Name == assemblyName.Name);
                 if (asm == null)
+                {
                     continue;
+                }
                 referencedTypes.AddRange(asm.DefinedTypes.Select(x => x.FullName).ToArray());
             }
 
@@ -1645,7 +2031,8 @@ namespace SE.Interop
             // https://makolyte.com/csharp-get-a-list-of-types-defined-in-an-assembly-without-loading-it/
 
             // We need private types of this assembly too, DefinedTypes contains a lot of types from other assemblies...
-            var types = referencedTypes.Any() ? assembly.DefinedTypes.Where(x => !referencedTypes.Contains(x.FullName)).ToArray() : assembly.DefinedTypes.ToArray();
+            TypeInfo[] types = referencedTypes.Any() ? assembly.DefinedTypes.Where(x => !referencedTypes.Contains(x
+                .FullName)).ToArray() : assembly.DefinedTypes.ToArray();
 
             Assert.IsTrue(NativeInteropUtils.GetAssemblies().Count(x => x.GetName().Name == "FlaxEngine.CSharp") == 1);
             return types;
@@ -1654,10 +2041,14 @@ namespace SE.Interop
         internal static TypeHolder GetTypeHolder(Type type)
         {
             if (s_ManagedTypes.TryGetValue(type, out (TypeHolder typeHolder, ManagedHandle handle) tuple))
+            {
                 return tuple.typeHolder;
+            }
 #if SE_EDITOR
             if (s_ManagedTypesCollectible.TryGetValue(type, out tuple))
+            {
                 return tuple.typeHolder;
+            }
 #endif
             return RegisterType(type, true).typeHolder;
         }
@@ -1665,10 +2056,14 @@ namespace SE.Interop
         internal static (TypeHolder typeHolder, ManagedHandle handle) GetTypeHolderAndManagedHandle(Type type)
         {
             if (s_ManagedTypes.TryGetValue(type, out (TypeHolder typeHolder, ManagedHandle handle) tuple))
+            {
                 return tuple;
+            }
 #if SE_EDITOR
             if (s_ManagedTypesCollectible.TryGetValue(type, out tuple))
+            {
                 return tuple;
+            }
 #endif
             return RegisterType(type, true);
         }
@@ -1679,17 +2074,24 @@ namespace SE.Interop
         internal static ManagedHandle GetTypeManagedHandle(Type type)
         {
             if (type.IsInterface && type.IsGenericType)
-                type = type.GetGenericTypeDefinition(); // Generic type to use type definition handle
+            {
+                type = type.GetGenericTypeDefinition();
+            } // Generic type to use type definition handle
             if (s_ManagedTypes.TryGetValue(type, out (TypeHolder typeHolder, ManagedHandle handle) tuple))
+            {
                 return tuple.handle;
+            }
 #if SE_EDITOR
             if (s_ManagedTypesCollectible.TryGetValue(type, out tuple))
+            {
                 return tuple.handle;
+            }
 #endif
             return RegisterType(type, true).handle;
         }
 
-        internal static (TypeHolder typeHolder, ManagedHandle handle) RegisterType(Type type, bool registerNativeType = false)
+        internal static (TypeHolder typeHolder, ManagedHandle handle) RegisterType(Type type,
+            bool registerNativeType = false)
         {
             // TODO: should this strip by-ref?
 
@@ -1702,7 +2104,7 @@ namespace SE.Interop
             {
                 // The owning assembly of a generic type with type arguments referencing
                 // collectible assemblies must be one of the collectible assemblies.
-                foreach (var genericType in type.GetGenericArguments())
+                foreach (Type genericType in type.GetGenericArguments())
                 {
                     if (genericType.Assembly.IsCollectible)
                     {
@@ -1723,7 +2125,9 @@ namespace SE.Interop
             }
 
             if (registerNativeType)
+            {
                 RegisterNativeClassFromType(tuple.typeHolder, tuple.handle);
+            }
 
             return tuple;
         }
@@ -1736,16 +2140,19 @@ namespace SE.Interop
                 Type type = typeof(T);
                 try
                 {
-                    var marshalType = type;
+                    Type marshalType = type;
                     if (type.IsEnum)
+                    {
                         marshalType = type.GetEnumUnderlyingType();
+                    }
                     MarshalSize = Marshal.SizeOf(marshalType);
                 }
                 catch
                 {
-                    // Workaround the issue where structure defined within generic type instance (eg. MyType<int>.MyStruct) fails to get size
+                    // Workaround the issue where structure defined within generic type instance (eg.
+                    // MyType<int>.MyStruct) fails to get size
                     // https://github.com/dotnet/runtime/issues/46426
-                    var obj = RuntimeHelpers.GetUninitializedObject(type);
+                    object obj = RuntimeHelpers.GetUninitializedObject(type);
                     MarshalSize = Marshal.SizeOf(obj);
                 }
             }
@@ -1755,7 +2162,8 @@ namespace SE.Interop
         {
             if (!s_TypeSizeCache.TryGetValue(type, out int size))
             {
-                var marshalSizeField = typeof(TypeHelpers<>).MakeGenericType(type).GetField(nameof(TypeHelpers<int>.MarshalSize), BindingFlags.Static | BindingFlags.Public);
+                FieldInfo marshalSizeField = typeof(TypeHelpers<>).MakeGenericType(type)
+                    .GetField(nameof(TypeHelpers<int>.MarshalSize), BindingFlags.Static | BindingFlags.Public);
                 size = (int)marshalSizeField.GetValue(null);
                 s_TypeSizeCache.AddOrUpdate(type, size, (t, v) => size);
             }
@@ -1778,22 +2186,27 @@ namespace SE.Interop
             {
                 s_MakeNewCustomDelegateFunc =
                 typeof(Expression).Assembly.GetType("System.Linq.Expressions.Compiler.DelegateHelpers")
-                                  .GetMethod("MakeNewCustomDelegate", BindingFlags.NonPublic | BindingFlags.Static).CreateDelegate<Func<Type[], Type>>();
+                                  .GetMethod("MakeNewCustomDelegate", BindingFlags.NonPublic | BindingFlags.Static)
+                                      .CreateDelegate<Func<Type[], Type>>();
 
 #if SE_EDITOR
                 // Load System.Linq.Expressions assembly to collectible ALC.
                 // The dynamic assembly where delegates are stored is cached in the DelegateHelpers class, so we should
-                // use the DelegateHelpers in collectible ALC to make sure the delegates are also stored in the same ALC.
-                Assembly assembly = s_ScriptingAssemblyLoadContext.LoadFromAssemblyPath(typeof(Expression).Assembly.Location);
+                // use the DelegateHelpers in collectible ALC to make sure the delegates are also stored in the same
+                // ALC.
+                Assembly assembly = s_ScriptingAssemblyLoadContext.LoadFromAssemblyPath(typeof(Expression).Assembly
+                    .Location);
                 s_MakeNewCustomDelegateFuncCollectible =
                 assembly.GetType("System.Linq.Expressions.Compiler.DelegateHelpers")
-                        .GetMethod("MakeNewCustomDelegate", BindingFlags.NonPublic | BindingFlags.Static).CreateDelegate<Func<Type[], Type>>();
+                        .GetMethod("MakeNewCustomDelegate", BindingFlags.NonPublic | BindingFlags.Static)
+                            .CreateDelegate<Func<Type[], Type>>();
 
                 // Create dummy delegates to force the dynamic Snippets assembly to be loaded in correcet ALCs
                 s_MakeNewCustomDelegateFunc(new[] { typeof(void) });
                 {
                     // Ensure the new delegate is placed in the collectible ALC
-                    using var ctx = s_ScriptingAssemblyLoadContext.EnterContextualReflection();
+                    using AssemblyLoadContext.ContextualReflectionScope ctx = s_ScriptingAssemblyLoadContext
+                        .EnterContextualReflection();
                     s_MakeNewCustomDelegateFuncCollectible(new[] { typeof(void) });
                 }
 #endif
@@ -1803,7 +2216,9 @@ namespace SE.Interop
             {
 #if SE_EDITOR
                 if (parameters.Any(x => x.IsCollectible))
+                {
                     return s_MakeNewCustomDelegateFuncCollectible(parameters);
+                }
 #endif
                 return s_MakeNewCustomDelegateFunc(parameters);
             }
@@ -1826,39 +2241,58 @@ namespace SE.Interop
                 this.method = method;
                 parameterTypes = method.GetParameterTypes();
 
-                // Thunk delegates don't support IsByRef parameters (use generic invocation that handles 'out' and 'ref' prams)
-                foreach (var type in parameterTypes)
+                // Thunk delegates don't support IsByRef parameters (use generic invocation that handles 'out' and 'ref'
+                // prams)
+                foreach (Type type in parameterTypes)
                 {
                     if (type.IsByRef)
+                    {
                         return;
+                    }
                 }
 
                 List<Type> methodTypes = new List<Type>();
                 if (!method.IsStatic)
+                {
                     methodTypes.Add(method.DeclaringType);
+                }
                 if (method.ReturnType != typeof(void))
+                {
                     methodTypes.Add(method.ReturnType);
+                }
                 methodTypes.AddRange(parameterTypes);
 
                 List<Type> genericParamTypes = new List<Type>();
-                foreach (var type in methodTypes)
+                foreach (Type type in methodTypes)
                 {
                     if (type.IsByRef)
+                    {
                         genericParamTypes.Add(type.GetElementType());
+                    }
                     else if (type.IsPointer)
+                    {
                         genericParamTypes.Add(typeof(IntPtr));
+                    }
                     else
+                    {
                         genericParamTypes.Add(type);
+                    }
                 }
 
-                string invokerTypeName = $"{typeof(Invoker).FullName}+Invoker{(method.IsStatic ? "Static" : "")}{(method.ReturnType != typeof(void) ? "Ret" : "NoRet")}{parameterTypes.Length}{(genericParamTypes.Count > 0 ? "`" + genericParamTypes.Count : "")}";
+                string invokerTypeName =
+                    $"{typeof(Invoker).FullName}+Invoker{(method.IsStatic ? "Static" : "")}{(method.ReturnType != typeof(void) ? "Ret" : "NoRet")}{parameterTypes.Length}{(genericParamTypes.Count > 0 ? "`" + genericParamTypes.Count : "")}";
                 Type invokerType = Type.GetType(invokerTypeName);
                 if (invokerType != null)
                 {
                     if (genericParamTypes.Count != 0)
+                    {
                         invokerType = invokerType.MakeGenericType(genericParamTypes.ToArray());
-                    methodDelegate = invokerType.GetMethod(nameof(Invoker.InvokerStaticNoRet0.InvokeThunk), BindingFlags.Static | BindingFlags.NonPublic).CreateDelegate<Invoker.InvokeThunkDelegate>();
-                    methodDelegateContext = invokerType.GetMethod(nameof(Invoker.InvokerStaticNoRet0.CreateInvokerDelegate), BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { method });
+                    }
+                    methodDelegate = invokerType.GetMethod(nameof(Invoker.InvokerStaticNoRet0.InvokeThunk),
+                        BindingFlags.Static | BindingFlags.NonPublic).CreateDelegate<Invoker.InvokeThunkDelegate>();
+                    methodDelegateContext = invokerType.GetMethod(nameof(Invoker.InvokerStaticNoRet0
+                        .CreateInvokerDelegate), BindingFlags.Static | BindingFlags.NonPublic).Invoke(null,
+                            new object[] { method });
                 }
 
                 if (methodDelegate != null)
@@ -1867,7 +2301,8 @@ namespace SE.Interop
                 }
             }
 
-            public IntPtr InvokeThunk(ManagedHandle instanceHandle, IntPtr param1, IntPtr param2, IntPtr param3, IntPtr param4, IntPtr param5, IntPtr param6, IntPtr param7)
+            public IntPtr InvokeThunk(ManagedHandle instanceHandle, IntPtr param1, IntPtr param2, IntPtr param3,
+                IntPtr param4, IntPtr param5, IntPtr param6, IntPtr param7)
             {
                 IntPtr* nativePtrs = stackalloc IntPtr[] { param1, param2, param3, param4, param5, param6, param7 };
                 if (methodDelegate != null)
@@ -1882,7 +2317,10 @@ namespace SE.Interop
                         // Returned exception is the last parameter
                         IntPtr exceptionPtr = nativePtrs[parameterTypes.Length];
                         if (exceptionPtr != IntPtr.Zero)
-                            Unsafe.Write<IntPtr>(exceptionPtr.ToPointer(), ManagedHandle.ToIntPtr(exception, GCHandleType.Weak));
+                        {
+                            Unsafe.Write<IntPtr>(exceptionPtr.ToPointer(), ManagedHandle.ToIntPtr(exception,
+                                GCHandleType.Weak));
+                        }
                         return IntPtr.Zero;
                     }
                     return returnValue;
@@ -1908,23 +2346,31 @@ namespace SE.Interop
                                 type = elementType;
                             }
                             if (type.IsArray)
-                                managed = MarshalToManaged(nativePtr, type); // Array might be in internal format of custom structs so unbox if need to
+                            {
+                                managed = MarshalToManaged(nativePtr, type);
+                            } // Array might be in internal format of custom structs so unbox if need to
                             else
+                            {
                                 managed = ManagedHandle.FromIntPtr(nativePtr).Target;
+                            }
                         }
                         methodParameters[i] = managed;
                     }
 
                     try
                     {
-                        returnObject = method.Invoke(instanceHandle.IsAllocated ? instanceHandle.Target : null, methodParameters);
+                        returnObject = method.Invoke(instanceHandle.IsAllocated ? instanceHandle.Target : null,
+                            methodParameters);
                     }
                     catch (Exception exception)
                     {
                         // Returned exception is the last parameter
                         IntPtr exceptionPtr = nativePtrs[numParams];
                         if (exceptionPtr != IntPtr.Zero)
-                            Unsafe.Write<IntPtr>(exceptionPtr.ToPointer(), ManagedHandle.ToIntPtr(exception, GCHandleType.Weak));
+                        {
+                            Unsafe.Write<IntPtr>(exceptionPtr.ToPointer(), ManagedHandle.ToIntPtr(exception,
+                                GCHandleType.Weak));
+                        }
                         return IntPtr.Zero;
                     }
 
@@ -1938,11 +2384,18 @@ namespace SE.Interop
                         {
                             type = type.GetElementType();
                             if (managed == null)
+                            {
                                 Unsafe.Write<IntPtr>(nativePtr.ToPointer(), IntPtr.Zero);
+                            }
                             else if (type.IsArray)
+                            {
                                 MarshalToNative(managed, nativePtr, type);
+                            }
                             else
-                                Unsafe.Write<IntPtr>(nativePtr.ToPointer(), ManagedHandle.ToIntPtr(ManagedHandle.Alloc(managed, GCHandleType.Weak)));
+                            {
+                                Unsafe.Write<IntPtr>(nativePtr.ToPointer(), ManagedHandle.ToIntPtr(ManagedHandle
+                                    .Alloc(managed, GCHandleType.Weak)));
+                            }
                         }
                     }
 

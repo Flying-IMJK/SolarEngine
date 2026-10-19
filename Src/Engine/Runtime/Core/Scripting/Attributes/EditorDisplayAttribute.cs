@@ -6,7 +6,8 @@ namespace SE
     /// Controls an item's display group and name in the editor.
     /// </summary>
     [Serializable]
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Delegate | AttributeTargets.Event | AttributeTargets.Method)]
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Delegate
+        | AttributeTargets.Event | AttributeTargets.Method)]
     public sealed class EditorDisplayAttribute : Attribute
     {
         /// <summary>
@@ -17,12 +18,12 @@ namespace SE
         /// <summary>
         /// The editor group name.
         /// </summary>
-        public string? Group;
+        public string Group;
 
         /// <summary>
         /// The editor display name.
         /// </summary>
-        public string? Name;
+        public string Name;
 
         private EditorDisplayAttribute()
         {
@@ -31,7 +32,7 @@ namespace SE
         /// <summary>
         /// Initializes a new editor display attribute.
         /// </summary>
-        public EditorDisplayAttribute(string? group = null, string? name = null)
+        public EditorDisplayAttribute(string group = null, string name = null)
         {
             Group = group;
             Name = name;

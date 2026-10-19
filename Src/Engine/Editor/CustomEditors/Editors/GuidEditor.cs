@@ -6,19 +6,21 @@ namespace SE.Editor
     [CustomEditor(typeof(Guid)), DefaultEditor]
     public sealed class GuidEditor : CustomEditor
     {
-        private TextBox _textBox = null!;
-        private Color _defaultWatermarkColor;
+        private TextBox m_TextBox = null!;
+        private Color m_DefaultWatermarkColor;
 
         public override DisplayStyle Style => DisplayStyle.Inline;
 
         public override void Initialize(LayoutElementsContainer layout)
         {
-            _textBox = new TextBox(false, 0, 0) { Parent = layout.ContainerControl };
-            _defaultWatermarkColor = _textBox.WatermarkTextColor;
-            _textBox.EditEnd += () =>
+            m_TextBox = new TextBox(false, 0, 0) { Parent = layout.ContainerControl };
+            m_DefaultWatermarkColor = m_TextBox.WatermarkTextColor;
+            m_TextBox.EditEnd += () =>
             {
-                if (Guid.TryParse(_textBox.Text, out Guid value))
+                if (Guid.TryParse(m_TextBox.Text, out Guid value))
+                {
                     SetValue(value);
+                }
             };
         }
 
@@ -27,14 +29,14 @@ namespace SE.Editor
             base.Refresh();
             if (HasDifferentValues)
             {
-                _textBox.Text = string.Empty;
-                _textBox.WatermarkTextColor = _defaultWatermarkColor;
-                _textBox.WatermarkText = "Different values";
+                m_TextBox.Text = string.Empty;
+                m_TextBox.WatermarkTextColor = m_DefaultWatermarkColor;
+                m_TextBox.WatermarkText = "Different values";
             }
             else
             {
-                _textBox.Text = ((Guid)Values[0]!).ToString("D");
-                _textBox.WatermarkText = string.Empty;
+                m_TextBox.Text = ((Guid)Values[0]!).ToString("D");
+                m_TextBox.WatermarkText = string.Empty;
             }
         }
     }

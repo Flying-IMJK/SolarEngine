@@ -19,7 +19,7 @@ namespace SE.Editor.GUI
         /// <returns>True if text is valid, otherwise false.</returns>
         public delegate bool ValidateFunc(RenamePopup popup, ref string value);
 
-        private TextBox _inputField;
+        private TextBox m_InputField;
 
         /// <summary>
         /// Occurs when renaming is done.
@@ -46,14 +46,14 @@ namespace SE.Editor.GUI
         /// </summary>
         public string Text
         {
-            get => _inputField.Text;
-            set => _inputField.Text = value;
+            get => m_InputField.Text;
+            set => m_InputField.Text = value;
         }
 
         /// <summary>
         /// Gets the text input field control.
         /// </summary>
-        public TextBox InputField => _inputField;
+        public TextBox InputField => m_InputField;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RenamePopup"/> class.
@@ -71,12 +71,12 @@ namespace SE.Editor.GUI
 
             InitialValue = value;
 
-            _inputField = new TextBox(isMultiline, 0, 0, size.Y);
-            _inputField.TextChanged += OnTextChanged;
-            _inputField.AnchorPreset = AnchorPresets.StretchAll;
-            _inputField.Offsets = Margin.Zero;
-            _inputField.Text = InitialValue;
-            _inputField.Parent = this;
+            m_InputField = new TextBox(isMultiline, 0, 0, size.Y);
+            m_InputField.TextChanged += OnTextChanged;
+            m_InputField.AnchorPreset = AnchorPresets.StretchAll;
+            m_InputField.Offsets = Margin.Zero;
+            m_InputField.Text = InitialValue;
+            m_InputField.Parent = this;
         }
 
         /// <inheritdoc />
@@ -142,7 +142,7 @@ namespace SE.Editor.GUI
             Renamed = null;
             Closed = null;
             Validate = null;
-            _inputField = null;
+            m_InputField = null;
 
             base.OnDestroy();
         }
@@ -155,9 +155,9 @@ namespace SE.Editor.GUI
         /// <inheritdoc />
         protected override void OnShow()
         {
-            _inputField.EndEditOnClick = false; // Ending edit is handled through popup
-            _inputField.Focus();
-            _inputField.SelectAll();
+            m_InputField.EndEditOnClick = false; // Ending edit is handled through popup
+            m_InputField.Focus();
+            m_InputField.SelectAll();
 
             base.OnShow();
         }
@@ -196,34 +196,34 @@ namespace SE.Editor.GUI
             Style style = Style.Current;
             if (valid)
             {
-                _inputField.BorderColor = Color.Transparent;
-                _inputField.BorderSelectedColor = style.BackgroundSelected;
+                m_InputField.BorderColor = Color.Transparent;
+                m_InputField.BorderSelectedColor = style.BackgroundSelected;
             }
             else
             {
                 Color color = new Color(1.0f, 0.0f, 0.02745f, 1.0f);
-                _inputField.BorderColor = Color.Lerp(color, style.TextBoxBackground, 0.6f);
-                _inputField.BorderSelectedColor = color;
+                m_InputField.BorderColor = Color.Lerp(color, style.TextBoxBackground, 0.6f);
+                m_InputField.BorderSelectedColor = color;
             }
         }
 
         private bool GetIsInputValid()
         {
-            if (string.IsNullOrEmpty(_inputField.Text))
+            if (string.IsNullOrEmpty(m_InputField.Text))
             {
                 return false;
             }
 
-            if (_inputField.Text == InitialValue || Validate == null)
+            if (m_InputField.Text == InitialValue || Validate == null)
             {
                 return true;
             }
 
-            string text = _inputField.Text;
+            string text = m_InputField.Text;
             bool valid = Validate(this, ref text);
-            if (text != _inputField.Text)
+            if (text != m_InputField.Text)
             {
-                _inputField.SetText(text);
+                m_InputField.SetText(text);
             }
 
             return valid;

@@ -21,7 +21,8 @@ namespace SE
         }
 
         /// <summary>
-        /// The size of the imported texture. If Resize property is set to true then texture will be resized during the import to this value. Otherwise it will be ignored.
+        /// The size of the imported texture. If Resize property is set to true then texture will be resized during the
+        /// import to this value. Otherwise it will be ignored.
         /// </summary>
         [EditorOrder(110), DefaultValue(typeof(Int2), "1024,1024")]
         public Int2 Size
@@ -35,14 +36,15 @@ namespace SE
         }
 
         /// <summary>
-        /// Maximum size of the texture (for both width and height). Higher resolution textures will be resized during importing process.
+        /// Maximum size of the texture (for both width and height). Higher resolution textures will be resized during
+        /// importing process.
         /// </summary>
         [EditorOrder(90), DefaultValue(CustomMaxSizes._8192), EditorDisplay(null, "Max Size")]
         public CustomMaxSizes CustomMaxSize
         {
             get
             {
-                var value = MaxSize;
+                int value = MaxSize;
                 if (!Mathf.IsPowerOfTwo(value))
                 {
                     value = Mathf.NextPowerOfTwo(value);
@@ -51,7 +53,7 @@ namespace SE
                 FieldInfo[] fields = typeof(CustomMaxSizes).GetFields();
                 for (int i = 0; i < fields.Length; i++)
                 {
-                    var @field = fields[i];
+                    FieldInfo @field = fields[i];
                     if (@field.Name.Equals("value__"))
                     {
                         continue;
@@ -67,9 +69,9 @@ namespace SE
             set => MaxSize = (int)value;
         }
 
-        private static bool m__DefaultValid = false;
+        private static bool s_DefaultValid = false;
 
-        private static TextureUtilsOptions m_Default;
+        private static TextureUtilsOptions s_Default;
 
         /// <summary>
         /// The default <see cref="Options"/>.
@@ -78,14 +80,14 @@ namespace SE
         {
             get
             {
-                if (!m__DefaultValid)
+                if (!s_DefaultValid)
                 {
-                    m__DefaultValid = true;
-                    object obj = m_Default;
+                    s_DefaultValid = true;
+                    object obj = s_Default;
                     Utils.InitStructure(obj, typeof(TextureUtilsOptions));
-                    m_Default = (TextureUtilsOptions)obj;
+                    s_Default = (TextureUtilsOptions)obj;
                 }
-                return m_Default;
+                return s_Default;
             }
         }
     }

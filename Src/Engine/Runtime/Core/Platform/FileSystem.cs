@@ -13,22 +13,26 @@ namespace SE
         /// <param name="dstDirectoryPath">The destination directory path.</param>
         /// <param name="copySubDirs">If set to <c>true</c> copy subdirectories.</param>
         /// <param name="overrideFiles">if set to <c>true</c> override existing files.</param>
-        public static void DirectoryCopy(string srcDirectoryPath, string dstDirectoryPath, bool copySubDirs = true, bool overrideFiles = false)
+        public static void DirectoryCopy(string srcDirectoryPath, string dstDirectoryPath, bool copySubDirs = true,
+            bool overrideFiles = false)
         {
-            var dir = new DirectoryInfo(srcDirectoryPath);
+            DirectoryInfo dir = new DirectoryInfo(srcDirectoryPath);
             if (!dir.Exists)
+            {
                 throw new DirectoryNotFoundException("Missing source directory to copy. " + srcDirectoryPath);
+            }
             DirectoryCopy(dir, dstDirectoryPath, copySubDirs, overrideFiles);
         }
 
-        private static void DirectoryCopy(DirectoryInfo dir, string dstDirectoryPath, bool copySubDirs = true, bool overrideFiles = false)
+        private static void DirectoryCopy(DirectoryInfo dir, string dstDirectoryPath, bool copySubDirs = true,
+            bool overrideFiles = false)
         {
             if (!Directory.Exists(dstDirectoryPath))
             {
                 Directory.CreateDirectory(dstDirectoryPath);
             }
 
-            var files = dir.GetFiles();
+            FileInfo[] files = dir.GetFiles();
             for (int i = 0; i < files.Length; i++)
             {
                 string tmp = Path.Combine(dstDirectoryPath, files[i].Name);
@@ -37,7 +41,7 @@ namespace SE
 
             if (copySubDirs)
             {
-                var dirs = dir.GetDirectories();
+                DirectoryInfo[] dirs = dir.GetDirectories();
                 for (int i = 0; i < dirs.Length; i++)
                 {
                     string tmp = Path.Combine(dstDirectoryPath, dirs[i].Name);
@@ -72,13 +76,15 @@ namespace SE
             {
                 return path;
             }
-            var chars = path.ToCharArray();
+            char[] chars = path.ToCharArray();
 
             // Convert all '\' to '/'
             for (int i = 0; i < chars.Length; i++)
             {
                 if (chars[i] == '\\')
+                {
                     chars[i] = '/';
+                }
             }
 
             // Normalize the separator after a drive letter, as the native implementation does.
@@ -99,7 +105,9 @@ namespace SE
         public static string NormalizeExtension(string extension)
         {
             if (extension.Length != 0 && extension[0] == '.')
+            {
                 extension = extension.Remove(0, 1);
+            }
             return extension.ToLower();
         }
 

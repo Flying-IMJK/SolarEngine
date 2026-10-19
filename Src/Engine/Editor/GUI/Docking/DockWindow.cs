@@ -9,8 +9,8 @@ namespace SE.Editor.GUI
     /// </summary>
     public class DockWindow : Panel
     {
-        private string _title = string.Empty;
-        private Float2 _titleSize;
+        private string m_Title = string.Empty;
+        private Float2 m_TitleSize;
 
         /// <summary>
         /// The master panel.
@@ -81,12 +81,12 @@ namespace SE.Editor.GUI
         protected override void PerformLayoutBeforeChildren()
         {
             // Cache window title dimensions
-            if (_titleSize.X <= 0)
+            if (m_TitleSize.X <= 0)
             {
                 Style style = Style.Current;
                 if (style != null && style.FontMedium != null)
                 {
-                    _titleSize = style.FontMedium.MeasureText(_title, TextLayoutOptions.Default);
+                    m_TitleSize = style.FontMedium.MeasureText(m_Title, TextLayoutOptions.Default);
                 }
             }
 
@@ -152,13 +152,13 @@ namespace SE.Editor.GUI
         /// </summary>
         public string Title
         {
-            get => _title;
+            get => m_Title;
             set
             {
-                _title = value;
+                m_Title = value;
 
                 // Invalidate cached title size
-                _titleSize = new Float2(-1);
+                m_TitleSize = new Float2(-1);
                 PerformLayoutBeforeChildren();
 
                 // Check if is docked to the floating window and is selected so update window title
@@ -177,7 +177,7 @@ namespace SE.Editor.GUI
         /// <summary>
         /// Gets the size of the title.
         /// </summary>
-        public Float2 TitleSize => _titleSize;
+        public Float2 TitleSize => m_TitleSize;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DockWindow"/> class.
@@ -235,13 +235,15 @@ namespace SE.Editor.GUI
         /// <param name="location">Window location.</param>
         /// <param name="size">Window size, set <see cref="Float2.Zero"/> to use default.</param>
         /// <param name="position">Window location.</param>
-        public void ShowFloating(Float2 location, Float2 size, WindowStartPosition position = WindowStartPosition.CenterParent)
+        public void ShowFloating(Float2 location, Float2 size, WindowStartPosition position = WindowStartPosition
+            .CenterParent)
         {
             Undock();
 
             // Create window
             Float2 winSize = size.LengthSquared > 4 ? size : DefaultSize;
-            SE.Window window = FloatWindowDockPanel.CreateFloatWindow(_masterPanel.Root, location, winSize, position, _title);
+            SE.Window window = FloatWindowDockPanel.CreateFloatWindow(_masterPanel.Root, location, winSize,
+                position, m_Title);
             WindowRootControl windowGUI = window.GUI;
 
             // Create dock panel for the window
@@ -268,9 +270,12 @@ namespace SE.Editor.GUI
         /// </summary>
         /// <param name="state">Initial window state.</param>
         /// <param name="toDock">Panel to dock to it.</param>
-        /// <param name="autoSelect">Only used if <paramref name="toDock"/> is set. If true the window will be selected after docking it.</param>
-        /// <param name="splitterValue">Only used if <paramref name="toDock"/> is set. The splitter value to use. If not specified, a default value will be used.</param>
-        public void Show(DockState state = DockState.Float, DockPanel toDock = null, bool autoSelect = true, float splitterValue = 0)
+        /// <param name="autoSelect"> Only used if <paramref name="toDock"/> is set. If true the window will be selected
+        /// after docking it.</param>
+        /// <param name="splitterValue"> Only used if <paramref name="toDock"/> is set. The splitter value to use. If
+        /// not specified, a default value will be used.</param>
+        public void Show(DockState state = DockState.Float, DockPanel toDock = null, bool autoSelect = true,
+            float splitterValue = 0)
         {
             if (state == DockState.Hidden)
             {
@@ -419,7 +424,8 @@ namespace SE.Editor.GUI
         public virtual bool UseLayoutData => false;
 
         /// <summary>
-        /// Called when during windows layout deserialization if window has no layout data to load. Can be used to restore default UI layout.
+        /// Called when during windows layout deserialization if window has no layout data to load. Can be used to
+        /// restore default UI layout.
         /// </summary>
         public virtual void OnLayoutDeserialize()
         {
@@ -466,7 +472,8 @@ namespace SE.Editor.GUI
         }
 
         /// <summary>
-        /// Called when dock panel wants to show the context menu for this window. Can be used to inject custom buttons and items to the context menu (on top).
+        /// Called when dock panel wants to show the context menu for this window. Can be used to inject custom buttons
+        /// and items to the context menu (on top).
         /// </summary>
         /// <param name="menu">The menu.</param>
         public virtual void OnShowContextMenu(ContextMenu menu)

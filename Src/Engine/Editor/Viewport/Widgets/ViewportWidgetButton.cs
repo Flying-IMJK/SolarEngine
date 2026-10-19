@@ -8,11 +8,11 @@ namespace SE.Editor
 {
     public class ViewportWidgetButton : Control
     {
-        private string _text;
-        private ContextMenu _cm;
-        private bool _autoCheck;
-        private bool _isMosueDown;
-        private float _forcedTextWidth;
+        private string m_Text;
+        private ContextMenu m_Cm;
+        private bool m_AutoCheck;
+        private bool m_IsMosueDown;
+        private float m_ForcedTextWidth;
 
         /// <summary>
         /// Event fired when user toggles checked state.
@@ -34,10 +34,10 @@ namespace SE.Editor
         /// </summary>
         public string Text
         {
-            get => _text;
+            get => m_Text;
             set
             {
-                _text = value;
+                m_Text = value;
                 PerformLayout();
             }
         }
@@ -55,18 +55,19 @@ namespace SE.Editor
         /// <param name="contextMenu">The context menu.</param>
         /// <param name="autoCheck">If set to <c>true</c> will be automatic checked on mouse click.</param>
         /// <param name="textWidth">Forces the text to be drawn with the specified width.</param>
-        public ViewportWidgetButton(string text, SpriteHandle icon, ContextMenu contextMenu = null, bool autoCheck = false, float textWidth = 0.0f)
+        public ViewportWidgetButton(string text, SpriteHandle icon, ContextMenu contextMenu = null, bool autoCheck =
+            false, float textWidth = 0.0f)
             : base(0, 0, CalculateButtonWidth(textWidth, icon.IsValid), ViewportWidgetsContainer.WidgetsHeight)
         {
-            _text = text;
+            m_Text = text;
             Icon = icon;
-            _cm = contextMenu;
-            _autoCheck = autoCheck;
-            _forcedTextWidth = textWidth;
+            m_Cm = contextMenu;
+            m_AutoCheck = autoCheck;
+            m_ForcedTextWidth = textWidth;
 
-            if (_cm != null)
+            if (m_Cm != null)
             {
-                _cm.VisibleChanged += CmOnVisibleChanged;
+                m_Cm.VisibleChanged += CmOnVisibleChanged;
             }
         }
 
@@ -84,7 +85,7 @@ namespace SE.Editor
             {
                 Render2D.FillRectangle(textRect, style.BackgroundSelected * (IsMouseOver ? 0.9f : 0.6f));
             }
-            else if (_autoCheck && IsMouseOver)
+            else if (m_AutoCheck && IsMouseOver)
             {
                 Render2D.FillRectangle(textRect, style.BackgroundHighlighted);
             }
@@ -101,7 +102,8 @@ namespace SE.Editor
             }
 
             // Draw text
-            Render2D.RenderText(style.FontMedium, _text, textRect, style.ForegroundViewport * (IsMouseOver ? 1.0f : 0.9f),
+            Render2D.RenderText(style.FontMedium, m_Text, textRect, style.ForegroundViewport * (IsMouseOver ? 1.0f
+                : 0.9f),
                 TextAlignment.Center, TextAlignment.Center);
         }
 
@@ -110,18 +112,18 @@ namespace SE.Editor
         {
             if (button == MouseButton.Left)
             {
-                _isMosueDown = true;
+                m_IsMosueDown = true;
             }
-            if (_autoCheck)
+            if (m_AutoCheck)
             {
                 // Toggle
                 Checked = !Checked;
                 Toggled?.Invoke(this);
             }
 
-            if (_cm != null)
+            if (m_Cm != null)
             {
-                _cm.Show(this, new Float2(-1, Height + 2));
+                m_Cm.Show(this, new Float2(-1, Height + 2));
             }
 
             return base.OnMouseDown(location, button);
@@ -130,9 +132,9 @@ namespace SE.Editor
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (button == MouseButton.Left && _isMosueDown)
+            if (button == MouseButton.Left && m_IsMosueDown)
             {
-                _isMosueDown = false;
+                m_IsMosueDown = false;
                 Clicked?.Invoke(this);
             }
 
@@ -146,14 +148,15 @@ namespace SE.Editor
 
             if (style != null && style.FontMedium != null)
             {
-                Width = CalculateButtonWidth(_forcedTextWidth > 0.0f ? _forcedTextWidth : style.FontMedium.MeasureText(_text, TextLayoutOptions.Default).X,
+                Width = CalculateButtonWidth(m_ForcedTextWidth > 0.0f ? m_ForcedTextWidth : style.FontMedium
+                    .MeasureText(m_Text, TextLayoutOptions.Default).X,
                     Icon.IsValid);
             }
         }
 
         private void CmOnVisibleChanged(Control control)
         {
-            if (_cm != null && !_cm.IsOpened)
+            if (m_Cm != null && !m_Cm.IsOpened)
             {
                 if (HasParent && Parent.HasParent)
                 {

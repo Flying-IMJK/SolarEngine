@@ -35,8 +35,8 @@ namespace SE.GUI
         /// </summary>
         public TextAlignment VerticalAlignment
         {
-            get => _layout.VerticalAlignment;
-            set => _layout.VerticalAlignment = value;
+            get => m_Layout.VerticalAlignment;
+            set => m_Layout.VerticalAlignment = value;
         }
 
         /// <summary>
@@ -44,8 +44,8 @@ namespace SE.GUI
         /// </summary>
         public TextAlignment HorizontalAlignment
         {
-            get => _layout.HorizontalAlignment;
-            set => _layout.HorizontalAlignment = value;
+            get => m_Layout.HorizontalAlignment;
+            set => m_Layout.HorizontalAlignment = value;
         }
 
         /// <summary>
@@ -53,8 +53,8 @@ namespace SE.GUI
         /// </summary>
         public TextWrapping Wrapping
         {
-            get => _layout.TextWrapping;
-            set => _layout.TextWrapping = value;
+            get => m_Layout.TextWrapping;
+            set => m_Layout.TextWrapping = value;
         }
 
         /// <summary>
@@ -63,7 +63,8 @@ namespace SE.GUI
         public FontReference Font = new FontReference();
 
         /// <summary>
-        /// Gets or sets the custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.
+        /// Gets or sets the custom material used to render the text. It must has domain set to GUI and have a public
+        /// texture parameter named Font used to sample font atlas texture with font characters data.
         /// </summary>
         public MaterialBase TextMaterial;
 
@@ -95,10 +96,10 @@ namespace SE.GUI
         /// <param name="width">Width</param>
         public TextBox(bool isMultiline, float x, float y, float width = 120) : base(isMultiline, x, y, width)
         {
-            _layout = TextLayoutOptions.Default;
-            _layout.VerticalAlignment = IsMultiline ? TextAlignment.Near : TextAlignment.Center;
-            _layout.TextWrapping = TextWrapping.NoWrap;
-            _layout.Bounds = new Rectangle(DefaultMargin, 1, Width - 2 * DefaultMargin, Height - 2);
+            m_Layout = TextLayoutOptions.Default;
+            m_Layout.VerticalAlignment = IsMultiline ? TextAlignment.Near : TextAlignment.Center;
+            m_Layout.TextWrapping = TextWrapping.NoWrap;
+            m_Layout.Bounds = new Rectangle(DefaultMargin, 1, Width - 2 * DefaultMargin, Height - 2);
 
             Style style = Style.Current;
             Font = new FontReference(style.FontMedium);
@@ -116,7 +117,7 @@ namespace SE.GUI
                 return Float2.Zero;
             }
 
-            return font.MeasureText(ConvertedText(), _layout);
+            return font.MeasureText(ConvertedText(), m_Layout);
         }
 
         /// <inheritdoc />
@@ -129,7 +130,7 @@ namespace SE.GUI
                 return Float2.Zero;
             }
             height = font.GetHeight() / GetDpiScale();
-            return font.GetCharPosition(ConvertedText(), index, _layout);
+            return font.GetCharPosition(ConvertedText(), index, m_Layout);
         }
 
         /// <inheritdoc />
@@ -141,7 +142,7 @@ namespace SE.GUI
                 return 0;
             }
 
-            return font.HitTestText(ConvertedText(), location, _layout);
+            return font.HitTestText(ConvertedText(), location, m_Layout);
         }
 
         /// <inheritdoc />
@@ -185,8 +186,8 @@ namespace SE.GUI
             // Check if sth is selected to draw selection
             if (HasSelection)
             {
-                Float2 leftEdge = font.GetCharPosition(text, SelectionLeft, _layout);
-                Float2 rightEdge = font.GetCharPosition(text, SelectionRight, _layout);
+                Float2 leftEdge = font.GetCharPosition(text, SelectionLeft, m_Layout);
+                Float2 rightEdge = font.GetCharPosition(text, SelectionRight, m_Layout);
                 float fontHeight = font.GetHeight();
                 float textHeight = fontHeight / GetDpiScale();
 
@@ -203,7 +204,7 @@ namespace SE.GUI
                 }
                 else
                 {
-                    float leftMargin = _layout.Bounds.Location.X;
+                    float leftMargin = m_Layout.Bounds.Location.X;
 
                     // Selected is more than one line
                     Rectangle r1 = new Rectangle(leftEdge.X, leftEdge.Y, 1000000000, fontHeight);
@@ -228,11 +229,11 @@ namespace SE.GUI
                     color *= 0.6f;
                 }
 
-                Render2D.RenderText(font, text, color, _layout, TextMaterial);
+                Render2D.RenderText(font, text, color, m_Layout, TextMaterial);
             }
             else if (_watermarkText.Length > 0)
             {
-                Render2D.RenderText(font, _watermarkText, WatermarkTextColor, _layout, TextMaterial);
+                Render2D.RenderText(font, _watermarkText, WatermarkTextColor, m_Layout, TextMaterial);
             }
 
             // Caret
@@ -244,22 +245,22 @@ namespace SE.GUI
                 if (CaretPosition == 0)
                 {
                     Rectangle bounds = CaretBounds;
-                    if (_layout.VerticalAlignment == TextAlignment.Center)
+                    if (m_Layout.VerticalAlignment == TextAlignment.Center)
                     {
-                        bounds.Y = _layout.Bounds.Y + _layout.Bounds.Height * 0.5f - bounds.Height * 0.5f;
+                        bounds.Y = m_Layout.Bounds.Y + m_Layout.Bounds.Height * 0.5f - bounds.Height * 0.5f;
                     }
-                    else if (_layout.VerticalAlignment == TextAlignment.Far)
+                    else if (m_Layout.VerticalAlignment == TextAlignment.Far)
                     {
-                        bounds.Y = _layout.Bounds.Y + _layout.Bounds.Height - bounds.Height;
+                        bounds.Y = m_Layout.Bounds.Y + m_Layout.Bounds.Height - bounds.Height;
                     }
 
-                    if (_layout.HorizontalAlignment == TextAlignment.Center)
+                    if (m_Layout.HorizontalAlignment == TextAlignment.Center)
                     {
-                        bounds.X = _layout.Bounds.X + _layout.Bounds.Width * 0.5f - bounds.Width * 0.5f;
+                        bounds.X = m_Layout.Bounds.X + m_Layout.Bounds.Width * 0.5f - bounds.Width * 0.5f;
                     }
-                    else if (_layout.HorizontalAlignment == TextAlignment.Far)
+                    else if (m_Layout.HorizontalAlignment == TextAlignment.Far)
                     {
-                        bounds.X = _layout.Bounds.X + _layout.Bounds.Width - bounds.Width;
+                        bounds.X = m_Layout.Bounds.X + m_Layout.Bounds.Width - bounds.Width;
                     }
                     Render2D.FillRectangle(bounds, CaretColor * alpha);
                 }
@@ -296,14 +297,14 @@ namespace SE.GUI
         protected override void OnIsMultilineChanged()
         {
             base.OnIsMultilineChanged();
-            _layout.VerticalAlignment = IsMultiline ? TextAlignment.Near : TextAlignment.Center;
+            m_Layout.VerticalAlignment = IsMultiline ? TextAlignment.Near : TextAlignment.Center;
         }
 
         /// <inheritdoc />
         protected override void OnSizeChanged()
         {
             base.OnSizeChanged();
-            _layout.Bounds = TextRectangle;
+            m_Layout.Bounds = TextRectangle;
         }
 
         /// <summary>
@@ -311,7 +312,7 @@ namespace SE.GUI
         /// </summary>
         protected string _watermarkText = string.Empty;
 
-        private TextLayoutOptions _layout;
+        private TextLayoutOptions m_Layout;
 
         private SE.Font GetFont()
         {

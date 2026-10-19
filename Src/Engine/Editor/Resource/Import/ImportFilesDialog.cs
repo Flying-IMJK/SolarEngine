@@ -26,7 +26,7 @@ namespace SE.Editor
         {
             get
             {
-                var result = 0;
+                int result = 0;
                 for (int i = 0; i < m_RootNode.ChildrenCount; i++)
                 {
                     if (m_RootNode.Children[i].Tag is ImportFileEntry)
@@ -49,12 +49,12 @@ namespace SE.Editor
                 throw new ArgumentNullException();
             }
 
-            const float TotalWidth = 920;
-            const float EditorHeight = 450;
-            Width = TotalWidth;
+            const float totalWidth = 920;
+            const float editorHeight = 450;
+            Width = totalWidth;
 
             // Header and help description
-            var headerLabel = new Label
+            Label headerLabel = new Label
             {
                 Text = "Import settings",
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
@@ -62,7 +62,7 @@ namespace SE.Editor
                 Parent = this,
                 Font = new FontReference(Style.Current.FontTitle)
             };
-            var infoLabel = new Label
+            Label infoLabel = new Label
             {
                 Text = "Specify options for importing files. Every file can have different settings. Select entries on the left panel to modify them.\nPro Tip: hold CTRL key and select entries to edit multiple at once or use CTRL+A to select them all.",
                 HorizontalAlignment = TextAlignment.Near,
@@ -73,31 +73,33 @@ namespace SE.Editor
             };
 
             // Buttons
-            const float ButtonsWidth = 60;
-            const float ButtonsHeight = 24;
-            const float ButtonsMargin = 8;
-            var importButton = new Button(0, 0, ButtonsWidth, ButtonsHeight)
+            const float buttonsWidth = 60;
+            const float buttonsHeight = 24;
+            const float buttonsMargin = 8;
+            Button importButton = new Button(0, 0, buttonsWidth, buttonsHeight)
             {
                 Text = "Import",
                 AnchorPreset = AnchorPresets.BottomRight,
-                Offsets = new Margin(-ButtonsWidth - ButtonsMargin, ButtonsWidth, -ButtonsHeight - ButtonsMargin, ButtonsHeight),
+                Offsets = new Margin(-buttonsWidth - buttonsMargin, buttonsWidth, -buttonsHeight - buttonsMargin,
+                    buttonsHeight),
                 Parent = this
             };
             importButton.Clicked += OnSubmit;
-            var cancelButton = new Button(0, 0, ButtonsWidth, ButtonsHeight)
+            Button cancelButton = new Button(0, 0, buttonsWidth, buttonsHeight)
             {
                 Text = "Cancel",
                 AnchorPreset = AnchorPresets.BottomRight,
-                Offsets = new Margin(-ButtonsWidth - ButtonsMargin - ButtonsWidth - ButtonsMargin, ButtonsWidth, -ButtonsHeight - ButtonsMargin, ButtonsHeight),
+                Offsets = new Margin(-buttonsWidth - buttonsMargin - buttonsWidth - buttonsMargin, buttonsWidth,
+                    -buttonsHeight - buttonsMargin, buttonsHeight),
                 Parent = this
             };
             cancelButton.Clicked += OnCancel;
 
             // Split panel for entries list and settings editor
-            var splitPanel = new SplitPanel(Orientation.Horizontal, ScrollBars.Both, ScrollBars.Vertical)
+            SplitPanel splitPanel = new SplitPanel(Orientation.Horizontal, ScrollBars.Both, ScrollBars.Vertical)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = new Margin(2, 2, infoLabel.Bottom + 2, ButtonsHeight + ButtonsMargin + ButtonsMargin),
+                Offsets = new Margin(2, 2, infoLabel.Bottom + 2, buttonsHeight + buttonsMargin + buttonsMargin),
                 Parent = this
             };
 
@@ -114,10 +116,10 @@ namespace SE.Editor
             m_RootNode = new TreeNode(false);
             for (int i = 0; i < entries.Count; i++)
             {
-                var entry = entries[i];
+                ImportFileEntry entry = entries[i];
 
                 // TODO: add icons for textures/models/etc from FileEntry to tree node??
-                var node = new ItemNode(entry)
+                ItemNode node = new ItemNode(entry)
                 {
                     Parent = m_RootNode
                 };
@@ -131,14 +133,14 @@ namespace SE.Editor
             // Select the first item
             m_Tree.Select(m_RootNode.Children[0] as TreeNode);
 
-            m_DialogSize = new Float2(TotalWidth, EditorHeight + splitPanel.Offsets.Height);
+            m_DialogSize = new Float2(totalWidth, editorHeight + splitPanel.Offsets.Height);
         }
 
 
 
         private void OnTreeRightClick(TreeNode node, Float2 location)
         {
-            var menu = new ContextMenu();
+            ContextMenu menu = new ContextMenu();
             menu.AddButton("Rename", OnRenameClicked);
             menu.AddButton("Don't import", OnDontImportClicked);
             menu.AddButton("Show in Explorer", OnShowInExplorerClicked);
@@ -148,7 +150,7 @@ namespace SE.Editor
 
         private void OnRenameClicked(ContextMenuButton button)
         {
-            var node = (ItemNode)button.ParentContextMenu.Tag;
+            ItemNode node = (ItemNode)button.ParentContextMenu.Tag;
             node.StartRenaming();
         }
 
@@ -160,7 +162,7 @@ namespace SE.Editor
                 return;
             }
 
-            var node = (ItemNode)button.ParentContextMenu.Tag;
+            ItemNode node = (ItemNode)button.ParentContextMenu.Tag;
             if (m_SettingsEditor.Selection.Count == 1 && m_SettingsEditor.Selection[0] == node.Entry.Settings)
             {
                 m_SettingsEditor.Deselect();
@@ -170,7 +172,7 @@ namespace SE.Editor
 
         private void OnShowInExplorerClicked(ContextMenuButton button)
         {
-            var node = (ItemNode)button.ParentContextMenu.Tag;
+            ItemNode node = (ItemNode)button.ParentContextMenu.Tag;
             FileSystem.ShowFileExplorer(Path.GetDirectoryName(node.Entry.SourceUrl));
         }
 
@@ -196,12 +198,14 @@ namespace SE.Editor
             public override bool OnKeyDown(KeyboardKeys key)
             {
                 if (base.OnKeyDown(key))
+                {
                     return true;
+                }
                 switch (key)
                 {
-                case KeyboardKeys.F2:
-                    StartRenaming();
-                    return true;
+                    case KeyboardKeys.F2:
+                        StartRenaming();
+                        return true;
                 }
                 return false;
             }
@@ -221,7 +225,7 @@ namespace SE.Editor
 
             private void OnRenamed(RenamePopup popup)
             {
-                var entry = (ImportFileEntry)Tag;
+                ImportFileEntry entry = (ImportFileEntry)Tag;
                 entry.ModifyResultFilename(popup.Text);
                 Text = string.Format("{0} ({1})", Path.GetFileName(entry.SourceUrl), popup.Text);
             }
@@ -229,7 +233,7 @@ namespace SE.Editor
 
         private void OnSelectedChanged(List<TreeNode> before, List<TreeNode> after)
         {
-            var selection = new List<object>(after.Count);
+            List<object> selection = new List<object>(after.Count);
             for (int i = 0; i < after.Count; i++)
             {
                 if (after[i].Tag is ImportFileEntry fileEntry && fileEntry.HasSettings)
@@ -246,7 +250,7 @@ namespace SE.Editor
         {
             m_SettingsEditor.Update();
 
-            var entries = new List<ImportFileEntry>(m_RootNode.ChildrenCount);
+            List<ImportFileEntry> entries = new List<ImportFileEntry>(m_RootNode.ChildrenCount);
             for (int i = 0; i < m_RootNode.ChildrenCount; i++)
             {
                 if (m_RootNode.Children[i].Tag is ImportFileEntry fileEntry)
@@ -263,8 +267,6 @@ namespace SE.Editor
         public override void Update(float deltaTime)
         {
             base.Update(deltaTime);
-
-            m_SettingsEditor.Update();
         }
 
 

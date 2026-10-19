@@ -329,7 +329,7 @@ namespace SE
 			return m_Transform;
 		}
 
-		SE_FUNCTION(API(Prop))
+		SE_FUNCTION(API(Prop, Attributes = "HideInEditor"))
 		FORCE_INLINE const Transform& GetTransform() const
 		{
 			return m_Transform;
@@ -339,7 +339,7 @@ namespace SE
 		/// Sets the actor's world transformation.
 		/// </summary>
 		/// <param name="value">The value to set.</param>
-		SE_FUNCTION(API(Prop))
+		SE_FUNCTION(API(Prop, Attributes = "HideInEditor"))
 		void SetTransform(const Transform& value);
 
 		/// <summary>
@@ -393,20 +393,20 @@ namespace SE
 		/// <summary>
 		/// Gets actor rotation matrix.
 		/// </summary>
-		SE_FUNCTION(API(Prop))
+		SE_FUNCTION(API(Prop,  Attributes = "HideInEditor"))
 		Matrix GetRotation() const;
 
 		/// <summary>
 		/// Sets actor rotation matrix.
 		/// </summary>
 		/// <param name="value">The value to set.</param>
-		SE_FUNCTION(API(Prop))
+		SE_FUNCTION(API(Prop,  Attributes = "HideInEditor"))
 		void SetRotation(const Matrix& value);
 
 		/// <summary>
 		/// Gets actor direction vector (forward vector).
 		/// </summary>
-		SE_FUNCTION(API(Prop))
+		SE_FUNCTION(API(Prop, Attributes = "HideInEditor"))
 		FORCE_INLINE Float3 GetForward() const
 		{
 			return Float3::Transform(Float3::Forward, GetOrientation());
@@ -416,7 +416,7 @@ namespace SE
 		/// Sets actor direction vector (forward)
 		/// </summary>
 		/// <param name="value">The value to set.</param>
-		SE_FUNCTION(API(Prop))
+		SE_FUNCTION(API(Prop, Attributes = "HideInEditor"))
 		void SetForward(const Float3& value);
 
 		virtual bool IntersectsItself(const Ray& ray, float& distance, Float3& normal);
@@ -429,7 +429,7 @@ namespace SE
 		/// <summary>
 		/// Gets local transform of the actor in parent actor space.
 		/// </summary>
-		SE_FUNCTION(API(Prop))
+		SE_FUNCTION(API(Prop, Attributes = "HideInEditor"))
 		FORCE_INLINE Transform GetLocalTransform() const
 		{
 			return m_LocalTransform;
@@ -439,13 +439,13 @@ namespace SE
 		/// Sets local transform of the actor in parent actor space.
 		/// </summary>
 		/// <param name="value">The value to set.</param>
-		SE_FUNCTION(API(Prop))
+		SE_FUNCTION(API(Prop, Attributes = "HideInEditor"))
 		void SetLocalTransform(const Transform& value);
 
 		/// <summary>
 		/// Gets local position of the actor in parent actor space.
 		/// </summary>
-		SE_FUNCTION(API(Prop))
+		SE_FUNCTION(API(Prop, Attributes = "HideInEditor"))
 		FORCE_INLINE Float3 GetLocalPosition() const
 		{
 			return m_LocalTransform.Translation;
@@ -455,14 +455,14 @@ namespace SE
 		/// Sets local position of the actor in parent actor space.
 		/// </summary>
 		/// <param name="value">The value to set.</param>
-		SE_FUNCTION(API(Prop))
+		SE_FUNCTION(API(Prop, Attributes = "HideInEditor"))
 		void SetLocalPosition(const Float3& value);
 
 		/// <summary>
 		/// Gets local rotation of the actor in parent actor space.
 		/// </summary>
 		/// <code>Actor.LocalOrientation *= Quaternion.Euler(0, 10 * Time.DeltaTime, 0)</code>
-		SE_FUNCTION(API(Prop))
+		SE_FUNCTION(API(Prop, Attributes = "HideInEditor"))
 		FORCE_INLINE Quaternion GetLocalQuaternion() const
 		{
 			return m_LocalTransform.Orientation;
@@ -472,13 +472,13 @@ namespace SE
 		/// Sets local rotation of the actor in parent actor space.
 		/// </summary>
 		/// <param name="value">The value to set.</param>
-		SE_FUNCTION(API(Prop))
+		SE_FUNCTION(API(Prop, Attributes = "HideInEditor"))
 		void SetLocalQuaternion(const Quaternion& value);
 
 		/// <summary>
 		/// Gets local scale vector of the actor in parent actor space.
 		/// </summary>
-		SE_FUNCTION(API(Prop))
+		SE_FUNCTION(API(Prop, Attributes = "HideInEditor"))
 		FORCE_INLINE Float3 GetLocalScale() const
 		{
 			return m_LocalTransform.Scale;
@@ -488,7 +488,7 @@ namespace SE
 		/// Sets local scale vector of the actor in parent actor space.
 		/// </summary>
 		/// <param name="value">The value to set.</param>
-		SE_FUNCTION(API(Prop))
+		SE_FUNCTION(API(Prop, Attributes = "HideInEditor"))
 		void SetLocalScale(const Float3& value);
 
 

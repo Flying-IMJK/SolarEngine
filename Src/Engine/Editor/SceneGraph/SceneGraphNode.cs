@@ -20,7 +20,9 @@ namespace SE.Editor.SceneGraph
             set
             {
                 if (m_IsEdited == value)
+                {
                     return;
+                }
 
                 m_IsEdited = value;
                 TreeNode.UpdateText();

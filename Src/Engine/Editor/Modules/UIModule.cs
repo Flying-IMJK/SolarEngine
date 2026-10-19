@@ -9,7 +9,7 @@ namespace SE.Editor
     /// </summary>
     public sealed class UIModule : EditorModule
     {
-        private WindowRootControl? m_Root;
+        private WindowRootControl m_Root;
         private float m_LastWidth = float.NaN;
         private float m_LastHeight = float.NaN;
 
@@ -109,7 +109,7 @@ namespace SE.Editor
             m_Root.PerformLayout(true);
         }
 
-        private static void DisposeControl(Control? control)
+        private static void DisposeControl(Control control)
         {
             if (control == null || control.IsDisposed)
             {

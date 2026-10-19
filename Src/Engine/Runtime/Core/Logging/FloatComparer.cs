@@ -95,7 +95,9 @@ namespace SE.Log
         public static bool AreEqualRelative(float expected, float actual, float error)
         {
             if (expected == actual)
+            {
                 return true;
+            }
             float single = Math.Abs(expected);
             float single1 = Math.Abs(actual);
             return Math.Abs((actual - expected) / (single <= single1 ? single1 : single)) <= error;

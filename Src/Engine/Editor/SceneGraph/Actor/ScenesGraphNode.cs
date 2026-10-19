@@ -9,7 +9,7 @@ namespace SE.Editor.SceneGraph
     /// </summary>
     public abstract class ScenesGraphNode : IDisposable
     {
-        private ScenesGraphNode? m_ParentNode;
+        private ScenesGraphNode m_ParentNode;
         private SE.Transform m_Transform = SE.Transform.Identity;
         private int m_OrderInParent;
         private bool m_IsDisposed;
@@ -30,13 +30,13 @@ namespace SE.Editor.SceneGraph
 
         public abstract string Name { get; }
         public Guid ID { get; }
-        public virtual RootGraphNode? Root => ParentNode?.Root;
+        public virtual RootGraphNode Root => ParentNode?.Root;
         public virtual Transform Transform
         {
             get => m_Transform;
             set => m_Transform = value;
         }
-        public abstract SceneGraphNode? ParentScene { get; }
+        public abstract SceneGraphNode ParentScene { get; }
         public virtual int OrderInParent
         {
             get => m_OrderInParent;
@@ -44,26 +44,32 @@ namespace SE.Editor.SceneGraph
         }
         public bool IsDisposed => m_IsDisposed;
 
-        public virtual ScenesGraphNode? ParentNode
+        public virtual ScenesGraphNode ParentNode
         {
             get => m_ParentNode;
             set
             {
                 if (ReferenceEquals(m_ParentNode, value))
+                {
                     return;
+                }
                 if (ReferenceEquals(this, value))
+                {
                     throw new InvalidOperationException("A scene graph node cannot parent itself.");
+                }
 
                 m_ParentNode?.ChildNodes.Remove(this);
                 m_ParentNode = value;
                 if (m_ParentNode != null && !m_ParentNode.ChildNodes.Contains(this))
+                {
                     m_ParentNode.ChildNodes.Add(this);
+                }
 
                 OnParentChanged();
             }
         }
 
-        public abstract SE.Object? GetEditableObject();
+        public abstract SE.Object GetEditableObject();
 
         /// <summary>
         /// Releases this node tree and unlinks this node from its parent.
@@ -71,7 +77,9 @@ namespace SE.Editor.SceneGraph
         public virtual void Dispose()
         {
             if (m_IsDisposed)
+            {
                 return;
+            }
 
             OnDispose();
             if (m_ParentNode != null)
@@ -87,12 +95,16 @@ namespace SE.Editor.SceneGraph
         public virtual void OnDispose()
         {
             if (m_IsDisposed)
+            {
                 return;
+            }
 
             m_IsDisposed = true;
             ScenesGraphNode[] children = ChildNodes.ToArray();
             foreach (ScenesGraphNode child in children)
+            {
                 child.OnDispose();
+            }
             ChildNodes.Clear();
 
             Factory.UnregisterNode(this);

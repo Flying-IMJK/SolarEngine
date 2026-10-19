@@ -29,7 +29,7 @@ namespace SE.Editor
 
             public override IReadOnlyList<ScenesGraphNode> Selection => m_Module.Selection;
 
-            public override void Spawn(SE.Actor actor, SE.Actor? parent)
+            public override void Spawn(SE.Actor actor, SE.Actor parent)
             {
                 // The native root hook is a Flax placeholder whose forwarding
                 // call is commented out. Keep this override intentionally inert.
@@ -38,14 +38,14 @@ namespace SE.Editor
             }
         }
 
-        private Dictionary<ContainerControl, Float2>? m_UiRootSizes;
+        private Dictionary<ContainerControl, Float2> m_UiRootSizes;
 
         public SceneModule(Editor editor)
             : base(editor)
         {
         }
 
-        public event Action? SelectionChanged;
+        public event Action SelectionChanged;
 
         public SceneGraphFactory SceneGraph { get; private set; } = null!;
         public ScenesRootNode Root { get; private set; } = null!;
@@ -57,23 +57,33 @@ namespace SE.Editor
 
         public void Select(SE.Actor actor)
         {
-            ActorGraphNode? node = GetActorNode(actor);
+            ActorGraphNode node = GetActorNode(actor);
             if (node != null)
+            {
                 Select(node);
+            }
         }
 
         public void Select(ScenesGraphNode node, bool additive = false)
         {
             if (node == null)
+            {
                 return;
+            }
 
             if (!additive && Selection.Count == 1 && Selection[0] == node)
+            {
                 return;
+            }
             if (additive && Selection.Contains(node))
+            {
                 return;
+            }
 
             if (!additive)
+            {
                 Selection.Clear();
+            }
             Selection.Add(node);
             SelectionChanged?.Invoke();
         }
@@ -88,10 +98,14 @@ namespace SE.Editor
 
             selection.RemoveAll(node => node == null);
             if (!additive && SequenceEqual(Selection, selection))
+            {
                 return;
+            }
 
             if (!additive)
+            {
                 Selection.Clear();
+            }
             Selection.AddRange(selection);
             SelectionChanged?.Invoke();
         }
@@ -99,7 +113,9 @@ namespace SE.Editor
         public void Deselect()
         {
             if (Selection.Count == 0)
+            {
                 return;
+            }
             Selection.Clear();
             SelectionChanged?.Invoke();
         }
@@ -107,13 +123,17 @@ namespace SE.Editor
         public void SaveScene(SE.Scene scene)
         {
             if (GetActorNode(scene) is SceneGraphNode sceneNode)
+            {
                 SaveScene(sceneNode);
+            }
         }
 
         public void SaveScene(SceneGraphNode sceneNode)
         {
             if (!sceneNode.IsEdited)
+            {
                 return;
+            }
 
             sceneNode.IsEdited = false;
             SE.Level.SaveSceneAsync(sceneNode.Scene);
@@ -122,7 +142,7 @@ namespace SE.Editor
         public void CreateSceneFile(string path)
         {
             // Create a sample scene
-            var scene = new Scene
+            Scene scene = new Scene
             {
                 /*StaticFlags = StaticFlags.FullyStatic*/
             };
@@ -176,7 +196,7 @@ namespace SE.Editor
             }
 
             // Write to file
-            using (var fileStream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read))
+            using (FileStream fileStream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read))
             {
                 fileStream.Write(bytes, 0, bytes.Length);
             }
@@ -205,7 +225,7 @@ namespace SE.Editor
             PasteActor(null);
         }
 
-        public void PasteActor(SE.Actor? pasteTargetActor)
+        public void PasteActor(SE.Actor pasteTargetActor)
         {
             _ = pasteTargetActor;
         }
@@ -216,7 +236,7 @@ namespace SE.Editor
             Delete();
         }
 
-        public void Spawn(SE.Actor actor, SE.Actor? parent = null, bool autoSelect = true)
+        public void Spawn(SE.Actor actor, SE.Actor parent = null, bool autoSelect = true)
         {
             if (!SE.Level.IsAnySceneLoaded)
             {
@@ -225,20 +245,24 @@ namespace SE.Editor
             }
 
             if (parent == null)
+            {
                 SE.Level.SpawnActor(actor);
+            }
             else
+            {
                 SE.Level.SpawnActor(actor, parent);
+            }
 
             SE.Debug.Assert(GetActorNode(actor) != null, "Failed to create scene node for the spawned actor.");
             _ = autoSelect;
         }
 
-        public ActorGraphNode? GetActorNode(SE.Actor? actor)
+        public ActorGraphNode GetActorNode(SE.Actor actor)
         {
             return actor == null ? null : GetActorNode(actor.SceneObjectId);
         }
 
-        public ActorGraphNode? GetActorNode(Guid actorId)
+        public ActorGraphNode GetActorNode(Guid actorId)
         {
             return SceneGraph.FindNode(actorId) as ActorGraphNode;
         }
@@ -288,23 +312,29 @@ namespace SE.Editor
 
         private void OnSceneSaving(SE.Scene scene, Guid sceneId)
         {
-            ContainerControl? uiRoot = RootControl.GetGameRoot();
+            ContainerControl uiRoot = RootControl.GetGameRoot();
             if (uiRoot != null)
+            {
                 OnSaveStart(uiRoot);
+            }
         }
 
         private void OnSceneSaved(SE.Scene scene, Guid sceneId)
         {
-            ContainerControl? uiRoot = RootControl.GetGameRoot();
+            ContainerControl uiRoot = RootControl.GetGameRoot();
             if (uiRoot != null)
+            {
                 OnSaveEnd(uiRoot);
+            }
         }
 
         private void OnSceneSaveError(SE.Scene scene, Guid sceneId)
         {
-            ContainerControl? uiRoot = RootControl.GetGameRoot();
+            ContainerControl uiRoot = RootControl.GetGameRoot();
             if (uiRoot != null)
+            {
                 OnSaveEnd(uiRoot);
+            }
         }
 
         private void OnSceneLoaded(SE.Scene scene, Guid sceneId)
@@ -324,9 +354,11 @@ namespace SE.Editor
 
         private void OnSceneUnloading(SE.Scene scene, Guid sceneId)
         {
-            ActorGraphNode? node = Root.FindChildActor(scene);
+            ActorGraphNode node = Root.FindChildActor(scene);
             if (node == null)
+            {
                 return;
+            }
 
             bool hasSceneSelection = false;
             foreach (ScenesGraphNode selected in Selection)
@@ -343,7 +375,9 @@ namespace SE.Editor
                 foreach (ScenesGraphNode selected in Selection)
                 {
                     if (selected.ParentScene != node)
+                    {
                         newSelection.Add(selected);
+                    }
                 }
                 Select(newSelection);
             }
@@ -353,26 +387,36 @@ namespace SE.Editor
         private void OnActorSpawned(SE.Actor actor)
         {
             if (actor == null || GetActorNode(actor.Scene) == null)
+            {
                 return;
+            }
 
             SE.Actor parentActor = actor.Parent;
             if (parentActor == null)
+            {
                 return;
+            }
 
-            ActorGraphNode? parentNode = GetActorNode(parentActor);
+            ActorGraphNode parentNode = GetActorNode(parentActor);
             if (parentNode == null)
+            {
                 return;
+            }
 
             ActorGraphNode node = SceneGraph.BuildActorNode(actor);
             if (node != null)
+            {
                 node.ParentNode = parentNode;
+            }
         }
 
         private void OnActorDeleted(SE.Actor actor)
         {
-            ActorGraphNode? node = GetActorNode(actor);
+            ActorGraphNode node = GetActorNode(actor);
             if (node == null)
+            {
                 return;
+            }
 
             OnActorDeleted(node);
         }
@@ -392,43 +436,53 @@ namespace SE.Editor
 
         private void OnActorParentChanged(SE.Actor actor, SE.Actor previousParent)
         {
-            ActorGraphNode? node = null;
-            ActorGraphNode? parentNode = GetActorNode(actor.Parent);
-            ActorGraphNode? previousParentNode = GetActorNode(previousParent);
+            ActorGraphNode node = null;
+            ActorGraphNode parentNode = GetActorNode(actor.Parent);
+            ActorGraphNode previousParentNode = GetActorNode(previousParent);
 
             if (previousParentNode != null)
+            {
                 node = previousParentNode.FindChildActor(actor) ?? GetActorNode(actor);
+            }
             else if (parentNode != null)
+            {
                 node = SceneGraph.BuildActorNode(actor);
+            }
 
             if (node == null)
+            {
                 return;
+            }
 
             node.ParentNode = parentNode;
             if (parentNode == null)
             {
                 if (Selection.Contains(node))
+                {
                     Deselect();
+                }
                 node.Dispose();
             }
         }
 
         private void OnActorOrderInParentChanged(SE.Actor actor)
         {
-            ActorGraphNode? node = GetActorNode(actor);
+            ActorGraphNode node = GetActorNode(actor);
             node?.TreeNode.OnOrderInParentChanged();
         }
 
         private void OnActorNameChanged(SE.Actor actor)
         {
-            ActorGraphNode? node = GetActorNode(actor);
+            ActorGraphNode node = GetActorNode(actor);
             node?.TreeNode.UpdateText();
         }
 
         private void OnActorActiveChanged(SE.Actor actor)
         {
             if (GetActorNode(actor) != null)
+            {
                 SE.Debug.Assert(false, "Unreachable code encountered!");
+            }
         }
 
         public void OnSaveStart(ContainerControl uiRoot)

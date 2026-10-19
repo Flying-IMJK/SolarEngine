@@ -11,8 +11,8 @@ namespace SE.Editor.GUI
         private readonly Tree m_Tree;
         private readonly Panel m_SceneTreePanel;
         private readonly List<(string Path, Type ActorType)> m_ActorCreateMenus = new();
-        private bool _isUpdatingSelection;
-        private bool _isMouseDown;
+        private bool m_IsUpdatingSelection;
+        private bool m_IsMouseDown;
 
         public Panel SceneTreePanel => m_SceneTreePanel;
 
@@ -48,7 +48,7 @@ namespace SE.Editor.GUI
             m_Tree.Margin = new Margin(0.0f, 0.0f, -16.0f, m_SceneTreePanel.GetScrollBarsSize());
             m_Tree.IsScrollable = true;
             m_Tree.AddChild(root);
-            m_Tree.SelectedChanged += Tree_OnSelectedChanged;
+            m_Tree.SelectedChanged += TreeOnSelectedChanged;
             m_Tree.RightClick += OnTreeRightClick;
             m_Tree.Name = "SceneHierarchyWindow-Tree";
         }
@@ -56,9 +56,13 @@ namespace SE.Editor.GUI
         public void ScrollingOnSceneTreeView(bool enabled)
         {
             if (m_SceneTreePanel.vScrollBar != null)
+            {
                 m_SceneTreePanel.vScrollBar.ThumbEnabled = enabled;
+            }
             if (m_SceneTreePanel.hScrollBar != null)
+            {
                 m_SceneTreePanel.hScrollBar.ThumbEnabled = enabled;
+            }
         }
 
         public void Search()
@@ -102,10 +106,12 @@ namespace SE.Editor.GUI
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             if (base.OnMouseDown(location, button))
+            {
                 return true;
+            }
             if (button == MouseButton.Right)
             {
-                _isMouseDown = true;
+                m_IsMouseDown = true;
                 return true;
             }
             return false;
@@ -114,10 +120,12 @@ namespace SE.Editor.GUI
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (base.OnMouseUp(location, button))
-                return true;
-            if (_isMouseDown && button == MouseButton.Right)
             {
-                _isMouseDown = false;
+                return true;
+            }
+            if (m_IsMouseDown && button == MouseButton.Right)
+            {
+                m_IsMouseDown = false;
                 ShowContextMenu(Parent, location + m_SearchBox.BottomLeft);
                 return true;
             }
@@ -126,14 +134,14 @@ namespace SE.Editor.GUI
 
         public override void OnLostFocus()
         {
-            _isMouseDown = false;
+            m_IsMouseDown = false;
             base.OnLostFocus();
         }
 
         public override void OnDestroy()
         {
             m_SearchBox.TextChanged -= OnSearchBoxTextChanged;
-            m_Tree.SelectedChanged -= Tree_OnSelectedChanged;
+            m_Tree.SelectedChanged -= TreeOnSelectedChanged;
             m_Tree.RightClick -= OnTreeRightClick;
             base.OnDestroy();
         }
@@ -142,13 +150,17 @@ namespace SE.Editor.GUI
         {
             List<TreeNode> selection = m_Tree.Selection;
             if (selection.Count != 0)
+            {
                 m_SceneTreePanel.ScrollViewTo(selection[selection.Count - 1]);
+            }
         }
 
         private void OnSearchBoxTextChanged()
         {
             if (IsLayoutLocked)
+            {
                 return;
+            }
             m_Tree.LockChildrenRecursive();
             m_Tree.UnlockChildrenRecursive();
             PerformLayout();
@@ -168,16 +180,20 @@ namespace SE.Editor.GUI
         {
             SceneModule sceneModule = Editor.Scene;
             if (Activator.CreateInstance(type) is not SE.Actor actor)
+            {
                 return;
+            }
 
-            SE.Actor? parentActor = null;
+            SE.Actor parentActor = null;
             if (sceneModule.HasSthSelected && sceneModule.Selection[0] is ActorGraphNode actorNode)
             {
                 parentActor = actorNode.Actor;
                 actorNode.TreeNode.Expand();
             }
             if (parentActor == null && SE.Level.ScenesCount > 0)
+            {
                 parentActor = SE.Level.GetScene(SE.Level.ScenesCount - 1);
+            }
             if (parentActor != null)
             {
                 actor.Transform = parentActor.Transform;
@@ -189,17 +205,21 @@ namespace SE.Editor.GUI
             Rename();
         }
 
-        private void Tree_OnSelectedChanged(List<TreeNode> before, List<TreeNode> after)
+        private void TreeOnSelectedChanged(List<TreeNode> before, List<TreeNode> after)
         {
-            if (_isUpdatingSelection)
+            if (m_IsUpdatingSelection)
+            {
                 return;
+            }
             if (after.Count > 0)
             {
                 List<ScenesGraphNode> actors = new(after.Count);
                 foreach (TreeNode node in after)
                 {
                     if (node is ActorTreeNode actorNode && actorNode.GetActor() != null)
+                    {
                         actors.Add(actorNode.GetActorGraphNode());
+                    }
                 }
                 Editor.Scene.Select(actors);
             }
@@ -216,7 +236,7 @@ namespace SE.Editor.GUI
 
         private void OnSelectionChanged()
         {
-            _isUpdatingSelection = true;
+            m_IsUpdatingSelection = true;
             List<ScenesGraphNode> selection = Editor.Scene.Selection;
             if (selection.Count == 0)
             {
@@ -228,7 +248,9 @@ namespace SE.Editor.GUI
                 foreach (ScenesGraphNode selected in selection)
                 {
                     if (selected is ActorGraphNode node)
+                    {
                         nodes.Add(node.TreeNode);
+                    }
                 }
                 m_Tree.Select(nodes);
                 if (nodes.Count == 1)
@@ -237,7 +259,7 @@ namespace SE.Editor.GUI
                     m_SceneTreePanel.ScrollViewTo(nodes[0]);
                 }
             }
-            _isUpdatingSelection = false;
+            m_IsUpdatingSelection = false;
         }
 
         private ContextMenu CreateContextMenu()
@@ -274,14 +296,16 @@ namespace SE.Editor.GUI
             foreach ((string path, Type actorType) in m_ActorCreateMenus)
             {
                 string[] parts = path.Split('/');
-                ContextMenu? menu = null;
+                ContextMenu menu = null;
                 for (int index = 0; index < parts.Length; index++)
                 {
                     string part = parts[index].TrimEnd();
                     if (index == parts.Length - 1)
                     {
                         if (menu == null)
+                        {
                             createMenu.ContextMenu.AddButton(part, () => Spawn(actorType));
+                        }
                         else
                         {
                             menu.AddButton(part, () => Spawn(actorType));
@@ -306,7 +330,9 @@ namespace SE.Editor.GUI
             foreach (ScenesGraphNode selected in Editor.Scene.Selection)
             {
                 if (selected is ActorGraphNode node)
+                {
                     node.TreeNode.ExpandAll();
+                }
             }
         }
 
@@ -315,7 +341,9 @@ namespace SE.Editor.GUI
             foreach (ScenesGraphNode selected in Editor.Scene.Selection)
             {
                 if (selected is ActorGraphNode node)
+                {
                     node.TreeNode.CollapseAll();
+                }
             }
         }
     }

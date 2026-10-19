@@ -5,14 +5,17 @@ namespace SE.Editor.GUI
     [HideInEditor]
     public class DoubleValueBox : ValueBox<double>
     {
-        private Utils.ValueCategory _category = Utils.ValueCategory.None;
+        private Utils.ValueCategory m_Category = Utils.ValueCategory.None;
         public Utils.ValueCategory Category
         {
-            get => _category;
+            get => m_Category;
             set
             {
-                if (_category == value) return;
-                _category = value;
+                if (m_Category == value)
+                {
+                    return;
+                }
+                m_Category = value;
                 UpdateText();
             }
         }
@@ -24,7 +27,10 @@ namespace SE.Editor.GUI
         public override void SetValue(double value)
         {
             value = Mathd.Clamp(value, _min, _max);
-            if (Math.Abs(_value - value) <= Mathd.Epsilon) return;
+            if (Math.Abs(_value - value) <= Mathd.Epsilon)
+            {
+                return;
+            }
             _value = value;
             UpdateText();
             OnValueChanged();
@@ -32,14 +38,20 @@ namespace SE.Editor.GUI
         public override double GetMinValue() => _min;
         public override void SetMinValue(double value)
         {
-            if (value > _max) throw new ArgumentException();
+            if (value > _max)
+            {
+                throw new ArgumentException();
+            }
             _min = value;
             SetValue(_value);
         }
         public override double GetMaxValue() => _max;
         public override void SetMaxValue(double value)
         {
-            if (value < _min) throw new ArgumentException();
+            if (value < _min)
+            {
+                throw new ArgumentException();
+            }
             _max = value;
             SetValue(_value);
         }

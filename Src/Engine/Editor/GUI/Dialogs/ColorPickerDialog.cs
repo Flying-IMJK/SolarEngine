@@ -10,41 +10,47 @@ namespace SE.Editor.GUI.Dialogs
 
     public sealed class ColorPickerDialog : Dialog, IColorPickerDialog
     {
-        private readonly Color _initialValue;
-        private readonly bool _useDynamicEditing;
-        private readonly ColorValueBox.ColorPickerEvent _onChanged;
-        private readonly ColorValueBox.ColorPickerClosedEvent _onClosed;
-        private readonly ColorSelectorWithSliders _selector;
-        private readonly Panel _rgbPanel;
-        private readonly Panel _hsvPanel;
-        private readonly FloatValueBox[] _rgb = new FloatValueBox[3];
-        private readonly FloatValueBox[] _hsv = new FloatValueBox[3];
-        private readonly FloatValueBox _alpha;
-        private readonly TextBox _hex;
-        private Color _value;
-        private bool _disableEvents;
-        private bool _canPassLastChangeEvent = true;
+        private readonly Color m_InitialValue;
+        private readonly bool m_UseDynamicEditing;
+        private readonly ColorValueBox.ColorPickerEvent m_OnChanged;
+        private readonly ColorValueBox.ColorPickerClosedEvent m_OnClosed;
+        private readonly ColorSelectorWithSliders m_Selector;
+        private readonly Panel m_RgbPanel;
+        private readonly Panel m_HsvPanel;
+        private readonly FloatValueBox[] m_Rgb = new FloatValueBox[3];
+        private readonly FloatValueBox[] m_Hsv = new FloatValueBox[3];
+        private readonly FloatValueBox m_Alpha;
+        private readonly TextBox m_Hex;
+        private Color m_Value;
+        private bool m_DisableEvents;
+        private bool m_CanPassLastChangeEvent = true;
 
         public Color SelectedColor
         {
-            get => _value;
+            get => m_Value;
             private set
             {
-                if (_disableEvents || value == _value) return;
-                _disableEvents = true;
-                _value = value;
-                _selector.Color = value;
-                _rgb[0].SetValue(value.R);
-                _rgb[1].SetValue(value.G);
-                _rgb[2].SetValue(value.B);
-                _alpha.SetValue(value.A);
+                if (m_DisableEvents || value == m_Value)
+                {
+                    return;
+                }
+                m_DisableEvents = true;
+                m_Value = value;
+                m_Selector.Color = value;
+                m_Rgb[0].SetValue(value.R);
+                m_Rgb[1].SetValue(value.G);
+                m_Rgb[2].SetValue(value.B);
+                m_Alpha.SetValue(value.A);
                 Float3 hsv = value.ToHSV();
-                _hsv[0].SetValue(hsv.X);
-                _hsv[1].SetValue(hsv.Y * 100);
-                _hsv[2].SetValue(hsv.Z * 100);
-                _hex.Text = Color.Min(Color.White, value).ToHexString();
-                if (_useDynamicEditing) _onChanged(value, true);
-                _disableEvents = false;
+                m_Hsv[0].SetValue(hsv.X);
+                m_Hsv[1].SetValue(hsv.Y * 100);
+                m_Hsv[2].SetValue(hsv.Z * 100);
+                m_Hex.Text = Color.Min(Color.White, value).ToHexString();
+                if (m_UseDynamicEditing)
+                {
+                    m_OnChanged(value, true);
+                }
+                m_DisableEvents = false;
             }
         }
 
@@ -52,66 +58,101 @@ namespace SE.Editor.GUI.Dialogs
             ColorValueBox.ColorPickerClosedEvent onClosed, bool useDynamicEditing)
             : base("Pick a color!")
         {
-            _initialValue = initialValue;
-            _value = Color.Transparent;
-            _onChanged = onChanged;
-            _onClosed = onClosed;
-            _useDynamicEditing = useDynamicEditing;
+            m_InitialValue = initialValue;
+            m_Value = Color.Transparent;
+            m_OnChanged = onChanged;
+            m_OnClosed = onClosed;
+            m_UseDynamicEditing = useDynamicEditing;
 
-            _selector = new ColorSelectorWithSliders(180, 21)
+            m_Selector = new ColorSelectorWithSliders(180, 21)
             {
                 Parent = this,
                 Location = new Float2(6, 6),
             };
-            _selector.ColorChanged += color => SelectedColor = color;
+            m_Selector.ColorChanged += color => SelectedColor = color;
 
-            float panelX = _selector.Right + 16;
-            var rgbTab = new Button { Text = "RGB", Parent = this,
-                Bounds = new Rectangle(panelX, 6, 64, 20) };
-            var hsvTab = new Button { Text = "HSV", Parent = this,
-                Bounds = new Rectangle(panelX + 66, 6, 64, 20) };
-            _rgbPanel = new Panel { Parent = this, Bounds = new Rectangle(panelX, 28, 130, 84) };
-            _hsvPanel = new Panel { Parent = this, Bounds = new Rectangle(panelX, 28, 130, 84), Visible = false };
-            rgbTab.Clicked += () => { _rgbPanel.Visible = true; _hsvPanel.Visible = false; };
-            hsvTab.Clicked += () => { _rgbPanel.Visible = false; _hsvPanel.Visible = true; };
+            float panelX = m_Selector.Right + 16;
+            Button rgbTab = new Button
+            {
+                Text = "RGB",
+                Parent = this,
+                Bounds = new Rectangle(panelX, 6, 64, 20)
+            };
+            Button hsvTab = new Button
+            {
+                Text = "HSV",
+                Parent = this,
+                Bounds = new Rectangle(panelX + 66, 6, 64, 20)
+            };
+            m_RgbPanel = new Panel { Parent = this, Bounds = new Rectangle(panelX, 28, 130, 84) };
+            m_HsvPanel = new Panel { Parent = this, Bounds = new Rectangle(panelX, 28, 130, 84), Visible = false };
+            rgbTab.Clicked += () => { m_RgbPanel.Visible = true; m_HsvPanel.Visible = false; };
+            hsvTab.Clicked += () => { m_RgbPanel.Visible = false; m_HsvPanel.Visible = true; };
 
             string[] rgbNames = { "R", "G", "B" };
             string[] hsvNames = { "H", "S", "V" };
             for (int i = 0; i < 3; i++)
             {
                 float y = 3 + i * 26;
-                new Label { Text = rgbNames[i], Parent = _rgbPanel,
-                    Bounds = new Rectangle(0, y, 18, 18) };
-                var rgbBox = new FloatValueBox(0, 24, y, 102, 0, float.MaxValue, 0.001f)
-                { Parent = _rgbPanel };
+                new Label
+                {
+                    Text = rgbNames[i],
+                    Parent = m_RgbPanel,
+                    Bounds = new Rectangle(0, y, 18, 18)
+                };
+                FloatValueBox rgbBox = new FloatValueBox(0, 24, y, 102, 0, float.MaxValue, 0.001f)
+                { Parent = m_RgbPanel };
                 rgbBox.ValueChanged += OnRGBAChanged;
-                _rgb[i] = rgbBox;
+                m_Rgb[i] = rgbBox;
 
-                new Label { Text = hsvNames[i], Parent = _hsvPanel,
-                    Bounds = new Rectangle(0, y, 18, 18) };
-                var hsvBox = new FloatValueBox(0, 24, y, 102,
+                new Label
+                {
+                    Text = hsvNames[i],
+                    Parent = m_HsvPanel,
+                    Bounds = new Rectangle(0, y, 18, 18)
+                };
+                FloatValueBox hsvBox = new FloatValueBox(0, 24, y, 102,
                     0, i == 0 ? 360 : i == 1 ? 100 : float.MaxValue, 0.1f)
-                { Parent = _hsvPanel };
-                if (i == 0) hsvBox.Category = Utils.ValueCategory.Angle;
+                { Parent = m_HsvPanel };
+                if (i == 0)
+                {
+                    hsvBox.Category = Utils.ValueCategory.Angle;
+                }
                 hsvBox.ValueChanged += OnHSVChanged;
-                _hsv[i] = hsvBox;
+                m_Hsv[i] = hsvBox;
             }
 
-            new Label { Text = "A", Parent = this,
-                Bounds = new Rectangle(panelX, 126, 18, 18) };
-            _alpha = new FloatValueBox(0, panelX + 24, 126, 102, 0, float.MaxValue, 0.001f)
+            new Label
+            {
+                Text = "A",
+                Parent = this,
+                Bounds = new Rectangle(panelX, 126, 18, 18)
+            };
+            m_Alpha = new FloatValueBox(0, panelX + 24, 126, 102, 0, float.MaxValue, 0.001f)
             { Parent = this };
-            _alpha.ValueChanged += OnRGBAChanged;
-            new Label { Text = "Hex", Parent = this,
-                Bounds = new Rectangle(panelX, 154, 24, 18) };
-            _hex = new TextBox(false, panelX + 30, 154, 96) { Parent = this };
-            _hex.EditEnd += OnHexChanged;
+            m_Alpha.ValueChanged += OnRGBAChanged;
+            new Label
+            {
+                Text = "Hex",
+                Parent = this,
+                Bounds = new Rectangle(panelX, 154, 24, 18)
+            };
+            m_Hex = new TextBox(false, panelX + 30, 154, 96) { Parent = this };
+            m_Hex.EditEnd += OnHexChanged;
 
-            var accept = new Button { Text = "OK", Parent = this,
-                Bounds = new Rectangle(panelX + 32, 245, 46, 22) };
+            Button accept = new Button
+            {
+                Text = "OK",
+                Parent = this,
+                Bounds = new Rectangle(panelX + 32, 245, 46, 22)
+            };
             accept.Clicked += OnSubmit;
-            var cancel = new Button { Text = "Cancel", Parent = this,
-                Bounds = new Rectangle(panelX + 82, 245, 54, 22) };
+            Button cancel = new Button
+            {
+                Text = "Cancel",
+                Parent = this,
+                Bounds = new Rectangle(panelX + 82, 245, 54, 22)
+            };
             cancel.Clicked += OnCancel;
             m_DialogSize = Size = new Float2(panelX + 142, 275);
             SelectedColor = initialValue;
@@ -119,57 +160,74 @@ namespace SE.Editor.GUI.Dialogs
 
         private void OnRGBAChanged()
         {
-            if (_disableEvents) return;
-            SelectedColor = new Color(_rgb[0].GetValue(), _rgb[1].GetValue(),
-                _rgb[2].GetValue(), _alpha.GetValue());
+            if (m_DisableEvents)
+            {
+                return;
+            }
+            SelectedColor = new Color(m_Rgb[0].GetValue(), m_Rgb[1].GetValue(),
+                m_Rgb[2].GetValue(), m_Alpha.GetValue());
         }
 
         private void OnHSVChanged()
         {
-            if (_disableEvents) return;
-            float hue = Mathf.Wrap(_hsv[0].GetValue(), 0, 360);
-            SelectedColor = Color.FromHSV(hue, _hsv[1].GetValue() / 100,
-                _hsv[2].GetValue() / 100, _alpha.GetValue());
+            if (m_DisableEvents)
+            {
+                return;
+            }
+            float hue = Mathf.Wrap(m_Hsv[0].GetValue(), 0, 360);
+            SelectedColor = Color.FromHSV(hue, m_Hsv[1].GetValue() / 100,
+                m_Hsv[2].GetValue() / 100, m_Alpha.GetValue());
         }
 
         private void OnHexChanged()
         {
-            if (!_disableEvents && Color.TryParseHex(_hex.Text, out Color parsed))
+            if (!m_DisableEvents && Color.TryParseHex(m_Hex.Text, out Color parsed))
+            {
                 SelectedColor = parsed;
+            }
         }
 
         public override void Draw()
         {
             base.Draw();
-            var preview = new Rectangle(_selector.X, 206, _selector.Width, 50);
+            Rectangle preview = new Rectangle(m_Selector.X, 206, m_Selector.Width, 50);
             Render2D.FillRectangle(preview, Color.White);
-            Render2D.FillRectangle(preview, _value.ToSRgb());
+            Render2D.FillRectangle(preview, m_Value.ToSRgb());
             Render2D.DrawRectangle(preview, Color.Black);
         }
 
         public override void OnSubmit()
         {
-            if (_disableEvents) return;
-            _disableEvents = true;
-            if (_value != _initialValue) _onChanged(_value, false);
+            if (m_DisableEvents)
+            {
+                return;
+            }
+            m_DisableEvents = true;
+            if (m_Value != m_InitialValue)
+            {
+                m_OnChanged(m_Value, false);
+            }
             base.OnSubmit();
         }
 
         public override void OnCancel()
         {
-            if (_disableEvents) return;
-            _disableEvents = true;
-            if (_useDynamicEditing && _initialValue != _value && _canPassLastChangeEvent)
+            if (m_DisableEvents)
             {
-                _canPassLastChangeEvent = false;
-                _onChanged(_initialValue, false);
+                return;
+            }
+            m_DisableEvents = true;
+            if (m_UseDynamicEditing && m_InitialValue != m_Value && m_CanPassLastChangeEvent)
+            {
+                m_CanPassLastChangeEvent = false;
+                m_OnChanged(m_InitialValue, false);
             }
             base.OnCancel();
         }
 
         public override void OnDestroy()
         {
-            _onClosed();
+            m_OnClosed();
             base.OnDestroy();
         }
 

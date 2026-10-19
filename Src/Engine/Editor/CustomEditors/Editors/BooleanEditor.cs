@@ -5,23 +5,27 @@ namespace SE.Editor
     [CustomEditor(typeof(bool)), DefaultEditor]
     public sealed class BooleanEditor : CustomEditor
     {
-        private CheckBox _checkBox = null!;
+        private CheckBox m_CheckBox = null!;
 
         public override DisplayStyle Style => DisplayStyle.Inline;
 
         public override void Initialize(LayoutElementsContainer layout)
         {
-            _checkBox = new CheckBox { Height = 18, Parent = layout.ContainerControl };
-            _checkBox.StateChanged += box => SetValue(box.Checked);
+            m_CheckBox = new CheckBox { Height = 18, Parent = layout.ContainerControl };
+            m_CheckBox.StateChanged += box => SetValue(box.Checked);
         }
 
         public override void Refresh()
         {
             base.Refresh();
             if (HasDifferentValues)
-                _checkBox.Intermediate = true;
+            {
+                m_CheckBox.Intermediate = true;
+            }
             else if (Values[0] is bool value)
-                _checkBox.Checked = value;
+            {
+                m_CheckBox.Checked = value;
+            }
         }
     }
 }

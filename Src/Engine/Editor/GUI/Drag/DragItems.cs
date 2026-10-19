@@ -10,9 +10,9 @@ namespace SE.Editor.GUI
     {
         public const string DragPrefix = "ASSET!?";
 
-        private readonly Func<string, ContentItem?> m_FindItem;
+        private readonly Func<string, ContentItem> m_FindItem;
 
-        public DragItemsBase(Func<ContentItem, bool> validateFunction, Func<string, ContentItem?> findItem)
+        public DragItemsBase(Func<ContentItem, bool> validateFunction, Func<string, ContentItem> findItem)
             : base(validateFunction)
         {
             m_FindItem = findItem;
@@ -36,7 +36,9 @@ namespace SE.Editor.GUI
         public static DragData GetDragData(string path)
         {
             if (string.IsNullOrEmpty(path))
+            {
                 throw new ArgumentException("Drag path cannot be empty.", nameof(path));
+            }
 
             return new DragDataText(DragPrefix + path);
         }
@@ -60,22 +62,26 @@ namespace SE.Editor.GUI
         public override IEnumerable<ContentItem> FromDragData(DragData data)
         {
             if (data is not DragDataText textData || !textData.Text.StartsWith(DragPrefix, StringComparison.Ordinal))
+            {
                 yield break;
+            }
 
             string payload = textData.Text.Substring(DragPrefix.Length);
             string[] paths = payload.Split('\n', StringSplitOptions.RemoveEmptyEntries);
             foreach (string path in paths)
             {
-                ContentItem? item = m_FindItem(path);
+                ContentItem item = m_FindItem(path);
                 if (item != null)
+                {
                     yield return item;
+                }
             }
         }
     }
 
     public sealed class DragItems : DragItemsBase<DragEventArgs>
     {
-        public DragItems(Func<ContentItem, bool> validateFunction, Func<string, ContentItem?> findItem)
+        public DragItems(Func<ContentItem, bool> validateFunction, Func<string, ContentItem> findItem)
             : base(validateFunction, findItem)
         {
         }

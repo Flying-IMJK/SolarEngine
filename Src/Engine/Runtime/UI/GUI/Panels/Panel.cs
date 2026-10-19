@@ -17,7 +17,8 @@ namespace SE.GUI
         private Color m_ScrollbarThumbSelectedColor;
 
         /// <summary>
-        /// The cached scroll area bounds. Used to scroll contents of the panel control. Cached during performing layout.
+        /// The cached scroll area bounds. Used to scroll contents of the panel control. Cached during performing
+        /// layout.
         /// </summary>
         protected Rectangle m_ControlsBounds;
 
@@ -40,7 +41,8 @@ namespace SE.GUI
         }
 
         /// <summary>
-        /// Gets the cached scroll area bounds. Used to scroll contents of the panel control. Cached during performing layout.
+        /// Gets the cached scroll area bounds. Used to scroll contents of the panel control. Cached during performing
+        /// layout.
         /// </summary>
         public Rectangle GetControlsBounds()
         {
@@ -152,9 +154,11 @@ namespace SE.GUI
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether always show scrollbars. Otherwise show them only if scrolling is available.
+        /// Gets or sets a value indicating whether always show scrollbars. Otherwise show them only if scrolling is
+        /// available.
         /// </summary>
-        // [EditorDisplay("Scrollbar Style"), EditorOrder(1502), Tooltip("Whether always show scrollbars. Otherwise show them only if scrolling is available.")]
+        // [EditorDisplay("Scrollbar Style"), EditorOrder(1502), Tooltip("Whether always show scrollbars. Otherwise show
+        // them only if scrolling is available.")]
         public bool GetAlwaysShowScrollbars()
         {
             return m_AlwaysShowScrollbars;
@@ -188,9 +192,11 @@ namespace SE.GUI
         }
 
         /// <summary>
-        /// Gets or sets the scroll margin applies to the child controls area. Can be used to expand the scroll area bounds by adding a margin.
+        /// Gets or sets the scroll margin applies to the child controls area. Can be used to expand the scroll area
+        /// bounds by adding a margin.
         /// </summary>
-        // [EditorDisplay("Scrollbar Style"), EditorOrder(1503), Tooltip("Scroll margin applies to the child controls area. Can be used to expand the scroll area bounds by adding a margin.")]
+        // [EditorDisplay("Scrollbar Style"), EditorOrder(1503), Tooltip("Scroll margin applies to the child controls
+        // area. Can be used to expand the scroll area bounds by adding a margin.")]
         public Margin GetScrollMargin()
         {
             return m_ScrollMargin;
@@ -277,7 +283,7 @@ namespace SE.GUI
         public Panel()
         {
             // Initialize the palette before SetScrollBars creates its controls.
-            var style = Style.Current;
+            Style style = Style.Current;
             m_ScrollbarTrackColor = style.BackgroundHighlighted;
             m_ScrollbarThumbColor = style.BackgroundNormal;
             m_ScrollbarThumbSelectedColor = style.BackgroundSelected;
@@ -689,7 +695,8 @@ namespace SE.GUI
             if (vScrollBar != null)
             {
                 float height = Height;
-                bool vScrollEnabled = (controlsBounds.Bottom > height + 0.01f || controlsBounds.Y < 0.0f) && height > m_ScrollBarsSize;
+                bool vScrollEnabled = (controlsBounds.Bottom > height + 0.01f || controlsBounds.Y < 0.0f) && height
+                    > m_ScrollBarsSize;
                 if (vScrollBar.Enabled != vScrollEnabled)
                 {
                     // Set scroll bar visibility
@@ -719,7 +726,8 @@ namespace SE.GUI
             if (hScrollBar != null)
             {
                 float width = Width;
-                bool hScrollEnabled = controlsBounds.Right > width + 0.01f || controlsBounds.X < 0.0f && width > m_ScrollBarsSize;
+                bool hScrollEnabled = controlsBounds.Right > width + 0.01f || controlsBounds.X < 0.0f && width
+                    > m_ScrollBarsSize;
                 if (hScrollBar.Enabled != hScrollEnabled)
                 {
                     // Set scroll bar visibility

@@ -50,7 +50,8 @@ namespace SE.Editor
             }
             Render2D.FillRectangle(rect, color);
             Rectangle arrowRect = new(rect.Location.X, rect.Y + rect.Size.Y * 0.25f, rect.Size.X, rect.Size.X);
-            Render2D.DrawSprite(EditorIcons.ArrowRight12, arrowRect, EnabledInHierarchy ? style.Foreground : style.ForegroundDisabled);
+            Render2D.DrawSprite(EditorIcons.ArrowRight12, arrowRect, EnabledInHierarchy ? style.Foreground : style
+                .ForegroundDisabled);
         }
 
         protected override ContextMenu OnCreatePopup()

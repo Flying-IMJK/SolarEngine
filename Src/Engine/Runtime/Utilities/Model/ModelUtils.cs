@@ -5,7 +5,14 @@ namespace SE
     partial struct ModelUtilsOptions
     {
 
-        private bool ShowGeometry => Type == ModelUtilsModelType.Model || Type == ModelUtilsModelType.SkinnedModel || Type == ModelUtilsModelType.Prefab;
+        private bool ShowGeometry
+        {
+            get
+            {
+                return Type == ModelUtilsModelType.Model || Type == ModelUtilsModelType.SkinnedModel
+                            || Type == ModelUtilsModelType.Prefab;
+            }
+        }
         private bool ShowModel => Type == ModelUtilsModelType.Model || Type == ModelUtilsModelType.Prefab;
         private bool ShowSkinnedModel => Type == ModelUtilsModelType.SkinnedModel || Type == ModelUtilsModelType.Prefab;
         private bool ShowAnimation => Type == ModelUtilsModelType.Animation || Type == ModelUtilsModelType.Prefab;
@@ -16,8 +23,8 @@ namespace SE
         private bool ShowFramesRange => ShowAnimation && Duration == ModelUtilsAnimationDuration.Custom;
         private bool ShowSplitting => Type != ModelUtilsModelType.Prefab;
 
-        private static bool m_DefaultValid;
-        private static ModelUtilsOptions m_Default;
+        private static bool s_DefaultValid;
+        private static ModelUtilsOptions s_Default;
 
         /// <summary>
         /// The default <see cref="Options"/>.
@@ -26,15 +33,15 @@ namespace SE
         {
             get
             {
-                if (!m_DefaultValid)
+                if (!s_DefaultValid)
                 {
-                    m_DefaultValid = true;
-                    object obj = m_Default;
+                    s_DefaultValid = true;
+                    object obj = s_Default;
                     Utils.InitStructure(obj, typeof(ModelUtilsOptions));
-                    m_Default = (ModelUtilsOptions)obj;
+                    s_Default = (ModelUtilsOptions)obj;
                 }
-                return m_Default;
+                return s_Default;
             }
         }
-    }   
+    }
 }

@@ -76,7 +76,8 @@ namespace SE.GUI
         /// <inheritdoc />
         public override bool IntersectsContent(Float2 locationParent, out Float2 location)
         {
-            // Little workaround to prevent applying offset when performing intersection test with this scrollable control.
+            // Little workaround to prevent applying offset when performing intersection test with this scrollable
+            // control.
             // Note that overriden PointFromParent applies view offset.
             location = base.PointFromParent(locationParent);
             return ContainsPoint(location);

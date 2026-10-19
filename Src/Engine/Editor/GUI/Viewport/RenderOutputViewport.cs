@@ -18,9 +18,9 @@ namespace SE.Editor.GUI
         protected GPUTexture m_BackBuffer;
 
         private GPUTexture m_BackBufferOld;
-        private int _oldBackbufferLiveTimeLeft;
+        private int m_OldBackbufferLiveTimeLeft;
         private float m_ResizeTime;
-        private Int2 _customResolution = new Int2(0, 0);
+        private Int2 m_CustomResolution = new Int2(0, 0);
 
         /// <summary>
         /// The default back buffer format used by the GUI controls presenting rendered frames.
@@ -46,7 +46,8 @@ namespace SE.Editor.GUI
         public bool RenderOnlyWithWindow = true;
 
         /// <summary>
-        /// Gets or sets a value indicating whether use automatic task rendering skipping if output is too small or window is missing. Disable it to manually control <see cref="RenderTask.Enabled"/>.
+        /// Gets or sets a value indicating whether use automatic task rendering skipping if output is too small or
+        /// window is missing. Disable it to manually control <see cref="RenderTask.Enabled"/> .
         /// </summary>
         public bool UseAutomaticTaskManagement = true;
 
@@ -66,7 +67,8 @@ namespace SE.Editor.GUI
         public float Brightness = 1.0f;
 
         /// <summary>
-        /// Gets or sets the rendering resolution scale. Can be used to upscale image or to downscale the rendering to save the performance.
+        /// Gets or sets the rendering resolution scale. Can be used to upscale image or to downscale the rendering to
+        /// save the performance.
         /// </summary>
         public float ResolutionScale = 1.0f;
 
@@ -75,12 +77,12 @@ namespace SE.Editor.GUI
         /// </summary>
         public Int2 CustomResolution
         {
-            get => _customResolution;
+            get => m_CustomResolution;
             set
             {
-                if (_customResolution.X != value.X || _customResolution.Y != value.Y)
+                if (m_CustomResolution.X != value.X || m_CustomResolution.Y != value.Y)
                 {
-                    _customResolution = value;
+                    m_CustomResolution = value;
                     SyncBackbufferSize();
                 }
             }
@@ -164,10 +166,10 @@ namespace SE.Editor.GUI
             float scale = ResolutionScale * GetDpiScale();
             int width = (int)MathF.Ceiling(Width * scale);
             int height = (int)MathF.Ceiling(Height * scale);
-            if (_customResolution.X != 0 || _customResolution.Y != 0)
+            if (m_CustomResolution.X != 0 || m_CustomResolution.Y != 0)
             {
-                width = _customResolution.X;
-                height = _customResolution.Y;
+                width = m_CustomResolution.X;
+                height = m_CustomResolution.Y;
             }
             if (m_BackBuffer == null || m_BackBuffer.Width == width && m_BackBuffer.Height == height)
             {
@@ -193,7 +195,7 @@ namespace SE.Editor.GUI
             }
 
             // Set timeout to remove old buffer
-            _oldBackbufferLiveTimeLeft = 3;
+            m_OldBackbufferLiveTimeLeft = 3;
 
             // Resize backbuffer
             GPUTextureDescription desc = GPUTextureDescription.New2D(width, height, BackBufferFormat);
@@ -283,14 +285,15 @@ namespace SE.Editor.GUI
         }
 
         /// <summary>
-        /// Performs a check if rendering a current frame can be skipped (if control size is too small, has missing data, etc.).
+        /// Performs a check if rendering a current frame can be skipped (if control size is too small, has missing
+        /// data, etc.).
         /// </summary>
         /// <returns>True if skip rendering, otherwise false.</returns>
         protected virtual bool CanSkipRendering()
         {
             // Disable task rendering if control is very small
-            const float MinRenderSize = 4;
-            if (Width < MinRenderSize || Height < MinRenderSize)
+            const float minRenderSize = 4;
+            if (Width < minRenderSize || Height < minRenderSize)
             {
                 return true;
             }
@@ -314,8 +317,8 @@ namespace SE.Editor.GUI
             // Check if was using old backbuffer
             if (m_BackBufferOld != null)
             {
-                _oldBackbufferLiveTimeLeft--;
-                if (_oldBackbufferLiveTimeLeft < 0)
+                m_OldBackbufferLiveTimeLeft--;
+                if (m_OldBackbufferLiveTimeLeft < 0)
                 {
                     m_BackBufferOld.ReleaseGPU();
                     Object.DestroyNow(m_BackBufferOld);

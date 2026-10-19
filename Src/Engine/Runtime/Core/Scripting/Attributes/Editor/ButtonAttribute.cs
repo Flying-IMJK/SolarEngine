@@ -8,14 +8,14 @@ namespace SE
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class ButtonAttribute : Attribute
     {
-        public string? Text;
-        public string? Tooltip;
+        public string Text;
+        public string Tooltip;
 
         public ButtonAttribute()
         {
         }
 
-        public ButtonAttribute(string text, string? tooltip = null)
+        public ButtonAttribute(string text, string tooltip = null)
         {
             Text = text;
             Tooltip = tooltip;

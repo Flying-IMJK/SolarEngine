@@ -13,7 +13,10 @@ namespace SE.Editor.GUI
         public override void SetValue(int value)
         {
             value = Mathf.Clamp(value, _min, _max);
-            if (_value == value) return;
+            if (_value == value)
+            {
+                return;
+            }
             _value = value;
             UpdateText();
             OnValueChanged();
@@ -21,14 +24,20 @@ namespace SE.Editor.GUI
         public override int GetMinValue() => _min;
         public override void SetMinValue(int value)
         {
-            if (value > _max) throw new ArgumentException();
+            if (value > _max)
+            {
+                throw new ArgumentException();
+            }
             _min = value;
             SetValue(_value);
         }
         public override int GetMaxValue() => _max;
         public override void SetMaxValue(int value)
         {
-            if (value < _min) throw new ArgumentException();
+            if (value < _min)
+            {
+                throw new ArgumentException();
+            }
             _max = value;
             SetValue(_value);
         }
@@ -71,7 +80,10 @@ namespace SE.Editor.GUI
         public override void SetValue(long value)
         {
             value = Mathf.Clamp(value, _min, _max);
-            if (_value == value) return;
+            if (_value == value)
+            {
+                return;
+            }
             _value = value;
             UpdateText();
             OnValueChanged();
@@ -79,14 +91,20 @@ namespace SE.Editor.GUI
         public override long GetMinValue() => _min;
         public override void SetMinValue(long value)
         {
-            if (value > _max) throw new ArgumentException();
+            if (value > _max)
+            {
+                throw new ArgumentException();
+            }
             _min = value;
             SetValue(_value);
         }
         public override long GetMaxValue() => _max;
         public override void SetMaxValue(long value)
         {
-            if (value < _min) throw new ArgumentException();
+            if (value < _min)
+            {
+                throw new ArgumentException();
+            }
             _max = value;
             SetValue(_value);
         }
@@ -106,8 +124,14 @@ namespace SE.Editor.GUI
         protected override void UpdateText() => SetText(_value.ToString());
         protected override void TryGetValue()
         {
-            if (long.TryParse(Text, out long value)) SetValue(value);
-            else UpdateText();
+            if (long.TryParse(Text, out long value))
+            {
+                SetValue(value);
+            }
+            else
+            {
+                UpdateText();
+            }
         }
         protected override void ApplySliding(float delta) => SetValue(_startSlideValue + (long)delta);
     }
@@ -123,7 +147,10 @@ namespace SE.Editor.GUI
         public override void SetValue(ulong value)
         {
             value = Mathf.Clamp(value, _min, _max);
-            if (_value == value) return;
+            if (_value == value)
+            {
+                return;
+            }
             _value = value;
             UpdateText();
             OnValueChanged();
@@ -131,14 +158,20 @@ namespace SE.Editor.GUI
         public override ulong GetMinValue() => _min;
         public override void SetMinValue(ulong value)
         {
-            if (value > _max) throw new ArgumentException();
+            if (value > _max)
+            {
+                throw new ArgumentException();
+            }
             _min = value;
             SetValue(_value);
         }
         public override ulong GetMaxValue() => _max;
         public override void SetMaxValue(ulong value)
         {
-            if (value < _min) throw new ArgumentException();
+            if (value < _min)
+            {
+                throw new ArgumentException();
+            }
             _max = value;
             SetValue(_value);
         }
@@ -164,11 +197,17 @@ namespace SE.Editor.GUI
         protected override void ApplySliding(float delta)
         {
             if (delta < 0 && _startSlideValue > delta)
+            {
                 SetValue((ulong)Mathf.Max(0, (long)_startSlideValue + (long)delta));
+            }
             else if (delta < 0)
+            {
                 SetValue(_startSlideValue - (ulong)(-delta));
+            }
             else
+            {
                 SetValue(_startSlideValue + (ulong)delta);
+            }
         }
     }
 }

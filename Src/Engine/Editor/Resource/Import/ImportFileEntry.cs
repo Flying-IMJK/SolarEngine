@@ -36,7 +36,8 @@ namespace SE.Editor
         /// Tries the override import settings.
         /// </summary>
         /// <param name="settings">The settings.</param>
-        /// <returns>True if settings override was successful and there is no need to edit them in dedicated dialog, otherwise false.</returns>
+        /// <returns> True if settings override was successful and there is no need to edit them in dedicated dialog,
+        /// otherwise false.</returns>
         public virtual bool TryOverrideSettings(object settings)
         {
             return false;
@@ -58,8 +59,8 @@ namespace SE.Editor
         /// <param name="filename">The new filename.</param>
         public void ModifyResultFilename(string filename)
         {
-            var directory = Path.GetDirectoryName(ResultUrl) ?? string.Empty;
-            var extension = Path.GetExtension(ResultUrl);
+            string directory = Path.GetDirectoryName(ResultUrl) ?? string.Empty;
+            string extension = Path.GetExtension(ResultUrl);
             ResultUrl = Path.Combine(directory, filename + extension);
         }
 
@@ -71,7 +72,9 @@ namespace SE.Editor
         {
             // Skip if missing
             if (!Directory.Exists(SourceUrl) && !File.Exists(SourceUrl))
+            {
                 return true;
+            }
 
             // Setup output
             string folder = Path.GetDirectoryName(ResultUrl);
@@ -96,7 +99,8 @@ namespace SE.Editor
         /// The file types registered for importing. Key is a file extension (without a leading dot).
         /// Allows to plug custom importing options gather for different input file types.
         /// </summary>
-        public static readonly Dictionary<string, ImportFileEntryHandler> FileTypes = new Dictionary<string, ImportFileEntryHandler>(32);
+        public static readonly Dictionary<string, ImportFileEntryHandler> FileTypes = new Dictionary<string,
+            ImportFileEntryHandler>(32);
 
         /// <summary>
         /// Creates the entry.
@@ -106,7 +110,7 @@ namespace SE.Editor
         public static ImportFileEntry CreateEntry(ref Request request)
         {
             // Get extension (without a dot)
-            var extension = Path.GetExtension(request.InputPath);
+            string extension = Path.GetExtension(request.InputPath);
             if (File.GetAttributes(request.InputPath).HasFlag(FileAttributes.Directory))
             {
                 return new FolderImportEntry(ref request);
@@ -206,7 +210,8 @@ namespace SE.Editor
 
     public sealed class ImportRequest
     {
-        public ImportRequest(string inputPath, string outputPath, bool isInBuilt = false, bool skipSettingsDialog = false, object? settings = null)
+        public ImportRequest(string inputPath, string outputPath, bool isInBuilt = false, bool skipSettingsDialog =
+            false, object settings = null)
         {
             InputPath = inputPath ?? throw new ArgumentNullException(nameof(inputPath));
             OutputPath = outputPath ?? throw new ArgumentNullException(nameof(outputPath));
@@ -219,7 +224,7 @@ namespace SE.Editor
         public string OutputPath { get; }
         public bool IsInBuilt { get; }
         public bool SkipSettingsDialog { get; }
-        public object? Settings { get; }
+        public object Settings { get; }
     }
 
 }

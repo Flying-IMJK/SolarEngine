@@ -65,7 +65,8 @@ namespace SE.Editor.GUI
             }
 
             // Draw status text
-            Render2D.RenderText(style.FontSmall, Text, new Rectangle(4, 0, Width - 20, Height), TextColor, TextAlignment.Near, TextAlignment.Center);
+            Render2D.RenderText(style.FontSmall, Text, new Rectangle(4, 0, Width - 20, Height), TextColor,
+                TextAlignment.Near, TextAlignment.Center);
         }
     }
 }

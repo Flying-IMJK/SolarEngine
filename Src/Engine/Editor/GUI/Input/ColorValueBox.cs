@@ -13,55 +13,65 @@ namespace SE.Editor.GUI
         /// <summary>Reports that the picker has closed.</summary>
         public delegate void ColorPickerClosedEvent();
         /// <summary>Creates a picker owned by the caller, which must invoke pickerClosed on close.</summary>
-        public delegate IColorPickerDialog? ShowPickColorDialogDelegate(Control targetControl, Color initialValue,
+        public delegate IColorPickerDialog ShowPickColorDialogDelegate(Control targetControl, Color initialValue,
             ColorPickerEvent colorChanged, ColorPickerClosedEvent pickerClosed, bool useDynamicEditing);
         /// <summary>Optional picker factory. If null, the built-in dialog is used.</summary>
-        public static ShowPickColorDialogDelegate? ShowPickColorDialog;
+        public static ShowPickColorDialogDelegate ShowPickColorDialog;
 
-        private bool _isMouseDown;
-        private IColorPickerDialog? _currentDialog;
-        private Color _value;
-        private bool _isSliding;
+        private bool m_IsMouseDown;
+        private IColorPickerDialog m_CurrentDialog;
+        private Color m_Value;
+        private bool m_IsSliding;
         public bool UseDynamicEditing = true;
-        public event Action? ValueChanged;
-        public event Action<ColorValueBox>? ColorValueChanged;
+        public event Action ValueChanged;
+        public event Action<ColorValueBox> ColorValueChanged;
 
         public Color Value
         {
-            get => _value;
+            get => m_Value;
             set
             {
-                if (_value == value) return;
-                _value = value;
+                if (m_Value == value)
+                {
+                    return;
+                }
+                m_Value = value;
                 ValueChanged?.Invoke();
                 ColorValueChanged?.Invoke(this);
             }
         }
 
-        public bool IsSliding => _isSliding;
+        public bool IsSliding => m_IsSliding;
 
         public ColorValueBox() : base(0, 0, 32, 18) { }
-        public ColorValueBox(Color value, float x, float y) : base(x, y, 32, 18) => _value = value;
+        public ColorValueBox(Color value, float x, float y) : base(x, y, 32, 18) => m_Value = value;
 
         public override void Draw()
         {
             base.Draw();
-            var color = _value.ToSRgb();
+            Color color = m_Value.ToSRgb();
             bool transparent = color.A < 1;
-            var swatch = new Rectangle(0, 0, transparent ? Width * 0.7f : Width, Height);
+            Rectangle swatch = new Rectangle(0, 0, transparent ? Width * 0.7f : Width, Height);
             if (transparent)
             {
-                var alpha = new Rectangle(swatch.Right, 0, Width - swatch.Right, Height);
+                Rectangle alpha = new Rectangle(swatch.Right, 0, Width - swatch.Right, Height);
                 Render2D.FillRectangle(alpha, Color.White);
                 const float checkerSize = 7.9f;
                 int columns = Mathf.CeilToInt(alpha.Width / checkerSize);
                 int rows = Mathf.CeilToInt(alpha.Height / checkerSize);
                 Render2D.PushClip(alpha);
                 for (int x = 0; x < columns; x++)
+                {
                     for (int y = 0; y < rows; y++)
+                    {
                         if ((x + y) % 2 == 0)
+                        {
                             Render2D.FillRectangle(new Rectangle(alpha.X + checkerSize * x,
-                                alpha.Y + checkerSize * y, checkerSize, checkerSize), Color.Gray);
+                                                            alpha.Y + checkerSize * y, checkerSize, checkerSize),
+                                                                Color.Gray);
+                        }
+                    }
+                }
                 Render2D.PopClip();
                 Render2D.FillRectangle(alpha, color);
             }
@@ -73,15 +83,15 @@ namespace SE.Editor.GUI
 
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            _isMouseDown = true;
+            m_IsMouseDown = true;
             return base.OnMouseDown(location, button);
         }
 
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (_isMouseDown)
+            if (m_IsMouseDown)
             {
-                _isMouseDown = false;
+                m_IsMouseDown = false;
                 Focus();
                 OnSubmit();
             }
@@ -91,36 +101,39 @@ namespace SE.Editor.GUI
         public override void OnSubmit()
         {
             base.OnSubmit();
-            var show = ShowPickColorDialog ?? DefaultShowPicker;
-            _currentDialog = show(this, _value, OnColorChanged, OnPickerClosed, UseDynamicEditing);
+            ShowPickColorDialogDelegate show = ShowPickColorDialog ?? DefaultShowPicker;
+            m_CurrentDialog = show(this, m_Value, OnColorChanged, OnPickerClosed, UseDynamicEditing);
         }
 
         private static IColorPickerDialog DefaultShowPicker(Control target, Color initial,
             ColorPickerEvent changed, ColorPickerClosedEvent closed, bool dynamic)
         {
-            var dialog = new ColorPickerDialog(initial, changed, closed, dynamic);
+            ColorPickerDialog dialog = new ColorPickerDialog(initial, changed, closed, dynamic);
             dialog.Show(target);
             return dialog;
         }
 
         private void OnColorChanged(Color color, bool sliding)
         {
-            if (_isSliding != sliding)
+            if (m_IsSliding != sliding)
             {
-                _isSliding = sliding;
-                _value = color;
+                m_IsSliding = sliding;
+                m_Value = color;
                 ValueChanged?.Invoke();
                 ColorValueChanged?.Invoke(this);
             }
-            else Value = color;
+            else
+            {
+                Value = color;
+            }
         }
 
-        private void OnPickerClosed() => _currentDialog = null;
+        private void OnPickerClosed() => m_CurrentDialog = null;
 
         public override void OnDestroy()
         {
-            _currentDialog?.ClosePicker();
-            _currentDialog = null;
+            m_CurrentDialog?.ClosePicker();
+            m_CurrentDialog = null;
             base.OnDestroy();
         }
     }

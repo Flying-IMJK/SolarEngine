@@ -24,12 +24,12 @@ namespace SE.Editor
         {
             m_Entry = entry ?? throw new ArgumentNullException();
 
-            const float TotalWidth = 520;
-            const float EditorHeight = 250;
-            Width = TotalWidth;
+            const float totalWidth = 520;
+            const float editorHeight = 250;
+            Width = totalWidth;
 
             // Header and help description
-            var headerLabel = new Label
+            Label headerLabel = new Label
             {
                 Text = "Asset Options",
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
@@ -37,7 +37,7 @@ namespace SE.Editor
                 Parent = this,
                 Font = new FontReference(Style.Current.FontTitle)
             };
-            var infoLabel = new Label
+            Label infoLabel = new Label
             {
                 Text = "Specify options for creating new asset",
                 HorizontalAlignment = TextAlignment.Near,
@@ -48,40 +48,42 @@ namespace SE.Editor
             };
 
             // Buttons
-            const float ButtonsWidth = 60;
-            const float ButtonsHeight = 24;
-            const float ButtonsMargin = 8;
-            var createButton = new Button
+            const float buttonsWidth = 60;
+            const float buttonsHeight = 24;
+            const float buttonsMargin = 8;
+            Button createButton = new Button
             {
                 Text = "Create",
                 AnchorPreset = AnchorPresets.BottomRight,
-                Offsets = new Margin(-ButtonsWidth - ButtonsMargin, ButtonsWidth, -ButtonsHeight - ButtonsMargin, ButtonsHeight),
+                Offsets = new Margin(-buttonsWidth - buttonsMargin, buttonsWidth, -buttonsHeight - buttonsMargin,
+                    buttonsHeight),
                 Parent = this,
                 Enabled = entry.CanBeCreated,
             };
             createButton.Clicked += OnSubmit;
-            var cancelButton = new Button
+            Button cancelButton = new Button
             {
                 Text = "Cancel",
                 AnchorPreset = AnchorPresets.BottomRight,
-                Offsets = new Margin(-ButtonsWidth - ButtonsMargin - ButtonsWidth - ButtonsMargin, ButtonsWidth, -ButtonsHeight - ButtonsMargin, ButtonsHeight),
+                Offsets = new Margin(-buttonsWidth - buttonsMargin - buttonsWidth - buttonsMargin, buttonsWidth,
+                    -buttonsHeight - buttonsMargin, buttonsHeight),
                 Parent = this,
             };
             cancelButton.Clicked += OnCancel;
 
             // Panel for settings editor
-            var panel = new Panel(ScrollBars.Vertical)
+            Panel panel = new Panel(ScrollBars.Vertical)
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                Offsets = new Margin(2, 2, infoLabel.Bottom + 2, EditorHeight),
+                Offsets = new Margin(2, 2, infoLabel.Bottom + 2, editorHeight),
                 Parent = this,
             };
 
             // Settings editor
-/*            _settingsEditor = new CustomEditorPresenter(null);
-            _settingsEditor.Panel.Parent = panel;*/
+            /*            _settingsEditor = new CustomEditorPresenter(null);
+                        _settingsEditor.Panel.Parent = panel;*/
 
-            m_DialogSize = new Float2(TotalWidth, panel.Bottom);
+            m_DialogSize = new Float2(totalWidth, panel.Bottom);
 
             /*_settingsEditor.Select(_entry.Settings);
             _settingsEditor.Modified += () => createButton.Enabled = _entry.CanBeCreated;*/

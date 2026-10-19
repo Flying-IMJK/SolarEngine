@@ -177,18 +177,26 @@ namespace SE.Interop
         internal static void* AllocMemory(int size, byte coTaskMem)
         {
             if (coTaskMem != 0)
+            {
                 return Marshal.AllocCoTaskMem(size).ToPointer();
+            }
             else
+            {
                 return NativeMemory.AlignedAlloc((UIntPtr)size, 16);
+            }
         }
 
         [UnmanagedCallersOnly]
         internal static void FreeMemory(void* ptr, byte coTaskMem)
         {
             if (coTaskMem != 0)
+            {
                 Marshal.FreeCoTaskMem(new IntPtr(ptr));
+            }
             else
+            {
                 NativeMemory.AlignedFree(ptr);
+            }
         }
 
         private static Assembly GetOwningAssembly(Type type)
@@ -198,7 +206,7 @@ namespace SE.Interop
             {
                 // The owning assembly of a generic type with type arguments referencing
                 // collectible assemblies must be one of the collectible assemblies.
-                foreach (var genericType in type.GetGenericArguments())
+                foreach (Type genericType in type.GetGenericArguments())
                 {
                     if (genericType.Assembly.IsCollectible)
                     {
@@ -209,7 +217,9 @@ namespace SE.Interop
             }
 
             if (assembly == null)
+            {
                 assembly = type.Assembly;
+            }
             return assembly;
         }
 
@@ -300,19 +310,22 @@ namespace SE.Interop
         {
             Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
 
-            var methods = new List<MethodInfo>();
-            var staticMethods = type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic |
+            List<MethodInfo> methods = new List<MethodInfo>();
+            MethodInfo[] staticMethods = type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags
+                .NonPublic |
                                                 BindingFlags.DeclaredOnly);
-            var instanceMethods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+            MethodInfo[] instanceMethods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public
+                | BindingFlags.NonPublic |
                                                   BindingFlags.DeclaredOnly);
             methods.AddRange(staticMethods);
             methods.AddRange(instanceMethods);
 
-            var arr = (NativeMethodDefinitions*)NativeAlloc(methods.Count, Unsafe.SizeOf<NativeMethodDefinitions>());
+            NativeMethodDefinitions* arr = (NativeMethodDefinitions*)NativeAlloc(methods.Count, Unsafe
+                .SizeOf<NativeMethodDefinitions>());
             for (int i = 0; i < methods.Count; i++)
             {
                 IntPtr ptr = IntPtr.Add(new IntPtr(arr), Unsafe.SizeOf<NativeMethodDefinitions>() * i);
-                var classMethod = new NativeMethodDefinitions
+                NativeMethodDefinitions classMethod = new NativeMethodDefinitions
                 {
                     name = NativeAllocStringAnsi(methods[i].Name),
                     numParameters = methods[i].GetParameters().Length,
@@ -331,7 +344,7 @@ namespace SE.Interop
             int* classFieldsCount)
         {
             Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
-            var fields = type.GetFields(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public |
+            FieldInfo[] fields = type.GetFields(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public |
                                         BindingFlags.NonPublic);
 
             NativeFieldDefinitions* arr =
@@ -343,7 +356,9 @@ namespace SE.Interop
                 ManagedHandle fieldHandle = ManagedHandle.Alloc(fieldHolder);
 #if SE_EDITOR
                 if (type.IsCollectible)
+                {
                     s_FieldHandleCacheCollectible.Add(fieldHandle);
+                }
                 else
 #endif
                 {
@@ -371,19 +386,20 @@ namespace SE.Interop
             int* classPropertiesCount)
         {
             Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
-            var properties = type.GetProperties(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public |
+            PropertyInfo[] properties = type.GetProperties(BindingFlags.Static | BindingFlags.Instance
+                | BindingFlags.Public |
                                                 BindingFlags.NonPublic);
 
-            var arr = (NativePropertyDefinitions*)NativeAlloc(properties.Length,
+            NativePropertyDefinitions* arr = (NativePropertyDefinitions*)NativeAlloc(properties.Length,
                 Unsafe.SizeOf<NativePropertyDefinitions>());
             for (int i = 0; i < properties.Length; i++)
             {
                 IntPtr ptr = IntPtr.Add(new IntPtr(arr), Unsafe.SizeOf<NativePropertyDefinitions>() * i);
 
-                var getterMethod = properties[i].GetGetMethod(true);
-                var setterMethod = properties[i].GetSetMethod(true);
+                MethodInfo getterMethod = properties[i].GetGetMethod(true);
+                MethodInfo setterMethod = properties[i].GetSetMethod(true);
 
-                var classProperty = new NativePropertyDefinitions
+                NativePropertyDefinitions classProperty = new NativePropertyDefinitions
                 {
                     name = NativeAllocStringAnsi(properties[i].Name),
                 };
@@ -416,7 +432,8 @@ namespace SE.Interop
             ManagedHandle* arr = (ManagedHandle*)NativeAlloc(attributeValues.Length, Unsafe.SizeOf<ManagedHandle>());
             for (int i = 0; i < attributeValues.Length; i++)
             {
-                if (!s_ClassAttributesCacheCollectible.TryGetValue(attributeValues[i], out ManagedHandle attributeHandle))
+                if (!s_ClassAttributesCacheCollectible.TryGetValue(attributeValues[i],
+                    out ManagedHandle attributeHandle))
                 {
                     attributeHandle = ManagedHandle.Alloc(attributeValues[i]);
                     s_ClassAttributesCacheCollectible.Add(attributeValues[i], attributeHandle);
@@ -433,7 +450,7 @@ namespace SE.Interop
         internal static ManagedHandle GetCustomAttribute(ManagedHandle typeHandle, ManagedHandle attributeHandle)
         {
             Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
-            var attributes = type.GetCustomAttributes(false);
+            object[] attributes = type.GetCustomAttributes(false);
             object attrib;
             if (attributeHandle.IsAllocated)
             {
@@ -449,7 +466,7 @@ namespace SE.Interop
 
             if (attrib != null)
             {
-                if (!s_ClassAttributesCacheCollectible.TryGetValue(attrib, out var handle))
+                if (!s_ClassAttributesCacheCollectible.TryGetValue(attrib, out ManagedHandle handle))
                 {
                     handle = ManagedHandle.Alloc(attrib);
                     s_ClassAttributesCacheCollectible.Add(attrib, handle);
@@ -469,12 +486,13 @@ namespace SE.Interop
             Type[] interfaces = type.GetInterfaces();
 
             // Match mono_class_get_interfaces which doesn't return interfaces from base class
-            var baseTypeInterfaces = type.BaseType?.GetInterfaces();
+            Type[] baseTypeInterfaces = type.BaseType?.GetInterfaces();
             if (baseTypeInterfaces != null)
             {
                 if (baseTypeInterfaces.Length == interfaces.Length)
                 {
-                    // Both base and this type have the same amount of interfaces so assume that this one has none unique
+                    // Both base and this type have the same amount of interfaces so assume that this one has none
+                    // unique
                     interfaces = Array.Empty<Type>();
                 }
                 else if (baseTypeInterfaces.Length != 0)
@@ -494,7 +512,7 @@ namespace SE.Interop
                     }
 
                     // Get only unique interface types
-                    var unique = new Type[uniqueCount];
+                    Type[] unique = new Type[uniqueCount];
                     uniqueCount = 0;
                     for (int i = 0; i < interfaces.Length; i++)
                     {
@@ -509,7 +527,9 @@ namespace SE.Interop
                         }
 
                         if (isUnique)
+                        {
                             unique[uniqueCount++] = interfaces[i];
+                        }
                     }
 
                     interfaces = unique;
@@ -559,7 +579,9 @@ namespace SE.Interop
             string str = Unsafe.As<string>(stringHandle.Target);
             *len = str.Length;
             fixed (char* p = str)
+            {
                 return p;
+            }
         }
 
         [UnmanagedCallersOnly]
@@ -619,10 +641,14 @@ namespace SE.Interop
         internal static IntPtr GetArrayPointer(ManagedHandle arrayHandle)
         {
             if (!arrayHandle.IsAllocated)
+            {
                 return IntPtr.Zero;
+            }
             ManagedArray managedArray = Unsafe.As<ManagedArray>(arrayHandle.Target);
             if (managedArray.Length == 0)
+            {
                 return IntPtr.Zero;
+            }
             return managedArray.Pointer;
         }
 
@@ -630,12 +656,18 @@ namespace SE.Interop
         internal static IntPtr GetArray(ManagedHandle handle)
         {
             if (!handle.IsAllocated)
+            {
                 return IntPtr.Zero;
+            }
             object value = handle.Target;
             if (value is ManagedArray)
+            {
                 return (IntPtr)handle;
+            }
             if (value is Array)
+            {
                 return Invoker.MarshalReturnValueGeneric(value.GetType(), value);
+            }
             return IntPtr.Zero;
         }
 
@@ -643,7 +675,9 @@ namespace SE.Interop
         internal static int GetArrayLength(ManagedHandle arrayHandle)
         {
             if (!arrayHandle.IsAllocated)
+            {
                 return 0;
+            }
             ManagedArray managedArray = Unsafe.As<ManagedArray>(arrayHandle.Target);
             return managedArray.Length;
         }
@@ -672,7 +706,9 @@ namespace SE.Interop
             object obj = handle.Target;
             Type classType = obj.GetType();
             if (classType == typeof(ManagedArray))
+            {
                 classType = ((ManagedArray)obj).ArrayType;
+            }
             return GetTypeManagedHandle(classType);
         }
 
@@ -730,7 +766,9 @@ namespace SE.Interop
             object value = handle.Target;
             Type type = value.GetType();
             if (!type.IsValueType)
+            {
                 return ManagedHandle.ToIntPtr(handle);
+            }
             return ValueTypeUnboxer.GetPointer(value, type);
         }
 
@@ -751,7 +789,9 @@ namespace SE.Interop
                 ConstructorInfo ctor = type.GetConstructor(
                     BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null);
                 if (ctor == null)
+                {
                     throw new Exception($"Missing empty constructor in type '{type}'.");
+                }
                 ctor.Invoke(obj, null);
             }
             catch (Exception ex)
@@ -774,7 +814,8 @@ namespace SE.Interop
         {
             MethodHolder methodHolder = Unsafe.As<MethodHolder>(methodHandle.Target);
 #if !USE_AOT
-            if (methodHolder.TryGetDelegate(out var methodDelegate, out var methodDelegateContext))
+            if (methodHolder.TryGetDelegate(out Invoker.MarshalAndInvokeDelegate methodDelegate,
+                out object methodDelegateContext))
             {
                 // Fast path, invoke the method with minimal allocations
                 IntPtr returnValue;
@@ -785,8 +826,10 @@ namespace SE.Interop
                 catch (Exception exception)
                 {
                     if (exceptionPtr != IntPtr.Zero)
+                    {
                         Unsafe.Write<IntPtr>(exceptionPtr.ToPointer(),
-                            ManagedHandle.ToIntPtr(exception, GCHandleType.Weak));
+                                                    ManagedHandle.ToIntPtr(exception, GCHandleType.Weak));
+                    }
                     return IntPtr.Zero;
                 }
 
@@ -816,13 +859,19 @@ namespace SE.Interop
                     // The internal exception thrown in MethodInfo.Invoke is caught here
                     Exception realException = exception;
                     if (exception.InnerException != null && exception.TargetSite.ReflectedType.Name == "MethodInvoker")
+                    {
                         realException = exception.InnerException;
+                    }
 
                     if (exceptionPtr != IntPtr.Zero)
+                    {
                         Unsafe.Write<IntPtr>(exceptionPtr.ToPointer(),
-                            ManagedHandle.ToIntPtr(realException, GCHandleType.Weak));
+                                                    ManagedHandle.ToIntPtr(realException, GCHandleType.Weak));
+                    }
                     else
+                    {
                         throw realException;
+                    }
                     return IntPtr.Zero;
                 }
 
@@ -851,7 +900,8 @@ namespace SE.Interop
 #else
             MethodHolder methodHolder = Unsafe.As<MethodHolder>(methodHandle.Target);
 
-            // Wrap the method call, this is needed to get the object instance from ManagedHandle and to pass the exception back to native side
+            // Wrap the method call, this is needed to get the object instance from ManagedHandle and to pass the
+            // exception back to native side
             ThunkContext context = new ThunkContext((MethodInfo)methodHolder.method);
             Delegate methodDelegate = typeof(ThunkContext).GetMethod(nameof(ThunkContext.InvokeThunk))
                 .CreateDelegate<InvokeThunkDelegate>(context);
@@ -860,7 +910,9 @@ namespace SE.Interop
             // Keep a reference to the delegate to prevent it from being garbage collected
 #if SE_EDITOR
             if (methodHolder.method.IsCollectible)
+            {
                 s_CachedDelegatesCollectible[functionPtr] = methodDelegate;
+            }
             else
 #endif
             {
@@ -877,9 +929,13 @@ namespace SE.Interop
             FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
             object value = null;
             if (field.field.FieldType.IsValueType)
+            {
                 value = Marshal.PtrToStructure(valuePtr, field.field.FieldType);
+            }
             else if (valuePtr != IntPtr.Zero)
+            {
                 value = ManagedHandle.FromIntPtr(valuePtr).Target;
+            }
             field.field.SetValue(fieldOwner, value);
         }
 
@@ -941,7 +997,7 @@ namespace SE.Interop
         internal static void WriteArrayReferences(ManagedHandle arrayHandle, IntPtr spanPtr, int spanLength)
         {
             ManagedArray managedArray = Unsafe.As<ManagedArray>(arrayHandle.Target);
-            var unmanagedSpan = new Span<IntPtr>(spanPtr.ToPointer(), spanLength);
+            Span<nint> unmanagedSpan = new Span<IntPtr>(spanPtr.ToPointer(), spanLength);
             unmanagedSpan.CopyTo(managedArray.ToSpan<IntPtr>());
         }
 
@@ -962,7 +1018,8 @@ namespace SE.Interop
                 // This assembly was already loaded when initializing the host context
                 s_FirstAssemblyLoaded = true;
 
-                Assembly runtimeAssembly = AssemblyLoadContext.Default.Assemblies.First(x => x.GetName().Name == "SERuntimeCSharp");
+                Assembly runtimeAssembly = AssemblyLoadContext.Default.Assemblies.First(x => x.GetName().Name
+                    == "SERuntimeCSharp");
                 return GetAssemblyHandle(runtimeAssembly);
             }
 
@@ -973,9 +1030,9 @@ namespace SE.Interop
                 Assembly assembly;
 #if SE_EDITOR
                 // Load assembly from loaded bytes to prevent file locking in Editor
-                var assemblyBytes = File.ReadAllBytes(assemblyPath);
+                byte[] assemblyBytes = File.ReadAllBytes(assemblyPath);
                 using MemoryStream stream = new MemoryStream(assemblyBytes);
-                var pdbPath = Path.ChangeExtension(assemblyPath, "pdb");
+                string pdbPath = Path.ChangeExtension(assemblyPath, "pdb");
                 if (File.Exists(pdbPath))
                 {
                     // Load including debug symbols
@@ -1016,7 +1073,9 @@ namespace SE.Interop
             string name = Marshal.PtrToStringAnsi(namePtr);
             Assembly assembly = NativeInteropUtils.GetAssemblies().FirstOrDefault(x => x.GetName().Name == name);
             if (assembly == null)
+            {
                 return new ManagedHandle();
+            }
             return GetAssemblyHandle(assembly);
         }
 
@@ -1045,7 +1104,9 @@ namespace SE.Interop
             }
 
             if (nativeLibraryName != null)
+            {
                 s_LibraryPaths.Remove(nativeLibraryName);
+            }
         }
 
         [UnmanagedCallersOnly]
@@ -1057,17 +1118,18 @@ namespace SE.Interop
 
             // Release all references in collectible ALC
             s_CachedDelegatesCollectible.Clear();
-            foreach (var pair in s_ManagedTypesCollectible)
+            foreach (KeyValuePair<Type, (TypeHolder typeHolder, ManagedHandle handle)> pair in
+                s_ManagedTypesCollectible)
             {
                 pair.Value.handle.Free();
             }
             s_ManagedTypesCollectible.Clear();
-            foreach (var handle in s_MethodHandlesCollectible)
+            foreach (ManagedHandle handle in s_MethodHandlesCollectible)
             {
                 handle.Free();
             }
             s_MethodHandlesCollectible.Clear();
-            foreach (var handle in s_FieldHandleCacheCollectible)
+            foreach (ManagedHandle handle in s_FieldHandleCacheCollectible)
             {
                 handle.Free();
             }
@@ -1075,7 +1137,7 @@ namespace SE.Interop
 
             s_TypeSizeCache.Clear();
 
-            foreach (var pair in s_ClassAttributesCacheCollectible)
+            foreach (KeyValuePair<object, ManagedHandle> pair in s_ClassAttributesCacheCollectible)
             {
                 pair.Value.Free();
             }
@@ -1105,12 +1167,18 @@ namespace SE.Interop
             Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
             Type nativeType = GetInternalType(type) ?? type;
             if (nativeType == typeof(Version))
+            {
                 nativeType = typeof(NativeVersion);
+            }
             int size;
             if (nativeType.IsClass)
+            {
                 size = sizeof(IntPtr);
+            }
             else
+            {
                 size = GetTypeSize(nativeType);
+            }
             return size;
         }
 
@@ -1119,18 +1187,24 @@ namespace SE.Interop
             byte checkInterfaces)
         {
             if (typeHandle == otherTypeHandle)
+            {
                 return 1;
+            }
 
             Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
             Type otherType = Unsafe.As<TypeHolder>(otherTypeHandle.Target);
 
             if (type == otherType)
+            {
                 return 1;
+            }
 
             if (checkInterfaces != 0 && otherType.IsInterface)
             {
                 if (type.GetInterfaces().Contains(otherType))
+                {
                     return 1;
+                }
             }
 
             return type.IsSubclassOf(otherType) ? (byte)1 : (byte)0;
@@ -1185,7 +1259,7 @@ namespace SE.Interop
         [UnmanagedCallersOnly]
         internal static ManagedHandle GetNullReferenceException()
         {
-            var exception = new NullReferenceException();
+            NullReferenceException exception = new NullReferenceException();
             return ManagedHandle.Alloc(exception, GCHandleType.Weak);
         }
 
@@ -1193,35 +1267,35 @@ namespace SE.Interop
         internal static ManagedHandle GetException(IntPtr msgPtr)
         {
             string msg = Marshal.PtrToStringAnsi(msgPtr);
-            var exception = new Exception(msg);
+            Exception exception = new Exception(msg);
             return ManagedHandle.Alloc(exception, GCHandleType.Weak);
         }
 
         [UnmanagedCallersOnly]
         internal static ManagedHandle GetNotSupportedException()
         {
-            var exception = new NotSupportedException();
+            NotSupportedException exception = new NotSupportedException();
             return ManagedHandle.Alloc(exception, GCHandleType.Weak);
         }
 
         [UnmanagedCallersOnly]
         internal static ManagedHandle GetArgumentNullException()
         {
-            var exception = new ArgumentNullException();
+            ArgumentNullException exception = new ArgumentNullException();
             return ManagedHandle.Alloc(exception, GCHandleType.Weak);
         }
 
         [UnmanagedCallersOnly]
         internal static ManagedHandle GetArgumentException()
         {
-            var exception = new ArgumentException();
+            ArgumentException exception = new ArgumentException();
             return ManagedHandle.Alloc(exception, GCHandleType.Weak);
         }
 
         [UnmanagedCallersOnly]
         internal static ManagedHandle GetArgumentOutOfRangeException()
         {
-            var exception = new ArgumentOutOfRangeException();
+            ArgumentOutOfRangeException exception = new ArgumentOutOfRangeException();
             return ManagedHandle.Alloc(exception, GCHandleType.Weak);
         }
 
@@ -1294,7 +1368,9 @@ namespace SE.Interop
         {
             Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
             if (type.IsByRef)
-                type = type.GetElementType(); // Drop reference type (&) to get actual value type
+            {
+                type = type.GetElementType();
+            } // Drop reference type (&) to get actual value type
             MTypes monoType;
             switch (type)
             {

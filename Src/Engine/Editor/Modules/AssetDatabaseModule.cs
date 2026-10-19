@@ -129,7 +129,8 @@ namespace SE.Editor
         {
             foreach (ContentOperate proxy in Operate)
             {
-                if (proxy is AssetOperate assetProxy && assetProxy.IsVirtual && path.EndsWith(assetProxy.FileExtension, StringComparison.Ordinal))
+                if (proxy is AssetOperate assetProxy && assetProxy.IsVirtual && path.EndsWith(assetProxy
+                    .FileExtension, StringComparison.Ordinal))
                 {
                     return assetProxy;
                 }
@@ -258,7 +259,7 @@ namespace SE.Editor
                     Debug.LogError(string.Format("Cannot move folder \'{0}\' to \'{1}\'", oldPath, newPath));
                     return;
                 }
-   
+
                 item.UpdatePath(newPath);
                 for (int i = 0; i < folder.Children.Count; i++)
                 {
@@ -319,9 +320,9 @@ namespace SE.Editor
 
                 for (int i = 0; i < folder.Children.Count; i++)
                 {
-                    var child = folder.Children[i];
-                    var childExtension = Path.GetExtension(child.Path);
-                    var childTargetPath = FileSystem.CombinePaths(targetPath, child.ShortName + childExtension);
+                    ContentItem child = folder.Children[i];
+                    string childExtension = Path.GetExtension(child.Path);
+                    string childTargetPath = FileSystem.CombinePaths(targetPath, child.ShortName + childExtension);
                     Copy(folder.Children[i], childTargetPath);
                 }
             }
@@ -368,7 +369,7 @@ namespace SE.Editor
                 // Delete all children
                 if (folder.Children.Count > 0)
                 {
-                    var children = folder.Children.ToArray();
+                    ContentItem[] children = folder.Children.ToArray();
                     for (int i = 0; i < children.Length; i++)
                     {
                         Delete(children[i], deletedByUser);
@@ -410,10 +411,10 @@ namespace SE.Editor
                         // Delete asset by using content pool
                         AssetContent.DeleteAsset(path);
                     }
-/*                    else if (item is ScriptItem)
-                    {
-                        AssetContent.DeleteScript(path);
-                    }*/
+                    /*                    else if (item is ScriptItem)
+                                        {
+                                            AssetContent.DeleteScript(path);
+                                        }*/
                     else
                     {
                         // Delete file
@@ -476,7 +477,8 @@ namespace SE.Editor
             // Create content folders nodes
             ProjectInfo project = Editor.GetProjectInfo();
             ProjectNode = new ProjectTreeNode(project);
-            ProjectNode.Content = new MainContentTreeNode(ProjectNode, ContentFolderType.Content, EngineContext.ProjectContentFolder);
+            ProjectNode.Content = new MainContentTreeNode(ProjectNode, ContentFolderType.Content, EngineContext
+                .ProjectContentFolder);
             ProjectNode.Content.GetFolder().ParentFolder = ProjectNode.GetFolder();
             Projects.Add(ProjectNode);
 
@@ -524,7 +526,8 @@ namespace SE.Editor
                 return;
             }
 
-            if (args.ChangeType is WatcherChangeTypes.Created or WatcherChangeTypes.Deleted or WatcherChangeTypes.Renamed or WatcherChangeTypes.Changed)
+            if (args.ChangeType is WatcherChangeTypes.Created or WatcherChangeTypes.Deleted or WatcherChangeTypes
+                .Renamed or WatcherChangeTypes.Changed)
             {
                 lock (m_DirtyNodesLock)
                 {
@@ -720,7 +723,7 @@ namespace SE.Editor
                 WorkspaceRebuilding?.Invoke();
             }
 
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
             m_RebuildFlag = false;
             m_EnableEvents = false;
             m_IsDuringFastSetup = true;
@@ -739,7 +742,8 @@ namespace SE.Editor
             m_IsDuringFastSetup = false;
             m_EnableEvents = enableEvents;
             stopwatch.Stop();
-            Debug.Logger.Log("Asset", $"Project database created in {(int)stopwatch.Elapsed.TotalMilliseconds} ms. Items count: {m_ItemsCreated - startItems}");
+            Debug.Logger.Log("Asset",
+                $"Project database created in {(int)stopwatch.Elapsed.TotalMilliseconds} ms. Items count: {m_ItemsCreated - startItems}");
 
             if (enableEvents)
             {
@@ -842,7 +846,7 @@ namespace SE.Editor
                 ContentFolder existing = m_IsDuringFastSetup ? null : folder.FindChild(normalized) as ContentFolder;
                 if (existing == null)
                 {
-                    var childNode = new ContentTreeNode(node, normalized);
+                    ContentTreeNode childNode = new ContentTreeNode(node, normalized);
                     if (!m_IsDuringFastSetup)
                     {
                         sortChildren = true;

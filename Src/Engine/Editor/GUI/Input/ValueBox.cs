@@ -51,10 +51,10 @@ namespace SE.Editor.GUI
         /// </summary>
         protected string _startEditText = string.Empty;
 
-        private Float2 _startSlideLocation;
-        private double _clickStartTime = -1;
-        private bool _cursorChanged;
-        private Float2 _mouseClickedPosition;
+        private Float2 m_StartSlideLocation;
+        private double m_ClickStartTime = -1;
+        private bool m_CursorChanged;
+        private Float2 m_MouseClickedPosition;
 
         /// <summary>
         /// Occurs when value gets changed.
@@ -169,15 +169,15 @@ namespace SE.Editor.GUI
             {
                 // Start sliding
                 _isSliding = true;
-                _startSlideLocation = location;
+                m_StartSlideLocation = location;
                 _startSlideValue = _value;
                 StartMouseCapture(true);
                 EndEditOnClick = false;
 
                 // Hide cursor and cache location
                 Cursor = CursorType.Hidden;
-                _mouseClickedPosition = PointToWindow(location);
-                _cursorChanged = true;
+                m_MouseClickedPosition = PointToWindow(location);
+                m_CursorChanged = true;
 
                 SlidingStart?.Invoke();
                 return true;
@@ -185,7 +185,7 @@ namespace SE.Editor.GUI
 
             if (button == MouseButton.Left && !IsFocused)
             {
-                _clickStartTime = SE.Platform.TimeSeconds;
+                m_ClickStartTime = SE.Platform.TimeSeconds;
             }
 
             return base.OnMouseDown(location, button);
@@ -198,7 +198,7 @@ namespace SE.Editor.GUI
             {
                 // Update sliding
                 Float2 slideLocation = location + Root.GetTrackingMouseOffset();
-                ApplySliding(Mathf.RoundToInt(slideLocation.X - _startSlideLocation.X) * _slideSpeed);
+                ApplySliding(Mathf.RoundToInt(slideLocation.X - m_StartSlideLocation.X) * _slideSpeed);
                 return;
             }
 
@@ -206,12 +206,12 @@ namespace SE.Editor.GUI
             if (CanUseSliding && SlideRect.Contains(location) && !_isSliding)
             {
                 Cursor = CursorType.SizeWE;
-                _cursorChanged = true;
+                m_CursorChanged = true;
             }
-            else if (_cursorChanged && !_isSliding)
+            else if (m_CursorChanged && !_isSliding)
             {
                 Cursor = CursorType.Default;
-                _cursorChanged = false;
+                m_CursorChanged = false;
             }
 
             base.OnMouseMove(location);
@@ -223,15 +223,15 @@ namespace SE.Editor.GUI
             if (button == MouseButton.Left && _isSliding)
             {
                 // End sliding and return mouse to original location
-                RootWindow().SetMousePosition(_mouseClickedPosition);
+                RootWindow().SetMousePosition(m_MouseClickedPosition);
                 EndSliding();
                 return true;
             }
 
-            if (button == MouseButton.Left && _clickStartTime > 0 &&
-                (SE.Platform.TimeSeconds - _clickStartTime) < 0.2f)
+            if (button == MouseButton.Left && m_ClickStartTime > 0 &&
+                (SE.Platform.TimeSeconds - m_ClickStartTime) < 0.2f)
             {
-                _clickStartTime = -1;
+                m_ClickStartTime = -1;
                 OnSelectingEnd();
                 SelectAll();
                 return true;
@@ -243,10 +243,10 @@ namespace SE.Editor.GUI
         /// <inheritdoc />
         public override void OnMouseLeave()
         {
-            if (_cursorChanged)
+            if (m_CursorChanged)
             {
                 Cursor = CursorType.Default;
-                _cursorChanged = false;
+                m_CursorChanged = false;
             }
 
             base.OnMouseLeave();
@@ -377,10 +377,10 @@ namespace SE.Editor.GUI
             _isSliding = false;
             EndEditOnClick = true;
             EndMouseCapture();
-            if (_cursorChanged)
+            if (m_CursorChanged)
             {
                 Cursor = CursorType.Default;
-                _cursorChanged = false;
+                m_CursorChanged = false;
             }
             SlidingEnd?.Invoke();
             Defocus();

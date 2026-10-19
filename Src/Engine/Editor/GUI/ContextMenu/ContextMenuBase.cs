@@ -15,12 +15,12 @@ namespace SE.Editor.GUI
 
     public class ContextMenuBase : ContainerControl
     {
-        private ContextMenuDirection _direction;
-        private ContextMenuBase _parentCM;
-        private ContextMenuBase _childCM;
-        private bool _isSubMenu;
-        private SE.Window _window;
-        private Control _previouslyFocused;
+        private ContextMenuDirection m_Direction;
+        private ContextMenuBase m_ParentCM;
+        private ContextMenuBase m_ChildCM;
+        private bool m_IsSubMenu;
+        private SE.Window m_Window;
+        private Control m_PreviouslyFocused;
 
         /// <summary>
         /// Gets a value indicating whether use automatic popup direction fix based on the screen dimensions.
@@ -38,12 +38,12 @@ namespace SE.Editor.GUI
         /// <summary>
         /// Gets the popup direction.
         /// </summary>
-        public ContextMenuDirection Direction => _direction;
+        public ContextMenuDirection Direction => m_Direction;
 
         /// <summary>
         /// Gets a value indicating whether any child context menu has been opened.
         /// </summary>
-        public bool HasChildCMOpened => _childCM != null;
+        public bool HasChildCMOpened => m_ChildCM != null;
 
         /// <summary>
         /// Gets the topmost context menu.
@@ -51,12 +51,14 @@ namespace SE.Editor.GUI
         public ContextMenuBase TopmostCM => GetTopmostCM();
 
         /// <summary>
-        /// Gets a value indicating whether this context menu is a sub-menu. Sub menus are treated like child context menus of the other menu (eg. hierarchy).
+        /// Gets a value indicating whether this context menu is a sub-menu. Sub menus are treated like child context
+        /// menus of the other menu (eg. hierarchy).
         /// </summary>
-        public bool IsSubMenu => _isSubMenu;
+        public bool IsSubMenu => m_IsSubMenu;
 
         /// <summary>
-        /// External dialog popups opened within the context window (eg. color picker) that should preserve context menu visibility (prevent from closing context menu).
+        /// External dialog popups opened within the context window (eg. color picker) that should preserve context menu
+        /// visibility (prevent from closing context menu).
         /// </summary>
         public List<SE.Window> ExternalPopups = new List<SE.Window>();
 
@@ -98,8 +100,9 @@ namespace SE.Editor.GUI
                 return;
             }
 
-            // Check if show menu inside the other menu - then link as a child to prevent closing the calling menu window on lost focus
-            if (_parentCM == null && parentWin.ChildrenCount == 1)
+            // Check if show menu inside the other menu - then link as a child to prevent closing the calling menu
+            // window on lost focus
+            if (m_ParentCM == null && parentWin.ChildrenCount == 1)
             {
                 if (parentWin.Children[0] is ContextMenuBase parentCM)
                 {
@@ -130,7 +133,7 @@ namespace SE.Editor.GUI
                 {
                     isUp = true;
                     locationSS.Y -= dpiSize.Y;
-                    if (parentMenu != null && parentMenu._childCM != null)
+                    if (parentMenu != null && parentMenu.m_ChildCM != null)
                     {
                         locationSS.Y += 30.0f * dpiScale;
                     }
@@ -145,12 +148,13 @@ namespace SE.Editor.GUI
                     }
                 }
                 else if (monitorBounds.Right < rightBottomLocationSS.X ||
-                         (_parentCM != null && (_parentCM.Direction == ContextMenuDirection.LeftDown || _parentCM.Direction == ContextMenuDirection.LeftUp)))
+                         (m_ParentCM != null && (m_ParentCM.Direction == ContextMenuDirection.LeftDown || m_ParentCM
+                             .Direction == ContextMenuDirection.LeftUp)))
                 {
                     isLeft = true;
-                    if (IsSubMenu && _parentCM != null)
+                    if (IsSubMenu && m_ParentCM != null)
                     {
-                        locationSS.X -= _parentCM.Width + dpiSize.X;
+                        locationSS.X -= m_ParentCM.Width + dpiSize.X;
                     }
                     else
                     {
@@ -162,11 +166,11 @@ namespace SE.Editor.GUI
             // Update direction flag
             if (isUp)
             {
-                _direction = isLeft ? ContextMenuDirection.LeftUp : ContextMenuDirection.RightUp;
+                m_Direction = isLeft ? ContextMenuDirection.LeftUp : ContextMenuDirection.RightUp;
             }
             else
             {
-                _direction = isLeft ? ContextMenuDirection.LeftDown : ContextMenuDirection.RightDown;
+                m_Direction = isLeft ? ContextMenuDirection.LeftDown : ContextMenuDirection.RightDown;
             }
 
             // Create window
@@ -187,23 +191,23 @@ namespace SE.Editor.GUI
             desc.IsRegularWindow = false;
             desc.HasSizingFrame = false;
             OnWindowCreating(desc);
-            _window = SE.Window.Create(desc);
-            _window.GetFocus += OnWindowGotFocus;
-            _window.LostFocus += OnWindowLostFocus;
+            m_Window = SE.Window.Create(desc);
+            m_Window.GetFocus += OnWindowGotFocus;
+            m_Window.LostFocus += OnWindowLostFocus;
 
             // Attach to the window
-            _parentCM = parent as ContextMenuBase;
-            Parent = _window.GUI;
+            m_ParentCM = parent as ContextMenuBase;
+            Parent = m_Window.GUI;
 
             // Show
             Visible = true;
-            if (_window == null)
+            if (m_Window == null)
             {
                 return;
             }
-            _window.Show();
+            m_Window.Show();
             PerformLayout();
-            _previouslyFocused = parentWin.GetFocusedControl();
+            m_PreviouslyFocused = parentWin.GetFocusedControl();
             Focus();
             OnShow();
         }
@@ -228,30 +232,30 @@ namespace SE.Editor.GUI
             Parent = null;
 
             // Close window
-            if (_window != null)
+            if (m_Window != null)
             {
-                SE.Window win = _window;
-                _window = null;
+                SE.Window win = m_Window;
+                m_Window = null;
                 win.Close();
             }
 
             // Unlink from parent
-            if (_parentCM != null)
+            if (m_ParentCM != null)
             {
-                _parentCM._childCM = null;
-                _parentCM = null;
+                m_ParentCM.m_ChildCM = null;
+                m_ParentCM = null;
             }
 
             // Return focus
-            if (_previouslyFocused != null)
+            if (m_PreviouslyFocused != null)
             {
-                if (_previouslyFocused.RootWindow() != null)
+                if (m_PreviouslyFocused.RootWindow() != null)
                 {
-                    _previouslyFocused.RootWindow().Focus();
+                    m_PreviouslyFocused.RootWindow().Focus();
                 }
 
-                _previouslyFocused.Focus();
-                _previouslyFocused = null;
+                m_PreviouslyFocused.Focus();
+                m_PreviouslyFocused = null;
             }
 
             // Hide
@@ -264,19 +268,20 @@ namespace SE.Editor.GUI
         /// </summary>
         /// <param name="child">The child menu.</param>
         /// <param name="location">The child menu initial location.</param>
-        /// <param name="isSubMenu">True if context menu is a normal sub-menu, otherwise it is a custom menu popup linked as child.</param>
+        /// <param name="isSubMenu"> True if context menu is a normal sub-menu, otherwise it is a custom menu popup
+        /// linked as child.</param>
         public void ShowChild(ContextMenuBase child, Float2 location, bool isSubMenu = true)
         {
             // Hide current child
             HideChild();
 
             // Set child
-            _childCM = child;
-            _childCM._parentCM = this;
-            _childCM._isSubMenu = isSubMenu;
+            m_ChildCM = child;
+            m_ChildCM.m_ParentCM = this;
+            m_ChildCM.m_IsSubMenu = isSubMenu;
 
             // Show child
-            _childCM.Show(this, location);
+            m_ChildCM.Show(this, location);
         }
 
         /// <summary>
@@ -284,10 +289,10 @@ namespace SE.Editor.GUI
         /// </summary>
         public void HideChild()
         {
-            if (_childCM != null)
+            if (m_ChildCM != null)
             {
-                _childCM.Hide();
-                _childCM = null;
+                m_ChildCM.Hide();
+                m_ChildCM = null;
             }
         }
 
@@ -346,10 +351,10 @@ namespace SE.Editor.GUI
         public ContextMenuBase()
             : base(0, 0, 120, 32)
         {
-            _direction = ContextMenuDirection.RightDown;
+            m_Direction = ContextMenuDirection.RightDown;
             Visible = false;
 
-            _isSubMenu = true;
+            m_IsSubMenu = true;
         }
 
         /// <summary>
@@ -357,9 +362,9 @@ namespace SE.Editor.GUI
         /// </summary>
         protected void UpdateWindowSize()
         {
-            if (_window != null)
+            if (m_Window != null)
             {
-                _window.ClientSize = Size * _window.DpiScale;
+                m_Window.ClientSize = Size * m_Window.DpiScale;
             }
         }
 
@@ -394,12 +399,12 @@ namespace SE.Editor.GUI
         private void OnWindowLostFocus()
         {
             // Skip for parent menus (child should handle lost of focus)
-            if (_childCM != null)
+            if (m_ChildCM != null)
             {
                 return;
             }
 
-            if (_parentCM != null)
+            if (m_ParentCM != null)
             {
                 if (IsMouseOver)
                 {
@@ -416,23 +421,23 @@ namespace SE.Editor.GUI
 
                 // Check if mouse is over any of the parents
                 ContextMenuBase focusCM = null;
-                ContextMenuBase cm = _parentCM;
+                ContextMenuBase cm = m_ParentCM;
                 while (cm != null)
                 {
                     if (cm.IsMouseOver)
                     {
                         focusCM = cm;
                     }
-                    cm = cm._parentCM;
+                    cm = cm.m_ParentCM;
                 }
 
                 if (focusCM != null)
                 {
                     // Focus on the clicked parent and hide any open sub-menus
                     focusCM.HideChild();
-                    if (focusCM._window != null)
+                    if (focusCM.m_Window != null)
                     {
-                        focusCM._window.Show();
+                        focusCM.m_Window.Show();
                     }
                 }
                 else
@@ -450,9 +455,9 @@ namespace SE.Editor.GUI
         private ContextMenuBase GetTopmostCM()
         {
             ContextMenuBase cm = this;
-            while (cm._parentCM != null && cm._isSubMenu)
+            while (cm.m_ParentCM != null && cm.m_IsSubMenu)
             {
-                cm = cm._parentCM;
+                cm = cm.m_ParentCM;
             }
             return cm;
         }

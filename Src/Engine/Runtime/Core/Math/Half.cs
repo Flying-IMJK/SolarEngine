@@ -132,7 +132,9 @@ namespace SE
         {
             float[] results = new float[values.Length];
             for (int i = 0; i < results.Length; i++)
+            {
                 results[i] = HalfUtils.Unpack(values[i].RawValue);
+            }
             return results;
         }
 
@@ -145,7 +147,9 @@ namespace SE
         {
             Half[] results = new Half[values.Length];
             for (int i = 0; i < results.Length; i++)
+            {
                 results[i] = new Half(values[i]);
+            }
             return results;
         }
 
@@ -174,7 +178,8 @@ namespace SE
         /// </summary>
         /// <param name = "left">The first value to compare.</param>
         /// <param name = "right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name = "left" /> has the same value as <paramref name = "right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name = "left" /> has the same value as <paramref name = "right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         public static bool operator ==(Half left, Half right)
         {
             return left.m_RawValue == right.m_RawValue;
@@ -185,7 +190,8 @@ namespace SE
         /// </summary>
         /// <param name = "left">The first value to compare.</param>
         /// <param name = "right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name = "left" /> has a different value than <paramref name = "right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name = "left" /> has a different value than <paramref name = "right" />
+        /// ; otherwise, <c> false</c>.</returns>
         public static bool operator !=(Half left, Half right)
         {
             return left.m_RawValue != right.m_RawValue;
@@ -216,7 +222,9 @@ namespace SE
         /// </summary>
         /// <param name = "value1" />
         /// <param name = "value2" />
-        /// <returns><c>true</c> if <paramref name = "value1" /> is the same instance as <paramref name = "value2" /> or  if both are <c>null</c> references or if <c>value1.Equals(value2)</c> returns <c>true</c>; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name = "value1" /> is the same instance as <paramref name = "value2" />
+        /// or if both are <c> null</c> references or if <c> value1.Equals(value2)</c> returns <c> true</c>; otherwise,
+        /// <c> false</c>.</returns>
         public static bool Equals(ref Half value1, ref Half value2)
         {
             return value1.m_RawValue == value2.m_RawValue;
@@ -226,7 +234,8 @@ namespace SE
         /// Returns a value that indicates whether the current instance is equal to the specified object.
         /// </summary>
         /// <param name = "other">Object to make the comparison with.</param>
-        /// <returns><c>true</c> if the current instance is equal to the specified object; <c>false</c> otherwise.</returns>
+        /// <returns> <c> true</c> if the current instance is equal to the specified object; <c> false</c>
+        /// otherwise.</returns>
         public bool Equals(Half other)
         {
             return other.m_RawValue == m_RawValue;
@@ -236,7 +245,8 @@ namespace SE
         /// Returns a value that indicates whether the current instance is equal to a specified object.
         /// </summary>
         /// <param name = "obj">Object to make the comparison with.</param>
-        /// <returns><c>true</c> if the current instance is equal to the specified object; <c>false</c> otherwise.</returns>
+        /// <returns> <c> true</c> if the current instance is equal to the specified object; <c> false</c>
+        /// otherwise.</returns>
         public override bool Equals(object obj)
         {
             if (obj == null)
@@ -330,7 +340,8 @@ namespace SE
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
         /// <returns>
-        /// <c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <c> true</c> if <paramref name="left" /> has the same value as <paramref name="right" /> ; otherwise, <c>
+        /// false</c>.</returns>
         public static bool operator ==(Half2 left, Half2 right)
         {
             return Equals(ref left, ref right);
@@ -342,7 +353,8 @@ namespace SE
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
         /// <returns>
-        /// <c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <c> true</c> if <paramref name="left" /> has a different value than <paramref name="right" /> ; otherwise,
+        /// <c> false</c>.</returns>
         [return: MarshalAs(UnmanagedType.U1)]
         public static bool operator !=(Half2 left, Half2 right)
         {
@@ -365,7 +377,8 @@ namespace SE
         /// <param name="value2" />
         /// <returns>
         /// <c>true</c> if <paramref name="value1" /> is the same instance as <paramref name="value2" /> or
-        /// if both are <c>null</c> references or if <c>value1.Equals(value2)</c> returns <c>true</c>; otherwise, <c>false</c>.</returns>
+        /// if both are <c> null</c> references or if <c> value1.Equals(value2)</c> returns <c> true</c>; otherwise, <c>
+        /// false</c>.</returns>
         public static bool Equals(ref Half2 value1, ref Half2 value2)
         {
             return ((value1.X == value2.X) && (value1.Y == value2.Y));
@@ -512,7 +525,8 @@ namespace SE
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
         /// <returns>
-        /// <c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <c> true</c> if <paramref name="left" /> has the same value as <paramref name="right" /> ; otherwise, <c>
+        /// false</c>.</returns>
         public static bool operator ==(Half3 left, Half3 right)
         {
             return Equals(ref left, ref right);
@@ -524,7 +538,8 @@ namespace SE
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
         /// <returns>
-        /// <c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <c> true</c> if <paramref name="left" /> has a different value than <paramref name="right" /> ; otherwise,
+        /// <c> false</c>.</returns>
         [return: MarshalAs(UnmanagedType.U1)]
         public static bool operator !=(Half3 left, Half3 right)
         {
@@ -548,7 +563,8 @@ namespace SE
         /// <param name="value2" />
         /// <returns>
         /// <c>true</c> if <paramref name="value1" /> is the same instance as <paramref name="value2" /> or
-        /// if both are <c>null</c> references or if <c>value1.Equals(value2)</c> returns <c>true</c>; otherwise, <c>false</c>.</returns>
+        /// if both are <c> null</c> references or if <c> value1.Equals(value2)</c> returns <c> true</c>; otherwise, <c>
+        /// false</c>.</returns>
         public static bool Equals(ref Half3 value1, ref Half3 value2)
         {
             return (((value1.X == value2.X) && (value1.Y == value2.Y)) && (value1.Z == value2.Z));
@@ -680,7 +696,8 @@ namespace SE
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
         /// <returns>
-        /// <c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <c> true</c> if <paramref name="left" /> has the same value as <paramref name="right" /> ; otherwise, <c>
+        /// false</c>.</returns>
         public static bool operator ==(Half4 left, Half4 right)
         {
             return Equals(ref left, ref right);
@@ -692,7 +709,8 @@ namespace SE
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
         /// <returns>
-        /// <c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <c> true</c> if <paramref name="left" /> has a different value than <paramref name="right" /> ; otherwise,
+        /// <c> false</c>.</returns>
         public static bool operator !=(Half4 left, Half4 right)
         {
             return !Equals(ref left, ref right);
@@ -716,7 +734,8 @@ namespace SE
         /// <param name="value2" />
         /// <returns>
         /// <c>true</c> if <paramref name="value1" /> is the same instance as <paramref name="value2" /> or
-        /// if both are <c>null</c> references or if <c>value1.Equals(value2)</c> returns <c>true</c>; otherwise, <c>false</c>.</returns>
+        /// if both are <c> null</c> references or if <c> value1.Equals(value2)</c> returns <c> true</c>; otherwise, <c>
+        /// false</c>.</returns>
         public static bool Equals(ref Half4 value1, ref Half4 value2)
         {
             return (((value1.X == value2.X) && (value1.Y == value2.Y)) &&

@@ -10,15 +10,21 @@ namespace SE.Editor
         protected override int Rows => 4;
         protected override float[] ReadComponents(object value)
         {
-            var matrix = (Matrix)value;
-            var result = new float[16];
-            for (int i = 0; i < result.Length; i++) result[i] = matrix[i];
+            Matrix matrix = (Matrix)value;
+            float[] result = new float[16];
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = matrix[i];
+            }
             return result;
         }
         protected override object CreateValue(float[] values)
         {
-            var matrix = new Matrix();
-            for (int i = 0; i < values.Length; i++) matrix[i] = values[i];
+            Matrix matrix = new Matrix();
+            for (int i = 0; i < values.Length; i++)
+            {
+                matrix[i] = values[i];
+            }
             return matrix;
         }
     }
@@ -29,11 +35,18 @@ namespace SE.Editor
         public override void Initialize(LayoutElementsContainer layout)
         {
             base.Initialize(layout);
-            var limit = Values.GetAttributes().OfType<LimitAttribute>().FirstOrDefault();
-            if (limit == null) return;
-            foreach (var child in ChildrenEditors)
+            LimitAttribute limit = Values.GetAttributes().OfType<LimitAttribute>().FirstOrDefault();
+            if (limit == null)
+            {
+                return;
+            }
+            foreach (CustomEditor child in ChildrenEditors)
+            {
                 if (child is FloatEditor editor)
+                {
                     editor.Element?.SetLimits(limit);
+                }
+            }
         }
     }
 }

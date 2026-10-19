@@ -62,7 +62,7 @@ namespace SE
 #endif
     public partial struct Float2 : IEquatable<Float2>, IFormattable
     {
-        private static readonly string s_FormatString = "X:{0:F2} Y:{1:F2}";
+        private static readonly string FormatString = "X:{0:F2} Y:{1:F2}";
 
         /// <summary>
         /// The size of the <see cref="Float2" /> type, in bytes.
@@ -128,7 +128,8 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Float2" /> struct.
         /// </summary>
-        /// <param name="value">A vector containing the values with which to initialize the X, Y and Z components.</param>
+        /// <param name="value"> A vector containing the values with which to initialize the X, Y and Z
+        /// components.</param>
         public Float2(Double2 value)
         {
             X = (float)value.X;
@@ -158,16 +159,22 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Float2" /> struct.
         /// </summary>
-        /// <param name="values">The values to assign to the X and Y components of the vector. This must be an array with two elements.</param>
+        /// <param name="values"> The values to assign to the X and Y components of the vector. This must be an array
+        /// with two elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="values" /> contains more or less than two elements.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"> Thrown when <paramref name="values" /> contains more or less
+        /// than two elements.</exception>
         public Float2(float[] values)
         {
             if (values == null)
+            {
                 throw new ArgumentNullException(nameof(values));
+            }
             if (values.Length != 2)
+            {
                 throw new ArgumentOutOfRangeException(nameof(values),
-                    "There must be two and only two input values for Float2.");
+                                    "There must be two and only two input values for Float2.");
+            }
             X = values[0];
             Y = values[1];
         }
@@ -216,9 +223,11 @@ namespace SE
         /// Gets or sets the component at the specified index.
         /// </summary>
         /// <value>The value of the X or Y component, depending on the index.</value>
-        /// <param name="index">The index of the component to access. Use 0 for the X component and 1 for the Y component.</param>
+        /// <param name="index"> The index of the component to access. Use 0 for the X component and 1 for the Y
+        /// component.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="index" /> is out of the range [0,1].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"> Thrown when the <paramref name="index" /> is out of
+        /// the range [0,1].</exception>
         public float this[int index]
         {
             get
@@ -252,14 +261,16 @@ namespace SE
         /// Calculates the length of the vector.
         /// </summary>
         /// <returns>The length of the vector.</returns>
-        /// <remarks><see cref="Float2.LengthSquared" /> may be preferred when only the relative length is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Float2.LengthSquared" /> may be preferred when only the relative length is needed and
+        /// speed is of the essence.</remarks>
         public float Length => (float)Math.Sqrt(X * X + Y * Y);
 
         /// <summary>
         /// Calculates the squared length of the vector.
         /// </summary>
         /// <returns>The squared length of the vector.</returns>
-        /// <remarks>This method may be preferred to <see cref="Float2.Length" /> when only a relative length is needed and speed is of the essence.</remarks>
+        /// <remarks> This method may be preferred to <see cref="Float2.Length" /> when only a relative length is needed
+        /// and speed is of the essence.</remarks>
         public float LengthSquared => X * X + Y * Y;
 
         /// <summary>
@@ -519,12 +530,18 @@ namespace SE
         /// Returns a <see cref="Float2" /> containing the 2D Cartesian coordinates of a point specified in Barycentric
         /// coordinates relative to a 2D triangle.
         /// </summary>
-        /// <param name="value1">A <see cref="Float2" /> containing the 2D Cartesian coordinates of vertex 1 of the triangle.</param>
-        /// <param name="value2">A <see cref="Float2" /> containing the 2D Cartesian coordinates of vertex 2 of the triangle.</param>
-        /// <param name="value3">A <see cref="Float2" /> containing the 2D Cartesian coordinates of vertex 3 of the triangle.</param>
-        /// <param name="amount1">Barycentric coordinate b2, which expresses the weighting factor toward vertex 2 (specified in <paramref name="value2" />).</param>
-        /// <param name="amount2">Barycentric coordinate b3, which expresses the weighting factor toward vertex 3 (specified in <paramref name="value3" />).</param>
-        /// <param name="result">When the method completes, contains the 2D Cartesian coordinates of the specified point.</param>
+        /// <param name="value1"> A <see cref="Float2" /> containing the 2D Cartesian coordinates of vertex 1 of the
+        /// triangle.</param>
+        /// <param name="value2"> A <see cref="Float2" /> containing the 2D Cartesian coordinates of vertex 2 of the
+        /// triangle.</param>
+        /// <param name="value3"> A <see cref="Float2" /> containing the 2D Cartesian coordinates of vertex 3 of the
+        /// triangle.</param>
+        /// <param name="amount1"> Barycentric coordinate b2, which expresses the weighting factor toward vertex 2
+        /// (specified in <paramref name="value2" /> ).</param>
+        /// <param name="amount2"> Barycentric coordinate b3, which expresses the weighting factor toward vertex 3
+        /// (specified in <paramref name="value3" /> ).</param>
+        /// <param name="result"> When the method completes, contains the 2D Cartesian coordinates of the specified
+        /// point.</param>
         public static void Barycentric(ref Float2 value1, ref Float2 value2, ref Float2 value3, float amount1,
             float amount2, out Float2 result)
         {
@@ -536,12 +553,18 @@ namespace SE
         /// Returns a <see cref="Float2" /> containing the 2D Cartesian coordinates of a point specified in Barycentric
         /// coordinates relative to a 2D triangle.
         /// </summary>
-        /// <param name="value1">A <see cref="Float2" /> containing the 2D Cartesian coordinates of vertex 1 of the triangle.</param>
-        /// <param name="value2">A <see cref="Float2" /> containing the 2D Cartesian coordinates of vertex 2 of the triangle.</param>
-        /// <param name="value3">A <see cref="Float2" /> containing the 2D Cartesian coordinates of vertex 3 of the triangle.</param>
-        /// <param name="amount1">Barycentric coordinate b2, which expresses the weighting factor toward vertex 2 (specified in <paramref name="value2" />).</param>
-        /// <param name="amount2">Barycentric coordinate b3, which expresses the weighting factor toward vertex 3 (specified in <paramref name="value3" />).</param>
-        /// <returns>A new <see cref="Float2" /> containing the 2D Cartesian coordinates of the specified point.</returns>
+        /// <param name="value1"> A <see cref="Float2" /> containing the 2D Cartesian coordinates of vertex 1 of the
+        /// triangle.</param>
+        /// <param name="value2"> A <see cref="Float2" /> containing the 2D Cartesian coordinates of vertex 2 of the
+        /// triangle.</param>
+        /// <param name="value3"> A <see cref="Float2" /> containing the 2D Cartesian coordinates of vertex 3 of the
+        /// triangle.</param>
+        /// <param name="amount1"> Barycentric coordinate b2, which expresses the weighting factor toward vertex 2
+        /// (specified in <paramref name="value2" /> ).</param>
+        /// <param name="amount2"> Barycentric coordinate b3, which expresses the weighting factor toward vertex 3
+        /// (specified in <paramref name="value3" /> ).</param>
+        /// <returns> A new <see cref="Float2" /> containing the 2D Cartesian coordinates of the specified
+        /// point.</returns>
         public static Float2 Barycentric(Float2 value1, Float2 value2, Float2 value3, float amount1, float amount2)
         {
             Barycentric(ref value1, ref value2, ref value3, amount1, amount2, out Float2 result);
@@ -606,7 +629,8 @@ namespace SE
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <param name="result">When the method completes, contains the distance between the two vectors.</param>
-        /// <remarks><see cref="Float2.DistanceSquared(ref Float2, ref Float2, out float)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Float2.DistanceSquared(ref Float2, ref Float2, out float)" /> may be preferred when
+        /// only the relative distance is needed and speed is of the essence.</remarks>
         public static void Distance(ref Float2 value1, ref Float2 value2, out float result)
         {
             float x = value1.X - value2.X;
@@ -620,7 +644,8 @@ namespace SE
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <returns>The distance between the two vectors.</returns>
-        /// <remarks><see cref="Float2.DistanceSquared(Float2, Float2)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Float2.DistanceSquared(Float2, Float2)" /> may be preferred when only the relative
+        /// distance is needed and speed is of the essence.</remarks>
         public static float Distance(Float2 value1, Float2 value2)
         {
             float x = value1.X - value2.X;
@@ -634,7 +659,8 @@ namespace SE
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <returns>The distance between the two vectors.</returns>
-        /// <remarks><see cref="Float2.DistanceSquared(ref Float2, ref Float2, out float)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Float2.DistanceSquared(ref Float2, ref Float2, out float)" /> may be preferred when
+        /// only the relative distance is needed and speed is of the essence.</remarks>
         public static float Distance(ref Float2 value1, ref Float2 value2)
         {
             float x = value1.X - value2.X;
@@ -647,7 +673,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector</param>
-        /// <param name="result">When the method completes, contains the squared distance between the two vectors.</param>
+        /// <param name="result"> When the method completes, contains the squared distance between the two
+        /// vectors.</param>
         public static void DistanceSquared(ref Float2 value1, ref Float2 value2, out float result)
         {
             float x = value1.X - value2.X;
@@ -852,7 +879,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Returns the vector with components containing the smallest integer greater to or equal to the original value.
+        /// Returns the vector with components containing the smallest integer greater to or equal to the original
+        /// value.
         /// </summary>
         /// <param name="v">The value.</param>
         /// <returns>The result.</returns>
@@ -862,7 +890,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Breaks the components of the vector into an integral and a fractional part. Returns vector made of fractional parts.
+        /// Breaks the components of the vector into an integral and a fractional part. Returns vector made of
+        /// fractional parts.
         /// </summary>
         /// <param name="v">The value.</param>
         /// <returns>The result.</returns>
@@ -877,8 +906,10 @@ namespace SE
         /// <param name="start">Start vector.</param>
         /// <param name="end">End vector.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
-        /// <param name="result">When the method completes, contains the linear interpolation of the two vectors.</param>
-        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
+        /// <param name="result"> When the method completes, contains the linear interpolation of the two
+        /// vectors.</param>
+        /// <remarks> Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be
+        /// returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static void Lerp(ref Float2 start, ref Float2 end, float amount, out Float2 result)
         {
             result = default;
@@ -893,7 +924,8 @@ namespace SE
         /// <param name="end">End vector.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
         /// <returns>The linear interpolation of the two vectors.</returns>
-        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
+        /// <remarks> Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be
+        /// returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static Float2 Lerp(Float2 start, Float2 end, float amount)
         {
             Lerp(ref start, ref end, amount, out Float2 result);
@@ -906,8 +938,10 @@ namespace SE
         /// <param name="start">Start vector.</param>
         /// <param name="end">End vector.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
-        /// <param name="result">When the method completes, contains the linear interpolation of the two vectors.</param>
-        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
+        /// <param name="result"> When the method completes, contains the linear interpolation of the two
+        /// vectors.</param>
+        /// <remarks> Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be
+        /// returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static void Lerp(ref Float2 start, ref Float2 end, ref Float2 amount, out Float2 result)
         {
             result = default;
@@ -922,7 +956,8 @@ namespace SE
         /// <param name="end">End vector.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
         /// <returns>The linear interpolation of the two vectors.</returns>
-        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
+        /// <remarks> Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be
+        /// returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static Float2 Lerp(Float2 start, Float2 end, Float2 amount)
         {
             Lerp(ref start, ref end, ref amount, out Float2 result);
@@ -963,7 +998,8 @@ namespace SE
         /// <param name="value2">Second source position vector.</param>
         /// <param name="tangent2">Second source tangent vector.</param>
         /// <param name="amount">Weighting factor.</param>
-        /// <param name="result">When the method completes, contains the result of the Hermite spline interpolation.</param>
+        /// <param name="result"> When the method completes, contains the result of the Hermite spline
+        /// interpolation.</param>
         public static void Hermite(ref Float2 value1, ref Float2 tangent1, ref Float2 value2, ref Float2 tangent2,
             float amount, out Float2 result)
         {
@@ -994,7 +1030,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Calculates the 2D vector perpendicular to the given 2D vector. The result is always rotated 90-degrees in a counter-clockwise direction for a 2D coordinate system where the positive Y axis goes up.
+        /// Calculates the 2D vector perpendicular to the given 2D vector. The result is always rotated 90-degrees in a
+        /// counter-clockwise direction for a 2D coordinate system where the positive Y axis goes up.
         /// </summary>
         /// <param name="inDirection">The input direction.</param>
         /// <returns>The result.</returns>
@@ -1004,7 +1041,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Calculates the 2D vector perpendicular to the given 2D vector. The result is always rotated 90-degrees in a counter-clockwise direction for a 2D coordinate system where the positive Y axis goes up.
+        /// Calculates the 2D vector perpendicular to the given 2D vector. The result is always rotated 90-degrees in a
+        /// counter-clockwise direction for a 2D coordinate system where the positive Y axis goes up.
         /// </summary>
         /// <param name="inDirection">The in direction.</param>
         /// <param name="result">When the method completes, contains the result of the calculation.</param>
@@ -1021,7 +1059,8 @@ namespace SE
         /// <param name="value3">The third position in the interpolation.</param>
         /// <param name="value4">The fourth position in the interpolation.</param>
         /// <param name="amount">Weighting factor.</param>
-        /// <param name="result">When the method completes, contains the result of the Catmull-Rom interpolation.</param>
+        /// <param name="result"> When the method completes, contains the result of the Catmull-Rom
+        /// interpolation.</param>
         public static void CatmullRom(ref Float2 value1, ref Float2 value2, ref Float2 value3, ref Float2 value4,
             float amount, out Float2 result)
         {
@@ -1056,7 +1095,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">When the method completes, contains an new vector composed of the largest components of the source vectors.</param>
+        /// <param name="result"> When the method completes, contains an new vector composed of the largest components
+        /// of the source vectors.</param>
         public static void Max(ref Float2 left, ref Float2 right, out Float2 result)
         {
             result = default;
@@ -1081,7 +1121,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">When the method completes, contains an new vector composed of the smallest components of the source vectors.</param>
+        /// <param name="result"> When the method completes, contains an new vector composed of the smallest components
+        /// of the source vectors.</param>
         public static void Min(ref Float2 left, ref Float2 right, out Float2 result)
         {
             result = default;
@@ -1117,7 +1158,8 @@ namespace SE
         /// <param name="vector">The source vector.</param>
         /// <param name="normal">Normal of the surface.</param>
         /// <param name="result">When the method completes, contains the reflected vector.</param>
-        /// <remarks>Reflect only gives the direction of a reflection off a surface, it does not determine whether the original vector was close enough to the surface to hit it.</remarks>
+        /// <remarks> Reflect only gives the direction of a reflection off a surface, it does not determine whether the
+        /// original vector was close enough to the surface to hit it.</remarks>
         public static void Reflect(ref Float2 vector, ref Float2 normal, out Float2 result)
         {
             result = default;
@@ -1132,7 +1174,8 @@ namespace SE
         /// <param name="vector">The source vector.</param>
         /// <param name="normal">Normal of the surface.</param>
         /// <returns>The reflected vector.</returns>
-        /// <remarks>Reflect only gives the direction of a reflection off a surface, it does not determine whether the original vector was close enough to the surface to hit it.</remarks>
+        /// <remarks> Reflect only gives the direction of a reflection off a surface, it does not determine whether the
+        /// original vector was close enough to the surface to hit it.</remarks>
         public static Float2 Reflect(Float2 vector, Float2 normal)
         {
             Reflect(ref vector, ref normal, out Float2 result);
@@ -1212,7 +1255,7 @@ namespace SE
         /// </remarks>
         public static void TransformCoordinate(ref Float2 coordinate, ref Matrix transform, out Float2 result)
         {
-            var vector = new Float4
+            Float4 vector = new Float4
             {
                 X = coordinate.X * transform.M11 + coordinate.Y * transform.M21 + transform.M41,
                 Y = coordinate.X * transform.M12 + coordinate.Y * transform.M22 + transform.M42,
@@ -1304,7 +1347,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Multiplies a vector with another by performing component-wise multiplication equivalent to <see cref="Multiply(ref Float2,ref Float2,out Float2)" />.
+        /// Multiplies a vector with another by performing component-wise multiplication equivalent to
+        /// <see cref="Multiply(ref Float2,ref Float2,out Float2)" /> .
         /// </summary>
         /// <param name="left">The first vector to multiply.</param>
         /// <param name="right">The second vector to multiply.</param>
@@ -1397,7 +1441,7 @@ namespace SE
         /// <returns>The scaled vector.</returns>
         public static Float2 operator *(double scale, Float2 value)
         {
-            var s = (float)scale;
+            float s = (float)scale;
             return new Float2(value.X * s, value.Y * s);
         }
 
@@ -1409,7 +1453,7 @@ namespace SE
         /// <returns>The scaled vector.</returns>
         public static Float2 operator *(Float2 value, double scale)
         {
-            var s = (float)scale;
+            float s = (float)scale;
             return new Float2(value.X * s, value.Y * s);
         }
 
@@ -1421,7 +1465,7 @@ namespace SE
         /// <returns>The scaled vector.</returns>
         public static Float2 operator /(Float2 value, double scale)
         {
-            var s = (float)scale;
+            float s = (float)scale;
             return new Float2(value.X / s, value.Y / s);
         }
 
@@ -1433,7 +1477,7 @@ namespace SE
         /// <returns>The scaled vector.</returns>
         public static Float2 operator /(double scale, Float2 value)
         {
-            var s = (float)scale;
+            float s = (float)scale;
             return new Float2(s / value.X, s / value.Y);
         }
 
@@ -1530,7 +1574,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise,<c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has the same value as <paramref name="right" /> ;
+        /// otherwise,<c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Float2 left, Float2 right)
         {
@@ -1542,7 +1587,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise,<c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has a different value than <paramref name="right" /> ;
+        /// otherwise,<c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Float2 left, Float2 right)
         {
@@ -1596,8 +1642,10 @@ namespace SE
         public string ToString(string format)
         {
             if (format == null)
+            {
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString,
+            }
+            return string.Format(CultureInfo.CurrentCulture, FormatString,
                 X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture));
         }
 
@@ -1608,7 +1656,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, s_FormatString, X, Y);
+            return string.Format(formatProvider, FormatString, X, Y);
         }
 
         /// <summary>
@@ -1620,8 +1668,10 @@ namespace SE
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
+            {
                 return ToString(formatProvider);
-            return string.Format(formatProvider, s_FormatString, X.ToString(format, formatProvider),
+            }
+            return string.Format(formatProvider, FormatString, X.ToString(format, formatProvider),
                 Y.ToString(format, formatProvider));
         }
 
@@ -1640,7 +1690,8 @@ namespace SE
         /// Determines whether the specified <see cref="Float2" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Float2" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Float2" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Float2" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Float2 other)
         {
@@ -1659,7 +1710,8 @@ namespace SE
         /// Determines whether the specified <see cref="Float2" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Float2" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Float2" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Float2" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Float2 other)
         {
@@ -1670,7 +1722,8 @@ namespace SE
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise,
+        /// <c> false</c>.</returns>
         public override bool Equals(object value)
         {
             return value is Float2 other && Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y);
@@ -1683,7 +1736,7 @@ namespace SE
 #endif
     public partial struct Float3 : IEquatable<Float3>, IFormattable
     {
-        private static readonly string s_FormatString = "X:{0:F2} Y:{1:F2} Z:{2:F2}";
+        private static readonly string FormatString = "X:{0:F2} Y:{1:F2} Z:{2:F2}";
 
         /// <summary>
         /// The size of the <see cref="Float3" /> type, in bytes.
@@ -1799,7 +1852,8 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Float3" /> struct.
         /// </summary>
-        /// <param name="value">A vector containing the values with which to initialize the X, Y and Z components.</param>
+        /// <param name="value"> A vector containing the values with which to initialize the X, Y and Z
+        /// components.</param>
         public Float3(Double3 value)
         {
             X = (float)value.X;
@@ -1810,7 +1864,8 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Float3" /> struct.
         /// </summary>
-        /// <param name="value">A vector containing the values with which to initialize the X, Y and Z components.</param>
+        /// <param name="value"> A vector containing the values with which to initialize the X, Y and Z
+        /// components.</param>
         public Float3(Float4 value)
         {
             X = value.X;
@@ -1821,16 +1876,22 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Float3" /> struct.
         /// </summary>
-        /// <param name="values">The values to assign to the X, Y, and Z components of the vector. This must be an array with three elements.</param>
+        /// <param name="values"> The values to assign to the X, Y, and Z components of the vector. This must be an
+        /// array with three elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"> Thrown when <paramref name="values" /> contains more or less than three elements.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"> Thrown when <paramref name="values" /> contains more or less
+        /// than three elements.</exception>
         public Float3(float[] values)
         {
             if (values == null)
+            {
                 throw new ArgumentNullException(nameof(values));
+            }
             if (values.Length != 3)
+            {
                 throw new ArgumentOutOfRangeException(nameof(values),
-                    "There must be three and only three input values for Float3.");
+                                    "There must be three and only three input values for Float3.");
+            }
             X = values[0];
             Y = values[1];
             Z = values[2];
@@ -1898,9 +1959,11 @@ namespace SE
         /// Gets or sets the component at the specified index.
         /// </summary>
         /// <value>The value of the X, Y, or Z component, depending on the index.</value>
-        /// <param name="index">The index of the component to access. Use 0 for the X component, 1 for the Y component, and 2 for the Z component.</param>
+        /// <param name="index"> The index of the component to access. Use 0 for the X component, 1 for the Y component,
+        /// and 2 for the Z component.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="index" /> is out of the range [0, 2].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"> Thrown when the <paramref name="index" /> is out of
+        /// the range [0, 2].</exception>
         public float this[int index]
         {
             get
@@ -1938,14 +2001,16 @@ namespace SE
         /// Calculates the length of the vector.
         /// </summary>
         /// <returns>The length of the vector.</returns>
-        /// <remarks><see cref="Float3.LengthSquared" /> may be preferred when only the relative length is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Float3.LengthSquared" /> may be preferred when only the relative length is needed and
+        /// speed is of the essence.</remarks>
         public float Length => (float)Math.Sqrt(X * X + Y * Y + Z * Z);
 
         /// <summary>
         /// Calculates the squared length of the vector.
         /// </summary>
         /// <returns>The squared length of the vector.</returns>
-        /// <remarks>This method may be preferred to <see cref="Float3.Length" /> when only a relative length is needed and speed is of the essence.</remarks>
+        /// <remarks> This method may be preferred to <see cref="Float3.Length" /> when only a relative length is needed
+        /// and speed is of the essence.</remarks>
         public float LengthSquared => X * X + Y * Y + Z * Z;
 
         /// <summary>
@@ -2213,14 +2278,21 @@ namespace SE
         }
 
         /// <summary>
-        /// Returns a <see cref="Float3" /> containing the 3D Cartesian coordinates of a point specified in Barycentric coordinates relative to a 3D triangle.
+        /// Returns a <see cref="Float3" /> containing the 3D Cartesian coordinates of a point specified in Barycentric
+        /// coordinates relative to a 3D triangle.
         /// </summary>
-        /// <param name="value1">A <see cref="Float3" /> containing the 3D Cartesian coordinates of vertex 1 of the triangle.</param>
-        /// <param name="value2">A <see cref="Float3" /> containing the 3D Cartesian coordinates of vertex 2 of the triangle.</param>
-        /// <param name="value3">A <see cref="Float3" /> containing the 3D Cartesian coordinates of vertex 3 of the triangle.</param>
-        /// <param name="amount1">Barycentric coordinate b2, which expresses the weighting factor toward vertex 2 (specified in <paramref name="value2" />).</param>
-        /// <param name="amount2">Barycentric coordinate b3, which expresses the weighting factor toward vertex 3 (specified in <paramref name="value3" />).</param>
-        /// <param name="result">When the method completes, contains the 3D Cartesian coordinates of the specified point.</param>
+        /// <param name="value1"> A <see cref="Float3" /> containing the 3D Cartesian coordinates of vertex 1 of the
+        /// triangle.</param>
+        /// <param name="value2"> A <see cref="Float3" /> containing the 3D Cartesian coordinates of vertex 2 of the
+        /// triangle.</param>
+        /// <param name="value3"> A <see cref="Float3" /> containing the 3D Cartesian coordinates of vertex 3 of the
+        /// triangle.</param>
+        /// <param name="amount1"> Barycentric coordinate b2, which expresses the weighting factor toward vertex 2
+        /// (specified in <paramref name="value2" /> ).</param>
+        /// <param name="amount2"> Barycentric coordinate b3, which expresses the weighting factor toward vertex 3
+        /// (specified in <paramref name="value3" /> ).</param>
+        /// <param name="result"> When the method completes, contains the 3D Cartesian coordinates of the specified
+        /// point.</param>
         public static void Barycentric(ref Float3 value1, ref Float3 value2, ref Float3 value3, float amount1,
             float amount2, out Float3 result)
         {
@@ -2230,17 +2302,24 @@ namespace SE
         }
 
         /// <summary>
-        /// Returns a <see cref="Float3" /> containing the 3D Cartesian coordinates of a point specified in Barycentric coordinates relative to a 3D triangle.
+        /// Returns a <see cref="Float3" /> containing the 3D Cartesian coordinates of a point specified in Barycentric
+        /// coordinates relative to a 3D triangle.
         /// </summary>
-        /// <param name="value1">A <see cref="Float3" /> containing the 3D Cartesian coordinates of vertex 1 of the triangle.</param>
-        /// <param name="value2">A <see cref="Float3" /> containing the 3D Cartesian coordinates of vertex 2 of the triangle.</param>
-        /// <param name="value3">A <see cref="Float3" /> containing the 3D Cartesian coordinates of vertex 3 of the triangle.</param>
-        /// <param name="amount1">Barycentric coordinate b2, which expresses the weighting factor toward vertex 2 (specified in <paramref name="value2" />).</param>
-        /// <param name="amount2">Barycentric coordinate b3, which expresses the weighting factor toward vertex 3 (specified in <paramref name="value3" />).</param>
-        /// <returns>A new <see cref="Float3" /> containing the 3D Cartesian coordinates of the specified point.</returns>
+        /// <param name="value1"> A <see cref="Float3" /> containing the 3D Cartesian coordinates of vertex 1 of the
+        /// triangle.</param>
+        /// <param name="value2"> A <see cref="Float3" /> containing the 3D Cartesian coordinates of vertex 2 of the
+        /// triangle.</param>
+        /// <param name="value3"> A <see cref="Float3" /> containing the 3D Cartesian coordinates of vertex 3 of the
+        /// triangle.</param>
+        /// <param name="amount1"> Barycentric coordinate b2, which expresses the weighting factor toward vertex 2
+        /// (specified in <paramref name="value2" /> ).</param>
+        /// <param name="amount2"> Barycentric coordinate b3, which expresses the weighting factor toward vertex 3
+        /// (specified in <paramref name="value3" /> ).</param>
+        /// <returns> A new <see cref="Float3" /> containing the 3D Cartesian coordinates of the specified
+        /// point.</returns>
         public static Float3 Barycentric(Float3 value1, Float3 value2, Float3 value3, float amount1, float amount2)
         {
-            Barycentric(ref value1, ref value2, ref value3, amount1, amount2, out var result);
+            Barycentric(ref value1, ref value2, ref value3, amount1, amount2, out Float3 result);
             return result;
         }
 
@@ -2274,7 +2353,7 @@ namespace SE
         /// <returns>The clamped value.</returns>
         public static Float3 Clamp(Float3 value, Float3 min, Float3 max)
         {
-            Clamp(ref value, ref min, ref max, out var result);
+            Clamp(ref value, ref min, ref max, out Float3 result);
             return result;
         }
 
@@ -2299,7 +2378,7 @@ namespace SE
         /// <returns>The cross product of the two vectors.</returns>
         public static Float3 Cross(Float3 left, Float3 right)
         {
-            Cross(ref left, ref right, out var result);
+            Cross(ref left, ref right, out Float3 result);
             return result;
         }
 
@@ -2309,7 +2388,8 @@ namespace SE
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <param name="result">When the method completes, contains the distance between the two vectors.</param>
-        /// <remarks><see cref="Float3.DistanceSquared(ref Float3, ref Float3, out float)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Float3.DistanceSquared(ref Float3, ref Float3, out float)" /> may be preferred when
+        /// only the relative distance is needed and speed is of the essence.</remarks>
         public static void Distance(ref Float3 value1, ref Float3 value2, out float result)
         {
             float x = value1.X - value2.X;
@@ -2324,7 +2404,8 @@ namespace SE
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <returns>The distance between the two vectors.</returns>
-        /// <remarks><see cref="Float3.DistanceSquared(ref Float3, ref Float3, out float)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Float3.DistanceSquared(ref Float3, ref Float3, out float)" /> may be preferred when
+        /// only the relative distance is needed and speed is of the essence.</remarks>
         public static float Distance(ref Float3 value1, ref Float3 value2)
         {
             float x = value1.X - value2.X;
@@ -2339,7 +2420,8 @@ namespace SE
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <returns>The distance between the two vectors.</returns>
-        /// <remarks><see cref="Float3.DistanceSquared(Float3, Float3)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Float3.DistanceSquared(Float3, Float3)" /> may be preferred when only the relative
+        /// distance is needed and speed is of the essence.</remarks>
         public static float Distance(Float3 value1, Float3 value2)
         {
             float x = value1.X - value2.X;
@@ -2353,7 +2435,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
-        /// <param name="result">When the method completes, contains the squared distance between the two vectors.</param>
+        /// <param name="result"> When the method completes, contains the squared distance between the two
+        /// vectors.</param>
         public static void DistanceSquared(ref Float3 value1, ref Float3 value2, out float result)
         {
             float x = value1.X - value2.X;
@@ -2395,7 +2478,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
-        /// <param name="result">When the method completes, contains the distance between the two vectors in the XY plane.</param>
+        /// <param name="result"> When the method completes, contains the distance between the two vectors in the XY
+        /// plane.</param>
         public static void DistanceXY(ref Float3 value1, ref Float3 value2, out float result)
         {
             float x = value1.X - value2.X;
@@ -2408,7 +2492,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector</param>
-        /// <param name="result">When the method completes, contains the squared distance between the two vectors in the XY plane.</param>
+        /// <param name="result"> When the method completes, contains the squared distance between the two vectors in
+        /// the XY plane.</param>
         public static void DistanceXYSquared(ref Float3 value1, ref Float3 value2, out float result)
         {
             float x = value1.X - value2.X;
@@ -2421,7 +2506,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
-        /// <param name="result">When the method completes, contains the distance between the two vectors in the XY plane.</param>
+        /// <param name="result"> When the method completes, contains the distance between the two vectors in the XY
+        /// plane.</param>
         public static void DistanceXZ(ref Float3 value1, ref Float3 value2, out float result)
         {
             float x = value1.X - value2.X;
@@ -2434,7 +2520,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector</param>
-        /// <param name="result">When the method completes, contains the squared distance between the two vectors in the XY plane.</param>
+        /// <param name="result"> When the method completes, contains the squared distance between the two vectors in
+        /// the XY plane.</param>
         public static void DistanceXZSquared(ref Float3 value1, ref Float3 value2, out float result)
         {
             float x = value1.X - value2.X;
@@ -2447,7 +2534,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
-        /// <param name="result">When the method completes, contains the distance between the two vectors in the YZ plane.</param>
+        /// <param name="result"> When the method completes, contains the distance between the two vectors in the YZ
+        /// plane.</param>
         public static void DistanceYZ(ref Float3 value1, ref Float3 value2, out float result)
         {
             float y = value1.Y - value2.Y;
@@ -2460,7 +2548,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector</param>
-        /// <param name="result">When the method completes, contains the squared distance between the two vectors in the YZ plane.</param>
+        /// <param name="result"> When the method completes, contains the squared distance between the two vectors in
+        /// the YZ plane.</param>
         public static void DistanceYZSquared(ref Float3 value1, ref Float3 value2, out float result)
         {
             float y = value1.Y - value2.Y;
@@ -2607,8 +2696,10 @@ namespace SE
         /// <param name="start">Start vector.</param>
         /// <param name="end">End vector.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
-        /// <param name="result">When the method completes, contains the linear interpolation of the two vectors.</param>
-        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
+        /// <param name="result"> When the method completes, contains the linear interpolation of the two
+        /// vectors.</param>
+        /// <remarks> Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be
+        /// returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static void Lerp(ref Float3 start, ref Float3 end, float amount, out Float3 result)
         {
             result = default;
@@ -2624,10 +2715,11 @@ namespace SE
         /// <param name="end">End vector.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
         /// <returns>The linear interpolation of the two vectors.</returns>
-        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
+        /// <remarks> Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be
+        /// returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static Float3 Lerp(Float3 start, Float3 end, float amount)
         {
-            Lerp(ref start, ref end, amount, out var result);
+            Lerp(ref start, ref end, amount, out Float3 result);
             return result;
         }
 
@@ -2653,7 +2745,7 @@ namespace SE
         /// <returns>The cubic interpolation of the two vectors.</returns>
         public static Float3 SmoothStep(Float3 start, Float3 end, float amount)
         {
-            SmoothStep(ref start, ref end, amount, out var result);
+            SmoothStep(ref start, ref end, amount, out Float3 result);
             return result;
         }
 
@@ -2666,11 +2758,13 @@ namespace SE
         /// <returns>The new position.</returns>
         public static Float3 MoveTowards(Float3 current, Float3 target, float maxDistanceDelta)
         {
-            var to = target - current;
-            var distanceSq = to.LengthSquared;
+            Float3 to = target - current;
+            float distanceSq = to.LengthSquared;
             if (distanceSq == 0 || (maxDistanceDelta >= 0 && distanceSq <= maxDistanceDelta * maxDistanceDelta))
+            {
                 return target;
-            var scale = maxDistanceDelta / Mathf.Sqrt(distanceSq);
+            }
+            float scale = maxDistanceDelta / Mathf.Sqrt(distanceSq);
             return new Float3(current.X + to.X * scale, current.Y + to.Y * scale, current.Z + to.Z * scale);
         }
 
@@ -2682,7 +2776,8 @@ namespace SE
         /// <param name="value2">Second source position vector.</param>
         /// <param name="tangent2">Second source tangent vector.</param>
         /// <param name="amount">Weighting factor.</param>
-        /// <param name="result">When the method completes, contains the result of the Hermite spline interpolation.</param>
+        /// <param name="result"> When the method completes, contains the result of the Hermite spline
+        /// interpolation.</param>
         public static void Hermite(ref Float3 value1, ref Float3 tangent1, ref Float3 value2, ref Float3 tangent2,
             float amount, out Float3 result)
         {
@@ -2709,7 +2804,7 @@ namespace SE
         /// <returns>The result of the Hermite spline interpolation.</returns>
         public static Float3 Hermite(Float3 value1, Float3 tangent1, Float3 value2, Float3 tangent2, float amount)
         {
-            Hermite(ref value1, ref tangent1, ref value2, ref tangent2, amount, out var result);
+            Hermite(ref value1, ref tangent1, ref value2, ref tangent2, amount, out Float3 result);
             return result;
         }
 
@@ -2721,7 +2816,8 @@ namespace SE
         /// <param name="value3">The third position in the interpolation.</param>
         /// <param name="value4">The fourth position in the interpolation.</param>
         /// <param name="amount">Weighting factor.</param>
-        /// <param name="result">When the method completes, contains the result of the Catmull-Rom interpolation.</param>
+        /// <param name="result"> When the method completes, contains the result of the Catmull-Rom
+        /// interpolation.</param>
         public static void CatmullRom(ref Float3 value1, ref Float3 value2, ref Float3 value3, ref Float3 value4,
             float amount, out Float3 result)
         {
@@ -2750,7 +2846,7 @@ namespace SE
         /// <returns>A vector that is the result of the Catmull-Rom interpolation.</returns>
         public static Float3 CatmullRom(Float3 value1, Float3 value2, Float3 value3, Float3 value4, float amount)
         {
-            CatmullRom(ref value1, ref value2, ref value3, ref value4, amount, out var result);
+            CatmullRom(ref value1, ref value2, ref value3, ref value4, amount, out Float3 result);
             return result;
         }
 
@@ -2759,7 +2855,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">When the method completes, contains an new vector composed of the largest components of the source vectors.</param>
+        /// <param name="result"> When the method completes, contains an new vector composed of the largest components
+        /// of the source vectors.</param>
         public static void Max(ref Float3 left, ref Float3 right, out Float3 result)
         {
             result = default;
@@ -2776,7 +2873,7 @@ namespace SE
         /// <returns>A vector containing the largest components of the source vectors.</returns>
         public static Float3 Max(Float3 left, Float3 right)
         {
-            Max(ref left, ref right, out var result);
+            Max(ref left, ref right, out Float3 result);
             return result;
         }
 
@@ -2785,7 +2882,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">When the method completes, contains an new vector composed of the smallest components of the source vectors.</param>
+        /// <param name="result"> When the method completes, contains an new vector composed of the smallest components
+        /// of the source vectors.</param>
         public static void Min(ref Float3 left, ref Float3 right, out Float3 result)
         {
             result = default;
@@ -2802,7 +2900,7 @@ namespace SE
         /// <returns>A vector containing the smallest components of the source vectors.</returns>
         public static Float3 Min(Float3 left, Float3 right)
         {
-            Min(ref left, ref right, out var result);
+            Min(ref left, ref right, out Float3 result);
             return result;
         }
 
@@ -2826,7 +2924,9 @@ namespace SE
         {
             float sqrMag = Dot(onNormal, onNormal);
             if (sqrMag < Mathf.Epsilon)
+            {
                 return Zero;
+            }
             return onNormal * Dot(vector, onNormal) / sqrMag;
         }
 
@@ -2842,7 +2942,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Calculates the angle (in degrees) between <paramref name="from"/> and <paramref name="to"/>. This is always the smallest value.
+        /// Calculates the angle (in degrees) between <paramref name="from"/> and <paramref name="to"/> . This is always
+        /// the smallest value.
         /// </summary>
         /// <param name="from">The first vector.</param>
         /// <param name="to">The second vector.</param>
@@ -2851,7 +2952,9 @@ namespace SE
         {
             float dot = Mathf.Clamp(Dot(from.Normalized, to.Normalized), -1.0f, 1.0f);
             if (Mathf.Abs(dot) > (1.0f - Mathf.Epsilon))
+            {
                 return dot > 0.0f ? 0.0f : 180.0f;
+            }
             return (float)Math.Acos(dot) * Mathf.RadiansToDegrees;
         }
 
@@ -2870,7 +2973,7 @@ namespace SE
         public static void Project(ref Float3 vector, float x, float y, float width, float height, float minZ,
             float maxZ, ref Matrix worldViewProjection, out Float3 result)
         {
-            TransformCoordinate(ref vector, ref worldViewProjection, out var v);
+            TransformCoordinate(ref vector, ref worldViewProjection, out Float3 v);
             result = new Float3((1.0f + v.X) * 0.5f * width + x, (1.0f - v.Y) * 0.5f * height + y,
                 v.Z * (maxZ - minZ) + minZ);
         }
@@ -2890,7 +2993,7 @@ namespace SE
         public static Float3 Project(Float3 vector, float x, float y, float width, float height, float minZ, float maxZ,
             Matrix worldViewProjection)
         {
-            Project(ref vector, x, y, width, height, minZ, maxZ, ref worldViewProjection, out var result);
+            Project(ref vector, x, y, width, height, minZ, maxZ, ref worldViewProjection, out Float3 result);
             return result;
         }
 
@@ -2909,8 +3012,8 @@ namespace SE
         public static void Unproject(ref Float3 vector, float x, float y, float width, float height, float minZ,
             float maxZ, ref Matrix worldViewProjection, out Float3 result)
         {
-            Matrix.Invert(ref worldViewProjection, out var matrix);
-            var v = new Float3
+            Matrix.Invert(ref worldViewProjection, out Matrix matrix);
+            Float3 v = new Float3
             {
                 X = (vector.X - x) / width * 2.0f - 1.0f,
                 Y = -((vector.Y - y) / height * 2.0f - 1.0f),
@@ -2934,7 +3037,7 @@ namespace SE
         public static Float3 Unproject(Float3 vector, float x, float y, float width, float height, float minZ,
             float maxZ, Matrix worldViewProjection)
         {
-            Unproject(ref vector, x, y, width, height, minZ, maxZ, ref worldViewProjection, out var result);
+            Unproject(ref vector, x, y, width, height, minZ, maxZ, ref worldViewProjection, out Float3 result);
             return result;
         }
 
@@ -2944,7 +3047,8 @@ namespace SE
         /// <param name="vector">The source vector.</param>
         /// <param name="normal">Normal of the surface.</param>
         /// <param name="result">When the method completes, contains the reflected vector.</param>
-        /// <remarks>Reflect only gives the direction of a reflection off a surface, it does not determine whether the original vector was close enough to the surface to hit it.</remarks>
+        /// <remarks> Reflect only gives the direction of a reflection off a surface, it does not determine whether the
+        /// original vector was close enough to the surface to hit it.</remarks>
         public static void Reflect(ref Float3 vector, ref Float3 normal, out Float3 result)
         {
             result = default;
@@ -2960,10 +3064,11 @@ namespace SE
         /// <param name="vector">The source vector.</param>
         /// <param name="normal">Normal of the surface.</param>
         /// <returns>The reflected vector.</returns>
-        /// <remarks>Reflect only gives the direction of a reflection off a surface, it does not determine whether the original vector was close enough to the surface to hit it.</remarks>
+        /// <remarks> Reflect only gives the direction of a reflection off a surface, it does not determine whether the
+        /// original vector was close enough to the surface to hit it.</remarks>
         public static Float3 Reflect(Float3 vector, Float3 normal)
         {
-            Reflect(ref vector, ref normal, out var result);
+            Reflect(ref vector, ref normal, out Float3 result);
             return result;
         }
 
@@ -3000,7 +3105,7 @@ namespace SE
         /// <returns>The transformed <see cref="Float3" />.</returns>
         public static Float3 Transform(Float3 vector, Quaternion rotation)
         {
-            Transform(ref vector, ref rotation, out var result);
+            Transform(ref vector, ref rotation, out Float3 result);
             return result;
         }
 
@@ -3025,7 +3130,7 @@ namespace SE
         /// <returns>The transformed <see cref="Float3"/>.</returns>
         public static Float3 Transform(Float3 vector, Matrix3x3 transform)
         {
-            Transform(ref vector, ref transform, out var result);
+            Transform(ref vector, ref transform, out Float3 result);
             return result;
         }
 
@@ -3085,7 +3190,7 @@ namespace SE
         /// </remarks>
         public static void TransformCoordinate(ref Float3 coordinate, ref Matrix transform, out Float3 result)
         {
-            var vector = new Float4
+            Float4 vector = new Float4
             {
                 X = coordinate.X * transform.M11 + coordinate.Y * transform.M21 + coordinate.Z * transform.M31 +
                     transform.M41,
@@ -3114,7 +3219,7 @@ namespace SE
         /// </remarks>
         public static Float3 TransformCoordinate(Float3 coordinate, Matrix transform)
         {
-            TransformCoordinate(ref coordinate, ref transform, out var result);
+            TransformCoordinate(ref coordinate, ref transform, out Float3 result);
             return result;
         }
 
@@ -3153,7 +3258,7 @@ namespace SE
         /// </remarks>
         public static Float3 TransformNormal(Float3 normal, Matrix transform)
         {
-            TransformNormal(ref normal, ref transform, out var result);
+            TransformNormal(ref normal, ref transform, out Float3 result);
             return result;
         }
 
@@ -3183,7 +3288,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Multiplies a vector with another by performing component-wise multiplication equivalent to <see cref="Multiply(ref Float3,ref Float3,out Float3)" />.
+        /// Multiplies a vector with another by performing component-wise multiplication equivalent to
+        /// <see cref="Multiply(ref Float3,ref Float3,out Float3)" /> .
         /// </summary>
         /// <param name="left">The first vector to multiply.</param>
         /// <param name="right">The second vector to multiply.</param>
@@ -3232,7 +3338,7 @@ namespace SE
         /// <returns>The scaled vector.</returns>
         public static Float3 operator *(Float3 vector, Quaternion rotation)
         {
-            Transform(ref vector, ref rotation, out var result);
+            Transform(ref vector, ref rotation, out Float3 result);
             return result;
         }
 
@@ -3288,7 +3394,7 @@ namespace SE
         /// <returns>The scaled vector.</returns>
         public static Float3 operator *(double scale, Float3 value)
         {
-            var s = (float)scale;
+            float s = (float)scale;
             return new Float3(value.X * s, value.Y * s, value.Z * s);
         }
 
@@ -3300,7 +3406,7 @@ namespace SE
         /// <returns>The scaled vector.</returns>
         public static Float3 operator *(Float3 value, double scale)
         {
-            var s = (float)scale;
+            float s = (float)scale;
             return new Float3(value.X * s, value.Y * s, value.Z * s);
         }
 
@@ -3312,7 +3418,7 @@ namespace SE
         /// <returns>The scaled vector.</returns>
         public static Float3 operator /(Float3 value, double scale)
         {
-            var s = (float)scale;
+            float s = (float)scale;
             return new Float3(value.X / s, value.Y / s, value.Z / s);
         }
 
@@ -3324,7 +3430,7 @@ namespace SE
         /// <returns>The scaled vector.</returns>
         public static Float3 operator /(double scale, Float3 value)
         {
-            var s = (float)scale;
+            float s = (float)scale;
             return new Float3(s / value.X, s / value.Y, s / value.Z);
         }
 
@@ -3421,7 +3527,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has the same value as <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Float3 left, Float3 right)
         {
@@ -3434,7 +3541,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has a different value than <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Float3 left, Float3 right)
         {
@@ -3478,7 +3586,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X, Y, Z);
+            return string.Format(CultureInfo.CurrentCulture, FormatString, X, Y, Z);
         }
 
         /// <summary>
@@ -3489,8 +3597,10 @@ namespace SE
         public string ToString(string format)
         {
             if (format == null)
+            {
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString,
+            }
+            return string.Format(CultureInfo.CurrentCulture, FormatString,
                 X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture),
                 Z.ToString(format, CultureInfo.CurrentCulture));
         }
@@ -3502,7 +3612,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, s_FormatString, X, Y, Z);
+            return string.Format(formatProvider, FormatString, X, Y, Z);
         }
 
         /// <summary>
@@ -3514,7 +3624,9 @@ namespace SE
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
+            {
                 return ToString(formatProvider);
+            }
             return string.Format(formatProvider, "X:{0} Y:{1} Z:{2}", X.ToString(format, formatProvider),
                 Y.ToString(format, formatProvider), Z.ToString(format, formatProvider));
         }
@@ -3537,7 +3649,8 @@ namespace SE
         /// Determines whether the specified <see cref="Float3" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Float3" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Float3" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Float3" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Float3 other)
         {
@@ -3548,7 +3661,8 @@ namespace SE
         /// Determines whether the specified <see cref="Float3" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Float3" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Float3" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Float3" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Float3 other)
         {
@@ -3559,7 +3673,8 @@ namespace SE
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise,
+        /// <c> false</c>.</returns>
         public override bool Equals(object value)
         {
             return value is Float3 other && Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y) &&
@@ -3573,7 +3688,7 @@ namespace SE
 #endif
     public partial struct Float4 : IEquatable<Float4>, IFormattable
     {
-        private static readonly string s_FormatString = "X:{0:F2} Y:{1:F2} Z:{2:F2} W:{3:F2}";
+        private static readonly string FormatString = "X:{0:F2} Y:{1:F2} Z:{2:F2} W:{3:F2}";
 
         /// <summary>
         /// The size of the <see cref="Float4" /> type, in bytes.
@@ -3655,7 +3770,8 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Float4" /> struct.
         /// </summary>
-        /// <param name="value">A vector containing the values with which to initialize the X, Y, and Z components.</param>
+        /// <param name="value"> A vector containing the values with which to initialize the X, Y, and Z
+        /// components.</param>
         /// <param name="w">Initial value for the W component of the vector.</param>
         public Float4(Float3 value, float w)
         {
@@ -3695,16 +3811,22 @@ namespace SE
         /// <summary>
         /// Initializes a new instance of the <see cref="Float4" /> struct.
         /// </summary>
-        /// <param name="values">The values to assign to the X, Y, Z, and W components of the vector. This must be an array with four elements.</param>
+        /// <param name="values"> The values to assign to the X, Y, Z, and W components of the vector. This must be an
+        /// array with four elements.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="values" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="values" /> contains more or less than four elements.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"> Thrown when <paramref name="values" /> contains more or less
+        /// than four elements.</exception>
         public Float4(float[] values)
         {
             if (values == null)
+            {
                 throw new ArgumentNullException(nameof(values));
+            }
             if (values.Length != 4)
+            {
                 throw new ArgumentOutOfRangeException(nameof(values),
-                    "There must be four and only four input values for Float4.");
+                                    "There must be four and only four input values for Float4.");
+            }
             X = values[0];
             Y = values[1];
             Z = values[2];
@@ -3760,9 +3882,11 @@ namespace SE
         /// Gets or sets the component at the specified index.
         /// </summary>
         /// <value>The value of the X, Y, Z, or W component, depending on the index.</value>
-        /// <param name="index">The index of the component to access. Use 0 for the X component, 1 for the Y component, 2 for the Z component, and 3 for the W component.</param>
+        /// <param name="index"> The index of the component to access. Use 0 for the X component, 1 for the Y component,
+        /// 2 for the Z component, and 3 for the W component.</param>
         /// <returns>The value of the component at the specified index.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the <paramref name="index" /> is out of the range [0,3].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"> Thrown when the <paramref name="index" /> is out of
+        /// the range [0,3].</exception>
         public float this[int index]
         {
             get
@@ -3804,14 +3928,16 @@ namespace SE
         /// Calculates the length of the vector.
         /// </summary>
         /// <returns>The length of the vector.</returns>
-        /// <remarks><see cref="Float4.LengthSquared" /> may be preferred when only the relative length is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Float4.LengthSquared" /> may be preferred when only the relative length is needed and
+        /// speed is of the essence.</remarks>
         public float Length => (float)Math.Sqrt(X * X + Y * Y + Z * Z + W * W);
 
         /// <summary>
         /// Calculates the squared length of the vector.
         /// </summary>
         /// <returns>The squared length of the vector.</returns>
-        /// <remarks>This method may be preferred to <see cref="Float4.Length" /> when only a relative length is needed and speed is of the essence.</remarks>
+        /// <remarks> This method may be preferred to <see cref="Float4.Length" /> when only a relative length is needed
+        /// and speed is of the essence.</remarks>
         public float LengthSquared => X * X + Y * Y + Z * Z + W * W;
 
         /// <summary>
@@ -4058,14 +4184,21 @@ namespace SE
         }
 
         /// <summary>
-        /// Returns a <see cref="Float4" /> containing the 4D Cartesian coordinates of a point specified in Barycentric coordinates relative to a 4D triangle.
+        /// Returns a <see cref="Float4" /> containing the 4D Cartesian coordinates of a point specified in Barycentric
+        /// coordinates relative to a 4D triangle.
         /// </summary>
-        /// <param name="value1">A <see cref="Float4" /> containing the 4D Cartesian coordinates of vertex 1 of the triangle.</param>
-        /// <param name="value2">A <see cref="Float4" /> containing the 4D Cartesian coordinates of vertex 2 of the triangle.</param>
-        /// <param name="value3">A <see cref="Float4" /> containing the 4D Cartesian coordinates of vertex 3 of the triangle.</param>
-        /// <param name="amount1">Barycentric coordinate b2, which expresses the weighting factor toward vertex 2 (specified in <paramref name="value2" />).</param>
-        /// <param name="amount2">Barycentric coordinate b3, which expresses the weighting factor toward vertex 3 (specified in <paramref name="value3" />).</param>
-        /// <param name="result">When the method completes, contains the 4D Cartesian coordinates of the specified point.</param>
+        /// <param name="value1"> A <see cref="Float4" /> containing the 4D Cartesian coordinates of vertex 1 of the
+        /// triangle.</param>
+        /// <param name="value2"> A <see cref="Float4" /> containing the 4D Cartesian coordinates of vertex 2 of the
+        /// triangle.</param>
+        /// <param name="value3"> A <see cref="Float4" /> containing the 4D Cartesian coordinates of vertex 3 of the
+        /// triangle.</param>
+        /// <param name="amount1"> Barycentric coordinate b2, which expresses the weighting factor toward vertex 2
+        /// (specified in <paramref name="value2" /> ).</param>
+        /// <param name="amount2"> Barycentric coordinate b3, which expresses the weighting factor toward vertex 3
+        /// (specified in <paramref name="value3" /> ).</param>
+        /// <param name="result"> When the method completes, contains the 4D Cartesian coordinates of the specified
+        /// point.</param>
         public static void Barycentric(ref Float4 value1, ref Float4 value2, ref Float4 value3, float amount1,
             float amount2, out Float4 result)
         {
@@ -4076,14 +4209,21 @@ namespace SE
         }
 
         /// <summary>
-        /// Returns a <see cref="Float4" /> containing the 4D Cartesian coordinates of a point specified in Barycentric coordinates relative to a 4D triangle.
+        /// Returns a <see cref="Float4" /> containing the 4D Cartesian coordinates of a point specified in Barycentric
+        /// coordinates relative to a 4D triangle.
         /// </summary>
-        /// <param name="value1">A <see cref="Float4" /> containing the 4D Cartesian coordinates of vertex 1 of the triangle.</param>
-        /// <param name="value2">A <see cref="Float4" /> containing the 4D Cartesian coordinates of vertex 2 of the triangle.</param>
-        /// <param name="value3">A <see cref="Float4" /> containing the 4D Cartesian coordinates of vertex 3 of the triangle.</param>
-        /// <param name="amount1">Barycentric coordinate b2, which expresses the weighting factor toward vertex 2 (specified in <paramref name="value2" />).</param>
-        /// <param name="amount2">Barycentric coordinate b3, which expresses the weighting factor toward vertex 3 (specified in <paramref name="value3" />).</param>
-        /// <returns>A new <see cref="Float4" /> containing the 4D Cartesian coordinates of the specified point.</returns>
+        /// <param name="value1"> A <see cref="Float4" /> containing the 4D Cartesian coordinates of vertex 1 of the
+        /// triangle.</param>
+        /// <param name="value2"> A <see cref="Float4" /> containing the 4D Cartesian coordinates of vertex 2 of the
+        /// triangle.</param>
+        /// <param name="value3"> A <see cref="Float4" /> containing the 4D Cartesian coordinates of vertex 3 of the
+        /// triangle.</param>
+        /// <param name="amount1"> Barycentric coordinate b2, which expresses the weighting factor toward vertex 2
+        /// (specified in <paramref name="value2" /> ).</param>
+        /// <param name="amount2"> Barycentric coordinate b3, which expresses the weighting factor toward vertex 3
+        /// (specified in <paramref name="value3" /> ).</param>
+        /// <returns> A new <see cref="Float4" /> containing the 4D Cartesian coordinates of the specified
+        /// point.</returns>
         public static Float4 Barycentric(Float4 value1, Float4 value2, Float4 value3, float amount1, float amount2)
         {
             Barycentric(ref value1, ref value2, ref value3, amount1, amount2, out Float4 result);
@@ -4133,7 +4273,8 @@ namespace SE
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <param name="result">When the method completes, contains the distance between the two vectors.</param>
-        /// <remarks><see cref="Float4.DistanceSquared(ref Float4, ref Float4, out float)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Float4.DistanceSquared(ref Float4, ref Float4, out float)" /> may be preferred when
+        /// only the relative distance is needed and speed is of the essence.</remarks>
         public static void Distance(ref Float4 value1, ref Float4 value2, out float result)
         {
             float x = value1.X - value2.X;
@@ -4149,7 +4290,8 @@ namespace SE
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <returns>The distance between the two vectors.</returns>
-        /// <remarks><see cref="Float4.DistanceSquared(Float4, Float4)" /> may be preferred when only the relative distance is needed and speed is of the essence.</remarks>
+        /// <remarks> <see cref="Float4.DistanceSquared(Float4, Float4)" /> may be preferred when only the relative
+        /// distance is needed and speed is of the essence.</remarks>
         public static float Distance(Float4 value1, Float4 value2)
         {
             float x = value1.X - value2.X;
@@ -4164,7 +4306,8 @@ namespace SE
         /// </summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
-        /// <param name="result">When the method completes, contains the squared distance between the two vectors.</param>
+        /// <param name="result"> When the method completes, contains the squared distance between the two
+        /// vectors.</param>
         public static void DistanceSquared(ref Float4 value1, ref Float4 value2, out float result)
         {
             float x = value1.X - value2.X;
@@ -4316,8 +4459,10 @@ namespace SE
         /// <param name="start">Start vector.</param>
         /// <param name="end">End vector.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
-        /// <param name="result">When the method completes, contains the linear interpolation of the two vectors.</param>
-        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
+        /// <param name="result"> When the method completes, contains the linear interpolation of the two
+        /// vectors.</param>
+        /// <remarks> Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be
+        /// returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static void Lerp(ref Float4 start, ref Float4 end, float amount, out Float4 result)
         {
             result = default;
@@ -4334,7 +4479,8 @@ namespace SE
         /// <param name="end">End vector.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
         /// <returns>The linear interpolation of the two vectors.</returns>
-        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
+        /// <remarks> Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be
+        /// returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static Float4 Lerp(Float4 start, Float4 end, float amount)
         {
             Lerp(ref start, ref end, amount, out Float4 result);
@@ -4375,7 +4521,8 @@ namespace SE
         /// <param name="value2">Second source position vector.</param>
         /// <param name="tangent2">Second source tangent vector.</param>
         /// <param name="amount">Weighting factor.</param>
-        /// <param name="result">When the method completes, contains the result of the Hermite spline interpolation.</param>
+        /// <param name="result"> When the method completes, contains the result of the Hermite spline
+        /// interpolation.</param>
         public static void Hermite(ref Float4 value1, ref Float4 tangent1, ref Float4 value2, ref Float4 tangent2,
             float amount, out Float4 result)
         {
@@ -4414,7 +4561,8 @@ namespace SE
         /// <param name="value3">The third position in the interpolation.</param>
         /// <param name="value4">The fourth position in the interpolation.</param>
         /// <param name="amount">Weighting factor.</param>
-        /// <param name="result">When the method completes, contains the result of the Catmull-Rom interpolation.</param>
+        /// <param name="result"> When the method completes, contains the result of the Catmull-Rom
+        /// interpolation.</param>
         public static void CatmullRom(ref Float4 value1, ref Float4 value2, ref Float4 value3, ref Float4 value4,
             float amount, out Float4 result)
         {
@@ -4455,7 +4603,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">When the method completes, contains an new vector composed of the largest components of the source vectors.</param>
+        /// <param name="result"> When the method completes, contains an new vector composed of the largest components
+        /// of the source vectors.</param>
         public static void Max(ref Float4 left, ref Float4 right, out Float4 result)
         {
             result = default;
@@ -4482,7 +4631,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <param name="result">When the method completes, contains an new vector composed of the smallest components of the source vectors.</param>
+        /// <param name="result"> When the method completes, contains an new vector composed of the smallest components
+        /// of the source vectors.</param>
         public static void Min(ref Float4 left, ref Float4 right, out Float4 result)
         {
             result = default;
@@ -4595,7 +4745,8 @@ namespace SE
         }
 
         /// <summary>
-        /// Multiplies a vector with another by performing component-wise multiplication equivalent to <see cref="Multiply(ref Float4,ref Float4,out Float4)" />.
+        /// Multiplies a vector with another by performing component-wise multiplication equivalent to
+        /// <see cref="Multiply(ref Float4,ref Float4,out Float4)" /> .
         /// </summary>
         /// <param name="left">The first vector to multiply.</param>
         /// <param name="right">The second vector to multiply.</param>
@@ -4688,7 +4839,7 @@ namespace SE
         /// <returns>The scaled vector.</returns>
         public static Float4 operator *(double scale, Float4 value)
         {
-            var s = (float)scale;
+            float s = (float)scale;
             return new Float4(value.X * s, value.Y * s, value.Z * s, value.W * s);
         }
 
@@ -4700,7 +4851,7 @@ namespace SE
         /// <returns>The scaled vector.</returns>
         public static Float4 operator *(Float4 value, double scale)
         {
-            var s = (float)scale;
+            float s = (float)scale;
             return new Float4(value.X * s, value.Y * s, value.Z * s, value.W * s);
         }
 
@@ -4712,7 +4863,7 @@ namespace SE
         /// <returns>The scaled vector.</returns>
         public static Float4 operator /(Float4 value, double scale)
         {
-            var s = (float)scale;
+            float s = (float)scale;
             return new Float4(value.X / s, value.Y / s, value.Z / s, value.W / s);
         }
 
@@ -4724,7 +4875,7 @@ namespace SE
         /// <returns>The scaled vector.</returns>
         public static Float4 operator /(double scale, Float4 value)
         {
-            var s = (float)scale;
+            float s = (float)scale;
             return new Float4(s / value.X, s / value.Y, s / value.Z, s / value.W);
         }
 
@@ -4821,7 +4972,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has the same value as <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Float4 left, Float4 right)
         {
@@ -4834,7 +4986,8 @@ namespace SE
         /// </summary>
         /// <param name="left">The first value to compare.</param>
         /// <param name="right">The second value to compare.</param>
-        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if <paramref name="left" /> has a different value than <paramref name="right" /> ;
+        /// otherwise, <c> false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Float4 left, Float4 right)
         {
@@ -4877,7 +5030,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString, X, Y, Z, W);
+            return string.Format(CultureInfo.CurrentCulture, FormatString, X, Y, Z, W);
         }
 
         /// <summary>
@@ -4888,8 +5041,10 @@ namespace SE
         public string ToString(string format)
         {
             if (format == null)
+            {
                 return ToString();
-            return string.Format(CultureInfo.CurrentCulture, s_FormatString,
+            }
+            return string.Format(CultureInfo.CurrentCulture, FormatString,
                 X.ToString(format, CultureInfo.CurrentCulture), Y.ToString(format, CultureInfo.CurrentCulture),
                 Z.ToString(format, CultureInfo.CurrentCulture), W.ToString(format, CultureInfo.CurrentCulture));
         }
@@ -4901,7 +5056,7 @@ namespace SE
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
         public string ToString(IFormatProvider formatProvider)
         {
-            return string.Format(formatProvider, s_FormatString, X, Y, Z, W);
+            return string.Format(formatProvider, FormatString, X, Y, Z, W);
         }
 
         /// <summary>
@@ -4913,7 +5068,9 @@ namespace SE
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
+            {
                 return ToString(formatProvider);
+            }
             return string.Format(formatProvider, "X:{0} Y:{1} Z:{2} W:{3}", X.ToString(format, formatProvider),
                 Y.ToString(format, formatProvider), Z.ToString(format, formatProvider),
                 W.ToString(format, formatProvider));
@@ -4938,7 +5095,8 @@ namespace SE
         /// Determines whether the specified <see cref="Float4" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Float4" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         public bool Equals(ref Float4 other)
         {
             return Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y) && Mathf.NearEqual(other.Z, Z) &&
@@ -4949,7 +5107,8 @@ namespace SE
         /// Determines whether the specified <see cref="Float4" /> is equal to this instance.
         /// </summary>
         /// <param name="other">The <see cref="Float4" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="Float4" /> is equal to this instance; otherwise, <c>
+        /// false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Float4 other)
         {
@@ -4961,7 +5120,8 @@ namespace SE
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
         /// </summary>
         /// <param name="value">The <see cref="System.Object" /> to compare with this instance.</param>
-        /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise,
+        /// <c> false</c>.</returns>
         public override bool Equals(object value)
         {
             return value is Float4 other && Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y) &&

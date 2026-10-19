@@ -10,8 +10,8 @@ namespace SE.Editor.GUI
     /// <seealso cref="DockPanel" />
     public class FloatWindowDockPanel : DockPanel
     {
-        private MasterDockPanel _masterPanel;
-        private WindowRootControl _window;
+        private MasterDockPanel m_MasterPanel;
+        private WindowRootControl m_Window;
 
         private bool OnLeftButtonHit(WindowHitCodes hitTest)
         {
@@ -40,9 +40,9 @@ namespace SE.Editor.GUI
             }
 
             // Unlink
-            _window.Window.Closing -= OnClosing;
-            _window.Window.LeftButtonHit = null;
-            _window = null;
+            m_Window.Window.Closing -= OnClosing;
+            m_Window.Window.LeftButtonHit = null;
+            m_Window = null;
 
             // Remove object
             SE.Debug.Assert(TabsCount == 0 && ChildPanelsCount == 0,
@@ -53,12 +53,12 @@ namespace SE.Editor.GUI
         /// <summary>
         /// Gets the master panel.
         /// </summary>
-        public MasterDockPanel MasterPanel => _masterPanel;
+        public MasterDockPanel MasterPanel => m_MasterPanel;
 
         /// <summary>
         /// Gets the window.
         /// </summary>
-        public WindowRootControl Window => _window;
+        public WindowRootControl Window => m_Window;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FloatWindowDockPanel"/> class.
@@ -67,14 +67,14 @@ namespace SE.Editor.GUI
         /// <param name="window">The window.</param>
         public FloatWindowDockPanel(MasterDockPanel masterPanel, RootControl window) : base(null)
         {
-            _masterPanel = masterPanel;
-            _window = (WindowRootControl)window;
+            m_MasterPanel = masterPanel;
+            m_Window = (WindowRootControl)window;
 
             // Link
-            _masterPanel.FloatingPanels.Add(this);
+            m_MasterPanel.FloatingPanels.Add(this);
             Parent = window;
-            _window.Window.Closing += OnClosing;
-            _window.Window.LeftButtonHit = OnLeftButtonHit;
+            m_Window.Window.Closing += OnClosing;
+            m_Window.Window.LeftButtonHit = OnLeftButtonHit;
         }
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace SE.Editor.GUI
         public void BeginDrag()
         {
             // Filter invalid events
-            if (_window == null)
+            if (m_Window == null)
             {
                 return;
             }
@@ -100,7 +100,8 @@ namespace SE.Editor.GUI
         /// <param name="size">Window client area size.</param>
         /// <param name="startPosition">Window start position.</param>
         /// <param name="title">Initial window title.</param>
-        public static SE.Window CreateFloatWindow(RootControl parent, Float2 location, Float2 size, WindowStartPosition startPosition, string title)
+        public static SE.Window CreateFloatWindow(RootControl parent, Float2 location, Float2 size,
+            WindowStartPosition startPosition, string title)
         {
             // Setup initial window settings
             CreateWindowSettings settings = SE.Window.CreateDefaultSettings();
@@ -141,9 +142,9 @@ namespace SE.Editor.GUI
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            if (_masterPanel != null)
+            if (m_MasterPanel != null)
             {
-                _masterPanel.FloatingPanels.Remove(this);
+                m_MasterPanel.FloatingPanels.Remove(this);
             }
 
             base.OnDestroy();
@@ -153,9 +154,9 @@ namespace SE.Editor.GUI
         protected override void OnLastTabRemoved()
         {
             // Close window
-            if (_window != null)
+            if (m_Window != null)
             {
-                _window.Close();
+                m_Window.Close();
             }
         }
 
@@ -164,9 +165,9 @@ namespace SE.Editor.GUI
         {
             base.OnSelectedTabChanged();
 
-            if (_window != null && SelectedTab != null)
+            if (m_Window != null && SelectedTab != null)
             {
-                _window.SetTitle(SelectedTab.Title);
+                m_Window.SetTitle(SelectedTab.Title);
             }
         }
 

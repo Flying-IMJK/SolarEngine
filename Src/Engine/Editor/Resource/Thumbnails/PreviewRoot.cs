@@ -27,7 +27,7 @@ namespace SE.Editor
 
             // Draw accent
             const float accentHeight = 2;
-            Render2D.FillRectangle(new Rectangle(0, Height - accentHeight, Width, accentHeight),AccentColor);
+            Render2D.FillRectangle(new Rectangle(0, Height - accentHeight, Width, accentHeight), AccentColor);
         }
     }
 }

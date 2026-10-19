@@ -32,7 +32,7 @@ namespace SE.Editor.GUI
         public abstract DragData ToDragData(IEnumerable<T> items);
         public abstract IEnumerable<T> FromDragData(DragData data);
 
-        public virtual void DragDrop(TEventArgs? dragEventArgs, IReadOnlyList<T> items)
+        public virtual void DragDrop(TEventArgs dragEventArgs, IReadOnlyList<T> items)
         {
         }
 
@@ -47,7 +47,9 @@ namespace SE.Editor.GUI
             foreach (T item in FromDragData(data))
             {
                 if (m_ValidateFunction(item))
+                {
                     Objects.Add(item);
+                }
             }
 
             return HasValidDrag;
@@ -61,14 +63,18 @@ namespace SE.Editor.GUI
         public override void OnDragDrop()
         {
             if (HasValidDrag)
+            {
                 DragDrop(null, Objects);
+            }
             Objects.Clear();
         }
 
         public override void OnDragDrop(DragEventArgs dragEventArgs)
         {
             if (HasValidDrag)
+            {
                 DragDrop(dragEventArgs as TEventArgs, Objects);
+            }
             Objects.Clear();
         }
     }

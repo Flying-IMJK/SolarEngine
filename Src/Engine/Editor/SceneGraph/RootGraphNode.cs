@@ -21,7 +21,7 @@ namespace SE.Editor.SceneGraph
 
         public override string Name => "Root";
         public override RootGraphNode Root => this;
-        public override SceneGraphNode? ParentScene => null;
+        public override SceneGraphNode ParentScene => null;
 
         public override Transform Transform
         {
@@ -30,7 +30,7 @@ namespace SE.Editor.SceneGraph
         }
 
         public abstract IReadOnlyList<ScenesGraphNode> Selection { get; }
-        public abstract void Spawn(SE.Actor actor, SE.Actor? parent);
+        public abstract void Spawn(SE.Actor actor, SE.Actor parent);
 
         public virtual void OnActorChildNodesDispose(ActorGraphNode node)
         {

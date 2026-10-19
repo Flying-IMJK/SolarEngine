@@ -33,7 +33,7 @@ namespace SE::Editor
 		}
 
 		
-		CubeTexture* cubeTexture = AssetContent::LoadAsyncInternal<CubeTexture>(SE_TEXT("Asset/Texture/Skybox"));
+		CubeTexture* cubeTexture = AssetContent::Load<CubeTexture>(EngineContext::ProjectContentFolder + SE_TEXT("/Skybox.sge"));
 
 		Scene* scene = Level::Scenes[0];
 

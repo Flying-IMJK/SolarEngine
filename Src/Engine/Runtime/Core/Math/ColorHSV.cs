@@ -66,18 +66,18 @@ namespace SE
 
             switch (hi)
             {
-            case 0:
-                return new Color(V, t, p, A);
-            case 1:
-                return new Color(q, V, p, A);
-            case 2:
-                return new Color(p, V, t, A);
-            case 3:
-                return new Color(p, q, V, A);
-            case 4:
-                return new Color(t, p, V, A);
-            default:
-                return new Color(V, p, q, A);
+                case 0:
+                    return new Color(V, t, p, A);
+                case 1:
+                    return new Color(q, V, p, A);
+                case 2:
+                    return new Color(p, V, t, A);
+                case 3:
+                    return new Color(p, q, V, A);
+                case 4:
+                    return new Color(t, p, V, A);
+                default:
+                    return new Color(V, p, q, A);
             }
         }
 
@@ -97,15 +97,23 @@ namespace SE
             if (delta > 0.0f)
             {
                 if (color.R >= max)
+                {
                     h = (color.G - color.B) / delta;
+                }
                 else if (color.G >= max)
+                {
                     h = (color.B - color.R) / delta + 2.0f;
+                }
                 else
+                {
                     h = (color.R - color.G) / delta + 4.0f;
+                }
                 h *= 60.0f;
 
                 if (h < 0)
+                {
                     h += 360f;
+                }
             }
 
             float s = Mathf.IsZero(max) ? 0.0f : delta / max;
@@ -122,7 +130,10 @@ namespace SE
         /// <inheritdoc/>
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(null, obj))
+            {
+                return false;
+            }
             return obj is ColorHSV && Equals((ColorHSV)obj);
         }
 
@@ -177,7 +188,9 @@ namespace SE
         public string ToString(string format, IFormatProvider formatProvider)
         {
             if (format == null)
+            {
                 return ToString(formatProvider);
+            }
 
             return string.Format(formatProvider, ToStringFormat,
                                  H.ToString(format, formatProvider),

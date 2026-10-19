@@ -5,19 +5,19 @@ namespace SE.Editor.GUI
 {
     public class MainMenu : ContainerControl
     {
-        private Window.HitTestDelegate _hitTestCall;
-        private bool _useCustomWindowSystem = false;
-        private Image _icon = null;
-        private Label _title = null;
-        private Button _closeButton = null;
-        private Button _minimizeButton = null;
-        private Button _maximizeButton = null;
-        private Window _window = null;
-        private MainMenuButton _selected = null;
+        private Window.HitTestDelegate m_HitTestCall;
+        private bool m_UseCustomWindowSystem = false;
+        private Image m_Icon = null;
+        private Label m_Title = null;
+        private Button m_CloseButton = null;
+        private Button m_MinimizeButton = null;
+        private Button m_MaximizeButton = null;
+        private Window m_Window = null;
+        private MainMenuButton m_Selected = null;
 
         private void OnSelectedContextMenuVisibleChanged(Control control)
         {
-            if (_selected != null)
+            if (m_Selected != null)
             {
                 Selected = null;
             }
@@ -48,26 +48,26 @@ namespace SE.Editor.GUI
 
         private void OnWindowClosed()
         {
-            if (_window != null)
+            if (m_Window != null)
             {
-                _window.HitTest = null;
-                _window = null;
+                m_Window.HitTest = null;
+                m_Window = null;
             }
         }
 
         private WindowHitCodes OnHitTest(Float2 mouse)
         {
-            float dpiScale = _window.DpiScale;
+            float dpiScale = m_Window.DpiScale;
 
-            if (_window.IsMinimized)
+            if (m_Window.IsMinimized)
             {
                 return WindowHitCodes.NoWhere;
             }
 
-            if (!_window.IsMaximized)
+            if (!m_Window.IsMaximized)
             {
-                Float2 pos = _window.ScreenToClient(mouse * dpiScale); // pos is not DPI adjusted
-                Float2 winSize = _window.Size;
+                Float2 pos = m_Window.ScreenToClient(mouse * dpiScale); // pos is not DPI adjusted
+                Float2 winSize = m_Window.Size;
 
                 // Distance from which the mouse is considered to be on the border/corner
                 float distance = 5.0f * dpiScale;
@@ -108,21 +108,21 @@ namespace SE.Editor.GUI
 
             Float2 mousePos = PointFromScreen(mouse * dpiScale);
             Control controlUnderMouse = GetChildAt(mousePos);
-            bool isMouseOverSth = controlUnderMouse != null && controlUnderMouse != _title;
+            bool isMouseOverSth = controlUnderMouse != null && controlUnderMouse != m_Title;
 
             MainMenuButton rb = GetRightButton();
             if (rb == null)
             {
-                Float2 upperLeft = _title.UpperLeft;
+                Float2 upperLeft = m_Title.UpperLeft;
                 Rectangle rectangle = new Rectangle(upperLeft,
-                    new Float2(_minimizeButton.BottomLeft.X - upperLeft.X, _title.Height));
+                    new Float2(m_MinimizeButton.BottomLeft.X - upperLeft.X, m_Title.Height));
                 if (rectangle.Contains(mousePos) && !isMouseOverSth)
                 {
                     return WindowHitCodes.Caption;
                 }
             }
-            else if (_minimizeButton != null &&
-                new Rectangle(rb.UpperRight, _minimizeButton.BottomLeft - rb.UpperRight).Contains(mousePos) &&
+            else if (m_MinimizeButton != null &&
+                new Rectangle(rb.UpperRight, m_MinimizeButton.BottomLeft - rb.UpperRight).Contains(mousePos) &&
                 !isMouseOverSth)
             {
                 return WindowHitCodes.Caption;
@@ -136,26 +136,26 @@ namespace SE.Editor.GUI
         /// </summary>
         public MainMenuButton Selected
         {
-            get => _selected;
+            get => m_Selected;
             set
             {
-                if (_selected == value)
+                if (m_Selected == value)
                 {
                     return;
                 }
 
-                if (_selected != null)
+                if (m_Selected != null)
                 {
-                    _selected.ContextMenu.VisibleChanged -= OnSelectedContextMenuVisibleChanged;
-                    _selected.ContextMenu.Hide();
+                    m_Selected.ContextMenu.VisibleChanged -= OnSelectedContextMenuVisibleChanged;
+                    m_Selected.ContextMenu.Hide();
                 }
 
-                _selected = value;
+                m_Selected = value;
 
-                if (_selected != null && _selected.ContextMenu.HasChildren)
+                if (m_Selected != null && m_Selected.ContextMenu.HasChildren)
                 {
-                    _selected.ContextMenu.Show(_selected, new Float2(0, _selected.Height));
-                    _selected.ContextMenu.VisibleChanged += OnSelectedContextMenuVisibleChanged;
+                    m_Selected.ContextMenu.Show(m_Selected, new Float2(0, m_Selected.Height));
+                    m_Selected.ContextMenu.VisibleChanged += OnSelectedContextMenuVisibleChanged;
                 }
             }
         }
@@ -169,8 +169,8 @@ namespace SE.Editor.GUI
             AutoFocus = false;
             AnchorPreset = AnchorPresets.HorizontalStretchTop;
 
-            _useCustomWindowSystem = true;
-            if (_useCustomWindowSystem)
+            m_UseCustomWindowSystem = true;
+            if (m_UseCustomWindowSystem)
             {
                 BackgroundColor = Style.Current.LightBackground;
                 Height = 28;
@@ -182,83 +182,83 @@ namespace SE.Editor.GUI
                 windowIconsFont.WaitForLoaded();
 
                 Font iconFont = windowIconsFont.CreateFont(9);
-                _hitTestCall = OnWindowHitTest;
+                m_HitTestCall = OnWindowHitTest;
 
-                _window = mainWindow.RootWindow().Window;
-                _window.HitTest = _hitTestCall;
-                _window.Closed += OnWindowClosed;
+                m_Window = mainWindow.RootWindow().Window;
+                m_Window.HitTest = m_HitTestCall;
+                m_Window.Closed += OnWindowClosed;
 
                 // ScriptsBuilder.GetBinariesConfiguration(...)
-                _icon = new Image();
-                _icon.Margin = new Margin(6, 6, 6, 6);
-                _icon.Brush = new TextureBrush(windowIcon);
+                m_Icon = new Image();
+                m_Icon.Margin = new Margin(6, 6, 6, 6);
+                m_Icon.Brush = new TextureBrush(windowIcon);
                 // Preserve the engine texture's colors in both normal and hover states.
-                _icon.Color = Color.White;
-                _icon.MouseOverColor = Color.White;
-                _icon.KeepAspectRatio = false;
-                _icon.Parent = this;
+                m_Icon.Color = Color.White;
+                m_Icon.MouseOverColor = Color.White;
+                m_Icon.KeepAspectRatio = false;
+                m_Icon.Parent = this;
 
-                _title = new Label(0, 0, Width, Height);
-                _title.Text = _window.Title;
-                _title.HorizontalAlignment = TextAlignment.Center;
-                _title.VerticalAlignment = TextAlignment.Center;
-                _title.ClipText = true;
-                _title.TextColor = Style.Current.ForegroundGrey;
-                _title.TextColorHighlighted = Style.Current.ForegroundGrey;
-                _title.Parent = this;
+                m_Title = new Label(0, 0, Width, Height);
+                m_Title.Text = m_Window.Title;
+                m_Title.HorizontalAlignment = TextAlignment.Center;
+                m_Title.VerticalAlignment = TextAlignment.Center;
+                m_Title.ClipText = true;
+                m_Title.TextColor = Style.Current.ForegroundGrey;
+                m_Title.TextColorHighlighted = Style.Current.ForegroundGrey;
+                m_Title.Parent = this;
 
-                _closeButton = new Button(0, 0, 46, Height);
-                _closeButton.Text = EditorAssets.SegMDL2Icons.ChromeClose;
-                _closeButton.Font = iconFont;
-                _closeButton.TextColor = Style.Current.Foreground;
-                _closeButton.BackgroundColor = Color.Transparent;
-                _closeButton.BackgroundColorHighlighted = Color.Red;
-                _closeButton.BackgroundColorSelected = Color.Red.RGBMultiplied(1.3f);
-                _closeButton.BorderColor = Color.Transparent;
-                _closeButton.BorderColorHighlighted = Color.Transparent;
-                _closeButton.BorderColorSelected = Color.Transparent;
-                _closeButton.Parent = this;
-                _closeButton.Clicked += () =>
+                m_CloseButton = new Button(0, 0, 46, Height);
+                m_CloseButton.Text = EditorAssets.SegMDL2Icons.ChromeClose;
+                m_CloseButton.Font = iconFont;
+                m_CloseButton.TextColor = Style.Current.Foreground;
+                m_CloseButton.BackgroundColor = Color.Transparent;
+                m_CloseButton.BackgroundColorHighlighted = Color.Red;
+                m_CloseButton.BackgroundColorSelected = Color.Red.RGBMultiplied(1.3f);
+                m_CloseButton.BorderColor = Color.Transparent;
+                m_CloseButton.BorderColorHighlighted = Color.Transparent;
+                m_CloseButton.BorderColorSelected = Color.Transparent;
+                m_CloseButton.Parent = this;
+                m_CloseButton.Clicked += () =>
                 {
-                    _window.Close(SE.ClosingReason.User);
+                    m_Window.Close(SE.ClosingReason.User);
                 };
 
-                _minimizeButton = new Button(0, 0, 46, Height);
-                _minimizeButton.Text = EditorAssets.SegMDL2Icons.ChromeMinimize;
-                _minimizeButton.Font = iconFont;
-                _minimizeButton.TextColor = Style.Current.Foreground;
-                _minimizeButton.BackgroundColor = Color.Transparent;
-                _minimizeButton.BackgroundColorHighlighted = Style.Current.LightBackground.RGBMultiplied(0.8f);
-                _minimizeButton.BorderColor = Color.Transparent;
-                _minimizeButton.BorderColorHighlighted = Color.Transparent;
-                _minimizeButton.BorderColorSelected = Color.Transparent;
-                _minimizeButton.Parent = this;
-                _minimizeButton.Clicked += () =>
+                m_MinimizeButton = new Button(0, 0, 46, Height);
+                m_MinimizeButton.Text = EditorAssets.SegMDL2Icons.ChromeMinimize;
+                m_MinimizeButton.Font = iconFont;
+                m_MinimizeButton.TextColor = Style.Current.Foreground;
+                m_MinimizeButton.BackgroundColor = Color.Transparent;
+                m_MinimizeButton.BackgroundColorHighlighted = Style.Current.LightBackground.RGBMultiplied(0.8f);
+                m_MinimizeButton.BorderColor = Color.Transparent;
+                m_MinimizeButton.BorderColorHighlighted = Color.Transparent;
+                m_MinimizeButton.BorderColorSelected = Color.Transparent;
+                m_MinimizeButton.Parent = this;
+                m_MinimizeButton.Clicked += () =>
                 {
-                    _window.Minimize();
+                    m_Window.Minimize();
                 };
 
-                _maximizeButton = new Button(0, 0, 46, Height);
-                _maximizeButton.Text = _window.IsMaximized
+                m_MaximizeButton = new Button(0, 0, 46, Height);
+                m_MaximizeButton.Text = m_Window.IsMaximized
                     ? EditorAssets.SegMDL2Icons.ChromeRestore
                     : EditorAssets.SegMDL2Icons.ChromeMaximize;
-                _maximizeButton.TextColor = Style.Current.Foreground;
-                _maximizeButton.Font = iconFont;
-                _maximizeButton.BackgroundColor = Color.Transparent;
-                _maximizeButton.BackgroundColorHighlighted = Style.Current.LightBackground.RGBMultiplied(0.8f);
-                _maximizeButton.BorderColor = Color.Transparent;
-                _maximizeButton.BorderColorHighlighted = Color.Transparent;
-                _maximizeButton.BorderColorSelected = Color.Transparent;
-                _maximizeButton.Parent = this;
-                _maximizeButton.Clicked += () =>
+                m_MaximizeButton.TextColor = Style.Current.Foreground;
+                m_MaximizeButton.Font = iconFont;
+                m_MaximizeButton.BackgroundColor = Color.Transparent;
+                m_MaximizeButton.BackgroundColorHighlighted = Style.Current.LightBackground.RGBMultiplied(0.8f);
+                m_MaximizeButton.BorderColor = Color.Transparent;
+                m_MaximizeButton.BorderColorHighlighted = Color.Transparent;
+                m_MaximizeButton.BorderColorSelected = Color.Transparent;
+                m_MaximizeButton.Parent = this;
+                m_MaximizeButton.Clicked += () =>
                 {
-                    if (_window.IsMaximized)
+                    if (m_Window.IsMaximized)
                     {
-                        _window.Restore();
+                        m_Window.Restore();
                     }
                     else
                     {
-                        _window.Maximize();
+                        m_Window.Maximize();
                     }
                 };
             }
@@ -272,9 +272,9 @@ namespace SE.Editor.GUI
         {
             base.Update(deltaTime);
 
-            if (_maximizeButton != null)
+            if (m_MaximizeButton != null)
             {
-                _maximizeButton.Text = _window.IsMaximized
+                m_MaximizeButton.Text = m_Window.IsMaximized
                     ? EditorAssets.SegMDL2Icons.ChromeRestore
                     : EditorAssets.SegMDL2Icons.ChromeMaximize;
             }
@@ -320,15 +320,15 @@ namespace SE.Editor.GUI
             }
 
             Control child = GetChildAtRecursive(location);
-            if (_useCustomWindowSystem && child is not Button && child is not MainMenuButton)
+            if (m_UseCustomWindowSystem && child is not Button && child is not MainMenuButton)
             {
-                if (_window.IsMaximized)
+                if (m_Window.IsMaximized)
                 {
-                    _window.Restore();
+                    m_Window.Restore();
                 }
                 else
                 {
-                    _window.Maximize();
+                    m_Window.Maximize();
                 }
             }
 
@@ -352,7 +352,7 @@ namespace SE.Editor.GUI
         {
             base.OnDestroy();
 
-            if (_window != null)
+            if (m_Window != null)
             {
                 OnWindowClosed();
             }
@@ -363,12 +363,12 @@ namespace SE.Editor.GUI
         {
             float x = 0;
 
-            if (_useCustomWindowSystem)
+            if (m_UseCustomWindowSystem)
             {
                 // Icon
-                _icon.X = x;
-                _icon.Size = new Float2(Height);
-                x += _icon.Width;
+                m_Icon.X = x;
+                m_Icon.Size = new Float2(Height);
+                x += m_Icon.Width;
             }
 
             // Arrange controls
@@ -394,26 +394,26 @@ namespace SE.Editor.GUI
                 }
             }
 
-            if (_useCustomWindowSystem)
+            if (m_UseCustomWindowSystem)
             {
                 // Buttons
-                float width = _closeButton.Width;
-                _closeButton.Height = Height;
-                _closeButton.X = Width - width;
-                _maximizeButton.Height = Height;
-                _maximizeButton.X = _closeButton.X - _maximizeButton.Width;
-                _minimizeButton.Height = Height;
-                _minimizeButton.X = _maximizeButton.X - _minimizeButton.Width;
+                float width = m_CloseButton.Width;
+                m_CloseButton.Height = Height;
+                m_CloseButton.X = Width - width;
+                m_MaximizeButton.Height = Height;
+                m_MaximizeButton.X = m_CloseButton.X - m_MaximizeButton.Width;
+                m_MinimizeButton.Height = Height;
+                m_MinimizeButton.X = m_MaximizeButton.X - m_MinimizeButton.Width;
 
                 // Title
-                _title.Bounds = new Rectangle(x + 2, 0, _minimizeButton.Left - x - 4, Height);
-                _title.Text = _window.Title;
+                m_Title.Bounds = new Rectangle(x + 2, 0, m_MinimizeButton.Left - x - 4, Height);
+                m_Title.Text = m_Window.Title;
             }
         }
 
         private WindowHitCodes OnWindowHitTest(ref Float2 mousePosition)
         {
-            Float2 pos = mousePosition / _window.DpiScale;
+            Float2 pos = mousePosition / m_Window.DpiScale;
             return OnHitTest(pos);
         }
     }

@@ -22,7 +22,8 @@ namespace SE.Editor
 
         public virtual bool AcceptsAsset(Type typeId, string path)
         {
-            return IsProxyFor(typeId) && path.EndsWith("." + FileExtension.TrimStart('.'), StringComparison.OrdinalIgnoreCase);
+            return IsProxyFor(typeId) && path.EndsWith("." + FileExtension.TrimStart('.'), StringComparison
+                .OrdinalIgnoreCase);
         }
 
         public abstract AssetItem ConstructItem(string path, Type typeId, Guid id);
@@ -39,7 +40,8 @@ namespace SE.Editor
         /// Determines whether thumbnail can be drawn for the specified item.
         /// </summary>
         /// <param name="request">The request.</param>
-        /// <returns><c>true</c> if this thumbnail can be drawn for the specified item; otherwise, <c>false</c>.</returns>
+        /// <returns> <c> true</c> if this thumbnail can be drawn for the specified item; otherwise, <c>
+        /// false</c>.</returns>
         public virtual bool CanDrawThumbnail(ThumbnailRequest request)
         {
             return true;
@@ -65,7 +67,8 @@ namespace SE.Editor
         }
 
         /// <summary>
-        /// Called when thumbnail drawing ends. Proxy should clear custom GUI from guiRoot from that should be not destroyed.
+        /// Called when thumbnail drawing ends. Proxy should clear custom GUI from guiRoot from that should be not
+        /// destroyed.
         /// </summary>
         /// <param name="request">The request to render thumbnail.</param>
         /// <param name="guiRoot">The GUI root container control.</param>

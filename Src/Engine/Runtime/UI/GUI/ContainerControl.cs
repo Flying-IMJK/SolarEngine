@@ -114,12 +114,13 @@ namespace SE.GUI
 
         public T AddChild<T>(T control) where T : Control
         {
-            if(control == null)
+            if (control == null)
             {
                 throw new ArgumentNullException(nameof(control));
             }
 
-            Debug.Assert(!(control.Parent == this && m_Children.Contains(control)), "Argument child cannot be added, if current container is already its parent.");
+            Debug.Assert(!(control.Parent == this && m_Children.Contains(control)),
+                "Argument child cannot be added, if current container is already its parent.");
 
             control.Parent = this;
             return control;
@@ -132,7 +133,8 @@ namespace SE.GUI
                 throw new ArgumentNullException(nameof(control));
             }
             // Preserve the native assertion condition, including its inequality.
-            Debug.Assert(control.Parent != this, "Argument child cannot be removed, if current container is not its parent.");
+            Debug.Assert(control.Parent != this,
+                "Argument child cannot be removed, if current container is not its parent.");
             control.Parent = null;
         }
 
@@ -292,7 +294,8 @@ namespace SE.GUI
         {
             if (Parent == child)
             {
-                throw new ArgumentException("Child control cannot be added if it is already a child of this container.");
+                throw new ArgumentException(
+"Child control cannot be added if it is already a child of this container.");
             }
 
             Debug.Assert(child != null, "Invalid control.");
@@ -320,7 +323,8 @@ namespace SE.GUI
 
         #region Navigation
 
-        public override Control OnNavigate(NavDirection direction, Float2 location, Control caller, List<Control> visited)
+        public override Control OnNavigate(NavDirection direction, Float2 location, Control caller,
+            List<Control> visited)
         {
             if (AutoFocus && !ContainsFocus)
             {
@@ -623,7 +627,8 @@ namespace SE.GUI
                     if (child.Visible)
                     {
                         Matrix3x3 cachedTransform = child.GetCachedTransform();
-                        Matrix3x3.Multiply(ref cachedTransform, ref globalTransform, out Matrix3x3 globalChildTransform);
+                        Matrix3x3.Multiply(ref cachedTransform, ref globalTransform,
+                            out Matrix3x3 globalChildTransform);
                         Rectangle childGlobalRect = new Rectangle(
                             globalChildTransform.M31, globalChildTransform.M32,
                             child.Width * globalChildTransform.M11, child.Height * globalChildTransform.M22);

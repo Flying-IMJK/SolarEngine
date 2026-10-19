@@ -7,24 +7,24 @@ namespace SE.GUI
     public abstract class ScrollBar : Control
     {
         // Scrolling
-        private float _clickChange = 20.0f, _scrollChange = 50.0f;
-        private float _minimum, _maximum = 100.0f;
-        private float _startValue, _value, _targetValue;
-        private Orientation _orientation;
-        private Action<float> _update;
+        private float m_ClickChange = 20.0f, m_ScrollChange = 50.0f;
+        private float m_Minimum, m_Maximum = 100.0f;
+        private float m_StartValue, m_Value, m_TargetValue;
+        private Orientation m_Orientation;
+        private Action<float> m_Update;
         private Action<float> m_OnUpdate;
 
         // Input
-        private float _mouseOffset;
+        private float m_MouseOffset;
 
         // Thumb data
-        private Rectangle _thumbRect, _trackRect;
-        private bool _thumbClicked;
-        private float _thumbCenter, _thumbSize;
+        private Rectangle m_ThumbRect, m_TrackRect;
+        private bool m_ThumbClicked;
+        private float m_ThumbCenter, m_ThumbSize;
 
         // Smoothing
-        private float _thumbOpacity = DefaultMinimumOpacity;
-        private float _scrollAnimationProgress = 0.0f;
+        private float m_ThumbOpacity = DefaultMinimumOpacity;
+        private float m_ScrollAnimationProgress = 0.0f;
 
         /// <summary>
         /// The default minimum opacity.
@@ -36,7 +36,7 @@ namespace SE.GUI
         /// </summary>
         public Orientation GetOrientation()
         {
-            return _orientation;
+            return m_Orientation;
         }
 
         /// <summary>
@@ -87,20 +87,20 @@ namespace SE.GUI
         /// </summary>
         public float GetMinimum()
         {
-            return _minimum;
+            return m_Minimum;
         }
 
         public void SetMinimum(float value)
         {
-            if (value > _maximum)
+            if (value > m_Maximum)
             {
-                value = _maximum;
+                value = m_Maximum;
             }
 
-            _minimum = value;
-            if (value < _minimum)
+            m_Minimum = value;
+            if (value < m_Minimum)
             {
-                value = _minimum;
+                value = m_Minimum;
             }
         }
 
@@ -109,20 +109,20 @@ namespace SE.GUI
         /// </summary>
         public float GetMaximum()
         {
-            return _maximum;
+            return m_Maximum;
         }
 
         public void SetMaximum(float value)
         {
-            if (value < _minimum)
+            if (value < m_Minimum)
             {
-                value = _minimum;
+                value = m_Minimum;
             }
 
-            _maximum = value;
-            if (value > _maximum)
+            m_Maximum = value;
+            if (value > m_Maximum)
             {
-                value = _maximum;
+                value = m_Maximum;
             }
         }
 
@@ -138,29 +138,29 @@ namespace SE.GUI
         /// </summary>
         public float GetValue()
         {
-            return _value;
+            return m_Value;
         }
 
         public void SetValue(float value)
         {
-            value = ClampLikeNative(value, _minimum, _maximum);
-            if (!Mathf.WithinEpsilon((double)value, _targetValue, Mathf.Epsilon))
+            value = ClampLikeNative(value, m_Minimum, m_Maximum);
+            if (!Mathf.WithinEpsilon((double)value, m_TargetValue, Mathf.Epsilon))
             {
-                _targetValue = value;
-                _startValue = _value;
-                _scrollAnimationProgress = 0.0f;
+                m_TargetValue = value;
+                m_StartValue = m_Value;
+                m_ScrollAnimationProgress = 0.0f;
 
                 // Check if skip smoothing
                 if (!UseSmoothing())
                 {
-                    _value = value;
-                    _startValue = value;
-                    _scrollAnimationProgress = 1.0f;
+                    m_Value = value;
+                    m_StartValue = value;
+                    m_ScrollAnimationProgress = 1.0f;
                     OnValueChanged();
                 }
                 else
                 {
-                    SetUpdate(_update, m_OnUpdate);
+                    SetUpdate(m_Update, m_OnUpdate);
                 }
             }
         }
@@ -170,17 +170,17 @@ namespace SE.GUI
         /// </summary>
         public float GetTargetValue()
         {
-            return _targetValue;
+            return m_TargetValue;
         }
 
         public void SetTargetValue(float value)
         {
-            value = ClampLikeNative(value, _minimum, _maximum);
-            if (!Mathf.WithinEpsilon((double)value, _targetValue, Mathf.Epsilon))
+            value = ClampLikeNative(value, m_Minimum, m_Maximum);
+            if (!Mathf.WithinEpsilon((double)value, m_TargetValue, Mathf.Epsilon))
             {
-                _targetValue = value;
-                _value = value;
-                SetUpdate(_update, null);
+                m_TargetValue = value;
+                m_Value = value;
+                SetUpdate(m_Update, null);
                 OnValueChanged();
             }
         }
@@ -200,7 +200,7 @@ namespace SE.GUI
         /// </summary>
         public float ValueSlowDown()
         {
-            return _targetValue - _value;
+            return m_TargetValue - m_Value;
         }
 
         /// <summary>
@@ -208,7 +208,7 @@ namespace SE.GUI
         /// </summary>
         public bool IsThumbClicked()
         {
-            return _thumbClicked;
+            return m_ThumbClicked;
         }
 
         /// <summary>
@@ -226,11 +226,11 @@ namespace SE.GUI
         /// </summary>
         public void FastScroll()
         {
-            if (!Mathf.WithinEpsilon((double)_value, _targetValue, Mathf.Epsilon))
+            if (!Mathf.WithinEpsilon((double)m_Value, m_TargetValue, Mathf.Epsilon))
             {
-                _value = _targetValue = _startValue;
-                _scrollAnimationProgress = 0.0f;
-                SetUpdate(_update, null);
+                m_Value = m_TargetValue = m_StartValue;
+                m_ScrollAnimationProgress = 0.0f;
+                SetUpdate(m_Update, null);
                 OnValueChanged();
             }
         }
@@ -244,7 +244,7 @@ namespace SE.GUI
         public void ScrollViewTo(float min, float max, bool fastScroll = false)
         {
             // Check if we need to change view
-            float viewMin = _value;
+            float viewMin = m_Value;
             float viewSize = TrackSize();
             float viewMax = viewMin + viewSize;
             if (viewMin > viewMax || min < viewMin || min > viewMax)
@@ -273,16 +273,16 @@ namespace SE.GUI
         {
             SE.Debug.Assert(minimum <= maximum, "ArgumentOutOfRange");
 
-            _minimum = minimum;
-            _maximum = maximum;
+            m_Minimum = minimum;
+            m_Maximum = maximum;
 
-            if (_value < minimum)
+            if (m_Value < minimum)
             {
                 SetValue(minimum);
             }
-            else if (_value > maximum)
+            else if (m_Value > maximum)
             {
-                _value = maximum;
+                m_Value = maximum;
             }
 
             UpdateThumb();
@@ -294,8 +294,8 @@ namespace SE.GUI
             base.Draw();
 
             // var style = Style.Current;
-            Render2D.FillRectangle(_trackRect, TrackColor * _thumbOpacity);
-            Render2D.FillRectangle(_thumbRect, (_thumbClicked ? ThumbSelectedColor : ThumbColor) * _thumbOpacity);
+            Render2D.FillRectangle(m_TrackRect, TrackColor * m_ThumbOpacity);
+            Render2D.FillRectangle(m_ThumbRect, (m_ThumbClicked ? ThumbSelectedColor : ThumbColor) * m_ThumbOpacity);
         }
 
         /// <inheritdoc />
@@ -309,7 +309,7 @@ namespace SE.GUI
         /// <inheritdoc />
         public override void OnMouseMove(Float2 location)
         {
-            if (_thumbClicked)
+            if (m_ThumbClicked)
             {
                 Float2 slidePosition = location + Root.GetTrackingMouseOffset();
                 if (Parent is ScrollableControl panel)
@@ -317,9 +317,9 @@ namespace SE.GUI
                     slidePosition += panel.GetViewOffset(); // Hardcoded fix
                 }
 
-                float mousePosition = _orientation == Orientation.Vertical ? slidePosition.Y : slidePosition.X;
-                float percentage = (mousePosition - _mouseOffset - _thumbSize / 2) / (TrackSize() - _thumbSize);
-                SetTargetValue(_minimum + percentage * (_maximum - _minimum));
+                float mousePosition = m_Orientation == Orientation.Vertical ? slidePosition.Y : slidePosition.X;
+                float percentage = (mousePosition - m_MouseOffset - m_ThumbSize / 2) / (TrackSize() - m_ThumbSize);
+                SetTargetValue(m_Minimum + percentage * (m_Maximum - m_Minimum));
             }
         }
 
@@ -329,7 +329,7 @@ namespace SE.GUI
             if (ThumbEnabled)
             {
                 // Scroll
-                SetValue(_targetValue - delta * _scrollChange);
+                SetValue(m_TargetValue - delta * m_ScrollChange);
             }
 
             return true;
@@ -347,13 +347,13 @@ namespace SE.GUI
                     root.GetFocusedControl().Defocus();
                 }
 
-                float mousePosition = _orientation == Orientation.Vertical ? location.Y : location.X;
+                float mousePosition = m_Orientation == Orientation.Vertical ? location.Y : location.X;
 
-                if (_thumbRect.Contains(location))
+                if (m_ThumbRect.Contains(location))
                 {
                     // Start moving thumb
-                    _thumbClicked = true;
-                    _mouseOffset = mousePosition - _thumbCenter;
+                    m_ThumbClicked = true;
+                    m_MouseOffset = mousePosition - m_ThumbCenter;
 
                     // Start capturing mouse
                     StartMouseCapture();
@@ -361,7 +361,7 @@ namespace SE.GUI
                 else
                 {
                     // Click change
-                    SetValue(_value + (mousePosition < _thumbCenter ? -1 : 1) * _clickChange);
+                    SetValue(m_Value + (mousePosition < m_ThumbCenter ? -1 : 1) * m_ClickChange);
                 }
             }
 
@@ -387,7 +387,7 @@ namespace SE.GUI
         {
             base.OnMouseEnter(location);
 
-            SetUpdate(_update, m_OnUpdate);
+            SetUpdate(m_Update, m_OnUpdate);
         }
 
         /// <inheritdoc />
@@ -395,13 +395,13 @@ namespace SE.GUI
         {
             base.OnMouseLeave();
 
-            SetUpdate(_update, m_OnUpdate);
+            SetUpdate(m_Update, m_OnUpdate);
         }
 
         public void Reset()
         {
-            _value = _targetValue = _startValue = 0.0f;
-            _scrollAnimationProgress = 0.0f;
+            m_Value = m_TargetValue = m_StartValue = 0.0f;
+            m_ScrollAnimationProgress = 0.0f;
         }
 
         private void UpdateThumb()
@@ -410,19 +410,19 @@ namespace SE.GUI
             float width = Width;
             float height = Height;
             float trackSize = TrackSize();
-            float range = _maximum - _minimum;
+            float range = m_Maximum - m_Minimum;
             float minimumThumbSize = trackSize / range * 100.0f;
             float maximumThumbSize = minimumThumbSize < 50.0f ? 50.0f : minimumThumbSize;
             float remainingTrackSize = trackSize - 10.0f;
-            _thumbSize = maximumThumbSize < remainingTrackSize ? maximumThumbSize : remainingTrackSize;
-            float pixelRange = trackSize - _thumbSize;
-            float percentage = (_value - _minimum) / range;
+            m_ThumbSize = maximumThumbSize < remainingTrackSize ? maximumThumbSize : remainingTrackSize;
+            float pixelRange = trackSize - m_ThumbSize;
+            float percentage = (m_Value - m_Minimum) / range;
             float thumbPosition = (int)(percentage * pixelRange);
-            _thumbCenter = thumbPosition + _thumbSize / 2;
-            _thumbRect = _orientation == Orientation.Vertical
-                ? new Rectangle((width - ThumbThickness) / 2, thumbPosition + 4, ThumbThickness, _thumbSize - 8)
-                : new Rectangle(thumbPosition + 4, (height - ThumbThickness) / 2, _thumbSize - 8, ThumbThickness);
-            _trackRect = _orientation == Orientation.Vertical
+            m_ThumbCenter = thumbPosition + m_ThumbSize / 2;
+            m_ThumbRect = m_Orientation == Orientation.Vertical
+                ? new Rectangle((width - ThumbThickness) / 2, thumbPosition + 4, ThumbThickness, m_ThumbSize - 8)
+                : new Rectangle(thumbPosition + 4, (height - ThumbThickness) / 2, m_ThumbSize - 8, ThumbThickness);
+            m_TrackRect = m_Orientation == Orientation.Vertical
                 ? new Rectangle((width - TrackThickness) / 2, 4, TrackThickness, height - 8)
                 : new Rectangle(4, (height - TrackThickness) / 2, width - 8, TrackThickness);
         }
@@ -430,10 +430,10 @@ namespace SE.GUI
         private void EndTracking()
         {
             // Check flag
-            if (_thumbClicked)
+            if (m_ThumbClicked)
             {
                 // Clear flag
-                _thumbClicked = false;
+                m_ThumbClicked = false;
 
                 // End capturing mouse
                 EndMouseCapture();
@@ -446,40 +446,41 @@ namespace SE.GUI
 
             // Opacity smoothing
             float targetOpacity = IsMouseOver ? 1.0f : DefaultMinimumOpacity;
-            _thumbOpacity = isDeltaSlow ? targetOpacity : Mathf.Lerp(_thumbOpacity, targetOpacity, deltaTime * 10.0f);
-            bool needUpdate = MathF.Abs(_thumbOpacity - targetOpacity) > 0.001f;
+            m_ThumbOpacity = isDeltaSlow ? targetOpacity : Mathf.Lerp(m_ThumbOpacity, targetOpacity, deltaTime * 10.0f);
+            bool needUpdate = MathF.Abs(m_ThumbOpacity - targetOpacity) > 0.001f;
 
             // Ensure scroll bar is visible and smoothing is required
-            if (Visible && MathF.Abs(_targetValue - _value) > 0.01f)
+            if (Visible && MathF.Abs(m_TargetValue - m_Value) > 0.01f)
             {
                 // Interpolate or not if running slow
                 float value;
                 if (!isDeltaSlow && UseSmoothing())
                 {
                     // percentage of scroll from 0 to _scrollChange, ex. 0.5 at _scrollChange / 2
-                    float minScrollChangeRatio = ClampLikeNative(MathF.Abs(_targetValue - _startValue) / _scrollChange, 0.0f, 1.0f);
+                    float minScrollChangeRatio = ClampLikeNative(MathF.Abs(m_TargetValue - m_StartValue)
+                        / m_ScrollChange, 0.0f, 1.0f);
 
                     // shorten the duration if we scrolled less than _scrollChange
                     float actualDuration = ScrollAnimationDuration * minScrollChangeRatio;
                     float step = deltaTime / actualDuration;
 
-                    float progress = _scrollAnimationProgress;
+                    float progress = m_ScrollAnimationProgress;
                     progress = ClampLikeNative(progress + step, 0.0f, 1.0f);
 
                     // https://easings.net/#easeOutSine
                     float easedProgress = MathF.Sin((progress * MathF.PI) / 2);
-                    value = Mathf.Lerp(_startValue, _targetValue, easedProgress);
+                    value = Mathf.Lerp(m_StartValue, m_TargetValue, easedProgress);
 
-                    _scrollAnimationProgress = progress;
+                    m_ScrollAnimationProgress = progress;
                 }
                 else
                 {
-                    value = _targetValue;
-                    _startValue = _targetValue;
-                    _scrollAnimationProgress = 0.0f;
+                    value = m_TargetValue;
+                    m_StartValue = m_TargetValue;
+                    m_ScrollAnimationProgress = 0.0f;
                 }
 
-                _value = value;
+                m_Value = value;
                 OnValueChanged();
                 needUpdate = true;
             }
@@ -487,7 +488,7 @@ namespace SE.GUI
             // End updating if all animations are done
             if (!needUpdate)
             {
-                SetUpdate(_update, null);
+                SetUpdate(m_Update, null);
             }
         }
 
@@ -528,7 +529,7 @@ namespace SE.GUI
         protected ScrollBar()
         {
             // Standalone scrollbars use the same palette; Panel may override it.
-            var style = Style.Current;
+            Style style = Style.Current;
             TrackColor = style.BackgroundHighlighted;
             ThumbColor = style.BackgroundNormal;
             ThumbSelectedColor = style.BackgroundSelected;
@@ -544,7 +545,7 @@ namespace SE.GUI
 
             AutoFocus = false;
 
-            _orientation = orientation;
+            m_Orientation = orientation;
         }
 
         /// <inheritdoc />
@@ -552,9 +553,9 @@ namespace SE.GUI
         {
             base.AddUpdateCallbacks(root);
 
-            if (_update != null)
+            if (m_Update != null)
             {
-                root.UpdateCallbacksToAdd.Add(_update);
+                root.UpdateCallbacksToAdd.Add(m_Update);
             }
         }
 
@@ -563,9 +564,9 @@ namespace SE.GUI
         {
             base.RemoveUpdateCallbacks(root);
 
-            if (_update != null)
+            if (m_Update != null)
             {
-                root.UpdateCallbacksToRemove.Add(_update);
+                root.UpdateCallbacksToRemove.Add(m_Update);
             }
         }
     }

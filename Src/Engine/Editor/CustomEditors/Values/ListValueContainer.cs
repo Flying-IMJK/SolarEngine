@@ -6,17 +6,19 @@ namespace SE.Editor
     [HideInEditor]
     public sealed class ListValueContainer : ValueContainer
     {
-        private readonly object[]? _attributes;
+        private readonly object[] m_Attributes;
         public readonly int Index;
 
-        public ListValueContainer(Type elementType, int index, ValueContainer values, object[]? attributes = null)
+        public ListValueContainer(Type elementType, int index, ValueContainer values, object[] attributes = null)
             : base(elementType)
         {
             Index = index;
-            _attributes = attributes;
+            m_Attributes = attributes;
             Capacity = values.Count;
-            foreach (var value in values)
+            foreach (object value in values)
+            {
                 Add(((IList)value!)[index]);
+            }
             if (values.ReferenceValue is IList reference && reference.Count > index)
             {
                 _referenceValue = reference[index];
@@ -24,17 +26,26 @@ namespace SE.Editor
             }
         }
 
-        public override object[] GetAttributes() => _attributes ?? base.GetAttributes();
+        public override object[] GetAttributes() => m_Attributes ?? base.GetAttributes();
 
         public override void Refresh(ValueContainer instanceValues)
         {
-            if (instanceValues.Count != Count) throw new ArgumentException();
-            for (int i = 0; i < Count; i++) this[i] = ((IList)instanceValues[i]!)[Index];
+            if (instanceValues.Count != Count)
+            {
+                throw new ArgumentException();
+            }
+            for (int i = 0; i < Count; i++)
+            {
+                this[i] = ((IList)instanceValues[i]!)[Index];
+            }
         }
 
-        public override void Set(ValueContainer instanceValues, object? value)
+        public override void Set(ValueContainer instanceValues, object value)
         {
-            if (instanceValues.Count != Count) throw new ArgumentException();
+            if (instanceValues.Count != Count)
+            {
+                throw new ArgumentException();
+            }
             for (int i = 0; i < Count; i++)
             {
                 ((IList)instanceValues[i]!)[Index] = value;
@@ -44,7 +55,10 @@ namespace SE.Editor
 
         public override void Set(ValueContainer instanceValues, ValueContainer values)
         {
-            if (instanceValues.Count != Count || values.Count != Count) throw new ArgumentException();
+            if (instanceValues.Count != Count || values.Count != Count)
+            {
+                throw new ArgumentException();
+            }
             for (int i = 0; i < Count; i++)
             {
                 ((IList)instanceValues[i]!)[Index] = values[i];
@@ -54,11 +68,17 @@ namespace SE.Editor
 
         public override void Set(ValueContainer instanceValues)
         {
-            if (instanceValues.Count != Count) throw new ArgumentException();
-            for (int i = 0; i < Count; i++) ((IList)instanceValues[i]!)[Index] = this[i];
+            if (instanceValues.Count != Count)
+            {
+                throw new ArgumentException();
+            }
+            for (int i = 0; i < Count; i++)
+            {
+                ((IList)instanceValues[i]!)[Index] = this[i];
+            }
         }
 
-        public override void RefreshReferenceValue(object? instanceValue)
+        public override void RefreshReferenceValue(object instanceValue)
         {
             if (instanceValue is IList list && list.Count > Index)
             {

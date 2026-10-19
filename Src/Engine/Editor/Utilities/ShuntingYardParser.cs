@@ -140,7 +140,8 @@ namespace SE.Editor
         };
 
         /// <summary>
-        /// List known units which cannot be handled as a variable easily because they contain operator symbols (mostly a forward slash). The value is the factor to calculate game units. 
+        /// List known units which cannot be handled as a variable easily because they contain operator symbols (mostly
+        /// a forward slash). The value is the factor to calculate game units.
         /// </summary>
         private static readonly IDictionary<string, double> UnitSymbols = new Dictionary<string, double>
         {
@@ -149,7 +150,8 @@ namespace SE.Editor
             ["m/s"] = Units.Meters2Units,
             ["m/s²"] = Units.Meters2Units,
             ["km/h"] = 1 / 3.6 * Units.Meters2Units,
-            // Nm is here because these values are compared case-sensitive, and we don't want to confuse nanometers and Newtonmeters
+            // Nm is here because these values are compared case-sensitive, and we don't want to confuse nanometers and
+            // Newtonmeters
             ["Nm"] = Units.Meters2Units * Units.Meters2Units,
         };
 
@@ -161,8 +163,8 @@ namespace SE.Editor
         /// <returns>The comparison result.</returns>
         private static bool CompareOperators(string oper1, string oper2)
         {
-            var op1 = Operators[oper1];
-            var op2 = Operators[oper2];
+            Operator op1 = Operators[oper1];
+            Operator op2 = Operators[oper2];
             return op1.RightAssociative ? op1.Precedence < op2.Precedence : op1.Precedence <= op2.Precedence;
         }
 
@@ -174,20 +176,30 @@ namespace SE.Editor
         private static TokenType DetermineType(char c)
         {
             if (char.IsDigit(c) || c == '.')
+            {
                 return TokenType.Number;
+            }
 
             if (char.IsWhiteSpace(c))
+            {
                 return TokenType.WhiteSpace;
+            }
 
             if (c == '(' || c == ')')
+            {
                 return TokenType.Parenthesis;
+            }
 
-            var str = char.ToString(c);
+            string str = char.ToString(c);
             if (Operators.ContainsKey(str))
+            {
                 return TokenType.Operator;
+            }
 
             if (char.IsLetter(c) || c == '²' || c == '³')
+            {
                 return TokenType.Variable;
+            }
 
             throw new ParsingException("wrong character");
         }
@@ -201,7 +213,7 @@ namespace SE.Editor
         {
             // Prepare text
             text = text.Replace(',', '.').Replace("°", "");
-            foreach (var kv in UnitSymbols)
+            foreach (KeyValuePair<string, double> kv in UnitSymbols)
             {
                 int idx;
                 do
@@ -210,24 +222,32 @@ namespace SE.Editor
                     if (idx > 0)
                     {
                         if (DetermineType(text[idx - 1]) != TokenType.Number)
+                        {
                             throw new ParsingException($"unit found without a number: {kv.Key} at {idx} in {text}");
+                        }
                         if (Mathf.Abs(kv.Value - 1) < Mathf.Epsilon)
+                        {
                             text = text.Remove(idx, kv.Key.Length);
+                        }
                         else
+                        {
                             text = text.Replace(kv.Key, "*" + kv.Value);
+                        }
                     }
                 } while (idx > 0);
             }
 
             // Necessary to correctly parse negative numbers
-            var previous = TokenType.WhiteSpace;
+            TokenType previous = TokenType.WhiteSpace;
 
-            var token = new StringBuilder();
+            StringBuilder token = new StringBuilder();
             for (int i = 0; i < text.Length; i++)
             {
-                var type = DetermineType(text[i]);
+                TokenType type = DetermineType(text[i]);
                 if (type == TokenType.WhiteSpace)
+                {
                     continue;
+                }
 
                 token.Clear();
                 token.Append(text[i]);
@@ -240,50 +260,56 @@ namespace SE.Editor
                     {
                         switch (text[i + 1])
                         {
-                        case 'x':
-                        case 'X':
-                        {
-                            // Hexadecimal value
-                            i++;
-                            token.Clear();
-                            if (i + 1 == text.Length || !Uri.IsHexDigit(text[i + 1]))
-                                throw new ParsingException("invalid hexadecimal number");
-                            while (i + 1 < text.Length && Uri.IsHexDigit(text[i + 1]))
-                            {
-                                token.Append(text[++i]);
-                            }
-                            var value = ulong.Parse(token.ToString(), NumberStyles.HexNumber);
-                            token.Clear();
-                            token.Append(value.ToString());
-                            break;
-                        }
-                        default:
-                        {
-                            // Decimal value
-                            while (i + 1 < text.Length && DetermineType(text[i + 1]) == TokenType.Number)
-                            {
-                                token.Append(text[++i]);
-                            }
-
-                            // Exponential notation
-                            if (i + 2 < text.Length && (text[i + 1] == 'e' || text[i + 1] == 'E'))
-                            {
-                                token.Append(text[++i]);
-                                if (text[i + 1] == '-' || text[i + 1] == '+')
-                                    token.Append(text[++i]);
-                                while (i + 1 < text.Length && DetermineType(text[i + 1]) == TokenType.Number)
+                            case 'x':
+                            case 'X':
                                 {
-                                    token.Append(text[++i]);
+                                    // Hexadecimal value
+                                    i++;
+                                    token.Clear();
+                                    if (i + 1 == text.Length || !Uri.IsHexDigit(text[i + 1]))
+                                    {
+                                        throw new ParsingException("invalid hexadecimal number");
+                                    }
+                                    while (i + 1 < text.Length && Uri.IsHexDigit(text[i + 1]))
+                                    {
+                                        token.Append(text[++i]);
+                                    }
+                                    ulong value = ulong.Parse(token.ToString(), NumberStyles.HexNumber);
+                                    token.Clear();
+                                    token.Append(value.ToString());
+                                    break;
                                 }
-                            }
-                            break;
-                        }
+                            default:
+                                {
+                                    // Decimal value
+                                    while (i + 1 < text.Length && DetermineType(text[i + 1]) == TokenType.Number)
+                                    {
+                                        token.Append(text[++i]);
+                                    }
+
+                                    // Exponential notation
+                                    if (i + 2 < text.Length && (text[i + 1] == 'e' || text[i + 1] == 'E'))
+                                    {
+                                        token.Append(text[++i]);
+                                        if (text[i + 1] == '-' || text[i + 1] == '+')
+                                        {
+                                            token.Append(text[++i]);
+                                        }
+                                        while (i + 1 < text.Length && DetermineType(text[i + 1]) == TokenType.Number)
+                                        {
+                                            token.Append(text[++i]);
+                                        }
+                                    }
+                                    break;
+                                }
                         }
                     }
 
                     // Discard solo '-'
                     if (token.Length != 1)
+                    {
                         type = TokenType.Number;
+                    }
                 }
                 else if (type == TokenType.Variable)
                 {
@@ -312,53 +338,60 @@ namespace SE.Editor
         /// <returns>The collection of the tokens in reverse polish notation order.</returns>
         public static IEnumerable<Token> OrderTokens(IEnumerable<Token> tokens)
         {
-            var stack = new Stack<Token>();
+            Stack<Token> stack = new Stack<Token>();
 
-            foreach (var tok in tokens)
+            foreach (Token tok in tokens)
             {
                 switch (tok.Type)
                 {
-                // Number and variable tokens go directly to output
-                case TokenType.Variable:
-                case TokenType.Number:
-                    yield return tok;
-                    break;
+                    // Number and variable tokens go directly to output
+                    case TokenType.Variable:
+                    case TokenType.Number:
+                        yield return tok;
+                        break;
 
-                // Operators go on stack, unless last operator on stack has higher precedence
-                case TokenType.Operator:
-                    while (stack.Any() && stack.Peek().Type == TokenType.Operator && CompareOperators(tok.Value, stack.Peek().Value))
-                    {
-                        yield return stack.Pop();
-                    }
-
-                    stack.Push(tok);
-                    break;
-
-                // Left parenthesis goes on stack
-                // Right parenthesis takes all symbols (...) to output
-                case TokenType.Parenthesis:
-                    if (tok.Value == "(")
-                        stack.Push(tok);
-                    else
-                    {
-                        while (stack.Peek().Value != "(")
+                    // Operators go on stack, unless last operator on stack has higher precedence
+                    case TokenType.Operator:
+                        while (stack.Any() && stack.Peek().Type == TokenType.Operator && CompareOperators(tok.Value,
+                            stack.Peek().Value))
+                        {
                             yield return stack.Pop();
-                        stack.Pop();
-                    }
-                    break;
+                        }
 
-                default: throw new ParsingException("wrong token");
+                        stack.Push(tok);
+                        break;
+
+                    // Left parenthesis goes on stack
+                    // Right parenthesis takes all symbols (...) to output
+                    case TokenType.Parenthesis:
+                        if (tok.Value == "(")
+                        {
+                            stack.Push(tok);
+                        }
+                        else
+                        {
+                            while (stack.Peek().Value != "(")
+                            {
+                                yield return stack.Pop();
+                            }
+                            stack.Pop();
+                        }
+                        break;
+
+                    default: throw new ParsingException("wrong token");
                 }
             }
 
             // Pop all remaining operators from stack
             while (stack.Any())
             {
-                var tok = stack.Pop();
+                Token tok = stack.Pop();
 
                 // Parenthesis still on stack mean a mismatch
                 if (tok.Type == TokenType.Parenthesis)
+                {
                     throw new ParsingException("mismatched parentheses");
+                }
 
                 yield return tok;
             }
@@ -371,13 +404,14 @@ namespace SE.Editor
         /// <returns>The result value.</returns>
         public static double EvaluateRPN(IEnumerable<Token> tokens)
         {
-            var stack = new Stack<double>();
+            Stack<double> stack = new Stack<double>();
 
-            foreach (var token in tokens)
+            foreach (Token token in tokens)
             {
                 if (token.Type == TokenType.Number)
                 {
-                    stack.Push(double.Parse(token.Value, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture));
+                    stack.Push(double.Parse(token.Value, NumberStyles.Float | NumberStyles.AllowThousands,
+                        CultureInfo.InvariantCulture));
                 }
                 else if (token.Type == TokenType.Variable)
                 {
@@ -394,30 +428,34 @@ namespace SE.Editor
                 {
                     // In this step there always should be 2 values on stack
                     if (stack.Count < 2)
+                    {
                         throw new ParsingException("evaluation error");
+                    }
 
-                    var f1 = stack.Pop();
-                    var f2 = stack.Pop();
+                    double f1 = stack.Pop();
+                    double f2 = stack.Pop();
 
                     switch (token.Value)
                     {
-                    case "+":
-                        f2 += f1;
-                        break;
-                    case "-":
-                        f2 -= f1;
-                        break;
-                    case "*":
-                        f2 *= f1;
-                        break;
-                    case "/":
-                        if (Math.Abs(f1) < 1e-7f)
-                            throw new Exception("division by 0");
-                        f2 /= f1;
-                        break;
-                    case "^":
-                        f2 = Math.Pow(f2, f1);
-                        break;
+                        case "+":
+                            f2 += f1;
+                            break;
+                        case "-":
+                            f2 -= f1;
+                            break;
+                        case "*":
+                            f2 *= f1;
+                            break;
+                        case "/":
+                            if (Math.Abs(f1) < 1e-7f)
+                            {
+                                throw new Exception("division by 0");
+                            }
+                            f2 /= f1;
+                            break;
+                        case "^":
+                            f2 = Math.Pow(f2, f1);
+                            break;
                     }
 
                     stack.Push(f2);
@@ -428,9 +466,11 @@ namespace SE.Editor
             // we assume the remaining values are all factors to be multiplied
             if (stack.Count > 1)
             {
-                var v1 = stack.Pop();
+                double v1 = stack.Pop();
                 while (stack.Count > 0)
+                {
                     v1 *= stack.Pop();
+                }
                 return v1;
             }
             return stack.Pop();
@@ -446,8 +486,8 @@ namespace SE.Editor
             // Hack to allow parsing numbers while using "_" as a separator (like this: 1_000)
             text = text.Replace("_", string.Empty);
 
-            var tokens = Tokenize(text);
-            var rpn = OrderTokens(tokens);
+            IEnumerable<Token> tokens = Tokenize(text);
+            IEnumerable<Token> rpn = OrderTokens(tokens);
             return EvaluateRPN(rpn);
         }
     }

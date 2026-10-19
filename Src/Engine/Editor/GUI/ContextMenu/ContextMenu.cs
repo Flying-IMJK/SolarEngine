@@ -14,7 +14,7 @@ namespace SE.Editor.GUI
         /// <seealso cref="Panel" />
         protected class ItemsPanel : Panel
         {
-            private ContextMenu _menu;
+            private ContextMenu m_Menu;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ItemsPanel"/> class.
@@ -22,7 +22,7 @@ namespace SE.Editor.GUI
             /// <param name="menu">The menu.</param>
             public ItemsPanel(ContextMenu menu)
             {
-                _menu = menu;
+                m_Menu = menu;
             }
 
             /// <inheritdoc />
@@ -31,7 +31,7 @@ namespace SE.Editor.GUI
                 base.Arrange();
 
                 // Arrange controls
-                Margin margin = _menu._itemsMargin;
+                Margin margin = m_Menu._itemsMargin;
                 float y = 0;
                 float width = Width - margin.Width;
                 for (int i = 0; i < m_Children.Count; i++)
@@ -100,7 +100,8 @@ namespace SE.Editor.GUI
         public float MinimumWidth;
 
         /// <summary>
-        /// Gets or sets the maximum amount of items in the view. If popup has more items to show it uses a additional scroll panel.
+        /// Gets or sets the maximum amount of items in the view. If popup has more items to show it uses a additional
+        /// scroll panel.
         /// </summary>
         public int MaximumItemsInViewCount;
 
@@ -124,11 +125,11 @@ namespace SE.Editor.GUI
         /// </summary>
         public bool AutoSort
         {
-            get => _autosort;
+            get => m_Autosort;
             set
             {
-                _autosort = value;
-                if (_autosort)
+                m_Autosort = value;
+                if (m_Autosort)
                 {
                     SortButtons();
                 }
@@ -141,7 +142,7 @@ namespace SE.Editor.GUI
         /// <param name="force">Overrides <see cref="AutoSort"/> property.</param>
         public void SortButtons(bool force = false)
         {
-            if (!_autosort && !force)
+            if (!m_Autosort && !force)
             {
                 return;
             }
@@ -552,7 +553,7 @@ namespace SE.Editor.GUI
             }
         }
 
-        private bool _autosort;
+        private bool m_Autosort;
 
         private static bool CompareButtons(Control control, Control control1)
         {

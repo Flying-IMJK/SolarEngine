@@ -10,9 +10,9 @@ namespace SE.Editor.GUI
     {
         public const string DragPrefix = "ACTOR!?";
 
-        private readonly Func<Guid, ActorGraphNode?> m_FindNode;
+        private readonly Func<Guid, ActorGraphNode> m_FindNode;
 
-        public DragActorsBase(Func<ActorGraphNode, bool> validateFunction, Func<Guid, ActorGraphNode?> findNode)
+        public DragActorsBase(Func<ActorGraphNode, bool> validateFunction, Func<Guid, ActorGraphNode> findNode)
             : base(validateFunction)
         {
             m_FindNode = findNode;
@@ -40,7 +40,9 @@ namespace SE.Editor.GUI
             foreach (ActorGraphNode item in items)
             {
                 if (item != null)
+                {
                     names.Add(item.ID.ToString("N"));
+                }
             }
 
             return new DragDataText(DragPrefix + string.Join("\n", names));
@@ -49,23 +51,30 @@ namespace SE.Editor.GUI
         public override IEnumerable<ActorGraphNode> FromDragData(DragData data)
         {
             if (data is not DragDataText textData || !textData.Text.StartsWith(DragPrefix, StringComparison.Ordinal))
+            {
                 yield break;
+            }
 
-            foreach (string idText in textData.Text.Substring(DragPrefix.Length).Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            foreach (string idText in textData.Text.Substring(DragPrefix.Length).Split('\n', StringSplitOptions
+                .RemoveEmptyEntries))
             {
                 if (!Guid.TryParseExact(idText, "N", out Guid id))
+                {
                     continue;
+                }
 
-                ActorGraphNode? node = m_FindNode(id);
+                ActorGraphNode node = m_FindNode(id);
                 if (node != null)
+                {
                     yield return node;
+                }
             }
         }
     }
 
     public sealed class DragActors : DragActorsBase<DragEventArgs>
     {
-        public DragActors(Func<ActorGraphNode, bool> validateFunction, Func<Guid, ActorGraphNode?> findNode)
+        public DragActors(Func<ActorGraphNode, bool> validateFunction, Func<Guid, ActorGraphNode> findNode)
             : base(validateFunction, findNode)
         {
         }

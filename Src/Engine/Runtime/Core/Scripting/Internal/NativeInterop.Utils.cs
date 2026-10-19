@@ -20,18 +20,19 @@ namespace SE.Interop
     /// Editor utilities and helper functions for System.Type.
     /// </summary>
     public static class NativeInteropUtils
-    { 
+    {
         /// <summary>
         /// Gets all currently loaded assemblies in the runtime.
         /// </summary>
         /// <returns>List of assemblies</returns>
         public static Assembly[] GetAssemblies()
         {
-// #if USE_NETCORE
-            return AssemblyLoadContext.Default.Assemblies.Concat(NativeInterop.s_ScriptingAssemblyLoadContext.Assemblies).ToArray();
-/*#else
-            return AppDomain.CurrentDomain.GetAssemblies();
-#endif*/
+            // #if USE_NETCORE
+            return AssemblyLoadContext.Default.Assemblies.Concat(NativeInterop.s_ScriptingAssemblyLoadContext
+                .Assemblies).ToArray();
+            /*#else
+                        return AppDomain.CurrentDomain.GetAssemblies();
+            #endif*/
         }
 
 
@@ -44,17 +45,20 @@ namespace SE.Interop
         {
             if (type.IsGenericType && type.IsConstructedGenericType)
             {
-                // For generic types (eg. Dictionary) FullName returns generic parameter types with fully qualified name so simplify it manually
-                var sb = new StringBuilder();
+                // For generic types (eg. Dictionary) FullName returns generic parameter types with fully qualified name
+                // so simplify it manually
+                StringBuilder sb = new StringBuilder();
                 sb.Append(type.Namespace);
                 sb.Append('.');
                 sb.Append(type.Name);
                 sb.Append('[');
-                var genericArgs = type.GetGenericArguments();
-                for (var i = 0; i < genericArgs.Length; i++)
+                Type[] genericArgs = type.GetGenericArguments();
+                for (int i = 0; i < genericArgs.Length; i++)
                 {
                     if (i != 0)
+                    {
                         sb.Append(',');
+                    }
                     sb.Append(genericArgs[i].GetTypeName());
                 }
                 sb.Append(']');
@@ -72,7 +76,7 @@ namespace SE.Interop
         public static Type[] GetParameterTypes(this MethodBase method)
         {
             Type[] parameterTypes;
-            var parameters = method.GetParameters();
+            ParameterInfo[] parameters = method.GetParameters();
             if (parameters.Length != 0)
             {
                 parameterTypes = new Type[parameters.Length];

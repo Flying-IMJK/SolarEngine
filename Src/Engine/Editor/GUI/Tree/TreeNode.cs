@@ -39,7 +39,7 @@ namespace SE.Editor.GUI
         private Float2 m_MouseDownPos;
         private DragItemPositioning m_DragOverMode;
         private bool m_IsDragOverHeader;
-        private static ulong m_DragEndFrame;
+        private static ulong s_DragEndFrame;
 
         public TreeNode()
         {
@@ -134,9 +134,17 @@ namespace SE.Editor.GUI
         }
 
         /// <summary>
-        /// Gets a value indicating whether the node is collapsed in the hierarchy (is collapsed or any of its parents is collapsed).
+        /// Gets a value indicating whether the node is collapsed in the hierarchy (is collapsed or any of its parents
+        /// is collapsed).
         /// </summary>
-        public bool IsCollapsedInHierarchy => IsCollapsed || (Parent is TreeNode parent && parent.IsCollapsedInHierarchy);
+        public bool IsCollapsedInHierarchy
+        {
+            get
+            {
+                return IsCollapsed || (Parent is TreeNode parent && parent
+                            .IsCollapsedInHierarchy);
+            }
+        }
 
         /// <summary>
         /// Gets or sets the text margin.
@@ -179,9 +187,9 @@ namespace SE.Editor.GUI
         /// <summary>
         /// Gets the parent tree control.
         /// </summary>
-        public Tree ParentTree 
+        public Tree ParentTree
         {
-            get 
+            get
             {
                 if (m_Tree == null)
                 {
@@ -532,7 +540,8 @@ namespace SE.Editor.GUI
                         break;
                     case DragItemPositioning.Above:
                         Render2D.DrawRectangle(new Rectangle(textRect.X,
-                            textRect.Top - DefaultDragInsertPositionMargin * 0.5f - DefaultNodeOffsetY - m_TextMargin.Top,
+                            textRect.Top - DefaultDragInsertPositionMargin * 0.5f - DefaultNodeOffsetY
+                                - m_TextMargin.Top,
                             textRect.Width, DefaultDragInsertPositionMargin), style.SelectionBorder);
                         break;
                     case DragItemPositioning.Below:
@@ -576,7 +585,8 @@ namespace SE.Editor.GUI
 
                     Rectangle parentTextRect = parentNode.TextRect;
                     Rectangle parentHeaderRect = parentNode.HeaderRect;
-                    Rectangle lineRect = new Rectangle(parentTextRect.Left - leftOffset, parentHeaderRect.Top + topOffset, 1, parentHeaderRect.Height - bottomOffset);
+                    Rectangle lineRect = new Rectangle(parentTextRect.Left - leftOffset, parentHeaderRect.Top
+                        + topOffset, 1, parentHeaderRect.Height - bottomOffset);
 
                     Color color = isSelected ? style.ForegroundGrey : style.LightBackground;
                     Render2D.FillRectangle(lineRect, color);
@@ -636,7 +646,7 @@ namespace SE.Editor.GUI
 
             if (m_MouseOverHeader)
             {
-                if (button == MouseButton.Left && Engine.FrameCount - m_DragEndFrame < 10)
+                if (button == MouseButton.Left && Engine.FrameCount - s_DragEndFrame < 10)
                 {
                     return true;
                 }
@@ -870,7 +880,7 @@ namespace SE.Editor.GUI
             if (result == DragDropEffect.None)
             {
                 UpdateDragPositioning(ref location);
-                m_DragEndFrame = Engine.FrameCount;
+                s_DragEndFrame = Engine.FrameCount;
                 if (TestHeaderHit(ref location))
                 {
                     result = OnDragDropHeader(data);
@@ -1070,7 +1080,8 @@ namespace SE.Editor.GUI
         }
 
         /// <summary>
-        /// Caches the color of the text for this node. Called during update before children nodes but after parent node so it can reuse parent tree node data.
+        /// Caches the color of the text for this node. Called during update before children nodes but after parent node
+        /// so it can reuse parent tree node data.
         /// </summary>
         /// <returns>Text color.</returns>
         protected virtual Color CacheTextColor()
@@ -1115,7 +1126,8 @@ namespace SE.Editor.GUI
                 int firstVisibleChild = Math.Clamp(
                     (int)Math.Floor((globalClipping.Y - firstChildGlobalRect.Top) / m_HeaderHeight) + 1,
                     0, children.Count - 1);
-                if (GetChildGlobalRectangle(children[firstVisibleChild], ref globalTransform).Top > globalClipping.Top ||
+                if (GetChildGlobalRectangle(children[firstVisibleChild], ref globalTransform).Top > globalClipping
+                    .Top ||
                     !children[firstVisibleChild].Visible)
                 {
                     for (; firstVisibleChild > 0; firstVisibleChild--)

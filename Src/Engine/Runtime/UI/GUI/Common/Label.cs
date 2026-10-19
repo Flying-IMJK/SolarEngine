@@ -131,7 +131,8 @@ namespace SE.GUI
         }
 
         /// <summary>
-        /// Gets or sets the custom material used to render the text. It has to have domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.
+        /// Gets or sets the custom material used to render the text. It has to have domain set to GUI and have a public
+        /// texture parameter named Font used to sample font atlas texture with font characters data.
         /// </summary>
         public MaterialBase Material;
 
@@ -180,7 +181,8 @@ namespace SE.GUI
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether scale text to fit the label control bounds. Disables using text alignment, automatic width and height.
+        /// Gets or sets a value indicating whether scale text to fit the label control bounds. Disables using text
+        /// alignment, automatic width and height.
         /// </summary>
         public bool GetAutoFitText()
         {
@@ -197,10 +199,12 @@ namespace SE.GUI
         }
 
         /// <summary>
-        /// Gets or sets the text scale range (min and max) for automatic fit text option. Can be used to constraint the text scale adjustment.
+        /// Gets or sets the text scale range (min and max) for automatic fit text option. Can be used to constraint the
+        /// text scale adjustment.
         /// </summary>
         // [VisibleIf(nameof(AutoFitText))]
-        // [EditorOrder(110), DefaultValue(typeof(Float2), "0.1, 100"), Tooltip("The text scale range (min and max) for automatic fit text option. Can be used to constraint the text scale adjustment.")]
+        // [EditorOrder(110), DefaultValue(typeof(Float2), "0.1, 100"), Tooltip("The text scale range (min and max) for
+        // automatic fit text option. Can be used to constraint the text scale adjustment.")]
         public Float2 AutoFitTextRange = new Float2(0.1f, 100.0f);
 
         public Label() : base(0, 0, 100, 20)
@@ -261,7 +265,8 @@ namespace SE.GUI
             SE.Font font = GetFont();
             string text = ConvertedText();
 
-            Render2D.RenderText(font, Material, text, rect, color, hAlignment, wAlignment, Wrapping, BaseLinesGapScale, scale);
+            Render2D.RenderText(font, Material, text, rect, color, hAlignment, wAlignment, Wrapping,
+                BaseLinesGapScale, scale);
 
             if (ClipText)
             {
