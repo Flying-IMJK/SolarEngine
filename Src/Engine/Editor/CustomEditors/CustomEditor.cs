@@ -67,16 +67,14 @@ namespace SE.Editor
         {
             get
             {
-                return m_Presenter
-                            ?? throw new InvalidOperationException("Editor is not initialized.");
+                return m_Presenter ?? throw new InvalidOperationException("Editor is not initialized.");
             }
         }
         public LayoutElementsContainer Layout
         {
             get
             {
-                return m_Layout
-                            ?? throw new InvalidOperationException("Editor is not initialized.");
+                return m_Layout ?? throw new InvalidOperationException("Editor is not initialized.");
             }
         }
         public PropertyNameLabel LinkedLabel;

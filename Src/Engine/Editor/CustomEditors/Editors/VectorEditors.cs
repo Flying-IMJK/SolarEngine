@@ -5,6 +5,26 @@ using SE.GUI;
 
 namespace SE.Editor
 {
+    /// <summary>A vector component label with an input that stretches inside its grid slot.</summary>
+    internal sealed class AxisValuePanel : ContainerControl
+    {
+        public AxisValuePanel(int index, Control value)
+        {
+            AutoFocus = false;
+            Height = TextBox.DefaultHeight;
+            ClipChildren = false;
+            Label label = new Label(0, 0, 12, Height)
+            {
+                Parent = this,
+                Text = "XYZW"[index].ToString(),
+                HorizontalAlignment = TextAlignment.Center,
+            };
+            value.Parent = this;
+            value.AnchorPreset = AnchorPresets.StretchAll;
+            value.Offsets = new Margin(label.Right + 2, 0, 0, 0);
+        }
+    }
+
     // Flax's two- and four-component editors use the same one-row grid and
     // leave mixed-value refresh unchanged until ValueBox supports it.
     public abstract class ComponentVectorEditor<TScalar> : CustomEditor
@@ -18,6 +38,9 @@ namespace SE.Editor
         protected abstract object CreateValue(TScalar[] values);
 
         public override DisplayStyle Style => DisplayStyle.Inline;
+
+        /// <summary>Whether to show axis labels. Set before initializing the editor.</summary>
+        public bool ShowAxisLabels { get; set; }
 
         public override void Initialize(LayoutElementsContainer layout)
         {
@@ -34,7 +57,14 @@ namespace SE.Editor
             for (int i = 0; i < ComponentCount; i++)
             {
                 ValueBox<TScalar> box = CreateBox(limit);
-                box.Parent = grid;
+                if (ShowAxisLabels && i < 4)
+                {
+                    _ = new AxisValuePanel(i, box) { Parent = grid };
+                }
+                else
+                {
+                    box.Parent = grid;
+                }
                 int index = i;
                 box.ValueChanged += () => OnComponentChanged(index);
                 box.SlidingEnd += () => OnSlidingEnd(index);

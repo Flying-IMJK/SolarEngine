@@ -101,13 +101,13 @@ namespace SE
 		/// <summary>
 		/// Gets the name of the layer.
 		/// </summary>
-		SE_FUNCTION(API(Prop))
+		SE_FUNCTION(API(Prop, Attributes = "HideInEditor"))
 		const String& GetLayerName() const;
 
 		/// <summary>
 		/// Sets the name of the layer.
 		/// </summary>
-		SE_FUNCTION(API(Prop))
+		SE_FUNCTION(API(Prop, Attributes = "HideInEditor"))
 		void SetLayerName(const StringView& value);
 
 		/// <summary>
@@ -317,7 +317,7 @@ namespace SE
 		/// </summary>
 		/// <param name="flag">The flag to change.</param>
 		/// <param name="value">The target value of the flag.</param>
-		SE_FUNCTION(API())
+		SE_FUNCTION(API(Prop, ReadOnly))
 		void SetStaticFlag(StaticMask flag, bool value);
 
 	public:

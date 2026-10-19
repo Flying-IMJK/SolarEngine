@@ -1,4 +1,4 @@
-// Copyright (c) Wojciech Figat. All rights reserved.
+
 
 using System;
 using System.Collections.Generic;
@@ -29,6 +29,8 @@ namespace SE.Editor
             public bool IsReadOnly;
             public string DisplayName { get; }
             public string TooltipText;
+
+            public string Name => Info.Name;
 
             public ItemInfo(MemberInfo info)
                 : this(info, info.GetCustomAttributes(true))
@@ -303,7 +305,7 @@ namespace SE.Editor
             return sources.ToArray();
         }
 
-        // CLR equivalents of ScriptType's instance-creation contract.
+
         private static bool CanCreateInstance(Type type)
         {
             return type.IsValueType || type.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic |
@@ -322,8 +324,7 @@ namespace SE.Editor
             return value;
         }
 
-        private static void GroupPanelCheckIfCanRevert(LayoutElementsContainer layout, ref bool canRevertReference,
-            ref bool canRevertDefault)
+        private static void GroupPanelCheckIfCanRevert(LayoutElementsContainer layout, ref bool canRevertReference, ref bool canRevertDefault)
         {
             if (layout == null || canRevertReference && canRevertDefault)
             {
@@ -338,8 +339,7 @@ namespace SE.Editor
 
             foreach (LayoutElement child in layout.Children)
             {
-                GroupPanelCheckIfCanRevert(child as LayoutElementsContainer, ref canRevertReference,
-                    ref canRevertDefault);
+                GroupPanelCheckIfCanRevert(child as LayoutElementsContainer, ref canRevertReference, ref canRevertDefault);
             }
         }
 
@@ -487,11 +487,9 @@ namespace SE.Editor
             GroupPanelCheckIfCanRevert(group, ref canRevertReference, ref canRevertDefault);
 
             ContextMenu menu = new ContextMenu();
-            ContextMenuButton revertToPrefab = menu.AddButton("Revert to Prefab",
-                () => OnGroupPanelRevert(group, false));
+            ContextMenuButton revertToPrefab = menu.AddButton("Revert to Prefab", () => OnGroupPanelRevert(group, false));
             revertToPrefab.Enabled = canRevertReference;
-            ContextMenuButton resetToDefault = menu.AddButton("Reset to default",
-                () => OnGroupPanelRevert(group, true));
+            ContextMenuButton resetToDefault = menu.AddButton("Reset to default", () => OnGroupPanelRevert(group, true));
             resetToDefault.Enabled = canRevertDefault;
             menu.AddSeparator();
             ContextMenuButton copy = menu.AddButton("Copy", () => OnGroupPanelCopy(group));
@@ -690,8 +688,7 @@ namespace SE.Editor
         /// <param name="itemLayout">The item layout.</param>
         /// <param name="itemValues">The item values.</param>
         /// <param name="item">The item.</param>
-        protected virtual void SpawnProperty(LayoutElementsContainer itemLayout, ValueContainer itemValues,
-            ItemInfo item)
+        protected virtual void SpawnProperty(LayoutElementsContainer itemLayout, ValueContainer itemValues, ItemInfo item)
         {
             int labelIndex = GetLabelIndex(itemLayout, item);
 

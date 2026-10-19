@@ -18,6 +18,9 @@ namespace SE.Editor
         public virtual bool AllowSlidingForDifferentValues => true;
         public override DisplayStyle Style => DisplayStyle.Inline;
 
+        /// <summary>Whether to show axis labels. Set before initializing the editor.</summary>
+        public bool ShowAxisLabels { get; set; }
+
         public override void Initialize(LayoutElementsContainer layout)
         {
             UniformGridPanel grid = new UniformGridPanel
@@ -31,7 +34,15 @@ namespace SE.Editor
             for (int i = 0; i < 3; i++)
             {
                 int index = i;
-                FloatValueBox box = new FloatValueBox(0) { Parent = grid };
+                FloatValueBox box = new FloatValueBox(0);
+                if (ShowAxisLabels)
+                {
+                    _ = new AxisValuePanel(i, box) { Parent = grid };
+                }
+                else
+                {
+                    box.Parent = grid;
+                }
                 box.Category = Utils.ValueCategory.Angle;
                 box.ValueChanged += () => OnComponentChanged(index);
                 box.SlidingEnd += () => { m_SlidingEnded = true; ClearToken(); };

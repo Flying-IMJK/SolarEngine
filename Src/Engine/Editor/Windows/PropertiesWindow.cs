@@ -38,6 +38,7 @@ namespace SE.Editor.GUI
         {
             Title = "Properties";
             AutoFocus = true;
+            Icon = EditorIcons.Info32;
 
             ContainerControl header = AddChild(new ContainerControl
             {
