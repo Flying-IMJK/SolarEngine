@@ -26,7 +26,7 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" PREFIX "Shaders" FILES ${SE_SHAD
 add_custom_target(SEShader ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${EngineAssetsDir}"
-        "${ProjectBuildDir}/Cache/Assets"
+        "${ProjectBuildDir}/Assets"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${EngineShadersDir}"
         "${ProjectBuildDir}/Shaders"

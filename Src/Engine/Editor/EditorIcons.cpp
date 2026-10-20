@@ -49,6 +49,9 @@ namespace SE::Editor
 			DEFINE_ICON_PACK(EditorIcons::Bone32),
 			DEFINE_ICON_PACK(EditorIcons::BoneFull32),
 			DEFINE_ICON_PACK(EditorIcons::LogWindow32),
+			DEFINE_ICON_PACK(EditorIcons::HierarchyWindow32),
+			DEFINE_ICON_PACK(EditorIcons::SceneWindow32),
+			DEFINE_ICON_PACK(EditorIcons::PropertiesWindow32),
 
 			DEFINE_ICON_PACK(EditorIcons::VisjectBoxOpen32),
 			DEFINE_ICON_PACK(EditorIcons::VisjectBoxClosed32),

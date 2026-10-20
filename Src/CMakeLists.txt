@@ -123,6 +123,7 @@ add_dependencies(${PRECOMPILE_REBUILD_TARGET} SEBuilder)
 add_dependencies(${PRECOMPILE_CLEAR_TARGET} SEBuilder)
 add_dependencies(${PRECOMPILE_TARGET} SEBuilder)
 
+#add_dependencies(SERuntime ${PRECOMPILE_TARGET})
 add_dependencies(SERuntime SEShader)
 add_dependencies(SEEditor SERuntime)
 

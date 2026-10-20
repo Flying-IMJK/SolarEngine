@@ -128,7 +128,7 @@ namespace SE
 		/// <summary>
 		/// 上次资源加载失败，则返回 true，否则返回 false。
 		/// </summary>
-				SE_FUNCTION(API())
+		SE_FUNCTION(API())
 		bool LastLoadFailed() const
 		{
 			return Platform::AtomicRead(&m_LoadState) == (int64)LoadState::LoadFailed;

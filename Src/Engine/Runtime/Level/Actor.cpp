@@ -141,7 +141,17 @@ namespace SE
 		}
 	}
 
-	void Actor::SetStaticFlag(StaticMask flag, bool value)
+	void Actor::SetStaticFlags(StaticMask flags) 
+	{ 
+		if (m_StaticFlags == flags)
+        {
+            return;
+        }
+		m_StaticFlags = flags; 
+		OnStaticFlagsChanged();
+	}
+
+    void Actor::SetStaticFlag(StaticMask flag, bool value)
 	{
 		if (EnumHasAnyFlags(m_StaticFlags, flag) != value)
 		{

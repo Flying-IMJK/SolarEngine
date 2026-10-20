@@ -128,6 +128,9 @@ namespace SE::Editor
     SpriteHandle EditorIcons::Bone32;
     SpriteHandle EditorIcons::BoneFull32;
 	SpriteHandle EditorIcons::LogWindow32;
+	SpriteHandle EditorIcons::HierarchyWindow32;
+	SpriteHandle EditorIcons::SceneWindow32;
+	SpriteHandle EditorIcons::PropertiesWindow32;
 
     // Visject
     SpriteHandle EditorIcons::VisjectBoxOpen32;

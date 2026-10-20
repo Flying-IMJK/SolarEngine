@@ -19,6 +19,7 @@ namespace SE.Editor.GUI
         public SceneHierarchyWindow(Editor editor) : base(editor)
         {
             Title = "Hierarchy";
+            Icon = EditorIcons.HierarchyWindow32;
 
             ContainerControl headerPanel = AddChild(new ContainerControl());
             headerPanel.AnchorPreset = AnchorPresets.HorizontalStretchTop;

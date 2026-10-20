@@ -13,11 +13,11 @@ namespace SE.Editor
 
             items.RemoveAll(item => 
             {
-
                 return item.Name == nameof(Actor.Name) || 
                 item.Name == nameof(Actor.IsActive) || 
                 item.Name == nameof(Actor.Layer) || 
                 item.Name == nameof(Actor.LayerName) || 
+                item.Name == nameof(Actor.StaticFlags) ||
                 item.Name == nameof(Actor.Position) || 
                 item.Name == nameof(Actor.Orientation) || 
                 item.Name == nameof(Actor.Scale);
@@ -71,11 +71,22 @@ namespace SE.Editor
                 control.TooltipText = "Name";
             }
 
-            CustomElementsContainer<VerticalPanel> layer = header.CustomContainer<VerticalPanel>();
+            // Keep the two actor settings in equal-width slots as the Properties panel resizes.
+            CustomElementsContainer<UniformGridPanel> settings = header.CustomContainer<UniformGridPanel>();
+            settings.CustomControl.SlotsHorizontally = 2;
+            settings.CustomControl.SlotsVertically = 1;
+            settings.CustomControl.SlotSpacing = new Float2(RowSpacing, 0);
+            settings.CustomControl.AnchorPreset = AnchorPresets.HorizontalStretchTop;
+            settings.CustomControl.Offsets = new Margin(icon.Right + Padding, Padding, Padding + rowHeight + RowSpacing,
+                rowHeight);
+
+            CustomElementsContainer<VerticalPanel> layer = settings.CustomContainer<VerticalPanel>();
             layer.CustomControl.Margin = new Margin(0);
-            layer.CustomControl.AnchorPreset = AnchorPresets.HorizontalStretchTop;
-            layer.CustomControl.Offsets = new Margin(icon.Right + Padding, Padding, Padding + rowHeight + RowSpacing, rowHeight);
             AddActorProperty(layer, nameof(Actor.Layer), "Layer");
+
+            CustomElementsContainer<VerticalPanel> staticFlags = settings.CustomContainer<VerticalPanel>();
+            staticFlags.CustomControl.Margin = new Margin(0);
+            AddActorProperty(staticFlags, nameof(Actor.StaticFlags), "Static", new ActorStaticFlagsEditor());
             layout.Space(4);
 
             GroupElement transform = OnGroup(layout, "Transform");

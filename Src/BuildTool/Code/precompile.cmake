@@ -21,8 +21,8 @@ macro(GetAllTargetsRecursive targets dir ignoreDirectorys)
     list(APPEND ${targets} ${current_targets})
 endmacro()
 
-set(PrecompileToolsPath "${CMAKE_CURRENT_SOURCE_DIR}/BuildTool/Precompile")
-set(SGEPreCompileParamsPath "${PrecompileToolsPath}/precompilefile.json")
+set(PrecompileToolsPath "${ProjectRootDir}/Intermediate/Builder")
+set(PreCompileParamsPath "${PrecompileToolsPath}/precompilefile.json")
 
 set(ignoreDirectorys
     ${EngineRootDir}/Reflector/Code
@@ -53,7 +53,7 @@ endforeach()
 
 string(REGEX REPLACE ",\n$" "" all_targets_config "${all_targets_config}")
 set(all_targets_json "[\n${all_targets_config}\n]")
-file(WRITE "${SGEPreCompileParamsPath}" "${all_targets_json}")
+file(WRITE "${PreCompileParamsPath}" "${all_targets_json}")
 
 #
 # use wine for linux
@@ -95,20 +95,20 @@ set(PRECOMPILE_TARGET "PreCompileUpdate")
 
 ### Rebuild ====================================================================================
 add_custom_target(${PRECOMPILE_REBUILD_TARGET}
-COMMAND ${PrecompileParser} -r ${EngineRootDir} -s "${SGEPreCompileParamsPath}" -rebuild
+COMMAND ${PrecompileParser} -r ${EngineRootDir} -s "${PreCompileParamsPath}" -rebuild
 COMMAND ${CMAKE_COMMAND} -E echo "+++ Precompile Rebuild finished +++"
 )
 
 ### Clear ====================================================================================
 add_custom_target(${PRECOMPILE_CLEAR_TARGET}
-COMMAND ${PrecompileParser} -r ${EngineRootDir} -s "${SGEPreCompileParamsPath}" -clean
+COMMAND ${PrecompileParser} -r ${EngineRootDir} -s "${PreCompileParamsPath}" -clean
 COMMAND ${CMAKE_COMMAND} -E echo "+++ Precompile Clear finished +++"
 )
 
 
 ### Update ====================================================================================
 add_custom_target(${PRECOMPILE_TARGET}
-COMMAND ${PrecompileParser} -r ${EngineRootDir} -s "${SGEPreCompileParamsPath}"
+COMMAND ${PrecompileParser} -r ${EngineRootDir} -s "${PreCompileParamsPath}"
 COMMAND ${CMAKE_COMMAND} -E echo "+++ Precompile Update finished +++"
 )
 

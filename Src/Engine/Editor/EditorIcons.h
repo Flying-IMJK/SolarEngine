@@ -72,7 +72,11 @@ namespace SE::Editor
         SE_FIELD(API(ReadOnly)) static SpriteHandle Error32;
         SE_FIELD(API(ReadOnly)) static SpriteHandle Bone32;
         SE_FIELD(API(ReadOnly)) static SpriteHandle BoneFull32;
+
         SE_FIELD(API(ReadOnly)) static SpriteHandle LogWindow32;
+        SE_FIELD(API(ReadOnly)) static SpriteHandle HierarchyWindow32;
+        SE_FIELD(API(ReadOnly)) static SpriteHandle SceneWindow32;
+        SE_FIELD(API(ReadOnly)) static SpriteHandle PropertiesWindow32;
 
         // Visject
         SE_FIELD(API(ReadOnly)) static SpriteHandle VisjectBoxOpen32;

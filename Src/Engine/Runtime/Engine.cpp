@@ -30,7 +30,8 @@ namespace SE
 		double FpsAccumulated = 0.0;
 
 		void InitLog();
-		void InitPaths();
+		void InitStartupPaths();
+		void InitProjectPaths();
 		void InitMainWindow(App* application);
 		void InitGraphic();
 	}
@@ -78,15 +79,16 @@ namespace SE
 		}
 		EngineContext::TemporaryFolder /= UID::New().ToString(UID::FormatType::D);
 
-		EngineImpl::InitPaths();
+		EngineImpl::InitStartupPaths();
 		EngineImpl::InitLog();
 
-		// Load game info or project info
+		// Load game info or project info before configuring project-dependent paths.
 		const int32 result = application->LoadProduct();
 		if (result != 0)
 		{
 			return result;
 		}
+		EngineImpl::InitProjectPaths();
 
 		// 启动多线程
 		Threading::SetMainThreadID(Platform::GetCurrentThreadID());
@@ -316,7 +318,7 @@ namespace SE
 		Platform::LogInfo();
 	}
 
-	void EngineImpl::InitPaths()
+	void EngineImpl::InitStartupPaths()
 	{
 		// Cache other global paths
 		FileSystem::GetSpecialFolderPath(SpecialFolder::LocalAppData, EngineContext::ProductLocalFolder);
@@ -332,14 +334,6 @@ namespace SE
 		EngineContext::MonoPath = EngineContext::StartupFolder / SE_TEXT("Mono");
 #endif
 #endif*/
-
-#if SE_EDITOR
-		EngineContext::ProjectFolder = EngineContext::StartupFolder;
-		EngineContext::ProjectSourceFolder = EngineContext::ProjectFolder / SE_TEXT("Source");
-    	EngineContext::ProjectCacheFolder = EngineContext::ProjectFolder / SE_TEXT("Cache");
-#endif
-
-		EngineContext::ProjectContentFolder = EngineContext::ProjectFolder / SE_TEXT("Content");
 
 #if !PLATFORM_SWITCH
 		// Setup directories
@@ -358,30 +352,38 @@ namespace SE
 		}
 #endif
 
+
+	}
+
+	void EngineImpl::InitProjectPaths()
+	{
+		// LoadProduct has selected the project root before dependent folders are created.
+		ENGINE_ASSERT(!EngineContext::ProjectFolder.IsEmpty());
+		EngineContext::ProjectContentFolder = EngineContext::ProjectFolder / SE_TEXT("Content");
 #if SE_EDITOR
+		EngineContext::ProjectSourceFolder = EngineContext::ProjectFolder / SE_TEXT("Source");
+        EngineContext::ProjectCacheFolder = EngineContext::ProjectFolder / SE_TEXT("Cache");
+
+        if (!FileSystem::DirectoryExists(EngineContext::ProjectCacheFolder))
+        {
+            FileSystem::CreateDirectory(EngineContext::ProjectCacheFolder);
+
+			FileSystem::CopyDirectory(EngineContext::ProjectFolder / SE_TEXT("Cache/Assets"),
+                                      EngineContext::StartupFolder / SE_TEXT("Assets"),
+                                      true);
+        }
+
 		if (!FileSystem::DirectoryExists(EngineContext::ProjectContentFolder))
 		{
 			FileSystem::CreateDirectory(EngineContext::ProjectContentFolder);
 		}
+
 		if (!FileSystem::DirectoryExists(EngineContext::ProjectSourceFolder))
 		{
 			FileSystem::CreateDirectory(EngineContext::ProjectSourceFolder);
 		}
-/*		if (CommandLine::Options.ClearCache)
-		{
-			FileSystem::DeleteDirectory(EngineContext::ProjectCacheFolder, true);
-		}
-		else if (CommandLine::Options.ClearCookerCache)
-		{
-			FileSystem::DeleteDirectory(EngineContext::ProjectCacheFolder / SE_TEXT("Cooker"), true);
-		}*/
-		if (!FileSystem::DirectoryExists(EngineContext::ProjectCacheFolder))
-		{
-			FileSystem::CreateDirectory(EngineContext::ProjectCacheFolder);
-		}
 #endif
-
-		// Setup current working directory to the project root
+		// Resolve relative project paths against the selected project, not the executable folder.
 		Platform::SetWorkingDirectory(EngineContext::ProjectFolder);
 	}
 

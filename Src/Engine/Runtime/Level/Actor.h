@@ -298,11 +298,14 @@ namespace SE
 		/// <summary>
 		/// Gets the actor static flags.
 		/// </summary>
-		SE_FUNCTION(API(Prop, ReadOnly))
-		FORCE_INLINE StaticMask GetStaticFlags() const
+        SE_FUNCTION(API(Prop))
+		StaticMask GetStaticFlags() const
 		{
 			return m_StaticFlags;
 		}
+
+		SE_FUNCTION(API(Prop))
+        void SetStaticFlags(StaticMask flags);
 
 		/// <summary>
 		/// Returns true if object has given flag(s) set.
@@ -317,7 +320,6 @@ namespace SE
 		/// </summary>
 		/// <param name="flag">The flag to change.</param>
 		/// <param name="value">The target value of the flag.</param>
-		SE_FUNCTION(API(Prop, ReadOnly))
 		void SetStaticFlag(StaticMask flag, bool value);
 
 	public:

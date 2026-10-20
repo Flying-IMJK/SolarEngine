@@ -74,8 +74,8 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
 
 set(LLVM_INCLUDE_DIRS ${EngineLibDir}/${LLVM}/include)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/../Precompile)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}/../Precompile)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${ProjectRootDir}/Intermediate/Builder)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${ProjectRootDir}/Intermediate/Builder)
 # add LLVM includes
 include_directories(${LLVM_INCLUDE_DIRS})
 

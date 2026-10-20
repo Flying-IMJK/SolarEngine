@@ -522,6 +522,7 @@ SHADER_PROGRAM(SelfTestProgram, SHADER_VS(VSMain) SHADER_PS(PSMain) SHADER_MACRO
 			}
 			result /= path.Substring(projectNameEnd + 1);
 		}
+        else
 #endif
 		{
 			// 绝对路径

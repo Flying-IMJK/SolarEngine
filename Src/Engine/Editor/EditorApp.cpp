@@ -142,6 +142,13 @@ namespace SE::Editor
 				return 11;
             }
 
+			if (!FileSystem::CreateDirectory(projectPath / SE_TEXT("Cache")))
+            {
+                return 12;
+            }
+
+			FileSystem::CopyDirectory(projectPath / SE_TEXT("Cache/Assets") , EngineContext::StartupFolder / SE_TEXT("Assets"), true);
+
 			/*if (failed)
 				return 12;*/
 		}

@@ -704,35 +704,44 @@ namespace SE
 		// Create dst directory
 		if (!FileSystem::DirectoryExists(dst))
 		{
-			if (FileSystem::CreateDirectory(dst))
-				return true;
+            if (!FileSystem::CreateDirectory(dst))
+            {
+                return false;
+            }
 		}
 
 		// Copy all files
 		List<String> cache(32);
-		if (FileSystem::DirectoryGetFiles(cache, src, SE_TEXT("*"), DirectorySearchOption::TopOnly))
-			return true;
+        if (!FileSystem::DirectoryGetFiles(cache, src, SE_TEXT("*"), DirectorySearchOption::TopOnly))
+        {
+            return true;
+        }
+
 		for (int32 i = 0; i < cache.Count(); i++)
 		{
 			String dstFile = dst / GetFileName(cache[i]);
-			if (FileSystem::CopyFile(*dstFile, *cache[i]))
-				return true;
+            if (!FileSystem::CopyFile(*dstFile, *cache[i]))
+            {
+                return false;
+            }
 		}
 
 		// Copy all subdirectories (if need to)
 		if (withSubDirectories)
 		{
 			cache.Clear();
-			if (FileSystem::GetChildDirectories(cache, src))
-				return true;
+            if (!FileSystem::GetChildDirectories(cache, src))
+            {
+                return false;
+            }
 			for (int32 i = 0; i < cache.Count(); i++)
 			{
 				String dstDir = dst / GetFileName(cache[i]);
-				if (DirectoryCopyHelper(dstDir, cache[i], true))
-					return true;
+				if (!DirectoryCopyHelper(dstDir, cache[i], true))
+					return false;
 			}
 		}
 
-		return false;
+		return true;
 	}
 }

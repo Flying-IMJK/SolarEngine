@@ -115,7 +115,9 @@ namespace SE.Editor.GUI
             }
             foreach (FieldInfo field in type.GetFields())
             {
-                if (field.Name == "value__" || field.IsDefined(typeof(HideInEditorAttribute), false))
+                // A flags enum's MAX sentinel is not a selectable bit.
+                if (field.Name == "value__" || IsFlags && field.Name == "MAX" ||
+                    field.IsDefined(typeof(HideInEditorAttribute), false))
                 {
                     continue;
                 }
@@ -169,20 +171,11 @@ namespace SE.Editor.GUI
                 return;
             }
             long selectedValue = m_Entries[index].Value;
-            bool isSelected = _selectedIndices.Contains(index);
-            long valueAfter = 0;
-            foreach (int selectedIndex in _selectedIndices)
-            {
-                if (selectedIndex != index &&
-                    (isSelected || (m_Entries[selectedIndex].Value & selectedValue) == 0))
-                {
-                    valueAfter |= m_Entries[selectedIndex].Value;
-                }
-            }
-            if (!isSelected)
-            {
-                valueAfter |= selectedValue;
-            }
+            // Toggle the bits in the current value, including when it is shown as a combined entry.
+            long currentValue = Value;
+            long valueAfter = (currentValue & selectedValue) == selectedValue
+                ? currentValue & ~selectedValue
+                : currentValue | selectedValue;
             if (Value == valueAfter)
             {
                 return;

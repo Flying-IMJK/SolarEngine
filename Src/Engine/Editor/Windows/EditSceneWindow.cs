@@ -101,6 +101,8 @@ namespace SE.Editor.GUI
         public EditSceneWindow(Editor editor) : base(editor)
         {
             Title = "Scene";
+            Icon = EditorIcons.SceneWindow32;
+
             Viewport = new EditorGizmoViewport(new SceneRenderTask(), editor.Scene.Root);
             Viewport.Parent = this;
             Viewport.NearPlane = 0.01f;
