@@ -82,10 +82,13 @@ namespace SE
 			{
 				// Pruned IR 中子块的 ElementType 以 ParameterBlock 记录为准，不能依赖容器类型的旧 TypeId。
 				ShaderVarLocation blockLocation;
-				if (!ShaderNameResolver::Resolve(reflection, path, blockLocation))
+				String msg;
+				if (!ShaderNameResolver::Resolve(reflection, path, blockLocation, msg))
 				{
+					LOG_ERROR("Shader", "{0}", msg);
 					return false;
 				}
+
 				const ShaderIRParameterBlock* block = reflection.GetBlock(blockLocation.BlockId);
 				if (block == nullptr || blockLocation.TypeId != block->ElementTypeId)
 				{
@@ -118,10 +121,14 @@ namespace SE
 			binding.TypeName = type->Name;
 			binding.UniformByteSize = type->UniformByteSize;
 			binding.IsArrayElement = isArrayElement;
-			if (!ShaderNameResolver::Resolve(reflection, path, binding.Location))
+
+			String msg;
+			if (!ShaderNameResolver::Resolve(reflection, path, binding.Location, msg))
 			{
+				LOG_ERROR("Shader", "{0}", msg);
 				return false;
 			}
+
 			if (binding.Location.Kind == ShaderParameterAddressKind::UniformValue)
 			{
 				binding.Kind = ShaderProgramBindingKind::Uniform;

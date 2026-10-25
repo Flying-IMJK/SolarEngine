@@ -13,7 +13,8 @@ namespace SE
             return false;
         }
         ShaderVarLocation location;
-        if (!ShaderNameResolver::ResolveMember(*_reflection, _location, name, location))
+        String msg;
+        if (!ShaderNameResolver::ResolveMember(*_reflection, _location, name, location, msg))
         {
             return false;
         }
@@ -29,7 +30,8 @@ namespace SE
             return false;
         }
         ShaderVarLocation location;
-        if (!ShaderNameResolver::ResolveIndex(*_reflection, _location, index, location))
+        String msg;
+        if (!ShaderNameResolver::ResolveIndex(*_reflection, _location, index, location, msg))
         {
             return false;
         }

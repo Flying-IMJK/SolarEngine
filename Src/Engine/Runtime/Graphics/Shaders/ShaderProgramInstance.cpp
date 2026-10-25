@@ -138,11 +138,20 @@ namespace SE
 
     bool ShaderProgramInstance::FindVar(const String& path, ShaderVar& result)
     {
+        if (m_Program == nullptr)
+        {
+            LOG_ERROR("Graphics", "Shader program instance is not initialized.");
+            return false;
+        }
+
         ShaderVarLocation location;
-        if (!Resolve(path, location))
+
+        String msg;
+        if (!ShaderNameResolver::Resolve(m_Program->GetReflection(), path, location, msg))
         {
             return false;
         }
+
         result = ShaderVar(this, &m_Program->GetReflection(), location);
         return true;
     }
@@ -200,8 +209,13 @@ namespace SE
             return false;
         }
         ShaderVarLocation location;
-        if (!ShaderNameResolver::ResolveUniformBlock(m_Program->GetReflection(), path, location) ||
-            location.UniformBlockIndex < 0 || location.UniformBlockIndex >= m_UniformBlocks.Count() || data == nullptr)
+        String msg;
+        if (!ShaderNameResolver::ResolveUniformBlock(m_Program->GetReflection(), path, location, msg))
+        {
+            LOG_ERROR("Graphics", "{0}", msg);
+        }
+
+        if (location.UniformBlockIndex < 0 || location.UniformBlockIndex >= m_UniformBlocks.Count() || data == nullptr)
         {
             return false;
         }
@@ -226,8 +240,13 @@ namespace SE
             return false;
         }
         ShaderVarLocation location;
-        if (!ShaderNameResolver::ResolveUniformBlock(m_Program->GetReflection(), path, location) ||
-            location.UniformBlockIndex < 0 || location.UniformBlockIndex >= m_UniformBlocks.Count() ||
+        String msg;
+        if (!ShaderNameResolver::ResolveUniformBlock(m_Program->GetReflection(), path, location, msg))
+        {
+            LOG_ERROR("Graphics", "{0}", msg);
+        }
+
+        if (location.UniformBlockIndex < 0 || location.UniformBlockIndex >= m_UniformBlocks.Count() ||
             buffer == nullptr)
         {
             return false;
@@ -312,15 +331,6 @@ namespace SE
 
     SLC2GPUShaderProgram* ShaderProgramInstance::GetProgram() const { return m_Program; }
 
-    bool ShaderProgramInstance::Resolve(const String& path, ShaderVarLocation& location) const
-    {
-        if (m_Program == nullptr)
-        {
-            LOG_ERROR("Graphics", "Shader program instance is not initialized.");
-            return false;
-        }
-        return ShaderNameResolver::Resolve(m_Program->GetReflection(), path, location);
-    }
 
     ShaderBindingResource* ShaderProgramInstance::GetResourceSlot(const ShaderVarLocation& location,
                                                                   const ShaderProgramBindingKind expectedKind) const
@@ -331,13 +341,14 @@ namespace SE
             LOG_ERROR("Graphics", "Shader variable does not identify a logical resource slot.");
             return nullptr;
         }
-        const ShaderLogicalResourceSlot* reflectedSlot =
-            m_Program->GetReflection().GetLogicalResourceSlot(static_cast<uint32>(location.LogicalResourceSlotIndex));
+
+        const ShaderLogicalResourceSlot* reflectedSlot = m_Program->GetReflection().GetLogicalResourceSlot(static_cast<uint32>(location.LogicalResourceSlotIndex));
         if (reflectedSlot == nullptr || reflectedSlot->Kind != expectedKind || reflectedSlot->TypeId != location.TypeId)
         {
             LOG_ERROR("Graphics", "Shader resource setter does not match the reflected logical slot.");
             return nullptr;
         }
+
         return m_Resources[location.LogicalResourceSlotIndex];
     }
 
@@ -352,7 +363,9 @@ namespace SE
         }
         GPUTexture* parent = static_cast<GPUTexture*>(value->GetParent());
         const ShaderIRTypeRecord* type = m_Program->GetReflection().GetType(location.TypeId);
-        if (type == nullptr || !parent->IsAllocated() || value->GetNativePtr() == nullptr ||
+        if (type == nullptr || 
+            !parent->IsAllocated() || 
+            value->GetNativePtr() == nullptr ||
             (RequiresWriteAccess(*type) ? !parent->IsUnorderedAccess() : !parent->IsShaderResource()))
         {
             LOG_ERROR("Graphics", "Texture binding does not satisfy the reflected access capability.");

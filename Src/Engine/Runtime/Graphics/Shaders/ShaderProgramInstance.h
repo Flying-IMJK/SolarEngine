@@ -57,8 +57,6 @@ namespace SE
             GPUConstantBuffer*       ExternalBuffer = nullptr;
         };
 
-		// 路径解析只依赖不可变 reflection；资源和 ordinary data 都落到 Instance 的 dense state。
-        bool Resolve(const String& path, ShaderVarLocation& location) const;
         bool SetTexture(const ShaderVarLocation& location, GPUTextureView* value);
         bool SetBuffer(const ShaderVarLocation& location, GPUBuffer* value);
         bool SetSampler(const ShaderVarLocation& location, GPUSampler* value);

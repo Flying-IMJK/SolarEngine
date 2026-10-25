@@ -12,21 +12,22 @@ namespace SE
 				type.Kind == SE_TEXT("TextureBuffer") || type.Kind == SE_TEXT("ShaderStorageBuffer");
 		}
 
-		bool ResolvePrecomputedAddress(const ShaderProgramReflection& reflection, ShaderVarLocation& location)
+		bool ResolvePrecomputedAddress(const ShaderProgramReflection& reflection, ShaderVarLocation& location, String& msg)
 		{
 			const ShaderIRTypeRecord* type = reflection.GetType(location.TypeId);
 			if (type == nullptr)
 			{
-				LOG_ERROR("Graphics", "Shader variable type was not found while resolving its address.");
+				msg = SE_TEXT("Shader variable type was not found while resolving its address.");
 				return false;
 			}
 			location.LogicalResourceSlotIndex = -1;
 			location.UniformByteSize = 0;
+
 			if (IsResourceLeafType(*type))
 			{
 				if (location.ResourceRangeIndex < 0 || location.ResourceIndex < 0)
 				{
-					LOG_ERROR("Graphics", "Shader resource leaf has no logical resource coordinates.");
+					msg = SE_TEXT("Shader resource leaf has no logical resource coordinates.");
 					return false;
 				}
 				ShaderResourceKey key;
@@ -36,13 +37,14 @@ namespace SE
 				uint32 slotIndex;
 				if (!reflection.FindLogicalResourceSlotIndex(key, slotIndex))
 				{
-					LOG_ERROR("Graphics", "Shader resource NamePath does not map to a user-visible logical slot.");
+					msg = SE_TEXT("Shader resource NamePath does not map to a user-visible logical slot.");
 					return false;
 				}
 				location.Kind = ShaderParameterAddressKind::Resource;
 				location.LogicalResourceSlotIndex = static_cast<int32>(slotIndex);
 				return true;
 			}
+
 			if (type->Kind == SE_TEXT("ParameterBlock") || type->Kind == SE_TEXT("ConstantBuffer"))
 			{
 				// 容器类型会在 ResolveMember 中切换到对应 sub-block。
@@ -133,24 +135,24 @@ namespace SE
 		}
 	}
 
-	bool ShaderNameResolver::ResolveMember(const ShaderProgramReflection& reflection, const ShaderVarLocation& source, const String& name, ShaderVarLocation& location)
+	bool ShaderNameResolver::ResolveMember(const ShaderProgramReflection& reflection, const ShaderVarLocation& source, const String& name, ShaderVarLocation& location, String& msg)
 	{
 		const ShaderIRTypeRecord* parentType = reflection.GetType(source.TypeId);
 		if (parentType == nullptr || parentType->Kind != SE_TEXT("Struct"))
 		{
-			LOG_ERROR("Graphics", "Shader variable member access requires a struct.");
+			msg = SE_TEXT("Shader variable member access requires a struct.");
 			return false;
 		}
 		const ShaderIRMember* member = reflection.FindMember(source.TypeId, name);
 		if (member == nullptr)
 		{
-			LOG_ERROR("Graphics", "Shader variable member was not found: {0}", name);
+			msg = String::Format(SE_TEXT("Shader variable member was not found: {0}"), name);
 			return false;
 		}
 		const ShaderIRTypeRecord* memberType = reflection.GetType(member->TypeId);
 		if (memberType == nullptr)
 		{
-			LOG_ERROR("Graphics", "Shader variable member type was not found.");
+			msg = SE_TEXT("Shader variable member type was not found.");
 			return false;
 		}
 
@@ -163,6 +165,7 @@ namespace SE
 		{
 			location.UniformByteOffset += static_cast<int32>(member->UniformOffset);
 		}
+
 		if (memberType->ResourceRanges.HasItems())
 		{
 			location.ResourceRangeIndex = (source.ResourceRangeIndex < 0 ? 0 : source.ResourceRangeIndex) + static_cast<int32>(member->ResourceRangeOffset);
@@ -173,34 +176,39 @@ namespace SE
 			location.ResourceRangeIndex = -1;
 			location.ResourceIndex = -1;
 		}
+
 		if (memberType->Kind != SE_TEXT("ParameterBlock") && memberType->Kind != SE_TEXT("ConstantBuffer"))
 		{
-			return ResolvePrecomputedAddress(reflection, location);
+			return ResolvePrecomputedAddress(reflection, location, msg);
 		}
 
 		if (location.ResourceRangeIndex < 0)
 		{
-			LOG_ERROR("Graphics", "Shader parameter block has no logical range.");
+			msg = SE_TEXT("Shader parameter block has no logical range.");
 			return false;
 		}
+
 		const ShaderIRRangeBinding* binding = reflection.FindRangeBinding(location.BlockId, static_cast<uint32>(location.ResourceRangeIndex));
 		if (binding == nullptr || binding->SubBlockId < 0)
 		{
-			LOG_ERROR("Graphics", "Shader parameter block has no sub-block mapping.");
+			msg = SE_TEXT("Shader parameter block has no sub-block mapping.");
 			return false;
 		}
+
 		const ShaderIRParameterBlock* subBlock = reflection.GetBlock(static_cast<uint32>(binding->SubBlockId));
 		if (subBlock == nullptr)
 		{
-			LOG_ERROR("Graphics", "Shader parameter block mapping is invalid.");
+			msg = SE_TEXT("Shader parameter block mapping is invalid.");
 			return false;
 		}
+
 		location.BlockId = subBlock->Id;
 		location.TypeId = subBlock->ElementTypeId;
 		location.Kind = ShaderParameterAddressKind::Invalid;
 		location.UniformBlockIndex = -1;
 		location.UniformByteOffset = -1;
 		uint32 uniformBlockIndex;
+
 		if (reflection.FindUniformBlockIndex(subBlock->Id, uniformBlockIndex))
 		{
 			location.Kind = ShaderParameterAddressKind::UniformBlock;
@@ -214,12 +222,12 @@ namespace SE
 		return true;
 	}
 
-	bool ShaderNameResolver::ResolveIndex(const ShaderProgramReflection& reflection, const ShaderVarLocation& source, const uint32 index, ShaderVarLocation& location)
+	bool ShaderNameResolver::ResolveIndex(const ShaderProgramReflection& reflection, const ShaderVarLocation& source, const uint32 index, ShaderVarLocation& location, String& msg)
 	{
 		const ShaderIRTypeRecord* type = reflection.GetType(source.TypeId);
 		if (type == nullptr || type->Kind != SE_TEXT("Array") || index >= type->ElementCount)
 		{
-			LOG_ERROR("Graphics", "Shader variable array index is out of range.");
+			msg = SE_TEXT("Shader variable array index is out of range.");
 			return false;
 		}
 		location = source;
@@ -235,10 +243,10 @@ namespace SE
 			location.ResourceIndex = location.ResourceIndex * static_cast<int32>(type->ElementCount) + static_cast<int32>(index);
 		}
 		location.TypeId = type->ElementTypeId;
-		return ResolvePrecomputedAddress(reflection, location);
+		return ResolvePrecomputedAddress(reflection, location, msg);
 	}
 
-	bool ShaderNameResolver::Resolve(const ShaderProgramReflection& reflection, const String& path, ShaderVarLocation& location)
+	bool ShaderNameResolver::Resolve(const ShaderProgramReflection& reflection, const String& path, ShaderVarLocation& location, String& msg)
 	{
 		const ShaderReflectionIR& layout = reflection.GetLayout();
 		if (reflection.GetBlock(layout.RootBlockId) == nullptr || path.IsEmpty())
@@ -255,7 +263,7 @@ namespace SE
 			if (expectMember)
 			{
 				String name;
-				if (!ReadIdentifier(path, cursor, name) || !ResolveMember(reflection, location, name, location))
+				if (!ReadIdentifier(path, cursor, name) || !ResolveMember(reflection, location, name, location, msg))
 				{
 					return false;
 				}
@@ -269,7 +277,7 @@ namespace SE
 			else if (path[cursor] == '[')
 			{
 				uint32 index = 0;
-				if (!ReadIndex(path, cursor, index) || !ResolveIndex(reflection, location, index, location))
+				if (!ReadIndex(path, cursor, index) || !ResolveIndex(reflection, location, index, location, msg))
 				{
 					return false;
 				}
@@ -283,7 +291,7 @@ namespace SE
 		return !expectMember;
 	}
 
-	bool ShaderNameResolver::ResolveUniformBlock(const ShaderProgramReflection& reflection, const String& path, ShaderVarLocation& location)
+	bool ShaderNameResolver::ResolveUniformBlock(const ShaderProgramReflection& reflection, const String& path, ShaderVarLocation& location, String& msg)
 	{
 		if (reflection.GetBlock(reflection.GetLayout().RootBlockId) == nullptr)
 		{
@@ -294,7 +302,7 @@ namespace SE
 		{
 			location = MakeRootLocation(reflection);
 		}
-		else if (!Resolve(reflection, path, location))
+		else if (!Resolve(reflection, path, location, msg))
 		{
 			return false;
 		}
