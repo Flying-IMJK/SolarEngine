@@ -1,4 +1,4 @@
-#pragma once
+/*#pragma once
 
 #include "MaterialInfo.h"
 #include "MaterialParams.h"
@@ -131,4 +131,4 @@ namespace SE
         List<MaterialParameterBinding> m_Bindings;
         List<MaterialRuntimeProgram*> m_Programs;
     };
-}
+}*/

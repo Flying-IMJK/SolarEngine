@@ -30,13 +30,28 @@ namespace SE
 			{
 				if (error.IsEmpty())
 				{
-					error = String(SE_TEXT("SLC2 field must be string: ")) + StringAnsi(name).ToString();
+					error = String::Format(SE_TEXT("SLC2 field must be string: {0}"), StringAnsiView(name));
 				}
 				return false;
 			}
-			value = StringAnsi(member->value.GetString(), static_cast<int32>(member->value.GetStringLength())).ToString();
+            value = member->value.GetText();
 			return true;
 		}
+
+		bool ReadString(const Json::Value& object, const char* name, StringAnsi& value, String& error)
+        {
+            Json::Value::ConstMemberIterator member;
+            if (!RequireMember(object, name, member, error) || !member->value.IsString())
+            {
+                if (error.IsEmpty())
+                {
+                    error = String(SE_TEXT("SLC2 field must be string: ")) + StringAnsi(name).ToString();
+                }
+                return false;
+            }
+            value = StringAnsi(member->value.GetString(), static_cast<int32>(member->value.GetStringLength()));
+            return true;
+        }
 
 		bool ReadUint(const Json::Value& object, const char* name, uint32& value, String& error)
 		{
@@ -281,7 +296,7 @@ namespace SE
 			if (!defaultUniform->value.IsNull())
 			{
 				output.HasDefaultUniformBuffer = true;
-				if (!ParseDescriptorRange(defaultUniform->value, output.DefaultUniformBuffer, error) || output.DefaultUniformBuffer.Role != SE_TEXT("uniformData"))
+				if (!ParseDescriptorRange(defaultUniform->value, output.DefaultUniformBuffer, error) || output.DefaultUniformBuffer.Role != "uniformData")
 				{
 					if (error.IsEmpty())
 					{
@@ -450,7 +465,7 @@ namespace SE
 							error = SE_TEXT("SLC2 descriptor count does not match its logical resource range.");
 							return false;
 						}
-						if (descriptor.Role == SE_TEXT("primary"))
+						if (descriptor.Role == "primary")
 						{
 							if (hasPrimary)
 							{
@@ -460,7 +475,7 @@ namespace SE
 							hasPrimary = true;
 							primaryStageMask = descriptor.StageMask;
 						}
-						else if (descriptor.Role == SE_TEXT("counter"))
+						else if (descriptor.Role == "counter")
 						{
 							if (hasCounter || (descriptor.DescriptorType != SE_TEXT("RawBuffer") &&
 								descriptor.DescriptorType != SE_TEXT("StorageBuffer")))
@@ -696,22 +711,18 @@ namespace SE
 
 		bool ParseTarget(const Json::Value& value, SLC2TargetRecord& output, String& error)
 		{
-			String platform;
 			String shaderProfile;
 			String featureLevel;
 			const Json::Value* variants = nullptr;
-			if (!ReadString(value, "targetKey", output.TargetKey, error) || !ReadString(value, "platform", platform, error) || !ReadString(value, "shaderProfile", shaderProfile, error) || !ReadString(value, "featureLevel", featureLevel, error) || !ReadArray(value, "variants", variants, error))
+			if (!ReadString(value, "targetKey", output.TargetKey, error) ||
+				!ReadString(value, "shaderProfile", shaderProfile, error) || 
+				!ReadString(value, "featureLevel", featureLevel, error) ||
+				!ReadArray(value, "variants", variants, error))
 			{
 				return false;
 			}
+
 			bool featureLevelFound = false;
-			for (int32 index = 0; index <= static_cast<int32>(ShaderTargetPlatform::PS5); index++)
-			{
-				if (ToString(static_cast<ShaderTargetPlatform>(index)) == platform)
-				{
-					output.Target.Platform = static_cast<ShaderTargetPlatform>(index);
-				}
-			}
 			for (int32 index = 0; index < static_cast<int32>(ShaderProfile::MAX); index++)
 			{
 				if (ToString(static_cast<ShaderProfile>(index)) == shaderProfile)
@@ -727,7 +738,7 @@ namespace SE
 					featureLevelFound = true;
 				}
 			}
-			if (output.Target.Platform == ShaderTargetPlatform::Unknown || output.Target.Profile == ShaderProfile::Unknown || !featureLevelFound || BuildTargetKey(output.Target) != output.TargetKey || variants->Empty())
+			if (output.Target.Profile == ShaderProfile::Unknown || !featureLevelFound || BuildTargetKey(output.Target) != output.TargetKey || variants->Empty())
 			{
 				error = SE_TEXT("SLC2 target identity is invalid.");
 				return false;
@@ -958,7 +969,7 @@ namespace SE
 						error = SE_TEXT("SLC2 variant group member is invalid.");
 						return false;
 					}
-					record.Members.Add(StringAnsi(member->GetString(), static_cast<int32>(member->GetStringLength())).ToString());
+                    record.Members.Add(member->GetText());
 				}
 				program.VariantGroups.Add(record);
 			}

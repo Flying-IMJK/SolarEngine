@@ -15,7 +15,6 @@ namespace SE
 		bool Build(
 		const String& programId,
 		const String& targetKey,
-		const String& variant,
 		slang::IComponentType* linked,
                    const List<ShaderStage>& stages,
 		SlangInt targetIndex,

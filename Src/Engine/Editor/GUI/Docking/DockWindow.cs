@@ -1,4 +1,3 @@
-#nullable disable annotations
 
 using SE.GUI;
 
@@ -15,19 +14,19 @@ namespace SE.Editor.GUI
         /// <summary>
         /// The master panel.
         /// </summary>
-        protected MasterDockPanel _masterPanel;
+        protected MasterDockPanel m_MasterPanel;
 
         /// <summary>
         /// The parent panel.
         /// </summary>
-        protected DockPanel _dockedTo;
+        protected DockPanel m_DockedTo;
 
         /// <summary>
         /// Called when window is unlinked from the master panel.
         /// </summary>
         protected virtual void OnUnlink()
         {
-            _masterPanel = null;
+            m_MasterPanel = null;
         }
 
         /// <summary>
@@ -43,10 +42,10 @@ namespace SE.Editor.GUI
             Defocus();
 
             // Call undock
-            if (_dockedTo != null)
+            if (m_DockedTo != null)
             {
-                _dockedTo.UndockWindowInternal(this);
-                SE.Debug.Assert(_dockedTo == null, "Window is still docked.");
+                m_DockedTo.UndockWindowInternal(this);
+                SE.Debug.Assert(m_DockedTo == null, "Window is still docked.");
             }
         }
 
@@ -101,21 +100,21 @@ namespace SE.Editor.GUI
         /// <summary>
         /// Gets the master panel.
         /// </summary>
-        public MasterDockPanel MasterPanel => _masterPanel;
+        public MasterDockPanel MasterPanel => m_MasterPanel;
 
         /// <summary>
         /// Gets the parent dock panel.
         /// </summary>
         public DockPanel ParentDockPanel
         {
-            get => _dockedTo;
-            set => _dockedTo = value;
+            get => m_DockedTo;
+            set => m_DockedTo = value;
         }
 
         /// <summary>
         /// Gets a value indicating whether this window is docked.
         /// </summary>
-        public bool IsDocked => _dockedTo != null;
+        public bool IsDocked => m_DockedTo != null;
 
         /// <summary>
         /// Gets a value indicating whether this window is selected.
@@ -124,9 +123,9 @@ namespace SE.Editor.GUI
         {
             get
             {
-                if (_dockedTo != null)
+                if (m_DockedTo != null)
                 {
-                    return _dockedTo.SelectedTab == this;
+                    return m_DockedTo.SelectedTab == this;
                 }
                 return false;
             }
@@ -135,7 +134,7 @@ namespace SE.Editor.GUI
         /// <summary>
         /// Gets a value indicating whether this window is hidden from the user (eg. not shown or hidden on closed).
         /// </summary>
-        public bool IsHidden => !Visible || _dockedTo == null;
+        public bool IsHidden => !Visible || m_DockedTo == null;
 
         /// <summary>
         /// Gets the default window size (in UI units, unscaled by DPI which is handled by windowing system).
@@ -162,7 +161,7 @@ namespace SE.Editor.GUI
                 PerformLayoutBeforeChildren();
 
                 // Check if is docked to the floating window and is selected so update window title
-                if (IsSelected && _dockedTo is FloatWindowDockPanel floatPanel)
+                if (IsSelected && m_DockedTo is FloatWindowDockPanel floatPanel)
                 {
                     floatPanel.Window.SetTitle(Title);
                 }
@@ -187,7 +186,7 @@ namespace SE.Editor.GUI
         /// <param name="scrollBars">The scroll bars.</param>
         public DockWindow(MasterDockPanel masterPanel, bool hideOnClose, ScrollBars scrollBars) : base(scrollBars)
         {
-            _masterPanel = masterPanel;
+            m_MasterPanel = masterPanel;
             HideOnClose = hideOnClose;
             AnchorPreset = AnchorPresets.StretchAll;
             Offsets = Margin.Zero;
@@ -196,9 +195,9 @@ namespace SE.Editor.GUI
             // Native InputActions registration is commented out.
 
             // Link to the master panel
-            if (_masterPanel != null)
+            if (m_MasterPanel != null)
             {
-                _masterPanel.LinkWindow(this);
+                m_MasterPanel.LinkWindow(this);
             }
         }
 
@@ -242,12 +241,12 @@ namespace SE.Editor.GUI
 
             // Create window
             Float2 winSize = size.LengthSquared > 4 ? size : DefaultSize;
-            SE.Window window = FloatWindowDockPanel.CreateFloatWindow(_masterPanel.Root, location, winSize,
+            SE.Window window = FloatWindowDockPanel.CreateFloatWindow(m_MasterPanel.Root, location, winSize,
                 position, m_Title);
             WindowRootControl windowGUI = window.GUI;
 
             // Create dock panel for the window
-            FloatWindowDockPanel dockPanel = new FloatWindowDockPanel(_masterPanel, windowGUI);
+            FloatWindowDockPanel dockPanel = new FloatWindowDockPanel(m_MasterPanel, windowGUI);
             dockPanel.DockWindowInternal(DockState.DockFill, this);
 
             // Perform layout
@@ -299,7 +298,7 @@ namespace SE.Editor.GUI
                 }
                 else
                 {
-                    _masterPanel.DockWindowInternal(state, this, autoSelect, splitterValue);
+                    m_MasterPanel.DockWindowInternal(state, this, autoSelect, splitterValue);
                 }
 
                 OnShow();
@@ -401,9 +400,9 @@ namespace SE.Editor.GUI
         /// <param name="autoFocus">True if focus tab after selection change.</param>
         public void SelectTab(bool autoFocus = true)
         {
-            if (_dockedTo != null)
+            if (m_DockedTo != null)
             {
-                _dockedTo.SelectTab(this, autoFocus);
+                m_DockedTo.SelectTab(this, autoFocus);
             }
         }
 
@@ -412,9 +411,9 @@ namespace SE.Editor.GUI
         /// </summary>
         public void BringToFront()
         {
-            if (_dockedTo != null && _dockedTo.RootWindow() != null)
+            if (m_DockedTo != null && m_DockedTo.RootWindow() != null)
             {
-                _dockedTo.RootWindow().Window.BringToFront();
+                m_DockedTo.RootWindow().Window.BringToFront();
             }
         }
 
@@ -441,9 +440,9 @@ namespace SE.Editor.GUI
             }
 
             // Unlink from the master panel
-            if (_masterPanel != null)
+            if (m_MasterPanel != null)
             {
-                _masterPanel.UnlinkWindow(this);
+                m_MasterPanel.UnlinkWindow(this);
             }
 
             base.OnDestroy();

@@ -13,6 +13,8 @@
 #include "Runtime/Graphics/GPUContext.h"
 #include "Runtime/Graphics/GPUDevice.h"
 #include "Runtime/Resource/Assets/Materials/MaterialBase.h"
+#include "Runtime/Resource/Assets/SLC2Materials/SLC2Material.h"
+#include "Runtime/Resource/Assets/SLC2Materials/SLC2MaterialInstance.h"
 #include "Utils/RenderUtils.h"
 
 namespace SE
@@ -248,6 +250,9 @@ namespace SE
         // Scenes.Clear();
         DrawCalls.Clear();
         BatchedDrawCalls.Clear();
+        _submittedSLC2Draws.Clear();
+        _slc2Draws.Clear();
+        _slc2SubmissionCount = 0;
         for (auto& list : DrawCallsLists)
             list.Clear();
         ShadowDepthDrawCallsList.Clear();
@@ -289,13 +294,17 @@ namespace SE
         const float distance = Float3::Dot(planeNormal, drawCall.ObjectPosition) - planePoint;
         PackedSortKey key;
         key.DistanceKey = RenderUtils::ComputeDistanceSortKey(distance);
-        uint32 batchKey = GetHash(drawCall.Material);
+        uint32 batchKey = drawCall.SLC2 != nullptr
+            ? GetHash(drawCall.SLC2->Material != nullptr
+                ? static_cast<const void*>(drawCall.SLC2->Material)
+                : static_cast<const void*>(drawCall.SLC2->Instance))
+            : GetHash(drawCall.Material);
         batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[0]);
         batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[1]);
         batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[2]);
         batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.IndexBuffer);
         IMaterial::InstancingHandler handler;
-        if (drawCall.Material->CanUseInstancing(handler))
+        if (drawCall.SLC2 == nullptr && drawCall.Material->CanUseInstancing(handler))
             handler.GetHash(drawCall, batchKey);
         batchKey += (int32)(471 * drawCall.WorldDeterminantSign);
         key.SortKey = (uint16)(sortOrder - Min_int16);
@@ -303,11 +312,23 @@ namespace SE
         drawCall.SortKey = key.Data;
     }
 
+    void RenderList::AddSLC2DrawCall(const RenderContext& renderContext, DrawPass drawModes,
+                                      StaticMask staticFlags, DrawCall& drawCall,
+                                      const SLC2RenderDraw& slc2, bool receivesDecals, int16 sortOrder)
+    {
+        // DrawCall is POD; the owning list keeps its non-trivial geometry and defines stable.
+        auto owned = std::make_shared<SLC2RenderDraw>(slc2);
+        drawCall.SLC2 = owned.get();
+        drawCall.Material = nullptr;
+        _slc2Draws.Add(MoveTemp(owned));
+        AddDrawCall(renderContext, drawModes, staticFlags, drawCall, receivesDecals, sortOrder);
+    }
+
     void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticMask staticFlags, DrawCall& drawCall, bool receivesDecals, int16 sortOrder)
     {
 #if ENABLE_ASSERTION_LOW_LAYERS
         // Ensure that draw modes are non-empty and in conjunction with material draw modes
-        auto materialDrawModes = drawCall.Material->GetDrawModes();
+        auto materialDrawModes = drawCall.SLC2 != nullptr ? drawModes : drawCall.Material->GetDrawModes();
         ASSERT_LOW_LAYER(drawModes != DrawPass::None && ((uint32)drawModes & ~(uint32)materialDrawModes) == 0);
 #endif
 
@@ -320,7 +341,8 @@ namespace SE
         {
             DrawCallsLists[(int32)DrawCallsListType::Depth].Indices.Add(index);
         }
-        if (EnumHasAllFlags(drawModes, DrawPass::GBuffer) && EnumHasAllFlags(drawModes, DrawPass::GlobalSurfaceAtlas))
+        if (EnumHasAllFlags(drawModes, DrawPass::GBuffer) &&
+            (drawCall.SLC2 != nullptr || EnumHasAllFlags(drawModes, DrawPass::GlobalSurfaceAtlas)))
         {
             if (receivesDecals)
                 DrawCallsLists[(int32)DrawCallsListType::GBuffer].Indices.Add(index);
@@ -341,12 +363,25 @@ namespace SE
         }
     }
 
+    void RenderList::AddSLC2DrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes,
+                                      StaticMask staticFlags, ShadowsCastingMode shadowsMode,
+                                      const BoundingSphere& bounds, DrawCall& drawCall,
+                                      const SLC2RenderDraw& slc2, bool receivesDecals, int16 sortOrder)
+    {
+        auto owned = std::make_shared<SLC2RenderDraw>(slc2);
+        drawCall.SLC2 = owned.get();
+        drawCall.Material = nullptr;
+        _slc2Draws.Add(MoveTemp(owned));
+        AddDrawCall(renderContextBatch, drawModes, staticFlags, shadowsMode, bounds, drawCall,
+                    receivesDecals, sortOrder);
+    }
+
     void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticMask staticFlags,
         ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals, int16 sortOrder)
     {
 #if ENABLE_ASSERTION_LOW_LAYERS
         // Ensure that draw modes are non-empty and in conjunction with material draw modes
-        auto materialDrawModes = drawCall.Material->GetDrawModes();
+        auto materialDrawModes = drawCall.SLC2 != nullptr ? drawModes : drawCall.Material->GetDrawModes();
         ASSERT_LOW_LAYER(drawModes != DrawPass::None && ((uint32)drawModes & ~(uint32)materialDrawModes) == 0);
 #endif
         const RenderContext& mainRenderContext = renderContextBatch.Contexts.Get()[0];
@@ -367,7 +402,8 @@ namespace SE
             {
                 DrawCallsLists[(int32)DrawCallsListType::Depth].Indices.Add(index);
             }
-            if (EnumHasAllFlags(drawModes, DrawPass::GBuffer) && EnumHasAllFlags(drawModes, DrawPass::GlobalSurfaceAtlas))
+            if (EnumHasAllFlags(drawModes, DrawPass::GBuffer) &&
+            (drawCall.SLC2 != nullptr || EnumHasAllFlags(drawModes, DrawPass::GlobalSurfaceAtlas)))
             {
                 if (receivesDecals)
                     DrawCallsLists[(int32)DrawCallsListType::GBuffer].Indices.Add(index);
@@ -412,7 +448,8 @@ namespace SE
         {
             IMaterial::InstancingHandler handler;
             // 自动合批中的每个 DrawCall 只写入一条实例记录。
-            return a.Material == b.Material &&
+            return a.SLC2 == nullptr && b.SLC2 == nullptr &&
+                    a.Material == b.Material &&
                     a.Material->CanUseInstancing(handler) &&
                     Platform::MemoryCompare(&a.Geometry, &b.Geometry, sizeof(a.Geometry)) == 0 &&
                     a.InstanceCount == 1 &&
@@ -508,6 +545,72 @@ namespace SE
         return pass == DrawPass::GBuffer || pass == DrawPass::Depth;
     }
 
+    bool RenderList::ExecuteSLC2DrawCall(const RenderContext& renderContext, const DrawCallsList& list,
+                                          const DrawCall& drawCall, uint32 instanceCount,
+                                          GPUBuffer* instanceBuffer, uint32 instanceByteOffset)
+    {
+/*        const SLC2RenderDraw& slc2 = *drawCall.SLC2;
+        if ((slc2.Material == nullptr) == (slc2.Instance == nullptr)) return false;
+        String pass;
+        if (&list == &ShadowDepthDrawCallsList) pass = SE_TEXT("Shadow");
+        else switch (renderContext.view.Pass)
+        {
+        case DrawPass::Depth: pass = SE_TEXT("Depth"); break;
+        case DrawPass::GBuffer: pass = SE_TEXT("GBuffer"); break;
+        case DrawPass::Forward: pass = SE_TEXT("Forward"); break;
+        case DrawPass::Distortion: pass = SE_TEXT("Distortion"); break;
+        case DrawPass::MotionVectors: pass = SE_TEXT("MotionVectors"); break;
+        default: return false;
+        }
+
+        if (instanceBuffer != nullptr && slc2.GeometryMode == SLC2MaterialGeometryMode::Skinned)
+            return false; // There is no combined SkinnedInstanced Program convention.
+        RenderGeometry geometry = slc2.Geometry;
+        if (instanceBuffer != nullptr &&
+            !StaticMeshVertexFactory::CreateRenderGeometryWithInstanceBuffer(
+                slc2.Geometry, instanceBuffer, instanceByteOffset, geometry)) return false;
+        const auto mode = instanceBuffer != nullptr ? SLC2MaterialGeometryMode::Instanced : slc2.GeometryMode;
+
+        std::unique_ptr<SLC2MaterialDrawProgram> prepared;
+        const bool selected = slc2.Material != nullptr
+            ? slc2.Material->PrepareDraw(pass, mode, slc2.Target, slc2.Defines, sources, prepared)
+            : slc2.Instance->PrepareDraw(pass, mode, slc2.Target, slc2.Defines, sources, prepared);
+        if (!selected || prepared == nullptr ||
+        {
+            !prepared->Prepare(*renderContext.gpuContext, geometry)) return false;
+        }
+
+        // Keep the selected Generation and Pipeline through this RenderList submission.
+        SharedPtr<SLC2MaterialDrawProgram> submitted(prepared.release());
+        _submittedSLC2Draws.Add(submitted);
+        // The GPUContext freezes bindings once for the actual submitted draw.
+        if (drawCall.InstanceCount == 0)
+        {
+            if (geometry.IndexBuffer != nullptr)
+            {
+                renderContext.gpuContext->DrawIndexedInstancedIndirect(
+                    submitted->GetInstance(), drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
+            }
+            else
+            {
+                renderContext.gpuContext->DrawInstancedIndirect(
+                    submitted->GetInstance(), drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
+            }
+        }
+        else if (geometry.IndexBuffer != nullptr)
+        {
+            renderContext.gpuContext->DrawIndexedInstanced(
+                submitted->GetInstance(), drawCall.Draw.IndicesCount, instanceCount, 0, 0, drawCall.Draw.StartIndex);
+        }
+        else
+        {
+            renderContext.gpuContext->DrawInstanced(
+                submitted->GetInstance(), drawCall.Draw.IndicesCount, instanceCount);
+        }
+        ++_slc2SubmissionCount;*/
+        return true;
+    }
+
     void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, GPUTextureView* input)
     {
         if (list.IsEmpty())
@@ -585,7 +688,13 @@ namespace SE
             // Execute draw calls
             MaterialBase::BindParameters bindParams(context, renderContext);
             bindParams.Input = input;
-            bindParams.BindViewData();
+            bool hasLegacyDraw = false;
+            for (int32 i = 0; i < list.Indices.Count(); ++i)
+                hasLegacyDraw |= drawCallsData[listData[i]].SLC2 == nullptr;
+            for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); ++i)
+                hasLegacyDraw |= BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]].DrawCall.SLC2 == nullptr;
+            // An SLC2-only list never binds legacy per-view constant buffers.
+            if (hasLegacyDraw) bindParams.BindViewData();
             if (useInstancing)
             {
                 int32 instanceBufferOffset = 0;
@@ -609,6 +718,14 @@ namespace SE
                         vbOffsets[j] = 0;
                     }
 
+                    if (drawCall.SLC2 != nullptr)
+                    {
+                        ExecuteSLC2DrawCall(renderContext, list, drawCall, batch.InstanceCount,
+                            batch.BatchSize > 1 ? _instanceBuffer.GetBuffer() : nullptr,
+                            instanceBufferOffset * sizeof(StaticMeshInstanceData));
+                        if (batch.BatchSize > 1) instanceBufferOffset += batch.BatchSize;
+                        continue;
+                    }
                     bindParams.firstDrawCall = &drawCall;
                     bindParams.drawCallsCount = batch.BatchSize;
                     drawCall.Material->Bind(bindParams);
@@ -661,6 +778,15 @@ namespace SE
                         vbOffsets[j] = 0;
                     }
 
+                    if (drawCall.SLC2 != nullptr)
+                    {
+                        const bool instanced = batch.Instances.Count() > 1;
+                        ExecuteSLC2DrawCall(renderContext, list, drawCall, batch.Instances.Count(),
+                            instanced ? _instanceBuffer.GetBuffer() : nullptr,
+                            instanceBufferOffset * sizeof(StaticMeshInstanceData));
+                        if (instanced) instanceBufferOffset += batch.Instances.Count();
+                        continue;
+                    }
                     bindParams.firstDrawCall = &drawCall;
                     bindParams.drawCallsCount = batch.Instances.Count();
                     drawCall.Material->Bind(bindParams);
@@ -703,6 +829,11 @@ namespace SE
                     for (int32 j = 0; j < batch.BatchSize; j++)
                     {
                         const DrawCall& drawCall = drawCalls[listData[batch.StartIndex + j]];
+                        if (drawCall.SLC2 != nullptr)
+                        {
+                            ExecuteSLC2DrawCall(renderContext, list, drawCall, drawCall.InstanceCount, nullptr, 0);
+                            continue;
+                        }
                         bindParams.firstDrawCall = &drawCall;
                         drawCall.Material->Bind(bindParams);
 
@@ -739,6 +870,11 @@ namespace SE
                         drawCall.World.SetRow(2, Float4(instance.InstanceTransform2, 0.0f));
                         drawCall.World.SetRow(3, Float4(instance.InstanceTransform3, 0.0f));
                         drawCall.World.SetRow(4, Float4(instance.InstanceOrigin, 1.0f));
+                        if (drawCall.SLC2 != nullptr)
+                        {
+                            ExecuteSLC2DrawCall(renderContext, list, drawCall, drawCall.InstanceCount, nullptr, 0);
+                            continue;
+                        }
                         drawCall.Material->Bind(bindParams);
 
                         context->BindIB(drawCall.Geometry.IndexBuffer);
@@ -752,6 +888,11 @@ namespace SE
                     for (int32 j = 0; j < list.Indices.Count(); j++)
                     {
                         const DrawCall& drawCall = drawCalls[listData[j]];
+                        if (drawCall.SLC2 != nullptr)
+                        {
+                            ExecuteSLC2DrawCall(renderContext, list, drawCall, drawCall.InstanceCount, nullptr, 0);
+                            continue;
+                        }
                         bindParams.firstDrawCall = &drawCall;
                         drawCall.Material->Bind(bindParams);
 

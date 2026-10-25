@@ -219,7 +219,6 @@ namespace SE::Editor
     SpriteHandle EditorIcons::PS5Icon128;
     SpriteHandle EditorIcons::MacOSIcon128;
     SpriteHandle EditorIcons::IOSIcon128;
-    SpriteHandle EditorIcons::FlaxLogo128;
     SpriteHandle EditorIcons::SwitchIcon128;
     SpriteHandle EditorIcons::SwitchSettings128;
     SpriteHandle EditorIcons::LocalizationSettings128;

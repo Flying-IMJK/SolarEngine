@@ -126,7 +126,7 @@ namespace SE
 			if (block.HasDefaultUniformBuffer)
 			{
 				const ShaderIRDescriptorRange& uniform = block.DefaultUniformBuffer;
-				if (uniform.Role != SE_TEXT("uniformData") || uniform.DescriptorType != SE_TEXT("ConstantBuffer") || uniform.DescriptorCount != 1 || uniform.ArrayElementBase != 0 || uniform.LogicalElementStride != 1)
+				if (uniform.Role != "uniformData" || uniform.DescriptorType != SE_TEXT("ConstantBuffer") || uniform.DescriptorCount != 1 || uniform.ArrayElementBase != 0 || uniform.LogicalElementStride != 1)
 				{
 					error = SE_TEXT("Shader default uniform buffer descriptor shape is invalid.");
 					return false;

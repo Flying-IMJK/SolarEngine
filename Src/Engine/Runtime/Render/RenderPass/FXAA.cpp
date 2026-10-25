@@ -20,7 +20,7 @@ namespace SE
 	bool FXAA::Init()
 	{
 		_psFXAA.CreatePipelineStates();
-		_shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/FXAA"));
+		_shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/PostProcess/FXAA"));
 		if (_shader == nullptr)
 		{
 			return false;

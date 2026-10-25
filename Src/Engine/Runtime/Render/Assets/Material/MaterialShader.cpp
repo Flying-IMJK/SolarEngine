@@ -231,38 +231,6 @@ namespace SE
         return m_IsLoaded;
     }
 
-    bool MaterialShader::IsSLC2Ready() const
-    {
-        return m_RuntimeGeneration != nullptr;
-    }
-
-    uint64 MaterialShader::GetRuntimeGenerationID() const
-    {
-        return m_RuntimeGeneration != nullptr ? m_RuntimeGeneration->GetID() : 0;
-    }
-
-    bool MaterialShader::InstallSLC2RuntimeData(MaterialSLC2RuntimeData&& data, const MaterialParams& parameters)
-    {
-        String error;
-        SharedPtr<MaterialRuntimeGeneration> candidate =
-            MaterialRuntimeGeneration::Create(MoveTemp(data), m_Info, parameters, error);
-        if (candidate == nullptr)
-        {
-            LOG_ERROR("Material", "Failed to install SLC2 runtime data: {0}", error);
-            return false;
-        }
-
-        // 只有完整候选 Generation 验证并创建成功后才替换当前活动快照。
-        m_RuntimeGeneration = MoveTemp(candidate);
-        return true;
-    }
-
-    bool MaterialShader::PrepareSLC2Binding(const MaterialDrawContext& context, const List<const MaterialParams*>& parameterChain, MaterialProgramInstanceCache& cache, MaterialSLC2Binding& output) const
-    {
-        output.Clear();
-        return m_RuntimeGeneration != nullptr && m_RuntimeGeneration->Prepare(context, parameterChain, cache, output);
-    }
-
     bool MaterialShader::Load(MemoryReadStream& shaderCacheStream, const MaterialInfo& info)
     {
         ENGINE_ASSERT(!m_IsLoaded);
@@ -304,7 +272,6 @@ namespace SE
 
     void MaterialShader::Unload()
     {
-        m_RuntimeGeneration.reset();
         m_IsLoaded = false;
         m_CB = nullptr;
         m_CBData.Resize(0, false);

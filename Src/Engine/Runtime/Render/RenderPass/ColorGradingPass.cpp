@@ -82,7 +82,7 @@ namespace SE
 		m_PsLut.CreatePipelineStates();
 
 		// Load shader
-		m_Shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/ColorGrading"));
+		m_Shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/PostProcess/ColorGrading"));
 		if (m_Shader == nullptr)
 		{
 			return false;

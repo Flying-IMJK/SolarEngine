@@ -291,6 +291,12 @@ namespace SE
 			DrawIndexedInstanced(indicesCount, 1, 0, startVertex, startIndex);
 		}
 
+		SE_FUNCTION(API())
+		inline void DrawIndexed(ShaderProgramInstance& instance, uint32 indicesCount, int32 startVertex = 0, int32 startIndex = 0)
+        {
+            DrawIndexedInstanced(instance, indicesCount, 1, 0, startVertex, startIndex);
+        }
+
 		/**
 		 * Draws the indexed, instanced primitives.
 		 * @param indicesCount The indices count.
@@ -321,6 +327,9 @@ namespace SE
 		SE_FUNCTION(API())
 		virtual void DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) = 0;
 
+        // SLC2 indirect draws freeze the same instance snapshot as direct draws.
+        virtual void DrawInstancedIndirect(ShaderProgramInstance& instance, GPUBuffer* bufferForArgs, uint32 offsetForArgs) = 0;
+
 		/**
 		 * Draws the instanced GPU-generated indexed primitives. Buffer must contain GPUDrawIndexedIndirectArgs.
 		 * @param bufferForArgs The buffer with drawing arguments.
@@ -328,6 +337,7 @@ namespace SE
 		 */
 		SE_FUNCTION(API())
 		virtual void DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) = 0;
+        virtual void DrawIndexedInstancedIndirect(ShaderProgramInstance& instance, GPUBuffer* bufferForArgs, uint32 offsetForArgs) = 0;
 
 	public:
 		/**

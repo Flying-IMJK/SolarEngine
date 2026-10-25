@@ -866,7 +866,7 @@ namespace SE
 			return true;
 		}
 
-		bool BuildDescriptorRange(slang::TypeLayoutReflection* typeLayout, const BindingPath& ownerPath, const SlangInt descriptorSetIndex, const SlangInt descriptorRangeIndex, const String& role, const StageUsageContext& stageUsage, ShaderIRDescriptorRange& output, String& error)
+		bool BuildDescriptorRange(slang::TypeLayoutReflection* typeLayout, const BindingPath& ownerPath, const SlangInt descriptorSetIndex, const SlangInt descriptorRangeIndex, const StringAnsi& role, const StageUsageContext& stageUsage, ShaderIRDescriptorRange& output, String& error)
 		{
 			uint32 relativeSet;
 			uint32 relativeBinding;
@@ -980,7 +980,7 @@ namespace SE
 		bool BuildSimpleDescriptor(slang::TypeLayoutReflection* elementTypeLayout,
 			const BindingPath& elementPath,
 			const uint32 rawRangeIndex,
-			const String& role,
+			const StringAnsi& role,
 			const uint32 logicalCount,
 			const StageUsageContext& stageUsage,
 			ShaderIRDescriptorRange& descriptor,
@@ -1108,7 +1108,7 @@ namespace SE
 					{
 						return false;
 					}
-					binding.Flavor = bindingType == slang::BindingType::ConstantBuffer ? SE_TEXT("constantBuffer") : SE_TEXT("parameterBlock");
+					binding.Flavor = bindingType == slang::BindingType::ConstantBuffer ? "constantBuffer" : "parameterBlock";
 					binding.SubBlockId = static_cast<int32>(subBlockId);
 				}
 				else
@@ -1116,8 +1116,7 @@ namespace SE
 					const ShaderIRResourceRange& logicalRange =
 						output.Types[elementTypeId].ResourceRanges[logicalRangeIndex];
 					ShaderIRDescriptorRange primaryDescriptor;
-					if (!BuildSimpleDescriptor(elementTypeLayout, context.ElementPath, primaryRangeIndex,
-						SE_TEXT("primary"), logicalRange.Count, stageUsage, primaryDescriptor, error))
+					if (!BuildSimpleDescriptor(elementTypeLayout, context.ElementPath, primaryRangeIndex, "primary", logicalRange.Count, stageUsage, primaryDescriptor, error))
 					{
 						return false;
 					}
@@ -1128,7 +1127,7 @@ namespace SE
 					{
 						ShaderIRDescriptorRange counterDescriptor;
 						if (!BuildSimpleDescriptor(elementTypeLayout, context.ElementPath,
-							static_cast<uint32>(mapping.CounterRangeIndex), SE_TEXT("counter"),
+							static_cast<uint32>(mapping.CounterRangeIndex), "counter",
 							logicalRange.Count, stageUsage, counterDescriptor, error))
 						{
 							return false;
@@ -1436,7 +1435,6 @@ namespace SE
 	bool SlangReflectionBuilder::Build(
 		const String& programId,
 		const String& targetKey,
-		const String& variant,
 		slang::IComponentType* linked,
 		const List<ShaderStage>& stages,
 		const SlangInt targetIndex,

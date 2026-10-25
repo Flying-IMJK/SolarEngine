@@ -20,14 +20,14 @@ namespace rapidjson
 
 namespace SE::Json
 {
-	class FlaxAllocator;
+	class CustomAllocator;
 
     // String buffer with UTF8 encoding
-	typedef rapidjson::GenericStringBuffer<::rapidjson::UTF8<char>, FlaxAllocator> StringBuffer;
+	typedef rapidjson::GenericStringBuffer<::rapidjson::UTF8<char>, CustomAllocator> StringBuffer;
 
     // GenericDocument with UTF8 encoding
-	typedef rapidjson::GenericDocument<rapidjson::UTF8<char>, rapidjson::MemoryPoolAllocator<FlaxAllocator>, FlaxAllocator> Document;
+	typedef rapidjson::GenericDocument<rapidjson::UTF8<char>, rapidjson::MemoryPoolAllocator<CustomAllocator>, CustomAllocator> Document;
 
     // GenericValue with UTF8 encoding
-	typedef rapidjson::GenericValue<rapidjson::UTF8<char>, rapidjson::MemoryPoolAllocator<FlaxAllocator>> Value;
+	typedef rapidjson::GenericValue<rapidjson::UTF8<char>, rapidjson::MemoryPoolAllocator<CustomAllocator>> Value;
 }

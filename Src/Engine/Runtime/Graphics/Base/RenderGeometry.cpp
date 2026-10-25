@@ -46,7 +46,7 @@ namespace SE
 			if (!EnumHasAllFlags(vertexBuffer.Buffer->GetFlags(), GPUBufferFlags::VertexBuffer))
 			{
                 LOG_ERROR("Graphics", "RenderGeometry buffer at slot {0} is not a vertex buffer.", vertexBuffer.Slot);
-				return false;
+				return false; 
 			}
 			if (vertexBuffer.Buffer->GetStride() != 0 && vertexBuffer.Buffer->GetStride() != binding->Stride)
 			{

@@ -26,10 +26,10 @@ namespace SE
 
     ShaderStorage::CachingMode ShaderStorage::GetCachingMode()
     {
-#if !COMPILE_WITH_SHADER_CACHE_MANAGER
+/*#if !COMPILE_WITH_SHADER_CACHE_MANAGER
         if (CurrentCachingMode == CachingMode::ProjectCache)
             return CachingMode::AssetInternal;
-#endif
+#endif*/
         return CurrentCachingMode;
     }
 
@@ -275,7 +275,7 @@ namespace SE
             else if (cachingMode == ShaderStorage::CachingMode::ProjectCache)
             {
                 // Save results to cache
-                if (ShaderCacheManager::SetCache(shaderProfile, cachedEntry, cacheStream))
+                if (!ShaderCacheManager::SetCache(shaderProfile, cachedEntry, cacheStream))
                 {
                     LOG_WARNING("Resource", "Cannot save shader cache.");
                     return false;
@@ -308,7 +308,7 @@ namespace SE
         else if (cachedEntry.IsValid() || ShaderCacheManager::TryGetEntry(shaderProfile, parent->GetID(), cachedEntry))
         {
             // Load results from cache
-            if (ShaderCacheManager::GetCache(shaderProfile, cachedEntry, result.Data))
+            if (!ShaderCacheManager::GetCache(shaderProfile, cachedEntry, result.Data))
             {
                 LOG_WARNING("Resource", "Cannot load shader cache.");
                 return false;

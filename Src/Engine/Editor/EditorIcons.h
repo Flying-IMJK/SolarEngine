@@ -165,7 +165,6 @@ namespace SE::Editor
         SE_FIELD(API(ReadOnly)) static SpriteHandle PS5Icon128;
         SE_FIELD(API(ReadOnly)) static SpriteHandle MacOSIcon128;
         SE_FIELD(API(ReadOnly)) static SpriteHandle IOSIcon128;
-        SE_FIELD(API(ReadOnly)) static SpriteHandle FlaxLogo128;
         SE_FIELD(API(ReadOnly)) static SpriteHandle SwitchIcon128;
         SE_FIELD(API(ReadOnly)) static SpriteHandle SwitchSettings128;
         SE_FIELD(API(ReadOnly)) static SpriteHandle LocalizationSettings128;

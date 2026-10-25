@@ -45,7 +45,7 @@ namespace SE
 	// 当前 Target 下已经展开的物理绑定范围，字段必须保持稳定文本，避免序列化 Slang 原生枚举。
 	struct SE_API_RUNTIME ShaderIRDescriptorRange
 	{
-		String Role;
+		StringAnsi Role;
 		uint32 Set = 0;
 		uint32 Binding = 0;
 		uint32 ArrayElementBase = 0;

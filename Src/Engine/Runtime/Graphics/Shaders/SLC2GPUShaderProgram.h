@@ -20,9 +20,9 @@ namespace SE
         const ShaderProgramReflection& GetReflection() const;
 
     protected:
-        const SLC2ProgramRecord* _program = nullptr;
-        const SLC2TargetRecord*  _target  = nullptr;
-        const SLC2VariantRecord* _variant = nullptr;
-        ShaderProgramReflection  _reflection;
+        const SLC2ProgramRecord* m_Program = nullptr;
+        const SLC2TargetRecord*  m_Target  = nullptr;
+        const SLC2VariantRecord* m_Variant = nullptr;
+        ShaderProgramReflection  m_Reflection;
     };
 }

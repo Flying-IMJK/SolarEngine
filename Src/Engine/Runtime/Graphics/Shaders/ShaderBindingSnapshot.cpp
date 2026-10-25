@@ -73,6 +73,7 @@ namespace SE
         m_TextureOwner->Releasing.Bind<ShaderBindingResource, &ShaderBindingResource::OnResourceReleasing>(this);
     }
 
+
     void ShaderBindingResource::SetBuffer(GPUBuffer* buffer)
     {
         Clear();

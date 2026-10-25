@@ -1,151 +1,83 @@
 #pragma once
 
-#include "GraphicShader.h"
-#include "Runtime/Resource/AssetRef.h"
+#include <Runtime/Render/Assets/Material/MaterialParams.h>
+#include <Runtime/Resource/AssetRef.h>
+#include <Runtime/Resource/Assets/SLC2Materials/GraphicShader.h>
+#include <Runtime/Resource/Assets/SLC2Materials/SLC2MaterialBinding.h>
+#include <Runtime/Resource/Assets/SLC2Materials/SLC2MaterialDrawProgram.h>
 
 namespace SE
 {
-    class GPUBuffer;
-    class GPUConstantBuffer;
-    class GPUSampler;
-    class GPUTextureView;
-    class TextureBase;
     class SLC2MaterialInstance;
-
-    enum class SLC2MaterialStoredKind : byte { Uniform, ConstantBuffer, TextureAsset };
-
-    // Editor-authored values are separate from compiled code and never contain GPU pointers.
-    struct SE_API_RUNTIME SLC2MaterialStoredValue
-    {
-        String Path;
-        SLC2MaterialStoredKind Kind = SLC2MaterialStoredKind::Uniform;
-        List<byte> Bytes;
-        UID TextureId = UID::Empty;
-        mutable AssetRef<TextureBase> Texture;
-    };
-
-    class SE_API_RUNTIME SLC2MaterialParameters
-    {
-    public:
-        bool SetUniform(const String& path, const void* bytes, uint32 size);
-        bool SetConstantBuffer(const String& path, const void* bytes, uint32 size);
-        bool SetTexture(const String& path, TextureBase* texture);
-        bool SetTextureReference(const String& path, const UID& textureId);
-        bool Remove(const String& path);
-        const SLC2MaterialStoredValue* Find(const String& path) const;
-        const List<SLC2MaterialStoredValue>& GetValues() const { return m_Values; }
-        void Clear();
-    private:
-        bool SetBytes(const String& path, SLC2MaterialStoredKind kind, const void* bytes, uint32 size);
-        List<SLC2MaterialStoredValue> m_Values;
-    };
-
-    enum class SLC2MaterialRuntimeKind : byte { Uniform, Texture, Buffer, Sampler, ConstantBuffer, ConstantBufferBytes };
-
-    struct SE_API_RUNTIME SLC2MaterialRuntimeValue
-    {
-        String Path;
-        SLC2MaterialRuntimeKind Kind = SLC2MaterialRuntimeKind::Texture;
-        GPUTextureView* Texture = nullptr;
-        GPUBuffer* Buffer = nullptr;
-        GPUSampler* Sampler = nullptr;
-        GPUConstantBuffer* ConstantBuffer = nullptr;
-        const void* Bytes = nullptr;
-        uint32 ByteSize = 0;
-    };
-
-    // Ephemeral one-Draw input; referenced resources and bytes survive through PrepareDraw only.
-    class SE_API_RUNTIME SLC2MaterialRuntimeValues
-    {
-    public:
-        void SetUniform(const String& path, const void* bytes, uint32 size);
-        void SetTexture(const String& path, GPUTextureView* value);
-        void SetBuffer(const String& path, GPUBuffer* value);
-        void SetSampler(const String& path, GPUSampler* value);
-        void SetConstantBuffer(const String& path, GPUConstantBuffer* value);
-        void SetConstantBuffer(const String& path, const void* bytes, uint32 size);
-        const SLC2MaterialRuntimeValue* Find(const String& path) const;
-        const List<SLC2MaterialRuntimeValue>& GetValues() const { return m_Values; }
-    private:
-        void Set(const SLC2MaterialRuntimeValue& value);
-        List<SLC2MaterialRuntimeValue> m_Values;
-    };
-
-    // Sources belong to the caller's current Draw; this view owns no values or GPU resources.
-    struct SE_API_RUNTIME SLC2MaterialDrawContext
-    {
-        const SLC2MaterialRuntimeValues* Material = nullptr;
-        const SLC2MaterialRuntimeValues* PerMaterial = nullptr;
-        const SLC2MaterialRuntimeValues* PerView = nullptr;
-        const SLC2MaterialRuntimeValues* PerDraw = nullptr;
-        const SLC2MaterialRuntimeValues* SceneTexture = nullptr;
-    };
 
     SE_CLASS(Reflect, API(NoSpawn))
     class SE_API_RUNTIME SLC2Material final : public BinaryAsset
     {
         SE_DEFINE_CLASS(SLC2Material, BinaryAsset)
         ASSET_HEADER(SLC2Material);
+
     public:
-        SLC2MaterialParameters& GetParameters() { return m_Parameters; }
-        const SLC2MaterialParameters& GetParameters() const { return m_Parameters; }
-        void SetGraphicShader(GraphicShader* shader) { m_Shader = shader; }
-        GraphicShader* GetGraphicShader() const { return m_Shader.Get(); }
-        bool PrepareDraw(const String& passName, GraphicShaderGeometryMode geometryMode,
-                         const ShaderCompileTarget& target, const List<String>& defines,
-                         const SLC2MaterialDrawContext& context,
-                         std::unique_ptr<GraphicShaderDrawProgram>& output) const;
+        // Read operations return caller-owned snapshots; no mutable internal container or reference escapes.
+        bool GetParameters(MaterialParams& output) const;
+        // Mutations read inputs synchronously and publish only a completely validated copy. False leaves published
+        // state unchanged; SetGraphicShader retains only an AssetRef to pShader.
+        bool                    SetParameters(MaterialParams& parameters);
+        bool                    SetParameterValue(const UID& parameterId, const Variant& value);
+        void                    GetParameterBindings(List<SLC2MaterialParameterBinding>& output) const;
+        bool                    SetParameterBinding(const SLC2MaterialParameterBinding& binding);
+        bool                    RemoveParameterBinding(const UID& parameterId);
+        void                    GetPipelines(List<SLC2MaterialPipelineState>& output) const;
+        bool                    SetPipeline(const SLC2MaterialPipelineState& pipeline);
+        bool                    RemovePipeline(const String& programId);
+        bool                    SetGraphicShader(GraphicShader* pShader);
+        AssetRef<GraphicShader> GetGraphicShader() const;
+        // May wait for Shader and parameter content. Call on the GPU/render-resource thread. On failure output is
+        // empty; on success it owns the selected Program, Pipeline, and Generation but not provider resources. Keep
+        // output and those resources alive through Prepare and backend descriptor/draw submission. No GPU work is
+        // submitted or completed here.
+        bool PrepareDraw(const String&                             passName,
+                         SLC2MaterialGeometryMode                  geometryMode,
+                         const ShaderCompileTarget&                target,
+                         const List<String>&                       defines,
+                         const SLC2MaterialDrawContext&            context,
+                         std::unique_ptr<SLC2MaterialDrawProgram>& output) const;
+
 #if SE_EDITOR
-        static bool SaveAssetData(const StringView& path, GraphicShader* shader,
-                                  const SLC2MaterialParameters& parameters);
-        void GetReferences(List<UID>& output) const override;
+        // Reads all inputs synchronously without retaining them and returns false for invalid state or save failure.
+        static bool SaveAssetData(const StringView&                         path,
+                                  GraphicShader*                            pShader,
+                                  MaterialParams&                           parameters,
+                                  const List<SLC2MaterialParameterBinding>& bindings,
+                                  const List<SLC2MaterialPipelineState>&    pipelines);
+        void        GetReferences(List<UID>& output) const override;
 #endif
+
         uint32 GetSerializedVersion() const override;
+
     protected:
-        bool OnInit(AssetInitData& initData) override;
+        bool            OnInit(AssetInitData& initData) override;
         AssetChunksFlag GetChunksToPreload() const override;
-        LoadResult load() override;
-        void Unload(bool isReloading) override;
+        LoadResult      load() override;
+        void            Unload(bool isReloading) override;
+
     private:
         friend class SLC2MaterialInstance;
-        bool PrepareDrawWithChain(const String& passName, GraphicShaderGeometryMode geometryMode,
-                                  const ShaderCompileTarget& target, const List<String>& defines,
-                                  const List<const SLC2MaterialParameters*>& overrides,
-                                  const SLC2MaterialDrawContext& context,
-                                  std::unique_ptr<GraphicShaderDrawProgram>& output) const;
-        AssetRef<GraphicShader> m_Shader;
-        SLC2MaterialParameters m_Parameters;
-    };
 
-    SE_CLASS(Reflect, API(NoSpawn))
-    class SE_API_RUNTIME SLC2MaterialInstance final : public BinaryAsset
-    {
-        SE_DEFINE_CLASS(SLC2MaterialInstance, BinaryAsset)
-        ASSET_HEADER(SLC2MaterialInstance);
-    public:
-        SLC2MaterialParameters& GetOverrides() { return m_Overrides; }
-        const SLC2MaterialParameters& GetOverrides() const { return m_Overrides; }
-        void SetBaseMaterial(SLC2Material* material);
-        bool SetParentInstance(SLC2MaterialInstance* instance);
-        bool PrepareDraw(const String& passName, GraphicShaderGeometryMode geometryMode,
-                         const ShaderCompileTarget& target, const List<String>& defines,
-                         const SLC2MaterialDrawContext& context,
-                         std::unique_ptr<GraphicShaderDrawProgram>& output) const;
-#if SE_EDITOR
-        static bool SaveAssetData(const StringView& path, SLC2Material* material,
-                                  SLC2MaterialInstance* parent,
-                                  const SLC2MaterialParameters& overrides);
-        void GetReferences(List<UID>& output) const override;
-#endif
-        uint32 GetSerializedVersion() const override;
-    protected:
-        bool OnInit(AssetInitData& initData) override;
-        AssetChunksFlag GetChunksToPreload() const override;
-        LoadResult load() override;
-        void Unload(bool isReloading) override;
-    private:
-        AssetRef<SLC2Material> m_Base;
-        AssetRef<SLC2MaterialInstance> m_Parent;
-        SLC2MaterialParameters m_Overrides;
+        bool SnapshotParameters(MaterialParams& output, int32& version, uint64& revision) const;
+        bool PrepareDrawWithParameters(const String&                             passName,
+                                       SLC2MaterialGeometryMode                  geometryMode,
+                                       const ShaderCompileTarget&                target,
+                                       const List<String>&                       defines,
+                                       const MaterialParams&                     parameters,
+                                       uint64                                    expectedRevision,
+                                       const SLC2MaterialDrawContext&            context,
+                                       std::unique_ptr<SLC2MaterialDrawProgram>& output) const;
+
+        AssetRef<GraphicShader>                       m_Shader;
+        MaterialParams                                m_Parameters;
+        List<SLC2MaterialParameterBinding>            m_Bindings;
+        List<SLC2MaterialPipelineState>               m_Pipelines;
+        mutable List<SharedPtr<SLC2MaterialPipeline>> m_CachedPipelines;
+        uint64                                        m_Revision = 0;
     };
 } // namespace SE

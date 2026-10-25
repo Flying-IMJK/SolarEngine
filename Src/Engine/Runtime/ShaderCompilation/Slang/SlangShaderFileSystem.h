@@ -20,6 +20,7 @@ namespace SE
         explicit SlangShaderFileSystem(const List<String>& rootSourcePath);
 
 		ISlangFileSystem* GetSlangFileSystem();
+		const List<String>& GetLoadedFiles() const { return m_LoadedFiles; }
 
 		SLANG_NO_THROW SlangResult SLANG_MCALL queryInterface(SlangUUID const& uuid, void** outObject) override;
 		SLANG_NO_THROW uint32_t SLANG_MCALL addRef() override;
@@ -39,7 +40,8 @@ namespace SE
 		String ResolvePath(const char* path);
 
 	private:
-		int64 volatile _refCount;
-		List<String> _searchRoots;
+		int64 volatile m_RefCount;
+		List<String> m_SearchRoots;
+		List<String> m_LoadedFiles;
 	};
 }

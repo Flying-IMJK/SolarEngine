@@ -1,4 +1,4 @@
-#include "MaterialRuntime.h"
+/*#include "MaterialRuntime.h"
 
 #include "Runtime/Core/Math/Matrix.h"
 #include "Runtime/Core/Memory/Memory.h"
@@ -454,7 +454,7 @@ namespace SE
             return nullptr;
         }
         candidate->m_Shader = GPUDevice::instance->CreateSLC2Shader(SE_TEXT("MaterialRuntimeGeneration"));
-        if (candidate->m_Shader == nullptr || !candidate->m_Shader->Load(data.SLC2Data))
+        if (candidate->m_Shader == nullptr || !candidate->m_Shader->Load(data.SLC2Data.Get(), data.SLC2Data.Count()))
         {
             error = SE_TEXT("Failed to load the validated Material SLC2 artifact.");
             return nullptr;
@@ -587,4 +587,4 @@ namespace SE
         output.GenerationID = m_ID;
         return true;
     }
-}
+}*/

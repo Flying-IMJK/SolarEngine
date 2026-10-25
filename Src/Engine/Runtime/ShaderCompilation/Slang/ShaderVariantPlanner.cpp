@@ -30,16 +30,16 @@ namespace SE
 		}
 	}
 
-	String ShaderVariantPlanner::SerializeDefines(const List<String>& defines)
+	StringAnsi ShaderVariantPlanner::SerializeDefines(const List<String>& defines)
 	{
-		String result;
+        StringAnsi result;
 		for (int32 i = 0; i < defines.Count(); i++)
 		{
 			if (i != 0)
 			{
-				result += SE_TEXT(";");
+				result += ";";
 			}
-			result += defines[i];
+			result += defines[i].ToStringAnsi();
 		}
 		return result;
 	}
@@ -90,7 +90,7 @@ namespace SE
 		if (variants.Count() == 0)
 		{
 			ShaderVariantPlan empty;
-			empty.Variant = String::Empty;
+            empty.Variant = StringAnsi::Empty;
 			variants.Add(empty);
 		}
 		return true;

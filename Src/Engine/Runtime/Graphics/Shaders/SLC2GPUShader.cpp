@@ -18,43 +18,43 @@ namespace SE
 		ReleasePrograms();
 	}
 
-	bool SLC2GPUShader::Load(const List<byte>& data)
+	bool SLC2GPUShader::Load(const byte* data, int dataLength)
 	{
 		SLC2Artifact artifact;
         String       error;
-		if (!SLC2Reader::Read(data, artifact, error))
+        if (!SLC2Reader::Read(data, dataLength, artifact, error))
 		{
             LOG_ERROR("Graphics", "Failed to read SLC2 artifact: {0}", error);
 			return false;
 		}
 		ReleasePrograms();
-		_artifact = MoveTemp(artifact);
+		m_Artifact = MoveTemp(artifact);
 		int32 programCapacity = 0;
-		for (int32 programIndex = 0; programIndex < _artifact.Programs.Count(); programIndex++)
+		for (int32 programIndex = 0; programIndex < m_Artifact.Programs.Count(); programIndex++)
 		{
-			for (int32 targetIndex = 0; targetIndex < _artifact.Programs[programIndex].Targets.Count(); targetIndex++)
+			for (int32 targetIndex = 0; targetIndex < m_Artifact.Programs[programIndex].Targets.Count(); targetIndex++)
 			{
-				programCapacity += _artifact.Programs[programIndex].Targets[targetIndex].Variants.Count();
+				programCapacity += m_Artifact.Programs[programIndex].Targets[targetIndex].Variants.Count();
 			}
 		}
 		m_Programs.SetCapacity(programCapacity, false);
-		m_MemoryUsage = data.Count();
+        m_MemoryUsage = dataLength;
 		return true;
 	}
 
-	bool SLC2GPUShader::SelectProgram(const ShaderProgramSelection& selection, const SLC2ProgramRecord*& program, const SLC2TargetRecord*& target, const SLC2VariantRecord*& variant) const
+	bool SLC2GPUShader::SelectProgram(const String& programName, const ShaderProgramSelection& selection, const SLC2ProgramRecord*& program, const SLC2TargetRecord*& target, const SLC2VariantRecord*& variant) const
 	{
-		return ResolveProgramSelection(_artifact, selection, program, target, variant);
+        return ResolveProgramSelection(m_Artifact, programName, selection, program, target, variant);
 	}
 
-	bool SLC2GPUShader::ResolveProgramSelection(const SLC2Artifact& artifact, const ShaderProgramSelection& selection, const SLC2ProgramRecord*& program, const SLC2TargetRecord*& target, const SLC2VariantRecord*& variant)
+	bool SLC2GPUShader::ResolveProgramSelection(const SLC2Artifact& artifact, const String& programName, const ShaderProgramSelection& selection, const SLC2ProgramRecord*& program, const SLC2TargetRecord*& target, const SLC2VariantRecord*& variant)
 	{
 		program = nullptr;
 		target = nullptr;
 		variant = nullptr;
 		for (int32 index = 0; index < artifact.Programs.Count(); index++)
 		{
-			if (artifact.Programs[index].ProgramId == selection.ProgramId)
+            if (artifact.Programs[index].ProgramId == programName)
 			{
 				program = &artifact.Programs[index];
 				break;
@@ -103,10 +103,6 @@ namespace SE
 		return true;
 	}
 
-	bool SLC2GPUShader::ResolveProgramSelection(const ShaderProgramSelection& selection, const SLC2ProgramRecord*& program, const SLC2TargetRecord*& target, const SLC2VariantRecord*& variant) const
-	{
-		return SelectProgram(selection, program, target, variant);
-	}
 
 	bool SLC2GPUShader::GetOrCreateProgram(const SLC2ProgramRecord* program, const SLC2TargetRecord* target, const SLC2VariantRecord* variant, SLC2GPUShaderProgram*& shaderProgram)
 	{
@@ -129,12 +125,14 @@ namespace SE
 		return true;
 	}
 
-	bool SLC2GPUShader::CreateProgramInstance(const ShaderProgramSelection& selection, ShaderProgramInstance& instance)
+	bool SLC2GPUShader::CreateProgramInstance(const String&                 programName,
+                                              const ShaderProgramSelection& selection,
+                                              ShaderProgramInstance&        instance)
 	{
 		const SLC2ProgramRecord* program;
 		const SLC2TargetRecord* target;
 		const SLC2VariantRecord* variant;
-		if (!SelectProgram(selection, program, target, variant))
+        if (!SelectProgram(programName, selection, program, target, variant))
 		{
 			return false;
 		}

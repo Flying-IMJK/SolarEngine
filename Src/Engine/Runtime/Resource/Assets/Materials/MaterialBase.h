@@ -21,9 +21,6 @@ namespace SE
         /// </summary>
         MaterialParams Params;
 
-    protected:
-        MaterialProgramInstanceCache m_SLC2ProgramInstances;
-
     public:
 
         /// <summary>
@@ -36,9 +33,6 @@ namespace SE
         /// </summary>
         virtual bool IsMaterialInstance() const = 0;
         virtual MaterialShader* GetMaterialShaderObject() const = 0;
-
-    protected:
-        void ClearSLC2RuntimeCache();
 
     public:
         /// <summary>
@@ -86,11 +80,6 @@ namespace SE
         MaterialInstance* CreateVirtualInstance();
 
         uint32 GetSerializedVersion() const override;
-
-        // [IMaterial]
-        bool IsSLC2Ready() const override;
-        uint64 GetRuntimeGenerationID() const override;
-        bool PrepareSLC2Binding(const MaterialDrawContext& context, MaterialSLC2Binding& output) override;
 
     public:
         // [BinaryAsset]

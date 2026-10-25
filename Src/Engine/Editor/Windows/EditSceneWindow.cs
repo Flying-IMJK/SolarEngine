@@ -1,15 +1,17 @@
 using System.Collections.Generic;
 using SE.GUI;
 
-namespace SE.Editor.GUI
+namespace SE.Editor
 {
     /// <summary>
     /// Managed scene editing window.
     /// </summary>
     public sealed class EditSceneWindow : SceneEditorWindow
     {
-        /// <summary>Camera preview output control.</summary>
-        public sealed class CameraPreview : RenderOutputViewport
+        /// <summary>
+        /// Camera preview output control.
+        /// </summary>
+        public sealed class CameraPreview : GUI.RenderOutputViewport
         {
             private bool m_IsPinned;
             private Button m_PinButton;

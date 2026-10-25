@@ -31,29 +31,29 @@ String PostProcessingPass::ToString() const
 }
 
 bool PostProcessingPass::Init()
+{
+	GPUDevice* device = GPUDevice::instance;
+
+	// Create pipeline states
+	_psThreshold = device->CreatePipelineState();
+	_psScale = device->CreatePipelineState();
+	_psBlurH = device->CreatePipelineState();
+	_psBlurV = device->CreatePipelineState();
+	_psGenGhosts = device->CreatePipelineState();
+	_psComposite.CreatePipelineStates();
+
+	// Load shader
+	_shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/PostProcess/PostProcessing"));
+	if (_shader == nullptr)
 	{
-	    GPUDevice* device = GPUDevice::instance;
-
-	    // Create pipeline states
-	    _psThreshold = device->CreatePipelineState();
-	    _psScale = device->CreatePipelineState();
-	    _psBlurH = device->CreatePipelineState();
-	    _psBlurV = device->CreatePipelineState();
-	    _psGenGhosts = device->CreatePipelineState();
-	    _psComposite.CreatePipelineStates();
-
-	    // Load shader
-	    _shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/PostProcessing"));
-	    if (_shader == nullptr)
-	    {
-	        return false;
-	    }
+	    return false;
+	}
 #if COMPILE_WITH_DEV_ENV
-	    _shader.Get()->OnReloading.Bind<PostProcessingPass, &PostProcessingPass::OnShaderReloading>(this);
+	_shader.Get()->OnReloading.Bind<PostProcessingPass, &PostProcessingPass::OnShaderReloading>(this);
 #endif
 
-	    return true;
-	}
+	return true;
+}
 
 bool PostProcessingPass::SetupResources()
 {

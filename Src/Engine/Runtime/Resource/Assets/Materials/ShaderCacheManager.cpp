@@ -40,7 +40,7 @@ namespace SE
             Folder = cacheRoot / ShaderProfileCacheDirNames[static_cast<int32>(profile)];
             if (!FileSystem::DirectoryExists(Folder))
             {
-                if (FileSystem::CreateDirectory(Folder))
+                if (!FileSystem::CreateDirectory(Folder))
                 {
                     LOG_WARNING("Resource", "Cannot create cache directory for ShaderProfileDatabase: {0} (path: \'{1}\')", ToString(Profile), Folder);
                 }
@@ -187,7 +187,7 @@ namespace SE
         const String cacheVerFile = rootDir / SE_TEXT("CacheVersion");
         if (FileSystem::FileExists(cacheVerFile))
         {
-            if (File::ReadAllBytes(cacheVerFile, (byte*)&cacheVersion, sizeof(cacheVersion)))
+            if (!File::ReadAllBytes(cacheVerFile, (byte*)&cacheVersion, sizeof(cacheVersion)))
             {
                 cacheVersion = CacheVersion();
                 LOG_WARNING("Resource", "Failed to read the shaders cache database version file.");
@@ -201,11 +201,11 @@ namespace SE
         {
             LOG_WARNING("Resource", "Shaders cache database is invalid. Performing reset.");
 
-            if (FileSystem::DirectoryExists(rootDir) && FileSystem::DeleteDirectory(rootDir))
+            if (!FileSystem::DirectoryExists(rootDir) && !FileSystem::DeleteDirectory(rootDir))
             {
                 LOG_WARNING("Resource", "Failed to reset the shaders cache database.");
             }
-            if (FileSystem::CreateDirectory(rootDir))
+            if (!FileSystem::CreateDirectory(rootDir))
             {
                 LOG_ERROR("Resource", "Failed to createe the shaders cache database directory.");
             }
@@ -214,7 +214,7 @@ namespace SE
             cacheVersion.ShaderCacheVersion = GPU_SHADER_CACHE_VERSION;
             cacheVersion.MaterialGraphVersion = MATERIAL_GRAPH_VERSION;
             // cacheVersion.ParticleGraphVersion = PARTICLE_GPU_GRAPH_VERSION;
-            if (File::WriteAllBytes(cacheVerFile, (byte*)&cacheVersion, sizeof(cacheVersion)))
+            if (!File::WriteAllBytes(cacheVerFile, (byte*)&cacheVersion, sizeof(cacheVersion)))
             {
                 LOG_ERROR("Resource", "Failed to create the shaders cache database version file.");
             }

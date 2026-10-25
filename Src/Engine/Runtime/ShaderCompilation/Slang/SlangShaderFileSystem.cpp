@@ -134,13 +134,13 @@ namespace SE
 		}
 	}
 
-	SlangShaderFileSystem::SlangShaderFileSystem(const List<String>& rootSourcePaths) : _refCount(1)
+	SlangShaderFileSystem::SlangShaderFileSystem(const List<String>& rootSourcePaths) : m_RefCount(1)
 	{
 		for (const String& rootSourcePath : rootSourcePaths)
 		{
 			if (!rootSourcePath.IsEmpty())
 			{
-				_searchRoots.Add(rootSourcePath);
+				m_SearchRoots.Add(rootSourcePath);
 			}
 		}
 	}
@@ -168,12 +168,12 @@ namespace SE
 
 	SLANG_NO_THROW uint32_t SLANG_MCALL SlangShaderFileSystem::addRef()
 	{
-		return (uint32)Platform::AtomicIncrement(&_refCount);
+		return (uint32)Platform::AtomicIncrement(&m_RefCount);
 	}
 
 	SLANG_NO_THROW uint32_t SLANG_MCALL SlangShaderFileSystem::release()
 	{
-		const int64 refCount = Platform::AtomicDecrement(&_refCount);
+		const int64 refCount = Platform::AtomicDecrement(&m_RefCount);
 		if (refCount == 0)
 		{
 			delete this;
@@ -218,6 +218,13 @@ namespace SE
 		}
 
 		*outBlob = new SlangShaderBlob(bytes);
+		// Only successful reads belong to the dependency set; speculative lookups do not.
+		String canonical = FileSystem::ConvertRelativePathToAbsolute(m_SearchRoots[0], resolvedPath);
+		FileSystem::PathRemoveRelativeParts(canonical);
+        if (!m_LoadedFiles.Contains(canonical))
+        {
+            m_LoadedFiles.Add(canonical);
+        }
 		return SLANG_OK;
 	}
 
@@ -330,9 +337,9 @@ namespace SE
 			return requestedPath;
 		}
 
-		for (int32 searchRootIndex = 0; searchRootIndex < _searchRoots.Count(); searchRootIndex++)
+		for (int32 searchRootIndex = 0; searchRootIndex < m_SearchRoots.Count(); searchRootIndex++)
 		{
-			const String candidatePath = CombinePath(_searchRoots[searchRootIndex], requestedPath);
+			const String candidatePath = CombinePath(m_SearchRoots[searchRootIndex], requestedPath);
 			if (PathExistsAsFileOrDirectory(candidatePath))
 			{
 				return candidatePath;

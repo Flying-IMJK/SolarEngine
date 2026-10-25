@@ -136,7 +136,6 @@ namespace SE::Editor
 			DEFINE_ICON_PACK(EditorIcons::PS5Icon128),
 			DEFINE_ICON_PACK(EditorIcons::MacOSIcon128),
 			DEFINE_ICON_PACK(EditorIcons::IOSIcon128),
-			DEFINE_ICON_PACK(EditorIcons::FlaxLogo128),
 			DEFINE_ICON_PACK(EditorIcons::SwitchIcon128),
 			DEFINE_ICON_PACK(EditorIcons::SwitchSettings128),
 			DEFINE_ICON_PACK(EditorIcons::LocalizationSettings128),

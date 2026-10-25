@@ -59,7 +59,6 @@ namespace SE
 
     void MaterialInstance::OnBaseUnset()
     {
-        ClearSLC2RuntimeCache();
         _baseMaterial->RemoveReference();
         _baseMaterial->OnUnloadedEvent.Unbind<MaterialInstance, &MaterialInstance::OnBaseUnloaded>(this);
         _baseMaterial->ParamsChanged.Unbind<MaterialInstance, &MaterialInstance::OnBaseParamsChanged>(this);
@@ -245,7 +244,6 @@ namespace SE
 
     void MaterialInstance::Unload(bool isReloading)
     {
-        ClearSLC2RuntimeCache();
         if (_baseMaterial)
         {
             OnBaseUnset();

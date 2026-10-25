@@ -90,22 +90,6 @@ namespace SE
             return false;
         }
 
-        virtual bool IsSLC2Ready() const
-        {
-            return false;
-        }
-
-        virtual uint64 GetRuntimeGenerationID() const
-        {
-            return 0;
-        }
-
-        virtual bool PrepareSLC2Binding(const MaterialDrawContext& context, MaterialSLC2Binding& output)
-        {
-            output.Clear();
-            return false;
-        }
-
     public:
         /// <summary>
         /// Settings for the material binding to the graphics pipeline.

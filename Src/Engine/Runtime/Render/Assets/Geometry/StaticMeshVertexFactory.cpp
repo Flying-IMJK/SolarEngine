@@ -131,8 +131,7 @@ namespace SE
 		};
 
 		VertexFactoryLayout layout;
-		const bool created = VertexFactoryLayout::Create(bindings, elements, layout);
-		if (!created)
+        if (!VertexFactoryLayout::Create(bindings, elements, layout))
 		{
 			// 固定描述若无法构造，说明 MeshDataLayout 与 VertexFactory 契约已经失配。
 			ENGINE_ASSERT(false);

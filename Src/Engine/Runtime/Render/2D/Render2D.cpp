@@ -8,20 +8,26 @@
 #include "SpriteAtlas.h"
 #include "TextLayoutOptions.h"
 
-#include "Runtime/Core/Systems.h"
-#include "Runtime/Core/Math/Half.h"
-#include "Runtime/Core/Math/Matrix3x3.h"
-#include "Runtime/Core/Math/Rectangle.h"
-#include "Runtime/Core/Profiler/Profiler.h"
-#include "Runtime/Core/Profiler/ProfilerGPU.h"
-#include "Runtime/Graphics/DynamicBuffer.h"
-#include "Runtime/Graphics/GPUContext.h"
-#include "Runtime/Graphics/GPUDevice.h"
-#include "Runtime/Graphics/RenderTargetPool.h"
-#include "Runtime/Graphics/Shaders/GPUShader.h"
-#include "Runtime/Graphics/Textures/GPUTextureDescription.h"
-#include "Runtime/Resource/Assets/Materials/MaterialBase.h"
-#include "Runtime/Resource/Assets/Materials/Shader.h"
+#include <Runtime/Core/Systems.h>
+#include <Runtime/Core/Math/Half.h>
+#include <Runtime/Core/Math/Matrix3x3.h>
+#include <Runtime/Core/Math/Rectangle.h>
+#include <Runtime/Core/Profiler/Profiler.h>
+#include <Runtime/Core/Profiler/ProfilerGPU.h>
+#include <Runtime/Graphics/DynamicBuffer.h>
+#include <Runtime/Graphics/GPUContext.h>
+#include <Runtime/Graphics/GPUDevice.h>
+#include <Runtime/Graphics/RenderTargetPool.h>
+#include <Runtime/Graphics/Shaders/GPUShader.h>
+#include <Runtime/Graphics/Shaders/GPUConstantBuffer.h>
+#include <Runtime/Graphics/Textures/GPUTextureDescription.h>
+#include <Runtime/Graphics/Textures/GPUSampler.h>
+#include <Runtime/Resource/Assets/Materials/MaterialBase.h>
+#include <Runtime/Resource/Assets/Materials/Shader.h>
+
+#include <Runtime/Graphics/Base/VertexFactoryLayout.h>
+#include <Runtime/Graphics/Base/RenderGeometry.h>
+#include <Runtime/Resource/Assets/SLC2Materials/GraphicShader.h>
 
 namespace SE
 {
@@ -175,6 +181,44 @@ namespace SE
         void Dispose();
     };
 
+    struct CachedPSOSLC2
+    {
+        bool Inited = false;
+        bool UseDepth;
+
+        SLC2GPUPipelineState* PS_Image;
+        ShaderProgramInstance* SP_Image;
+
+        SLC2GPUPipelineState* PS_ImagePoint;
+        ShaderProgramInstance* SP_ImagePoint;
+
+        SLC2GPUPipelineState* PS_Color;
+        SLC2GPUPipelineState* PS_Color_NoAlpha;
+        ShaderProgramInstance* SP_Color;
+        ShaderProgramInstance* SP_Color_NoAlpha;
+
+        SLC2GPUPipelineState* PS_Font;
+        ShaderProgramInstance* SP_Font;
+
+        SLC2GPUPipelineState* PS_BlurH;
+        SLC2GPUPipelineState* PS_BlurV;
+        SLC2GPUPipelineState* PS_Downscale;
+
+        ShaderProgramInstance* SP_BlurH;
+        ShaderProgramInstance* SP_BlurV;
+        ShaderProgramInstance* SP_Downscale;
+
+        SLC2GPUPipelineState* PS_LineAA;
+        ShaderProgramInstance* SP_LineAA;
+
+        GPUConstantBuffer* ConstantBuffer = nullptr;
+
+
+        bool Init(SLC2GPUShader* shader, bool useDepth);
+        void Dispose();
+    };
+
+
     // Clip
     struct ClipMask
     {
@@ -186,6 +230,8 @@ namespace SE
 
     struct Render2DData
     {
+        VertexFactoryLayout vertexLayout;
+
         // Private Stuff
         GPUContext* Context = nullptr;
         GPUTextureView* Output = nullptr;
@@ -215,9 +261,17 @@ namespace SE
 
         // Shader
         AssetRef<Shader> GUIShader;
+        AssetRef<GraphicShader> GUIShader2;
         CachedPSO PsoDepth;
         CachedPSO PsoNoDepth;
         CachedPSO* CurrentPso = nullptr;
+        CachedPSOSLC2 PsoDepthSLC2;
+        CachedPSOSLC2 PsoNoDepthSLC2;
+        CachedPSOSLC2* CurrentPsoSLC2 = nullptr;
+
+        GPUSampler* SamplerLinearClamp = nullptr;
+        GPUSampler* SamplerPointClamp  = nullptr;
+
         DynamicVertexBuffer VB = DynamicVertexBuffer(RENDER2D_INITIAL_VB_CAPACITY, (uint32)sizeof(Render2DVertex), SE_TEXT("Render2D.VB"));
         DynamicIndexBuffer IB = DynamicIndexBuffer(RENDER2D_INITIAL_IB_CAPACITY, sizeof(uint32), SE_TEXT("Render2D.IB"));
         uint32 VBIndex = 0;
@@ -258,7 +312,7 @@ namespace SE
             point,
             Half2(uv),
             color * render2DData->TintLayersStack.Peek(),
-            { 0.0f, static_cast<float>(static_cast<uint32>(Render2D::Features)) },
+            { 0.0f, static_cast<float>(static_cast<uint32>(Render2D::Features))},
             render2DData->ClipLayersStack.Peek().Mask
         };
     }
@@ -281,7 +335,7 @@ namespace SE
         {
             point,
             Half2(uv),
-            color * tint,
+            color * tint, 
             customData,
             mask
         };
@@ -472,7 +526,7 @@ namespace SE
         return d1.Type == d2.Type && CanDrawCallBatch[(int32)d1.Type](d1, d2);
     }
 
-    void DrawBatch(int32 startIndex, int32 count);
+    void DrawBatch(int32 startIndex, int32 count, GPUConstantBuffer* constantBuffer);
 
     bool CachedPSO::Init(GPUShader* shader, bool useDepth)
     {
@@ -576,6 +630,8 @@ namespace SE
 
         bool OnInit() override;
         void OnDispose() override;
+
+        void CreateVertexLayout();
     };
 
     ENGINE_SYSTEM_REGISTER(Render2DSystem)
@@ -607,12 +663,23 @@ namespace SE
         // GUI Shader
         render2DData->GUIShader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/GUI"));
         if (render2DData->GUIShader == nullptr)
+        {
             return false;
+        }
+
+        render2DData->GUIShader2 = AssetContent::LoadAsyncInternal<GraphicShader>(SE_TEXT("Shaders/Slang/GUI"));
+        if (render2DData->GUIShader2 == nullptr)
+        {
+            return false;
+        }
+
 #if COMPILE_WITH_DEV_ENV
         GUIShader.Get()->OnReloading.Bind<OnGUIShaderReloading>();
 #endif
 
         render2DData->DrawCalls.EnsureCapacity(RENDER2D_INITIAL_DRAW_CALL_CAPACITY);
+
+        CreateVertexLayout();
 
         return true;
     }
@@ -632,6 +699,30 @@ namespace SE
 
         render2DData->VB.Dispose();
         render2DData->IB.Dispose();
+
+        DeleteObjectSafe(render2DData->SamplerLinearClamp);
+        DeleteObjectSafe(render2DData->SamplerPointClamp);
+    }
+
+    void Render2DSystem::CreateVertexLayout()
+    {
+        const List<VertexFactoryBufferBinding> bindings = {
+            {0, sizeof(Render2DVertex), VertexFactoryInputRate::PerVertex, 0}
+        }; 
+
+        const List<VertexFactoryInputElement> elements = {
+            {SE_TEXT("POSITION"), 0, PixelFormat::R32G32_Float, 0, OFFSET_OF(Render2DVertex, Position)},
+            {SE_TEXT("TEXCOORD"), 0, PixelFormat::R16G16_Float, 0, OFFSET_OF(Render2DVertex, TexCoord)},
+            {SE_TEXT("COLOR"), 0, PixelFormat::R32G32B32A32_Float, 0, OFFSET_OF(Render2DVertex, Color)},
+            {SE_TEXT("TEXCOORD"), 1, PixelFormat::R32G32B32A32_Float, 0, OFFSET_OF(Render2DVertex, CustomData)},
+            {SE_TEXT("TEXCOORD"), 2, PixelFormat::R32G32B32A32_Float, 0, OFFSET_OF(Render2DVertex, ClipMask) + sizeof(Float2)}
+        };
+
+        VertexFactoryLayout layout;
+        if (!VertexFactoryLayout::Create(bindings, elements, render2DData->vertexLayout))
+        {
+            ENGINE_ASSERT(false);
+        }
     }
 
     void Render2D::BeginFrame()
@@ -706,7 +797,7 @@ namespace SE
         render2DData->IBIndex = 0;
     }
 
-    void Render2D::End()
+/*    void Render2D::End()
     {
         RENDER2D_CHECK_RENDERING_STATE;
         ENGINE_ASSERT(render2DData->Context != nullptr && render2DData->Output != nullptr);
@@ -770,9 +861,16 @@ namespace SE
         }
         render2DData->CurrentPso = render2DData->DepthBuffer ? &render2DData->PsoDepth : &render2DData->PsoNoDepth;
 
+        if (!render2DData->PsoDepthSLC2.Inited)
+        { 
+            render2DData->PsoDepthSLC2.Init(render2DData->GUIShader2->GetGPUShader(), true);
+            render2DData->PsoNoDepthSLC2.Init(render2DData->GUIShader2->GetGPUShader(), false);
+        }
+        render2DData->CurrentPsoSLC2 = render2DData->DepthBuffer ? &render2DData->PsoDepthSLC2 : &render2DData->PsoNoDepthSLC2;
+
         // Flush draw calls
         int32 batchStart = 0, batchSize = 0;
-        render2DData->IsScissorsRectEmpty = false;
+        render2DData->IsScissorsRectEmpty = false; 
         for (int32 i = 0; i < render2DData->DrawCalls.Count(); i++)
         {
             // Peek draw call
@@ -801,6 +899,117 @@ namespace SE
         render2DData->DrawCalls.Clear();
         render2DData->Context = nullptr;
         render2DData->Output = nullptr;
+    }*/
+
+    void Render2D::End()
+    {
+        RENDER2D_CHECK_RENDERING_STATE;
+        ENGINE_ASSERT(render2DData->Context != nullptr && render2DData->Output != nullptr);
+        ENGINE_ASSERT(render2DData->GUIShader2 != nullptr);
+
+        // Skip if has nothing to draw
+        if (render2DData->DrawCalls.IsEmpty())
+        {
+            // End
+            render2DData->Context = nullptr;
+            render2DData->Output  = nullptr;
+            return;
+        }
+
+        PROFILE_GPU_CPU_NAMED("Render2D");
+
+        // Prepare shader
+        SLC2GPUShader* shader;
+        {
+            if (!render2DData->GUIShader2->IsLoaded() && render2DData->GUIShader2->WaitForLoaded())
+            {
+                // End
+                render2DData->DrawCalls.Clear();
+                render2DData->Context = nullptr;
+                render2DData->Output  = nullptr;
+                return;
+            }
+            shader = render2DData->GUIShader2->GetGPUShader();
+        }
+
+        // Flush geometry buffers
+        render2DData->VB.Flush(render2DData->Context);
+        render2DData->IB.Flush(render2DData->Context);
+
+        // Set output
+        render2DData->Context->ResetSR();
+        if (render2DData->DepthBuffer != nullptr)
+        {
+            render2DData->Context->SetRenderTarget(render2DData->Output, render2DData->DepthBuffer);
+        }
+        else
+        {
+            render2DData->Context->SetRenderTarget(render2DData->Output);
+        }
+
+        render2DData->Context->SetViewportAndScissors(render2DData->View);
+        render2DData->Context->FlushState();
+
+        // Prepare PSO
+        if (!render2DData->PsoDepthSLC2.Inited)
+        {
+            render2DData->PsoDepthSLC2.Init(render2DData->GUIShader2->GetGPUShader(), true);
+            render2DData->PsoNoDepthSLC2.Init(render2DData->GUIShader2->GetGPUShader(), false);
+        }
+        render2DData->CurrentPsoSLC2 = render2DData->DepthBuffer ? &render2DData->PsoDepthSLC2 : &render2DData->PsoNoDepthSLC2;
+
+        if (render2DData->SamplerLinearClamp == nullptr)
+        {
+            GPUDevice* device = GPUDevice::instance;
+            render2DData->SamplerLinearClamp = device->CreateSampler();
+            render2DData->SamplerPointClamp  = device->CreateSampler();
+
+            GPUSamplerDescription linear = GPUSamplerDescription::New(GPUSamplerFilter::Bilinear, GPUSamplerAddressMode::Clamp);
+            GPUSamplerDescription point = GPUSamplerDescription::New(GPUSamplerFilter::Point, GPUSamplerAddressMode::Clamp);
+
+            render2DData->SamplerLinearClamp->Init(linear);
+            render2DData->SamplerLinearClamp->Init(point);
+        }
+
+        
+        // Prepare constant buffer
+        GPUConstantBuffer* constantBuffer = render2DData->CurrentPsoSLC2->ConstantBuffer;
+        Data               data;
+        data.ViewProjection = render2DData->ViewProjection;
+        //Matrix::Transpose(render2DData->ViewProjection, data.ViewProjection);
+        render2DData->Context->UpdateCB(constantBuffer, &data);
+
+        // Flush draw calls
+        int32 batchStart = 0, batchSize = 0;
+        render2DData->IsScissorsRectEmpty = false;
+        for (int32 i = 0; i < render2DData->DrawCalls.Count(); i++)
+        {
+            // Peek draw call
+            const auto& drawCall = render2DData->DrawCalls[i];
+
+            // Check if cannot add element to the batching
+            if (batchSize != 0 && !CanBatchDrawCalls(render2DData->DrawCalls[batchStart], drawCall))
+            {
+                // Flush batched elements
+                DrawBatch(batchStart, batchSize, constantBuffer);
+                batchStart += batchSize;
+                batchSize = 0;
+            }
+
+            // Add element to batching
+            batchSize++;
+        }
+
+        // Flush end of batched elements
+        if (batchSize != 0)
+        {
+            DrawBatch(batchStart, batchSize, constantBuffer);
+        }
+
+        // End
+        render2DData->DrawCalls.Clear();
+        render2DData->Context = nullptr;
+        render2DData->Output  = nullptr;
     }
 
     void Render2D::EndFrame()
@@ -954,14 +1163,16 @@ namespace SE
         return numSamples;
     }
 
-    void DrawBatch(int32 startIndex, int32 count)
+    void DrawBatch(int32 startIndex, int32 count, GPUConstantBuffer* constantBuffer)
     {
         const Render2DDrawCall& d = render2DData->DrawCalls[startIndex];
         GPUBuffer* vb = render2DData->VB.GetBuffer();
         GPUBuffer* ib = render2DData->IB.GetBuffer();
         uint32 countIb = 0;
         for (int32 i = 0; i < count; i++)
+        {
             countIb += render2DData->DrawCalls[startIndex + i].CountIB;
+        }
 
         if (d.Type == DrawCallType::ClipScissors)
         {
@@ -971,31 +1182,61 @@ namespace SE
             return;
         }
         if (render2DData->IsScissorsRectEmpty)
+        {
             return;
+        }
+
+        ShaderProgramInstance* programInstance = nullptr;
 
         switch (d.Type)
         {
         case DrawCallType::FillRect:
-            render2DData->Context->SetState(render2DData->CurrentPso->PS_Color);
+            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_Color);
+            programInstance = render2DData->CurrentPsoSLC2->SP_Color;
             break;
         case DrawCallType::FillRectNoAlpha:
-            render2DData->Context->SetState(render2DData->CurrentPso->PS_Color_NoAlpha);
+            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_Color_NoAlpha);
+            programInstance = render2DData->CurrentPsoSLC2->SP_Color_NoAlpha;
             break;
         case DrawCallType::FillRT:
-            render2DData->Context->BindSR(0, d.AsRT.Ptr);
-            render2DData->Context->SetState(render2DData->CurrentPso->PS_Image);
+            if (d.AsRT.Ptr == nullptr)
+            {
+                return;
+            }
+
+            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_Image);
+            programInstance = render2DData->CurrentPsoSLC2->SP_Image;
+            programInstance->SetTexture(SE_TEXT("ImageTex"), d.AsRT.Ptr);
             break;
         case DrawCallType::FillTexture:
-            render2DData->Context->BindSR(0, d.AsTexture.Ptr);
-            render2DData->Context->SetState(render2DData->CurrentPso->PS_Image);
+            if (d.AsTexture.Ptr == nullptr || d.AsTexture.Ptr->ResidentMipLevels() <= 0)
+            {
+                return;
+            }
+
+            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_Image);
+            programInstance = render2DData->CurrentPsoSLC2->SP_Image;
+            programInstance->SetTexture(SE_TEXT("ImageTex"), d.AsTexture.Ptr->View());
             break;
         case DrawCallType::FillTexturePoint:
-            render2DData->Context->BindSR(0, d.AsTexture.Ptr);
-            render2DData->Context->SetState(render2DData->CurrentPso->PS_ImagePoint);
+            if (d.AsTexture.Ptr == nullptr || d.AsTexture.Ptr->ResidentMipLevels() <= 0)
+            {
+                return;
+            }
+
+            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_ImagePoint);
+            programInstance = render2DData->CurrentPsoSLC2->SP_ImagePoint;
+            programInstance->SetTexture(SE_TEXT("ImageTex"), d.AsTexture.Ptr->View());
             break;
         case DrawCallType::DrawChar:
-            render2DData->Context->BindSR(0, d.AsChar.Tex);
-            render2DData->Context->SetState(render2DData->CurrentPso->PS_Font);
+            if (d.AsChar.Tex == nullptr || d.AsChar.Tex->ResidentMipLevels() <= 0)
+            {
+                return;
+            }
+
+            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_Font);
+            programInstance = render2DData->CurrentPsoSLC2->SP_Font;
+            programInstance->SetTexture(SE_TEXT("ImageTex"), d.AsChar.Tex->View());
             break;
         case DrawCallType::DrawCharMaterial:
         {
@@ -1030,8 +1271,10 @@ namespace SE
             return;
         }
         case DrawCallType::Custom:
-            render2DData->Context->BindSR(0, d.AsCustom.Tex);
+/*            render2DData->Context->BindSR(0, d.AsCustom.Tex);
             render2DData->Context->SetState(d.AsCustom.Pso);
+            programInstance = render2DData->CurrentPsoSLC2->SP_Font;
+            programInstance->SetTexture(SE_TEXT("Image"), d.AsCustom.Ptr);*/
             break;
         case DrawCallType::Material:
         {
@@ -1144,7 +1387,7 @@ namespace SE
             render2DData->Context->SetScissor(*(Rectangle*)&d.AsClipScissors.X);
             return;
         case DrawCallType::LineAA:
-            render2DData->Context->SetState(render2DData->CurrentPso->PS_LineAA);
+            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_LineAA);
             break;
 #if !BUILD_RELEASE
         default:
@@ -1152,10 +1395,30 @@ namespace SE
 #endif
         }
 
+        ShaderVar samplerVar;
+        if (programInstance->FindVar(SE_TEXT("SamplerLinearClamp"), samplerVar))
+        {
+            samplerVar.SetSampler(render2DData->SamplerLinearClamp);
+        }
+
+        if (programInstance->FindVar(SE_TEXT("SamplerPointClamp"), samplerVar))
+        {
+            samplerVar.SetSampler(render2DData->SamplerPointClamp);
+        }
+
+        programInstance->SetConstantBuffer(SE_TEXT("data"), constantBuffer);
+
+
+        RenderGeometry renderGeometry;
+        renderGeometry.Layout = &render2DData->vertexLayout;
+        renderGeometry.VertexBuffers = {{0, vb}};
+        renderGeometry.IndexBuffer   = ib;
+        renderGeometry.IndexFormat   = PixelFormat::R32_UInt;
+        renderGeometry.IndexOffset   = 0;
+
         // Draw
-        render2DData->Context->BindVB(ToSpan(&vb, 1));
-        render2DData->Context->BindIB(ib);
-        render2DData->Context->DrawIndexed(countIb, 0, d.StartIB);
+        render2DData->Context->BindRenderGeometry(renderGeometry);
+        render2DData->Context->DrawIndexed(*programInstance, countIb, 0, d.StartIB);
     }
 
 
@@ -2021,7 +2284,9 @@ namespace SE
         drawCall.AsTexture.Ptr = t;
 
         for (int32 i = 0; i < vertices.Length(); i += 3)
+        {
             WriteTri(vertices[i], vertices[i + 1], vertices[i + 2], uvs[i], uvs[i + 1], uvs[i + 2], colors[i], colors[i + 1], colors[i + 2]);
+        }
     }
 
     void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<uint16>& indices, const Span<Float2>& vertices, const Span<Float2>& uvs, const Span<Color>& colors)
@@ -2056,7 +2321,9 @@ namespace SE
         drawCall.CountIB = vertices.Length();
 
         for (int32 i = 0; i < vertices.Length(); i += 3)
+        {
             WriteTri(vertices[i], vertices[i + 1], vertices[i + 2], colors[i], colors[i + 1], colors[i + 2]);
+        }
     }
 
     void Render2D::FillTriangle(const Float2& p0, const Float2& p1, const Float2& p2, const Color& color)
@@ -2101,4 +2368,162 @@ namespace SE
         drawableElement();
         End();
     }
+
+    bool CachedPSOSLC2::Init(SLC2GPUShader* shader, bool useDepth)
+    {
+        if (Inited)
+        {
+            Dispose();
+        }
+
+        UseDepth = useDepth;
+
+        GPUDevice* device = GPUDevice::instance;
+
+        ConstantBuffer = device->CreateConstantBuffer(sizeof(Data), SE_TEXT("Render2DConst"));
+
+        ShaderProgramSelection programSelection;
+        programSelection.Target = {device->GetShaderProfile(), FeatureLevel::SM5};
+
+        // Create pipeline states
+        SLC2GPUPipelineState::Description desc = SLC2GPUPipelineState::Description::DefaultFullscreenTriangle;
+        desc.DepthEnable = desc.DepthWriteEnable = useDepth;
+        desc.DepthWriteEnable                    = false;
+        desc.DepthClipEnable                     = false;
+        desc.CullMode                            = CullMode::TwoSided;
+        desc.BlendMode                           = BlendingMode::AlphaBlend;
+        PS_Image                                 = device->CreateSLC2PipelineState();
+        SP_Image                                 = New<ShaderProgramInstance>();
+
+        if (!shader->CreateProgramInstance(SE_TEXT("Image"), programSelection, *SP_Image) ||
+            !PS_Image->Init(desc, SP_Image->GetProgram()))
+        {
+            return false;
+        }
+
+        //
+        desc.BlendMode = BlendingMode::AlphaBlend;
+        PS_ImagePoint  = device->CreateSLC2PipelineState();
+        SP_ImagePoint       = New<ShaderProgramInstance>();
+
+        if (!shader->CreateProgramInstance(SE_TEXT("ImagePoint"), programSelection, *SP_ImagePoint) ||
+            !PS_ImagePoint->Init(desc, SP_ImagePoint->GetProgram()))
+        {
+            return false;
+        }
+
+        //
+        desc.BlendMode = BlendingMode::AlphaBlend;
+        PS_Color       = device->CreateSLC2PipelineState();
+        SP_Color       = New<ShaderProgramInstance>();
+
+        if (!shader->CreateProgramInstance(SE_TEXT("Color"), programSelection, *SP_Color) ||
+            !PS_Color->Init(desc, SP_Color->GetProgram()))
+        {
+            return false;
+        }
+
+        //
+        desc.BlendMode   = BlendingMode::Opaque;
+        PS_Color_NoAlpha = device->CreateSLC2PipelineState();
+        SP_Color_NoAlpha = New<ShaderProgramInstance>();
+
+        if (!shader->CreateProgramInstance(SE_TEXT("Color"), programSelection, *SP_Color_NoAlpha) ||
+            !PS_Color_NoAlpha->Init(desc, SP_Color_NoAlpha->GetProgram()))
+        {
+            return false;
+        }
+
+        //
+        desc.BlendMode = BlendingMode::AlphaBlend;
+        PS_Font        = device->CreateSLC2PipelineState();
+        SP_Font       = New<ShaderProgramInstance>();
+
+        if (!shader->CreateProgramInstance(SE_TEXT("Font"), programSelection, *SP_Font) ||
+            !PS_Font->Init(desc, SP_Font->GetProgram()))
+        {
+            return false;
+        }
+
+        //
+        PS_LineAA = device->CreateSLC2PipelineState();
+        SP_LineAA  = New<ShaderProgramInstance>();
+
+        if (!shader->CreateProgramInstance(SE_TEXT("LineAA"), programSelection, *SP_LineAA) ||
+            !PS_LineAA->Init(desc, SP_LineAA->GetProgram()))
+        {
+            return false;
+        }
+
+        //
+        desc.BlendMode = BlendingMode::Opaque;
+        PS_BlurH       = device->CreateSLC2PipelineState();
+        SP_BlurH       = New<ShaderProgramInstance>();
+
+        if (!shader->CreateProgramInstance(SE_TEXT("Blur"), programSelection, *SP_BlurH) ||
+            !PS_BlurH->Init(desc, SP_BlurH->GetProgram()))
+        {
+            return false;
+        }
+
+        //
+        programSelection.Defines.Add(SE_TEXT("BLUR_V"));
+        PS_BlurV = device->CreateSLC2PipelineState();
+        SP_BlurV = New<ShaderProgramInstance>();
+
+        if (!shader->CreateProgramInstance(SE_TEXT("Blur"), programSelection, *SP_BlurV) ||
+            !PS_BlurV->Init(desc, SP_BlurV->GetProgram()))
+        {
+            return false;
+        }
+        programSelection.Defines.Clear();
+
+        //
+        PS_Downscale = device->CreateSLC2PipelineState();
+        SP_Downscale     = New<ShaderProgramInstance>();
+
+        if (!shader->CreateProgramInstance(SE_TEXT("Downscale"), programSelection, *SP_Downscale) ||
+            !PS_Downscale->Init(desc, SP_Downscale->GetProgram()))
+        {
+            return false;
+        }
+
+        Inited = true;
+
+        return true;
+    }
+
+    void CachedPSOSLC2::Dispose()
+    {
+        if (!Inited)
+        {
+            return;
+        }
+
+        Delete(ConstantBuffer);
+
+        DeleteObjectSafe(PS_Image);
+        DeleteObjectSafe(PS_ImagePoint);
+        DeleteObjectSafe(PS_Color);
+        DeleteObjectSafe(PS_Color_NoAlpha);
+        DeleteObjectSafe(PS_Font);
+        DeleteObjectSafe(PS_BlurH);
+        DeleteObjectSafe(PS_BlurV);
+        DeleteObjectSafe(PS_Downscale);
+        DeleteObjectSafe(PS_LineAA);
+
+
+        Delete(SP_Image);
+        Delete(SP_ImagePoint);
+        Delete(SP_Color);
+        Delete(SP_Color_NoAlpha);
+        Delete(SP_Font);
+        Delete(SP_BlurH);
+        Delete(SP_BlurV);
+        Delete(SP_Downscale);
+        Delete(SP_LineAA);
+        Inited = false;
+    }
+
 } // SE
+

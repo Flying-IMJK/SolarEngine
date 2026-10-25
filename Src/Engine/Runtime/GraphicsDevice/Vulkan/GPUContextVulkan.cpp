@@ -389,7 +389,7 @@ namespace SE
 			return false;
 		}
 
-		if (cmdBuffer->IsOutsideRenderPass())
+ 		if (cmdBuffer->IsOutsideRenderPass())
 		{
 			BeginRenderPass();
 		}
@@ -1316,6 +1316,27 @@ namespace SE
 		vkCmdDrawIndexedIndirect(cmdBuffer->GetHandle(), bufferForArgsVK->GetHandle(), (VkDeviceSize)offsetForArgs, 1, sizeof(VkDrawIndexedIndirectCommand));
 //		RENDER_STAT_DRAW_CALL(0, 0);
 	}
+
+    void GPUContextVulkan::DrawInstancedIndirect(ShaderProgramInstance& instance, GPUBuffer* args, uint32 offset)
+    {
+        if (instance.GetProgram() == nullptr || !_renderGeometryReady || args == nullptr ||
+            !EnumHasAnyFlags(args->GetFlags(), GPUBufferFlags::Argument) || !OnSLC2DrawCall(instance))
+            return;
+        const auto* buffer = static_cast<GPUBufferVulkan*>(args);
+        vkCmdDrawIndirect(_cmdBufferManager->GetCmdBuffer()->GetHandle(), buffer->GetHandle(),
+                          static_cast<VkDeviceSize>(offset), 1, sizeof(VkDrawIndirectCommand));
+    }
+
+    void GPUContextVulkan::DrawIndexedInstancedIndirect(ShaderProgramInstance& instance, GPUBuffer* args, uint32 offset)
+    {
+        if (instance.GetProgram() == nullptr || !_renderGeometryReady ||
+            _renderGeometryIndexBufferSize == 0 || args == nullptr ||
+            !EnumHasAnyFlags(args->GetFlags(), GPUBufferFlags::Argument) || !OnSLC2DrawCall(instance))
+            return;
+        const auto* buffer = static_cast<GPUBufferVulkan*>(args);
+        vkCmdDrawIndexedIndirect(_cmdBufferManager->GetCmdBuffer()->GetHandle(), buffer->GetHandle(),
+                                 static_cast<VkDeviceSize>(offset), 1, sizeof(VkDrawIndexedIndirectCommand));
+    }
 
 	void GPUContextVulkan::ResetSR()
 	{

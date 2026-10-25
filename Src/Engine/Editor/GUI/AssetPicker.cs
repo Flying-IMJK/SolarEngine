@@ -1,4 +1,3 @@
-// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;

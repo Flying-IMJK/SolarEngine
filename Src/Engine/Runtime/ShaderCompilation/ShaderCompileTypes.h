@@ -7,26 +7,8 @@
 
 namespace SE
 {
-	enum class ShaderCompileStatus
-	{
-		Success,
-		Failed,
-	};
-
-	enum class ShaderTargetPlatform
-	{
-		Unknown,
-		Windows,
-		Linux,
-		MacOS,
-		PS4,
-		PS5,
-	};
-
-
 	struct SE_API_RUNTIME ShaderCompileTarget
 	{
-		ShaderTargetPlatform Platform = ShaderTargetPlatform::Unknown;
 		ShaderProfile Profile = ShaderProfile::Unknown;
 		FeatureLevel Feature = FeatureLevel::ES2;
 	};
@@ -46,25 +28,21 @@ namespace SE
 	{
 		String ShaderName;
 		String SourcePath;
-		String SourceCode;
+		char* SourceCode;
+        int SourceCodeLength;
 		List<ShaderCompileTarget> Targets;
 		List<ShaderProgramVariantSelection> VariantSelections;
 	};
 
-	struct SE_API_RUNTIME ShaderCompileMessage
-	{
-		String Text;
-	};
+
 
 	struct SE_API_RUNTIME ShaderCompileResult
 	{
-		ShaderCompileStatus Status = ShaderCompileStatus::Failed;
-		ShaderCompileMessage CompileMessage;
+        bool       Success;
+        String     CompileMessage;
 		List<byte> SLC2Data;
+		List<String> SourceDependencies;
 	};
-
-	SE_API_RUNTIME String ToString(const ShaderCompileStatus value);
-	SE_API_RUNTIME String ToString(const ShaderTargetPlatform value);
 
 	SE_API_RUNTIME String BuildTargetKey(const ShaderCompileTarget& target);
 }

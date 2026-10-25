@@ -1,6 +1,7 @@
 #include "SlangShaderCompiler.h"
 
 #include <Runtime/EngineContext.h>
+#include <Runtime/Core/Platform/FileSystem.h>
 #include <Runtime/Core/Platform/StringUtils.h>
 #include <Runtime/Core/Types/Collections/List.h>
 #include <Runtime/Core/Types/Collections/Sorting.h>
@@ -73,7 +74,7 @@ namespace SE
 		}
 
 
-		void SplitMacroGroup(const String& raw, ShaderVariantGroup& group)
+		void SplitMacroGroup(const StringAnsi& raw, ShaderVariantGroup& group)
 		{
 			group.Members.Clear();
 			int32 begin = 0;
@@ -96,7 +97,7 @@ namespace SE
 				}
 				if (right > left)
 				{
-					group.Members.Add(raw.Substring(left, right - left));
+					group.Members.Add(raw.Substring(left, right - left).ToString());
 				}
 				if (end == raw.Length())
 				{
@@ -265,7 +266,7 @@ namespace SE
 							return false;
 						}
 						ShaderVariantGroup group;
-                        SplitMacroGroup(String(macroText, macroSize), group);
+                        SplitMacroGroup(StringAnsi(macroText, macroSize), group);
 						if (group.Members.Count() == 0)
 						{
 							error = SE_TEXT("SHADER_MACRO group is empty on program: ") + program.ProgramId;
@@ -391,24 +392,9 @@ namespace SE
 			return true;
 		}
 
-		bool CreateSession(slang::IGlobalSession* globalSession, SlangShaderFileSystem& fileSystem, const ShaderCompileTarget& target, const ShaderVariantPlan& variant, Slang::ComPtr<slang::ISession>& session, String& error)
+		bool CreateSession(slang::IGlobalSession* globalSession, SlangShaderFileSystem& fileSystem, const ShaderCompileTarget& target, 
+			const ShaderVariantPlan& variant, Slang::ComPtr<slang::ISession>& session, String& error)
 		{
-			if (target.Platform == ShaderTargetPlatform::Unknown || target.Profile == ShaderProfile::Unknown)
-			{
-				error = SE_TEXT("Shader compile target must specify platform and shader profile.");
-				return false;
-			}
-			if (target.Profile != ShaderProfile::Vulkan_SM5)
-			{
-				error = SE_TEXT("Only Vulkan SM5 shader profile is supported by the current offline Slang compiler.");
-				return false;
-			}
-			if (target.Feature != FeatureLevel::SM5)
-			{
-				error = SE_TEXT("Vulkan SM5 shader profile must use SM5 feature level.");
-				return false;
-			}
-
 			List<StringAnsi> macroNames;
 			List<slang::PreprocessorMacroDesc> macroDescs;
 			macroNames.SetCapacity(variant.Defines.Count(), false);
@@ -434,7 +420,15 @@ namespace SE
 			useVulkanEntryPointNameOption.name = slang::CompilerOptionName::VulkanUseEntryPointName;
 			useVulkanEntryPointNameOption.value.kind = slang::CompilerOptionValueKind::Int;
 			useVulkanEntryPointNameOption.value.intValue0 = 1;
+
 			compilerOptionEntries.Add(useVulkanEntryPointNameOption);
+
+            slang::CompilerOptionEntry vulkanInvertYOption = {};
+            vulkanInvertYOption.name                       = slang::CompilerOptionName::VulkanInvertY;
+            vulkanInvertYOption.value.kind                 = slang::CompilerOptionValueKind::Int;
+            vulkanInvertYOption.value.intValue0            = 1;
+
+			compilerOptionEntries.Add(vulkanInvertYOption);
 
 			slang::SessionDesc sessionDesc = {};
 			sessionDesc.targetCount = 1;
@@ -463,8 +457,7 @@ namespace SE
 			}
 
 			const StringAnsi sourcePathAnsi(sourcePath);
-            const StringAnsi sourceAnsi(request.SourceCode);
-			return session->loadModuleFromSourceString("SolarShaderModule", sourcePathAnsi.Get(), sourceAnsi.Get(), diagnostics.writeRef());
+            return session->loadModuleFromSourceString("SolarShaderModule", sourcePathAnsi.Get(), request.SourceCode, diagnostics.writeRef());
 		}
 
 		bool ValidateReflectionConstraints(slang::ProgramLayout* layout, String& error)
@@ -524,18 +517,18 @@ namespace SE
 		m_Diagnostics = String::Empty;
 
 		ShaderCompileResult result;
-		result.Status = ShaderCompileStatus::Failed;
+		result.Success = false;
 
-		if (request.SourceCode.IsEmpty())
+		if (request.SourceCode == nullptr || request.SourceCodeLength <= 0)
 		{
 			AddDiagnostic(SE_TEXT("Missing Slang shader source."));
-			result.CompileMessage.Text = m_Diagnostics;
+			result.CompileMessage = m_Diagnostics;
 			return result;
 		}
 		if (request.Targets.Count() == 0)
 		{
 			AddDiagnostic(SE_TEXT("Missing shader compile target."));
-			result.CompileMessage.Text = m_Diagnostics;
+			result.CompileMessage = m_Diagnostics;
 			return result;
 		}
 
@@ -543,7 +536,7 @@ namespace SE
 		if (!SLANG_SUCCEEDED(slang::createGlobalSession(globalSession.writeRef())))
 		{
 			AddDiagnostic(SE_TEXT("Failed to create Slang global session."));
-			result.CompileMessage.Text = m_Diagnostics;
+			result.CompileMessage = m_Diagnostics;
 			return result;
 		}
 
@@ -559,7 +552,7 @@ namespace SE
 		if (!CreateSession(globalSession, *fileSystem, request.Targets[0], baselineVariant, baselineSession, error))
 		{
 			AddDiagnostic(error);
-			result.CompileMessage.Text = m_Diagnostics;
+			result.CompileMessage = m_Diagnostics;
 			return result;
 		}
 
@@ -569,7 +562,7 @@ namespace SE
 		if (baselineModule == nullptr)
 		{
 			AddDiagnostic(SE_TEXT("Failed to load Slang module for baseline discovery."));
-			result.CompileMessage.Text = m_Diagnostics;
+			result.CompileMessage = m_Diagnostics;
 			return result;
 		}
 
@@ -577,7 +570,7 @@ namespace SE
 		if (!DiscoverPrograms(baselineModule, baselinePrograms, error))
 		{
 			AddDiagnostic(error);
-			result.CompileMessage.Text = m_Diagnostics;
+			result.CompileMessage = m_Diagnostics;
 			return result;
 		}
 
@@ -586,7 +579,7 @@ namespace SE
 			if (FindProgram(baselinePrograms, request.VariantSelections[selectionIndex].ProgramId) == nullptr)
 			{
 				AddDiagnostic(SE_TEXT("Explicit variant selection references unknown program: ") + request.VariantSelections[selectionIndex].ProgramId);
-				result.CompileMessage.Text = m_Diagnostics;
+				result.CompileMessage = m_Diagnostics;
 				return result;
 			}
 		}
@@ -603,7 +596,7 @@ namespace SE
 			if (!PlanProgramVariants(request, baselineProgram, variants, error))
 			{
 				AddDiagnostic(error);
-				result.CompileMessage.Text = m_Diagnostics;
+				result.CompileMessage = m_Diagnostics;
 				return result;
 			}
 			if (variants.Count() == 0)
@@ -634,7 +627,7 @@ namespace SE
 					if (!CreateSession(globalSession, *fileSystem, target, variant, session, error))
 					{
 						AddDiagnostic(error);
-						result.CompileMessage.Text = m_Diagnostics;
+						result.CompileMessage = m_Diagnostics;
 						return result;
 					}
 
@@ -643,8 +636,8 @@ namespace SE
 					AddSlangDiagnostics(moduleDiagnostics);
 					if (module == nullptr)
 					{
-						AddDiagnostic(SE_TEXT("Failed to load Slang module for variant: ") + variant.Variant);
-						result.CompileMessage.Text = m_Diagnostics;
+						AddDiagnostic(String::Format(SE_TEXT("Failed to load Slang module for variant: {0}"), variant.Variant));
+						result.CompileMessage = m_Diagnostics;
 						return result;
 					}
 
@@ -653,7 +646,7 @@ namespace SE
 					if (!DiscoverPrograms(module, variantPrograms, error))
 					{
 						AddDiagnostic(error);
-						result.CompileMessage.Text = m_Diagnostics;
+						result.CompileMessage = m_Diagnostics;
 						return result;
 					}
 
@@ -661,7 +654,7 @@ namespace SE
 					if (variantProgram == nullptr || !SameProgramShape(baselineProgram, *variantProgram))
 					{
 						AddDiagnostic(SE_TEXT("Variant-controlled Program/Stage/Macro declarations are not allowed: ") + baselineProgram.ProgramId);
-						result.CompileMessage.Text = m_Diagnostics;
+						result.CompileMessage = m_Diagnostics;
 						return result;
 					}
 
@@ -681,7 +674,7 @@ namespace SE
                         {
                             AddSlangDiagnostics(entryDiagnostics);
                             AddDiagnostic(SE_TEXT("Failed to find or check entry point: ") + stage.EntryPoint);
-                            result.CompileMessage.Text = m_Diagnostics;
+                            result.CompileMessage = m_Diagnostics;
                             return result;
                         }
 						components.Add(entryPoints[stageIndex]);
@@ -693,7 +686,7 @@ namespace SE
 					{
 						AddSlangDiagnostics(compositeDiagnostics);
 						AddDiagnostic(SE_TEXT("Failed to create Slang composite component."));
-						result.CompileMessage.Text = m_Diagnostics;
+						result.CompileMessage = m_Diagnostics;
 						return result;
 					}
 
@@ -703,7 +696,7 @@ namespace SE
 					{
 						AddSlangDiagnostics(linkDiagnostics);
 						AddDiagnostic(SE_TEXT("Failed to link Slang component."));
-						result.CompileMessage.Text = m_Diagnostics;
+						result.CompileMessage = m_Diagnostics;
 						return result;
 					}
 
@@ -713,13 +706,13 @@ namespace SE
 					if (layout == nullptr)
 					{
 						AddDiagnostic(SE_TEXT("Failed to get Slang program layout."));
-						result.CompileMessage.Text = m_Diagnostics;
+						result.CompileMessage = m_Diagnostics;
 						return result;
 					}
 					if (!ValidateReflectionConstraints(layout, error))
 					{
 						AddDiagnostic(error);
-						result.CompileMessage.Text = m_Diagnostics;
+						result.CompileMessage = m_Diagnostics;
 						return result;
 					}
 
@@ -733,10 +726,10 @@ namespace SE
 						reflectionStages[stageIndex] = baselineProgram.Stages[stageIndex].Stage;
 					}
 					// linked component 已经完成当前 Target/Variant 的组合，编译期在这里固化运行时所需的反射 IR。
-					if (!reflectionBuilder.Build(baselineProgram.ProgramId, targetRecord.TargetKey, variant.Variant, linked, reflectionStages, 0, layout, variantRecord.Layout, error))
+					if (!reflectionBuilder.Build(baselineProgram.ProgramId, targetRecord.TargetKey, linked, reflectionStages, 0, layout, variantRecord.Layout, error))
 					{
 						AddDiagnostic(error);
-						result.CompileMessage.Text = m_Diagnostics;
+						result.CompileMessage = m_Diagnostics;
 						return result;
 					}
 
@@ -748,13 +741,13 @@ namespace SE
 						{
 							AddSlangDiagnostics(codeDiagnostics);
 							AddDiagnostic(SE_TEXT("Failed to emit target code for entry point: ") + baselineProgram.Stages[stageIndex].EntryPoint);
-							result.CompileMessage.Text = m_Diagnostics;
+							result.CompileMessage = m_Diagnostics;
 							return result;
 						}
 						if (code == nullptr || code->getBufferPointer() == nullptr || code->getBufferSize() == 0)
 						{
 							AddDiagnostic(SE_TEXT("Slang returned empty target code for entry point: ") + baselineProgram.Stages[stageIndex].EntryPoint);
-							result.CompileMessage.Text = m_Diagnostics;
+							result.CompileMessage = m_Diagnostics;
 							return result;
 						}
 
@@ -767,7 +760,7 @@ namespace SE
 								 layout, stageIndex, stageRecord.VertexInputSignature, error))
 						{
 							AddDiagnostic(baselineProgram.ProgramId + SE_TEXT(": ") + error);
-							result.CompileMessage.Text = m_Diagnostics;
+							result.CompileMessage = m_Diagnostics;
 							return result;
 						}
 						if (stageRecord.Stage == ShaderStage::Vertex)
@@ -781,7 +774,7 @@ namespace SE
 									programVertexSignature, stageRecord.VertexInputSignature, false))
 							{
 								AddDiagnostic(baselineProgram.ProgramId + SE_TEXT(": vertex input semantic/type changed between variants or targets."));
-								result.CompileMessage.Text = m_Diagnostics;
+								result.CompileMessage = m_Diagnostics;
 								return result;
 							}
 							if (!hasTargetVertexSignature)
@@ -793,14 +786,14 @@ namespace SE
 									targetVertexSignature, stageRecord.VertexInputSignature, true))
 							{
 								AddDiagnostic(baselineProgram.ProgramId + SE_TEXT(": vertex input locations changed between variants of one target."));
-								result.CompileMessage.Text = m_Diagnostics;
+								result.CompileMessage = m_Diagnostics;
 								return result;
 							}
 						}
 						if (!ReadOutputControlPoints(globalSession, layout, stageIndex, baselineProgram.Stages[stageIndex], stageRecord.OutputControlPoints, error))
 						{
 							AddDiagnostic(error);
-							result.CompileMessage.Text = m_Diagnostics;
+							result.CompileMessage = m_Diagnostics;
 							return result;
 						}
 						stageRecord.Code.Set((const byte*)code->getBufferPointer(), (int32)code->getBufferSize());
@@ -824,7 +817,7 @@ namespace SE
 		{
 			AddDiagnostic(error);
 			result.SLC2Data.Clear();
-			result.CompileMessage.Text = m_Diagnostics;
+			result.CompileMessage = m_Diagnostics;
 			return result;
 		}
 
@@ -832,12 +825,22 @@ namespace SE
 		{
 			AddDiagnostic(error);
 			result.SLC2Data.Clear();
-			result.CompileMessage.Text = m_Diagnostics;
+			result.CompileMessage = m_Diagnostics;
 			return result;
 		}
 
-		result.Status = ShaderCompileStatus::Success;
-		result.CompileMessage.Text = m_Diagnostics;
+		result.Success            = true;
+		result.SourceDependencies = fileSystem->GetLoadedFiles();
+		if (!request.SourcePath.IsEmpty())
+		{
+			String mainSource = FileSystem::ConvertRelativePathToAbsolute(EngineContext::StartupFolder, request.SourcePath);
+			FileSystem::PathRemoveRelativeParts(mainSource);
+            if (FileSystem::FileExists(mainSource) && !result.SourceDependencies.Contains(mainSource))
+            {
+                result.SourceDependencies.Add(mainSource);
+            }
+		}
+		result.CompileMessage = m_Diagnostics;
 		return result;
 	}
 }

@@ -360,6 +360,7 @@ namespace SE
         return true;
     }
 
+
     bool ShaderProgramInstance::SetBuffer(const ShaderVarLocation& location, GPUBuffer* value)
     {
         ShaderBindingResource* slot = GetResourceSlot(location, ShaderProgramBindingKind::Buffer);

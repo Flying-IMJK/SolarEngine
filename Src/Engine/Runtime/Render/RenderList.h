@@ -1,12 +1,14 @@
 #pragma once
 #include "PostProcessSettings.h"
 #include "RenderDrawCall.h"
+#include "SLC2RenderDraw.h"
 #include "RenderEnum.h"
 #include "Assets/Geometry/StaticMeshVertexFactory.h"
 #include "Utils/RendererAllocation.hpp"
 #include "Utils/RenderListBuffer.hpp"
 
 #include "Runtime/Core/Types/Object.h"
+#include "Runtime/Core/Memory/Memory.h"
 #include "Runtime/Graphics/DynamicBuffer.h"
 
 namespace SE
@@ -16,6 +18,7 @@ namespace SE
     struct BoundingSphere;
     struct DrawCall;
     struct RenderContext;
+    class SLC2MaterialDrawProgram;
 
     /// <summary>
     /// Structure that contains information about light for shaders.
@@ -441,10 +444,10 @@ namespace SE
         /// </summary>
         Float3 FrustumCornersVs[8];
 
-    private:
-        DynamicVertexBuffer _instanceBuffer;
-
     public:
+        // Counts calls issued to the typed GPUContext route, independent of GPU completion.
+        uint32 GetSLC2SubmissionCount() const { return _slc2SubmissionCount; }
+
         /// <summary>
         /// Blends the postprocessing settings into the final options.
         /// </summary>
@@ -530,6 +533,10 @@ namespace SE
         /// <param name="drawCall">The draw call data.</param>
         /// <param name="receivesDecals">True if the rendered mesh can receive decals.</param>
         /// <param name="sortOrder">Object sorting key.</param>
+        // Copies geometry and selection for this frame; parameters remain current Draw inputs.
+        void AddSLC2DrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticMask staticFlags,
+                             DrawCall& drawCall, const SLC2RenderDraw& slc2,
+                             bool receivesDecals = true, int16 sortOrder = 0);
         void AddDrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticMask staticFlags, DrawCall& drawCall, bool receivesDecals = true, int16 sortOrder = 0);
 
         /// <summary>
@@ -543,6 +550,10 @@ namespace SE
         /// <param name="drawCall">The draw call data.</param>
         /// <param name="receivesDecals">True if the rendered mesh can receive decals.</param>
         /// <param name="sortOrder">Object sorting key.</param>
+        void AddSLC2DrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes,
+                             StaticMask staticFlags, ShadowsCastingMode shadowsMode,
+                             const BoundingSphere& bounds, DrawCall& drawCall, const SLC2RenderDraw& slc2,
+                             bool receivesDecals = true, int16 sortOrder = 0);
         void AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticMask staticFlags, ShadowsCastingMode shadowsMode,
             const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals = true, int16 sortOrder = 0);
 
@@ -598,6 +609,21 @@ namespace SE
         /// <param name="drawCalls">The collected draw calls list.</param>
         /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
         void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, GPUTextureView* input);
+
+
+    private:
+        DynamicVertexBuffer                      _instanceBuffer;
+        List<SharedPtr<SLC2RenderDraw>>          _slc2Draws;
+        List<SharedPtr<SLC2MaterialDrawProgram>> _submittedSLC2Draws;
+        uint32                                   _slc2SubmissionCount = 0;
+
+        // All SLC2 paths submit the selected material Instance through one GPUContext route.
+        bool ExecuteSLC2DrawCall(const RenderContext& renderContext,
+                                 const DrawCallsList& list,
+                                 const DrawCall&      drawCall,
+                                 uint32               instanceCount,
+                                 GPUBuffer*           instanceBuffer,
+                                 uint32               instanceByteOffset);
     };
 
 

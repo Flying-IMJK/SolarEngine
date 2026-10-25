@@ -8,6 +8,7 @@ namespace SE
     class GPUBuffer;
     class GPUSampler;
     class GPUTextureView;
+    class GPUTexture;
     class ShaderProgramInstance;
     class ShaderProgramReflection;
 

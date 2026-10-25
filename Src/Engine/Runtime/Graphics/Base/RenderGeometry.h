@@ -25,6 +25,7 @@ namespace SE
 		List<RenderGeometryVertexBuffer> VertexBuffers;
 		GPUBuffer* IndexBuffer = nullptr;
 		uint32 IndexOffset = 0;
+		// R16_UInt、R32_UInt
 		PixelFormat IndexFormat = PixelFormat::Undefined;
 
 		const RenderGeometryVertexBuffer* FindVertexBuffer(uint32 slot) const;

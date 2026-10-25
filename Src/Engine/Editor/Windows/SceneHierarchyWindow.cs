@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using SE.Editor.SceneGraph;
+using SE.Editor.GUI;
 using SE.GUI;
 
-namespace SE.Editor.GUI
+
+namespace SE.Editor
 {
     public sealed class SceneHierarchyWindow : SceneEditorWindow
     {

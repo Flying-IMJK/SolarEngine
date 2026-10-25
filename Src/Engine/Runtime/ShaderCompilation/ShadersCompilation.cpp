@@ -250,17 +250,17 @@ namespace SE
 
 		SlangShaderCompiler compiler;
 		ShaderCompileResult result = compiler.Compile(request);
-		if (result.Status == ShaderCompileStatus::Success)
+		if (result.Success)
 		{
 			LOG_INFO("ShaderCompiler", "Slang shader compilation '{0}' succeed.", request.ShaderName);
-			if (!result.CompileMessage.Text.IsEmpty())
+			if (!result.CompileMessage.IsEmpty())
 			{
-				LOG_WARNING("ShaderCompiler", "{0}", result.CompileMessage.Text);
+				LOG_WARNING("ShaderCompiler", "{0}", result.CompileMessage);
 			}
 		}
 		else
 		{
-			LOG_ERROR("ShaderCompiler", "Slang shader compilation '{0}' failed. {1}", request.ShaderName, result.CompileMessage.Text);
+			LOG_ERROR("ShaderCompiler", "Slang shader compilation '{0}' failed. {1}", request.ShaderName, result.CompileMessage);
 		}
 		return result;
 	}
@@ -272,7 +272,7 @@ namespace SE
 		ShaderCompileRequest request;
 		request.ShaderName = SE_TEXT("SolarSlangOfflineSelfTest");
 		request.SourcePath = SE_TEXT("SolarSlangOfflineSelfTest.slang");
-		request.SourceCode = SE_TEXT(R"(
+		request.SourceCode = R"(
 #include "Shaders/Slang/SolarShaderProgram.slang"
 
 struct VSInput
@@ -304,24 +304,23 @@ float4 PSMain(VSOutput input) : SV_Target0
 }
 
 SHADER_PROGRAM(SelfTestProgram, SHADER_VS(VSMain) SHADER_PS(PSMain) SHADER_MACRO(_, USE_TINT))
-)");
+)";
 
 		ShaderCompileTarget target;
-		target.Platform = ShaderTargetPlatform::Windows;
 		target.Profile = ShaderProfile::Vulkan_SM5;
 		target.Feature = FeatureLevel::SM5;
 		request.Targets.Add(target);
 
 		// 自测只调用离线编译入口；CompileSlang 内部会完成 SLC2 写出与结构校验。
 		ShaderCompileResult result = CompileSlang(request);
-		if (result.Status == ShaderCompileStatus::Success && result.SLC2Data.Count() == 0)
+		if (result.Success && result.SLC2Data.Count() == 0)
 		{
-			result.Status = ShaderCompileStatus::Failed;
-			if (!result.CompileMessage.Text.IsEmpty())
+            result.Success = false;
+			if (!result.CompileMessage.IsEmpty())
 			{
-				result.CompileMessage.Text += SE_TEXT("\n");
+				result.CompileMessage += SE_TEXT("\n");
 			}
-			result.CompileMessage.Text += SE_TEXT("Slang offline self-test produced empty SLC2 data.");
+			result.CompileMessage += SE_TEXT("Slang offline self-test produced empty SLC2 data.");
 		}
 		return result;
 	}
@@ -648,6 +647,8 @@ SHADER_PROGRAM(SelfTestProgram, SHADER_VS(VSMain) SHADER_PS(PSMain) SHADER_MACRO
 		FileSystem::GetChildDirectories(shaderDirectoryList, nativeShaderDirectory);
 		FileSystem::DirectoryGetFiles(shaderFileList, nativeShaderDirectory, SE_TEXT("*.shader"), DirectorySearchOption::TopOnly);
 
+		FileSystem::DirectoryGetFiles(shaderFileList, nativeShaderDirectory / SE_TEXT("Slang"), SE_TEXT("*.slang"), DirectorySearchOption::TopOnly);
+
 		for (String& shaderDirectory : shaderDirectoryList)
 		{
 			if (!shaderDirectory.Contains(SE_TEXT("Template")))
@@ -662,11 +663,20 @@ SHADER_PROGRAM(SelfTestProgram, SHADER_VS(VSMain) SHADER_PS(PSMain) SHADER_MACRO
 		for (String& shaderFile : shaderFileList)
 		{
 			FileSystem::NormalizePath(shaderFile);
-			String fileName = FileSystem::GetFileNameWithoutExtension(shaderFile);
+            String relativePath = FileSystem::ConvertAbsolutePathToRelative(nativeShaderDirectory, shaderFile);
+            String parentPath   = FileSystem::GetParentDirectory(relativePath);
+            String fileName     = FileSystem::GetFileNameWithoutExtension(relativePath);
 
 			outPutPath.Clear();
 			outPutPath.Append(EngineContext::ProjectCacheFolder);
 			outPutPath.Append("/Shaders/");
+
+            if (!parentPath.IsEmpty())
+            {
+                outPutPath.Append(parentPath);
+                outPutPath.Append("/");
+            }
+
 			outPutPath.Append(fileName);
 			outPutPath.Append(".");
 			outPutPath.Append(ASSET_FILES_EXTENSION);

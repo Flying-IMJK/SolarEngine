@@ -452,6 +452,30 @@ namespace SE
         renderContext.list->AddDrawCall(renderContext, drawModes, flags, drawCall, receiveDecals, sortOrder);
     }
 
+    void Mesh::DrawSLC2(const RenderContext& renderContext, const SLC2RenderDraw& slc2,
+                         const Matrix& world, DrawPass drawModes, StaticMask flags,
+                         bool receiveDecals, float perInstanceRandom, int16 sortOrder) const
+    {
+        if (!IsInitialized() || renderContext.list == nullptr || drawModes == DrawPass::None ||
+            (slc2.Material == nullptr) == (slc2.Instance == nullptr)) return;
+        DrawCall call;
+        GetDrawCallGeometry(call);
+        call.InstanceCount = 1;
+        call.World = world;
+        call.ObjectPosition = world.GetTranslation();
+        call.ObjectRadius = static_cast<float>(_sphere.Radius) * world.GetScaleVector().GetAbsolute().MaxValue();
+        call.Surface.GeometrySize = _box.GetSize();
+        call.Surface.PrevWorld = world;
+        call.Surface.LightmapUVsArea = Rectangle::Empty;
+        call.Surface.LODDitherFactor = 0.0f;
+        call.WorldDeterminantSign = world.RotDeterminant() >= 0.0f ? 1.0f : -1.0f;
+        call.PerInstanceRandom = perInstanceRandom;
+        SLC2RenderDraw meshDraw = slc2;
+        meshDraw.Geometry = GetRenderGeometry();
+        renderContext.list->AddSLC2DrawCall(renderContext, drawModes, flags, call,
+                                            meshDraw, receiveDecals, sortOrder);
+    }
+
     void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float lodDitherFactor) const
     {
         const auto& entry = info.Buffer->At(_materialSlotIndex);

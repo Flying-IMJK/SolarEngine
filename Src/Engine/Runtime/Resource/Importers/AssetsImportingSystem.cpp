@@ -97,7 +97,8 @@ namespace SE
 				*/
 				// Shaders
 				{ SE_TEXT("shader"), ASSET_FILES_EXTENSION, ImportShader::Import },
-/*
+                { SE_TEXT("slang"), ASSET_FILES_EXTENSION, ImportSLC2Shader::Import},
+                /*
 				// Audio
 				{ SE_TEXT("wav"), ASSET_FILES_EXTENSION, ImportAudio::ImportWav },
 				{ SE_TEXT("mp3"), ASSET_FILES_EXTENSION, ImportAudio::ImportMp3 },

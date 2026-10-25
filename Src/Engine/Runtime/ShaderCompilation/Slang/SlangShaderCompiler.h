@@ -15,10 +15,9 @@ namespace SE
 		ShaderCompileResult Compile(const ShaderCompileRequest& request);
 
 	private:
-		String m_Diagnostics;
-
-	private:
 		void AddDiagnostic(const String& text);
 		void AddSlangDiagnostics(void* diagnosticsBlob);
+
+		String m_Diagnostics;
 	};
 }

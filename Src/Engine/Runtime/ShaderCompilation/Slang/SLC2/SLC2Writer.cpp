@@ -317,8 +317,6 @@ namespace SE
 				writer.StartObject();
 				writer.Key(SE_TEXT("targetKey"));
 				writer.String(target.TargetKey);
-				writer.Key(SE_TEXT("platform"));
-				writer.String(ToString(target.Target.Platform));
 				writer.Key(SE_TEXT("shaderProfile"));
 				writer.String(ToString(target.Target.Profile));
 				writer.Key(SE_TEXT("featureLevel"));

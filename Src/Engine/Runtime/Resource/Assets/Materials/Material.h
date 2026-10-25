@@ -49,8 +49,6 @@ namespace SE
 		bool IsMaterialInstance() const override;
 		MaterialShader* GetMaterialShaderObject() const override;
 
-		bool InstallSLC2RuntimeData(MaterialSLC2RuntimeData&& data);
-
 		// [IMaterial]
 		const MaterialInfo& GetInfo() const override;
 		GPUShader* GetShader() const override;

@@ -98,14 +98,14 @@ namespace SE
 			return false;
 		}
 
-		VertexFactoryLayout candidate;
-		candidate.m_Bindings = bindings;
-		candidate.m_Elements = elements;
+		VertexFactoryLayout layout;
+		layout.m_Bindings = bindings;
+		layout.m_Elements = elements;
 
 		// Semantic 不区分大小写，构造时统一为大写并据此建立唯一键。
-		for (int32 index = 0; index < candidate.m_Elements.Count(); index++)
+		for (int32 index = 0; index < layout.m_Elements.Count(); index++)
 		{
-			VertexFactoryInputElement& element = candidate.m_Elements[index];
+			VertexFactoryInputElement& element = layout.m_Elements[index];
 			element.Semantic.ToUpper();
 			if (element.Semantic.IsEmpty())
 			{
@@ -122,12 +122,12 @@ namespace SE
 			}
 		}
 
-		Sorting::QuickSort(candidate.m_Bindings, IsBindingLess);
-		Sorting::QuickSort(candidate.m_Elements, IsElementLess);
+		Sorting::QuickSort(layout.m_Bindings, IsBindingLess);
+		Sorting::QuickSort(layout.m_Elements, IsElementLess);
 
-		for (int32 bindingIndex = 0; bindingIndex < candidate.m_Bindings.Count(); bindingIndex++)
+		for (int32 bindingIndex = 0; bindingIndex < layout.m_Bindings.Count(); bindingIndex++)
 		{
-			const VertexFactoryBufferBinding& binding = candidate.m_Bindings[bindingIndex];
+			const VertexFactoryBufferBinding& binding = layout.m_Bindings[bindingIndex];
 			if (binding.Slot >= GPU_MAX_VB_BINDED)
 			{
 				LOG_ERROR("Graphics", "VertexFactory binding slot {0} exceeds the engine limit.", binding.Slot);
@@ -144,22 +144,22 @@ namespace SE
 				LOG_ERROR("Graphics", "VertexFactory binding slot {0} has an invalid instance step rate.", binding.Slot);
 				return false;
 			}
-			if (bindingIndex > 0 && candidate.m_Bindings[bindingIndex - 1].Slot == binding.Slot)
+			if (bindingIndex > 0 && layout.m_Bindings[bindingIndex - 1].Slot == binding.Slot)
 			{
 				LOG_ERROR("Graphics", "VertexFactory layout contains duplicate binding slot {0}.", binding.Slot);
 				return false;
 			}
 		}
 
-		for (int32 elementIndex = 0; elementIndex < candidate.m_Elements.Count(); elementIndex++)
+		for (int32 elementIndex = 0; elementIndex < layout.m_Elements.Count(); elementIndex++)
 		{
-			const VertexFactoryInputElement& element = candidate.m_Elements[elementIndex];
+			const VertexFactoryInputElement& element = layout.m_Elements[elementIndex];
 			const VertexFactoryBufferBinding* binding = nullptr;
-			for (int32 bindingIndex = 0; bindingIndex < candidate.m_Bindings.Count(); bindingIndex++)
+			for (int32 bindingIndex = 0; bindingIndex < layout.m_Bindings.Count(); bindingIndex++)
 			{
-				if (candidate.m_Bindings[bindingIndex].Slot == element.Slot)
+				if (layout.m_Bindings[bindingIndex].Slot == element.Slot)
 				{
-					binding = &candidate.m_Bindings[bindingIndex];
+					binding = &layout.m_Bindings[bindingIndex];
 					break;
 				}
 			}
@@ -178,7 +178,7 @@ namespace SE
 
 			for (int32 previousIndex = 0; previousIndex < elementIndex; previousIndex++)
 			{
-				const VertexFactoryInputElement& previous = candidate.m_Elements[previousIndex];
+				const VertexFactoryInputElement& previous = layout.m_Elements[previousIndex];
 				if (previous.Semantic == element.Semantic && previous.SemanticIndex == element.SemanticIndex)
 				{
 					LOG_ERROR("Graphics", "VertexFactory layout contains duplicate semantic {0}{1}.", element.Semantic, element.SemanticIndex);
@@ -202,9 +202,9 @@ namespace SE
 			}
 		}
 
-		candidate.m_LayoutHash = BuildLayoutHash(candidate.m_Bindings, candidate.m_Elements);
-		candidate.m_IsValid = true;
-		output = MoveTemp(candidate);
+		layout.m_LayoutHash = BuildLayoutHash(layout.m_Bindings, layout.m_Elements);
+		layout.m_IsValid = true;
+		output = MoveTemp(layout);
 		return true;
 	}
 

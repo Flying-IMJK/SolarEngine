@@ -25,7 +25,7 @@
 namespace SE::Json
 {
     // The memory allocator implementation for rapidjson library that uses default engine Allocator.
-    class SE_API_RUNTIME FlaxAllocator
+    class SE_API_RUNTIME CustomAllocator
     {
     public:
         static const bool kNeedFree = true;
@@ -51,22 +51,22 @@ namespace SE::Json
     };
 
     // String buffer with UTF8 encoding
-	typedef rapidjson::GenericStringBuffer<rapidjson::UTF8<>, FlaxAllocator> StringBuffer;
+	typedef rapidjson::GenericStringBuffer<rapidjson::UTF8<>, CustomAllocator> StringBuffer;
 
     // GenericDocument with UTF8 encoding
-	typedef rapidjson::GenericDocument<rapidjson::UTF8<>, rapidjson::MemoryPoolAllocator<FlaxAllocator>, FlaxAllocator> Document;
+	typedef rapidjson::GenericDocument<rapidjson::UTF8<>, rapidjson::MemoryPoolAllocator<CustomAllocator>, CustomAllocator> Document;
 
     // GenericValue with UTF8 encoding
-	typedef rapidjson::GenericValue<rapidjson::UTF8<>, rapidjson::MemoryPoolAllocator<FlaxAllocator>> Value;
+	typedef rapidjson::GenericValue<rapidjson::UTF8<>, rapidjson::MemoryPoolAllocator<CustomAllocator>> Value;
 
     typedef rapidjson::GenericArray<false, rapidjson::GenericValue<rapidjson::UTF8<>>> Array;
 
     // JSON writer to the stream
     template<typename OutputStream, typename SourceEncoding = rapidjson::UTF8<>, typename TargetEncoding = rapidjson::UTF8<>, unsigned writeFlags = rapidjson::kWriteDefaultFlags>
-    using Writer = rapidjson::Writer<OutputStream, SourceEncoding, TargetEncoding, FlaxAllocator, writeFlags>;
+    using Writer = rapidjson::Writer<OutputStream, SourceEncoding, TargetEncoding, CustomAllocator, writeFlags>;
 
     // Pretty JSON writer to the stream
     template<typename OutputStream, typename SourceEncoding = rapidjson::UTF8<>, typename TargetEncoding = rapidjson::UTF8<>, unsigned writeFlags = rapidjson::kWriteDefaultFlags>
-    using PrettyWriter = rapidjson::PrettyWriter<OutputStream, SourceEncoding, TargetEncoding, FlaxAllocator, writeFlags>;
+    using PrettyWriter = rapidjson::PrettyWriter<OutputStream, SourceEncoding, TargetEncoding, CustomAllocator, writeFlags>;
 
 }

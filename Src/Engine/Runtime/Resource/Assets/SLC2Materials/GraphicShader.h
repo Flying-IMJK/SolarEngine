@@ -1,48 +1,15 @@
 #pragma once
 
-#include "Runtime/Graphics/Base/GPUPipelineState.h"
-#include "Runtime/Graphics/Shaders/SLC2GPUShader.h"
-#include "Runtime/Graphics/Shaders/ShaderProgramInstance.h"
-#include "Runtime/Resource/BinaryAsset.h"
+#include <Runtime/Graphics/Shaders/SLC2GPUShader.h>
+#include <Runtime/Graphics/Shaders/ShaderProgramInstance.h>
+#include <Runtime/Resource/BinaryAsset.h>
 
 namespace SE
 {
-    class GPUContext;
-    struct RenderGeometry;
-    struct GraphicShaderGeneration;
-
-    enum class GraphicShaderGeometryMode : byte
-    {
-        Static,
-        Instanced,
-        Skinned,
-    };
-
-    struct SE_API_RUNTIME GraphicShaderPipeline
-    {
-        String ProgramId;
-        SLC2GPUPipelineState::Description State;
-    };
-
-    // A selected draw owns its shader generation, Program, mutable parameters and pipeline lifetime.
-    // Keep this object alive until its GPU submission is finished; never detach its raw pipeline/Program pointers.
-    class SE_API_RUNTIME GraphicShaderDrawProgram final
-    {
-    public:
-        ShaderProgramInstance& GetInstance() { return m_Instance; }
-        SLC2GPUPipelineState* GetPipeline() const { return m_Pipeline; }
-
-        // The caller sets render targets before preparing geometry, then calls GPUContext::Draw*(GetInstance(), ...).
-        bool Prepare(GPUContext& context, const RenderGeometry& geometry) const;
-
-    private:
-        friend class GraphicShader;
-        explicit GraphicShaderDrawProgram(SharedPtr<GraphicShaderGeneration> generation);
-
-        SharedPtr<GraphicShaderGeneration> m_Generation;
-        ShaderProgramInstance m_Instance;
-        SLC2GPUPipelineState* m_Pipeline = nullptr;
-    };
+    class GraphicShaderProgramSelection;
+    struct SLC2MaterialParameterBinding;
+    struct SLC2MaterialPipelineState;
+    class SLC2Material;
 
     // Shared compiled output contract for handwritten and, later, Graph-authored shaders.
     SE_CLASS(Reflect, API(NoSpawn))
@@ -54,28 +21,67 @@ namespace SE
     public:
         ~GraphicShader() override;
 
-        // Install is also the in-memory authoring entry for virtual assets. Failure retains the active generation.
-        bool InstallCompiled(const List<byte>& artifact, const List<GraphicShaderPipeline>& pipelines);
-        bool CreateDrawProgram(const String& passName, GraphicShaderGeometryMode geometryMode,
-                               const ShaderCompileTarget& target, const List<String>& defines,
-                               std::unique_ptr<GraphicShaderDrawProgram>& output);
+        // Creates an independently mutable Program instance on the GPU/render-resource thread. output is reset on
+        // entry and failure; success transfers an owning selection that retains the Generation. Keep it alive while
+        // any Pipeline or draw uses its Program.
+        bool SelectProgram(String& name, const ShaderProgramSelection& selection, UniquePtr<ShaderProgramInstance>& output);
 
 #if SE_EDITOR
-        // Same versioned storage contract is used by handwritten and generated shader producers.
-        // Returns true on success (the underlying Storage::Create convention).
-        static bool SaveCompiledAsset(const StringView& path, const List<byte>& artifact,
-                                      const List<GraphicShaderPipeline>& pipelines);
+        bool Save();
 #endif
 
         uint32 GetSerializedVersion() const override;
 
+        SLC2GPUShader* GetGPUShader() { return m_GPUShader; }
+
     protected:
-        bool OnInit(AssetInitData& initData) override;
-        AssetChunksFlag GetChunksToPreload() const override;
-        LoadResult load() override;
-        void Unload(bool isReloading) override;
+        bool            OnInit(AssetInitData& initData) override;
+        LoadResult      load() override;
+        void            Unload(bool isReloading) override;
 
     private:
-        SharedPtr<GraphicShaderGeneration> m_Generation;
+        friend class SLC2Material;
+
+        /// <summary>
+        /// Shader cache loading result data container.
+        /// </summary>
+        struct ShaderCacheResult
+        {
+            /// <summary>
+            /// The shader cache data. Allocated or linked (if gathered from asset chunk).
+            /// </summary>
+            DataContainer<byte> Data;
+
+            /// <summary>
+            /// The list of files included by the shader source (used by the given cache on the runtime graphics
+            /// platform shader profile). Paths are absolute and unique.
+            /// </summary>
+            List<String> Includes;
+        };
+
+        /// <summary>
+        /// Gets internal shader cache chunk index.
+        /// </summary>
+        /// <param name="profile">Shader profile</param>
+        /// <returns>Chunk index</returns>
+        static int32 GetCacheChunkIndex(ShaderProfile profile);
+
+        bool LoadShaderCache(ShaderCacheResult& result);
+
+        /// <summary>
+        /// Registers shader asset for the automated reloads on source includes changes.
+        /// </summary>
+        /// <param name="asset">The asset.</param>
+        /// <param name="shaderCache">The loaded shader cache.</param>
+        void RegisterForShaderReloads(Asset* asset, const ShaderCacheResult& shaderCache);
+
+        /// <summary>
+        /// Unregisters shader asset from the automated reloads on source includes changes.
+        /// </summary>
+        /// <param name="asset">The asset.</param>
+        void UnregisterForShaderReloads(Asset* asset);
+
+
+        SLC2GPUShader* m_GPUShader;
     };
 } // namespace SE

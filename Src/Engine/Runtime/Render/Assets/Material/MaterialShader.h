@@ -43,7 +43,6 @@ namespace SE
         GPUConstantBuffer* m_CB;
         List<byte> m_CBData;
         MaterialInfo m_Info;
-        SharedPtr<MaterialRuntimeGeneration> m_RuntimeGeneration;
 
     protected:
         /// <summary>
@@ -81,9 +80,6 @@ namespace SE
         /// </summary>
         virtual void Unload();
 
-        bool InstallSLC2RuntimeData(MaterialSLC2RuntimeData&& data, const MaterialParams& parameters);
-        bool PrepareSLC2Binding(const MaterialDrawContext& context, const List<const MaterialParams*>& parameterChain, MaterialProgramInstanceCache& cache, MaterialSLC2Binding& output) const;
-
     protected:
         bool Load(MemoryReadStream& shaderCacheStream, const MaterialInfo& info);
         virtual bool OnLoad() = 0;
@@ -93,8 +89,6 @@ namespace SE
         const MaterialInfo& GetInfo() const override;
         GPUShader* GetShader() const override;
         bool IsReady() const override;
-        bool IsSLC2Ready() const override;
-        uint64 GetRuntimeGenerationID() const override;
     };
 } // SE
 

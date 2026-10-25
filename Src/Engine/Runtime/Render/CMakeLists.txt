@@ -1,7 +1,6 @@
 
 add_subdirectory(Assets)
 add_subdirectory(Utils)
-add_subdirectory(GUI)
 add_subdirectory(RenderPass)
 add_subdirectory(2D)
 
@@ -13,6 +12,7 @@ RUNTIME_ADD(
         RenderEnum.h
         RendererPass.h
         RenderDrawCall.h
+        SLC2RenderDraw.h
 
         Renderer.h
         Renderer.cpp

@@ -1,290 +1,381 @@
-#include "GraphicShader.h"
+#include <Runtime/Resource/Assets/SLC2Materials/GraphicShader.h>
 
-#include "GraphicShaderStorage.h"
-#include "Runtime/Core/Memory/Memory.h"
-#include "Runtime/Core/Thread/Threading.h"
-#include "Runtime/Graphics/GPUContext.h"
-#include "Runtime/Graphics/GPUDevice.h"
-#include "Runtime/Graphics/Base/RenderGeometry.h"
-#include "Runtime/Graphics/Shaders/Reflection/ShaderProgramReflection.h"
-#include "Runtime/Resource/Factories/BinaryAssetFactory.h"
-#include "Runtime/Resource/Storage/StorageChunk.h"
-#include "Runtime/ShaderCompilation/Slang/SLC2/SLC2Reader.h"
+#include <Runtime/Core/Platform/File.h>
+#include <Runtime/Core/Platform/FileSystem.h>
+#include <Runtime/Core/Serialization/MemoryWriteStream.h>
+#include <Runtime/Core/Thread/Threading.h>
+#include <Runtime/Graphics/GPUDevice.h>
+#include <Runtime/Graphics/Shaders/Reflection/ShaderProgramReflection.h>
+#include <Runtime/Resource/Assets/Materials/ShaderCacheManager.h>
+#include <Runtime/Resource/Assets/Materials/ShaderStorage.h>
+#include <Runtime/Resource/Assets/SLC2Materials/SLC2MaterialBinding.h>
+#include <Runtime/Resource/Assets/SLC2Materials/SLC2MaterialPipeline.h>
+#include <Runtime/Resource/Factories/BinaryAssetFactory.h>
+#include <Runtime/Resource/Storage/StorageChunk.h>
+#include <Runtime/ShaderCompilation/ShadersCompilation.h>
+#include <Runtime/ShaderCompilation/Slang/SLC2/SLC2Reader.h>
+#include <Runtime/ShaderCompilation/Slang/SlangShaderCompiler.h>
 
 namespace SE
 {
     BINARY_ASSET_FACTORY(GraphicShader, true);
 
-    struct GraphicShaderGeneration
+#if SE_EDITOR
+
+    bool IsValidShaderCache2(DataContainer<byte>& shaderCache, List<String>& includes)
     {
-        struct CachedPipeline
+        if (shaderCache.Length() == 0)
         {
-            const SLC2GPUShaderProgram* Program = nullptr;
-            SLC2GPUPipelineState* State = nullptr;
-        };
-
-        SLC2GPUShader* Shader = nullptr;
-        List<GraphicShaderPipeline> Descriptions;
-        List<CachedPipeline> Pipelines;
-
-        ~GraphicShaderGeneration()
-        {
-            // Pipeline objects still refer to the selected Program's modules/layout.
-            for (const CachedPipeline& pipeline : Pipelines)
-                Delete(pipeline.State);
-            Delete(Shader);
+            return false;
         }
+/*        MemoryReadStream stream(shaderCache.Get(), shaderCache.Length());
+
+        // Read cache format version
+        int32 version;
+        stream.ReadInt32(&version);
+        if (version != GPU_SHADER_CACHE_VERSION)
+            return false;
+
+        // Read the location of additional data that contains list of included source files
+        int32 additionalDataStart;
+        stream.ReadInt32(&additionalDataStart);
+        stream.SetPosition(additionalDataStart);
+
+        // Read all includes
+        int32 includesCount;
+        stream.ReadInt32(&includesCount);
+        includes.Clear();
+        for (int32 i = 0; i < includesCount; i++)
+        {
+            String& include = includes.AddOne();
+            stream.ReadString(&include, 11);
+            include = ShadersCompilation::ResolveShaderPath(include);
+            DateTime lastEditTime;
+            stream.Read(lastEditTime);
+
+            // Check if included file exists locally and has been modified since last compilation
+            if (!(FileSystem::FileExists(include) && FileSystem::GetFileLastEditTime(include) > lastEditTime))
+            {
+                return false;
+            }
+        }*/
+
+        return true;
+    }
+
+#endif
+
+
+    bool GraphicShader::SelectProgram(String&                           name,
+                                      const ShaderProgramSelection&     selection,
+                                      UniquePtr<ShaderProgramInstance>& output)
+    {
+        UniquePtr<ShaderProgramInstance> selected = CreateScope<ShaderProgramInstance>();
+
+        if (!m_GPUShader->CreateProgramInstance(name, selection, *selected))
+        {
+            return false;
+        }
+        output = MoveTemp(selected);
+        return true;
+    }
+
+    GraphicShader::GraphicShader(const SpawnParams& params, const AssetInfo* info) : BinaryAsset(params, info) 
+    {
+        m_GPUShader = GPUDevice::instance->CreateSLC2Shader(info->path);
+    }
+
+    GraphicShader::~GraphicShader() 
+    { 
+        Delete(m_GPUShader);
     };
 
-    namespace
+    int32 GraphicShader::GetCacheChunkIndex(ShaderProfile profile) 
     {
-        bool ValidatePipelineState(const SLC2GPUPipelineState::Description& state)
+        int32 result;
+        switch (profile)
         {
-            const auto comparisonValid = [](ComparisonFunc value)
+            case ShaderProfile::DirectX_SM6:
+                result = SHADER_FILE_CHUNK_INTERNAL_D3D_SM6_CACHE;
+                break;
+            case ShaderProfile::DirectX_SM5:
+                result = SHADER_FILE_CHUNK_INTERNAL_D3D_SM5_CACHE;
+                break;
+            case ShaderProfile::DirectX_SM4:
+                result = SHADER_FILE_CHUNK_INTERNAL_D3D_SM4_CACHE;
+                break;
+            case ShaderProfile::GLSL_410:
+                result = SHADER_FILE_CHUNK_INTERNAL_GLSL_410_CACHE;
+                break;
+            case ShaderProfile::GLSL_440:
+                result = SHADER_FILE_CHUNK_INTERNAL_GLSL_440_CACHE;
+                break;
+            case ShaderProfile::Vulkan_SM5:
+                result = SHADER_FILE_CHUNK_INTERNAL_VULKAN_SM5_CACHE;
+                break;
+            default:
+                result = SHADER_FILE_CHUNK_INTERNAL_GENERIC_CACHE;
+                break;
+        }
+        return result;
+    }
+
+    bool GraphicShader::LoadShaderCache(ShaderCacheResult& result) 
+    {
+        // Prepare
+        const ShaderProfile                   shaderProfile   = GPUDevice::instance->GetShaderProfile();
+        const int32                           cacheChunkIndex = GetCacheChunkIndex(shaderProfile);
+        const auto                            cachingMode     = ShaderStorage::GetCachingMode();
+        ShaderCacheManager::CachedEntryHandle cachedEntry;
+
+#if SE_EDITOR
+        // Try to get cached shader (based on current caching policy)
+        bool hasCache = false;
+        if (cachingMode == ShaderStorage::CachingMode::AssetInternal)
+        {
+            if (HasChunkLoaded(cacheChunkIndex))
             {
-                return value >= ComparisonFunc::Never && value <= ComparisonFunc::Always;
-            };
-            const auto stencilValid = [](StencilOperation value)
+                // Load cached shader data, create reading stream (memory free, super fast, super easy, no overhead at
+                // all)
+                const auto cacheChunk = GetChunk(cacheChunkIndex);
+                result.Data.Link(cacheChunk->Data);
+                if (IsValidShaderCache2(result.Data, result.Includes))
+                {
+                    hasCache = true;
+                }
+                else
+                {
+                    result.Data.Release();
+                }
+            }
+        }
+        else if (cachingMode == ShaderStorage::CachingMode::ProjectCache)
+        {
+            // Try get cached shader cache
+            const DateTime assetModificationDate = storage ? FileSystem::GetFileLastEditTime(storage->GetPath()) : DateTime::MinValue();
+
+            if (ShaderCacheManager::TryGetEntry(shaderProfile, GetID(), cachedEntry) &&
+                cachedEntry.GetModificationDate() > assetModificationDate &&
+                !ShaderCacheManager::GetCache(shaderProfile, cachedEntry, result.Data) &&
+                IsValidShaderCache2(result.Data, result.Includes))
             {
-                return value >= StencilOperation::Keep && value < StencilOperation::MAX;
-            };
-            const auto factorValid = [](BlendingMode::Blend value)
+                hasCache = true;
+            }
+            else
             {
-                const uint32 factor = static_cast<uint32>(value);
-                return (factor >= 1 && factor <= 11) || (factor >= 14 && factor <= 19);
-            };
-            const auto operationValid = [](BlendingMode::Operation value)
-            {
-                return value >= BlendingMode::Operation::Add && value <= BlendingMode::Operation::Max;
-            };
-            const auto& blend = state.BlendMode;
-            return comparisonValid(state.DepthFunc) && comparisonValid(state.StencilFunc) &&
-                stencilValid(state.StencilFailOp) && stencilValid(state.StencilDepthFailOp) &&
-                stencilValid(state.StencilPassOp) &&
-                state.PrimitiveTopology >= PrimitiveTopologyType::Point &&
-                state.PrimitiveTopology <= PrimitiveTopologyType::Triangle &&
-                state.CullMode >= CullMode::Normal && state.CullMode <= CullMode::TwoSided &&
-                factorValid(blend.SrcBlend) && factorValid(blend.DestBlend) &&
-                factorValid(blend.SrcBlendAlpha) && factorValid(blend.DestBlendAlpha) &&
-                operationValid(blend.BlendOp) && operationValid(blend.BlendOpAlpha) &&
-                static_cast<uint32>(blend.RenderTargetWriteMask) <= 15;
+                result.Data.Release();
+            }
         }
 
-        bool ValidateCompiled(const List<byte>& artifactData, const List<GraphicShaderPipeline>& pipelines)
+        // Check if shader should be compiled
+#if BUILD_DEBUG
+        const bool forceRecompile = false;
+#else
+        const bool forceRecompile = false;
+#endif
+        if ((forceRecompile || GPU_FORCE_RECOMPILE_SHADERS || !hasCache) && HasChunk(SHADER_FILE_CHUNK_SOURCE))
         {
-            SLC2Artifact artifact;
-            String error;
-            if (!SLC2Reader::Read(artifactData, artifact, error) || artifact.Programs.IsEmpty() ||
-                artifact.Programs.Count() != pipelines.Count())
+            result.Data.Release();
+            const String parentPath = GetPath();
+            const UID    parentID   = GetID();
+            LOG_INFO("Resource", "Compiling shader '{0}':{1}...", parentPath, parentID);
+
+            // Load all chunks (except that with internal cache for current shader profile, it will be generated)
+            AssetChunksFlag chunksToLoad = ALL_ASSET_CHUNKS;
+            chunksToLoad &= ~GET_CHUNK_FLAG(cacheChunkIndex);
+            if (!LoadChunks(chunksToLoad))
             {
-                LOG_ERROR("Resource", "GraphicShader requires valid SLC2 data and one pipeline description per Program: {0}", error);
+                LOG_WARNING("Resource", "Cannot load '{0}' data from chunk {1}.", ToString(), chunksToLoad);
                 return false;
             }
 
-            // Validate the entire generation before publishing; only a requested target/variant creates GPU objects.
-            for (const GraphicShaderPipeline& pipeline : pipelines)
+            // Remove current profile internal chunk (it could be loaded by the asset itself during precaching phrase)
+            ReleaseChunk(cacheChunkIndex);
+
+
+            // Decrypt source code
+            auto sourceChunk  = GetChunk(SHADER_FILE_CHUNK_SOURCE);
+            auto source       = sourceChunk->Get<char>();
+            auto sourceLength = sourceChunk->Size();
+            Encoding::DecryptBytes((byte*)source, sourceLength);
+            source[sourceLength - 1] = 0;
+
+
+            SlangShaderCompiler compiler;
+
+            ShaderCompileRequest request;
+            request.ShaderName = FileSystem::GetFileNameWithoutExtension(parentPath);
+            request.SourcePath = parentPath;
+            request.SourceCode = source;
+            request.SourceCodeLength = sourceLength;
+            request.Targets.Add({shaderProfile, FeatureLevel::SM5});
+
+/*            #if PLATFORM_WINDOWS
+            platformDefine.Name = "PLATFORM_WINDOWS";
+#elif PLATFORM_LINUX
+            platformDefine.Name = "PLATFORM_LINUX";
+#elif PLATFORM_MAC
+            platformDefine.Name = "PLATFORM_MAC";
+#else
+#error "Unknown platform."
+#endif*/
+
+            ShaderCompileResult compileResult = compiler.Compile(request);
+            
+            // Encrypt source code
+            Encoding::EncryptBytes(reinterpret_cast<byte*>(source), sourceLength);
+
+            if (!compileResult.Success)
             {
-                const SLC2ProgramRecord* program = nullptr;
-                for (const SLC2ProgramRecord& record : artifact.Programs)
+                LOG_ERROR("Resource", "Failed to compile shader '{0}' {1}", ToString(), compileResult.CompileMessage);
+                return false;
+            }
+
+
+            // Save compilation result (based on current caching policy)
+            if (cachingMode == ShaderStorage::CachingMode::AssetInternal)
+            {
+                // Save cache to the internal shader cache chunk
+                auto cacheChunk = GetOrCreateChunk(cacheChunkIndex);
+                if (cacheChunk == nullptr)
                 {
-                    if (record.ProgramId == pipeline.ProgramId)
-                    {
-                        program = &record;
-                        break;
-                    }
-                }
-                if (program == nullptr || pipeline.ProgramId.IsEmpty() || !ValidatePipelineState(pipeline.State))
-                {
-                    LOG_ERROR("Resource", "GraphicShader pipeline names an invalid or non-graphics Program.");
                     return false;
                 }
-                for (const GraphicShaderPipeline& other : pipelines)
+                cacheChunk->Data.Copy(compileResult.SLC2Data);
+#if SE_EDITOR
+                // Save chunks to the asset file
+                if (!Save())
                 {
-                    if (&other != &pipeline && other.ProgramId == pipeline.ProgramId)
-                    {
-                        LOG_ERROR("Resource", "GraphicShader has duplicate ProgramId {0}.", pipeline.ProgramId);
-                        return false;
-                    }
+                    LOG_WARNING("Resource", "Cannot save '{0}'.", ToString());
+                    return false;
                 }
-                for (const SLC2TargetRecord& target : program->Targets)
+
+                // Save 会导致chunk 数据被释放需要重新加载
+                List<StorageChunk*> chunks;
+                storage->GetChunks(chunks);
+                for (int i = 0; i < chunks.Count(); i++)
                 {
-                    for (const SLC2VariantRecord& variant : target.Variants)
-                    {
-                        ShaderProgramReflection reflection;
-                        if (!reflection.Initialize(variant.Layout))
-                        {
-                            LOG_ERROR("Resource", "GraphicShader Program {0} has invalid reflection.", pipeline.ProgramId);
-                            return false;
-                        }
-                        bool vertex = false, pixel = false;
-                        for (const SLC2StageRecord& stage : variant.Stages)
-                        {
-                            vertex |= stage.Stage == ShaderStage::Vertex;
-                            pixel |= stage.Stage == ShaderStage::Pixel;
-                        }
-                        if (!vertex || !pixel)
-                        {
-                            LOG_ERROR("Resource", "GraphicShader Program {0} is not drawable graphics.", pipeline.ProgramId);
-                            return false;
-                        }
-                    }
+                    storage->LoadAssetChunk(chunks[i]);
+                }
+#endif
+            }
+            else if (cachingMode == ShaderStorage::CachingMode::ProjectCache)
+            {
+                MemoryWriteStream stream(static_cast<uint32>(compileResult.SLC2Data.Count()));
+                stream.WriteBytes(compileResult.SLC2Data.Get(), static_cast<uint32>(compileResult.SLC2Data.Count()));
+
+                // Save results to cache
+                if (!ShaderCacheManager::SetCache(shaderProfile, cachedEntry, stream))
+                {
+                    LOG_WARNING("Resource", "Cannot save shader cache.");
+                    return false;
                 }
             }
-            return true;
-        }
-    }
-
-    GraphicShaderDrawProgram::GraphicShaderDrawProgram(SharedPtr<GraphicShaderGeneration> generation)
-        : m_Generation(MoveTemp(generation))
-    {
-    }
-
-    bool GraphicShaderDrawProgram::Prepare(GPUContext& context, const RenderGeometry& geometry) const
-    {
-        if (m_Pipeline == nullptr || !m_Pipeline->IsValid())
-            return false;
-        context.SetSLC2State(m_Pipeline);
-        return context.BindRenderGeometry(geometry);
-    }
-
-    GraphicShader::GraphicShader(const SpawnParams& params, const AssetInfo* info) : BinaryAsset(params, info) {}
-    GraphicShader::~GraphicShader() = default;
-
-    bool GraphicShader::InstallCompiled(const List<byte>& artifact, const List<GraphicShaderPipeline>& pipelines)
-    {
-        if (!ValidateCompiled(artifact, pipelines) || GPUDevice::instance == nullptr)
-            return false;
-
-        auto candidate = std::make_shared<GraphicShaderGeneration>();
-        candidate->Shader = GPUDevice::instance->CreateSLC2Shader(SE_TEXT("GraphicShader"));
-        if (candidate->Shader == nullptr || !candidate->Shader->Load(artifact))
-            return false;
-        candidate->Descriptions = pipelines;
-
-        // Never call Load on the active GPUShader: its cached Programs and reflection pointers belong to the old artifact.
-        Threading::ScopeLock lock(Locker);
-        m_Generation = MoveTemp(candidate);
-        return true;
-    }
-
-    bool GraphicShader::CreateDrawProgram(const String& passName, const GraphicShaderGeometryMode geometryMode,
-                                           const ShaderCompileTarget& target, const List<String>& defines,
-                                           std::unique_ptr<GraphicShaderDrawProgram>& output)
-    {
-        // Failed selection must not leave a previous draw's Program available as an implicit fallback.
-        output.reset();
-        String programId = passName;
-        switch (geometryMode)
-        {
-        case GraphicShaderGeometryMode::Static: break;
-        case GraphicShaderGeometryMode::Instanced: programId += SE_TEXT("Instanced"); break;
-        case GraphicShaderGeometryMode::Skinned: programId += SE_TEXT("Skinned"); break;
-        default: return false;
-        }
-
-        Threading::ScopeLock lock(Locker);
-        auto generation = m_Generation;
-        if (generation == nullptr)
-            return false;
-
-        const GraphicShaderPipeline* description = nullptr;
-        for (const GraphicShaderPipeline& pipeline : generation->Descriptions)
-        {
-            if (pipeline.ProgramId == programId)
+            else
             {
-                description = &pipeline;
-                break;
-            }
-        }
-        if (description == nullptr)
-        {
-            LOG_ERROR("Resource", "GraphicShader has no selected ProgramId {0}.", programId);
-            return false;
-        }
-
-        ShaderProgramSelection selection;
-        selection.ProgramId = programId;
-        selection.Target = target;
-        selection.Defines = defines;
-        auto chosen = std::unique_ptr<GraphicShaderDrawProgram>(new GraphicShaderDrawProgram(generation));
-        if (!generation->Shader->CreateProgramInstance(selection, chosen->m_Instance))
-            return false;
-
-        const SLC2GPUShaderProgram* program = chosen->m_Instance.GetProgram();
-        for (const GraphicShaderGeneration::CachedPipeline& pipeline : generation->Pipelines)
-        {
-            if (pipeline.Program == program)
-            {
-                chosen->m_Pipeline = pipeline.State;
-                output = MoveTemp(chosen);
+                // Use temporary generated data without caching (but read the includes from cache)
+                result.Data.Copy(compileResult.SLC2Data);
+                IsValidShaderCache2(result.Data, result.Includes);
                 return true;
             }
         }
-
-        SLC2GPUPipelineState* pipeline = SLC2GPUPipelineState::New();
-        if (pipeline == nullptr || !pipeline->Init(description->State, program))
+        else if (hasCache && result.Data.IsValid())
         {
-            Delete(pipeline);
+            // The cached version is valid
+            return true;
+        }
+
+#endif
+
+        // Check if has internal shader cache
+        if (HasChunkLoaded(cacheChunkIndex))
+        {
+            // Load cached shader data, create reading stream (memory free, super fast, super easy, no overhead at all)
+            const auto cacheChunk = GetChunk(cacheChunkIndex);
+            result.Data.Link(cacheChunk->Data);
+        }
+        // Check if has cached shader
+        else if (cachedEntry.IsValid() || ShaderCacheManager::TryGetEntry(shaderProfile, GetID(), cachedEntry))
+        {
+            // Load results from cache
+            if (!ShaderCacheManager::GetCache(shaderProfile, cachedEntry, result.Data))
+            {
+                LOG_WARNING("Resource", "Cannot load shader cache.");
+                return false;
+            }
+        }
+        else
+        {
+            LOG_WARNING("Resource", "Missing shader cache '{0}'.", ToString());
             return false;
         }
-        GraphicShaderGeneration::CachedPipeline cached;
-        cached.Program = program;
-        cached.State = pipeline;
-        generation->Pipelines.Add(cached);
-        chosen->m_Pipeline = pipeline;
-        output = MoveTemp(chosen);
-        return true;
+
+        ENGINE_ASSERT(result.Data.IsValid());
     }
 
-    uint32 GraphicShader::GetSerializedVersion() const { return GraphicShaderStorage::Version; }
+    uint32 GraphicShader::GetSerializedVersion() const { return 1; }
 
     bool GraphicShader::OnInit(AssetInitData& initData)
     {
-        return initData.SerializedVersion == GraphicShaderStorage::Version;
-    }
+        // Validate version
+        if (initData.SerializedVersion != ShaderStorage::Header::Version)
+        {
+            LOG_WARNING("Resource", "Invalid shader serialized version.");
+            return false;
+        }
 
-    AssetChunksFlag GraphicShader::GetChunksToPreload() const
-    {
-        return GET_CHUNK_FLAG(GraphicShaderStorage::Chunk);
     }
 
     Asset::LoadResult GraphicShader::load()
     {
-        auto chunk = GetChunk(GraphicShaderStorage::Chunk);
-        if (chunk == nullptr || !chunk->IsValid())
-            return LoadResult::MissingDataChunk;
+        // Load shader cache (it may call compilation or gather cached data)
+        ShaderCacheResult shaderCache;
+        if (!LoadShaderCache(shaderCache))
+        {
+            LOG_ERROR("Resource", "Cannot load \'{0}\' shader cache.", ToString());
+            return LoadResult::Failed;
+        }
 
-        List<byte> artifact;
-        List<GraphicShaderPipeline> pipelines;
-        if (!GraphicShaderStorage::Decode(chunk->Get(), chunk->Size(), artifact, pipelines) ||
-            !InstallCompiled(artifact, pipelines))
-            return LoadResult::InvalidData;
+        // Create shader from cache
+        if (!m_GPUShader->Load(shaderCache.Data.Get(), shaderCache.Data.Length()))
+        {
+            LOG_ERROR("Resource", "Cannot load shader \'{0}\'", ToString());
+            return LoadResult::Failed;
+        }
+
+        RegisterForShaderReloads(this, shaderCache);
+
         return LoadResult::Ok;
     }
 
     void GraphicShader::Unload(const bool isReloading)
     {
-        // Asset::Reload unloads before loading the candidate: retain the active generation until installation succeeds.
-        if (!isReloading)
-            m_Generation.reset();
+        ShadersCompilation::UnregisterForShaderReloads(this);
+        m_GPUShader->ReleaseGPU();
     }
 
 #if SE_EDITOR
-    bool GraphicShader::SaveCompiledAsset(const StringView& path, const List<byte>& artifact,
-                                          const List<GraphicShaderPipeline>& pipelines)
+    bool GraphicShader::Save() 
     {
-        if (!ValidateCompiled(artifact, pipelines))
-            return false;
-
-        List<byte> bytes;
-        GraphicShaderStorage::Encode(artifact, pipelines, bytes);
-        StorageChunk chunk;
-        chunk.Data.Copy(bytes.Get(), bytes.Count());
         AssetInitData data;
-        data.Header.TypeID = Typeof<GraphicShader>();
-        data.Header.Chunks[GraphicShaderStorage::Chunk] = &chunk;
-        data.SerializedVersion = GraphicShaderStorage::Version;
-        return SaveToAsset(path, data);
+        data.SerializedVersion = ShaderStorage::Header::Version;
+        //data.CustomData.Link(&_shaderHeader);
+        metadata.Release();
+        return SaveAsset(data);
     }
 #endif
+
+    void GraphicShader::RegisterForShaderReloads(Asset* asset, const ShaderCacheResult& shaderCache)
+    {
+        for (auto& include : shaderCache.Includes)
+        {
+            ShadersCompilation::RegisterForShaderReloads(asset, include);
+        }
+    }
+
+    void GraphicShader::UnregisterForShaderReloads(Asset* asset)
+    {
+        ShadersCompilation::UnregisterForShaderReloads(asset);
+    }
+
 } // namespace SE

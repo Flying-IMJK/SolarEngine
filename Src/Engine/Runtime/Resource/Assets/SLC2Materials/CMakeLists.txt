@@ -1,8 +1,15 @@
 RUNTIME_ADD(
     GraphicShader.h
     GraphicShader.cpp
-    GraphicShaderStorage.h
-    GraphicShaderStorage.cpp
+    SLC2MaterialPipeline.h
+    SLC2MaterialPipeline.cpp
+    SLC2MaterialDrawProgram.h
+    SLC2MaterialDrawProgram.cpp
+    SLC2MaterialBinding.h
     SLC2Material.h
     SLC2Material.cpp
+    SLC2MaterialInstance.h
+    SLC2MaterialInstance.cpp
+    SLC2MaterialStorage.h
+    SLC2MaterialStorage.cpp
 )

@@ -533,11 +533,11 @@ namespace SE
                         LOG_ERROR("Graphic", "Vulkan descriptor target has no precomputed logical resource slot.");
                         return false;
                     }
-					if (range.Role == SE_TEXT("primary"))
+					if (range.Role == "primary")
 					{
 						binding.ResourceRole = SLC2VulkanResourceRole::Primary;
 					}
-					else if (range.Role == SE_TEXT("counter"))
+					else if (range.Role == "counter")
 					{
 						if (descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 						{

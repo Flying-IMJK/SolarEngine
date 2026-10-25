@@ -10,6 +10,7 @@ namespace SE
     struct RenderContext;
     struct DrawCall;
     class IMaterial;
+    struct SLC2RenderDraw;
     class MaterialBase;
     class RenderBuffers;
     class GPUTextureView;
@@ -48,6 +49,9 @@ namespace SE
         /// The material to use for rendering.
         /// </summary>
         IMaterial* Material;
+
+        /// <summary>Optional owned SLC2 draw input. Set by RenderList::AddSLC2DrawCall.</summary>
+        const SLC2RenderDraw* SLC2;
 
         struct
         {

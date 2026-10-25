@@ -68,7 +68,7 @@ namespace SE
 
 	struct SE_API_RUNTIME SLC2VariantRecord
 	{
-		String Variant;
+		StringAnsi Variant;
 		ShaderReflectionIR Layout;
 		List<SLC2StageRecord> Stages;
 	};

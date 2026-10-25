@@ -1,4 +1,3 @@
-#nullable disable annotations
 
 using SE.GUI;
 
