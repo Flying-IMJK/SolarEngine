@@ -166,7 +166,7 @@ namespace SE
 		void DrawInstanced(uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex) override;
 		void DrawInstanced(ShaderProgramInstance& instance, uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex) override;
 		void DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex) override;
-		void DrawIndexedInstanced(ShaderProgramInstance& instance, uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex) override;
+		void DrawIndexedInstanced(ShaderProgramInstance* instance, uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex) override;
 		void DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
 		void DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
         void DrawInstancedIndirect(ShaderProgramInstance& instance, GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;

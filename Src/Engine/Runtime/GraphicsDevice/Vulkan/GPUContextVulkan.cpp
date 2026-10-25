@@ -1222,14 +1222,14 @@ namespace SE
 
 	}
 
-	void GPUContextVulkan::DrawIndexedInstanced(ShaderProgramInstance& instance,
+	void GPUContextVulkan::DrawIndexedInstanced(ShaderProgramInstance* instance,
 		uint32 indicesCount,
 		uint32 instanceCount,
 		int32 startInstance,
 		int32 startVertex,
 		int32 startIndex)
 	{
-		SLC2GPUShaderProgram* shaderProgram = instance.GetProgram();
+		SLC2GPUShaderProgram* shaderProgram = instance->GetProgram();
 		if (shaderProgram == nullptr)
 		{
 			LOG_ERROR("Graphic", "indexed draw requires an initialized shader program instance.");
@@ -1288,7 +1288,7 @@ namespace SE
 			}
 		}
 
-		if (!OnSLC2DrawCall(instance))
+		if (!OnSLC2DrawCall(*instance))
 		{
 			return;
 		}

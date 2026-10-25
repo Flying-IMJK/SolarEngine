@@ -380,14 +380,14 @@ namespace SE
 
         bool HasContentLoaded() const;
 
-    private:
-        void clone(const MaterialParameter* param);
-
-    public:
         bool operator==(const MaterialParameter& other) const;
 
         // [Object]
         String ToString() const override;
+
+    private:
+        void clone(const MaterialParameter* param);
+
     };
 
     /// <summary>
@@ -459,7 +459,6 @@ namespace SE
         /// <param name="params">The array of parameters.</param>
         static void Save(BytesContainer& data, const List<SerializedMaterialParam>* params);
 
-    public:
 #if SE_EDITOR
 
         /// <summary>
@@ -467,7 +466,6 @@ namespace SE
         /// </summary>
         /// <param name="output">The output.</param>
         void GetReferences(List<UID>& output) const;
-
 #endif
 
         bool HasContentLoaded() const;

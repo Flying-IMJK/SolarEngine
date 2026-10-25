@@ -36,14 +36,11 @@ set(RuntimeHeadFiles
         ${CMAKE_CURRENT_SOURCE_DIR}/App.h
         ${CMAKE_CURRENT_SOURCE_DIR}/Engine.h
         ${CMAKE_CURRENT_SOURCE_DIR}/EngineContext.h
-#        ${CMAKE_CURRENT_SOURCE_DIR}/ShaderReflection.h
 )
 set(RuntimeSourceFiles
         ${CMAKE_CURRENT_SOURCE_DIR}/API.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/Engine.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/EngineContext.cpp
-#        ${CMAKE_CURRENT_SOURCE_DIR}/ShaderReflection.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/Test.cpp
 )
 
 

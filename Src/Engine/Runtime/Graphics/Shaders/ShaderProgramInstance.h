@@ -1,8 +1,9 @@
 #pragma once
 
-#include "Reflection/ShaderVar.h"
 #include "Runtime/API.h"
+#include "Reflection/ShaderVar.h"
 #include "ShaderBindingSnapshot.h"
+#include <Runtime/Core/Scripting/ScriptingObject.h>
 
 namespace SE
 {
@@ -16,13 +17,13 @@ namespace SE
 
     // 一次 Shader 使用的可变参数状态。
     // 它引用不可变 Program，并分别持有 dense logical resources 与 Uniform Block tagged state。
-    class SE_API_RUNTIME ShaderProgramInstance
+    SE_CLASS(API(NoSpawn))
+    class SE_API_RUNTIME ShaderProgramInstance : public ScriptingObject
     {
+        SCRIPTING_TYPE_NO_SPAWN(ShaderProgramInstance)
     public:
-        ShaderProgramInstance() = default;
+        ShaderProgramInstance();
         ~ShaderProgramInstance();
-
-        NON_COPYABLE(ShaderProgramInstance)
 
         bool      Initialize(SLC2GPUShaderProgram* program);
         ShaderVar GetRootVar();

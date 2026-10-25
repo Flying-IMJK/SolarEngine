@@ -1418,7 +1418,7 @@ namespace SE
 
         // Draw
         render2DData->Context->BindRenderGeometry(renderGeometry);
-        render2DData->Context->DrawIndexed(*programInstance, countIb, 0, d.StartIB);
+        render2DData->Context->DrawIndexed(programInstance, countIb, 0, d.StartIB);
     }
 
 

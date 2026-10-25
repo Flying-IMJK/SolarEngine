@@ -51,6 +51,10 @@ namespace SE
         }
     }
 
+    ShaderProgramInstance::ShaderProgramInstance() : ScriptingObject(SpawnParams(UID::New(), ShaderProgramInstance::TypeInitializer))
+    {
+    }
+
     ShaderProgramInstance::~ShaderProgramInstance()
     {
         ClearResources();

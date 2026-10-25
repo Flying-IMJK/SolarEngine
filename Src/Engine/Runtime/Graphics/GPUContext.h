@@ -286,13 +286,13 @@ namespace SE
 		 * @param startIndex The location of the first index read by the GPU from the index buffer.
 		 */
 		SE_FUNCTION(API())
-		inline void DrawIndexed(uint32 indicesCount, int32 startVertex = 0, int32 startIndex = 0)
+		void DrawIndexed(uint32 indicesCount, int32 startVertex = 0, int32 startIndex = 0)
 		{
 			DrawIndexedInstanced(indicesCount, 1, 0, startVertex, startIndex);
 		}
 
 		SE_FUNCTION(API())
-		inline void DrawIndexed(ShaderProgramInstance& instance, uint32 indicesCount, int32 startVertex = 0, int32 startIndex = 0)
+		void DrawIndexed(ShaderProgramInstance* instance, uint32 indicesCount, int32 startVertex = 0, int32 startIndex = 0)
         {
             DrawIndexedInstanced(instance, indicesCount, 1, 0, startVertex, startIndex);
         }
@@ -317,7 +317,7 @@ namespace SE
 		 * @param startVertex 顶点偏移。
 		 * @param startIndex 起始索引。
 		 */
-		virtual void DrawIndexedInstanced(ShaderProgramInstance& instance, uint32 indicesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0, int32 startIndex = 0) = 0;
+		virtual void DrawIndexedInstanced(ShaderProgramInstance* instance, uint32 indicesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0, int32 startIndex = 0) = 0;
 
 		/**
 		 * Draws the instanced GPU-generated primitives. Buffer must contain GPUDrawIndirectArgs.

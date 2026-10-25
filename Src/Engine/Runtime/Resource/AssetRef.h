@@ -83,6 +83,7 @@ namespace SE
 	/// <summary>
 	/// Asset reference utility. Keeps reference to the linked asset object and handles load/unload events.
 	/// </summary>
+	SE_CLASS(API(InBuild)) 
 	template<typename T>
 	class AssetRef : public AssetRefBase
 	{

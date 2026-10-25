@@ -11,7 +11,6 @@
 #include "Runtime/Graphics/Async/GPUTasksExecutor.h"
 #include "Runtime/Graphics/GPUSwapChain.h"
 #include "Runtime/GraphicsDevice/Vulkan/GPUDeviceVulkan.h"
-#include "Runtime/Render/GUI/GUIRenderer.h"
 #include "Runtime/Render/RenderTask.h"
 #include "Runtime/Engine.h"
 #include "GPUResourceProperty.h"

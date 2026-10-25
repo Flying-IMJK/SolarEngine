@@ -1039,9 +1039,13 @@ namespace SE
         MemoryWriteStream stream(1024);
         Save(&stream, params);
         if (stream.GetPosition() > 0)
+        {
             data.Copy(stream.GetHandle(), stream.GetPosition());
+        }
         else
+        {
             data.Release();
+        }
     }
 
 #if SE_EDITOR
@@ -1051,7 +1055,9 @@ namespace SE
         for (int32 i = 0; i < Count(); i++)
         {
             if (At(i).m_AsAsset)
+            {
                 output.Add(At(i).m_AsAsset->GetID());
+            }
         }
     }
 

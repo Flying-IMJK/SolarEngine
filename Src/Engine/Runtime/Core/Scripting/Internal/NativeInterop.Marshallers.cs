@@ -27,13 +27,23 @@ namespace SE.Interop
         {
             public static object ConvertToManaged(IntPtr unmanaged)
             {
-                return unmanaged == IntPtr.Zero ? null
-                                : ManagedHandle.FromIntPtr(unmanaged).Target;
+                if (unmanaged == IntPtr.Zero)
+                {
+                    return null;
+                }
+
+                object managed = ManagedHandle.FromIntPtr(unmanaged).Target;
+                if (managed is ManagedArray managedArray)
+                {
+                    ManagedHandle managedArrayHandle = ManagedHandle.Alloc(managedArray, GCHandleType.Normal);
+                    managed = NativeInterop.MarshalToManaged((IntPtr)managedArrayHandle, managedArray.ArrayType);
+                    managedArrayHandle.Free();
+                }
+                return managed;
             }
             public static IntPtr ConvertToUnmanaged(object managed)
             {
-                return managed != null ? ManagedHandle
-                                .ToIntPtr(managed, GCHandleType.Weak) : IntPtr.Zero;
+                return managed != null ? ManagedHandle.ToIntPtr(managed, GCHandleType.Weak) : IntPtr.Zero;
             }
 
             public static void Free(IntPtr unmanaged)

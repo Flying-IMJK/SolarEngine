@@ -5,7 +5,6 @@
 #include "Runtime/Graphics/GPUDevice.h"
 #include "Runtime/Graphics/GPUContext.h"
 #include "Runtime/EngineContext.h"
-#include "Runtime/ShaderReflection.h"
 #include "Runtime/Level/Level.h"
 #include "Runtime/Level/Actors/DirectionalLight.h"
 #include "Runtime/Level/Actors/PointLight.h"

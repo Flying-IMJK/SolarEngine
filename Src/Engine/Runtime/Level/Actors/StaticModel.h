@@ -37,6 +37,7 @@ namespace SE
 		/// <summary>
 		/// The model asset to draw.
 		/// </summary>
+		SE_FIELD(API(Attributes="EditorOrder(20), DefaultValue(null), EditorDisplay(\"Model\")"))
 		AssetRef<Model> Model;
 
 		/// <summary>
