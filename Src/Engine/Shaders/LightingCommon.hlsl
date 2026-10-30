@@ -2,8 +2,8 @@
 #ifndef __LIGHTING_COMMON__
 #define __LIGHTING_COMMON__
 
-#include "./Shaders/BRDF.hlsl"
-#include "./Shaders/GBufferCommon.hlsl"
+#include "Shaders/BRDF.hlsl"
+#include "Shaders/GBufferCommon.hlsl"
 
 // Disables directional lighting (no shadowing with dot(N, L), eg. for smoke particles)
 #ifndef LIGHTING_NO_DIRECTIONAL

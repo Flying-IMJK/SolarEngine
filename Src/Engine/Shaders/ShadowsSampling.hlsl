@@ -3,9 +3,9 @@
 #ifndef __SHADOWS_SAMPLING__
 #define __SHADOWS_SAMPLING__
 
-#include "./Shaders/ShadowsCommon.hlsl"
-#include "./Shaders/GBufferCommon.hlsl"
-#include "./Shaders/LightingCommon.hlsl"
+#include "Shaders/ShadowsCommon.hlsl"
+#include "Shaders/GBufferCommon.hlsl"
+#include "Shaders/LightingCommon.hlsl"
 
 // Select shadows filter based on quality
 // Supported sampling kernel sizes fo each shadowing technique:
@@ -39,7 +39,7 @@
 #endif
 
 #if SHADOWS_QUALITY != 0
-#include "./Shaders/PCFKernels.hlsl"
+#include "Shaders/PCFKernels.hlsl"
 #endif
 
 // Gets the cube texture face index to use for shadow map sampling for the given view-to-light direction vector

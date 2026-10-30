@@ -95,6 +95,7 @@ target_include_directories(${REFLECTOR_TARGET}
 
 
 set_target_properties(${REFLECTOR_TARGET} PROPERTIES CXX_STANDARD 17)
+set_target_properties(${REFLECTOR_TARGET} PROPERTIES FOLDER "Tool" )
 
 if (CMAKE_HOST_WIN32)
 

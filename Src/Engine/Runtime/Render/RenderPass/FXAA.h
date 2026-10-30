@@ -5,11 +5,11 @@
 #include "Runtime/Render/RenderEnum.h"
 #include "Runtime/Render/RendererPass.h"
 #include "Runtime/Resource/AssetRef.h"
-#include "Runtime/Resource/Assets/Materials/Shader.h"
 
 namespace SE
 {
-	class GPUTextureView;
+    class GraphicShader;
+    class GPUTextureView;
 
 	/// <summary>
 	/// Fast-Approximate Anti-Aliasing effect.
@@ -17,8 +17,9 @@ namespace SE
 	class FXAA final : public RendererPass<FXAA>
 	{
 	private:
-		AssetRef<Shader> _shader;
-		GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX)> _psFXAA;
+		AssetRef<GraphicShader> m_Shader;
+        SLC2GPUPipelineState* m_PipelineState;
+        ShaderProgramInstance*  m_ProgramInstance;
 
 	public:
 		/// <summary>

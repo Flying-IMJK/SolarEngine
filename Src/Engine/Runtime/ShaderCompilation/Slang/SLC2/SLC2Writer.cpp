@@ -63,13 +63,13 @@ namespace SE
 			}
 
 			bool WriteVertexInputSignature(JsonWriter& writer,
-										   const List<SLC2VertexInputSignatureElement>& signature,
+										   const List<VertexInputSignatureElement>& signature,
 										   String& error)
 			{
 				writer.StartArray();
 				for (int32 elementIndex = 0; elementIndex < signature.Count(); elementIndex++)
 				{
-					const SLC2VertexInputSignatureElement& element = signature[elementIndex];
+					const VertexInputSignatureElement& element = signature[elementIndex];
 					const char* shaderType = ShaderTypeName(element.ShaderType);
 					if (element.Semantic.IsEmpty() || element.Semantic.StartsWith(SE_TEXT("SV_")) || shaderType == nullptr)
 					{
@@ -78,7 +78,7 @@ namespace SE
 					}
 					for (int32 otherIndex = 0; otherIndex < elementIndex; otherIndex++)
 					{
-						const SLC2VertexInputSignatureElement& other = signature[otherIndex];
+						const VertexInputSignatureElement& other = signature[otherIndex];
 						if ((other.Semantic == element.Semantic && other.SemanticIndex == element.SemanticIndex) ||
 							other.Location == element.Location)
 						{
@@ -315,12 +315,8 @@ namespace SE
 			{
 				const SLC2TargetRecord& target = program.Targets[targetIndex];
 				writer.StartObject();
-				writer.Key(SE_TEXT("targetKey"));
-				writer.String(target.TargetKey);
 				writer.Key(SE_TEXT("shaderProfile"));
-				writer.String(ToString(target.Target.Profile));
-				writer.Key(SE_TEXT("featureLevel"));
-				writer.String(ToString(target.Target.Feature));
+				writer.String(ToString(target.Target));
 
 				writer.Key(SE_TEXT("variants"));
 				writer.StartArray();

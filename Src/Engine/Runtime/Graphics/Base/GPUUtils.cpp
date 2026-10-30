@@ -291,7 +291,7 @@ namespace SE
             return false;
         }
 
-        const StringAnsi value(text);
+        const StringAnsiView value(text);
         if (value == "vertex" || value == "vs")
         {
             stage = ShaderStage::Vertex;

@@ -15,7 +15,7 @@ namespace SE
 	struct SE_API_RUNTIME ShaderVariantPlan
 	{
 		List<String> Defines;
-        StringAnsi       Variant;
+        StringAnsi   Variant;
 	};
 
 	class SE_API_RUNTIME ShaderVariantPlanner

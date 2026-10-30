@@ -107,7 +107,7 @@ namespace SE
 			}
 
 			bool ParseVertexInputSignature(const Json::Value& value,
-												   List<SLC2VertexInputSignatureElement>& output,
+												   List<VertexInputSignatureElement>& output,
 												   String& error)
 			{
 				output.Clear();
@@ -118,7 +118,7 @@ namespace SE
 				}
 				for (auto it = value.Begin(); it != value.End(); ++it)
 				{
-					SLC2VertexInputSignatureElement element;
+					VertexInputSignatureElement element;
 					String shaderType;
 					if (!it->IsObject())
 					{
@@ -714,35 +714,27 @@ namespace SE
 			String shaderProfile;
 			String featureLevel;
 			const Json::Value* variants = nullptr;
-			if (!ReadString(value, "targetKey", output.TargetKey, error) ||
-				!ReadString(value, "shaderProfile", shaderProfile, error) || 
-				!ReadString(value, "featureLevel", featureLevel, error) ||
+			if (!ReadString(value, "shaderProfile", shaderProfile, error) ||
 				!ReadArray(value, "variants", variants, error))
 			{
 				return false;
 			}
 
-			bool featureLevelFound = false;
+
 			for (int32 index = 0; index < static_cast<int32>(ShaderProfile::MAX); index++)
 			{
 				if (ToString(static_cast<ShaderProfile>(index)) == shaderProfile)
 				{
-					output.Target.Profile = static_cast<ShaderProfile>(index);
+					output.Target = static_cast<ShaderProfile>(index);
 				}
 			}
-			for (int32 index = 0; index < static_cast<int32>(FeatureLevel::MAX); index++)
-			{
-				if (String(ToString(static_cast<FeatureLevel>(index))) == featureLevel)
-				{
-					output.Target.Feature = static_cast<FeatureLevel>(index);
-					featureLevelFound = true;
-				}
-			}
-			if (output.Target.Profile == ShaderProfile::Unknown || !featureLevelFound || BuildTargetKey(output.Target) != output.TargetKey || variants->Empty())
+
+			if (output.Target == ShaderProfile::Unknown || variants->Empty())
 			{
 				error = SE_TEXT("SLC2 target identity is invalid.");
 				return false;
 			}
+
 			for (auto it = variants->Begin(); it != variants->End(); ++it)
 			{
 				SLC2VariantRecord variant;
@@ -754,10 +746,15 @@ namespace SE
 				}
 				const Json::Value* types = nullptr;
 				const Json::Value* blocks = nullptr;
-				if (!ReadUint(layout->value, "schema", variant.Layout.Schema, error) || !ReadUint(layout->value, "rootBlockId", variant.Layout.RootBlockId, error) || !ReadString(layout->value, "pipelineLayoutFingerprint", variant.Layout.PipelineLayoutFingerprint, error) || !ReadArray(layout->value, "types", types, error) || !ReadArray(layout->value, "parameterBlocks", blocks, error))
+				if (!ReadUint(layout->value, "schema", variant.Layout.Schema, error) || 
+				    !ReadUint(layout->value, "rootBlockId", variant.Layout.RootBlockId, error) || 
+				    !ReadString(layout->value, "pipelineLayoutFingerprint", variant.Layout.PipelineLayoutFingerprint, error) || 
+				    !ReadArray(layout->value, "types", types, error) || 
+				    !ReadArray(layout->value, "parameterBlocks", blocks, error))
 				{
 					return false;
 				}
+
 				for (auto type = types->Begin(); type != types->End(); ++type)
 				{
 					ShaderIRTypeRecord record;
@@ -827,8 +824,8 @@ namespace SE
 		// 逻辑签名是 Program 合约：语义/类型跨 Target 稳定，同一 Target 的 Location 跨 Variant 稳定。
 		namespace SLC2VertexInputReader
 		{
-			bool SameSignature(const List<SLC2VertexInputSignatureElement>& a,
-							   const List<SLC2VertexInputSignatureElement>& b,
+			bool SameSignature(const List<VertexInputSignatureElement>& a,
+							   const List<VertexInputSignatureElement>& b,
 							   const bool includeLocation)
 			{
 				if (a.Count() != b.Count())
@@ -837,8 +834,8 @@ namespace SE
 				}
 				for (int32 index = 0; index < a.Count(); index++)
 				{
-					const SLC2VertexInputSignatureElement& lhs = a[index];
-					const SLC2VertexInputSignatureElement* rhs = nullptr;
+					const VertexInputSignatureElement& lhs = a[index];
+					const VertexInputSignatureElement* rhs = nullptr;
 					for (int32 otherIndex = 0; otherIndex < b.Count(); otherIndex++)
 					{
 						if (b[otherIndex].Semantic == lhs.Semantic && b[otherIndex].SemanticIndex == lhs.SemanticIndex)
@@ -858,12 +855,12 @@ namespace SE
 
 			bool ValidateProgramVertexInput(const SLC2ProgramRecord& program, String& error)
 			{
-				List<SLC2VertexInputSignatureElement> programSignature;
+				List<VertexInputSignatureElement> programSignature;
 				bool hasProgramSignature = false;
 				for (int32 targetIndex = 0; targetIndex < program.Targets.Count(); targetIndex++)
 				{
 					const SLC2TargetRecord& target = program.Targets[targetIndex];
-					List<SLC2VertexInputSignatureElement> targetSignature;
+					List<VertexInputSignatureElement> targetSignature;
 					bool hasTargetSignature = false;
 					for (int32 variantIndex = 0; variantIndex < target.Variants.Count(); variantIndex++)
 					{
@@ -982,7 +979,7 @@ namespace SE
 				}
 				for (int32 existing = 0; existing < program.Targets.Count(); existing++)
 				{
-					if (program.Targets[existing].TargetKey == record.TargetKey)
+					if (program.Targets[existing].Target == record.Target)
 					{
 						error = SE_TEXT("SLC2 program has duplicate targets.");
 						return false;

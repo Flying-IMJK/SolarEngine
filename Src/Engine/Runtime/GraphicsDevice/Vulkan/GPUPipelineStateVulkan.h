@@ -214,7 +214,7 @@ namespace SE
 
     protected:
         SLC2PipelineStateVulkanBase(GPUDeviceVulkan* device, PipelineLayoutVulkan* layout);
-        ~SLC2PipelineStateVulkanBase();
+        virtual ~SLC2PipelineStateVulkanBase() override;
 
         PipelineLayoutVulkan*            GetLayout() const;
         const DescriptorSetLayoutVulkan* GetDescriptorSetLayout() const;
@@ -263,7 +263,7 @@ namespace SE
     {
     public:
         SLC2ComputePipelineStateVulkan(GPUDeviceVulkan* device, VkPipeline pipeline, PipelineLayoutVulkan* layout);
-        ~SLC2ComputePipelineStateVulkan();
+        ~SLC2ComputePipelineStateVulkan() override;
 
         bool Init(const Description& desc, const SLC2GPUShaderProgram* program) override;
 
@@ -290,7 +290,7 @@ namespace SE
     {
     public:
         SLC2GraphicsPipelineStateVulkan(GPUDeviceVulkan* device);
-        ~SLC2GraphicsPipelineStateVulkan();
+        ~SLC2GraphicsPipelineStateVulkan() override;
 
         virtual bool Init(const Description& desc, const SLC2GPUShaderProgram* program) override;
 

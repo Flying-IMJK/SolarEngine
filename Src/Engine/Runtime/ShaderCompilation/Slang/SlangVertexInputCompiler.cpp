@@ -49,12 +49,12 @@ namespace SE
             return true;
         }
 
-        bool IsDuplicate(const List<SLC2VertexInputSignatureElement>& signature,
-                         const SLC2VertexInputSignatureElement& element)
+        bool IsDuplicate(const List<VertexInputSignatureElement>& signature,
+                         const VertexInputSignatureElement& element)
         {
             for (int32 index = 0; index < signature.Count(); index++)
             {
-                const SLC2VertexInputSignatureElement& existing = signature[index];
+                const VertexInputSignatureElement& existing = signature[index];
                 if ((existing.Semantic == element.Semantic && existing.SemanticIndex == element.SemanticIndex) ||
                     existing.Location == element.Location)
                 {
@@ -67,7 +67,7 @@ namespace SE
 
     bool SLC2VertexInputCompiler::AppendVertexInput(
         slang::VariableLayoutReflection* variable,
-        List<SLC2VertexInputSignatureElement>& signature,
+        List<VertexInputSignatureElement>& signature,
         String& error)
     {
         if (variable == nullptr || variable->getTypeLayout() == nullptr)
@@ -79,16 +79,14 @@ namespace SE
         const char* semanticName = variable->getSemanticName();
         if (semanticName != nullptr && semanticName[0] != '\0')
         {
-            String semantic = String(semanticName);
-            semantic.ToUpper();
             // SV_* 是系统值输入，由固定功能提供，不需要 VertexFactory 数据。
-            if (semantic.StartsWith(SE_TEXT("SV_")))
+            if (StringUtils::CompareIgnoreCase(semanticName, "SV_", StringUtils::Length("SV_")) == 0)
             {
                 return true;
             }
 
-            SLC2VertexInputSignatureElement element;
-            element.Semantic = semantic;
+            VertexInputSignatureElement element;
+            element.Semantic           = semanticName;
             const size_t semanticIndex = variable->getSemanticIndex();
             const size_t location = variable->getOffset(slang::ParameterCategory::VaryingInput);
             if (semanticIndex > static_cast<size_t>(0xffffffffu) || location > static_cast<size_t>(0xffffffffu))
@@ -131,7 +129,7 @@ namespace SE
     bool SLC2VertexInputCompiler::ReadVertexInputSignature(
         slang::ProgramLayout* layout,
         const int32 entryPointIndex,
-        List<SLC2VertexInputSignatureElement>& signature,
+        List<VertexInputSignatureElement>& signature,
         String& error)
     {
         signature.Clear();
@@ -157,11 +155,11 @@ namespace SE
     }
 
     bool SLC2VertexInputCompiler::ValidateVertexInputSignature(
-        const List<SLC2VertexInputSignatureElement>& signature, String& error)
+        const List<VertexInputSignatureElement>& signature, String& error)
     {
         for (int32 index = 0; index < signature.Count(); index++)
         {
-            const SLC2VertexInputSignatureElement& element = signature[index];
+            const VertexInputSignatureElement& element = signature[index];
             if (element.Semantic.IsEmpty() || element.Semantic.StartsWith(SE_TEXT("SV_")))
             {
                 error = SE_TEXT("Vertex input signature contains an invalid system or empty semantic.");
@@ -191,8 +189,8 @@ namespace SE
     }
 
     bool SLC2VertexInputCompiler::SameVertexInputSignature(
-        const List<SLC2VertexInputSignatureElement>& a,
-        const List<SLC2VertexInputSignatureElement>& b,
+        const List<VertexInputSignatureElement>& a,
+        const List<VertexInputSignatureElement>& b,
         const bool includeLocation)
     {
         if (a.Count() != b.Count())
@@ -201,8 +199,8 @@ namespace SE
         }
         for (int32 index = 0; index < a.Count(); index++)
         {
-            const SLC2VertexInputSignatureElement& lhs = a[index];
-            const SLC2VertexInputSignatureElement* rhs = nullptr;
+            const VertexInputSignatureElement& lhs = a[index];
+            const VertexInputSignatureElement* rhs = nullptr;
             for (int32 otherIndex = 0; otherIndex < b.Count(); otherIndex++)
             {
                 if (b[otherIndex].Semantic == lhs.Semantic && b[otherIndex].SemanticIndex == lhs.SemanticIndex)

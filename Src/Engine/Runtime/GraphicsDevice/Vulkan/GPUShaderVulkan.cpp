@@ -702,7 +702,7 @@ namespace SE
 
             SLC2VulkanStageModule module;
             module.Stage               = stage.Stage;
-            module.EntryPointAnsi      = stage.EntryPoint.ToStringAnsi();
+            module.EntryPointAnsi      = stage.EntryPoint;
             module.OutputControlPoints = stage.OutputControlPoints;
             const VkResult result = vkCreateShaderModule(m_Device->device, &createInfo, nullptr, &module.Module);
             LOG_VULKAN_RESULT(result);
@@ -823,7 +823,7 @@ namespace SE
         return computeState->PrepareAndBindDescriptors(context, snapshot, m_DescriptorBindings);
     }
 
-    bool SLC2ShaderProgramVulkan::PrepareAndBindGraphicsDescriptors(GPUContextVulkan*                context,
+    bool SLC2ShaderProgramVulkan::BindGraphicsDescriptors(GPUContextVulkan* context,
                                                                     const ShaderBindingSnapshot&     snapshot,
                                                                     SLC2GraphicsPipelineStateVulkan* state)
     {

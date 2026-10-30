@@ -1,7 +1,7 @@
 
-#include "Shaders/Slang/SolarShaderProgram.hlsl"
-#include "Shaders/Slang/GUICommon.hlsl"
-#include "Shaders/Slang/QuadCommon.hlsl"
+#include "Shaders/ProgramCommon.hlsl"
+#include "Shaders/GUICommon.hlsl"
+#include "Shaders/QuadCommon.hlsl"
 
 
 #ifndef BLUR_V
@@ -14,6 +14,7 @@ struct Data
 {
 	float4x4 ViewProjection;
 }
+
 
 struct BlurData
 {
@@ -71,7 +72,7 @@ SHADER_PROGRAM(Blur,
 VS2PS VS(Render2DVertex input)
 {
 	VS2PS output;
-
+	
 	// Render2D::RenderingFeatures::VertexSnapping
 	if ((int)input.CustomDataAndClipOrigin.y & 1)
 		input.Position = (float2)(int2)input.Position;

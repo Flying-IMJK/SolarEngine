@@ -2,7 +2,7 @@
 #ifndef __LIGHTING__
 #define __LIGHTING__
 
-#include "./Shaders/LightingCommon.hlsl"
+#include "Shaders/LightingCommon.hlsl"
 
 ShadowData GetShadow(LightData lightData, GBufferSample gBuffer, float4 shadowMask)
 {

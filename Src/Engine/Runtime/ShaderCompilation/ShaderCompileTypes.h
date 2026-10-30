@@ -7,21 +7,9 @@
 
 namespace SE
 {
-	struct SE_API_RUNTIME ShaderCompileTarget
-	{
-		ShaderProfile Profile = ShaderProfile::Unknown;
-		FeatureLevel Feature = FeatureLevel::ES2;
-	};
-
 	struct SE_API_RUNTIME ShaderVariantRequest
 	{
 		List<String> Defines;
-	};
-
-	struct SE_API_RUNTIME ShaderProgramVariantSelection
-	{
-		String ProgramId;
-		List<ShaderVariantRequest> Variants;
 	};
 
 	struct SE_API_RUNTIME ShaderCompileRequest
@@ -30,8 +18,8 @@ namespace SE
 		String SourcePath;
 		char* SourceCode;
         int SourceCodeLength;
-		List<ShaderCompileTarget> Targets;
-		List<ShaderProgramVariantSelection> VariantSelections;
+		List<ShaderProfile> Targets;
+        List<ShaderVariantRequest> VariantSelections;
 	};
 
 
@@ -44,5 +32,4 @@ namespace SE
 		List<String> SourceDependencies;
 	};
 
-	SE_API_RUNTIME String BuildTargetKey(const ShaderCompileTarget& target);
 }

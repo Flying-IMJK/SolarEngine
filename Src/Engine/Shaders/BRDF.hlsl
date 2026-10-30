@@ -2,7 +2,7 @@
 #ifndef __BRDF__
 #define __BRDF__
 
-#include "./Shaders/Math.hlsl"
+#include "Shaders/Math.hlsl"
 
 float3 Diffuse_Lambert(float3 diffuseColor)
 {

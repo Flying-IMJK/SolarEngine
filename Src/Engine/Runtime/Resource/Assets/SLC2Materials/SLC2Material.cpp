@@ -333,7 +333,6 @@ namespace SE
 
     bool SLC2Material::PrepareDraw(const String&                             passName,
                                    const SLC2MaterialGeometryMode            geometryMode,
-                                   const ShaderCompileTarget&                target,
                                    const List<String>&                       defines,
                                    const SLC2MaterialDrawContext&            context,
                                    std::unique_ptr<SLC2MaterialDrawProgram>& output) const
@@ -347,12 +346,11 @@ namespace SE
         }
         
         return PrepareDrawWithParameters(
-            passName, geometryMode, target, defines, parameters, revision, context, output);
+            passName, geometryMode, defines, parameters, revision, context, output);
     }
 
     bool SLC2Material::PrepareDrawWithParameters(const String&                             passName,
                                                  const SLC2MaterialGeometryMode            geometryMode,
-                                                 const ShaderCompileTarget&                target,
                                                  const List<String>&                       defines,
                                                  const MaterialParams&                     parameters,
                                                  const uint64                              expectedRevision,

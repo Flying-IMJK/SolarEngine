@@ -12,14 +12,6 @@ namespace SE
 	class ShaderProgramInstance;
     class SLC2GPUShaderProgram;
 
-	// 运行时选择一个已编译 SLC2 变体的最小输入：
-	// ProgramId 定位 SHADER_PROGRAM，Target 定位编译目标，Defines 经变体规划器归一化后定位 Variant。
-	struct SE_API_RUNTIME ShaderProgramSelection
-	{
-		ShaderCompileTarget Target;
-		List<String> Defines;
-	};
-
 	class SE_API_RUNTIME SLC2GPUShader : public GPUResource
 	{
 	protected:
@@ -29,18 +21,31 @@ namespace SE
 		~SLC2GPUShader() override;
 
 		bool Load(const byte* data, int dataLength);
-		
-		static bool ResolveProgramSelection(const SLC2Artifact& artifact, const String& programName, const ShaderProgramSelection& selection, const SLC2ProgramRecord*& program, const SLC2TargetRecord*& target, const SLC2VariantRecord*& variant);
-		// 根据 selection 复用或创建不可变 ShaderProgram，并初始化一次可变的 ShaderProgramInstance 绑定状态。
-        bool CreateProgramInstance(const String&                 programName,
-                                   const ShaderProgramSelection& selection,
-                                   ShaderProgramInstance&        instance);
+
+		// 根据 ProgramName 和 变体列表 复用或创建不可变 ShaderProgram。
+        bool GetOrCreateProgram(const String&                   programName,
+                                const List<String>&             defines, 
+                                SLC2GPUShaderProgram*& program);
+
+		bool GetOrCreateProgram(const String& programName, SLC2GPUShaderProgram*& program);
 
         GPUResourceType GetResType() const final override;
 
 	private:
-		bool SelectProgram(const String& programName, const ShaderProgramSelection& selection, const SLC2ProgramRecord*& program, const SLC2TargetRecord*& target, const SLC2VariantRecord*& variant) const;
-		bool GetOrCreateProgram(const SLC2ProgramRecord* program, const SLC2TargetRecord* target, const SLC2VariantRecord* variant, SLC2GPUShaderProgram*& shaderProgram);
+        static bool ResolveProgramSelection(const SLC2Artifact&       artifact,
+                                            const String&             programName,
+                                            const List<String>&       Defines,
+                                            const SLC2ProgramRecord*& program,
+                                            const SLC2TargetRecord*&  target,
+                                            const SLC2VariantRecord*& variant);
+
+        bool SelectProgram(const String&             programName,
+                           const List<String>&       defines,
+                           const SLC2ProgramRecord*& program,
+                           const SLC2TargetRecord*&  target,
+                           const SLC2VariantRecord*& variant) const;
+
+		bool CreateProgram(const SLC2ProgramRecord* program, const SLC2TargetRecord* target, const SLC2VariantRecord* variant, SLC2GPUShaderProgram*& shaderProgram);
 		void ReleasePrograms();
 
 	protected:

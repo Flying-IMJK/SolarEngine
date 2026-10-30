@@ -269,9 +269,6 @@ namespace SE
         CachedPSOSLC2 PsoNoDepthSLC2;
         CachedPSOSLC2* CurrentPsoSLC2 = nullptr;
 
-        GPUSampler* SamplerLinearClamp = nullptr;
-        GPUSampler* SamplerPointClamp  = nullptr;
-
         DynamicVertexBuffer VB = DynamicVertexBuffer(RENDER2D_INITIAL_VB_CAPACITY, (uint32)sizeof(Render2DVertex), SE_TEXT("Render2D.VB"));
         DynamicIndexBuffer IB = DynamicIndexBuffer(RENDER2D_INITIAL_IB_CAPACITY, sizeof(uint32), SE_TEXT("Render2D.IB"));
         uint32 VBIndex = 0;
@@ -661,13 +658,13 @@ namespace SE
         render2DData = New<Render2DData>();
 
         // GUI Shader
-        render2DData->GUIShader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/GUI"));
+        render2DData->GUIShader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/Discard/GUI"));
         if (render2DData->GUIShader == nullptr)
         {
             return false;
         }
 
-        render2DData->GUIShader2 = AssetContent::LoadAsyncInternal<GraphicShader>(SE_TEXT("Shaders/Slang/GUI"));
+        render2DData->GUIShader2 = AssetContent::LoadAsyncInternal<GraphicShader>(SE_TEXT("Shaders/GUI"));
         if (render2DData->GUIShader2 == nullptr)
         {
             return false;
@@ -699,9 +696,6 @@ namespace SE
 
         render2DData->VB.Dispose();
         render2DData->IB.Dispose();
-
-        DeleteObjectSafe(render2DData->SamplerLinearClamp);
-        DeleteObjectSafe(render2DData->SamplerPointClamp);
     }
 
     void Render2DSystem::CreateVertexLayout()
@@ -957,19 +951,6 @@ namespace SE
             render2DData->PsoNoDepthSLC2.Init(render2DData->GUIShader2->GetGPUShader(), false);
         }
         render2DData->CurrentPsoSLC2 = render2DData->DepthBuffer ? &render2DData->PsoDepthSLC2 : &render2DData->PsoNoDepthSLC2;
-
-        if (render2DData->SamplerLinearClamp == nullptr)
-        {
-            GPUDevice* device = GPUDevice::instance;
-            render2DData->SamplerLinearClamp = device->CreateSampler();
-            render2DData->SamplerPointClamp  = device->CreateSampler();
-
-            GPUSamplerDescription linear = GPUSamplerDescription::New(GPUSamplerFilter::Bilinear, GPUSamplerAddressMode::Clamp);
-            GPUSamplerDescription point = GPUSamplerDescription::New(GPUSamplerFilter::Point, GPUSamplerAddressMode::Clamp);
-
-            render2DData->SamplerLinearClamp->Init(linear);
-            render2DData->SamplerLinearClamp->Init(point);
-        }
 
         
         // Prepare constant buffer
@@ -1350,22 +1331,22 @@ namespace SE
             render2DData->Context->SetRenderTarget(blurA->View());
             render2DData->Context->SetViewportAndScissors((float)renderTargetWidth, (float)renderTargetHeight);
             render2DData->Context->BindSR(0, render2DData->Output);
-            render2DData->Context->SetState(render2DData->CurrentPso->PS_Downscale);
-            render2DData->Context->DrawFullscreenTriangle();
+            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_Downscale);
+            render2DData->Context->DrawFullscreenTriangle(render2DData->CurrentPsoSLC2->SP_Downscale);
 
             // Render the blur (1st pass)
             render2DData->Context->ResetRenderTarget();
             render2DData->Context->SetRenderTarget(blurB->View());
             render2DData->Context->BindSR(0, blurA->View());
-            render2DData->Context->SetState(render2DData->CurrentPso->PS_BlurH);
-            render2DData->Context->DrawFullscreenTriangle();
+            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_BlurH);
+            render2DData->Context->DrawFullscreenTriangle(render2DData->CurrentPsoSLC2->SP_BlurH);
 
             // Render the blur (2nd pass)
             render2DData->Context->ResetRenderTarget();
             render2DData->Context->SetRenderTarget(blurA->View());
             render2DData->Context->BindSR(0, blurB->View());
-            render2DData->Context->SetState(render2DData->CurrentPso->PS_BlurV);
-            render2DData->Context->DrawFullscreenTriangle();
+            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_BlurV);
+            render2DData->Context->DrawFullscreenTriangle(render2DData->CurrentPsoSLC2->SP_BlurV);
 
             // Restore output
             render2DData->Context->ResetRenderTarget();
@@ -1375,7 +1356,7 @@ namespace SE
 
             // Link for drawing final blur as a texture
             render2DData->Context->BindSR(0, blurA->View());
-            render2DData->Context->SetState(render2DData->CurrentPso->PS_Image);
+            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_Image);
 
             // Cleanup
             RenderTargetPool::Release(blurA);
@@ -1393,17 +1374,6 @@ namespace SE
         default:
             ENGINE_UNREACHABLE_CODE();
 #endif
-        }
-
-        ShaderVar samplerVar;
-        if (programInstance->FindVar(SE_TEXT("SamplerLinearClamp"), samplerVar))
-        {
-            samplerVar.SetSampler(render2DData->SamplerLinearClamp);
-        }
-
-        if (programInstance->FindVar(SE_TEXT("SamplerPointClamp"), samplerVar))
-        {
-            samplerVar.SetSampler(render2DData->SamplerPointClamp);
         }
 
         programInstance->SetConstantBuffer(SE_TEXT("data"), constantBuffer);
@@ -2382,8 +2352,7 @@ namespace SE
 
         ConstantBuffer = device->CreateConstantBuffer(sizeof(Data), SE_TEXT("Render2DConst"));
 
-        ShaderProgramSelection programSelection;
-        programSelection.Target = {device->GetShaderProfile(), FeatureLevel::SM5};
+        SLC2GPUShaderProgram* program;
 
         // Create pipeline states
         SLC2GPUPipelineState::Description desc = SLC2GPUPipelineState::Description::DefaultFullscreenTriangle;
@@ -2395,98 +2364,98 @@ namespace SE
         PS_Image                                 = device->CreateSLC2PipelineState();
         SP_Image                                 = New<ShaderProgramInstance>();
 
-        if (!shader->CreateProgramInstance(SE_TEXT("Image"), programSelection, *SP_Image) ||
-            !PS_Image->Init(desc, SP_Image->GetProgram()))
+        if (!shader->GetOrCreateProgram(SE_TEXT("Image"), program) || !PS_Image->Init(desc, program))
         {
             return false;
         }
+        SP_Image->Initialize(program);
 
         //
         desc.BlendMode = BlendingMode::AlphaBlend;
         PS_ImagePoint  = device->CreateSLC2PipelineState();
-        SP_ImagePoint       = New<ShaderProgramInstance>();
+        SP_ImagePoint  = New<ShaderProgramInstance>();
 
-        if (!shader->CreateProgramInstance(SE_TEXT("ImagePoint"), programSelection, *SP_ImagePoint) ||
-            !PS_ImagePoint->Init(desc, SP_ImagePoint->GetProgram()))
+        if (!shader->GetOrCreateProgram(SE_TEXT("ImagePoint"), program) || !PS_ImagePoint->Init(desc, program))
         {
             return false;
         }
+        SP_ImagePoint->Initialize(program);
 
         //
         desc.BlendMode = BlendingMode::AlphaBlend;
         PS_Color       = device->CreateSLC2PipelineState();
         SP_Color       = New<ShaderProgramInstance>();
 
-        if (!shader->CreateProgramInstance(SE_TEXT("Color"), programSelection, *SP_Color) ||
-            !PS_Color->Init(desc, SP_Color->GetProgram()))
+        if (!shader->GetOrCreateProgram(SE_TEXT("Color"), program) || !PS_Color->Init(desc, program))
         {
             return false;
         }
+        SP_Color->Initialize(program);
+
 
         //
         desc.BlendMode   = BlendingMode::Opaque;
         PS_Color_NoAlpha = device->CreateSLC2PipelineState();
         SP_Color_NoAlpha = New<ShaderProgramInstance>();
 
-        if (!shader->CreateProgramInstance(SE_TEXT("Color"), programSelection, *SP_Color_NoAlpha) ||
-            !PS_Color_NoAlpha->Init(desc, SP_Color_NoAlpha->GetProgram()))
+        if (!shader->GetOrCreateProgram(SE_TEXT("Color"), program) || !PS_Color_NoAlpha->Init(desc, program))
         {
             return false;
         }
+        SP_Color_NoAlpha->Initialize(program);
 
         //
         desc.BlendMode = BlendingMode::AlphaBlend;
         PS_Font        = device->CreateSLC2PipelineState();
-        SP_Font       = New<ShaderProgramInstance>();
+        SP_Font        = New<ShaderProgramInstance>();
 
-        if (!shader->CreateProgramInstance(SE_TEXT("Font"), programSelection, *SP_Font) ||
-            !PS_Font->Init(desc, SP_Font->GetProgram()))
+        if (!shader->GetOrCreateProgram(SE_TEXT("Font"), program) || !PS_Font->Init(desc, program))
         {
             return false;
         }
+        SP_Font->Initialize(program);
 
         //
         PS_LineAA = device->CreateSLC2PipelineState();
-        SP_LineAA  = New<ShaderProgramInstance>();
+        SP_LineAA = New<ShaderProgramInstance>();
 
-        if (!shader->CreateProgramInstance(SE_TEXT("LineAA"), programSelection, *SP_LineAA) ||
-            !PS_LineAA->Init(desc, SP_LineAA->GetProgram()))
+        if (!shader->GetOrCreateProgram(SE_TEXT("LineAA"), program) || !PS_LineAA->Init(desc, program))
         {
             return false;
         }
+        SP_LineAA->Initialize(program);
 
         //
         desc.BlendMode = BlendingMode::Opaque;
         PS_BlurH       = device->CreateSLC2PipelineState();
         SP_BlurH       = New<ShaderProgramInstance>();
 
-        if (!shader->CreateProgramInstance(SE_TEXT("Blur"), programSelection, *SP_BlurH) ||
-            !PS_BlurH->Init(desc, SP_BlurH->GetProgram()))
+        if (!shader->GetOrCreateProgram(SE_TEXT("Blur"), program) || !PS_BlurH->Init(desc, program))
         {
             return false;
         }
+        SP_BlurH->Initialize(program);
 
         //
-        programSelection.Defines.Add(SE_TEXT("BLUR_V"));
         PS_BlurV = device->CreateSLC2PipelineState();
         SP_BlurV = New<ShaderProgramInstance>();
 
-        if (!shader->CreateProgramInstance(SE_TEXT("Blur"), programSelection, *SP_BlurV) ||
-            !PS_BlurV->Init(desc, SP_BlurV->GetProgram()))
+        if (!shader->GetOrCreateProgram(SE_TEXT("Blur"), {SE_TEXT("BLUR_V")}, program) ||
+            !PS_BlurV->Init(desc, program))
         {
             return false;
         }
-        programSelection.Defines.Clear();
+        SP_BlurV->Initialize(program);
 
         //
         PS_Downscale = device->CreateSLC2PipelineState();
-        SP_Downscale     = New<ShaderProgramInstance>();
+        SP_Downscale = New<ShaderProgramInstance>();
 
-        if (!shader->CreateProgramInstance(SE_TEXT("Downscale"), programSelection, *SP_Downscale) ||
-            !PS_Downscale->Init(desc, SP_Downscale->GetProgram()))
+        if (!shader->GetOrCreateProgram(SE_TEXT("Downscale"), program) || !PS_Downscale->Init(desc, program))
         {
             return false;
         }
+        SP_Downscale->Initialize(program);
 
         Inited = true;
 

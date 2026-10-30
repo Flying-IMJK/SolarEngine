@@ -16,6 +16,7 @@ namespace SE
     class SLC2GPUPipelineState;
 	class GPUContext;
 	class GPUTexture;
+	class GPUTextureView;
 	class GPUShader;
 	class SLC2GPUShader;
 	class GPUBuffer;
@@ -28,6 +29,7 @@ namespace SE
 	class GPUTasksSystem;
 	class GPUTasksContext;
 	class GPUTasksExecutor;
+	struct ShaderIRTypeRecord;
 
 	SE_CLASS(API(Sealed, NoSpawn))
 	class SE_API_RUNTIME GPUDevice : public ScriptingObject
@@ -146,6 +148,12 @@ namespace SE
 
 		SE_FUNCTION(API())
 		virtual GPUSampler* CreateSampler() = 0;
+
+        // Device-owned resources for snapshot completion on the render submission thread.
+        // Returned pointers are non-owning and may be null on initialization failure or unsupported texture shapes.
+        virtual GPUTextureView* GetDummyTextureView(const ShaderIRTypeRecord& type) = 0;
+        virtual GPUBuffer*      GetDummyBuffer() = 0;
+        virtual GPUSampler*     GetDummySampler(bool comparison) = 0;
 
 		virtual GPUTimerQuery* CreateTimerQuery() = 0;
 

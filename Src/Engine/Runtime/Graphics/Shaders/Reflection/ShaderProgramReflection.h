@@ -13,6 +13,7 @@ namespace SE
 		Texture,
 		Buffer,
 		Sampler,
+		Max
 	};
 
 	struct SE_API_RUNTIME ShaderResourceKey
@@ -44,6 +45,7 @@ namespace SE
 	struct SE_API_RUNTIME ShaderLogicalResourceSlot
 	{
 		ShaderResourceKey Key;
+		String Path;
 		uint32 TypeId = Max_uint32;
 		ShaderProgramBindingKind Kind = ShaderProgramBindingKind::Texture;
 	};

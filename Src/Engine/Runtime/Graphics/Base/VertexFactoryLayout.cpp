@@ -1,6 +1,8 @@
 #include "VertexFactoryLayout.h"
 #include "Runtime/Core/Types/Collections/Sorting.h"
 #include "Runtime/Core/Types/Hash.h"
+#include "Runtime/Core/Types/Collections/Span.h"
+
 #include "Runtime/Graphics/GlobalSettings_GPU.h"
 #include "Runtime/Graphics/Shaders/Config.h"
 
@@ -83,8 +85,8 @@ namespace SE
 	}
 
 	bool VertexFactoryLayout::Create(
-		const List<VertexFactoryBufferBinding>& bindings,
-		const List<VertexFactoryInputElement>& elements,
+	    const List<VertexFactoryBufferBinding>& bindings,
+	    const List<VertexFactoryInputElement>&  elements,
 		VertexFactoryLayout& output)
 	{
 		if (bindings.Count() > GPU_MAX_VB_BINDED)
@@ -92,15 +94,15 @@ namespace SE
 			LOG_ERROR("Graphics", "VertexFactory layout has too many bindings. Maximum is {0}.", GPU_MAX_VB_BINDED);
 			return false;
 		}
-		if (elements.Count() > VERTEX_SHADER_MAX_INPUT_ELEMENTS)
+        if (elements.Count() > VERTEX_SHADER_MAX_INPUT_ELEMENTS)
 		{
 			LOG_ERROR("Graphics", "VertexFactory layout has too many elements. Maximum is {0}.", VERTEX_SHADER_MAX_INPUT_ELEMENTS);
 			return false;
 		}
 
 		VertexFactoryLayout layout;
-		layout.m_Bindings = bindings;
-		layout.m_Elements = elements;
+        layout.m_Bindings = MoveTemp(bindings);
+        layout.m_Elements = MoveTemp(elements);
 
 		// Semantic 不区分大小写，构造时统一为大写并据此建立唯一键。
 		for (int32 index = 0; index < layout.m_Elements.Count(); index++)

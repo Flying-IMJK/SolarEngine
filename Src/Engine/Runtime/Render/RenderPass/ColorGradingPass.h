@@ -8,7 +8,10 @@
 
 namespace SE
 {
-	/// <summary>
+    enum class ToneMappingMode;
+    class GraphicShader;
+
+    /// <summary>
 	/// Color Grading and Tone Mapping rendering service. Generates HDR LUT for PostFx pass.
 	/// </summary>
 	class ColorGradingPass : public RendererPass<ColorGradingPass>
@@ -16,8 +19,10 @@ namespace SE
 	private:
 		bool m_UseVolumeTexture;
 		PixelFormat m_LutFormat;
-		AssetRef<Shader> m_Shader;
-		GPUPipelineStatePermutationsPs<3> m_PsLut;
+		AssetRef<GraphicShader> m_Shader;
+        SLC2GPUPipelineState* m_PipelineState;
+        ShaderProgramInstance* m_ProgramInstance;
+        GPUConstantBuffer* m_GPUConstantBuffer;
 
 	public:
 
@@ -25,8 +30,6 @@ namespace SE
 		/// Init
 		/// </summary>
 		ColorGradingPass();
-
-	public:
 
 		/// <summary>
 		/// Performs Look Up Table rendering for the input task.
@@ -44,6 +47,8 @@ namespace SE
 			invalidateResources();
 		}
 #endif
+
+		void UpdateProgram(ToneMappingMode mappingMode);
 
 	public:
 		// [RendererPass]

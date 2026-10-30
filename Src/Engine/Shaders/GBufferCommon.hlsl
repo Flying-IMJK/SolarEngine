@@ -2,7 +2,12 @@
 #ifndef __GBUFFER_COMMON__
 #define __GBUFFER_COMMON__
 
-#include "./Shaders/Common.hlsl"
+#include "Shaders/Common.hlsl"
+
+#define SHADING_MODEL_UNLIT 0
+#define SHADING_MODEL_LIT 1
+#define SHADING_MODEL_SUBSURFACE 2
+#define SHADING_MODEL_FOLIAGE 3
 
 // GBuffer sample data structure
 struct GBufferSample

@@ -23,7 +23,7 @@ namespace SE
 
 	bool GizmosPass::Init()
 	{
-		m_Shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/Gizmos"));
+		m_Shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/Discard/Gizmos"));
 
 		if (m_Shader == nullptr)
 		{

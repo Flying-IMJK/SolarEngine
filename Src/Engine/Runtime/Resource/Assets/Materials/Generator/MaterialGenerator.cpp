@@ -65,7 +65,7 @@ namespace SE
     bool FeatureData::Init()
     {
         // Load template file
-        const String path = EngineContext::StartupFolder / SE_TEXT("Shaders/MaterialTemplates/") + Data.Template;
+        const String path = EngineContext::StartupFolder / SE_TEXT("Shaders/Discard/MaterialTemplates/") + Data.Template;
         String contents;
         if (!File::ReadAllText(path, contents))
         {
@@ -690,7 +690,7 @@ namespace SE
         // Create source code
         {
             // Open template file
-            String path = EngineContext::StartupFolder / SE_TEXT("Shaders/MaterialTemplates/");
+            String path = EngineContext::StartupFolder / SE_TEXT("Shaders/Discard/MaterialTemplates/");
             switch (materialInfo.Domain)
             {
             case MaterialDomain::Surface:

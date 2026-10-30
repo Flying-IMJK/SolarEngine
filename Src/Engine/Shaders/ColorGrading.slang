@@ -1,8 +1,8 @@
 
-#include "./Shaders/Common.hlsl"
-#include "./Shaders/PostProcess/GammaCorrectionCommon.hlsl"
-#include "./Shaders/PostProcess/ACES.hlsl"
-#include "./Shaders/QuadCommon.hlsl"
+#include "Shaders/Common.hlsl"
+#include "Shaders/PostProcess/GammaCorrectionCommon.hlsl"
+#include "Shaders/PostProcess/ACES.hlsl"
+#include "Shaders/QuadCommon.hlsl"
 
 #ifdef _PS_Lut3D
 #define USE_VOLUME_LUT 1
@@ -11,35 +11,39 @@
 #endif
 static const float LUTSize = 32;
 
-META_CB_BEGIN(0, Data)
-float4 ColorSaturationShadows;
-float4 ColorContrastShadows;
-float4 ColorGammaShadows;
-float4 ColorGainShadows;
-float4 ColorOffsetShadows;
 
-float4 ColorSaturationMidtones;
-float4 ColorContrastMidtones;
-float4 ColorGammaMidtones;
-float4 ColorGainMidtones;
-float4 ColorOffsetMidtones;
+struct Data
+{
+	float4 ColorSaturationShadows;
+	float4 ColorContrastShadows;
+	float4 ColorGammaShadows;
+	float4 ColorGainShadows;
+	float4 ColorOffsetShadows;
 
-float4 ColorSaturationHighlights;
-float4 ColorContrastHighlights;
-float4 ColorGammaHighlights;
-float4 ColorGainHighlights;
-float4 ColorOffsetHighlights;
+	float4 ColorSaturationMidtones;
+	float4 ColorContrastMidtones;
+	float4 ColorGammaMidtones;
+	float4 ColorGainMidtones;
+	float4 ColorOffsetMidtones;
 
-float ColorCorrectionShadowsMax;
-float ColorCorrectionHighlightsMin;
-float WhiteTemp;
-float WhiteTint;
+	float4 ColorSaturationHighlights;
+	float4 ColorContrastHighlights;
+	float4 ColorGammaHighlights;
+	float4 ColorGainHighlights;
+	float4 ColorOffsetHighlights;
 
-float3 Dummy;
-float LutWeight;
-META_CB_END
+	float ColorCorrectionShadowsMax;
+	float ColorCorrectionHighlightsMin;
+	float WhiteTemp;
+	float WhiteTint;
 
-Texture2D LutTexture : register(t0);
+	float3 Dummy;
+	float LutWeight;
+}
+
+ParameterBlock<Data> data;
+
+Texture2D LutTexture;
 
 // Accurate for 1000K < temp < 15000K
 // [Krystek 1985, "An algorithm to calculate correlated colour temperature"]
@@ -253,9 +257,6 @@ float4 CombineLUTs(float2 uv, uint layerIndex)
 
 // Vertex shader that writes to a range of slices of a volume texture
 META_VS(true, FEATURE_LEVEL_SM4)
-META_FLAG(VertexToGeometryShader)
-META_VS_IN_ELEMENT(POSITION, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
-META_VS_IN_ELEMENT(TEXCOORD, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
 Quad_VS2GS VS_WriteToSlice(float2 position : POSITION0, float2 texCoord : TEXCOORD0, uint layerIndex : SV_InstanceID)
 {
 	Quad_VS2GS output;
@@ -288,20 +289,30 @@ void GS_WriteToSlice(triangle Quad_VS2GS input[3], inout TriangleStream<Quad_GS2
 	stream.Append(vertex);
 }
 
-META_PS(true, FEATURE_LEVEL_ES2)
-META_PERMUTATION_1(TONE_MAPPING_MODE_NONE=1)
-META_PERMUTATION_1(TONE_MAPPING_MODE_NEUTRAL=1)
-META_PERMUTATION_1(TONE_MAPPING_MODE_ACES=1)
+
 float4 PS_Lut2D(Quad_VS2PS input) : SV_Target
 {
 	return CombineLUTs(input.TexCoord, 0);
 }
 
-META_PS(true, FEATURE_LEVEL_ES2)
-META_PERMUTATION_1(TONE_MAPPING_MODE_NONE=1)
-META_PERMUTATION_1(TONE_MAPPING_MODE_NEUTRAL=1)
-META_PERMUTATION_1(TONE_MAPPING_MODE_ACES=1)
+
 float4 PS_Lut3D(Quad_GS2PS input) : SV_Target
 {
 	return CombineLUTs(input.Vertex.TexCoord, input.LayerIndex);
 }
+
+SHADER_PROGRAM(Lut2D, 
+	SHADER_VS(VS_Quard),
+	SHADER_GS(GS_WriteToSlice),
+	SHADER_PS(PS_Lut3D),
+	SHADER_MACRO(_, TONE_MAPPING_MODE_NEUTRAL, TONE_MAPPING_MODE_ACES)
+)
+
+
+SHADER_PROGRAM(Lut3D, 
+	SHADER_VS(VS_WriteToSlice),
+	SHADER_GS(GS_WriteToSlice),
+	SHADER_PS(PS_Lut3D),
+	SHADER_MACRO(_, TONE_MAPPING_MODE_NEUTRAL, TONE_MAPPING_MODE_ACES)
+)
+

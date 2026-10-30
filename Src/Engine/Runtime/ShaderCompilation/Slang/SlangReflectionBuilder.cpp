@@ -1,4 +1,4 @@
-#include "SlangReflectionBuilder.h"
+#include "SlangShaderCompiler.h"
 #include "Runtime/Core/Types/Collections/ChunkedArray.h"
 
 #include <slang-com-ptr.h>
@@ -1432,9 +1432,7 @@ namespace SE
 		}
 	}
 
-	bool SlangReflectionBuilder::Build(
-		const String& programId,
-		const String& targetKey,
+	bool SlangShaderCompiler::BuildReflection(
 		slang::IComponentType* linked,
 		const List<ShaderStage>& stages,
 		const SlangInt targetIndex,

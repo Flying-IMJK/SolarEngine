@@ -1,6 +1,6 @@
 
-#include "./Shaders/Common.hlsl"
-#include "./Shaders/QuadCommon.hlsl"
+#include "./Shaders/Discard/Common.hlsl"
+#include "./Shaders/Discard/QuadCommon.hlsl"
 
 Texture2D Input : register(t0);
 Texture2D Distortion : register(t1);

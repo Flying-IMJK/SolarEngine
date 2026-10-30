@@ -24,7 +24,9 @@ namespace SE
         // Creates an independently mutable Program instance on the GPU/render-resource thread. output is reset on
         // entry and failure; success transfers an owning selection that retains the Generation. Keep it alive while
         // any Pipeline or draw uses its Program.
-        bool SelectProgram(String& name, const ShaderProgramSelection& selection, UniquePtr<ShaderProgramInstance>& output);
+        bool SelectProgram(const String& programName, const List<String>& selection, SLC2GPUShaderProgram*& output);
+
+        bool SelectProgram(const String& programName, const List<String>& selection, ShaderProgramInstance* programIns);
 
 #if SE_EDITOR
         bool Save();

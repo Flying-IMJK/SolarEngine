@@ -3,15 +3,11 @@
 
 #include "Runtime/Core/Profiler/Profiler.h"
 #include "Runtime/Graphics/GPUContext.h"
-#include "Runtime/Graphics/Shaders/GPUConstantBuffer.h"
+#include "Runtime/Graphics/Textures/GPUTexture.h"
+#include "Runtime/Resource/Assets/SLC2Materials/GraphicShader.h"
 
 namespace SE
 {
-	GES_PACK_STRUCT(struct Data
-		{
-		Float4 ScreenSize;
-		});
-
 	String FXAA::ToString() const
 	{
 		return SE_TEXT("FXAA");
@@ -19,14 +15,13 @@ namespace SE
 
 	bool FXAA::Init()
 	{
-		_psFXAA.CreatePipelineStates();
-		_shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/PostProcess/FXAA"));
-		if (_shader == nullptr)
+		m_Shader = AssetContent::LoadAsyncInternal<GraphicShader>(SE_TEXT("Shaders/PostProcess/FXAA"));
+		if (m_Shader == nullptr)
 		{
 			return false;
 		}
 #if COMPILE_WITH_DEV_ENV
-		_shader.Get()->OnReloading.Bind<FXAA, &FXAA::OnShaderReloading>(this);
+		m_Shader.Get()->OnReloading.Bind<FXAA, &FXAA::OnShaderReloading>(this);
 #endif
 
 		return true;
@@ -34,34 +29,16 @@ namespace SE
 
 	bool FXAA::SetupResources()
 	{
-		if (!_shader.HasReference())
+		if (!m_Shader.HasReference() || !m_Shader->WaitForLoaded())
 		{
 			return false;
 		}
 
-		_shader->WaitForLoaded();
+		GPUDevice* device = GPUDevice::instance;
 
-		if (!_shader->IsLoaded())
-		{
-			return false;
-		}
+		m_PipelineState = device->CreateSLC2PipelineState();
+        m_ProgramInstance       = New<ShaderProgramInstance>();
 
-		const auto shader = _shader->GetShader();
-		if (shader->GetCB(0)->GetSize() != sizeof(Data))
-		{
-			REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
-			return false;
-		}
-
-		GPUPipelineState::Description psDesc;
-		if (!_psFXAA.IsValid())
-		{
-			psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-			if (!_psFXAA.Create(psDesc, shader, SE_TEXT("PS")))
-			{
-				return false;
-			}
-		}
 
 		return true;
 	}
@@ -71,8 +48,9 @@ namespace SE
 		// Base
 		RendererPass::Dispose();
 
-		_psFXAA.Delete();
-		_shader = nullptr;
+		Delete(m_ProgramInstance);
+        Delete(m_PipelineState);
+		m_Shader = nullptr;
 	}
 
 	void FXAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output)
@@ -87,18 +65,45 @@ namespace SE
 		}
 		PROFILE_GPU_CPU("Fast Approximate Antialiasing");
 
+		const auto qualityLevel = Math::Clamp(static_cast<int32>(1), 0, static_cast<int32>(Quality::MAX) - 1);
+
+		String macro;
+        switch (qualityLevel)
+        {
+            case 0:
+                macro = SE_TEXT("QUALITY0");
+                break;
+            case 1:
+                macro = SE_TEXT("QUALITY1");
+                break;
+            case 2:
+                macro = SE_TEXT("QUALITY2");
+                break;
+            case 3:
+                macro = SE_TEXT("QUALITY3");
+                break;
+        }
+
+		SLC2GPUShaderProgram* program;
+        if (!m_Shader->SelectProgram(SE_TEXT("FXAA"), {macro}, program))
+        {
+            return;
+        }
+
+        if (m_ProgramInstance->GetProgram() == nullptr || m_ProgramInstance->GetProgram() != program)
+        {
+            m_ProgramInstance->Initialize(program);
+
+			m_PipelineState->Init(SLC2GPUPipelineState::Description::DefaultFullscreenTriangle, program);
+        }
+
 		// Bind input
-		Data data;
-		data.ScreenSize = renderContext.view.ScreenSize;
-		const auto cb = _shader->GetShader()->GetCB(0);
-		context->UpdateCB(cb, &data);
-		context->BindCB(0, cb);
-		context->BindSR(0, input);
+        m_ProgramInstance->SetFloat4(SE_TEXT("ScreenSize"), renderContext.view.ScreenSize);
+        m_ProgramInstance->SetTexture(SE_TEXT("Source"), input->View());
 
 		// Render
 		context->SetRenderTarget(output);
-		const auto qualityLevel = Math::Clamp(static_cast<int32>(1), 0, static_cast<int32>(Quality::MAX) - 1);
-		context->SetState(_psFXAA.Get(qualityLevel));
-		context->DrawFullscreenTriangle();
+        context->SetSLC2State(m_PipelineState);
+        context->DrawFullscreenTriangle(m_ProgramInstance);
 	}
 } // SE

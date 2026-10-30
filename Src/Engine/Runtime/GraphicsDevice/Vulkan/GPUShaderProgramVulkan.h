@@ -170,7 +170,7 @@ namespace SE
     class GPUContextVulkan;
     class ShaderBindingSnapshot;
     struct ShaderBindingUniformData;
-    struct ShaderBindingResource;
+    class ShaderBindingResource;
     class SLC2ComputePipelineStateVulkan;
     class SLC2GraphicsPipelineStateVulkan;
 
@@ -227,7 +227,7 @@ namespace SE
         // 延迟创建 compute pipeline；entry point 名称直接来自 SLC2 stage 记录。
         SLC2ComputePipelineStateVulkan* GetOrCreateComputeState();
         bool PrepareAndBindComputeDescriptors(GPUContextVulkan* context, const ShaderBindingSnapshot& snapshot);
-        bool PrepareAndBindGraphicsDescriptors(GPUContextVulkan*                context,
+        bool BindGraphicsDescriptors(GPUContextVulkan*                context,
                                                const ShaderBindingSnapshot&     snapshot,
                                                SLC2GraphicsPipelineStateVulkan* state);
 

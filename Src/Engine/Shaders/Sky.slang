@@ -1,22 +1,26 @@
-#include "./Shaders/Common.hlsl"
-#include "./Shaders/MaterialCommon.hlsl"
-#include "./Shaders/GBuffer.hlsl"
-#include "./Shaders/Common.hlsl"
-//#include "./Shaders/AtmosphereFog.hlsl"
-#include "./Shaders/QuadCommon.hlsl"
 
-META_CB_BEGIN(0, Data)
-float4x4 WVP;
-float3 ViewOffset;
-float Padding;
-GBufferData GBuffer;
-//AtmosphericFogData AtmosphericFog;
-META_CB_END
+#include "Shaders/Common.hlsl"
+#include "Shaders/MaterialCommon.hlsl"
+#include "Shaders/GBuffer.hlsl"
+
+//#include "./Shaders/AtmosphereFog.hlsl"
+#include "Shaders/QuadCommon.hlsl"
+
+struct Data
+{
+	float4x4 WVP;
+	float3 ViewOffset;
+	float Padding;
+	GBufferData GBuffer;
+	//AtmosphericFogData AtmosphericFog;
+}
+
+ParameterBlock<Data> data;
 
 DECLARE_GBUFFERDATA_ACCESS(GBuffer)
 
 #if !defined(USE_GBUFFER_CUSTOM_DATA)
-TextureCube SkyBox : register(t5);
+TextureCube SkyBoxTex;
 #endif
 
 struct MaterialInput
@@ -25,9 +29,29 @@ struct MaterialInput
 	float4 ScreenPos : TEXCOORD0;
 };
 
+
+SHADER_PROGRAM(
+	Sky,
+	SHADER_VS(VS),
+	SHADER_VS(PS_Sky)
+)
+
+SHADER_PROGRAM(
+	Fog,
+	SHADER_VS(VS),
+	SHADER_VS(PS_Fog)
+)
+
+SHADER_PROGRAM(
+	SkyBox,
+	SHADER_VS(VS),
+	SHADER_VS(PS_SkyBox)
+)
+
+
+
+
 // Vertex Shader function for GBuffer Pass
-META_VS(true, FEATURE_LEVEL_ES2)
-META_VS_IN_ELEMENT(POSITION, 0, R32G32B32_FLOAT, 0, 0, PER_VERTEX, 0, true)
 MaterialInput VS(ModelInput_PosOnly input)
 {
 	MaterialInput output;
@@ -43,7 +67,6 @@ MaterialInput VS(ModelInput_PosOnly input)
 }
 
 // Pixel Shader function for GBuffer Pass
-META_PS(true, FEATURE_LEVEL_ES2)
 GBufferOutput PS_Sky(MaterialInput input)
 {
 	GBufferOutput output;
@@ -68,7 +91,7 @@ GBufferOutput PS_Sky(MaterialInput input)
 	return output;
 }
 
-META_PS(true, FEATURE_LEVEL_ES2)
+
 float4 PS_Fog(Quad_VS2PS input) : SV_Target0
 {
 	float4 result;
@@ -102,7 +125,6 @@ float4 PS_Fog(Quad_VS2PS input) : SV_Target0
 }
 
 // Pixel Shader function for GBuffer Pass
-META_PS(true, FEATURE_LEVEL_ES2)
 GBufferOutput PS_SkyBox(MaterialInput input)
 {
 	GBufferOutput output;
@@ -115,7 +137,7 @@ GBufferOutput PS_SkyBox(MaterialInput input)
 	float3 vsPos = GetViewPos(gBufferData, uv, LinearZ2DeviceDepth(gBufferData, 1));
 	float3 wsPos = mul(float4(vsPos, 1), gBufferData.InvViewMatrix).xyz;
 	float3 viewVector = wsPos - gBufferData.ViewPos;
-	float4 color = SAMPLE_RT_LINEAR(SkyBox, viewVector);
+	float4 color = SAMPLE_RT_LINEAR(SkyBoxTex, viewVector);
 
 	// Pack GBuffer
 	output.Light = color;

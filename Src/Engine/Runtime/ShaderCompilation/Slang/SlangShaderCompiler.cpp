@@ -9,7 +9,6 @@
 #include <Runtime/ShaderCompilation/Slang/SLC2/SLC2Reader.h>
 #include <Runtime/ShaderCompilation/Slang/SLC2/SLC2Writer.h>
 #include <Runtime/ShaderCompilation/Slang/SLC2/SLC2Util.h>
-#include <Runtime/ShaderCompilation/Slang/SlangReflectionBuilder.h>
 #include <Runtime/ShaderCompilation/Slang/SlangShaderFileSystem.h>
 #include <Runtime/ShaderCompilation/Slang/SlangVertexInputCompiler.h>
 
@@ -38,41 +37,54 @@ namespace SE
 			slang::EntryPointReflection* entryPoint = layout->getEntryPointByIndex(entryPointIndex);
 			if (entryPoint == nullptr || entryPoint->getFunction() == nullptr)
 			{
-				error = SE_TEXT("Hull shader entry point reflection is missing: ") + stage.EntryPoint;
+				error = String::Format(SE_TEXT("Hull shader entry point reflection is missing: {0}"), stage.EntryPoint);
 				return false;
 			}
 
 			slang::Attribute* attribute = entryPoint->getFunction()->findUserAttributeByName(globalSession, "outputcontrolpoints");
 			if (attribute == nullptr)
 			{
-				error = SE_TEXT("Hull shader entry point requires [outputcontrolpoints(N)]: ") + stage.EntryPoint;
+                error = String::Format(SE_TEXT("Hull shader entry point requires [outputcontrolpoints(N)]: "), stage.EntryPoint);
 				return false;
 			}
 			if (attribute->getArgumentCount() != 1)
 			{
-				error = SE_TEXT("Hull shader [outputcontrolpoints] must have one integer argument: ") + stage.EntryPoint;
+                error = String::Format(SE_TEXT("Hull shader [outputcontrolpoints] must have one integer argument: "), stage.EntryPoint);
 				return false;
 			}
 
 			int value = 0;
 			if (!SLANG_SUCCEEDED(attribute->getArgumentValueInt(0, &value)) || value <= 0 || value > 32)
 			{
-				error = SE_TEXT("Hull shader [outputcontrolpoints] must be in range 1-32: ") + stage.EntryPoint;
+                error = String::Format(SE_TEXT("Hull shader [outputcontrolpoints] must be in range 1-32: "), stage.EntryPoint);
 				return false;
 			}
 			outputControlPoints = static_cast<int32>(value);
 			return true;
 		}
 
-		const char* GetProfileName(const ShaderProfile profile, const FeatureLevel feature)
+		const char* GetProfileName(const ShaderProfile profile)
 		{
-			if (profile == ShaderProfile::DirectX_SM6 || profile == ShaderProfile::PS5 || feature >= FeatureLevel::SM6)
+			switch (profile)
 			{
+			case ShaderProfile::DirectX_SM4:
+				return "sm_4_0";
+			case ShaderProfile::DirectX_SM5:
+			case ShaderProfile::Vulkan_SM5:
+			case ShaderProfile::PS4:
+				return "sm_5_0";
+			case ShaderProfile::DirectX_SM6:
+			case ShaderProfile::PS5:
 				return "sm_6_0";
+			case ShaderProfile::GLSL_410:
+				return "glsl_410";
+			case ShaderProfile::GLSL_440:
+				return "glsl_440";
+			default:
+				ENGINE_UNREACHABLE_CODE();
+				return "";
 			}
-			return "sm_5_0";
 		}
-
 
 		void SplitMacroGroup(const StringAnsi& raw, ShaderVariantGroup& group)
 		{
@@ -236,17 +248,16 @@ namespace SE
 						}
 
 						SLC2ProgramStageDeclaration stageDecl;
-						const String stageName = String(stageText, stageSize);
-						const StringAnsi stageNameAnsi(stageName);
-						if (!ParseShaderStage(stageNameAnsi.Get(), stageDecl.Stage))
+                        const StringAnsi            stageName(stageText, stageSize);
+                        if (!ParseShaderStage(stageName.Get(), stageDecl.Stage))
 						{
-							error = SE_TEXT("Unknown shader stage declared on program: ") + program.ProgramId;
+                            error = String::Format(SE_TEXT("Unknown shader stage declared on program: {0}"), program.ProgramId);
 							return false;
 						}
-                        stageDecl.EntryPoint = String(entryText, entrySize);
+                        stageDecl.EntryPoint = StringAnsi(entryText, entrySize);
 						if (stageDecl.EntryPoint.IsEmpty())
 						{
-							error = SE_TEXT("Shader stage entry point is empty on program: ") + program.ProgramId;
+                            error = String::Format(SE_TEXT("Shader stage entry point is empty on program: {0}"), program.ProgramId);
 							return false;
 						}
 						program.Stages.Add(stageDecl);
@@ -336,45 +347,26 @@ namespace SE
 			return nullptr;
 		}
 
-		const ShaderProgramVariantSelection* FindSelection(const ShaderCompileRequest& request, const String& programId)
-		{
-			for (int32 i = 0; i < request.VariantSelections.Count(); i++)
-			{
-				if (request.VariantSelections[i].ProgramId == programId)
-				{
-					return &request.VariantSelections[i];
-				}
-			}
-			return nullptr;
-		}
-
-		bool PlanProgramVariants(const ShaderCompileRequest& request, const SLC2ProgramDeclaration& program, List<ShaderVariantPlan>& variants, String& error)
+		bool PlanProgramVariants(const ShaderCompileRequest& request, 
+		    const SLC2ProgramDeclaration& program, 
+		    List<ShaderVariantPlan>& variants, 
+		    String& error)
 		{
 			variants.Clear();
-			const ShaderProgramVariantSelection* selection = FindSelection(request, program.ProgramId);
+
 			if (request.VariantSelections.Count() == 0)
 			{
 				return ShaderVariantPlanner::BuildAll(program.VariantGroups, variants, error);
 			}
 
-			if (selection == nullptr)
-			{
-				return true;
-			}
-
-			if (selection->Variants.Count() == 0)
-			{
-				error = SE_TEXT("Explicit variant selection is empty for program: ") + program.ProgramId;
-				return false;
-			}
-
-			for (int32 variantIndex = 0; variantIndex < selection->Variants.Count(); variantIndex++)
+			for (int32 variantIndex = 0; variantIndex < request.VariantSelections.Count(); variantIndex++)
 			{
 				ShaderVariantPlan plan;
-				if (!ShaderVariantPlanner::Normalize(program.VariantGroups, selection->Variants[variantIndex].Defines, plan, error))
+                if (!ShaderVariantPlanner::Normalize(program.VariantGroups, request.VariantSelections[variantIndex].Defines, plan, error))
 				{
 					return false;
 				}
+
 				bool duplicated = false;
 				for (int32 i = 0; i < variants.Count(); i++)
 				{
@@ -392,8 +384,12 @@ namespace SE
 			return true;
 		}
 
-		bool CreateSession(slang::IGlobalSession* globalSession, SlangShaderFileSystem& fileSystem, const ShaderCompileTarget& target, 
-			const ShaderVariantPlan& variant, Slang::ComPtr<slang::ISession>& session, String& error)
+		bool CreateSession(slang::IGlobalSession* globalSession,
+			SlangShaderFileSystem& fileSystem,
+			const ShaderProfile profile,
+			const ShaderVariantPlan& variant,
+			Slang::ComPtr<slang::ISession>& session,
+			String& error)
 		{
 			List<StringAnsi> macroNames;
 			List<slang::PreprocessorMacroDesc> macroDescs;
@@ -413,7 +409,7 @@ namespace SE
 
 			slang::TargetDesc targetDesc = {};
 			targetDesc.format = SLANG_SPIRV;
-			targetDesc.profile = globalSession->findProfile(GetProfileName(target.Profile, target.Feature));
+			targetDesc.profile = globalSession->findProfile(GetProfileName(profile));
 
 			List<slang::CompilerOptionEntry> compilerOptionEntries;
 			slang::CompilerOptionEntry useVulkanEntryPointNameOption = {};
@@ -574,24 +570,14 @@ namespace SE
 			return result;
 		}
 
-		for (int32 selectionIndex = 0; selectionIndex < request.VariantSelections.Count(); selectionIndex++)
-		{
-			if (FindProgram(baselinePrograms, request.VariantSelections[selectionIndex].ProgramId) == nullptr)
-			{
-				AddDiagnostic(SE_TEXT("Explicit variant selection references unknown program: ") + request.VariantSelections[selectionIndex].ProgramId);
-				result.CompileMessage = m_Diagnostics;
-				return result;
-			}
-		}
-
 		SLC2Artifact artifact;
-		artifact.CompilerBuildTag = String::Format(SE_TEXT("SolarSlangCompiler/1;Slang/{0};SLC2/{1}"),
+        artifact.CompilerBuildTag = String::Format(SE_TEXT("SolarSlangCompiler/1;Slang/{0};SLC2/{1}"),
                                                    StringAnsiView(SLANG_TAG_VERSION),
                                                    StringUtils::ToString(4));
 
-		for (int32 baselineProgramIndex = 0; baselineProgramIndex < baselinePrograms.Count(); baselineProgramIndex++)
+		for (int32 program_index = 0; program_index < baselinePrograms.Count(); program_index++)
 		{
-			const SLC2ProgramDeclaration& baselineProgram = baselinePrograms[baselineProgramIndex];
+			const SLC2ProgramDeclaration& baselineProgram = baselinePrograms[program_index];
 			List<ShaderVariantPlan> variants;
 			if (!PlanProgramVariants(request, baselineProgram, variants, error))
 			{
@@ -607,16 +593,15 @@ namespace SE
 			SLC2ProgramRecord programRecord;
 			programRecord.ProgramId = baselineProgram.ProgramId;
 			programRecord.VariantGroups = baselineProgram.VariantGroups;
-			List<SLC2VertexInputSignatureElement> programVertexSignature;
+			List<VertexInputSignatureElement> programVertexSignature;
 			bool hasProgramVertexSignature = false;
 
 			for (int32 targetIndex = 0; targetIndex < request.Targets.Count(); targetIndex++)
 			{
-				const ShaderCompileTarget& target = request.Targets[targetIndex];
+                const ShaderProfile& target = request.Targets[targetIndex];
 				SLC2TargetRecord targetRecord;
 				targetRecord.Target = target;
-				targetRecord.TargetKey = BuildTargetKey(target);
-				List<SLC2VertexInputSignatureElement> targetVertexSignature;
+				List<VertexInputSignatureElement> targetVertexSignature;
 				bool hasTargetVertexSignature = false;
 
 				for (int32 variantIndex = 0; variantIndex < variants.Count(); variantIndex++)
@@ -653,7 +638,7 @@ namespace SE
 					SLC2ProgramDeclaration* variantProgram = FindProgram(variantPrograms, baselineProgram.ProgramId);
 					if (variantProgram == nullptr || !SameProgramShape(baselineProgram, *variantProgram))
 					{
-						AddDiagnostic(SE_TEXT("Variant-controlled Program/Stage/Macro declarations are not allowed: ") + baselineProgram.ProgramId);
+                        AddDiagnostic(String::Format(SE_TEXT("Variant-controlled Program/Stage/Macro declarations are not allowed: {0}") ,baselineProgram.ProgramId));
 						result.CompileMessage = m_Diagnostics;
 						return result;
 					}
@@ -673,7 +658,7 @@ namespace SE
                                                                            entryDiagnostics.writeRef())))
                         {
                             AddSlangDiagnostics(entryDiagnostics);
-                            AddDiagnostic(SE_TEXT("Failed to find or check entry point: ") + stage.EntryPoint);
+                            AddDiagnostic(String::Format(SE_TEXT("Failed to find or check entry point: {0}"), stage.EntryPoint));
                             result.CompileMessage = m_Diagnostics;
                             return result;
                         }
@@ -718,7 +703,6 @@ namespace SE
 
 					SLC2VariantRecord variantRecord;
 					variantRecord.Variant = variant.Variant;
-					SlangReflectionBuilder reflectionBuilder;
 					List<ShaderStage> reflectionStages;
 					reflectionStages.Resize(baselineProgram.Stages.Count());
 					for (int32 stageIndex = 0; stageIndex < baselineProgram.Stages.Count(); stageIndex++)
@@ -726,7 +710,7 @@ namespace SE
 						reflectionStages[stageIndex] = baselineProgram.Stages[stageIndex].Stage;
 					}
 					// linked component 已经完成当前 Target/Variant 的组合，编译期在这里固化运行时所需的反射 IR。
-					if (!reflectionBuilder.Build(baselineProgram.ProgramId, targetRecord.TargetKey, linked, reflectionStages, 0, layout, variantRecord.Layout, error))
+					if (!BuildReflection(linked, reflectionStages, 0, layout, variantRecord.Layout, error))
 					{
 						AddDiagnostic(error);
 						result.CompileMessage = m_Diagnostics;
@@ -740,13 +724,13 @@ namespace SE
 						if (!SLANG_SUCCEEDED(linked->getEntryPointCode(stageIndex, 0, code.writeRef(), codeDiagnostics.writeRef())))
 						{
 							AddSlangDiagnostics(codeDiagnostics);
-							AddDiagnostic(SE_TEXT("Failed to emit target code for entry point: ") + baselineProgram.Stages[stageIndex].EntryPoint);
+                            AddDiagnostic(String::Format(SE_TEXT("Failed to emit target code for entry point: {0}") ,baselineProgram.Stages[stageIndex].EntryPoint));
 							result.CompileMessage = m_Diagnostics;
 							return result;
 						}
 						if (code == nullptr || code->getBufferPointer() == nullptr || code->getBufferSize() == 0)
 						{
-							AddDiagnostic(SE_TEXT("Slang returned empty target code for entry point: ") + baselineProgram.Stages[stageIndex].EntryPoint);
+							AddDiagnostic(String::Format(SE_TEXT("Slang returned empty target code for entry point: {0}"), baselineProgram.Stages[stageIndex].EntryPoint));
 							result.CompileMessage = m_Diagnostics;
 							return result;
 						}
@@ -755,9 +739,8 @@ namespace SE
 						stageRecord.Stage = baselineProgram.Stages[stageIndex].Stage;
 						stageRecord.EntryPoint = baselineProgram.Stages[stageIndex].EntryPoint;
 						// 顶点逻辑签名来自当前 linked Program，运行时不需要重新加载 Slang 或反射 SPIR-V。
-						if (stageRecord.Stage == ShaderStage::Vertex &&
-							!SLC2VertexInputCompiler::ReadVertexInputSignature(
-								 layout, stageIndex, stageRecord.VertexInputSignature, error))
+						if (stageRecord.Stage == ShaderStage::Vertex && 
+						    !SLC2VertexInputCompiler::ReadVertexInputSignature(layout, stageIndex, stageRecord.VertexInputSignature, error))
 						{
 							AddDiagnostic(baselineProgram.ProgramId + SE_TEXT(": ") + error);
 							result.CompileMessage = m_Diagnostics;

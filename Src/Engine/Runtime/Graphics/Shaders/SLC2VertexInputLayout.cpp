@@ -125,7 +125,7 @@ namespace SE
     }
 
     bool SLC2VertexInputLayoutMatcher::Match(
-        const List<SLC2VertexInputSignatureElement>& signature,
+        const List<VertexInputSignatureElement>& signature,
         const VertexFactoryLayout& layout,
         SLC2VertexInputMatchResult& output,
         String& error)
@@ -140,7 +140,7 @@ namespace SE
         candidate.Elements.EnsureCapacity(signature.Count());
         for (int32 index = 0; index < signature.Count(); index++)
         {
-            const SLC2VertexInputSignatureElement& input = signature[index];
+            const VertexInputSignatureElement& input = signature[index];
             const VertexFactoryInputElement* element = layout.FindElement(input.Semantic, input.SemanticIndex);
             if (element == nullptr)
             {

@@ -16,12 +16,13 @@
 // Please direct any bugs or questions to SDKFeedback@nvidia.com
 // Enhanced and ported to the Flax Engine by Wojciech Figat 
 
-#include "./Shaders/Common.hlsl"
-#include "./Shaders/QuadCommon.hlsl"
+#include "Shaders/Common.hlsl"
+#include "Shaders/QuadCommon.hlsl"
 
 #define FXAA_ALPHA_PASSTHROUGH 1
 
-Texture2D Source : register(t0);
+Texture2D Source;
+float4 ScreenSize;// x-width, y-height, z-1/width, w-1/height
 
 #define SAMPLE_TEXTURE_LEVEL(texture, uv, level) texture.SampleLevel(SamplerLinearClamp, uv, level)
 #define SAMPLE_TEXTURE_OFFSET(texture, uv, level, offset) texture.SampleLevel(SamplerLinearClamp, uv, level, offset)
@@ -135,16 +136,13 @@ FXAA_SUBPIX_CAP - Insures fine detail is not completely removed.
                   7.0/8.0 - high amount of filtering
                   1.0 - no capping of sub-pixel aliasing removal
 ============================================================================*/
-#ifndef QUALITY
-	#define QUALITY 1
-#endif
 
 // Select FXAA Preset based on Quality
-#if QUALITY == 0
+#if defined(QUALITY0)
 	#define FXAA_PRESET 1
-#elif QUALITY == 1
+#elif defined(QUALITY1)
 	#define FXAA_PRESET 3
-#elif QUALITY == 2
+#elif defined(QUALITY2)
 	#define FXAA_PRESET 4
 #else
 	#define FXAA_PRESET 5
@@ -252,21 +250,22 @@ float4 FxaaFilterReturn(float3 rgb, float4 source)
 #endif
 }
 
-META_CB_BEGIN(0, Data)
-float4 ScreenSize;// x-width, y-height, z-1/width, w-1/height
-META_CB_END
 
 #define ScreenWidth ScreenSize.x
 #define ScreenHeight ScreenSize.y
 #define ScreenWidthInv ScreenSize.z
 #define ScreenHeightInv ScreenSize.w
 
+
+SHADER_PROGRAM(
+    FXAA,
+    SHADER_VS(VS_Quad),
+    SHADER_PS(PS),
+    SHADER_MACRO(QUALITY0, QUALITY1, QUALITY2, QUALITY3)
+)
+
+
 // Pixel Shader for Fast-Approximate Anti-Aliasing
-META_PS(true, FEATURE_LEVEL_ES2)
-META_PERMUTATION_1(QUALITY=0)
-META_PERMUTATION_1(QUALITY=1)
-META_PERMUTATION_1(QUALITY=2)
-META_PERMUTATION_1(QUALITY=3)
 float4 PS(Quad_VS2PS input) : SV_Target
 {
 /*

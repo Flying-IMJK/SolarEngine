@@ -2,17 +2,18 @@
 #ifndef __GBUFFER__
 #define __GBUFFER__
 
-#include "./Shaders/GBufferCommon.hlsl"
+#include "Shaders/GBufferCommon.hlsl"
+ 
 
 #if !defined(NO_GBUFFER_SAMPLING)
 
 // GBuffer
-Texture2D GBuffer0 : register(t0);
-Texture2D GBuffer1 : register(t1);
-Texture2D GBuffer2 : register(t2);
-Texture2D Depth : register(t3);
+Texture2D GBuffer0;
+Texture2D GBuffer1;
+Texture2D GBuffer2;
+Texture2D Depth;
 #if defined(USE_GBUFFER_CUSTOM_DATA)
-Texture2D GBuffer3 : register(t4);
+Texture2D GBuffer3;
 #endif
 
 // GBuffer Layout:

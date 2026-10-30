@@ -1,6 +1,6 @@
 
-#include "./Shaders/GUICommon.hlsl"
-#include "./Shaders/QuadCommon.hlsl"
+#include "./Shaders/Discard/GUICommon.hlsl"
+#include "./Shaders/Discard/QuadCommon.hlsl"
 
 struct VertexInput
 {

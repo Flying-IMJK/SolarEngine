@@ -60,11 +60,11 @@ namespace SE
 	private:
 		GPUDeviceVulkan* _device;
 		QueueVulkan* _queue;
-		CmdBufferManagerVulkan* _cmdBufferManager;
-		PipelineBarrierVulkan _barriers;
+		CmdBufferManagerVulkan* m_CmdBufferManager;
+		PipelineBarrierVulkan m_Barriers;
 
-		int32 _psDirtyFlag : 1;
-		int32 _rtDirtyFlag : 1;
+		int32 m_PsoDirtyFlag : 1;
+		int32 m_RtDirtyFlag : 1;
 		int32 _cbDirtyFlag : 1;
 
 		int32 _rtCount;
@@ -72,17 +72,17 @@ namespace SE
 		uint32 _stencilRef;
 
 		// Render Geometry State
-		bool _renderGeometryReady;
+		bool m_RenderGeometryReady;
         PixelFormat _renderGeometryIndexFormat;
 		uint32 _renderGeometryIndexBufferSize;
 		uint32 _renderGeometryIndexOffset;
-		uint64 _renderGeometryLayoutHash;
-		uint32 _renderGeometryPerInstanceSlotsMask;
-		uint32 _renderGeometryVertexElementCounts[GPU_MAX_VB_BINDED];
+		uint64 m_RenderGeometryLayoutHash;
+		uint32 m_RenderGeometryPerInstanceSlotsMask;
+		uint32 m_RenderGeometryVertexElementCounts[GPU_MAX_VB_BINDED];
 
-		RenderPassVulkan* _renderPass;
+		RenderPassVulkan* m_RenderPass;
 		GPUPipelineStateVulkan* _currentState;
-		SLC2GraphicsPipelineStateVulkan* _currentSLC2GraphicsState;
+		SLC2GraphicsPipelineStateVulkan* m_CurrentSLC2GraphicsState;
 		GPUTextureViewVulkan* _rtDepth;
 		GPUTextureViewVulkan* _rtHandles[GPU_MAX_RT_BINDED];
 		DescriptorResourceVulkan* _cbHandles[GPU_MAX_CB_BINDED];
@@ -122,7 +122,7 @@ namespace SE
 
 		inline CmdBufferManagerVulkan* GetCmdBufferManager() const
 		{
-			return _cmdBufferManager;
+			return m_CmdBufferManager;
 		}
 
 		void AddImageBarrier(VkImage image, VkImageLayout srcLayout, VkImageLayout dstLayout, const VkImageSubresourceRange& subresourceRange, GPUTextureViewVulkan* handle);
@@ -164,7 +164,7 @@ namespace SE
         void DispatchIndirect(ShaderProgramInstance& instance, GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
 		void ResolveMultisample(GPUTexture* sourceMultisampleTexture, GPUTexture* destTexture, int32 sourceSubResource, int32 destSubResource, PixelFormat format) override;
 		void DrawInstanced(uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex) override;
-		void DrawInstanced(ShaderProgramInstance& instance, uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex) override;
+		void DrawInstanced(ShaderProgramInstance* instance, uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex) override;
 		void DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex) override;
 		void DrawIndexedInstanced(ShaderProgramInstance* instance, uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex) override;
 		void DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;

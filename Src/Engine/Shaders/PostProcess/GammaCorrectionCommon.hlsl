@@ -2,7 +2,7 @@
 #ifndef __GAMMA_CORRECTION_COMMON__
 #define __GAMMA_CORRECTION_COMMON__
 
-#include "./Shaders/Math.hlsl"
+#include "Shaders/Math.hlsl"
 
 // Fast reversible tonemapper
 // http://gpuopen.com/optimized-reversible-tonemapper-for-resolve/
@@ -54,7 +54,11 @@ float3 LinearToSrgb(float3 linearColor)
 float3 sRGBToLinear(float3 color)
 {
     color = max(6.10352e-5, color);
-    return color > 0.04045 ? pow(color * (1.0 / 1.055) + 0.0521327, 2.4) : color * (1.0 / 12.92);
+    if (all(color > 0.04045f))
+    {
+        return pow(color * (1.0 / 1.055) + 0.0521327, 2.4);
+    }
+    return color * (1.0 / 12.92);
 }
 
 float3 LogToLinear(float3 logColor)

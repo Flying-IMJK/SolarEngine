@@ -12,6 +12,7 @@
 
 namespace SE
 {
+    class GraphicShader;
     class GPUPipelineState;
 
 #define GB_RADIUS 6
@@ -73,13 +74,23 @@ private:
         });
 
     // Post Processing
-    AssetRef<Shader> _shader;
-    GPUPipelineState* _psThreshold;
-    GPUPipelineState* _psScale;
-    GPUPipelineState* _psBlurH;
-    GPUPipelineState* _psBlurV;
-    GPUPipelineState* _psGenGhosts;
-    GPUPipelineStatePermutationsPs<3> _psComposite;
+    AssetRef<GraphicShader> m_Shader;
+    SLC2GPUPipelineState* m_PSOThreshold;
+    SLC2GPUPipelineState* m_PSOScale;
+    SLC2GPUPipelineState* m_PSOBlurH;
+    SLC2GPUPipelineState* m_PSOBlurV;
+    SLC2GPUPipelineState* m_PSOGenGhosts;
+    SLC2GPUPipelineState* m_PSOComposite;
+
+    ShaderProgramInstance* m_SPThreshold;
+    ShaderProgramInstance* m_SPScale;
+    ShaderProgramInstance* m_SPBlurH;
+    ShaderProgramInstance* m_SPBlurV;
+    ShaderProgramInstance* m_SPGenGhosts;
+    ShaderProgramInstance* m_SPComposite;
+
+    GPUConstantBuffer* m_DataBuffer;
+    GPUConstantBuffer* m_GaussianBlurBuffer;
 
     GaussianBlurData _gbData;
     Float4 GaussianBlurCacheH[GB_KERNEL_SIZE];

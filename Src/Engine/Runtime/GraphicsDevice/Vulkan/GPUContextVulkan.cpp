@@ -39,14 +39,14 @@ namespace SE
 		: GPUContext((GPUDevice*)device)
 		, _device(device)
 		, _queue(queue)
-		, _cmdBufferManager(New<CmdBufferManagerVulkan>(device, this))
-		, _renderGeometryReady(false)
+		, m_CmdBufferManager(New<CmdBufferManagerVulkan>(device, this))
+		, m_RenderGeometryReady(false)
 		, _renderGeometryIndexBufferSize(0)
 		, _renderGeometryIndexOffset(0)
 		, _renderGeometryIndexFormat(PixelFormat::Undefined)
-		, _renderGeometryLayoutHash(0)
-		, _renderGeometryPerInstanceSlotsMask(0)
-		, _currentSLC2GraphicsState(nullptr)
+		, m_RenderGeometryLayoutHash(0)
+		, m_RenderGeometryPerInstanceSlotsMask(0)
+		, m_CurrentSLC2GraphicsState(nullptr)
 	{
 		Platform::MemoryClear(_rtHandles, sizeof(GPUTextureViewVulkan*) * GPU_MAX_RT_BINDED );
 		Platform::MemoryClear(_cbHandles, sizeof(DescriptorResourceVulkan*) * GPU_MAX_CB_BINDED );
@@ -77,7 +77,7 @@ namespace SE
 			_descriptorPools[i].ClearDelete();
 		}
 		_descriptorPools.Clear();
-		Delete(_cmdBufferManager);
+		Delete(m_CmdBufferManager);
 	}
 
 
@@ -218,7 +218,7 @@ namespace SE
 
 	void GPUContextVulkan::UpdateDescriptorSets(ComputePipelineStateVulkan* pipelineState)
 	{
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		const auto pipelineLayout = pipelineState->GetLayout();
 		ENGINE_ASSERT(pipelineLayout);
 
@@ -249,10 +249,10 @@ namespace SE
 	{
 		GPUPipelineStateVulkan* pipelineState = _currentState;
 		ENGINE_ASSERT(pipelineState && pipelineState->IsValid());
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 
 		// End previous render pass if render targets layout was modified
-		if (_rtDirtyFlag && cmdBuffer->IsInsideRenderPass())
+		if (m_RtDirtyFlag && cmdBuffer->IsInsideRenderPass())
 			EndRenderPass();
 
 		if (pipelineState->hasDescriptorsPerStageMask)
@@ -308,7 +308,7 @@ namespace SE
 		// Start render pass if not during one
 		if (cmdBuffer->IsOutsideRenderPass())
 			BeginRenderPass();
-		else if (_barriers.HasBarrier())
+		else if (m_Barriers.HasBarrier())
 		{
 			// TODO: implement better image/buffer barriers - and remove this renderPass split to flush barriers
 			EndRenderPass();
@@ -316,11 +316,11 @@ namespace SE
 		}
 
 		// Bind pipeline
-		if (_psDirtyFlag && pipelineState && (_rtDepth || _rtCount))
+		if (m_PsoDirtyFlag && pipelineState && (_rtDepth || _rtCount))
 		{
-			_psDirtyFlag = false;
-			const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-			const auto pipeline = pipelineState->GetState(_renderPass);
+			m_PsoDirtyFlag = false;
+			const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
+			const auto pipeline = pipelineState->GetState(m_RenderPass);
 			vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 //			RENDER_STAT_PS_STATE_CHANGE();
 		}
@@ -339,17 +339,15 @@ namespace SE
 				pipelineState->dynamicOffsets.Get());
 		}
 
-		_rtDirtyFlag = false;
+		m_RtDirtyFlag = false;
 	}
 
 	bool GPUContextVulkan::OnSLC2DrawCall(ShaderProgramInstance& instance)
 	{
-        SLC2GraphicsPipelineStateVulkan* pipelineState = _currentSLC2GraphicsState;
-		if (pipelineState == nullptr || !pipelineState->IsValid())
-		{
-			LOG_ERROR("Graphic", "SLC2 draw requires a valid pipeline state set by SetSLC2State.");
-			return false;
-		}
+        SLC2GraphicsPipelineStateVulkan* pipelineState = m_CurrentSLC2GraphicsState;
+
+		// Bind Global Shader Parameter
+        GlobalBinding(&instance);
 
 		ShaderBindingSnapshot snapshot;
 		// SLC2 graphics 与 compute 一样，先冻结 instance 的可变绑定状态，再交给 Vulkan descriptor 层消费。
@@ -364,6 +362,7 @@ namespace SE
 			LOG_ERROR("Graphic", "SLC2 draw requires an initialized shader program instance.");
 			return false;
 		}
+
 		SLC2ShaderProgramVulkan* shaderProgramVulkan = static_cast<SLC2ShaderProgramVulkan*>(shaderProgram);
 		if (pipelineState->GetProgram() != shaderProgram)
 		{
@@ -371,20 +370,20 @@ namespace SE
 			return false;
 		}
 
-		if (!_renderGeometryReady || _renderGeometryLayoutHash != pipelineState->GetVertexFactoryLayoutHash())
+		if (!m_RenderGeometryReady || m_RenderGeometryLayoutHash != pipelineState->GetVertexFactoryLayoutHash())
 		{
 			LOG_ERROR("Graphic", "SLC2 draw for program {0} requires RenderGeometry prepared by BindRenderGeometry for the current pipeline state. LayoutHash={1}.",
 				shaderProgram->GetProgramId(), pipelineState->GetVertexFactoryLayoutHash());
 			return false;
 		}
 
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-		if (_rtDirtyFlag && cmdBuffer->IsInsideRenderPass())
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
+		if (m_RtDirtyFlag && cmdBuffer->IsInsideRenderPass())
 		{
 			EndRenderPass();
 		}
 
-		if (!shaderProgramVulkan->PrepareAndBindGraphicsDescriptors(this, snapshot, pipelineState))
+		if (!shaderProgramVulkan->BindGraphicsDescriptors(this, snapshot, pipelineState))
 		{
 			return false;
 		}
@@ -393,19 +392,19 @@ namespace SE
 		{
 			BeginRenderPass();
 		}
-		else if (_barriers.HasBarrier())
+		else if (m_Barriers.HasBarrier())
 		{
 			EndRenderPass();
 			BeginRenderPass();
 		}
 
-		const VkPipeline pipeline = pipelineState->GetPreparedState(_renderPass);
+		const VkPipeline pipeline = pipelineState->GetPreparedState(m_RenderPass);
 		if (pipeline == VK_NULL_HANDLE)
 		{
 			return false;
 		}
 		vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-		_rtDirtyFlag = false;
+		m_RtDirtyFlag = false;
 		return true;
 	}
 
@@ -413,20 +412,20 @@ namespace SE
 	{
 #if VK_ENABLE_BARRIERS_BATCHING
 		// Auto-flush on overflow
-		if (_barriers.IsFull())
+		if (m_Barriers.IsFull())
 		{
-			const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+			const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 			if (cmdBuffer->IsInsideRenderPass())
 				EndRenderPass();
-			_barriers.Execute(cmdBuffer);
+			m_Barriers.Execute(cmdBuffer);
 		}
 #endif
 
 		// Insert barrier
 #if VK_ENABLE_BARRIERS_DEBUG
-		_barriers.ImageBarriersDebug.Add(handle);
+		m_Barriers.ImageBarriersDebug.Add(handle);
 #endif
-		VkImageMemoryBarrier& imageBarrier = _barriers.ImageBarriers.AddOne();
+		VkImageMemoryBarrier& imageBarrier = m_Barriers.ImageBarriers.AddOne();
 		VulkanTool::ZeroStruct(imageBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
 		imageBarrier.image = image;
 		imageBarrier.subresourceRange = subresourceRange;
@@ -434,8 +433,8 @@ namespace SE
 		imageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		imageBarrier.oldLayout = srcLayout;
 		imageBarrier.newLayout = dstLayout;
-		_barriers.SourceStage |= VulkanTool::GetImageBarrierFlags(srcLayout, imageBarrier.srcAccessMask);
-		_barriers.DestStage |= VulkanTool::GetImageBarrierFlags(dstLayout, imageBarrier.dstAccessMask);
+		m_Barriers.SourceStage |= VulkanTool::GetImageBarrierFlags(srcLayout, imageBarrier.srcAccessMask);
+		m_Barriers.DestStage |= VulkanTool::GetImageBarrierFlags(dstLayout, imageBarrier.dstAccessMask);
 #if VK_ENABLE_BARRIERS_DEBUG
 		LOG(Warning, "Image Barrier: 0x{0:x}, {1} -> {2} for baseMipLevel: {3}, baseArrayLayer: {4}, levelCount: {5}, layerCount: {6} ({7})",
         (uintptr)image,
@@ -451,10 +450,10 @@ namespace SE
 
 #if !VK_ENABLE_BARRIERS_BATCHING
 		// Auto-flush without batching
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		if (cmdBuffer->IsInsideRenderPass())
 			EndRenderPass();
-		_barriers.Execute(cmdBuffer);
+		m_Barriers.Execute(cmdBuffer);
 #endif
 	}
 
@@ -575,17 +574,17 @@ namespace SE
 
 #if VK_ENABLE_BARRIERS_BATCHING
 		// Auto-flush on overflow
-    if (_barriers.IsFull())
+    if (m_Barriers.IsFull())
     {
-        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+        const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
         if (cmdBuffer->IsInsideRenderPass())
             EndRenderPass();
-        _barriers.Execute(cmdBuffer);
+        m_Barriers.Execute(cmdBuffer);
     }
 #endif
 
 		// Insert barrier
-		VkBufferMemoryBarrier& bufferBarrier = _barriers.BufferBarriers.AddOne();
+		VkBufferMemoryBarrier& bufferBarrier = m_Barriers.BufferBarriers.AddOne();
 		VulkanTool::ZeroStruct(bufferBarrier, VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER);
 		bufferBarrier.buffer = buffer->GetHandle();
 		bufferBarrier.offset = 0;
@@ -594,28 +593,28 @@ namespace SE
 		bufferBarrier.dstAccessMask = dstAccess;
 		bufferBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		bufferBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		_barriers.SourceStage |= VulkanTool::GetBufferBarrierFlags(buffer->Access);
-		_barriers.DestStage |= VulkanTool::GetBufferBarrierFlags(dstAccess);
+		m_Barriers.SourceStage |= VulkanTool::GetBufferBarrierFlags(buffer->Access);
+		m_Barriers.DestStage |= VulkanTool::GetBufferBarrierFlags(dstAccess);
 		buffer->Access = dstAccess;
 
 #if !VK_ENABLE_BARRIERS_BATCHING
 		// Auto-flush without batching
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		if (cmdBuffer->IsInsideRenderPass())
 			EndRenderPass();
-		_barriers.Execute(cmdBuffer);
+		m_Barriers.Execute(cmdBuffer);
 #endif
 	}
 
 	void GPUContextVulkan::FlushBarriers()
 	{
 #if VK_ENABLE_BARRIERS_BATCHING
-		if (_barriers.HasBarrier())
+		if (m_Barriers.HasBarrier())
 		{
-			const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+			const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 			if (cmdBuffer->IsInsideRenderPass())
 				EndRenderPass();
-			_barriers.Execute(cmdBuffer);
+			m_Barriers.Execute(cmdBuffer);
 		}
 #endif
 	}
@@ -663,14 +662,14 @@ namespace SE
 
 	void GPUContextVulkan::BeginRenderPass()
 	{
-		auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 
 		// Build render targets layout descriptor and framebuffer key
 		FramebufferVulkan::Desc framebufferKey;
 		framebufferKey.attachmentCount = _rtCount;
 		RenderTargetLayoutVulkan layout;
 		layout.RTsCount = _rtCount;
-		layout.BlendEnable = _currentState ? _currentState->blendEnable : (_currentSLC2GraphicsState != nullptr && _currentSLC2GraphicsState->blendEnable);
+		layout.BlendEnable = _currentState ? _currentState->blendEnable : (m_CurrentSLC2GraphicsState != nullptr && m_CurrentSLC2GraphicsState->blendEnable);
 		layout.DepthFormat = _rtDepth ? _rtDepth->GetFormat() : PixelFormat::Undefined;
 		for (int32 i = 0; i < GPU_MAX_RT_BINDED; i++)
 		{
@@ -722,7 +721,7 @@ namespace SE
 		auto renderPass = _device->GetOrCreateRenderPass(layout);
 		framebufferKey.renderPass = renderPass;
 		auto framebuffer = _device->GetOrCreateFramebuffer(framebufferKey, layout.Extent, layout.Layers);
-		_renderPass = renderPass;
+		m_RenderPass = renderPass;
 
 		FlushBarriers();
 
@@ -732,9 +731,9 @@ namespace SE
 
 	void GPUContextVulkan::EndRenderPass()
 	{
-		auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		cmdBuffer->EndRenderPass();
-		_renderPass = nullptr;
+		m_RenderPass = nullptr;
 
 		// Place a barrier between RenderPasses, so that color / depth outputs can be read in subsequent passes
 		// TODO: remove it in future and use proper barriers without whole pipeline stalls
@@ -748,15 +747,15 @@ namespace SE
 		GPUContext::FrameBegin();
 
 		// Setup
-		_psDirtyFlag = 0;
-		_rtDirtyFlag = 0;
+		m_PsoDirtyFlag = 0;
+		m_RtDirtyFlag = 0;
 		_cbDirtyFlag = 0;
 		_rtCount = 0;
 		_vbCount = 0;
 		_stencilRef = 0;
-		_renderPass = nullptr;
+		m_RenderPass = nullptr;
 		_currentState = nullptr;
-		_currentSLC2GraphicsState = nullptr;
+		m_CurrentSLC2GraphicsState = nullptr;
 		ClearRenderGeometry();
 		_rtDepth = nullptr;
 		Platform::MemoryClear(_rtHandles, sizeof(_rtHandles));
@@ -770,7 +769,7 @@ namespace SE
 		// Reset pending queries
 		if (_device->QueriesToReset.HasItems())
 		{
-			const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+			const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 			for (auto query : _device->QueriesToReset)
 				query->Reset(cmdBuffer);
 			_device->QueriesToReset.Clear();
@@ -795,19 +794,19 @@ namespace SE
 
 	void GPUContextVulkan::EventBegin(const Char* name)
 	{
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		cmdBuffer->BeginEvent(name);
 	}
 
 	void GPUContextVulkan::EventEnd()
 	{
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		cmdBuffer->EndEvent();
 	}
 
 	void* GPUContextVulkan::GetNativePtr() const
 	{
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		return (void*)cmdBuffer->GetHandle();
 	}
 
@@ -820,13 +819,13 @@ namespace SE
 	{
 		if (_rtDepth || _rtCount != 0)
 		{
-			_rtDirtyFlag = true;
-			_psDirtyFlag = true;
+			m_RtDirtyFlag = true;
+			m_PsoDirtyFlag = true;
 			_rtCount = 0;
 			_rtDepth = nullptr;
 			Platform::MemoryClear(_rtHandles, sizeof(_rtHandles));
 
-			const auto cmdBuffer = _cmdBufferManager->GetActiveCmdBuffer();
+			const auto cmdBuffer = m_CmdBufferManager->GetActiveCmdBuffer();
 			if (cmdBuffer && cmdBuffer->IsInsideRenderPass())
 			{
 				EndRenderPass();
@@ -840,8 +839,8 @@ namespace SE
 
 		if (_rtDepth != nullptr || _rtCount != 1 || _rtHandles[0] != rtVulkan)
 		{
-			_rtDirtyFlag = true;
-			_psDirtyFlag = true;
+			m_RtDirtyFlag = true;
+			m_PsoDirtyFlag = true;
 			_rtCount = 1;
 			_rtDepth = nullptr;
 			_rtHandles[0] = rtVulkan;
@@ -856,8 +855,8 @@ namespace SE
 
 		if (_rtDepth != depthBufferVulkan || _rtCount != rtCount || _rtHandles[0] != rtVulkan)
 		{
-			_rtDirtyFlag = true;
-			_psDirtyFlag = true;
+			m_RtDirtyFlag = true;
+			m_PsoDirtyFlag = true;
 			_rtCount = rtCount;
 			_rtDepth = depthBufferVulkan;
 			_rtHandles[0] = rtVulkan;
@@ -879,8 +878,8 @@ namespace SE
 
 		if (_rtDepth != depthBufferVulkan || _rtCount != rts.Length() || Platform::MemoryCompare(_rtHandles, rtvs, rtvsSize) != 0)
 		{
-			_rtDirtyFlag = true;
-			_psDirtyFlag = true;
+			m_RtDirtyFlag = true;
+			m_PsoDirtyFlag = true;
 			_rtCount = rts.Length();
 			_rtDepth = depthBufferVulkan;
 			Platform::MemoryCopy(_rtHandles, rtvs, rtvsSize);
@@ -889,7 +888,7 @@ namespace SE
 
 	void GPUContextVulkan::SetBlendFactor(const Float4& value)
 	{
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		vkCmdSetBlendConstants(cmdBuffer->GetHandle(), value.Raw);
 	}
 
@@ -898,14 +897,14 @@ namespace SE
 		if (_stencilRef != value)
 		{
 			_stencilRef = value;
-			const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+			const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 			vkCmdSetStencilReference(cmdBuffer->GetHandle(), VK_STENCIL_FRONT_AND_BACK, _stencilRef);
 		}
 	}
 
 	void GPUContextVulkan::SetViewport(const Viewport& viewport)
 	{
-		vkCmdSetViewport(_cmdBufferManager->GetCmdBuffer()->GetHandle(), 0, 1, (VkViewport*)&viewport);
+		vkCmdSetViewport(m_CmdBufferManager->GetCmdBuffer()->GetHandle(), 0, 1, (VkViewport*)&viewport);
 	}
 
 	void GPUContextVulkan::SetScissor(const Rectangle& scissorRect)
@@ -915,13 +914,13 @@ namespace SE
 		rect.offset.y = (int32)scissorRect.Location.Y;
 		rect.extent.width = (uint32)scissorRect.Size.X;
 		rect.extent.height = (uint32)scissorRect.Size.Y;
-		vkCmdSetScissor(_cmdBufferManager->GetCmdBuffer()->GetHandle(), 0, 1, &rect);
+		vkCmdSetScissor(m_CmdBufferManager->GetCmdBuffer()->GetHandle(), 0, 1, &rect);
 	}
 
 	void GPUContextVulkan::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ)
 	{
 		ENGINE_ASSERT(shader);
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		auto shaderVulkan = (GPUShaderProgramCSVulkan*)shader;
 
 		// End any render pass
@@ -971,7 +970,7 @@ namespace SE
 			return;
 		}
 
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		if (cmdBuffer->IsInsideRenderPass())
 		{
 			EndRenderPass();
@@ -1000,7 +999,7 @@ namespace SE
 	void GPUContextVulkan::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 	{
 		ENGINE_ASSERT(shader && bufferForArgs);
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		auto shaderVulkan = (GPUShaderProgramCSVulkan*)shader;
 		const auto bufferForArgsVulkan = (GPUBufferVulkan*)bufferForArgs;
 
@@ -1058,7 +1057,7 @@ namespace SE
 			return;
 		}
 
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		if (cmdBuffer->IsInsideRenderPass())
 		{
 			EndRenderPass();
@@ -1097,7 +1096,7 @@ namespace SE
 
 		// TODO: use render pass to resolve attachments
 
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		if (cmdBuffer->IsInsideRenderPass())
 			EndRenderPass();
 
@@ -1138,25 +1137,25 @@ namespace SE
 		int32 startVertex)
 	{
 		OnDrawCall();
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		vkCmdDraw(cmdBuffer->GetHandle(), verticesCount, instanceCount, startVertex, startInstance);
 //		RENDER_STAT_DRAW_CALL(verticesCount * instanceCount, verticesCount * instanceCount / 3);
 	}
 
-	void GPUContextVulkan::DrawInstanced(ShaderProgramInstance& instance,
+	void GPUContextVulkan::DrawInstanced(ShaderProgramInstance* instance,
                                          uint32                 verticesCount,
                                          uint32                 instanceCount,
                                          int32                  startInstance,
                                          int32                  startVertex)
     {
-        SLC2GPUShaderProgram* shaderProgram = instance.GetProgram();
+        SLC2GPUShaderProgram* shaderProgram = instance->GetProgram();
         if (shaderProgram == nullptr)
         {
             LOG_ERROR("Graphic", "Draw requires an initialized shader program instance.");
             return;
         }
 
-        if (!_renderGeometryReady)
+        if (!m_RenderGeometryReady)
         {
             LOG_ERROR("Graphic", "Draw requires a successful BindRenderGeometry call.");
             return;
@@ -1170,7 +1169,7 @@ namespace SE
 
         const uint64 vertexStart   = static_cast<uint64>(startVertex);
         const uint64 instanceStart = static_cast<uint64>(startInstance);
-        const uint32 requiredSlotsMask = _currentSLC2GraphicsState->GetRequiredVertexBufferSlotsMask();
+        const uint32 requiredSlotsMask = m_CurrentSLC2GraphicsState->GetRequiredVertexBufferSlotsMask();
         for (uint32 slot = 0; slot < GPU_MAX_VB_BINDED; slot++)
         {
             const uint32 requiredBit = 1u << slot;
@@ -1180,9 +1179,9 @@ namespace SE
                 continue;
             }
 
-            if (_renderGeometryPerInstanceSlotsMask & requiredBit)
+            if (m_RenderGeometryPerInstanceSlotsMask & requiredBit)
             {
-                const uint64 available = _renderGeometryVertexElementCounts[slot];
+                const uint64 available = m_RenderGeometryVertexElementCounts[slot];
                 if (instanceStart > available || static_cast<uint64>(instanceCount) > available - instanceStart)
                 {
                     LOG_ERROR("Graphic", "Draw instance range exceeds vertex buffer slot {0}.", slot);
@@ -1191,7 +1190,7 @@ namespace SE
             }
             else
             {
-                const uint64 available = _renderGeometryVertexElementCounts[slot];
+                const uint64 available = m_RenderGeometryVertexElementCounts[slot];
                 if (vertexStart > available || static_cast<uint64>(verticesCount) > available - vertexStart)
                 {
                     LOG_ERROR("Graphic", "Draw vertex range exceeds vertex buffer slot {0}.", slot);
@@ -1200,12 +1199,12 @@ namespace SE
             }
         }
 
-        if (!OnSLC2DrawCall(instance))
+        if (!OnSLC2DrawCall(*instance))
         {
             return;
         }
 
-        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+        const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
         vkCmdDraw(cmdBuffer->GetHandle(), verticesCount, instanceCount, startVertex, startInstance);
     }
 
@@ -1216,7 +1215,7 @@ namespace SE
 		int32 startIndex)
 	{
 		OnDrawCall();
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		vkCmdDrawIndexed(cmdBuffer->GetHandle(), indicesCount, instanceCount, startIndex, startVertex, startInstance);
 //		RENDER_STAT_DRAW_CALL(0, indicesCount / 3 * instanceCount);
 
@@ -1236,7 +1235,7 @@ namespace SE
 			return;
 		}
 
-		if (!_renderGeometryReady)
+		if (!m_RenderGeometryReady)
 		{
 			LOG_ERROR("Graphic", "SLC2 indexed draw for program {0} requires a successful BindRenderGeometry call.",
 				shaderProgram->GetProgramId());
@@ -1248,7 +1247,7 @@ namespace SE
 			 _renderGeometryIndexFormat != PixelFormat::R32_UInt))
 		{
 			LOG_ERROR("Graphic", "SLC2 indexed draw for program {0} requires an index buffer in the prepared RenderGeometry. LayoutHash={1}.",
-				shaderProgram->GetProgramId(), _renderGeometryLayoutHash);
+				shaderProgram->GetProgramId(), m_RenderGeometryLayoutHash);
 			return;
 		}
 		if (startIndex < 0 || startInstance < 0)
@@ -1264,23 +1263,23 @@ namespace SE
 		if (indexSize == 0 || endByte > _renderGeometryIndexBufferSize)
 		{
 			LOG_ERROR("Graphic", "SLC2 indexed draw for program {0} exceeds the prepared index buffer range. LayoutHash={1}.",
-				shaderProgram->GetProgramId(), _renderGeometryLayoutHash);
+				shaderProgram->GetProgramId(), m_RenderGeometryLayoutHash);
 			return;
 		}
 
 		const uint64 instanceStart = static_cast<uint64>(startInstance);
-		const uint32 requiredSlotsMask = _currentSLC2GraphicsState->GetRequiredVertexBufferSlotsMask();
+		const uint32 requiredSlotsMask = m_CurrentSLC2GraphicsState->GetRequiredVertexBufferSlotsMask();
 		for (uint32 slot = 0; slot < GPU_MAX_VB_BINDED; slot++)
 		{
 			const uint32 requiredBit = 1u << slot;
 			// 索引决定 PerVertex 元素访问范围，但 PerInstance Slot 仍可在提交前精确校验。
 			if ((requiredSlotsMask & requiredBit) == 0 ||
-				(_renderGeometryPerInstanceSlotsMask & requiredBit) == 0)
+				(m_RenderGeometryPerInstanceSlotsMask & requiredBit) == 0)
 			{
 				continue;
 			}
 
-			const uint64 available = _renderGeometryVertexElementCounts[slot];
+			const uint64 available = m_RenderGeometryVertexElementCounts[slot];
 			if (instanceStart > available || static_cast<uint64>(instanceCount) > available - instanceStart)
 			{
 				LOG_ERROR("Graphic", "Indexed draw instance range exceeds vertex buffer slot {0}.", slot);
@@ -1293,7 +1292,7 @@ namespace SE
 			return;
 		}
 
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		vkCmdDrawIndexed(cmdBuffer->GetHandle(), indicesCount, instanceCount, startIndex, startVertex, startInstance);
 	}
 
@@ -1302,7 +1301,7 @@ namespace SE
 		ENGINE_ASSERT(bufferForArgs && EnumHasAnyFlags(bufferForArgs->GetFlags(), GPUBufferFlags::Argument));
 		OnDrawCall();
 		auto bufferForArgsVK = (GPUBufferVulkan*)bufferForArgs;
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		vkCmdDrawIndirect(cmdBuffer->GetHandle(), bufferForArgsVK->GetHandle(), (VkDeviceSize)offsetForArgs, 1, sizeof(VkDrawIndirectCommand));
 //		RENDER_STAT_DRAW_CALL(0, 0);
 	}
@@ -1312,29 +1311,29 @@ namespace SE
 		ENGINE_ASSERT(bufferForArgs && EnumHasAnyFlags(bufferForArgs->GetFlags(), GPUBufferFlags::Argument));
 		OnDrawCall();
 		auto bufferForArgsVK = (GPUBufferVulkan*)bufferForArgs;
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		vkCmdDrawIndexedIndirect(cmdBuffer->GetHandle(), bufferForArgsVK->GetHandle(), (VkDeviceSize)offsetForArgs, 1, sizeof(VkDrawIndexedIndirectCommand));
 //		RENDER_STAT_DRAW_CALL(0, 0);
 	}
 
     void GPUContextVulkan::DrawInstancedIndirect(ShaderProgramInstance& instance, GPUBuffer* args, uint32 offset)
     {
-        if (instance.GetProgram() == nullptr || !_renderGeometryReady || args == nullptr ||
+        if (instance.GetProgram() == nullptr || !m_RenderGeometryReady || args == nullptr ||
             !EnumHasAnyFlags(args->GetFlags(), GPUBufferFlags::Argument) || !OnSLC2DrawCall(instance))
             return;
         const auto* buffer = static_cast<GPUBufferVulkan*>(args);
-        vkCmdDrawIndirect(_cmdBufferManager->GetCmdBuffer()->GetHandle(), buffer->GetHandle(),
+        vkCmdDrawIndirect(m_CmdBufferManager->GetCmdBuffer()->GetHandle(), buffer->GetHandle(),
                           static_cast<VkDeviceSize>(offset), 1, sizeof(VkDrawIndirectCommand));
     }
 
     void GPUContextVulkan::DrawIndexedInstancedIndirect(ShaderProgramInstance& instance, GPUBuffer* args, uint32 offset)
     {
-        if (instance.GetProgram() == nullptr || !_renderGeometryReady ||
+        if (instance.GetProgram() == nullptr || !m_RenderGeometryReady ||
             _renderGeometryIndexBufferSize == 0 || args == nullptr ||
             !EnumHasAnyFlags(args->GetFlags(), GPUBufferFlags::Argument) || !OnSLC2DrawCall(instance))
             return;
         const auto* buffer = static_cast<GPUBufferVulkan*>(args);
-        vkCmdDrawIndexedIndirect(_cmdBufferManager->GetCmdBuffer()->GetHandle(), buffer->GetHandle(),
+        vkCmdDrawIndexedIndirect(m_CmdBufferManager->GetCmdBuffer()->GetHandle(), buffer->GetHandle(),
                                  static_cast<VkDeviceSize>(offset), 1, sizeof(VkDrawIndexedIndirectCommand));
     }
 
@@ -1361,7 +1360,7 @@ namespace SE
 		{
 			_srHandles[slot] = handle;
 			if (view)
-				*view->LastRenderTime = _lastRenderTime;
+				*view->LastRenderTime = m_LastRenderTime;
 		}
 	}
 	void GPUContextVulkan::BindUA(int32 slot, GPUResourceView* view)
@@ -1372,7 +1371,7 @@ namespace SE
 		{
 			_uaHandles[slot] = handle;
 			if (view)
-				*view->LastRenderTime = _lastRenderTime;
+				*view->LastRenderTime = m_LastRenderTime;
 		}
 
 	}
@@ -1398,7 +1397,7 @@ namespace SE
 
 		ENGINE_ASSERT(_vbCount <= GPU_MAX_VB_BINDED);
 
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		VkBuffer buffers[GPU_MAX_VB_BINDED];
 		VkDeviceSize offsets[GPU_MAX_VB_BINDED];
 
@@ -1423,7 +1422,7 @@ namespace SE
 		ClearRenderGeometry();
 		_vbCount = 1;
 
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		VkBuffer buffers[1];
 		VkDeviceSize offsets[1];
 
@@ -1441,20 +1440,20 @@ namespace SE
 	void GPUContextVulkan::BindIB(GPUBuffer* indexBuffer)
 	{
 		ClearRenderGeometry();
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		const auto ibVulkan = static_cast<GPUBufferVulkan*>(indexBuffer)->GetHandle();
 		vkCmdBindIndexBuffer(cmdBuffer->GetHandle(), ibVulkan, 0, indexBuffer->GetFormat() == PixelFormat::R32_UInt ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16);
 	}
 
 	void GPUContextVulkan::ClearRenderGeometry()
 	{
-		_renderGeometryReady = false;
+		m_RenderGeometryReady = false;
 		_renderGeometryIndexBufferSize = 0;
 		_renderGeometryIndexOffset = 0;
 		_renderGeometryIndexFormat = PixelFormat::Undefined;
-		_renderGeometryLayoutHash = 0;
-		_renderGeometryPerInstanceSlotsMask = 0;
-		Platform::MemoryClear(_renderGeometryVertexElementCounts, sizeof(_renderGeometryVertexElementCounts));
+		m_RenderGeometryLayoutHash = 0;
+		m_RenderGeometryPerInstanceSlotsMask = 0;
+		Platform::MemoryClear(m_RenderGeometryVertexElementCounts, sizeof(m_RenderGeometryVertexElementCounts));
 	}
 
 	bool GPUContextVulkan::BindRenderGeometry(const RenderGeometry& geometry)
@@ -1462,12 +1461,12 @@ namespace SE
 		// 任何失败都必须使旧 Geometry 失效，避免后续 Draw 使用上一次的 VB/IB 绑定。
 		ClearRenderGeometry();
 
-		SLC2GraphicsPipelineStateVulkan* pipelineState = _currentSLC2GraphicsState;
-		if (pipelineState == nullptr || !pipelineState->IsValid())
-		{
-			LOG_ERROR("Graphic", "BindRenderGeometry requires a valid pipeline set by SetSLC2State.");
-			return false;
-		}
+		SLC2GraphicsPipelineStateVulkan* pipelineState = m_CurrentSLC2GraphicsState;
+        if (pipelineState == nullptr)
+        {
+            LOG_ERROR("Graphic", "Not set pipelineState before call BindRenderGeometry.");
+            return false;
+        }
 
 		// Geometry 设置与具体 Draw 类型解耦；索引缓冲是否必需由后续 DrawIndexed 再判断。
 		if (!geometry.Validate(false))
@@ -1507,10 +1506,10 @@ namespace SE
 					geometry.Layout->GetHash(), slot);
 				return false;
 			}
-			_renderGeometryVertexElementCounts[slot] = (vertexBuffer->Buffer->GetSize() - vertexBuffer->Offset) / binding->Stride;
+			m_RenderGeometryVertexElementCounts[slot] = (vertexBuffer->Buffer->GetSize() - vertexBuffer->Offset) / binding->Stride;
 			if (binding->InputRate == VertexFactoryInputRate::PerInstance)
 			{
-				_renderGeometryPerInstanceSlotsMask |= (1u << slot);
+				m_RenderGeometryPerInstanceSlotsMask |= (1u << slot);
 			}
 		}
 
@@ -1529,7 +1528,7 @@ namespace SE
 			return false;
 		}
 
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		// 按真实 Slot 单独绑定，不以数组下标或上一 Draw 的连续绑定数量推断输入位置。
 		for (uint32 slot = 0; slot < GPU_MAX_VB_BINDED; slot++)
 		{
@@ -1556,8 +1555,8 @@ namespace SE
 		_renderGeometryIndexBufferSize = geometry.IndexBuffer != nullptr ? geometry.IndexBuffer->GetSize() : 0;
 		_renderGeometryIndexOffset = geometry.IndexOffset;
 		_renderGeometryIndexFormat = geometry.IndexFormat;
-		_renderGeometryLayoutHash = geometry.Layout->GetHash();
-		_renderGeometryReady = true;
+		m_RenderGeometryLayoutHash = geometry.Layout->GetHash();
+		m_RenderGeometryReady = true;
 		return true;
 	}
 
@@ -1577,7 +1576,7 @@ namespace SE
 			// TODO: detect if inside render pass and use ClearAttachments
 			// TODO: delay clear for attachments before render pass to use render pass clear values for faster clearing
 
-			const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+			const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 			if (cmdBuffer->IsInsideRenderPass())
 				EndRenderPass();
 
@@ -1598,7 +1597,7 @@ namespace SE
 			// TODO: detect if inside render pass and use ClearAttachments
 			// TODO: delay clear for attachments before render pass to use render pass clear values for faster clearing
 
-			const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+			const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 			if (cmdBuffer->IsInsideRenderPass())
 				EndRenderPass();
 
@@ -1617,7 +1616,7 @@ namespace SE
 		const auto bufVulkan = static_cast<GPUBufferVulkan*>(buf);
 		if (bufVulkan)
 		{
-			const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+			const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 			if (cmdBuffer->IsInsideRenderPass())
 				EndRenderPass();
 
@@ -1632,7 +1631,7 @@ namespace SE
 		const auto bufVulkan = static_cast<GPUBufferVulkan*>(buf);
 		if (bufVulkan)
 		{
-			const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+			const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 			if (cmdBuffer->IsInsideRenderPass())
 				EndRenderPass();
 
@@ -1647,7 +1646,7 @@ namespace SE
 		if (texVulkan)
 		{
 			auto rtVulkan = static_cast<GPUTextureViewVulkan*>(texVulkan->View(0));
-			const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+			const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 			if (cmdBuffer->IsInsideRenderPass())
 				EndRenderPass();
 
@@ -1664,7 +1663,7 @@ namespace SE
 		if (texVulkan)
 		{
 			auto rtVulkan = ((GPUTextureViewVulkan*)(texVulkan->IsVolume() ? texVulkan->ViewVolume() : texVulkan->View(0)));
-			const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+			const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 			if (cmdBuffer->IsInsideRenderPass())
 				EndRenderPass();
 
@@ -1678,32 +1677,44 @@ namespace SE
 
 	void GPUContextVulkan::SetState(GPUPipelineState* state)
 	{
-		if (_currentState != state || _currentSLC2GraphicsState != nullptr)
+		if (_currentState != state || m_CurrentSLC2GraphicsState != nullptr)
 		{
 			_currentState = static_cast<GPUPipelineStateVulkan*>(state);
-			_currentSLC2GraphicsState = nullptr;
+			m_CurrentSLC2GraphicsState = nullptr;
 			ClearRenderGeometry();
-			_psDirtyFlag = true;
+			m_PsoDirtyFlag = true;
 		}
 	}
 
 	GPUPipelineState* GPUContextVulkan::GetState() const
 	{
-		return _currentState; }
+		return _currentState; 
+	}
 
     void GPUContextVulkan::SetSLC2State(SLC2GPUPipelineState* state) 
 	{
-		SLC2GraphicsPipelineStateVulkan* stateVulkan = static_cast<SLC2GraphicsPipelineStateVulkan*>(state);
-        if (_currentSLC2GraphicsState != stateVulkan || _currentState != nullptr)
+        if (state == nullptr)
         {
-			_currentState = nullptr;
-            _currentSLC2GraphicsState = stateVulkan;
+            LOG_ERROR("Graphic", "set pipelineState is nullptr.");
+            return;
+        }
+
+        if (!state->IsValid())
+        {
+            LOG_ERROR("Graphic", "set pipelineState is inValid.");
+            return;
+        }
+
+		SLC2GraphicsPipelineStateVulkan* stateVulkan = static_cast<SLC2GraphicsPipelineStateVulkan*>(state);
+        if (m_CurrentSLC2GraphicsState != stateVulkan)
+        {
+            m_CurrentSLC2GraphicsState = stateVulkan;
 			ClearRenderGeometry();
-            _psDirtyFlag              = true;
+            m_PsoDirtyFlag              = true;
         }
 	}
 
-    SLC2GPUPipelineState* GPUContextVulkan::GetSLC2State() const { return _currentSLC2GraphicsState; }
+    SLC2GPUPipelineState* GPUContextVulkan::GetSLC2State() const { return m_CurrentSLC2GraphicsState; }
 
 	void GPUContextVulkan::ClearState()
 	{
@@ -1718,7 +1729,7 @@ namespace SE
 
 	void GPUContextVulkan::FlushState()
 	{
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		if (cmdBuffer->IsInsideRenderPass())
 		{
 			EndRenderPass();
@@ -1731,13 +1742,13 @@ namespace SE
 	{
 		FlushState();
 		_currentState = nullptr;
-		_currentSLC2GraphicsState = nullptr;
+		m_CurrentSLC2GraphicsState = nullptr;
 		ClearRenderGeometry();
 
 		// Execute commands
-		_cmdBufferManager->SubmitActiveCmdBuffer();
-		_cmdBufferManager->PrepareForNewActiveCommandBuffer();
-		ENGINE_ASSERT(_cmdBufferManager->HasPendingActiveCmdBuffer() && _cmdBufferManager->GetActiveCmdBuffer()->GetState() == CmdBufferVulkan::State::IsInsideBegin);
+		m_CmdBufferManager->SubmitActiveCmdBuffer();
+		m_CmdBufferManager->PrepareForNewActiveCommandBuffer();
+		ENGINE_ASSERT(m_CmdBufferManager->HasPendingActiveCmdBuffer() && m_CmdBufferManager->GetActiveCmdBuffer()->GetState() == CmdBufferVulkan::State::IsInsideBegin);
 	}
 
 
@@ -1746,7 +1757,7 @@ namespace SE
 		ENGINE_ASSERT(data);
 		ENGINE_ASSERT(buffer && buffer->GetSize() >= size);
 
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		if (cmdBuffer->IsInsideRenderPass())
 			EndRenderPass();
 
@@ -1804,7 +1815,7 @@ namespace SE
 	void GPUContextVulkan::CopyBuffer(GPUBuffer* dstBuffer, GPUBuffer* srcBuffer, uint32 size, uint32 dstOffset, uint32 srcOffset)
 	{
 		ENGINE_ASSERT(dstBuffer && srcBuffer);
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 
 		// Ensure to end active render pass
 		if (cmdBuffer->IsInsideRenderPass())
@@ -1829,7 +1840,7 @@ namespace SE
 	{
 		ENGINE_ASSERT(texture && texture->IsAllocated() && data);
 
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 		if (cmdBuffer->IsInsideRenderPass())
 			EndRenderPass();
 
@@ -1863,7 +1874,7 @@ namespace SE
 	void GPUContextVulkan::CopyTexture(GPUTexture* dstResource, uint32 dstSubresource, uint32 dstX, uint32 dstY, uint32 dstZ, GPUTexture* srcResource, uint32 srcSubresource)
 	{
 		ENGINE_ASSERT(dstResource && srcResource);
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 
 		// Ensure to end active render pass
 		if (cmdBuffer->IsInsideRenderPass())
@@ -1908,7 +1919,7 @@ namespace SE
 	void GPUContextVulkan::ResetCounter(GPUBuffer* buffer)
 	{
 		ENGINE_ASSERT(buffer);
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 
 		const auto bufferVulkan = static_cast<GPUBufferVulkan*>(buffer);
 		const auto counter = bufferVulkan->Counter;
@@ -1924,7 +1935,7 @@ namespace SE
 	void GPUContextVulkan::CopyCounter(GPUBuffer* dstBuffer, uint32 dstOffset, GPUBuffer* srcBuffer)
 	{
 		ENGINE_ASSERT(dstBuffer && srcBuffer);
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 
 		const auto dstBufferVulkan = static_cast<GPUBufferVulkan*>(dstBuffer);
 		const auto srcBufferVulkan = static_cast<GPUBufferVulkan*>(srcBuffer);
@@ -1946,7 +1957,7 @@ namespace SE
 	void GPUContextVulkan::CopyResource(GPUResource* dstResource, GPUResource* srcResource)
 	{
 		ENGINE_ASSERT(dstResource && srcResource);
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 
 		// Ensure to end active render pass
 		if (cmdBuffer->IsInsideRenderPass())
@@ -2092,7 +2103,7 @@ namespace SE
 	void GPUContextVulkan::CopySubresource(GPUResource* dstResource, uint32 dstSubresource, GPUResource* srcResource, uint32 srcSubresource)
 	{
 		ENGINE_ASSERT(dstResource && srcResource);
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 
 		// Ensure to end active render pass
 		if (cmdBuffer->IsInsideRenderPass())
@@ -2211,7 +2222,7 @@ namespace SE
 		const uint32 size = cbVulkan->GetSize();
 		if (size == 0)
 			return;
-		const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+		const auto cmdBuffer = m_CmdBufferManager->GetCmdBuffer();
 
 		// Allocate bytes for the buffer
 		const auto allocation = _device->uniformBufferUploader->Allocate(size, 0, this);

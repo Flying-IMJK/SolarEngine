@@ -65,6 +65,10 @@ namespace SE
 
 		GPUSampler* CreateSampler() override;
 
+        GPUTextureView* GetDummyTextureView(const ShaderIRTypeRecord& type) override;
+        GPUBuffer*      GetDummyBuffer() override;
+        GPUSampler*     GetDummySampler(bool comparison) override;
+
 		GPUTimerQuery* CreateTimerQuery() override;
 
 		GPUConstantBuffer* CreateConstantBuffer(uint32 size, const StringView& name) override;

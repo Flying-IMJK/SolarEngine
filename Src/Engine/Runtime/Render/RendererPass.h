@@ -48,21 +48,20 @@ namespace SE
 		/// Determines whether can render this pass. Checks if pass is ready and has valid resources loaded.
 		/// </summary>
 		/// <returns><c>true</c> if can render pass; otherwise, <c>false</c>.</returns>
-		bool IsReady()
-		{
-			return CheckIfSkipPass();
-		}
+        bool IsReady() { return !CheckIfSkipPass(); }
 
-	protected:
+    protected:
 
 		bool CheckIfSkipPass()
 		{
 			if (m_HasValidResources)
-				return false;
+			{
+                return false;
+			}
 
 			const bool setupSuccess = SetupResources();
-			m_HasValidResources = !setupSuccess;
-			return setupSuccess;
+			m_HasValidResources = setupSuccess;
+			return !setupSuccess;
 		}
 
 		void InvalidateResources()

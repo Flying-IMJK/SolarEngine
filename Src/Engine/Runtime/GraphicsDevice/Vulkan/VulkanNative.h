@@ -229,6 +229,7 @@ namespace SE
 		GPUTextureVulkan* _dummyTextures[6];
 		GPUBufferVulkan* _dummyBuffer;
 		GPUBufferVulkan* _dummyVB;
+		GPUSampler* _samplers[GPU_STATIC_SAMPLERS_COUNT];
 		VkSampler _staticSamplers[GPU_STATIC_SAMPLERS_COUNT];
 
 	public:
@@ -238,6 +239,7 @@ namespace SE
 		VkSampler* GetStaticSamplers();
 		GPUTextureVulkan* GetDummyTexture(SpirvShaderResourceType type);
 		GPUBufferVulkan* GetDummyBuffer();
+		GPUSampler* GetDummySampler(bool comparison);
 		GPUBufferVulkan* GetDummyVertexBuffer();
 		void Dispose();
 	};

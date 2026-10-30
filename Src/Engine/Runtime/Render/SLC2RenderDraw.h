@@ -19,7 +19,6 @@ namespace SE
         SLC2Material* Material = nullptr;
         SLC2MaterialInstance* Instance = nullptr;
         RenderGeometry Geometry;
-        ShaderCompileTarget Target;
         List<String> Defines;
         SLC2MaterialGeometryMode GeometryMode = SLC2MaterialGeometryMode::Static;
     };

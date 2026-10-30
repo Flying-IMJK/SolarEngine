@@ -11,21 +11,21 @@ namespace SE
     {
     public:
         static bool AppendVertexInput(slang::VariableLayoutReflection* variable,
-                                      List<SLC2VertexInputSignatureElement>& signature,
+                                      List<VertexInputSignatureElement>& signature,
                                       String& error);
 
         static bool ReadVertexInputSignature(slang::ProgramLayout* layout,
                                              int32 entryPointIndex,
-                                             List<SLC2VertexInputSignatureElement>& signature,
+                                             List<VertexInputSignatureElement>& signature,
                                              String& error);
 
-        static bool ValidateVertexInputSignature(const List<SLC2VertexInputSignatureElement>& signature,
+        static bool ValidateVertexInputSignature(const List<VertexInputSignatureElement>& signature,
                                                  String& error);
 
         // includeLocation=false 用于比较同一 Program 的跨 Target 变体；
         // includeLocation=true 还会检查同一 Target 内的后端 location 稳定性。
-        static bool SameVertexInputSignature(const List<SLC2VertexInputSignatureElement>& a,
-                                             const List<SLC2VertexInputSignatureElement>& b,
+        static bool SameVertexInputSignature(const List<VertexInputSignatureElement>& a,
+                                             const List<VertexInputSignatureElement>& b,
                                              bool includeLocation);
     };
 }

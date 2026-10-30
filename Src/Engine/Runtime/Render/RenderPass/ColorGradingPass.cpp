@@ -6,6 +6,7 @@
 #include "Runtime/Graphics/RenderTargetPool.h"
 #include "Runtime/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Runtime/Render/RenderList.h"
+#include "Runtime/Resource/Assets/SLC2Materials/GraphicShader.h"
 
 namespace SE
 {
@@ -78,11 +79,8 @@ namespace SE
 			m_LutFormat = PixelFormat::R8G8B8A8_UNorm;
 		}
 
-		// Create pipeline state
-		m_PsLut.CreatePipelineStates();
-
 		// Load shader
-		m_Shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/PostProcess/ColorGrading"));
+		m_Shader = AssetContent::LoadAsyncInternal<GraphicShader>(SE_TEXT("Shaders/PostProcess/ColorGrading"));
 		if (m_Shader == nullptr)
 		{
 			return false;
@@ -90,6 +88,12 @@ namespace SE
 #if COMPILE_WITH_DEV_ENV
 		_shader.Get()->OnReloading.Bind<ColorGradingPass, &ColorGradingPass::OnShaderReloading>(this);
 #endif
+
+		m_ProgramInstance = New<ShaderProgramInstance>();
+
+		m_GPUConstantBuffer = device->CreateConstantBuffer(sizeof(Data), SE_TEXT("ColorGradingCB"));
+
+		m_PipelineState = device->CreateSLC2PipelineState();
 
 		return true;
 	}
@@ -100,7 +104,9 @@ namespace SE
 		RendererPass::Dispose();
 
 		// Cleanup
-		m_PsLut.Delete();
+        Delete(m_GPUConstantBuffer);
+        Delete(m_PipelineState);
+        Delete(m_ProgramInstance);
 		m_Shader = nullptr;
 	}
 
@@ -111,44 +117,10 @@ namespace SE
 			return false;
 		}
 
-		m_Shader->WaitForLoaded();
-
 		// Wait for shader
-		if (!m_Shader->IsLoaded())
+        if (!m_Shader->WaitForLoaded())
 		{
 			return false;
-		}
-
-		const auto shader = m_Shader->GetShader();
-
-		// Validate shader constant buffer size
-		if (shader->GetCB(0)->GetSize() != sizeof(Data))
-		{
-			REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
-			return false;
-		}
-
-		// Create pipeline stages
-		GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-		if (!m_PsLut.IsValid())
-		{
-			StringView psName;
-#if GPU_ALLOW_GEOMETRY_SHADERS
-			if (_useVolumeTexture)
-			{
-				psDesc.VS = shader->GetVS("VS_WriteToSlice");
-				psDesc.GS = shader->GetGS("GS_WriteToSlice");
-				psName = "PS_Lut3D";
-			}
-			else
-#endif
-			{
-				psName = SE_TEXT("PS_Lut2D");
-			}
-			if (!m_PsLut.Create(psDesc, shader, psName))
-			{
-				return false;
-			}
 		}
 
 		return true;
@@ -157,10 +129,13 @@ namespace SE
 	GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
 	{
 		// Ensure to have valid data
-		if (!CheckIfSkipPass())
-			return nullptr;
+		if (CheckIfSkipPass())
+		{
+            return nullptr;
+		}
 
 		PROFILE_GPU_CPU("Color Grading LUT");
+
 
 		// For a 3D texture, the viewport is 16x16 (per slice), for a 2D texture, it's unwrapped to 256x16
 		const int32 LutSize = 32; // this must match value in shader (see ColorGrading.shader and PostProcessing.shader)
@@ -182,6 +157,9 @@ namespace SE
 		Data data;
 		auto& toneMapping = renderContext.list->PostSettings.ToneMapping;
 		auto& colorGrading = renderContext.list->PostSettings.ColorGrading;
+
+		UpdateProgram(toneMapping.Mode);
+
 		// White Balance
 		data.WhiteTemp = toneMapping.WhiteTemperature;
 		data.WhiteTint = toneMapping.WhiteTint;
@@ -215,12 +193,18 @@ namespace SE
 		// Prepare
 		auto device = GPUDevice::instance;
 		auto context = device->GetMainContext();
-		const auto cb = m_Shader->GetShader()->GetCB(0);
-		context->UpdateCB(cb, &data);
-		context->BindCB(0, cb);
+
+        context->UpdateCB(m_GPUConstantBuffer, &data);
+
+		m_ProgramInstance->SetConstantBuffer(SE_TEXT("data"), m_GPUConstantBuffer);
 		context->SetViewportAndScissors((float)lutDesc.Width, (float)lutDesc.Height);
-		context->SetState(m_PsLut.Get((int32)toneMapping.Mode));
-		context->BindSR(0, useLut ? colorGrading.LutTexture->GetTexture() : nullptr);
+        context->SetSLC2State(m_PipelineState);
+
+		ShaderVar lutVar;
+        if (useLut && m_ProgramInstance->FindVar(SE_TEXT("LutTexture"), lutVar))
+        {
+            lutVar.SetTexture(colorGrading.LutTexture->GetTexture()->View());
+        }
 
 		// Draw
 #if GPU_ALLOW_GEOMETRY_SHADERS
@@ -236,10 +220,51 @@ namespace SE
 #endif
 		{
 			context->SetRenderTarget(lut->View());
-			context->DrawFullscreenTriangle();
+            context->DrawFullscreenTriangle(m_ProgramInstance);
 		}
-		context->UnBindSR(0);
 
 		return lut;
 	}
+
+    void ColorGradingPass::UpdateProgram(ToneMappingMode mappingMode)
+    {
+        StringView programName;
+#if GPU_ALLOW_GEOMETRY_SHADERS
+        if (_useVolumeTexture)
+        {
+            programName = "PS_Lut3D";
+        }
+        else
+#endif
+        {
+            programName = SE_TEXT("PS_Lut2D");
+        }
+
+        String toneMappingMacro;
+        switch (mappingMode)
+        {
+
+            case ToneMappingMode::None:
+                break;
+            case ToneMappingMode::Neutral:
+                toneMappingMacro = SE_TEXT("TONE_MAPPING_MODE_NEUTRAL");
+                break;
+            case ToneMappingMode::ACES:
+                toneMappingMacro = SE_TEXT("TONE_MAPPING_MODE_ACES");
+                break;
+        }
+
+		SLC2GPUShaderProgram* program;
+
+        if (m_Shader->SelectProgram(programName, {toneMappingMacro}, program))
+        {
+            if (m_ProgramInstance->GetProgram() == nullptr || m_ProgramInstance->GetProgram() != program)
+            {
+                // Create pipeline stages
+                m_PipelineState->Init(SLC2GPUPipelineState::Description::DefaultFullscreenTriangle, program);
+
+                m_ProgramInstance->Initialize(program);
+            }
+        }
+    }
 }

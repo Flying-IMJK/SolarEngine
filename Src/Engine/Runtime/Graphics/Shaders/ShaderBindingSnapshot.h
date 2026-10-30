@@ -3,6 +3,8 @@
 #include "Runtime/API.h"
 #include "Runtime/Core/Types/Collections/List.h"
 
+#include "Reflection/ShaderProgramReflection.h"
+
 namespace SE
 {
     class GPUBuffer;
@@ -15,28 +17,22 @@ namespace SE
     class SLC2GPUShaderProgram;
     class ShaderProgramInstance;
 
-    enum class ShaderRuntimeResourceType : byte
-    {
-        Texture,
-        Buffer,
-        Sampler,
-    };
 
     // One dense logical resource slot. The tagged pointers are never exposed as void* and are
     // invalidated by both GPU release and scripting-object deletion notifications.
     class SE_API_RUNTIME ShaderBindingResource
     {
     public:
-        explicit ShaderBindingResource(ShaderRuntimeResourceType type);
+        ShaderBindingResource();
+        explicit ShaderBindingResource(ShaderProgramBindingKind type);
         ~ShaderBindingResource();
 
-        ShaderRuntimeResourceType GetType() const;
+        ShaderProgramBindingKind  GetType() const;
         GPUTextureView*           GetTexture() const;
         GPUBuffer*                GetBuffer() const;
         GPUSampler*               GetSampler() const;
+        // Snapshot resources must be valid; BuildSnapshot resolves empty instance slots to dummy resources.
         bool                      IsValid() const;
-
-        NON_COPYABLE(ShaderBindingResource)
 
     private:
         friend class ShaderProgramInstance;
@@ -50,7 +46,7 @@ namespace SE
         void OnResourceReleasing();
         void OnObjectDeleted(ScriptingObject* object);
 
-        ShaderRuntimeResourceType m_Type;
+        ShaderProgramBindingKind  m_Type;
         GPUTextureView*           m_Texture      = nullptr;
         GPUTexture*               m_TextureOwner = nullptr;
         GPUBuffer*                m_Buffer       = nullptr;
@@ -87,7 +83,7 @@ namespace SE
         // Valid only for a frozen snapshot; the pointer must remain alive through backend descriptor submission.
         const SLC2GPUShaderProgram*           GetProgram() const;
         uint32                                GetResourceCount() const;
-        const ShaderBindingResource*          GetResource(uint32 logicalResourceSlotIndex) const;
+        const ShaderBindingResource*          GetResource(uint32 logicalSlotIndex) const;
         const List<ShaderBindingUniformData>& GetUniformData() const;
         // Returns the frozen dense entry for a UniformBlockIndex, or nullptr when the index is absent.
         const ShaderBindingUniformData*       GetUniformData(uint32 uniformBlockIndex) const;
@@ -102,7 +98,7 @@ namespace SE
 
         bool                           _frozen   = false;
         const SLC2GPUShaderProgram*    m_Program = nullptr;
-        List<ShaderBindingResource*>   _resources;
+        List<ShaderBindingResource*>   m_Resources;
         List<ShaderBindingUniformData> _uniformData;
     };
 } // namespace SE

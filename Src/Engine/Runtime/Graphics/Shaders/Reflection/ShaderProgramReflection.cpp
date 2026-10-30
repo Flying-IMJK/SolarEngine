@@ -312,6 +312,7 @@ namespace SE
 		{
 			visitState[index] = 0;
 		}
+
 		if (!BuildBlockLayout(m_Layout->RootBlockId, visitState))
 		{
 			return false;
@@ -411,6 +412,7 @@ namespace SE
 					LOG_ERROR("Shader", "Shader reflection contains a duplicate logical resource key.");
 					return false;
 				}
+
 				ShaderLogicalResourceSlot slot;
 				slot.Key = key;
 				slot.Kind = kind;
@@ -436,6 +438,7 @@ namespace SE
 		{
 			resolvedSlots[index] = 0;
 		}
+
 		for (int32 index = 0; index < bindings.Count(); index++)
 		{
 			const ShaderVarLocation& location = bindings[index].Location;
@@ -450,6 +453,7 @@ namespace SE
 			}
 			ShaderLogicalResourceSlot& slot = m_LogicalResourceSlots[location.LogicalResourceSlotIndex];
 			slot.TypeId = location.TypeId;
+			slot.Path = bindings[index].Path;
 			resolvedSlots[location.LogicalResourceSlotIndex] = 1;
 		}
 		for (int32 index = 0; index < resolvedSlots.Count(); index++)

@@ -1,8 +1,6 @@
 #ifndef __GUI_COMMON__
 #define __GUI_COMMON__
 
-#include "./Shaders/Common.hlsl"
-
 #define CLIPPING_ENABLE 1
 
 struct Render2DVertex

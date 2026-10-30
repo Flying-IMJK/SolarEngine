@@ -16,6 +16,9 @@
 #include "VulkanPlatformBase.h"
 #include "GPUTimerQueryVulkan.h"
 
+#include <Runtime/GraphicsDevice/Vulkan/GPUTextureVulkan.h>
+#include <Runtime/ShaderCompilation/Slang/ShaderReflectionIR.h>
+
 #ifdef WIN32
 #include "Win32/Win32VulkanPlatform.h"
 #endif
@@ -998,6 +1001,7 @@ namespace SE
 		WaitForGPU();
 
 		// Pre dispose
+		dummyResources.Dispose();
 		PreDispose();
 
 		// Clear stuff
@@ -1131,6 +1135,71 @@ namespace SE
 	{
 		return New<GPUSamplerVulkan>(this);
 	}
+
+    GPUTextureView* GPUDeviceVulkan::GetDummyTextureView(const ShaderIRTypeRecord& type)
+    {
+        SpirvShaderResourceType resourceType;
+        // Slang's serialized shape includes the array flag (0x40).
+        if (type.Shape == SE_TEXT("1"))
+        {
+            resourceType = SpirvShaderResourceType::Texture1D;
+        }
+        else if (type.Shape == SE_TEXT("2"))
+        {
+            resourceType = SpirvShaderResourceType::Texture2D;
+        }
+        else if (type.Shape == SE_TEXT("3"))
+        {
+            resourceType = SpirvShaderResourceType::Texture3D;
+        }
+        else if (type.Shape == SE_TEXT("4"))
+        {
+            resourceType = SpirvShaderResourceType::TextureCube;
+        }
+        else if (type.Shape == SE_TEXT("65"))
+        {
+            resourceType = SpirvShaderResourceType::Texture1DArray;
+        }
+        else if (type.Shape == SE_TEXT("66"))
+        {
+            resourceType = SpirvShaderResourceType::Texture2DArray;
+        }
+        else
+        {
+            LOG_ERROR("Graphic", "Unbound texture has no compatible dummy resource shape: {0}.", type.Shape);
+            return nullptr;
+        }
+
+        GPUTexture* texture = dummyResources.GetDummyTexture(resourceType);
+        if (texture == nullptr)
+        {
+            return nullptr;
+        }
+        switch (resourceType)
+        {
+        case SpirvShaderResourceType::Texture1D:
+        case SpirvShaderResourceType::Texture2D:
+            return texture->View(0);
+        case SpirvShaderResourceType::Texture3D:
+            return texture->ViewVolume();
+        case SpirvShaderResourceType::TextureCube:
+        case SpirvShaderResourceType::Texture1DArray:
+        case SpirvShaderResourceType::Texture2DArray:
+            return texture->ViewArray();
+        default:
+            return nullptr;
+        }
+    }
+
+    GPUBuffer* GPUDeviceVulkan::GetDummyBuffer()
+    {
+        return dummyResources.GetDummyBuffer();
+    }
+
+    GPUSampler* GPUDeviceVulkan::GetDummySampler(bool comparison)
+    {
+        return dummyResources.GetDummySampler(comparison);
+    }
 
 	GPUTimerQuery* GPUDeviceVulkan::CreateTimerQuery()
 	{

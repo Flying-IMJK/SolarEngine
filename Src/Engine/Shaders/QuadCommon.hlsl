@@ -19,4 +19,15 @@ struct Quad_GS2PS
     uint LayerIndex : SV_RenderTargetArrayIndex;
 };
 
+// Vertex Shader for screen space quad rendering
+Quad_VS2PS VS_Quad(float2 Position : POSITION0, float2 TexCoord : TEXCOORD0)
+{
+	Quad_VS2PS output;
+
+	output.Position = float4(Position, 0, 1);
+	output.TexCoord = TexCoord;
+
+	return output;
+}
+
 #endif

@@ -281,7 +281,7 @@ namespace SE
     void Sky::OnEnable()
     {
         // Load shader
-        _shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/Sky"));
+        _shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/Discard/Sky"));
         if (_shader == nullptr)
         {
             LOG_FATAL("Level", "Cannot load sky shader.");

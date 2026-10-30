@@ -1,6 +1,6 @@
 
-#include "./Shaders/Common.hlsl"
-#include "./Shaders/Math.hlsl"
+#include "./Shaders/Discard/Common.hlsl"
+#include "./Shaders/Discard/Math.hlsl"
 
 #define kAntialiasing 2.0
 

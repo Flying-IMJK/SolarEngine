@@ -35,21 +35,21 @@
 // Lock for symbols list, shared with Tracy
 extern "C"
 {
-	static HANDLE dbgHelpLock;
+	static HANDLE DbgHelpLockMutex;
 
-	void DbgHelpInit()
-	{
-		dbgHelpLock = CreateMutexW(nullptr, FALSE, nullptr);
+	void SEDbgHelpInit()
+	{ 
+	    DbgHelpLockMutex = CreateMutexW(nullptr, FALSE, nullptr);
 	}
 
-	void DbgHelpLock()
-	{
-		WaitForSingleObject(dbgHelpLock, INFINITE);
+	void SEDbgHelpLock()
+	{ 
+	    WaitForSingleObject(DbgHelpLockMutex, INFINITE);
 	}
 
-	void DbgHelpUnlock()
-	{
-		ReleaseMutex(dbgHelpLock);
+	void SEDbgHelpUnlock()
+	{ 
+	    ReleaseMutex(DbgHelpLockMutex);
 	}
 }
 
@@ -540,7 +540,7 @@ namespace SE
 		}
 
 		TCHAR buffer[MAX_PATH] = { 0 };
-		DbgHelpLock();
+		SEDbgHelpLock();
 		if (::GetModuleFileNameW(::GetModuleHandleW(nullptr), buffer, MAX_PATH))
 			SymbolsPath.Add(FileSystem::GetDirectoryName(buffer));
 		if (::GetEnvironmentVariableW(SE_TEXT("_NT_SYMBOL_PATH"), buffer, MAX_PATH))
@@ -549,7 +549,7 @@ namespace SE
 		options |= SYMOPT_LOAD_LINES | SYMOPT_FAIL_CRITICAL_ERRORS | SYMOPT_DEFERRED_LOADS | SYMOPT_EXACT_SYMBOLS;
 		SymSetOptions(options);
 		OnSymbolsPathModified();
-		DbgHelpUnlock();
+		SEDbgHelpUnlock();
 
 
 		GetWindowsVersion(WindowsName, VersionMajor, VersionMinor, VersionBuild);
@@ -727,7 +727,7 @@ namespace SE
 
 	void WindowsPlatform::Exit()
 	{
-		DbgHelpLock();
+		SEDbgHelpLock();
 	#if !SGE_PROFILER
 		if (SymInitialized)
 		{
@@ -736,7 +736,7 @@ namespace SE
 		}
 	#endif
 		SymbolsPath.Resize(0);
-		DbgHelpUnlock();
+		SEDbgHelpUnlock();
 
 		// Unregister app class
 		UnregisterClassW(ApplicationWindowClass, nullptr);
@@ -1216,14 +1216,14 @@ namespace SE
 
 
 		// Refresh modules info during next stack trace collecting to have valid debug symbols information
-		DbgHelpLock();
+		SEDbgHelpLock();
 		if (folder.HasChars() && !SymbolsPath.Contains(folder))
 		{
 			SymbolsPath.Add(folder);
 			SymbolsPath.Last().Replace('/', '\\');
 			OnSymbolsPathModified();
 		}
-		DbgHelpUnlock();
+		SEDbgHelpUnlock();
 
 		return handle;
 	}
@@ -1231,7 +1231,7 @@ namespace SE
 	List<PlatformBase::StackFrame> WindowsPlatform::GetStackFrames(int32 skipCount, int32 maxDepth, void* context)
 	{
 		List<StackFrame> result;
-		DbgHelpLock();
+		SEDbgHelpLock();
 
 		// Initialize
 		HANDLE process = GetCurrentProcess();
@@ -1356,7 +1356,7 @@ namespace SE
 			}
 		}
 
-		DbgHelpUnlock();
+		SEDbgHelpUnlock();
 		return result;
 	}
 

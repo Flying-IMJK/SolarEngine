@@ -32,7 +32,7 @@ namespace SE
 		UInt4,
 	};
 
-	struct SE_API_RUNTIME SLC2VertexInputSignatureElement
+	struct SE_API_RUNTIME VertexInputSignatureElement
 	{
 		/// <summary>
         /// 输入语义名称 例如 POSITION, NORMAL, TEXCOORD 等。语义名称大写。
@@ -59,9 +59,9 @@ namespace SE
 	struct SE_API_RUNTIME SLC2StageRecord
 	{
         ShaderStage Stage = ShaderStage::Max;
-		String EntryPoint;
+        StringAnsi  EntryPoint;
 		// 逻辑签名只对 Vertex Stage 有效；合法的 system-value-only 入口使用空数组。
-		List<SLC2VertexInputSignatureElement> VertexInputSignature;
+		List<VertexInputSignatureElement> VertexInputSignature;
 		List<byte> Code;
 		int32 OutputControlPoints = 0;
 	};
@@ -75,8 +75,7 @@ namespace SE
 
 	struct SE_API_RUNTIME SLC2TargetRecord
 	{
-		ShaderCompileTarget Target;
-		String TargetKey;
+		ShaderProfile Target;
 		List<SLC2VariantRecord> Variants;
 	};
 
@@ -99,13 +98,13 @@ namespace SE
 	struct SE_API_RUNTIME SLC2ProgramStageDeclaration
     {
         ShaderStage Stage = ShaderStage::Max;
-        String      EntryPoint;
+        StringAnsi  EntryPoint;
     };
 
     struct SE_API_RUNTIME SLC2ProgramDeclaration
     {
-        String                             ProgramId;
+        String                            ProgramId;
         List<SLC2ProgramStageDeclaration> Stages;
-        List<ShaderVariantGroup>           VariantGroups;
+        List<ShaderVariantGroup>          VariantGroups;
     };
 }

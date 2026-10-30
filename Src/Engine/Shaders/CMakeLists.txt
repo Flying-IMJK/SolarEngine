@@ -27,6 +27,8 @@ add_custom_target(SEShader ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${EngineAssetsDir}"
         "${ProjectBuildDir}/Assets"
+    COMMAND ${CMAKE_COMMAND} -E rm -rf --
+        "${ProjectBuildDir}/Shaders"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${EngineShadersDir}"
         "${ProjectBuildDir}/Shaders"

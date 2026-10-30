@@ -6,6 +6,8 @@
 #include "GPUBufferVulkan.h"
 #include "QueueVulkan.h"
 
+#include <Runtime/GraphicsDevice/Vulkan/GPUSamplerVulkan.h>
+
 #include "Runtime/Engine.h"
 //#include "Runtime/RHI/VulkanRHI/VulkanRHI.h"
 //#include "Runtime/RHI/VulkanRHI/VulkanConvert.h"
@@ -653,63 +655,47 @@ namespace SE
 		, _dummyVB(nullptr)
 	{
 		Platform::MemoryClear(_dummyTextures, sizeof(_dummyTextures));
+		Platform::MemoryClear(_samplers, sizeof(_samplers));
 		Platform::MemoryClear(_staticSamplers, sizeof(_staticSamplers));
-	}
-
-	void InitSampler(VkSamplerCreateInfo& createInfo, bool supportsMirrorClampToEdge, GPUSamplerFilter filter, GPUSamplerAddressMode addressU, GPUSamplerAddressMode addressV, GPUSamplerAddressMode addressW, GPUSamplerCompareFunction compareFunction)
-	{
-		createInfo.magFilter = VulkanTool::ToVulkanMagFilterMode(filter);
-		createInfo.minFilter = VulkanTool::ToVulkanMinFilterMode(filter);
-		createInfo.mipmapMode = VulkanTool::ToVulkanMipFilterMode(filter);
-		createInfo.addressModeU = VulkanTool::ToVulkanWrapMode(addressU, supportsMirrorClampToEdge);
-		createInfo.addressModeV = VulkanTool::ToVulkanWrapMode(addressV, supportsMirrorClampToEdge);
-		createInfo.addressModeW = VulkanTool::ToVulkanWrapMode(addressW, supportsMirrorClampToEdge);
-		createInfo.compareEnable = compareFunction != GPUSamplerCompareFunction::Never ? VK_TRUE : VK_FALSE;
-		createInfo.compareOp = VulkanTool::ToVulkanSamplerCompareFunction(compareFunction);
 	}
 
 	VkSampler* DummyResourcesVulkan::GetStaticSamplers()
 	{
 		static_assert(GPU_STATIC_SAMPLERS_COUNT == 6, "Update static samplers setup.");
-		if (!_staticSamplers[0])
-		{
-			const bool supportsMirrorClampToEdge = GPUDeviceVulkan::optionalDeviceExtensions.HasMirrorClampToEdge;
-
-			VkSamplerCreateInfo createInfo;
-			VulkanTool::ZeroStruct(createInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
-			createInfo.mipLodBias = 0.0f;
-			createInfo.minLod = 0.0f;
-			createInfo.maxLod = Max_float;
-			createInfo.maxAnisotropy = 1.0f;
-			createInfo.anisotropyEnable = VK_FALSE;
-			createInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
-
-			// Linear Clamp
-			InitSampler(createInfo, supportsMirrorClampToEdge, GPUSamplerFilter::Trilinear, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerCompareFunction::Never);
-			VALIDATE_VULKAN_RESULT(vkCreateSampler(_device->device, &createInfo, nullptr, &_staticSamplers[0]));
-
-			// Point Clamp
-			InitSampler(createInfo, supportsMirrorClampToEdge, GPUSamplerFilter::Point, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerCompareFunction::Never);
-			VALIDATE_VULKAN_RESULT(vkCreateSampler(_device->device, &createInfo, nullptr, &_staticSamplers[1]));
-
-			// Linear Wrap
-			InitSampler(createInfo, supportsMirrorClampToEdge, GPUSamplerFilter::Trilinear, GPUSamplerAddressMode::Wrap, GPUSamplerAddressMode::Wrap, GPUSamplerAddressMode::Wrap, GPUSamplerCompareFunction::Never);
-			VALIDATE_VULKAN_RESULT(vkCreateSampler(_device->device, &createInfo, nullptr, &_staticSamplers[2]));
-
-			// Point Wrap
-			InitSampler(createInfo, supportsMirrorClampToEdge, GPUSamplerFilter::Point, GPUSamplerAddressMode::Wrap, GPUSamplerAddressMode::Wrap, GPUSamplerAddressMode::Wrap, GPUSamplerCompareFunction::Never);
-			VALIDATE_VULKAN_RESULT(vkCreateSampler(_device->device, &createInfo, nullptr, &_staticSamplers[3]));
-
-			// Shadow
-			InitSampler(createInfo, supportsMirrorClampToEdge, GPUSamplerFilter::Point, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerCompareFunction::Less);
-			VALIDATE_VULKAN_RESULT(vkCreateSampler(_device->device, &createInfo, nullptr, &_staticSamplers[4]));
-
-			// Shadow PCF
-			InitSampler(createInfo, supportsMirrorClampToEdge, GPUSamplerFilter::Trilinear, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerAddressMode::Clamp, GPUSamplerCompareFunction::Less);
-			VALIDATE_VULKAN_RESULT(vkCreateSampler(_device->device, &createInfo, nullptr, &_staticSamplers[5]));
-		}
+        const GPUSamplerFilter filters[GPU_STATIC_SAMPLERS_COUNT] = {
+            GPUSamplerFilter::Trilinear, GPUSamplerFilter::Point, GPUSamplerFilter::Trilinear,
+            GPUSamplerFilter::Point, GPUSamplerFilter::Point, GPUSamplerFilter::Trilinear
+        };
+        for (int32 i = 0; i < GPU_STATIC_SAMPLERS_COUNT; i++)
+        {
+            if (_samplers[i] == nullptr)
+            {
+                const GPUSamplerAddressMode address = i == 2 || i == 3 ?
+                    GPUSamplerAddressMode::Wrap : GPUSamplerAddressMode::Clamp;
+                GPUSamplerDescription desc = GPUSamplerDescription::New(filters[i], address);
+                desc.MinMipLevel = 0;
+                desc.MaxMipLevel = Max_float;
+                desc.MaxAnisotropy = 1;
+                desc.BorderColor = GPUSamplerBorderColor::OpaqueBlack;
+                desc.ComparisonFunction = i >= 4 ? GPUSamplerCompareFunction::Less : GPUSamplerCompareFunction::Never;
+                GPUSampler* sampler = _device->CreateSampler();
+                if (!sampler->Init(desc))
+                {
+                    Delete(sampler);
+                    return _staticSamplers;
+                }
+                _samplers[i] = sampler;
+            }
+            _staticSamplers[i] = static_cast<GPUSamplerVulkan*>(_samplers[i])->Sampler;
+        }
 		return _staticSamplers;
 	}
+
+    GPUSampler* DummyResourcesVulkan::GetDummySampler(bool comparison)
+    {
+        GetStaticSamplers();
+        return _samplers[comparison ? 4 : 0];
+    }
 
 	GPUTextureVulkan* DummyResourcesVulkan::GetDummyTexture(SpirvShaderResourceType type)
 	{
@@ -768,7 +754,11 @@ namespace SE
 				break;
 			default: ;
 			}
-			texture->Init(desc);
+            if (!texture->Init(desc))
+            {
+                Delete(texture);
+                return nullptr;
+            }
 			ENGINE_ASSERT(texture->View(0));
 			_dummyTextures[index] = texture;
 		}
@@ -781,7 +771,16 @@ namespace SE
 		if (!_dummyBuffer)
 		{
 			_dummyBuffer = (GPUBufferVulkan*)_device->CreateBuffer(SE_TEXT("DummyBuffer"));
-			_dummyBuffer->Init(GPUBufferDescription::Buffer(sizeof(int32) * 256, GPUBufferFlags::ShaderResource | GPUBufferFlags::UnorderedAccess, PixelFormat::R32_SInt));
+            // The same dummy parent also serves Append/Consume slots, whose second descriptor uses its counter.
+            const GPUBufferDescription desc = GPUBufferDescription::Buffer(
+                sizeof(int32) * 256,
+                GPUBufferFlags::ShaderResource | GPUBufferFlags::UnorderedAccess | GPUBufferFlags::Counter,
+                PixelFormat::R32_SInt);
+            if (!_dummyBuffer->Init(desc))
+            {
+                Delete(_dummyBuffer);
+                _dummyBuffer = nullptr;
+            }
 		}
 
 		return _dummyBuffer;
@@ -817,12 +816,8 @@ namespace SE
 
 		for (int32 i = 0; i < ARRAY_SIZE(_staticSamplers); i++)
 		{
-			auto& sampler = _staticSamplers[i];
-			if (sampler != VK_NULL_HANDLE)
-			{
-				_device->deferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::Sampler, sampler);
-				sampler = VK_NULL_HANDLE;
-			}
+            DeleteObjectSafe(_samplers[i]);
+            _staticSamplers[i] = VK_NULL_HANDLE;
 		}
 	}
 

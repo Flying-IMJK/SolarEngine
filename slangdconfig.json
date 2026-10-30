@@ -1,6 +1,6 @@
 {
   "slang.additionalSearchPaths": [
-    "Src/Engine",
+    "Src/Engine"
   ],
   "slang.enableCommitCharactersInAutoCompletion": "membersOnly",
   "slang.format.clangFormatStyle": "file"

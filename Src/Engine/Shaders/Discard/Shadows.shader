@@ -1,11 +1,11 @@
 
 #define USE_GBUFFER_CUSTOM_DATA
 
-#include "./Shaders/Common.hlsl"
-#include "./Shaders/QuadCommon.hlsl"
-#include "./Shaders/GBuffer.hlsl"
-#include "./Shaders/MaterialCommon.hlsl"
-#include "./Shaders/ShadowsSampling.hlsl"
+#include "./Shaders/Discard/Common.hlsl"
+#include "./Shaders/Discard/QuadCommon.hlsl"
+#include "./Shaders/Discard/GBuffer.hlsl"
+#include "./Shaders/Discard/MaterialCommon.hlsl"
+#include "./Shaders/Discard/ShadowsSampling.hlsl"
 
 META_CB_BEGIN(0, PerLight)
 GBufferData GBuffer;

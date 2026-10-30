@@ -1,9 +1,9 @@
 
 #define USE_GBUFFER_CUSTOM_DATA
 
-#include "./Shaders/Common.hlsl"
-#include "./Shaders/GBuffer.hlsl"
-#include "./Shaders/BRDF.hlsl"
+#include "./Shaders/Discard/Common.hlsl"
+#include "./Shaders/Discard/GBuffer.hlsl"
+#include "./Shaders/Discard/BRDF.hlsl"
 
 META_CB_BEGIN(0, Data)
 GBufferData GBuffer;

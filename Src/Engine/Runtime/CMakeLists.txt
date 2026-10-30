@@ -83,6 +83,7 @@ target_include_directories(${RUNTIME_TARGET}
 target_link_libraries(${RUNTIME_TARGET} PUBLIC assimp ShaderCompiler sqlite3 fmt ws2_32 freetype)
 if (WIN32)
     target_link_libraries(${RUNTIME_TARGET} PUBLIC Xinput Dbghelp)
+    target_compile_definitions(${RUNTIME_TARGET} PRIVATE TRACY_DBGHELP_LOCK=SEDbgHelp)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")

@@ -1,13 +1,17 @@
 #include "ShaderBindingSnapshot.h"
 
-#include "Runtime/Core/Memory/Memory.h"
-#include "Runtime/Graphics/Base/GPUBuffer.h"
-#include "Runtime/Graphics/Textures/GPUSampler.h"
-#include "Runtime/Graphics/Textures/GPUTexture.h"
+#include <Runtime/Core/Memory/Memory.h>
+#include <Runtime/Graphics/Base/GPUBuffer.h>
+#include <Runtime/Graphics/Textures/GPUSampler.h>
+#include <Runtime/Graphics/Textures/GPUTexture.h>
 
 namespace SE
 {
-    ShaderBindingResource::ShaderBindingResource(const ShaderRuntimeResourceType type) : m_Type(type)
+    ShaderBindingResource::ShaderBindingResource() : m_Type(ShaderProgramBindingKind::Max)
+    {
+    }
+
+    ShaderBindingResource::ShaderBindingResource(const ShaderProgramBindingKind type) : m_Type(type)
     {}
 
     ShaderBindingResource::~ShaderBindingResource()
@@ -15,7 +19,7 @@ namespace SE
         Clear();
     }
 
-    ShaderRuntimeResourceType ShaderBindingResource::GetType() const { return m_Type; }
+    ShaderProgramBindingKind ShaderBindingResource::GetType() const { return m_Type; }
 
     GPUTextureView* ShaderBindingResource::GetTexture() const { return m_Texture; }
 
@@ -27,13 +31,11 @@ namespace SE
     {
         switch (m_Type)
         {
-        case ShaderRuntimeResourceType::Texture:
-            return m_Texture != nullptr && m_TextureOwner != nullptr && m_TextureOwner->IsAllocated() &&
-                m_Texture->GetParent() == m_TextureOwner && m_Texture->GetNativePtr() != nullptr;
-        case ShaderRuntimeResourceType::Buffer:
-            return m_Buffer != nullptr && m_Buffer->IsAllocated() && m_Buffer->View() != nullptr &&
-                m_Buffer->View()->GetNativePtr() != nullptr;
-        case ShaderRuntimeResourceType::Sampler:
+        case ShaderProgramBindingKind::Texture:
+            return m_Texture != nullptr && m_TextureOwner != nullptr && m_TextureOwner->IsAllocated();
+        case ShaderProgramBindingKind::Buffer:
+            return m_Buffer != nullptr && m_Buffer->IsAllocated();
+        case ShaderProgramBindingKind::Sampler:
             return m_Sampler != nullptr && m_Sampler->IsInitialized();
         default:
             return false;
@@ -42,19 +44,15 @@ namespace SE
 
     bool ShaderBindingResource::CloneFrom(const ShaderBindingResource& other)
     {
-        if (m_Type != other.m_Type || !other.IsValid())
-        {
-            return false;
-        }
         switch (m_Type)
         {
-        case ShaderRuntimeResourceType::Texture:
+            case ShaderProgramBindingKind::Texture:
             SetTexture(other.m_Texture, other.m_TextureOwner);
             break;
-        case ShaderRuntimeResourceType::Buffer:
+            case ShaderProgramBindingKind::Buffer:
             SetBuffer(other.m_Buffer);
             break;
-        case ShaderRuntimeResourceType::Sampler:
+            case ShaderProgramBindingKind::Sampler:
             SetSampler(other.m_Sampler);
             break;
         default:
@@ -68,9 +66,16 @@ namespace SE
         Clear();
         m_Texture      = view;
         m_TextureOwner = parent;
-        m_Texture->Deleted.Bind<ShaderBindingResource, &ShaderBindingResource::OnObjectDeleted>(this);
-        m_TextureOwner->Deleted.Bind<ShaderBindingResource, &ShaderBindingResource::OnObjectDeleted>(this);
-        m_TextureOwner->Releasing.Bind<ShaderBindingResource, &ShaderBindingResource::OnResourceReleasing>(this);
+        if (view != nullptr)
+        {
+            m_Texture->Deleted.Bind<ShaderBindingResource, &ShaderBindingResource::OnObjectDeleted>(this);
+        }
+
+        if (parent != nullptr)
+        {
+            m_TextureOwner->Deleted.Bind<ShaderBindingResource, &ShaderBindingResource::OnObjectDeleted>(this);
+            m_TextureOwner->Releasing.Bind<ShaderBindingResource, &ShaderBindingResource::OnResourceReleasing>(this);
+        }
     }
 
 
@@ -78,16 +83,24 @@ namespace SE
     {
         Clear();
         m_Buffer = buffer;
-        m_Buffer->Deleted.Bind<ShaderBindingResource, &ShaderBindingResource::OnObjectDeleted>(this);
-        m_Buffer->Releasing.Bind<ShaderBindingResource, &ShaderBindingResource::OnResourceReleasing>(this);
+
+        if (buffer != nullptr)
+        {
+            m_Buffer->Deleted.Bind<ShaderBindingResource, &ShaderBindingResource::OnObjectDeleted>(this);
+            m_Buffer->Releasing.Bind<ShaderBindingResource, &ShaderBindingResource::OnResourceReleasing>(this);
+        }
     }
 
     void ShaderBindingResource::SetSampler(GPUSampler* sampler)
     {
         Clear();
         m_Sampler = sampler;
-        m_Sampler->Deleted.Bind<ShaderBindingResource, &ShaderBindingResource::OnObjectDeleted>(this);
-        m_Sampler->Releasing.Bind<ShaderBindingResource, &ShaderBindingResource::OnResourceReleasing>(this);
+
+        if (sampler != nullptr)
+        {
+            m_Sampler->Deleted.Bind<ShaderBindingResource, &ShaderBindingResource::OnObjectDeleted>(this);
+            m_Sampler->Releasing.Bind<ShaderBindingResource, &ShaderBindingResource::OnResourceReleasing>(this);
+        }
     }
 
     void ShaderBindingResource::Clear()
@@ -137,8 +150,8 @@ namespace SE
     {
         if (this != &other)
         {
-            _resources.ClearDelete();
-            _resources  = MoveTemp(other._resources);
+            m_Resources.ClearDelete();
+            m_Resources  = MoveTemp(other.m_Resources);
             _uniformData = MoveTemp(other._uniformData);
             _frozen      = other._frozen;
             m_Program    = other.m_Program;
@@ -150,20 +163,18 @@ namespace SE
 
     ShaderBindingSnapshot::~ShaderBindingSnapshot()
     {
-        _resources.ClearDelete();
+        m_Resources.ClearDelete();
     }
 
     bool ShaderBindingSnapshot::IsFrozen() const { return _frozen; }
 
     const SLC2GPUShaderProgram* ShaderBindingSnapshot::GetProgram() const { return m_Program; }
 
-    uint32 ShaderBindingSnapshot::GetResourceCount() const { return static_cast<uint32>(_resources.Count()); }
+    uint32 ShaderBindingSnapshot::GetResourceCount() const { return static_cast<uint32>(m_Resources.Count()); }
 
-    const ShaderBindingResource* ShaderBindingSnapshot::GetResource(const uint32 logicalResourceSlotIndex) const
+    const ShaderBindingResource* ShaderBindingSnapshot::GetResource(const uint32 logicalSlotIndex) const
     {
-        return logicalResourceSlotIndex < static_cast<uint32>(_resources.Count())
-            ? _resources[logicalResourceSlotIndex]
-            : nullptr;
+        return logicalSlotIndex < static_cast<uint32>(m_Resources.Count()) ? m_Resources[logicalSlotIndex] : nullptr;
     }
 
     const List<ShaderBindingUniformData>& ShaderBindingSnapshot::GetUniformData() const { return _uniformData; }
@@ -180,13 +191,14 @@ namespace SE
 
     bool ShaderBindingSnapshot::AddResource(const ShaderBindingResource& resource)
     {
+        // Event subscriptions retain the slot address, so the snapshot owns stable resource objects.
         ShaderBindingResource* copy = New<ShaderBindingResource>(resource.GetType());
         if (!copy->CloneFrom(resource))
         {
             Delete(copy);
             return false;
         }
-        _resources.Add(copy);
+        m_Resources.Add(copy);
         return true;
     }
 
@@ -198,7 +210,7 @@ namespace SE
         uniformData.Data.Resize(data.Count());
         if (data.HasItems())
         {
-			// 快照保存 uniform 数据副本，避免后端写 descriptor 时依赖仍可修改的 Instance shadow。
+            // 快照保存 uniform 数据副本，避免后端写 descriptor 时依赖仍可修改的 Instance shadow。
             Platform::MemoryCopy(uniformData.Data.Get(), data.Get(), data.Count());
         }
         _uniformData.Add(MoveTemp(uniformData));

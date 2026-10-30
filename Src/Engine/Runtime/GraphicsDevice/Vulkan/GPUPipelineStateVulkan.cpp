@@ -1,10 +1,10 @@
 
-#include "GPUPipelineStateVulkan.h"
-#include "GPUShaderProgramVulkan.h"
-#include "GPUContextVulkan.h"
-#include "GPUSamplerVulkan.h"
-#include "GPUBufferVulkan.h"
-#include "GPUShaderVulkan.h"
+#include <Runtime/GraphicsDevice/Vulkan/GPUPipelineStateVulkan.h>
+#include <Runtime/GraphicsDevice/Vulkan/GPUBufferVulkan.h>
+#include <Runtime/GraphicsDevice/Vulkan/GPUContextVulkan.h>
+#include <Runtime/GraphicsDevice/Vulkan/GPUSamplerVulkan.h>
+#include <Runtime/GraphicsDevice/Vulkan/GPUShaderProgramVulkan.h>
+#include <Runtime/GraphicsDevice/Vulkan/GPUShaderVulkan.h>
 
 #include "Runtime/Graphics/Textures/GPUTexture.h"
 
@@ -669,7 +669,7 @@ namespace SE
                 continue;
             }
             const ShaderBindingResource* resource = snapshot.GetResource(binding.ResourceSlotIndex);
-            if (resource == nullptr || !resource->IsValid() || !WriteResourceBinding(context, *resource, binding))
+            if (resource == nullptr || !WriteResourceBinding(context, *resource, binding))
             {
                 LOG_ERROR("Graphic", "Vulkan descriptor target references an invalid frozen resource slot.");
                 return false;
@@ -678,8 +678,7 @@ namespace SE
         return true;
     }
 
-    bool
-    SLC2PipelineStateVulkanBase::ValidateSnapshotCompleteness(const ShaderBindingSnapshot&             snapshot,
+    bool SLC2PipelineStateVulkanBase::ValidateSnapshotCompleteness(const ShaderBindingSnapshot&             snapshot,
                                                               const List<SLC2VulkanDescriptorBinding>& bindings) const
     {
         const List<ShaderBindingUniformData>& uniformDataList = snapshot.GetUniformData();
@@ -782,47 +781,31 @@ namespace SE
                     LOG_ERROR("Graphic", "Runtime sampler binding has no Vulkan sampler handle.");
                     return false;
                 }
-                VkDescriptorImageInfo*  imageInfo = const_cast<VkDescriptorImageInfo*>(descriptorWrite.pImageInfo + binding.ArrayElement);
+                VkDescriptorImageInfo* imageInfo =
+                    const_cast<VkDescriptorImageInfo*>(descriptorWrite.pImageInfo + binding.ArrayElement);
                 imageInfo->sampler = sampler->Sampler;
                 break;
             }
-            case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE: {
-                GPUTextureView*           view   = resource.GetTexture();
-                if (view == nullptr)
-                {
-                    LOG_ERROR("Graphic", "Runtime sampled image target is not a texture slot.");
-                    return false;
-                }
-                DescriptorResourceVulkan* handle = static_cast<DescriptorResourceVulkan*>(view->GetNativePtr());
+            case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+            case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE: {
+                GPUTextureView* view = resource.GetTexture();
+                DescriptorResourceVulkan* handle =
+                    view != nullptr ? static_cast<DescriptorResourceVulkan*>(view->GetNativePtr()) : nullptr;
                 if (handle == nullptr)
                 {
                     LOG_ERROR("Graphic", "Runtime texture binding has no Vulkan descriptor resource.");
                     return false;
                 }
-                VkImageView               imageView;
-                VkImageLayout             layout;
-                handle->AsImage(context, imageView, layout);
-                VkDescriptorImageInfo* imageInfo = const_cast<VkDescriptorImageInfo*>(descriptorWrite.pImageInfo + binding.ArrayElement);
-                imageInfo->imageView   = imageView;
-                imageInfo->imageLayout = layout;
-                break;
-            }
-            case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE: {
-                GPUTextureView*           view   = resource.GetTexture();
-                if (view == nullptr)
+                VkImageView   imageView;
+                VkImageLayout layout;
+                if (binding.DescriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
                 {
-                    LOG_ERROR("Graphic", "Runtime storage image target is not a texture slot.");
-                    return false;
+                    handle->AsStorageImage(context, imageView, layout);
                 }
-                DescriptorResourceVulkan* handle = static_cast<DescriptorResourceVulkan*>(view->GetNativePtr());
-                if (handle == nullptr)
+                else
                 {
-                    LOG_ERROR("Graphic", "Runtime storage image binding has no Vulkan descriptor resource.");
-                    return false;
+                    handle->AsImage(context, imageView, layout);
                 }
-                VkImageView               imageView;
-                VkImageLayout             layout;
-                handle->AsStorageImage(context, imageView, layout);
                 VkDescriptorImageInfo* imageInfo =
                     const_cast<VkDescriptorImageInfo*>(descriptorWrite.pImageInfo + binding.ArrayElement);
                 imageInfo->imageView   = imageView;
@@ -1025,6 +1008,11 @@ namespace SE
 
     bool SLC2GraphicsPipelineStateVulkan::Init(const Description& desc, const SLC2GPUShaderProgram* program)
     {
+        if (m_Program == program)
+        {
+            return true;
+        }
+
         SLC2GPUShaderProgram* programConst = const_cast<SLC2GPUShaderProgram*>(program);
         m_Program                          = static_cast<SLC2ShaderProgramVulkan*>(programConst);
         if (m_Program == nullptr)
@@ -1247,7 +1235,7 @@ namespace SE
         }
 
         const SLC2VariantRecord* variant = m_Program != nullptr ? m_Program->GetVariant() : nullptr;
-        const List<SLC2VertexInputSignatureElement>* signature = nullptr;
+        const List<VertexInputSignatureElement>* signature = nullptr;
         if (variant != nullptr)
         {
             for (int32 stageIndex = 0; stageIndex < variant->Stages.Count(); stageIndex++)
@@ -1279,7 +1267,7 @@ namespace SE
         // 语义匹配成功后再检查 Vulkan 格式能力，避免产生部分 Vulkan 状态后才失败。
         for (int32 matchIndex = 0; matchIndex < match.Elements.Count(); matchIndex++)
         {
-            const SLC2VertexInputSignatureElement& input = (*signature)[matchIndex];
+            const VertexInputSignatureElement& input = (*signature)[matchIndex];
             const VertexFactoryInputElement* element = match.Elements[matchIndex];
             if (m_Device == nullptr || 
                 VulkanTool::ToVulkanFormat(element->Format) == VK_FORMAT_UNDEFINED ||
@@ -1294,7 +1282,7 @@ namespace SE
         candidate.RequiredVertexBufferSlotsMask = match.RequiredVertexBufferSlotsMask;
         for (int32 matchIndex = 0; matchIndex < match.Elements.Count(); matchIndex++)
         {
-            const SLC2VertexInputSignatureElement& input = (*signature)[matchIndex];
+            const VertexInputSignatureElement& input = (*signature)[matchIndex];
             const VertexFactoryInputElement* element = match.Elements[matchIndex];
 
             VkVertexInputAttributeDescription& attribute = candidate.Attributes.AddOne();

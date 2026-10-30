@@ -5,9 +5,8 @@
 #include "Runtime/API.h"
 #include "Runtime/Graphics/Base/PixelFormat.h"
 #include "Runtime/Graphics/Base/GPUPipelineState.h"
-#include "Viewport.h"
 #include "Runtime/Core/Scripting/ScriptingObject.h"
-#include "Runtime/Core/Types/Strings/String.h"
+#include "Viewport.h"
 
 namespace SE
 {
@@ -19,7 +18,6 @@ namespace SE
 	class GPUPipelineState;
 	class GPUTexture;
 	class GPUSampler;
-	class GPUDevice;
 	class GPUResource;
 	class GPUResourceView;
 	class GPUTextureView;
@@ -40,7 +38,7 @@ namespace SE
 	protected:
 		GPUDevice* m_Device;
 		PrivateData* m_PrivateData;
-		double _lastRenderTime = -1;
+		double m_LastRenderTime = -1;
 
 		GPUContext(GPUDevice* device);
 	public:
@@ -224,7 +222,7 @@ namespace SE
 		 * @param instanceCount The instance count. Use SV_InstanceID in vertex shader to detect volume slice plane index.
 		 */
 		SE_FUNCTION(API())
-		void DrawFullscreenTriangle();
+        void DrawFullscreenTriangle(ShaderProgramInstance* instance);
 
 		/**
 		 * Draws the specified source texture to destination render target (using fullscreen triangle). Copies contents with resizing and format conversion support. Uses linear texture sampling.
@@ -277,7 +275,7 @@ namespace SE
 		 * @param startInstance 起始实例。
 		 * @param startVertex 起始顶点。
 		 */
-		virtual void DrawInstanced(ShaderProgramInstance& instance, uint32 verticesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0) = 0;
+		virtual void DrawInstanced(ShaderProgramInstance* instance, uint32 verticesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0) = 0;
 
 		/**
 		 * Draws the indexed primitives.
@@ -628,7 +626,8 @@ namespace SE
 		/// <param name="cb">The constant buffer.</param>
 		/// <param name="data">The pointer to the data.</param>
 		virtual void UpdateCB(GPUConstantBuffer* cb, const void* data) = 0;
-	public:
-		
+
+	protected:
+        void GlobalBinding(ShaderProgramInstance* program);
 	};
 }

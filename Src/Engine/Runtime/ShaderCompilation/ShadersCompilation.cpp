@@ -273,7 +273,7 @@ namespace SE
 		request.ShaderName = SE_TEXT("SolarSlangOfflineSelfTest");
 		request.SourcePath = SE_TEXT("SolarSlangOfflineSelfTest.slang");
 		request.SourceCode = R"(
-#include "Shaders/Slang/SolarShaderProgram.slang"
+#include "Shaders/ProgramCommon.hlsl"
 
 struct VSInput
 {
@@ -306,10 +306,7 @@ float4 PSMain(VSOutput input) : SV_Target0
 SHADER_PROGRAM(SelfTestProgram, SHADER_VS(VSMain) SHADER_PS(PSMain) SHADER_MACRO(_, USE_TINT))
 )";
 
-		ShaderCompileTarget target;
-		target.Profile = ShaderProfile::Vulkan_SM5;
-		target.Feature = FeatureLevel::SM5;
-		request.Targets.Add(target);
+        request.Targets.Add(ShaderProfile::Vulkan_SM5);
 
 		// 自测只调用离线编译入口；CompileSlang 内部会完成 SLC2 写出与结构校验。
 		ShaderCompileResult result = CompileSlang(request);
@@ -641,21 +638,10 @@ SHADER_PROGRAM(SelfTestProgram, SHADER_VS(VSMain) SHADER_PS(PSMain) SHADER_MACRO
 
 		//
 		List<String> shaderFileList;
-		List<String> shaderDirectoryList;
 
 		String nativeShaderDirectory = String::Format(SE_TEXT("{0}/Shaders"), EngineContext::StartupFolder);
-		FileSystem::GetChildDirectories(shaderDirectoryList, nativeShaderDirectory);
-		FileSystem::DirectoryGetFiles(shaderFileList, nativeShaderDirectory, SE_TEXT("*.shader"), DirectorySearchOption::TopOnly);
-
-		FileSystem::DirectoryGetFiles(shaderFileList, nativeShaderDirectory / SE_TEXT("Slang"), SE_TEXT("*.slang"), DirectorySearchOption::TopOnly);
-
-		for (String& shaderDirectory : shaderDirectoryList)
-		{
-			if (!shaderDirectory.Contains(SE_TEXT("Template")))
-			{
-				FileSystem::DirectoryGetFiles(shaderFileList, shaderDirectory, SE_TEXT("*.shader"), DirectorySearchOption::All);
-			}
-		}
+		FileSystem::DirectoryGetFiles(shaderFileList, nativeShaderDirectory, SE_TEXT("*.shader"), DirectorySearchOption::All);
+		FileSystem::DirectoryGetFiles(shaderFileList, nativeShaderDirectory, SE_TEXT("*.slang"), DirectorySearchOption::All);
 
 		MemoryWriteStream writeStream;
 		StringBuilder outPutPath;
@@ -664,6 +650,10 @@ SHADER_PROGRAM(SelfTestProgram, SHADER_VS(VSMain) SHADER_PS(PSMain) SHADER_MACRO
 		{
 			FileSystem::NormalizePath(shaderFile);
             String relativePath = FileSystem::ConvertAbsolutePathToRelative(nativeShaderDirectory, shaderFile);
+            if (relativePath.Contains(SE_TEXT("MaterialTemplates")))
+            {
+                continue;
+            }
             String parentPath   = FileSystem::GetParentDirectory(relativePath);
             String fileName     = FileSystem::GetFileNameWithoutExtension(relativePath);
 

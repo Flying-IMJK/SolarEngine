@@ -2,7 +2,7 @@
 #ifndef __SHADOWS_COMMON__
 #define __SHADOWS_COMMON__
 
-#include "./Shaders/Common.hlsl"
+#include "Shaders/Common.hlsl"
 
 // Maximum number of directional light shadows cascaded splits
 #define MaxNumCascades 4

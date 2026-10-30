@@ -316,7 +316,6 @@ namespace SE
 
     bool SLC2MaterialInstance::PrepareDraw(const String&                             passName,
                                            const SLC2MaterialGeometryMode            geometryMode,
-                                           const ShaderCompileTarget&                target,
                                            const List<String>&                       defines,
                                            const SLC2MaterialDrawContext&            context,
                                            std::unique_ptr<SLC2MaterialDrawProgram>& output) const
@@ -329,7 +328,7 @@ namespace SE
         if (!ResolveParameters(parameters, baseMaterial, baseRevision, stack) || !baseMaterial)
             return false;
         return baseMaterial->PrepareDrawWithParameters(
-            passName, geometryMode, target, defines, parameters, baseRevision, context, output);
+            passName, geometryMode, defines, parameters, baseRevision, context, output);
     }
 
     uint32 SLC2MaterialInstance::GetSerializedVersion() const { return SLC2MaterialStorage::Version; }

@@ -29,7 +29,6 @@ namespace SE
         // resources. Keep output and those resources alive through backend descriptor/draw submission.
         bool PrepareDraw(const String&                             passName,
                          SLC2MaterialGeometryMode                  geometryMode,
-                         const ShaderCompileTarget&                target,
                          const List<String>&                       defines,
                          const SLC2MaterialDrawContext&            context,
                          std::unique_ptr<SLC2MaterialDrawProgram>& output) const;

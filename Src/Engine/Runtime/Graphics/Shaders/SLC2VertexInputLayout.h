@@ -22,7 +22,7 @@ namespace SE
     {
     public:
         static bool Match(
-            const List<SLC2VertexInputSignatureElement>& signature,
+            const List<VertexInputSignatureElement>& signature,
             const VertexFactoryLayout& layout,
             SLC2VertexInputMatchResult& output,
             String& error);

@@ -2,9 +2,9 @@
 #define MATERIAL 1
 #define USE_PER_VIEW_CONSTANTS 1
 
-#include "./Shaders/Common.hlsl"
-#include "./Shaders/MaterialCommon.hlsl"
-#include "./Shaders/GBufferCommon.hlsl"
+#include "./Shaders/Discard/Common.hlsl"
+#include "./Shaders/Discard/MaterialCommon.hlsl"
+#include "./Shaders/Discard/GBufferCommon.hlsl"
 
 // Primary constant buffer (with additional material parameters)
 META_CB_BEGIN(0, Data)

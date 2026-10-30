@@ -51,7 +51,9 @@ namespace SE
 	class SE_API_RUNTIME VertexFactoryLayout
 	{
 	public:
-		static bool Create(const List<VertexFactoryBufferBinding>& bindings, const List<VertexFactoryInputElement>& elements, VertexFactoryLayout& output);
+        static bool Create(const List<VertexFactoryBufferBinding>& bindings,
+                           const List<VertexFactoryInputElement>&  elements,
+                           VertexFactoryLayout&                    output);
 
 		static bool IsVertexFormatSupported(PixelFormat format);
 

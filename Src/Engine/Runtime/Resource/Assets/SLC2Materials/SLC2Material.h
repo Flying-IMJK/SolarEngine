@@ -37,7 +37,6 @@ namespace SE
         // submitted or completed here.
         bool PrepareDraw(const String&                             passName,
                          SLC2MaterialGeometryMode                  geometryMode,
-                         const ShaderCompileTarget&                target,
                          const List<String>&                       defines,
                          const SLC2MaterialDrawContext&            context,
                          std::unique_ptr<SLC2MaterialDrawProgram>& output) const;
@@ -66,7 +65,6 @@ namespace SE
         bool SnapshotParameters(MaterialParams& output, int32& version, uint64& revision) const;
         bool PrepareDrawWithParameters(const String&                             passName,
                                        SLC2MaterialGeometryMode                  geometryMode,
-                                       const ShaderCompileTarget&                target,
                                        const List<String>&                       defines,
                                        const MaterialParams&                     parameters,
                                        uint64                                    expectedRevision,

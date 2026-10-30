@@ -29,7 +29,7 @@ namespace SE
     {
         // Prepare resources
         _psApplyDistortion = GPUDevice::instance->CreatePipelineState();
-        _shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/Forward"));
+        _shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/Discard/Forward"));
 
         if (_shader == nullptr)
         {
@@ -64,14 +64,14 @@ namespace SE
         const auto shader = _shader->GetShader();
 
         // Create pipeline stages
-        GPUPipelineState::Description psDesc;
+/*        GPUPipelineState::Description psDesc;
         if (!_psApplyDistortion->IsValid())
         {
             psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
             psDesc.PS = shader->GetPS(SE_TEXT("PS_ApplyDistortion"));
             if (!_psApplyDistortion->Init(psDesc))
                 return false;
-        }
+        }*/
 
         return true;
     }

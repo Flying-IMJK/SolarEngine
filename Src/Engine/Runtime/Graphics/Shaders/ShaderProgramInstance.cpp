@@ -1,14 +1,18 @@
 #include "ShaderProgramInstance.h"
 
-#include "Reflection/ShaderNameResolver.h"
-#include "Reflection/ShaderProgramReflection.h"
-#include "Runtime/Core/Memory/Memory.h"
-#include "Runtime/Graphics/Base/GPUBuffer.h"
-#include "Runtime/Graphics/Textures/GPUSampler.h"
-#include "Runtime/Graphics/Textures/GPUTexture.h"
-#include "GPUConstantBuffer.h"
-#include "SLC2GPUShader.h"
-#include "SLC2GPUShaderProgram.h"
+#include <Runtime/Core/Math/Vector2.h>
+#include <Runtime/Core/Math/Vector3.h>
+#include <Runtime/Core/Math/Vector4.h>
+#include <Runtime/Core/Memory/Memory.h>
+#include <Runtime/Graphics/Base/GPUBuffer.h>
+#include <Runtime/Graphics/GPUDevice.h>
+#include <Runtime/Graphics/Shaders/GPUConstantBuffer.h>
+#include <Runtime/Graphics/Shaders/Reflection/ShaderNameResolver.h>
+#include <Runtime/Graphics/Shaders/Reflection/ShaderProgramReflection.h>
+#include <Runtime/Graphics/Shaders/SLC2GPUShader.h>
+#include <Runtime/Graphics/Shaders/SLC2GPUShaderProgram.h>
+#include <Runtime/Graphics/Textures/GPUSampler.h>
+#include <Runtime/Graphics/Textures/GPUTexture.h>
 
 namespace SE
 {
@@ -32,23 +36,6 @@ namespace SE
                 type == GPUResourceType::VolumeTexture || type == GPUResourceType::RenderTarget;
         }
 
-        bool TryGetRuntimeResourceType(const ShaderProgramBindingKind kind, ShaderRuntimeResourceType& output)
-        {
-            switch (kind)
-            {
-            case ShaderProgramBindingKind::Texture:
-                output = ShaderRuntimeResourceType::Texture;
-                return true;
-            case ShaderProgramBindingKind::Buffer:
-                output = ShaderRuntimeResourceType::Buffer;
-                return true;
-            case ShaderProgramBindingKind::Sampler:
-                output = ShaderRuntimeResourceType::Sampler;
-                return true;
-            default:
-                return false;
-            }
-        }
     }
 
     ShaderProgramInstance::ShaderProgramInstance() : ScriptingObject(SpawnParams(UID::New(), ShaderProgramInstance::TypeInitializer))
@@ -73,18 +60,17 @@ namespace SE
         const ShaderProgramReflection& reflection = program->GetReflection();
         const uint32 resourceCount = reflection.GetLogicalResourceSlotCount();
         m_Resources.SetCapacity(static_cast<int32>(resourceCount), false);
+
         for (uint32 resourceIndex = 0; resourceIndex < resourceCount; resourceIndex++)
         {
             const ShaderLogicalResourceSlot* reflectedSlot = reflection.GetLogicalResourceSlot(resourceIndex);
-            ShaderRuntimeResourceType runtimeType;
-            if (reflectedSlot == nullptr || !TryGetRuntimeResourceType(reflectedSlot->Kind, runtimeType) ||
-                reflectedSlot->TypeId == Max_uint32)
+            if (reflectedSlot == nullptr || reflectedSlot->TypeId == Max_uint32)
             {
                 LOG_ERROR("Graphics", "Shader program contains an invalid logical resource slot.");
                 ClearResources();
                 return false;
             }
-            m_Resources.Add(New<ShaderBindingResource>(runtimeType));
+            m_Resources.Add(New<ShaderBindingResource>(reflectedSlot->Kind));
         }
 
         const uint32 uniformBlockCount = reflection.GetUniformBlockCount();
@@ -189,6 +175,21 @@ namespace SE
         return SetUniform(path, &value, sizeof(value));
     }
 
+    bool ShaderProgramInstance::SetFloat2(const String& path, Float2& value)
+    {
+        return SetUniform(path, &value, sizeof(value));
+    }
+
+    bool ShaderProgramInstance::SetFloat3(const String& path, Float3& value)
+    {
+        return SetUniform(path, &value, sizeof(value));
+    }
+
+    bool ShaderProgramInstance::SetFloat4(const String& path, Float4& value)
+    {
+        return SetUniform(path, &value, sizeof(value));
+    }
+
     bool ShaderProgramInstance::SetBool(const String& path, const bool value)
     {
         const uint32 encodedValue = value ? 1u : 0u;
@@ -280,36 +281,87 @@ namespace SE
             LOG_ERROR("Graphics", "Shader instance resource state does not match its program reflection.");
             return false;
         }
+
         // 先完成全部验证与复制；失败时调用方原有 snapshot 保持不变，不暴露部分结果。
+        GPUDevice* device = GPUDevice::instance;
         for (int32 resourceIndex = 0; resourceIndex < m_Resources.Count(); resourceIndex++)
         {
             const ShaderBindingResource* resource = m_Resources[resourceIndex];
-            const ShaderLogicalResourceSlot* reflectedSlot =
-                reflection.GetLogicalResourceSlot(static_cast<uint32>(resourceIndex));
-            ShaderRuntimeResourceType expectedType;
-            if (resource == nullptr || reflectedSlot == nullptr ||
-                !TryGetRuntimeResourceType(reflectedSlot->Kind, expectedType) || resource->GetType() != expectedType ||
-                !resource->IsValid() || !pending.AddResource(*resource))
+            const ShaderLogicalResourceSlot* reflectedSlot = reflection.GetLogicalResourceSlot(static_cast<uint32>(resourceIndex));
+            if (reflectedSlot == nullptr)
             {
-                LOG_ERROR("Graphics", "Shader logical resource slot {0} is unbound or no longer valid.", resourceIndex);
+                LOG_ERROR("Graphics", "Shader logical resource slot {0} has no valid reflection.", resourceIndex);
+                return false;
+            }
+
+            const ShaderIRTypeRecord* type = reflection.GetType(reflectedSlot->TypeId);
+            if (resource == nullptr || resource->GetType() != reflectedSlot->Kind || type == nullptr)
+            {
+                LOG_ERROR("Graphics", "Shader logical resource '{0}' (slot {1}) has an invalid type.",
+                          reflectedSlot->Path, resourceIndex);
+                return false;
+            }
+
+            // Bind the dummy resource without setting any resources.
+            if (!resource->IsValid())
+            {
+                // Resolve only the snapshot copy so an unbound instance remains unbound for later submissions.
+                ShaderBindingResource dummy(reflectedSlot->Kind);
+                switch (reflectedSlot->Kind)
+                {
+                    case ShaderProgramBindingKind::Texture:
+                        if (resource->GetTexture() == nullptr)
+                        {
+                            GPUTextureView* view = device->GetDummyTextureView(*type);
+                            dummy.SetTexture(view, static_cast<GPUTexture*>(view->GetParent()));
+                        }
+                        break;
+                    case ShaderProgramBindingKind::Buffer:
+                        if (resource->GetBuffer() == nullptr)
+                        {
+                            dummy.SetBuffer(device->GetDummyBuffer());
+                        }
+                        break;
+                    case ShaderProgramBindingKind::Sampler:
+                        if (resource->GetSampler() == nullptr)
+                        {
+                            GPUSampler* sampler = device->GetDummySampler(type->Name == SE_TEXT("SamplerComparisonState"));
+                            dummy.SetSampler(sampler);
+                        }
+                        break;
+                    default:
+                        return false;
+                }
+
+                resource = &dummy;
+            }
+
+
+
+            if (!resource->IsValid() || !pending.AddResource(*resource))
+            {
+                LOG_ERROR("Graphics", "Shader logical resource '{0}' (slot {1}) is invalid.", reflectedSlot->Path, resourceIndex);
                 return false;
             }
         }
+
         if (reflection.GetUniformBlockCount() != static_cast<uint32>(m_UniformBlocks.Count()))
         {
             LOG_ERROR("Graphics", "Shader instance uniform block state does not match its program reflection.");
             return false;
         }
+
         for (int32 uniformBlockIndex = 0; uniformBlockIndex < m_UniformBlocks.Count(); uniformBlockIndex++)
         {
-            const ShaderUniformBlockLayout* layout =
-                reflection.GetUniformBlockLayout(static_cast<uint32>(uniformBlockIndex));
+            const ShaderUniformBlockLayout* layout = reflection.GetUniformBlockLayout(static_cast<uint32>(uniformBlockIndex));
             const ShaderUniformBlockState& state = m_UniformBlocks[uniformBlockIndex];
+
             if (layout == nullptr || layout->ByteSize != static_cast<uint32>(state.Data.Count()))
             {
                 LOG_ERROR("Graphics", "Shader instance uniform block size does not match its program reflection.");
                 return false;
             }
+
             if (state.Source == ShaderUniformBlockSource::InternalData)
             {
                 pending.AddUniformData(static_cast<uint32>(uniformBlockIndex), state.Data);
@@ -324,6 +376,7 @@ namespace SE
                 pending.AddExternalUniformBuffer(static_cast<uint32>(uniformBlockIndex), state.ExternalBuffer);
             }
         }
+
         pending.Freeze(m_Program);
         snapshot = MoveTemp(pending);
         return true;
@@ -355,7 +408,12 @@ namespace SE
     bool ShaderProgramInstance::SetTexture(const ShaderVarLocation& location, GPUTextureView* value)
     {
         ShaderBindingResource* slot = GetResourceSlot(location, ShaderProgramBindingKind::Texture);
-        if (slot == nullptr || value == nullptr || value->GetParent() == nullptr ||
+        if (slot != nullptr && value == nullptr)
+        {
+            slot->SetTexture(nullptr, nullptr);
+            return true;
+        }
+        if (slot == nullptr || value->GetParent() == nullptr ||
             !IsTextureResource(value->GetParent()))
         {
             LOG_ERROR("Graphics", "Texture binding requires a valid texture view and parent texture.");
@@ -381,6 +439,11 @@ namespace SE
     bool ShaderProgramInstance::SetBuffer(const ShaderVarLocation& location, GPUBuffer* value)
     {
         ShaderBindingResource* slot = GetResourceSlot(location, ShaderProgramBindingKind::Buffer);
+        if (slot != nullptr && value == nullptr)
+        {
+            slot->SetBuffer(nullptr);
+            return true;
+        }
         const ShaderIRTypeRecord* type =
             slot != nullptr ? m_Program->GetReflection().GetType(location.TypeId) : nullptr;
         if (slot == nullptr || type == nullptr || value == nullptr || !value->IsAllocated() || value->View() == nullptr ||
@@ -419,7 +482,7 @@ namespace SE
     bool ShaderProgramInstance::SetSampler(const ShaderVarLocation& location, GPUSampler* value)
     {
         ShaderBindingResource* slot = GetResourceSlot(location, ShaderProgramBindingKind::Sampler);
-        if (slot == nullptr || value == nullptr || !value->IsInitialized())
+        if (slot == nullptr || (value != nullptr && !value->IsInitialized()))
         {
             LOG_ERROR("Graphics", "Sampler binding requires an initialized sampler.");
             return false;

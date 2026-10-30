@@ -66,18 +66,25 @@ namespace SE
 #endif
 
 
-    bool GraphicShader::SelectProgram(String&                           name,
-                                      const ShaderProgramSelection&     selection,
-                                      UniquePtr<ShaderProgramInstance>& output)
+    bool GraphicShader::SelectProgram(const String& programName, const List<String>& selection, SLC2GPUShaderProgram*& output)
     {
-        UniquePtr<ShaderProgramInstance> selected = CreateScope<ShaderProgramInstance>();
+        return m_GPUShader->GetOrCreateProgram(programName, selection, output);
+    }
 
-        if (!m_GPUShader->CreateProgramInstance(name, selection, *selected))
+    bool GraphicShader::SelectProgram(const String& programName, const List<String>& selection, ShaderProgramInstance* programIns)
+    {
+        if (programIns == nullptr)
         {
             return false;
         }
-        output = MoveTemp(selected);
-        return true;
+
+        SLC2GPUShaderProgram* program;
+        if (SelectProgram(programName, selection, program))
+        {
+            return programIns->Initialize(program);
+        }
+
+        return false;
     }
 
     GraphicShader::GraphicShader(const SpawnParams& params, const AssetInfo* info) : BinaryAsset(params, info) 
@@ -208,7 +215,7 @@ namespace SE
             request.SourcePath = parentPath;
             request.SourceCode = source;
             request.SourceCodeLength = sourceLength;
-            request.Targets.Add({shaderProfile, FeatureLevel::SM5});
+            request.Targets.Add(shaderProfile);
 
 /*            #if PLATFORM_WINDOWS
             platformDefine.Name = "PLATFORM_WINDOWS";

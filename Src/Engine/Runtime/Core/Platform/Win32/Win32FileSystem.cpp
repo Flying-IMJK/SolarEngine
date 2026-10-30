@@ -348,11 +348,9 @@ namespace SE
 		// Find all files in this directory
 		getFilesFromDirectoryTop(results, directory, searchPattern);
 
-		StringView targetSearchPattern = searchPattern == nullptr ? StringView(TEXT("*")) : StringView(searchPattern);
-
 		// Try to find first file/directory
 		WIN32_FIND_DATA info;
-		const HANDLE hp = FindFirstFileW(*(directory / targetSearchPattern), reinterpret_cast<LPWIN32_FIND_DATAW>(&info));
+		const HANDLE hp = FindFirstFileW(*(directory / TEXT('*')), reinterpret_cast<LPWIN32_FIND_DATAW>(&info));
 		if (INVALID_HANDLE_VALUE == hp)
 		{
 			// Check if no files at all

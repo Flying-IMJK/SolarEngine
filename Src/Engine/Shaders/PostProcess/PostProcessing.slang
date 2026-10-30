@@ -19,89 +19,92 @@
 //https://john-chapman.github.io/2017/11/05/pseudo-lens-flare.html
 //
 
-#include "./Shaders/Common.hlsl"
-#include "./Shaders/Random.hlsl"
-#include "./Shaders/PostProcess/GammaCorrectionCommon.hlsl"
-#include "./Shaders/QuadCommon.hlsl"
+#include "Shaders/Common.hlsl"
+#include "Shaders/Random.hlsl"
+#include "Shaders/PostProcess/GammaCorrectionCommon.hlsl"
+#include "Shaders/QuadCommon.hlsl"
 
 #define GB_RADIUS 6
 #define GB_KERNEL_SIZE (GB_RADIUS * 2 + 1)
 
-#ifndef NO_GRADING_LUT
-#define NO_GRADING_LUT 0
+#ifndef USE_GRADING_LUT
+#define USE_GRADING_LUT 0
 #endif
-#ifndef USE_VOLUME_LUT
-#define USE_VOLUME_LUT 0
+#ifndef USE_3D_LUT
+#define USE_3D_LUT 0
 #endif
 
-META_CB_BEGIN(0, Data)
 
-float BloomLimit;
-float BloomThreshold;
-float BloomMagnitude;
-float BloomBlurSigma;
+struct Data
+{
+	float BloomLimit;
+	float BloomThreshold;
+	float BloomMagnitude;
+	float BloomBlurSigma;
 
-float3 VignetteColor;
-float VignetteShapeFactor;
+	float3 VignetteColor;
+	float VignetteShapeFactor;
 
-float2 InputSize;
-float InputAspect;
-float GrainAmount;
+	float2 InputSize;
+	float InputAspect;
+	float GrainAmount;
 
-float GrainTime;
-float GrainParticleSize;
-int Ghosts;
-float HaloWidth;
+	float GrainTime;
+	float GrainParticleSize;
+	int Ghosts;
+	float HaloWidth;
 
-float HaloIntensity;
-float Distortion;
-float GhostDispersal;
-float LensFlareIntensity;
+	float HaloIntensity;
+	float Distortion;
+	float GhostDispersal;
+	float LensFlareIntensity;
 
-float2 LensInputDistortion;
-float LensScale;
-float LensBias;
+	float2 LensInputDistortion;
+	float LensScale;
+	float LensBias;
 
-float2 InvInputSize;
-float ChromaticDistortion;
-float Time;
+	float2 InvInputSize;
+	float ChromaticDistortion;
+	float Time;
 
-float Dummy1;
-float PostExposure;
-float VignetteIntensity;
-float LensDirtIntensity;
+	float Dummy1;
+	float PostExposure;
+	float VignetteIntensity;
+	float LensDirtIntensity;
 
-float4 ScreenFadeColor;
+	float4 ScreenFadeColor;
 
-float4x4 LensFlareStarMat;
+	float4x4 LensFlareStarMat;
+}
 
-META_CB_END
+struct GaussianBlurData
+{
+	float2 Size;
+	float Dummy3;
+	float Dummy4;
+	float4 GaussianBlurCache[GB_KERNEL_SIZE]; // x-weight, y-offset
+}
 
-META_CB_BEGIN(1, GaussianBlurData)
+ParameterBlock<Data> data;
+ParameterBlock<GaussianBlurData> gaussianBlurData;
 
-float2 Size;
-float Dummy3;
-float Dummy4;
-float4 GaussianBlurCache[GB_KERNEL_SIZE]; // x-weight, y-offset
-
-META_CB_END
 
 // Film Grain
 static const float permTexUnit = 1.0 / 256.0;      // Perm texture texel-size
 static const float permTexUnitHalf = 0.5 / 256.0;  // Half perm texture texel-size
 
 // Input textures
-Texture2D Input0    : register(t0);
-Texture2D Input1    : register(t1);
-Texture2D Input2    : register(t2);
-Texture2D Input3    : register(t3);
-Texture2D LensDirt  : register(t4);
-Texture2D LensStar  : register(t5);
-Texture2D LensColor : register(t6);
-#if USE_VOLUME_LUT
-Texture3D ColorGradingLUT : register(t7);
+Texture2D Input0;
+Texture2D Input1;
+Texture2D Input2;
+Texture2D Input3;
+Texture2D LensDirt;
+Texture2D LensStar;
+Texture2D LensColor;
+#if USE_3D_LUT
+Texture3D ColorGradingLUT;
 #else
-Texture2D ColorGradingLUT : register(t7);
+Texture2D ColorGradingLUT;
 #endif
 static const float LUTSize = 32;
 
@@ -113,7 +116,7 @@ half3 ColorLookupTable(half3 linearColor)
 
 	float3 uvw = encodedColor * ((LUTSize - 1) / LUTSize) + (0.5f / LUTSize);
 
-#if USE_VOLUME_LUT
+#if USE_3D_LUT
 	half3 color = ColorGradingLUT.Sample(SamplerLinearClamp, uvw).rgb;
 #else
 	half3 color = SampleUnwrappedTexture3D(ColorGradingLUT, SamplerLinearClamp, uvw, LUTSize).rgb;
@@ -245,23 +248,52 @@ float pnoise2D(in float2 p, in float time)
 // 2d coordinate orientation thing
 float2 coordRot(in float2 tc, in float angle)
 {
-	float rotX = ((tc.x * 2.0 - 1.0) * InputAspect * cos(angle)) - ((tc.y * 2.0 - 1.0) * sin(angle));
-	float rotY = ((tc.y * 2.0 - 1.0) * cos(angle)) + ((tc.x * 2.0 - 1.0) * InputAspect * sin(angle));
-	rotX = ((rotX / InputAspect) * 0.5 + 0.5);
+	float rotX = ((tc.x * 2.0 - 1.0) * data.InputAspect * cos(angle)) - ((tc.y * 2.0 - 1.0) * sin(angle));
+	float rotY = ((tc.y * 2.0 - 1.0) * cos(angle)) + ((tc.x * 2.0 - 1.0) * data.InputAspect * sin(angle));
+	rotX = ((rotX / data.InputAspect) * 0.5 + 0.5);
 	rotY = rotY * 0.5 + 0.5;
 	return float2(rotX, rotY);
 }
 
+
+SHADER_PROGRAM(
+	Threshold,
+	SHADER_VS(VS_Quad),
+	SHADER_PS(PS_Threshold)
+)
+
+SHADER_PROGRAM(
+	Scale,
+	SHADER_VS(VS_Quad),
+	SHADER_PS(PS_Scale)
+)
+
+SHADER_PROGRAM(
+	GaussainBlurH,
+	SHADER_VS(VS_Quad),
+	SHADER_PS(PS_GaussainBlurH)
+)
+
+SHADER_PROGRAM(
+	GaussainBlurV,
+	SHADER_VS(VS_Quad),
+	SHADER_PS(PS_GaussainBlurV)
+)
+
+SHADER_PROGRAM(
+	Ghosts,
+	SHADER_VS(VS_Quad),
+	SHADER_PS(PS_Ghosts)
+)
+
 // Uses a lower exposure to produce a value suitable for a bloom pass
-META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_Threshold(Quad_VS2PS input) : SV_Target
 {
 	float4 color = Input0.SampleLevel(SamplerLinearClamp, input.TexCoord, 0);
-    return clamp(color - BloomThreshold, 0, BloomLimit);
+    return clamp(color - data.BloomThreshold, 0, data.BloomLimit);
 }
 
 // Uses hw bilinear filtering for upscaling or downscaling
-META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_Scale(Quad_VS2PS input) : SV_Target
 {
 	// TODO: we could use quality switch for bloom effect
@@ -282,7 +314,6 @@ float4 PS_Scale(Quad_VS2PS input) : SV_Target
 }
 
 // Horizontal gaussian blur
-META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_GaussainBlurH(Quad_VS2PS input) : SV_Target
 {
 	float4 color = 0;
@@ -290,14 +321,13 @@ float4 PS_GaussainBlurH(Quad_VS2PS input) : SV_Target
 	UNROLL
 	for (int i = 0; i < GB_KERNEL_SIZE; i++)
 	{
-		color += Input0.Sample(SamplerLinearClamp, input.TexCoord + float2(GaussianBlurCache[i].y, 0.0)) * GaussianBlurCache[i].x;
+		color += Input0.Sample(SamplerLinearClamp, input.TexCoord + float2(gaussianBlurData.GaussianBlurCache[i].y, 0.0)) * gaussianBlurData.GaussianBlurCache[i].x;
 	}
 
 	return color;
 }
 
 // Vertical gaussian blur
-META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_GaussainBlurV(Quad_VS2PS input) : SV_Target
 {
 	float4 color = 0;
@@ -305,14 +335,13 @@ float4 PS_GaussainBlurV(Quad_VS2PS input) : SV_Target
 	UNROLL
 	for (int i = 0; i < GB_KERNEL_SIZE; i++)
 	{
-		color += Input0.Sample(SamplerLinearClamp, input.TexCoord + float2(0.0, GaussianBlurCache[i].y)) * GaussianBlurCache[i].x;
+		color += Input0.Sample(SamplerLinearClamp, input.TexCoord + float2(0.0, gaussianBlurData.GaussianBlurCache[i].y)) * gaussianBlurData.GaussianBlurCache[i].x;
 	}
 
 	return color;
 }
 
 // Generate 'ghosts' for lens flare
-META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_Ghosts(Quad_VS2PS input) : SV_Target
 {
 	// Temporary data
@@ -327,17 +356,17 @@ float4 PS_Ghosts(Quad_VS2PS input) : SV_Target
 	float2 texcoord = input.TexCoord * -1 + float2(1.0, 1.0);
 
 	// Ahost vector to image centre
-	float2 ghostVec = (float2(0.5, 0.5) - texcoord) * GhostDispersal;// TODO: optimize to MAD instruction
+	float2 ghostVec = (float2(0.5, 0.5) - texcoord) * data.GhostDispersal;// TODO: optimize to MAD instruction
 	float2 ghostVecnNorm = normalize(ghostVec);
-	float2 haloVec = ghostVecnNorm * HaloWidth;
+	float2 haloVec = ghostVecnNorm * data.HaloWidth;
 
 	// Calculate distortion vector
-	float3 distortion = float3(LensInputDistortion.x, 0.0, LensInputDistortion.y);
+	float3 distortion = float3(data.LensInputDistortion.x, 0.0, data.LensInputDistortion.y);
 
 	// Sample 'ghosts'
 	// TODO: use uniform amount of ghosts and unroll loop
 	LOOP
-	for(; i < Ghosts; i++)
+	for(; i < data.Ghosts; i++)
 	{
 		// Calculate ghost offset
 		offset = frac(texcoord + ghostVec * (float)i);
@@ -350,7 +379,7 @@ float4 PS_Ghosts(Quad_VS2PS input) : SV_Target
 			Input3.Sample(SamplerLinearClamp, offset + ghostVecnNorm * distortion.r).r,
 			Input3.Sample(SamplerLinearClamp, offset + ghostVecnNorm * distortion.g).g,
 			Input3.Sample(SamplerLinearClamp, offset + ghostVecnNorm * distortion.b).b);
-		color = clamp(color + LensBias, 0, 10) * (LensScale * weight);
+		color = clamp(color + data.LensBias, 0, 10) * (data.LensScale * weight);
 
 		// Accumulate color
 		result += color;
@@ -362,12 +391,12 @@ float4 PS_Ghosts(Quad_VS2PS input) : SV_Target
 	// Add halo
 	haloFrac = frac(texcoord + haloVec);
 	weight = length(float2(0.5, 0.5) - haloFrac) / length(float2(0.5, 0.5));
-	weight = pow(1.0 - weight, 5.0) * HaloIntensity;
+	weight = pow(1.0 - weight, 5.0) * data.HaloIntensity;
 	color = float3(
 			Input3.Sample(SamplerLinearClamp, haloFrac + ghostVecnNorm * distortion.r).r,
 			Input3.Sample(SamplerLinearClamp, haloFrac + ghostVecnNorm * distortion.g).g,
 			Input3.Sample(SamplerLinearClamp, haloFrac + ghostVecnNorm * distortion.b).b);
-	result += clamp((color + LensBias) * (LensScale * weight), 0, 8);
+	result += clamp((color + data.LensBias) * (data.LensScale * weight), 0, 8);
 
 	return float4(result, 1);
 }
@@ -406,12 +435,17 @@ float nrand(float2 n)
 	return frac(sin(dot(n.xy, float2(12.9898, 78.233)))* 43758.5453);
 }
 
+
+SHADER_PROGRAM(
+	Composite,
+	SHADER_VS(VS_Quad),
+	SHADER_PS(PS_Composite),
+	SHADER_MACRO(_, USE_GRADING_LUT),
+	SHADER_MACRO(_, USE_3D_LUT)
+)
+
 // Applies exposure, color grading and tone mapping to the input.
 // Combines it with the results of the bloom pass and other postFx.
-META_PS(true, FEATURE_LEVEL_ES2)
-META_PERMUTATION_1(NO_GRADING_LUT=1)
-META_PERMUTATION_1(USE_VOLUME_LUT=1)
-META_PERMUTATION_1(USE_VOLUME_LUT=0)
 float4 PS_Composite(Quad_VS2PS input) : SV_Target
 {
 	float2 uv = input.TexCoord;
@@ -419,19 +453,19 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 	float4 color;
 
 	// Chromatic Abberation
-	if (ChromaticDistortion > 0)
+	if (data.ChromaticDistortion > 0)
 	{
 		const float MAX_DIST_PX = 24.0;
-		float max_distort_px = MAX_DIST_PX * ChromaticDistortion;
-		float2 max_distort = InvInputSize * max_distort_px;
+		float max_distort_px = MAX_DIST_PX * data.ChromaticDistortion;
+		float2 max_distort = data.InvInputSize * max_distort_px;
 		float2 min_distort = 0.5 * max_distort;
 
 		float2 oversiz = distort(float2(1.0, 1.0), 1.0, min_distort, max_distort);
 		uv = remap(uv, 1.0 - oversiz, oversiz);
 
-		int iterations = (int)lerp(3, 10, ChromaticDistortion);
+		int iterations = (int)lerp(3, 10, data.ChromaticDistortion);
 		float stepsiz = 1.0 / (float(iterations) - 1.0);
-		float rnd = nrand(uv + Time);
+		float rnd = nrand(uv + data.Time);
 		float t = rnd * stepsiz;
 
 		float4 sumcol = 0;
@@ -454,14 +488,14 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 
 	// Lens Flares
 	BRANCH
-	if (LensFlareIntensity > 0)
+	if (data.LensFlareIntensity > 0)
 	{
 		// Get lens flare color
-		float3 lensFlares = Input3.Sample(SamplerLinearClamp, uv).rgb * LensFlareIntensity;
+		float3 lensFlares = Input3.Sample(SamplerLinearClamp, uv).rgb * data.LensFlareIntensity;
 
 		// Get lens star color and mix it with lens flares
 		float2 lensStarTexcoord = uv - 0.5;
-		lensStarTexcoord = mul(lensStarTexcoord, (float2x2)LensFlareStarMat).xy;
+		lensStarTexcoord = mul(lensStarTexcoord, (float2x2)data.LensFlareStarMat).xy;
 		lensStarTexcoord += 0.5;
 		float3 lensStar = LensStar.Sample(SamplerLinearClamp, lensStarTexcoord).rgb;
 		lensFlares *= lensStar * 2 + 0.5;
@@ -473,11 +507,11 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 
 	// Bloom
 	BRANCH
-	if (BloomMagnitude > 0)
+	if (data.BloomMagnitude > 0)
 	{
 		// Sample the bloom
 		float3 bloom = Input2.SampleLevel(SamplerLinearClamp, uv, 0).rgb;
-		bloom = bloom * BloomMagnitude;
+		bloom = bloom * data.BloomMagnitude;
 
 		// Accumulate final bloom lght
 		lensLight += max(0, bloom * 3.0f + (- 1.0f * 3.0f));
@@ -486,23 +520,23 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 
 	// Lens Dirt
 	float3 lensDirt = LensDirt.SampleLevel(SamplerLinearClamp, uv, 0).rgb;
-	color.rgb += lensDirt * (lensLight * LensDirtIntensity);
+	color.rgb += lensDirt * (lensLight * data.LensDirtIntensity);
 
 	// Eye Adaptation post exposure
 //	color.rgb *= PostExposure;
 
 	// Color Grading and Tone Mapping
-#if !NO_GRADING_LUT
+#if USE_GRADING_LUT
 	color.rgb = ColorLookupTable(color.rgb);
 #endif
 
 	// Film Grain
 	BRANCH
-	if (GrainAmount > 0)
+	if (data.GrainAmount > 0)
 	{
 		// Calculate noise
-		float2 rotCoordsR = coordRot(uv, GrainTime);
-		float noise = pnoise2D(rotCoordsR * (InputSize / GrainParticleSize), GrainTime);
+		float2 rotCoordsR = coordRot(uv, data.GrainTime);
+		float noise = pnoise2D(rotCoordsR * (data.InputSize / data.GrainParticleSize), data.GrainTime);
 
 		// Noisiness response curve based on scene luminance
 		float luminance = Luminance(saturate(color.rgb));
@@ -510,21 +544,21 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 
 		// Add noise to the final color
 		noise = lerp(noise, 0, min(pow(luminance, 4.0), 100));
-		color.rgb += noise * GrainAmount;
+		color.rgb += noise * data.GrainAmount;
 	}
 
 	// Vignette
 	BRANCH
-	if (VignetteIntensity > 0)
+	if (data.VignetteIntensity > 0)
 	{
 		float2 uvCircle = uv * (1 - uv);
 		float uvCircleScale = uvCircle.x * uvCircle.y * 16.0f;
-		float mask = lerp(1, pow(uvCircleScale, VignetteShapeFactor), VignetteIntensity);
-		color.rgb = lerp(VignetteColor, color.rgb, mask);
+		float mask = lerp(1, pow(uvCircleScale, data.VignetteShapeFactor), data.VignetteIntensity);
+		color.rgb = lerp(data.VignetteColor, color.rgb, mask);
 	}
 
 	// Screen fade
-	color.rgb = lerp(color.rgb, ScreenFadeColor.rgb, ScreenFadeColor.a);
+	color.rgb = lerp(color.rgb, data.ScreenFadeColor.rgb, data.ScreenFadeColor.a);
 
 	// Saturate color since it will be rendered to the screen
 	color.rgb = saturate(color.rgb);

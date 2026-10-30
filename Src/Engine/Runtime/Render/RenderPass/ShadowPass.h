@@ -1,14 +1,18 @@
 #pragma once
 
-#include "Runtime/Graphics/Base/GPUPipelineStatePermutations.h"
-#include "Runtime/Render/RendererPass.h"
-#include "Runtime/Render/RenderList.h"
-#include "Runtime/Render/Assets/Geometry/Model.h"
-#include "Runtime/Resource/AssetRef.h"
-#include "Runtime/Resource/Assets/Materials/Shader.h"
+#include <Runtime/Graphics/Base/GPUPipelineState.h>
+#include <Runtime/Render/Assets/Geometry/Model.h>
+#include <Runtime/Render/RenderList.h>
+#include <Runtime/Render/RendererPass.h>
+#include <Runtime/Resource/AssetRef.h>
 
 namespace SE
 {
+    class GraphicShader;
+    class GPUConstantBuffer;
+    class GPUSampler;
+    class ShaderProgramInstance;
+
     template<typename T>
     bool CanRenderShadow(const RenderView& view, const T& light)
     {
@@ -43,22 +47,28 @@ namespace SE
         };
 
         // Shader stuff
-        AssetRef<Shader> _shader;
-        GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2 * 2> _psShadowDir;
-        GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowPoint;
-        GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowSpot;
-        PixelFormat _shadowMapFormat;
+        AssetRef<GraphicShader> m_Shader;
+
+        SLC2GPUPipelineState*  m_SpoShadowDir;
+        SLC2GPUPipelineState*  m_SpoShadowPoint;
+        SLC2GPUPipelineState*  m_SpoShadowSpot;
+        ShaderProgramInstance* m_SPShadowDir;
+        ShaderProgramInstance* m_SPShadowPoint;
+        ShaderProgramInstance* m_SPShadowSpot;
+        GPUConstantBuffer*     m_GPUConstantBuffer;
+        GPUSampler*            m_ShadowSamplerPCF;
+        PixelFormat            m_ShadowMapFormat;
 
         // Shadow maps stuff
-        int32 _shadowMapsSizeCSM;
-        int32 _shadowMapsSizeCube;
-        GPUTexture* _shadowMapCSM;
-        GPUTexture* _shadowMapCube;
-        Quality _currentShadowMapsQuality;
+        int32 m_ShadowMapsSizeCSM;
+        int32 m_ShadowMapsSizeCube;
+        GPUTexture* m_ShadowMapCSM;
+        GPUTexture* m_ShadowMapCube;
+        Quality m_CurrentShadowMapsQuality;
 
         // Shadow map rendering stuff
-        AssetRef<Model> _sphereModel;
-        List<ShadowData> _shadowData;
+        AssetRef<Model> m_SphereModel;
+        List<ShadowData> m_ShadowData;
 
         // Cached state for the current frame rendering (setup via Prepare)
         int32 maxShadowsQuality;
@@ -122,16 +132,19 @@ namespace SE
         /// </summary>
         /// <param name="renderContextBatch">The rendering context batch.</param>
         /// <param name="light">The light.</param>
-        /// <param name="shadowMask">The shadow mask (output).</param>
-        void RenderShadow(RenderContextBatch& renderContextBatch, RendererPointLightData& light, GPUTextureView* shadowMask);
+        /// <param name="pShadowMask">The shadow mask (output).</param>
+        void RenderShadow(RenderContextBatch&     renderContextBatch,
+                          RendererPointLightData& light,
+                          GPUTextureView*         pShadowMask);
 
         /// <summary>
         /// Renders the shadow mask for the given light.
         /// </summary>
         /// <param name="renderContextBatch">The rendering context batch.</param>
         /// <param name="light">The light.</param>
-        /// <param name="shadowMask">The shadow mask (output).</param>
-        void RenderShadow(RenderContextBatch& renderContextBatch, RendererSpotLightData& light, GPUTextureView* shadowMask);
+        /// <param name="pShadowMask">The shadow mask (output).</param>
+        void
+        RenderShadow(RenderContextBatch& renderContextBatch, RendererSpotLightData& light, GPUTextureView* pShadowMask);
 
         /// <summary>
         /// Renders the shadow mask for the given light.
@@ -139,8 +152,11 @@ namespace SE
         /// <param name="renderContextBatch">The rendering context batch.</param>
         /// <param name="light">The light.</param>
         /// <param name="index">The light index.</param>
-        /// <param name="shadowMask">The shadow mask (output).</param>
-        void RenderShadow(RenderContextBatch& renderContextBatch, RendererDirectionalLightData& light, int32 index, GPUTextureView* shadowMask);
+        /// <param name="pShadowMask">The shadow mask (output).</param>
+        void RenderShadow(RenderContextBatch&           renderContextBatch,
+                          RendererDirectionalLightData& light,
+                          int32                         index,
+                          GPUTextureView*               pShadowMask);
 
     private:
 
@@ -151,13 +167,7 @@ namespace SE
         void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RendererSpotLightData& light);
 
 #if COMPILE_WITH_DEV_ENV
-        void OnShaderReloading(Asset* obj)
-        {
-            _psShadowDir.Release();
-            _psShadowPoint.Release();
-            _psShadowSpot.Release();
-            invalidateResources();
-        }
+        void OnShaderReloading(Asset* pObj);
 #endif
 
     public:
