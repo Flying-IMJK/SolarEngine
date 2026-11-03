@@ -15,7 +15,7 @@ namespace SE.Editor.GUI
     {
         private const float DefaultIconSize = 64;
         private const float ButtonsOffset = 2;
-        private const float ButtonsSize = 12;
+        private const float ActionIconSize = 12;
 
         private bool m_IsMouseDown;
         private Float2 m_MouseDownPos;
@@ -57,7 +57,7 @@ namespace SE.Editor.GUI
         /// <param name="assetType">The asset types that this picker accepts.</param>
         /// <param name="location">The control location.</param>
         public AssetPicker(Type assetType, Float2 location)
-        : base(location, new Float2(DefaultIconSize + ButtonsOffset + ButtonsSize, DefaultIconSize))
+        : base(location, new Float2(DefaultIconSize + (ButtonsOffset + DefaultIconSize * 2 / 3) * 2, DefaultIconSize))
         {
             Validator = new AssetPickerValidator(assetType);
             Validator.SelectedItemChanged += OnSelectedItemChanged;
@@ -107,14 +107,20 @@ namespace SE.Editor.GUI
 
         private Rectangle IconRect => new Rectangle(0, 0, Height, Height);
 
-        private Rectangle Button1Rect => new Rectangle(Height + ButtonsOffset, 0, ButtonsSize, ButtonsSize);
+        private float NameFieldHeight => Height / 3;
+
+        private Rectangle NameFieldRect => new Rectangle(Height + ButtonsOffset, 0,
+            Mathf.Max(0, Width - Height - ButtonsOffset), NameFieldHeight);
+
+        private Rectangle Button1Rect => new Rectangle(Mathf.Max(Height + ButtonsOffset, Width - ButtonsOffset - NameFieldHeight),
+            0, NameFieldHeight, NameFieldHeight);
 
         private Rectangle Button2Rect
         {
             get
             {
-                return new Rectangle(Height + ButtonsOffset, ButtonsSize + 2, ButtonsSize,
-                            ButtonsSize);
+                float size = Height - NameFieldHeight;
+                return new Rectangle(Height + ButtonsOffset, NameFieldHeight, size, size);
             }
         }
 
@@ -122,8 +128,8 @@ namespace SE.Editor.GUI
         {
             get
             {
-                return new Rectangle(Height + ButtonsOffset, (ButtonsSize + 2) * 2, ButtonsSize,
-                            ButtonsSize);
+                float size = Height - NameFieldHeight;
+                return new Rectangle(Height + ButtonsOffset * 2 + size, NameFieldHeight, size, size);
             }
         }
 
@@ -136,12 +142,33 @@ namespace SE.Editor.GUI
             Rectangle button2Rect = Button2Rect;
             Rectangle button3Rect = Button3Rect;
 
+            // Draw fixed-size icons centered inside their button hit areas.
+            Rectangle pickerIconRect = new Rectangle(button1Rect.X + (button1Rect.Width - ActionIconSize) * 0.5f,
+                button1Rect.Y + (button1Rect.Height - ActionIconSize) * 0.5f, ActionIconSize, ActionIconSize);
+            Rectangle locateIconRect = new Rectangle(button2Rect.X + (button2Rect.Width - ActionIconSize) * 0.5f,
+                button2Rect.Y + (button2Rect.Height - ActionIconSize) * 0.5f, ActionIconSize, ActionIconSize);
+            Rectangle clearIconRect = new Rectangle(button3Rect.X + (button3Rect.Width - ActionIconSize) * 0.5f,
+                button3Rect.Y + (button3Rect.Height - ActionIconSize) * 0.5f, ActionIconSize, ActionIconSize);
+
+            // Use the top third for the name and the remaining height for the action buttons.
+            Render2D.FillRectangle(NameFieldRect, style.BackgroundNormal);
+            Render2D.DrawRectangle(NameFieldRect, style.Background);
+
             // Draw asset picker button
             if (CanEdit)
             {
-                Render2D.DrawSprite(EditorIcons.ArrowDown12, button1Rect, button1Rect.Contains(m_MousePos) ? style
+                Render2D.DrawSprite(EditorIcons.ArrowDown12, pickerIconRect, button1Rect.Contains(m_MousePos) ? style
                     .Foreground : style.ForegroundGrey);
             }
+
+            // Keep locate visible even when there is no content item to select.
+            bool canLocate = !DifferentValues && Validator.SelectedItem != null;
+            Color locateColor = canLocate ? style.ForegroundGrey : style.ForegroundDisabled;
+            if (canLocate && button2Rect.Contains(m_MousePos))
+            {
+                locateColor = style.Foreground;
+            }
+            Render2D.DrawSprite(EditorIcons.Search12, locateIconRect, locateColor);
 
             if (DifferentValues)
             {
@@ -155,69 +182,23 @@ namespace SE.Editor.GUI
                 // Draw item preview
                 Validator.SelectedItem.DrawThumbnail(iconRect);
 
-                // Draw buttons
+                // Draw remove button
                 if (CanEdit)
                 {
-                    Render2D.DrawSprite(EditorIcons.Search12, button2Rect, button2Rect.Contains(m_MousePos) ? style
+                    Render2D.DrawSprite(EditorIcons.Cross16, clearIconRect, button3Rect.Contains(m_MousePos) ? style
                         .Foreground : style.ForegroundGrey);
-                    Render2D.DrawSprite(EditorIcons.Cross16, button3Rect, button3Rect.Contains(m_MousePos) ? style
-                        .Foreground : style.ForegroundGrey);
-                }
-                else
-                {
-                    Render2D.DrawSprite(EditorIcons.Search12, button1Rect, button1Rect.Contains(m_MousePos) ? style
-                        .Foreground : style.ForegroundGrey);
-                }
-
-                // Draw name
-                float sizeForTextLeft = Width - button1Rect.Right;
-                if (sizeForTextLeft > 30)
-                {
-                    Render2D.DrawText(
-                                      style.FontSmall,
-                                      Validator.SelectedItem.ShortName,
-                                      new Rectangle(button1Rect.Right + 2, 0, sizeForTextLeft, ButtonsSize),
-                                      style.Foreground,
-                                      TextAlignment.Near,
-                                      TextAlignment.Center);
-                    Render2D.DrawText(
-                                      style.FontSmall,
-                                      $"{Validator.AssetType?.Name}",
-                                      new Rectangle(button1Rect.Right + 2, ButtonsSize + 2, sizeForTextLeft,
-                                          ButtonsSize),
-                                      style.ForegroundGrey,
-                                      TextAlignment.Near,
-                                      TextAlignment.Center);
                 }
             }
             // Check if has no item but has an asset (eg. virtual asset)
             else if (Validator.SelectedAsset)
             {
                 // Draw remove button
-                Render2D.DrawSprite(EditorIcons.Cross16, button3Rect, button3Rect.Contains(m_MousePos) ? style
-                    .Foreground : style.ForegroundGrey);
-
-                // Draw name
-                float sizeForTextLeft = Width - button1Rect.Right;
-                if (sizeForTextLeft > 30)
+                if (CanEdit)
                 {
-                    string name = Validator.SelectedAsset.GetType().Name;
-                    Render2D.DrawText(
-                                      style.FontSmall,
-                                      name,
-                                      new Rectangle(button1Rect.Right + 2, 0, sizeForTextLeft, ButtonsSize),
-                                      style.Foreground,
-                                      TextAlignment.Near,
-                                      TextAlignment.Center);
-                    Render2D.DrawText(
-                                      style.FontSmall,
-                                      $"{Validator.AssetType?.Name}",
-                                      new Rectangle(button1Rect.Right + 2, ButtonsSize + 2, sizeForTextLeft,
-                                          ButtonsSize),
-                                      style.ForegroundGrey,
-                                      TextAlignment.Near,
-                                      TextAlignment.Center);
+                    Render2D.DrawSprite(EditorIcons.Cross16, clearIconRect, button3Rect.Contains(m_MousePos) ? style
+                        .Foreground : style.ForegroundGrey);
                 }
+                Render2D.FillRectangle(iconRect, style.BackgroundNormal);
             }
             else
             {
@@ -225,25 +206,35 @@ namespace SE.Editor.GUI
                 Render2D.FillRectangle(iconRect, style.BackgroundNormal);
                 Render2D.DrawText(style.FontMedium, "No asset\nselected", iconRect, Color.Orange, TextAlignment
                     .Center, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, Height / DefaultIconSize);
-                float sizeForTextLeft = Width - button1Rect.Right;
-                if (sizeForTextLeft > 30)
+            }
+
+            // Draw the reference name once for both file-backed and virtual assets.
+            Rectangle nameRect = new Rectangle(NameFieldRect.X + ButtonsOffset, 0,
+                Mathf.Max(0, button1Rect.X - NameFieldRect.X - ButtonsOffset * 2), NameFieldHeight);
+            if (nameRect.Width > 0)
+            {
+                string name = "None";
+                if (DifferentValues)
                 {
-                    Render2D.DrawText(
-                                      style.FontSmall,
-                                      $"None",
-                                      new Rectangle(button1Rect.Right + 2, 0, sizeForTextLeft, ButtonsSize),
-                                      style.Foreground,
-                                      TextAlignment.Near,
-                                      TextAlignment.Center);
-                    Render2D.DrawText(
-                                      style.FontSmall,
-                                      $"{Validator.AssetType?.Name}",
-                                      new Rectangle(button1Rect.Right + 2, ButtonsSize + 2, sizeForTextLeft,
-                                          ButtonsSize),
-                                      style.ForegroundGrey,
-                                      TextAlignment.Near,
-                                      TextAlignment.Center);
+                    name = "Multiple Values";
                 }
+                else if (Validator.SelectedItem != null)
+                {
+                    name = Validator.SelectedItem.ShortName;
+                }
+                else if (Validator.SelectedAsset)
+                {
+                    name = Validator.SelectedAsset.GetType().Name;
+                }
+                Render2D.PushClip(nameRect);
+                Render2D.DrawText(
+                                  style.FontSmall,
+                                  name,
+                                  nameRect,
+                                  style.Foreground,
+                                  TextAlignment.Near,
+                                  TextAlignment.Center);
+                Render2D.PopClip();
             }
 
             // Check if drag is over
@@ -315,11 +306,12 @@ namespace SE.Editor.GUI
             if (button == MouseButton.Left && m_IsMouseDown)
             {
                 m_IsMouseDown = false;
+                bool canLocate = !DifferentValues && Validator.SelectedItem != null;
 
                 // Buttons logic
                 if (!CanEdit)
                 {
-                    if (Button1Rect.Contains(location) && Validator.SelectedItem != null)
+                    if (Button2Rect.Contains(location) && canLocate)
                     {
                         // Select asset
                         Editor.Instance.Windows.ContentWin.Select(Validator.SelectedItem);
@@ -334,7 +326,7 @@ namespace SE.Editor.GUI
                 }
                 else if (Validator.SelectedAsset != null || Validator.SelectedItem != null)
                 {
-                    if (Button2Rect.Contains(location) && Validator.SelectedItem != null)
+                    if (Button2Rect.Contains(location) && canLocate)
                     {
                         // Select asset
                         Editor.Instance.Windows.ContentWin.Select(Validator.SelectedItem);
@@ -344,17 +336,32 @@ namespace SE.Editor.GUI
                     {
                         // Deselect asset
                         Focus();
-                        Validator.SelectedItem = null;
+                        if (Validator.SelectedItem != null)
+                        {
+                            Validator.SelectedItem = null;
+                        }
+                        else
+                        {
+                            // Virtual assets have no content item to clear.
+                            Validator.SelectedAsset = null;
+                        }
                     }
                 }
             }
-            if (button == MouseButton.Middle && IconRect.Contains(ref location))
+            if (button == MouseButton.Middle && IconRect.Contains(ref location) && CanEdit)
             {
                 // Clear value
                 Focus();
-                Validator.SelectedItem = null;
+                if (Validator.SelectedItem != null)
+                {
+                    Validator.SelectedItem = null;
+                }
+                else
+                {
+                    Validator.SelectedAsset = null;
+                }
             }
-            if (button == MouseButton.Right && IconRect.Contains(ref location))
+            if (button == MouseButton.Right && IconRect.Contains(ref location) && CanEdit)
             {
                 // Show picker
                 Focus();
@@ -452,7 +459,7 @@ namespace SE.Editor.GUI
             if (Validator.AssetType != null)
             {
                 // Show asset picker popup
-                AssetSearchPopup popup = AssetSearchPopup.Show(this, Button1Rect.BottomLeft, Validator.IsValid, item =>
+                AssetSearchPopup popup = AssetSearchPopup.Show(this, NameFieldRect.BottomLeft, Validator.IsValid, item =>
                 {
                     Validator.SelectedItem = item;
                     RootWindow().Focus();
@@ -467,7 +474,7 @@ namespace SE.Editor.GUI
             else
             {
                 // Show content item picker popup
-                ContentSearchPopup popup = ContentSearchPopup.Show(this, Button1Rect.BottomLeft, Validator.IsValid,
+                ContentSearchPopup popup = ContentSearchPopup.Show(this, NameFieldRect.BottomLeft, Validator.IsValid,
                     item =>
                 {
                     Validator.SelectedItem = item;
