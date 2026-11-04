@@ -32,6 +32,17 @@ namespace SE.Editor.SceneGraph
         }
 
         public SE.Actor Actor => m_Actor;
+        public override Transform Transform
+        {
+            get => m_Actor != null ? m_Actor.Transform : SE.Transform.Identity;
+            set
+            {
+                if (m_Actor != null)
+                {
+                    m_Actor.Transform = value;
+                }
+            }
+        }
         public ActorTreeNode TreeNode => m_TreeNode;
         public List<ActorChildNode> ActorChildNodes { get; } = new();
 

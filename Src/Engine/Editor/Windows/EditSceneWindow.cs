@@ -105,7 +105,7 @@ namespace SE.Editor
             Title = "Scene";
             Icon = EditorIcons.SceneWindow32;
 
-            Viewport = new EditorGizmoViewport(new SceneRenderTask(), editor.Scene.Root);
+            Viewport = new EditorGizmoViewport(new SceneRenderTask(), editor.Scene);
             Viewport.Parent = this;
             Viewport.NearPlane = 0.01f;
             Viewport.FarPlane = 20000.0f;

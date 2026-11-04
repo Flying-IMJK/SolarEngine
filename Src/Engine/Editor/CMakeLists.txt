@@ -51,6 +51,7 @@ add_subdirectory(CustomEditors)
 add_subdirectory(Resource)
 add_subdirectory(Windows)
 add_subdirectory(SceneGraph)
+add_subdirectory(Gizmo)
 
 source_group(TREE ${EngineEditorDir} FILES ${EditorSourceFiles} ${EditorHeadFiles})
 

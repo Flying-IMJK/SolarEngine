@@ -329,7 +329,7 @@ namespace SE.Editor
         /// <summary>
         /// Gets or sets the camera orthographic size scale when orthographic mode is used.
         /// </summary>
-        public float OrthographicScale;
+        public float OrthographicScale = 1.0f;
 
         /// <summary>Gets or sets the camera orthographic mode.</summary>
         public bool UseOrthographicProjection;
@@ -1368,7 +1368,7 @@ namespace SE.Editor
         {
             if (UseOrthographicProjection)
             {
-                Matrix.Ortho(Width * (UseOrthographicProjection ? 1 : 0),
+                Matrix.Ortho(Width * OrthographicScale,
                     Height * OrthographicScale, NearPlane, FarPlane, out result);
             }
             else
