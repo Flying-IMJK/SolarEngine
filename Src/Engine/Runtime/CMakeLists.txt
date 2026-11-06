@@ -91,6 +91,10 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 endif()
 
 target_compile_definitions(${RUNTIME_TARGET} PRIVATE TRACY_ENABLE TRACY_EXPORTS)
+if(USE_EDITOR AND USE_PROFILER)
+    target_link_libraries(${RUNTIME_TARGET} PRIVATE SETracyServer)
+    target_compile_definitions(${RUNTIME_TARGET} PRIVATE TRACY_ON_DEMAND SE_TRACY_SERVER)
+endif()
 
 # 运行时库 第三方链接库
 ADD_DELAYLOAD_FLAGS(${RUNTIME_TARGET} ShaderCompiler)

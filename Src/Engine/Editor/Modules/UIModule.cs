@@ -14,6 +14,7 @@ namespace SE.Editor
         private float m_LastHeight = float.NaN;
 
         private Thumbnails m_Thumbnails;
+        private ToolStripButton m_ProfilerButton;
 
         public UIModule(Editor editor) : base(editor)
         {
@@ -49,6 +50,7 @@ namespace SE.Editor
         {
             UpdateLayout(force: false);
             m_Thumbnails.Update();
+            m_ProfilerButton.Text = Editor.Profiler.MenuLabel;
         }
 
         public override void OnDispose()
@@ -73,6 +75,7 @@ namespace SE.Editor
             window.ContextMenu.AddButton("Content", () => Editor.Windows.Content.FocusOrShow());
             window.ContextMenu.AddButton("Scene Hierarchy", () => Editor.Windows.SceneHierarchy.FocusOrShow());
             window.ContextMenu.AddButton("Log", () => Editor.Windows.Log.FocusOrShow());
+            window.ContextMenu.AddButton("Profiler", () => Editor.Windows.Profiler.FocusOrShow());
             window.ContextMenu.AddButton("Edit Scene", () => Editor.Windows.EditScene.FocusOrShow());
             window.ContextMenu.AddButton("Create Demo Scene", () => Editor.CreateDemoScene());
         }
@@ -82,6 +85,7 @@ namespace SE.Editor
             ToolStrip.AddButton("Content", () => Editor.Windows.Content.FocusOrShow());
             ToolStrip.AddButton("Scene", () => Editor.Windows.SceneHierarchy.FocusOrShow());
             ToolStrip.AddButton("Log", () => Editor.Windows.Log.FocusOrShow());
+            m_ProfilerButton = ToolStrip.AddButton("Profiler", () => Editor.Windows.Profiler.FocusOrShow());
         }
 
         private void UpdateLayout(bool force)

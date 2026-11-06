@@ -23,6 +23,7 @@ namespace SE.Editor
         public SceneHierarchyWindow SceneHierarchy { get; private set; } = null!;
         public EditSceneWindow EditScene { get; private set; } = null!;
         public PropertiesWindow Properties { get; private set; } = null!;
+        public ProfilerWindow Profiler { get; private set; }
 
         // Flax-compatible names for editor features that use the traditional
         // WindowsModule surface. The descriptive properties above remain the
@@ -58,6 +59,7 @@ namespace SE.Editor
             SceneHierarchy = new SceneHierarchyWindow(Editor);
             EditScene = new EditSceneWindow(Editor);
             Properties = new PropertiesWindow(Editor);
+            Profiler = new ProfilerWindow(Editor);
         }
 
         public override void OnEndInit()
@@ -68,6 +70,7 @@ namespace SE.Editor
             Log.Show(DockState.DockBottom, master, autoSelect: false, splitterValue: 0.25f);
             EditScene.Show(DockState.DockFill, master, autoSelect: true);
             Properties.Show(DockState.DockRight, master, autoSelect: false, splitterValue: 0.25f);
+            Profiler.Show(DockState.DockFill, Log);
 
             foreach (EditorWindow window in new List<EditorWindow>(m_Windows))
             {

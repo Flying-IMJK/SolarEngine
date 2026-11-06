@@ -24,110 +24,110 @@ namespace SE
 {
     class SE_API_RUNTIME ISystem
     {
-		friend class Systems;
+        friend class Systems;
 
-	protected:
-		explicit ISystem(const Char* name, int32 order = 0);
+    protected:
+        explicit ISystem(const Char* name, int32 order = 0);
 
-	protected:
-		virtual bool OnInit() { return true; }
-		virtual void OnUpdate() {}
-		virtual void OnLateUpdate() {}
-		virtual void OnRender() {}
-		virtual void OnDispose() {}
-		virtual void OnBeforeExit() {}
+    protected:
+        virtual bool OnInit() { return true; }
+        virtual void OnUpdate() {}
+        virtual void OnLateUpdate() {}
+        virtual void OnRender() {}
+        virtual void OnDispose() {}
+        virtual void OnBeforeExit() {}
 
     public:
         ISystem()          = delete;
-		virtual ~ISystem() = default;
+        virtual ~ISystem() = default;
         ISystem(ISystem const &) = default;
-		ISystem &operator=(ISystem const &) = default;
+        ISystem &operator=(ISystem const &) = default;
 
         virtual uint32 GetSystemID() const = 0;
 
-		const Char* name;
-		int32 order;
-	private:
-		bool IsInitialized = false;
+        const Char* name;
+        int32 order;
+    private:
+        bool IsInitialized = false;
     };
 
     //-------------------------------------------------------------------------
-	class SE_API_RUNTIME SystemRegister
-	{
-	public:
-
-        virtual ISystem* Create() = 0;
-		virtual uint32   GetID() const = 0;
-
-		virtual ~SystemRegister() = default;
-	};
-
-	template <typename T, const Char* name>
-	class TSystemRegister final : SystemRegister
-	{
-		friend class ISystem;
-		static_assert(TIsBaseOf<ISystem, T>::Value, "T is not derived from ISystem");
-	private:
-		Function<ISystem*()> m_CreateCall;
-	public:
-	    TSystemRegister() : m_CreateCall()
-		{
-			m_CreateCall.Bind<TSystemRegister, &TSystemRegister::Create>(this);
-			Systems::Register(name, this);
-		}
-
-		ISystem* Create() override
-		{
-			return New<T>();
-		}
-
-		uint32 GetID() const override
-		{
-			return T::s_systemID;
-		}
-	};
-
-	class SE_API_RUNTIME Systems
+    class SE_API_RUNTIME SystemRegister
     {
     public:
-		static void Initialize();
-		static void ShutDown();
-		static void Register(StringView name, SystemRegister* pRegister);
-		static void Unregister(SystemRegister* pRegister);
-		static void Sort();
 
-		static void Update();
-		static void LateUpdate();
-		static void Render();
+        virtual ISystem* Create() = 0;
+        virtual uint32   GetID() const = 0;
+
+        virtual ~SystemRegister() = default;
+    };
+
+    template <typename T, const Char* name>
+    class TSystemRegister final : SystemRegister
+    {
+        friend class ISystem;
+        static_assert(TIsBaseOf<ISystem, T>::Value, "T is not derived from ISystem");
+    private:
+        Function<ISystem*()> m_CreateCall;
+    public:
+        TSystemRegister() : m_CreateCall()
+        {
+            m_CreateCall.Bind<TSystemRegister, &TSystemRegister::Create>(this);
+            Systems::Register(name, this);
+        }
+
+        ISystem* Create() override
+        {
+            return New<T>();
+        }
+
+        uint32 GetID() const override
+        {
+            return T::s_systemID;
+        }
+    };
+
+    class SE_API_RUNTIME Systems
+    {
+    public:
+        static void Initialize();
+        static void ShutDown();
+        static void Register(StringView name, SystemRegister* pRegister);
+        static void Unregister(SystemRegister* pRegister);
+        static void Sort();
+
+        static void Update();
+        static void LateUpdate();
+        static void Render();
 
         template <typename T>
         static T* GetSystem()
         {
             static_assert(TIsBaseOf<ISystem, T>::Value, "T is not derived from ISystem");
 
-			SystemInfo item;
-			if (GetSystemCache().TryGet(T::s_systemID, item))
-			{
-				if (item.systemInstance)
-				{
-					return reinterpret_cast<T *>(item.systemInstance);
-				}
-			}
+            SystemInfo item;
+            if (GetSystemCache().TryGet(T::s_systemID, item))
+            {
+                if (item.systemInstance)
+                {
+                    return reinterpret_cast<T *>(item.systemInstance);
+                }
+            }
 
             ENGINE_UNREACHABLE_CODE();
             return nullptr;
         }
 
     private:
-		struct SystemInfo
-		{
-			StringView name;
-			SystemRegister* systemRegister;
-			ISystem* systemInstance;
-		};
+        struct SystemInfo
+        {
+            StringView name;
+            SystemRegister* systemRegister;
+            ISystem* systemInstance;
+        };
 
-		static List<ISystem*>& GetSystems();
-		static Dictionary<uint32, SystemInfo>& GetSystemCache();
+        static List<ISystem*>& GetSystems();
+        static Dictionary<uint32, SystemInfo>& GetSystemCache();
 
     };
 }
@@ -142,6 +142,6 @@ namespace SE
 
 // 注册系统
 #define ENGINE_SYSTEM_REGISTER(TypeName) 									\
-	const Char typeSystemName[] = SE_TEXT(#TypeName);						\
-	::SE::TSystemRegister<TypeName, typeSystemName> TypeName##Register;
+    const Char typeSystemName[] = SE_TEXT(#TypeName);						\
+    ::SE::TSystemRegister<TypeName, typeSystemName> TypeName##Register;
 
