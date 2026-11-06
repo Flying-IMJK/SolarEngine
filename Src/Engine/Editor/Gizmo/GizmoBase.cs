@@ -1,4 +1,3 @@
-// Adapted from Flax Editor. Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using SE.Editor.SceneGraph;

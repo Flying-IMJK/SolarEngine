@@ -350,7 +350,7 @@ namespace SE.GUI
 
         public void OnUpdateTooltip(float deltaTime)
         {
-            // Tooltip.OnMouseOverControl(this, deltaTime);
+            GetTooltip()?.OnMouseOverControl(this, deltaTime);
         }
 
         public virtual void Draw()
@@ -363,7 +363,7 @@ namespace SE.GUI
 
         public virtual void PerformLayout(bool force = false)
         {
-            _ = force;
+
         }
 
         public virtual void ClearState()
@@ -1041,8 +1041,8 @@ namespace SE.GUI
             m_IsMouseOver = true;
             if (ShowTooltip() && OnTestTooltipOverControl(location))
             {
-                // Tooltip.OnMouseEnterControl(this);
-                SetUpdate(m_TooltipUpdate, m_OnUpdateTooltip);
+                GetTooltip()?.OnMouseEnterControl(this);
+                SetUpdate(ref m_TooltipUpdate, m_OnUpdateTooltip);
             }
         }
 
@@ -1050,16 +1050,16 @@ namespace SE.GUI
         {
             if (ShowTooltip() && OnTestTooltipOverControl(location))
             {
-                if (m_TooltipUpdate != null)
+                if (m_TooltipUpdate == null)
                 {
-                    // Tooltip.OnMouseEnterControl(this);
-                    SetUpdate(m_TooltipUpdate, m_OnUpdateTooltip);
+                    GetTooltip()?.OnMouseEnterControl(this);
+                    SetUpdate(ref m_TooltipUpdate, m_OnUpdateTooltip);
                 }
             }
             else if (m_TooltipUpdate != null)
             {
-                SetUpdate(m_TooltipUpdate, null);
-                // Tooltip.OnMouseLeaveControl(this);
+                SetUpdate(ref m_TooltipUpdate, null);
+                GetTooltip()?.OnMouseLeaveControl(this);
             }
         }
 
@@ -1068,8 +1068,8 @@ namespace SE.GUI
             m_IsMouseOver = false;
             if (m_TooltipUpdate != null)
             {
-                SetUpdate(m_TooltipUpdate, null);
-                // Tooltip.OnMouseLeaveControl(this);
+                SetUpdate(ref m_TooltipUpdate, null);
+                GetTooltip()?.OnMouseLeaveControl(this);
             }
         }
 
@@ -1220,11 +1220,13 @@ namespace SE.GUI
 
         public void UnlinkTooltip()
         {
+            SetUpdate(ref m_TooltipUpdate, null);
+            GetTooltip()?.OnMouseLeaveControl(this);
             TooltipText = string.Empty;
             Tooltip = null;
         }
 
-        public virtual bool OnShowTooltip(string text, out Float2 location, out Rectangle area)
+        public virtual bool OnShowTooltip(out string text, out Float2 location, out Rectangle area)
         {
             text = TooltipText;
             location = new Float2(0.5f, 1) * Size;
@@ -1455,9 +1457,9 @@ namespace SE.GUI
             }
         }
 
-        protected void SetUpdate(Action<float> onUpdate, Action<float> value)
+        protected void SetUpdate(ref Action<float> onUpdate, Action<float> value)
         {
-            // Control.cpp passes the delegate pointer by value; assignment only changes this local.
+            // Retain the registered delegate in the caller's field so it can be removed later.
             if ((object)onUpdate == (object)value)
             {
                 return;
@@ -1477,14 +1479,18 @@ namespace SE.GUI
 
         public virtual void CacheRootHandle()
         {
+            RootControl previousRoot = m_Root;
             if (m_Root != null)
             {
                 RemoveUpdateCallbacks(m_Root);
             }
 
-            if (m_Parent != null)
+            m_Root = m_Parent?.Root;
+            if (m_Root != previousRoot)
             {
-                m_Root = m_Parent.Root;
+                // A hover from the old window must not remain registered in the new root.
+                m_TooltipUpdate = null;
+                GetTooltip()?.OnMouseLeaveControl(this);
             }
 
             if (m_Root != null)

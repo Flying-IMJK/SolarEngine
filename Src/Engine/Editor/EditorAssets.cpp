@@ -110,6 +110,12 @@ namespace SE::Editor
     SpriteHandle EditorIcons::RotateSnap32;
     SpriteHandle EditorIcons::ScaleSnap32;
     SpriteHandle EditorIcons::Globe32;
+    SpriteHandle EditorIcons::LocalAxes32;
+    SpriteHandle EditorIcons::PivotSelection32;
+    SpriteHandle EditorIcons::PivotObject32;
+    SpriteHandle EditorIcons::PivotWorldOrigin32;
+    SpriteHandle EditorIcons::Perspective32;
+    SpriteHandle EditorIcons::Orthographic32;
     SpriteHandle EditorIcons::CamSpeed32;
     SpriteHandle EditorIcons::Link32;
     SpriteHandle EditorIcons::Add32;

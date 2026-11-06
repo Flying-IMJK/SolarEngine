@@ -29,6 +29,9 @@ namespace SE.Editor
         /// </summary>
         public SpriteHandle Icon;
 
+        /// <summary>Gets the popup menu. The caller owns its lifetime.</summary>
+        public ContextMenu ContextMenu => m_Cm;
+
         /// <summary>
         /// Gets or sets the text.
         /// </summary>
@@ -57,13 +60,14 @@ namespace SE.Editor
         /// <param name="textWidth">Forces the text to be drawn with the specified width.</param>
         public ViewportWidgetButton(string text, SpriteHandle icon, ContextMenu contextMenu = null, bool autoCheck =
             false, float textWidth = 0.0f)
-            : base(0, 0, CalculateButtonWidth(textWidth, icon.IsValid), ViewportWidgetsContainer.WidgetsHeight)
+            : base(0, 0, CalculateButtonWidth(textWidth, icon.IsValid, contextMenu != null), ViewportWidgetsContainer.WidgetsHeight)
         {
             m_Text = text;
             Icon = icon;
             m_Cm = contextMenu;
             m_AutoCheck = autoCheck;
             m_ForcedTextWidth = textWidth;
+            AutoFocus = false;
 
             if (m_Cm != null)
             {
@@ -77,43 +81,62 @@ namespace SE.Editor
             // Cache data
             Style style = Style.Current;
             float iconSize = ViewportWidgetsContainer.WidgetsIconSize;
-            Rectangle iconRect = new Rectangle(0, (Height - iconSize) / 2, iconSize, iconSize);
-            Rectangle textRect = new Rectangle(0, 0, Width + 1, Height + 1);
+            Rectangle clientRect = new Rectangle(Float2.Zero, Size);
+            Rectangle iconRect = new Rectangle(4, (Height - iconSize) / 2, iconSize, iconSize);
+            Rectangle textRect = new Rectangle(4, 0, Width - 8 - (m_Cm != null ? 12 : 0), Height);
+            Color foreground = EnabledInHierarchy ? style.ForegroundViewport : style.ForegroundDisabled;
 
-            // Check if is checked or mouse is over and auto check feature is enabled
+            // Keep the active tool highlighted independently of the hover state.
             if (Checked)
             {
-                Render2D.FillRectangle(textRect, style.BackgroundSelected * (IsMouseOver ? 0.9f : 0.6f));
+                Render2D.FillRectangle(clientRect, style.BackgroundSelected * (IsMouseOver ? 0.9f : 0.6f));
             }
-            else if (m_AutoCheck && IsMouseOver)
+            else if (EnabledInHierarchy && IsMouseOver)
             {
-                Render2D.FillRectangle(textRect, style.BackgroundHighlighted);
+                Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
             }
 
             // Check if has icon
             if (Icon.IsValid)
             {
                 // Draw icon
-                Render2D.DrawSprite(Icon, iconRect, style.ForegroundViewport);
+                Render2D.DrawSprite(Icon, iconRect, foreground);
 
                 // Update text rectangle
-                textRect.X += iconSize;
-                textRect.Width -= iconSize;
+                textRect.X += iconSize + 4;
+                textRect.Width -= iconSize + 4;
             }
 
-            // Draw text
-            Render2D.RenderText(style.FontMedium, m_Text, textRect, style.ForegroundViewport * (IsMouseOver ? 1.0f
-                : 0.9f),
-                TextAlignment.Center, TextAlignment.Center);
+            if (!string.IsNullOrEmpty(m_Text))
+            {
+                Render2D.RenderText(style.FontMedium, m_Text, textRect, foreground,
+                    TextAlignment.Center, TextAlignment.Center);
+            }
+            if (m_Cm != null)
+            {
+                Render2D.DrawSprite(EditorIcons.ArrowDown12, new Rectangle(Width - 12, (Height - 8) / 2, 8, 8), foreground);
+            }
         }
 
         /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (button == MouseButton.Left)
+            if (button != MouseButton.Left)
             {
-                m_IsMosueDown = true;
+                return base.OnMouseDown(location, button);
             }
+            m_IsMosueDown = true;
+            return true;
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseUp(Float2 location, MouseButton button)
+        {
+            if (button != MouseButton.Left || !m_IsMosueDown)
+            {
+                return base.OnMouseUp(location, button);
+            }
+            m_IsMosueDown = false;
             if (m_AutoCheck)
             {
                 // Toggle
@@ -125,20 +148,11 @@ namespace SE.Editor
             {
                 m_Cm.Show(this, new Float2(-1, Height + 2));
             }
-
-            return base.OnMouseDown(location, button);
-        }
-
-        /// <inheritdoc />
-        public override bool OnMouseUp(Float2 location, MouseButton button)
-        {
-            if (button == MouseButton.Left && m_IsMosueDown)
+            else
             {
-                m_IsMosueDown = false;
                 Clicked?.Invoke(this);
             }
-
-            return base.OnMouseUp(location, button);
+            return true;
         }
 
         /// <inheritdoc />
@@ -150,7 +164,7 @@ namespace SE.Editor
             {
                 Width = CalculateButtonWidth(m_ForcedTextWidth > 0.0f ? m_ForcedTextWidth : style.FontMedium
                     .MeasureText(m_Text, TextLayoutOptions.Default).X,
-                    Icon.IsValid);
+                    Icon.IsValid, m_Cm != null);
             }
         }
 
@@ -158,7 +172,11 @@ namespace SE.Editor
         {
             if (m_Cm != null && !m_Cm.IsOpened)
             {
-                if (HasParent && Parent.HasParent)
+                if (Tag is EditorViewport viewport && !viewport.IsDisposed)
+                {
+                    viewport.Focus();
+                }
+                else if (HasParent && Parent.HasParent)
                 {
                     // Focus viewport
                     Parent.Parent.Focus();
@@ -166,9 +184,33 @@ namespace SE.Editor
             }
         }
 
-        private static float CalculateButtonWidth(float textWidth, bool hasIcon)
+        public override void OnMouseLeave()
         {
-            return (hasIcon ? ViewportWidgetsContainer.WidgetsIconSize : 0) + (textWidth > 0 ? textWidth + 8 : 0);
+            m_IsMosueDown = false;
+            base.OnMouseLeave();
+        }
+
+        public override void OnLostFocus()
+        {
+            m_IsMosueDown = false;
+            base.OnLostFocus();
+        }
+
+        public override void OnDestroy()
+        {
+            if (m_Cm != null)
+            {
+                m_Cm.VisibleChanged -= CmOnVisibleChanged;
+            }
+            Clicked = null;
+            Toggled = null;
+            base.OnDestroy();
+        }
+
+        private static float CalculateButtonWidth(float textWidth, bool hasIcon, bool hasMenu)
+        {
+            return Mathf.Max(24, 8 + (hasIcon ? ViewportWidgetsContainer.WidgetsIconSize : 0) +
+                (textWidth > 0 ? textWidth + (hasIcon ? 4 : 0) : 0) + (hasMenu ? 12 : 0));
         }
     }
 }

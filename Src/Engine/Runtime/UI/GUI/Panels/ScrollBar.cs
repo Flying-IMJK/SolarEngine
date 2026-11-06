@@ -160,7 +160,7 @@ namespace SE.GUI
                 }
                 else
                 {
-                    SetUpdate(m_Update, m_OnUpdate);
+                    SetUpdate(ref m_Update, m_OnUpdate);
                 }
             }
         }
@@ -180,7 +180,7 @@ namespace SE.GUI
             {
                 m_TargetValue = value;
                 m_Value = value;
-                SetUpdate(m_Update, null);
+                SetUpdate(ref m_Update, null);
                 OnValueChanged();
             }
         }
@@ -230,7 +230,7 @@ namespace SE.GUI
             {
                 m_Value = m_TargetValue = m_StartValue;
                 m_ScrollAnimationProgress = 0.0f;
-                SetUpdate(m_Update, null);
+                SetUpdate(ref m_Update, null);
                 OnValueChanged();
             }
         }
@@ -387,7 +387,7 @@ namespace SE.GUI
         {
             base.OnMouseEnter(location);
 
-            SetUpdate(m_Update, m_OnUpdate);
+            SetUpdate(ref m_Update, m_OnUpdate);
         }
 
         /// <inheritdoc />
@@ -395,7 +395,7 @@ namespace SE.GUI
         {
             base.OnMouseLeave();
 
-            SetUpdate(m_Update, m_OnUpdate);
+            SetUpdate(ref m_Update, m_OnUpdate);
         }
 
         public void Reset()
@@ -488,7 +488,7 @@ namespace SE.GUI
             // End updating if all animations are done
             if (!needUpdate)
             {
-                SetUpdate(m_Update, null);
+                SetUpdate(ref m_Update, null);
             }
         }
 

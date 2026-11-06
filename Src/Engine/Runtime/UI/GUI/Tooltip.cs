@@ -16,7 +16,7 @@ namespace SE.GUI
             }
         }
 
-        private void WrapPosition(Float2 locationSS, float flipOffset = 0.0f)
+        private void WrapPosition(ref Float2 locationSS, Float2 monitorPositionSS, float flipOffset = 0.0f)
         {
             if (m_ShowTarget == null || m_ShowTarget.RootWindow() == null)
             {
@@ -26,11 +26,11 @@ namespace SE.GUI
             // Calculate popup direction
             float dpiScale = m_ShowTarget.RootWindow().Window.DpiScale;
             Float2 dpiSize = Size * dpiScale;
-            Rectangle monitorBounds = Platform.GetMonitorBounds(locationSS);
+            Rectangle monitorBounds = Platform.GetMonitorBounds(monitorPositionSS);
             Float2 rightBottomMonitorBounds = monitorBounds.BottomRight;
             Float2 rightBottomLocationSS = locationSS + dpiSize;
 
-            // Prioritize tooltip placement within parent window, fall back to virtual desktop
+            // Flip at the far edges, then keep the final popup rectangle inside this monitor.
             if (rightBottomMonitorBounds.Y < rightBottomLocationSS.Y)
             {
                 // Direction: up
@@ -42,6 +42,8 @@ namespace SE.GUI
                 // Direction: left
                 locationSS.X -= dpiSize.X + flipOffset * 2;
             }
+            locationSS.X = Mathf.Clamp(locationSS.X, monitorBounds.Left, Mathf.Max(monitorBounds.Left, monitorBounds.Right - dpiSize.X));
+            locationSS.Y = Mathf.Clamp(locationSS.Y, monitorBounds.Top, Mathf.Max(monitorBounds.Top, monitorBounds.Bottom - dpiSize.Y));
         }
 
         /// <summary>
@@ -98,7 +100,7 @@ namespace SE.GUI
             Float2 locationWS = target.PointToWindow(location);
             Float2 locationSS = parentWin.PointToScreen(locationWS);
             m_ShowTarget = target;
-            WrapPosition(locationSS);
+            WrapPosition(ref locationSS, locationSS);
 
             // Create window
             CreateWindowSettings desc = SE.Window.CreateDefaultSettings();
@@ -137,6 +139,10 @@ namespace SE.GUI
             {
                 return;
             }
+
+            m_ShowTarget = null;
+            m_LastTarget = null;
+            m_TimeToPopupLeft = 0.0f;
 
             // Unlink
             IsLayoutLocked = true;
@@ -180,7 +186,7 @@ namespace SE.GUI
                 {
                     Float2 location;
                     Rectangle area;
-                    if (m_LastTarget.OnShowTooltip(m_CurrentText, out location, out area))
+                    if (m_LastTarget.OnShowTooltip(out m_CurrentText, out location, out area))
                     {
                         Show(m_LastTarget, location, area);
                     }
@@ -215,10 +221,12 @@ namespace SE.GUI
             else
             {
                 // Position tooltip when mouse moves
-                WrapPosition(mousePos, 10);
+                Float2 locationSS = mousePos + new Float2(15, 10);
+                // Keep the mouse's monitor even when the popup offset crosses a monitor boundary.
+                WrapPosition(ref locationSS, mousePos, 10);
                 if (m_Window != null)
                 {
-                    m_Window.Position = mousePos + new Float2(15, 10);
+                    m_Window.Position = locationSS;
                 }
             }
 
@@ -253,9 +261,9 @@ namespace SE.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnShowTooltip(string text, out Float2 location, out Rectangle area)
+        public override bool OnShowTooltip(out string text, out Float2 location, out Rectangle area)
         {
-            base.OnShowTooltip(text, out location, out area);
+            base.OnShowTooltip(out text, out location, out area);
 
             // It's better not to show tooltip for a tooltip.
             // It would be kind of tooltipness.

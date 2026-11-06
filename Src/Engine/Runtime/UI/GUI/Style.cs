@@ -237,7 +237,7 @@ namespace SE.GUI
         /// <summary>
         /// The shared tooltip control used by controls if no custom tooltip is provided.
         /// </summary>
-        public Tooltip SharedTooltip;
+        public Tooltip SharedTooltip = new Tooltip();
 
         /// <summary>
         /// Ensures the style has all default interface fonts assigned.

@@ -234,7 +234,7 @@ namespace SE.Editor.GUI
         }
 
         /// <inheritdoc />
-        public override bool OnShowTooltip(string text, out Float2 location, out Rectangle area)
+        public override bool OnShowTooltip(out string text, out Float2 location, out Rectangle area)
         {
             // Evaluate tooltip text once it's actually needed
             SE.Actor actor = _actorNode.Actor;
@@ -243,7 +243,7 @@ namespace SE.Editor.GUI
                 // TooltipText = Surface.SurfaceUtils.GetVisualScriptTypeDescription(TypeUtils.GetObjectType(actor));
             }
 
-            return base.OnShowTooltip(text, out location, out area);
+            return base.OnShowTooltip(out text, out location, out area);
         }
 
         /// <inheritdoc />

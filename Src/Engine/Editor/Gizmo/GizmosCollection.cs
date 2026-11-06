@@ -1,4 +1,4 @@
-// Adapted from Flax Editor. Copyright (c) Wojciech Figat. All rights reserved.
+
 
 using System;
 using System.Collections.Generic;

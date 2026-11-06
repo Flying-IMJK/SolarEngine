@@ -1,5 +1,6 @@
 
 using System.Collections.Generic;
+using SE.Editor.GUI;
 using SE.Editor.Gizmo;
 using SE.Editor.SceneGraph;
 using SE.GUI;
@@ -9,14 +10,12 @@ namespace SE.Editor
     /// <summary>
     /// Editor viewport with scene gizmos.
     /// </summary>
-    public class EditorGizmoViewport : EditorViewport, IGizmoOwner
+    public partial class EditorGizmoViewport : EditorViewport, IGizmoOwner
     {
         private readonly SceneModule m_Scene;
         private Float2 m_ClickPosition;
         private bool m_CanPick;
         private bool m_WaitForGizmoMouseRelease;
-        private readonly Button m_SpaceButton;
-        private readonly Button m_PivotButton;
 
         public GizmosCollection Gizmos { get; }
         public TransformGizmo TransformGizmo { get; }
@@ -49,7 +48,8 @@ namespace SE.Editor
         /// </summary>
         /// <param name="task">The task.</param>
         /// <param name="scene">The scene and selection owner.</param>
-        public EditorGizmoViewport(SceneRenderTask task, SceneModule scene)
+        /// <param name="toolStrip">Window-owned toolbar populated by this viewport.</param>
+        public EditorGizmoViewport(SceneRenderTask task, SceneModule scene, ToolStrip toolStrip)
             : base(task, new FPSCamera(), true)
         {
             m_Scene = scene;
@@ -64,50 +64,11 @@ namespace SE.Editor
             m_Task.End += OnDrawGizmos;
             OnSelectionChanged();
 
-            ContainerControl toolbar = new ContainerControl
-            {
-                Parent = this,
-                Bounds = new Rectangle(4, 4, 354, 26),
-                AutoFocus = false,
-            };
-            Button move = new Button
-            {
-                Parent = toolbar, Bounds = new Rectangle(0, 0, 52, 24), Text = "Move", AutoFocus = false,
-                TooltipText = "Translate (W). Hold Ctrl for snapping.",
-            };
-            Button rotate = new Button
-            {
-                Parent = toolbar, Bounds = new Rectangle(54, 0, 52, 24), Text = "Rotate", AutoFocus = false,
-                TooltipText = "Rotate (E). Hold Ctrl for snapping.",
-            };
-            Button scale = new Button
-            {
-                Parent = toolbar, Bounds = new Rectangle(108, 0, 52, 24), Text = "Scale", AutoFocus = false,
-                TooltipText = "Scale (R). Hold Ctrl for snapping.",
-            };
-            m_SpaceButton = new Button
-            {
-                Parent = toolbar, Bounds = new Rectangle(166, 0, 74, 24), Text = "World", AutoFocus = false,
-                TooltipText = "Toggle world/local axes (X).",
-            };
-            m_PivotButton = new Button
-            {
-                Parent = toolbar, Bounds = new Rectangle(246, 0, 108, 24), Text = "Selection", AutoFocus = false,
-                TooltipText = "Cycle selection center, object center, and world origin (P).",
-            };
-            move.Clicked += () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate;
-            rotate.Clicked += () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate;
-            scale.Clicked += () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale;
-            m_SpaceButton.Clicked += TransformGizmo.ToggleTransformSpace;
-            m_PivotButton.Clicked += CyclePivot;
-            TransformGizmo.TransformSpaceChanged += OnTransformSpaceChanged;
-            TransformGizmo.PivotChanged += OnPivotChanged;
+            BuildToolStrip(toolStrip);
+            TransformGizmo.ModeChanged += UpdateToolStrip;
+            TransformGizmo.TransformSpaceChanged += UpdateToolStrip;
+            TransformGizmo.PivotChanged += UpdateToolStrip;
             TransformGizmo.TransformingEnded += OnTransformingEnded;
-        }
-
-        private void OnTransformSpaceChanged()
-        {
-            m_SpaceButton.Text = TransformGizmo.ActiveTransformSpace == TransformGizmoBase.TransformSpace.World ? "World" : "Local";
         }
 
         private void CyclePivot()
@@ -116,12 +77,6 @@ namespace SE.Editor
                 ? TransformGizmoBase.PivotType.ObjectCenter
                 : TransformGizmo.ActivePivot == TransformGizmoBase.PivotType.ObjectCenter
                     ? TransformGizmoBase.PivotType.WorldOrigin : TransformGizmoBase.PivotType.SelectionCenter;
-        }
-
-        private void OnPivotChanged()
-        {
-            m_PivotButton.Text = TransformGizmo.ActivePivot == TransformGizmoBase.PivotType.SelectionCenter ? "Selection"
-                : TransformGizmo.ActivePivot == TransformGizmoBase.PivotType.ObjectCenter ? "Object" : "Origin";
         }
 
         public void Select(List<ScenesGraphNode> nodes)
@@ -153,6 +108,7 @@ namespace SE.Editor
             {
                 gizmo.Update(deltaTime);
             }
+            UpdateToolStrip();
         }
 
         protected override bool GetIsControllingMouse() => Gizmos.Active?.IsControllingMouse ?? false;
@@ -256,6 +212,15 @@ namespace SE.Editor
 
         public override void OnDestroy()
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+            TransformGizmo.ModeChanged -= UpdateToolStrip;
+            TransformGizmo.TransformSpaceChanged -= UpdateToolStrip;
+            TransformGizmo.PivotChanged -= UpdateToolStrip;
+            TransformGizmo.TransformingEnded -= OnTransformingEnded;
+            DestroyToolStripItems();
             m_Scene.SelectionChanged -= OnSelectionChanged;
             m_Task.End -= OnDrawGizmos;
             // Renderer.TransformRestored -= OnTransformRestored;

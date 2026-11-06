@@ -283,9 +283,9 @@ namespace SE.GUI
         protected override bool ShowTooltip() => base.ShowTooltip() && _mouseOverHeader;
 
         /// <inheritdoc />
-        public override bool OnShowTooltip(string text, out Float2 location, out Rectangle area)
+        public override bool OnShowTooltip(out string text, out Float2 location, out Rectangle area)
         {
-            bool result = base.OnShowTooltip(text, out location, out area);
+            bool result = base.OnShowTooltip(out text, out location, out area);
 
             // Change the position
             location = new Float2(Width * 0.5f, HeaderHeight);

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using SE.Editor.GUI;
 using SE.GUI;
 
 namespace SE.Editor
@@ -97,6 +98,8 @@ namespace SE.Editor
         private Actor m_PilotActor;
         private BoundingBox m_PilotBounds;
         private Transform m_PilotStart;
+        private const float ToolStripHeight = 32.0f;
+        private readonly ToolStrip m_ToolStrip;
 
         public EditorGizmoViewport Viewport;
 
@@ -105,7 +108,8 @@ namespace SE.Editor
             Title = "Scene";
             Icon = EditorIcons.SceneWindow32;
 
-            Viewport = new EditorGizmoViewport(new SceneRenderTask(), editor.Scene);
+            m_ToolStrip = new ToolStrip(ToolStripHeight) { Parent = this };
+            Viewport = new EditorGizmoViewport(new SceneRenderTask(), editor.Scene, m_ToolStrip);
             Viewport.Parent = this;
             Viewport.NearPlane = 0.01f;
             Viewport.FarPlane = 20000.0f;
@@ -123,6 +127,18 @@ namespace SE.Editor
         public override void OnExit()
         {
             Viewport.Dispose();
+            m_ToolStrip.Dispose();
+        }
+
+        protected override void PerformLayoutBeforeChildren()
+        {
+            base.PerformLayoutBeforeChildren();
+            if (m_ToolStrip == null || Viewport == null)
+            {
+                return;
+            }
+            m_ToolStrip.SetBounds(0.0f, 0.0f, Width, ToolStripHeight);
+            Viewport.SetBounds(0.0f, ToolStripHeight, Width, Mathf.Max(0.0f, Height - ToolStripHeight));
         }
 
         private void OnSelectionChanged()

@@ -55,6 +55,12 @@ namespace SE::Editor
         SE_FIELD(API(ReadOnly)) static SpriteHandle RotateSnap32;
         SE_FIELD(API(ReadOnly)) static SpriteHandle ScaleSnap32;
         SE_FIELD(API(ReadOnly)) static SpriteHandle Globe32;
+        SE_FIELD(API(ReadOnly)) static SpriteHandle LocalAxes32;
+        SE_FIELD(API(ReadOnly)) static SpriteHandle PivotSelection32;
+        SE_FIELD(API(ReadOnly)) static SpriteHandle PivotObject32;
+        SE_FIELD(API(ReadOnly)) static SpriteHandle PivotWorldOrigin32;
+        SE_FIELD(API(ReadOnly)) static SpriteHandle Perspective32;
+        SE_FIELD(API(ReadOnly)) static SpriteHandle Orthographic32;
         SE_FIELD(API(ReadOnly)) static SpriteHandle CamSpeed32;
         SE_FIELD(API(ReadOnly)) static SpriteHandle Link32;
         SE_FIELD(API(ReadOnly)) static SpriteHandle Add32;

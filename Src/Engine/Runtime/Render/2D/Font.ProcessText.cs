@@ -11,13 +11,14 @@ namespace SE
         private static partial int Internal_ProcessTextLines(
             IntPtr font,
             string text,
+            int textLength,
             TextLayoutOptions layout,
             FontLineCacheMarshaller.FontLineCacheInternal* outputLines,
             int outputCapacity);
 
         public FontLineCache[] ProcessText(string text, TextLayoutOptions layout)
         {
-            int count = Internal_ProcessTextLines(__unmanagedPtr, text, layout, null, 0);
+            int count = Internal_ProcessTextLines(__unmanagedPtr, text, text.Length, layout, null, 0);
             if (count == 0)
             {
                 return Array.Empty<FontLineCache>();
@@ -27,7 +28,7 @@ namespace SE
                 new FontLineCacheMarshaller.FontLineCacheInternal[count];
             fixed (FontLineCacheMarshaller.FontLineCacheInternal* output = nativeLines)
             {
-                Internal_ProcessTextLines(__unmanagedPtr, text, layout, output, count);
+                Internal_ProcessTextLines(__unmanagedPtr, text, text.Length, layout, output, count);
             }
 
             FontLineCache[] result = new FontLineCache[count];
