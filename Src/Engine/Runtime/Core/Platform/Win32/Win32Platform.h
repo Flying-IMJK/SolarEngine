@@ -97,6 +97,9 @@ namespace SE
 		static int32 GetCacheLineSize();
 		static MemoryStats GetMemoryStats();
 		static ProcessMemoryStats GetProcessMemoryStats();
+        // Returns false on OS query failure and clears the caller-owned result.
+        static bool TryGetMemoryStats(MemoryStats& result);
+        static bool TryGetProcessMemoryStats(ProcessMemoryStats& result);
 		static uint64 GetCurrentProcessId();
 		static uint64 GetCurrentThreadID()
 		{

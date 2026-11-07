@@ -315,6 +315,8 @@ namespace SE
 		/// <returns>The memory stats.</returns>
         SE_FUNCTION(API(Prop))
 		static MemoryStats GetMemoryStats() = delete;
+        static bool TryGetMemoryStats(MemoryStats& result) = delete;
+        static bool TryGetProcessMemoryStats(ProcessMemoryStats& result) = delete;
 
 		/// <summary>
 		/// Gets the process current memory stats.

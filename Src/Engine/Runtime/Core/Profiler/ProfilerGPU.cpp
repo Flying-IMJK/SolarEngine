@@ -1,218 +1,249 @@
 
 
-#include "ProfilerGPU.h"
-#include "Runtime/Core/Logging/Logging.h"
+#include <Runtime/Core/Profiler/ProfilerGPU.h>
+#include <Runtime/Core/Logging/Logging.h>
 
 namespace SE
 {
-	RenderStatsData RenderStatsData::Counter;
+    RenderStatsData RenderStatsData::Counter;
 
-	Function<IGPUTimerQueryProfile*()> ProfilerGPU::CreateTimerQueryProfileCall;
-	Function<void(IGPUTimerQueryProfile*)> ProfilerGPU::DelateTimerQueryProfileCall;
-	Function<void(const Char*)> ProfilerGPU::EventBeginCall;
-	Function<void()> ProfilerGPU::EventEndCall;
-	Function<uint64()> ProfilerGPU::GetFrameCountCall;
+    Function<IGPUTimerQueryProfile*()>                      ProfilerGPU::CreateTimerQueryProfileCall;
+    Function<void(IGPUTimerQueryProfile*)>                  ProfilerGPU::DelateTimerQueryProfileCall;
+    Function<void(const Char*)>                             ProfilerGPU::EventBeginCall;
+    Function<void()>                                        ProfilerGPU::EventEndCall;
+    Function<uint64()>                                      ProfilerGPU::GetFrameCountCall;
+    Function<void(uint64, const ProfilerGPU::EventBuffer*)> ProfilerGPU::s_FrameSubmittedCall;
+    Function<void(const ProfilerGPU::EventBuffer&)>         ProfilerGPU::s_FrameResolvedCall;
 
-	int32 ProfilerGPU::m_Depth = 0;
-	List<IGPUTimerQueryProfile*> ProfilerGPU::m_TimerQueriesPool;
-	List<IGPUTimerQueryProfile*> ProfilerGPU::m_TimerQueriesFree;
-	bool ProfilerGPU::Enabled = false;
-	int32 ProfilerGPU::CurrentBuffer = 0;
-	ProfilerGPU::EventBuffer ProfilerGPU::Buffers[PROFILER_GPU_EVENTS_FRAMES];
+    int32                        ProfilerGPU::m_Depth = 0;
+    List<IGPUTimerQueryProfile*> ProfilerGPU::m_TimerQueriesPool;
+    List<IGPUTimerQueryProfile*> ProfilerGPU::m_TimerQueriesFree;
+    bool                         ProfilerGPU::Enabled       = false;
+    int32                        ProfilerGPU::CurrentBuffer = -1;
+    ProfilerGPU::EventBuffer     ProfilerGPU::Buffers[PROFILER_GPU_EVENTS_FRAMES];
 
-	bool ProfilerGPU::EventBuffer::HasData() const
-	{
-		return m_IsResolved && m_Data.HasItems();
-	}
+    bool ProfilerGPU::EventBuffer::HasData() const { return m_IsResolved && m_Data.HasItems(); }
 
-	void ProfilerGPU::EventBuffer::EndAll()
-	{
-		for (int32 i = 0; i < m_Data.Count(); i++)
-		{
-			m_Data[i].Timer->End();
-		}
-	}
+    void ProfilerGPU::EventBuffer::EndAll()
+    {
+        for (int32 i = 0; i < m_Data.Count(); i++)
+        {
+            m_Data[i].Timer->End();
+            if (!m_Data[i].Complete)
+                m_Data[i].ForcedEnd = true;
+        }
+    }
 
-	void ProfilerGPU::EventBuffer::TryResolve()
-	{
-		if (m_IsResolved || m_Data.IsEmpty())
-			return;
+    void ProfilerGPU::EventBuffer::TryResolve()
+    {
+        if (m_IsResolved || m_Data.IsEmpty())
+            return;
 
-		// Check all the queries from the back to the front (in some cases inner queries are not finished)
-		for (int32 i = m_Data.Count() - 1; i >= 0; i--)
-		{
-			const Event& e = m_Data[i];
-			ENGINE_ASSERT(e.Timer != nullptr);
-			if (!e.Timer->HasResult())
-			{
-				return;
-			}
-		}
+        // Check all the queries from the back to the front (in some cases inner queries are not finished)
+        for (int32 i = m_Data.Count() - 1; i >= 0; i--)
+        {
+            const Event& e = m_Data[i];
+            ENGINE_ASSERT(e.Timer != nullptr);
+            if (!e.Timer->HasResult())
+            {
+                return;
+            }
+        }
 
-		// Collect queries results and free them
-		for (int32 i = 0; i < m_Data.Count(); i++)
-		{
-			auto& e = m_Data[i];
-			e.Time = e.Timer->GetResult();
-			m_TimerQueriesFree.Add(e.Timer);
-			e.Timer = nullptr;
-		}
+        // Collect queries results and free them
+        for (int32 i = 0; i < m_Data.Count(); i++)
+        {
+            auto& e       = m_Data[i];
+            e.TimingValid = e.Timer->IsSupported();
+            e.Time        = e.TimingValid ? e.Timer->GetResult() : -1.0f;
+            m_TimerQueriesFree.Add(e.Timer);
+            e.Timer = nullptr;
+        }
 
-		m_IsResolved = true;
-	}
+        m_IsResolved = true;
+        if (s_FrameResolvedCall.IsBinded())
+            s_FrameResolvedCall(*this);
+    }
 
-	int32 ProfilerGPU::EventBuffer::Add(const Event& e)
-	{
-		const int32 index = m_Data.Count();
-		m_Data.Add(e);
-		return index;
-	}
+    int32 ProfilerGPU::EventBuffer::Add(const Event& e)
+    {
+        const int32 index = m_Data.Count();
+        m_Data.Add(e);
+        return index;
+    }
 
-	void ProfilerGPU::EventBuffer::Extract(List<Event>& data) const
-	{
-		// Don't use unresolved data
-		ASSERT(m_IsResolved);
-		data = m_Data;
-	}
+    void ProfilerGPU::EventBuffer::Extract(List<Event>& data) const
+    {
+        // Don't use unresolved data
+        ASSERT(m_IsResolved);
+        data = m_Data;
+    }
 
-	void ProfilerGPU::EventBuffer::Clear()
-	{
-		m_Data.Clear();
-		m_IsResolved = false;
-		FrameIndex = 0;
-		PresentTime = 0.0f;
-	}
+    void ProfilerGPU::EventBuffer::Clear()
+    {
+        m_Data.Clear();
+        m_IsResolved    = false;
+        FrameIndex      = 0;
+        PresentTime     = 0.0f;
+        PresentMeasured = false;
+    }
 
-	IGPUTimerQueryProfile* ProfilerGPU::GetTimerQuery()
-	{
-		IGPUTimerQueryProfile* result;
-		if (m_TimerQueriesFree.HasItems())
-		{
-			result = m_TimerQueriesFree.Last();
-			m_TimerQueriesFree.RemoveLast();
-		}
-		else
-		{
-			result = CreateTimerQueryProfileCall();
-			m_TimerQueriesPool.Add(result);
-		}
-		return result;
-	}
+    IGPUTimerQueryProfile* ProfilerGPU::GetTimerQuery()
+    {
+        IGPUTimerQueryProfile* result;
+        if (m_TimerQueriesFree.HasItems())
+        {
+            result = m_TimerQueriesFree.Last();
+            m_TimerQueriesFree.RemoveLast();
+        }
+        else
+        {
+            result = CreateTimerQueryProfileCall();
+            m_TimerQueriesPool.Add(result);
+        }
+        return result;
+    }
 
-	int32 ProfilerGPU::BeginEvent(const Char* name)
-	{
-		if (!Enabled)
-			return -1;
+    int32 ProfilerGPU::BeginEvent(const Char* name)
+    {
+        if (!Enabled || CurrentBuffer < 0)
+            return -1;
 
-		EventBeginCall(name);
+        EventBeginCall(name);
 
-		Event e;
-		e.Name = name;
-		e.Stats = RenderStatsData::Counter;
-		e.Timer = GetTimerQuery();
-		e.Timer->Begin();
-		e.Depth = m_Depth++;
+        Event e;
+        e.Name  = name;
+        e.Stats = RenderStatsData::Counter;
+        e.Timer = GetTimerQuery();
+        e.Timer->Begin();
+        e.Depth = m_Depth++;
 
-		auto& buffer = Buffers[CurrentBuffer];
-		const auto index = buffer.Add(e);
-		return index;
-	}
+        auto&      buffer = Buffers[CurrentBuffer];
+        const auto index  = buffer.Add(e);
+        return index;
+    }
 
-	void ProfilerGPU::EndEvent(int32 index)
-	{
-		if (index == -1)
-			return;
-		m_Depth--;
+    void ProfilerGPU::EndEvent(int32 index)
+    {
+        if (index == -1)
+            return;
+        if (CurrentBuffer < 0)
+        {
+            LOG_WARNING("Profiler", "GPU event ended outside its recording frame");
+            return;
+        }
+        m_Depth--;
 
-		auto& buffer = Buffers[CurrentBuffer];
-		auto e = buffer.Get(index);
-		e->Stats.Mix(RenderStatsData::Counter);
-		e->Timer->End();
+        auto& buffer = Buffers[CurrentBuffer];
+        auto  e      = buffer.Get(index);
+        e->Stats.Mix(RenderStatsData::Counter);
+        e->Complete = true;
+        e->Timer->End();
 
-		EventEndCall();
-	}
+        EventEndCall();
+    }
 
-	void ProfilerGPU::BeginFrame()
-	{
-		// Clear stats
-		RenderStatsData::Counter = RenderStatsData();
-		m_Depth = 0;
-		auto& buffer = Buffers[CurrentBuffer];
-		buffer.FrameIndex = GetFrameCountCall();
-		buffer.PresentTime = 0.0f;
+    void ProfilerGPU::BeginFrame()
+    {
+        // Clear stats
+        RenderStatsData::Counter = RenderStatsData();
+        m_Depth                  = 0;
+        // Try to resolve previous frames
+        for (int32 i = 0; i < PROFILER_GPU_EVENTS_FRAMES; i++)
+        {
+            Buffers[i].TryResolve();
+        }
+        // Keep every pending query alive. If all slots are busy, skip this frame without waiting or overwriting.
+        CurrentBuffer = -1;
+        if (Enabled)
+        {
+            uint64 oldest = uint64(-1);
+            for (int32 i = 0; i < PROFILER_GPU_EVENTS_FRAMES; i++)
+            {
+                if (Buffers[i].IsReusable() && Buffers[i].FrameIndex < oldest)
+                {
+                    oldest        = Buffers[i].FrameIndex;
+                    CurrentBuffer = i;
+                }
+            }
+        }
+        if (CurrentBuffer >= 0)
+        {
+            Buffers[CurrentBuffer].Clear();
+            Buffers[CurrentBuffer].FrameIndex = GetFrameCountCall();
+        }
+    }
 
-		// Try to resolve previous frames
-		for (int32 i = 0; i < PROFILER_GPU_EVENTS_FRAMES; i++)
-		{
-			Buffers[i].TryResolve();
-		}
-	}
+    void ProfilerGPU::OnPresent()
+    {
+        if (CurrentBuffer < 0)
+            return;
+        // End all current frame queries to prevent invalid event duration values
+        auto& buffer = Buffers[CurrentBuffer];
+        buffer.EndAll();
+    }
 
-	void ProfilerGPU::OnPresent()
-	{
-		// End all current frame queries to prevent invalid event duration values
-		auto& buffer = Buffers[CurrentBuffer];
-		buffer.EndAll();
-	}
+    void ProfilerGPU::OnPresentTime(float time)
+    {
+        if (CurrentBuffer < 0)
+            return;
+        auto& buffer = Buffers[CurrentBuffer];
+        buffer.PresentTime += time;
+        buffer.PresentMeasured = true;
+    }
 
-	void ProfilerGPU::OnPresentTime(float time)
-	{
-		auto& buffer = Buffers[CurrentBuffer];
-		buffer.PresentTime += time;
-	}
+    void ProfilerGPU::EndFrame()
+    {
+        if (m_Depth)
+        {
+            LOG_WARNING("Profiler", "GPU Profiler events start/end mismatch");
+        }
 
-	void ProfilerGPU::EndFrame()
-	{
-		if (m_Depth)
-		{
-			LOG_WARNING("Profiler", "GPU Profiler events start/end mismatch");
-		}
+        if (s_FrameSubmittedCall.IsBinded())
+            s_FrameSubmittedCall(GetFrameCountCall(), CurrentBuffer >= 0 ? &Buffers[CurrentBuffer] : nullptr);
+        CurrentBuffer = -1;
+    }
 
-		// Move frame
-		CurrentBuffer = (CurrentBuffer + 1) % PROFILER_GPU_EVENTS_FRAMES;
+    bool ProfilerGPU::GetLastFrameData(float& drawTimeMs, float& presentTimeMs, RenderStatsData& statsData)
+    {
+        uint64 maxFrame      = 0;
+        int32  maxFrameIndex = -1;
+        auto&  frames        = Buffers;
+        for (uint32 i = 0; i < ARRAY_SIZE(frames); i++)
+        {
+            if (frames[i].HasData() && frames[i].FrameIndex > maxFrame)
+            {
+                maxFrame      = frames[i].FrameIndex;
+                maxFrameIndex = i;
+            }
+        }
+        if (maxFrameIndex != -1)
+        {
+            auto&      frame = frames[maxFrameIndex];
+            const auto root  = frame.Get(0);
+            drawTimeMs       = root->Time;
+            presentTimeMs    = frame.PresentTime;
+            statsData        = root->Stats;
+            return true;
+        }
 
-		// Prepare current frame buffer
-		auto& buffer = Buffers[CurrentBuffer];
-		buffer.Clear();
-	}
+        // No data
+        drawTimeMs    = 0.0f;
+        presentTimeMs = 0.0f;
+        Platform::MemoryClear(&statsData, sizeof(statsData));
+        return false;
+    }
 
-	bool ProfilerGPU::GetLastFrameData(float& drawTimeMs, float& presentTimeMs, RenderStatsData& statsData)
-	{
-		uint64 maxFrame = 0;
-		int32 maxFrameIndex = -1;
-		auto& frames = Buffers;
-		for (uint32 i = 0; i < ARRAY_SIZE(frames); i++)
-		{
-			if (frames[i].HasData() && frames[i].FrameIndex > maxFrame)
-			{
-				maxFrame = frames[i].FrameIndex;
-				maxFrameIndex = i;
-			}
-		}
-		if (maxFrameIndex != -1)
-		{
-			auto& frame = frames[maxFrameIndex];
-			const auto root = frame.Get(0);
-			drawTimeMs = root->Time;
-			presentTimeMs = frame.PresentTime;
-			statsData = root->Stats;
-			return true;
-		}
-
-		// No data
-		drawTimeMs = 0.0f;
-		presentTimeMs = 0.0f;
-		Platform::MemoryClear(&statsData, sizeof(statsData));
-		return false;
-	}
-
-	void ProfilerGPU::Dispose()
-	{
+    void ProfilerGPU::Dispose()
+    {
         for (size_t i = 0; i < m_TimerQueriesPool.Count(); i++)
         {
             IGPUTimerQueryProfile* profile = m_TimerQueriesPool[i];
-			DelateTimerQueryProfileCall(profile);
+            DelateTimerQueryProfileCall(profile);
         }
-		m_TimerQueriesFree.Clear();
-	}
-}
+        m_TimerQueriesFree.Clear();
+        m_TimerQueriesPool.Clear();
+        for (EventBuffer& buffer : Buffers)
+            buffer.Clear();
+    }
+} // namespace SE

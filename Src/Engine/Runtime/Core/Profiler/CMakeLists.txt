@@ -7,4 +7,7 @@ RUNTIME_ADD(
         ProfilerGPU.cpp
         ProfilerSrcLoc.h
         RenderStats.h
+        ProfilerStats.h
+        ProfilingSystem.h
+        ProfilingSystem.cpp
 )

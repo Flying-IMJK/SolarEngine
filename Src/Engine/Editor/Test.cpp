@@ -160,7 +160,7 @@ namespace SE::Editor
 			m_Sampler->Init(samplerDescription);
 
 
-			// m_Shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/Test"));
+			// m_Shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/Discard/Test"));
 			// m_PipelineState = GPUPipelineState::New();
 			//
 			// m_Shader->OnLoadedEvent.Bind([&](Asset* asset)
@@ -400,7 +400,7 @@ namespace SE::Editor
 
 			spSetCompileFlags(pSlangRequest, slangFlags);
 
-			String path = EngineContext::ProjectFolder + SE_TEXT("/Shaders/Test.shader");
+			String path = EngineContext::ProjectFolder + SE_TEXT("/Shaders/Discard/Test.shader");
 			StringAnsi code;
 			if (!File::ReadAllText(path, code))
 			{

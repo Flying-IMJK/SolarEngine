@@ -322,6 +322,32 @@ namespace SE
 		return result;
 	}
 
+    bool Win32Platform::TryGetMemoryStats(MemoryStats& result)
+    {
+        result = {};
+        MEMORYSTATUSEX stats = {};
+        stats.dwLength = sizeof(stats);
+        if (!GlobalMemoryStatusEx(&stats))
+            return false;
+        result.TotalPhysicalMemory = stats.ullTotalPhys;
+        result.UsedPhysicalMemory = stats.ullTotalPhys - stats.ullAvailPhys;
+        result.TotalVirtualMemory = stats.ullTotalVirtual;
+        result.UsedVirtualMemory = stats.ullTotalVirtual - stats.ullAvailVirtual;
+        return true;
+    }
+
+    bool Win32Platform::TryGetProcessMemoryStats(ProcessMemoryStats& result)
+    {
+        result = {};
+        PROCESS_MEMORY_COUNTERS_EX stats = {};
+        stats.cb = sizeof(stats);
+        if (!GetProcessMemoryInfo(GetCurrentProcess(), (PPROCESS_MEMORY_COUNTERS)&stats, sizeof(stats)))
+            return false;
+        result.UsedPhysicalMemory = stats.WorkingSetSize;
+        result.UsedVirtualMemory = stats.PrivateUsage;
+        return true;
+    }
+
 	ProcessMemoryStats Win32Platform::GetProcessMemoryStats()
 	{
 		// Get memory stats
