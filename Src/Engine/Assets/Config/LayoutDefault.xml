@@ -1,0 +1,18 @@
+<DockPanelLayout Version="4">
+    <MainWindow>
+        <Bounds IsMaximized="True" IsMinimized="False" />
+    </MainWindow>
+    <MasterPanel SelectedTab="0">
+        <Window Typename="::EditSceneWindow" />
+        <Panel DockState="10" SplitterValue="0.24" SelectedTab="0">
+            <Window Typename="::PropertiesWindow" />
+        </Panel>
+        <Panel DockState="9" SplitterValue="0.37" SelectedTab="0">
+            <Window Typename="::ContentWindow" />
+            <Window Typename="::LogWindow" />
+        </Panel>
+        <Panel DockState="8" SplitterValue="0.25" SelectedTab="0">
+            <Window Typename="::SceneHierarchyWindow" />
+        </Panel>
+    </MasterPanel>
+</DockPanelLayout>

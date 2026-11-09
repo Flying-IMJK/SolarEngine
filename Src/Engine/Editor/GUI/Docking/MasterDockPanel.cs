@@ -51,14 +51,21 @@ namespace SE.Editor.GUI
         public void ResetLayout()
         {
             // Close all windows
-            for (int i = 0; i < Windows.Count; i++)
+            DockWindow[] windows = Windows.ToArray();
+            for (int i = 0; i < windows.Length; i++)
             {
-                Windows[i].Close();
+                windows[i].Close();
+            }
+
+            // Floating roots with only nested tabs can remain after their last child panel is removed.
+            foreach (FloatWindowDockPanel panel in FloatingPanels.ToArray())
+            {
+                panel.Window?.Window.Close();
             }
 
             // Ensure that has no docked windows
-            List<DockPanel> childPanels = ChildPanels;
-            for (int i = 0; i < childPanels.Count; i++)
+            DockPanel[] childPanels = ChildPanels.ToArray();
+            for (int i = 0; i < childPanels.Length; i++)
             {
                 childPanels[i].Dispose();
             }

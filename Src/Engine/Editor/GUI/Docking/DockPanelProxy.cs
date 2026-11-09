@@ -274,15 +274,14 @@ namespace SE.Editor.GUI
         /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            bool isMouseDownOverCross;
-            MouseDownWindow = GetTabAtPos(location, out isMouseDownOverCross);
+            MouseDownWindow = GetTabAtPos(location, out IsMouseDownOverCross);
 
             // Check buttons
             if (button == MouseButton.Left)
             {
                 // Cache data
                 IsMouseLeftButtonDown = true;
-                if (!isMouseDownOverCross && MouseDownWindow != null)
+                if (!IsMouseDownOverCross && MouseDownWindow != null)
                 {
                     m_Panel.SelectTab(MouseDownWindow);
                 }

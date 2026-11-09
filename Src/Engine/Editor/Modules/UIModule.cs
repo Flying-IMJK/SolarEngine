@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using SE.Editor.GUI;
 using SE.GUI;
 
@@ -14,7 +15,7 @@ namespace SE.Editor
         private float m_LastHeight = float.NaN;
 
         private Thumbnails m_Thumbnails;
-        private ToolStripButton m_ProfilerButton;
+        private ContextMenuChildMenu m_WindowLayoutsMenu;
 
         public UIModule(Editor editor) : base(editor)
         {
@@ -41,7 +42,6 @@ namespace SE.Editor
             m_Thumbnails.Init();
 
             BuildMenus();
-            BuildToolStrip();
             StatusBar.Text = "Ready";
             UpdateLayout(force: true);
         }
@@ -50,7 +50,6 @@ namespace SE.Editor
         {
             UpdateLayout(force: false);
             m_Thumbnails.Update();
-            m_ProfilerButton.Text = Editor.Profiler.MenuLabel;
         }
 
         public override void OnDispose()
@@ -77,16 +76,74 @@ namespace SE.Editor
             window.ContextMenu.AddButton("Log", () => Editor.Windows.Log.FocusOrShow());
             window.ContextMenu.AddButton("Profiler", () => Editor.Windows.Profiler.FocusOrShow());
             window.ContextMenu.AddButton("Edit Scene", () => Editor.Windows.EditScene.FocusOrShow());
+            window.ContextMenu.AddButton("Properties", () => Editor.Windows.Properties.FocusOrShow());
             window.ContextMenu.AddButton("Create Demo Scene", () => Editor.CreateDemoScene());
+            window.ContextMenu.AddSeparator();
+            
+            m_WindowLayoutsMenu = window.ContextMenu.AddChildMenu("Window Layouts");
+            window.ContextMenu.AddButton("Save Layout", () => Editor.Windows.SaveLayout());
+            window.ContextMenu.AddButton("Restore Default Layout", () => Editor.Windows.LoadDefaultLayout());
+
+            m_WindowLayoutsMenu.ContextMenu.VisibleChanged += OnWindowMenuVisibleChanged;
         }
 
-        private void BuildToolStrip()
+        private void OnWindowMenuVisibleChanged(Control menu)
         {
-            ToolStrip.AddButton("Content", () => Editor.Windows.Content.FocusOrShow());
-            ToolStrip.AddButton("Scene", () => Editor.Windows.SceneHierarchy.FocusOrShow());
-            ToolStrip.AddButton("Log", () => Editor.Windows.Log.FocusOrShow());
-            m_ProfilerButton = ToolStrip.AddButton("Profiler", () => Editor.Windows.Profiler.FocusOrShow());
+            if (!menu.Visible)
+            {
+                return;
+            }
+
+            ContextMenu layouts = m_WindowLayoutsMenu.ContextMenu;
+            foreach (ContextMenuItem item in layouts.Items)
+            {
+                if (item is ContextMenuChildMenu child)
+                {
+                    child.ContextMenu.Dispose();
+                }
+            }
+
+            layouts.ItemsContainer.DisposeChildren();
+
+            try
+            {
+                string folder = Editor.Windows.LayoutsFolder;
+                string[] files = Directory.Exists(folder) ? Directory.GetFiles(folder, "Layout_*.xml") : Array.Empty<string>();
+                Array.Sort(files, StringComparer.OrdinalIgnoreCase);
+                foreach (string file in files)
+                {
+                    string name = Path.GetFileNameWithoutExtension(file).Substring("Layout_".Length);
+                    ContextMenuChildMenu layout = layouts.AddChildMenu(name);
+
+                    layout.ContextMenu.AddButton("Apply", () =>
+                    {
+                        if (!Editor.Windows.LoadLayout(file))
+                        {
+                            Editor.Windows.LoadDefaultLayout();
+                        }
+                    });
+
+                    layout.ContextMenu.AddButton("Delete", () =>
+                    {
+                        try
+                        {
+                            File.Delete(file);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.LogWarning($"Failed to delete windows layout '{file}'.");
+                            Debug.LogWarning(ex);
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("Failed to list windows layouts.");
+                Debug.LogWarning(ex);
+            }
         }
+
 
         private void UpdateLayout(bool force)
         {

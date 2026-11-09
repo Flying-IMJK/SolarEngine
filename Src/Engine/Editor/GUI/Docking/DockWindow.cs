@@ -1,4 +1,5 @@
 
+using System.Xml;
 using SE.GUI;
 
 namespace SE.Editor.GUI
@@ -188,6 +189,7 @@ namespace SE.Editor.GUI
         {
             m_MasterPanel = masterPanel;
             HideOnClose = hideOnClose;
+            Visible = false;
             AnchorPreset = AnchorPresets.StretchAll;
             Offsets = Margin.Zero;
 
@@ -358,18 +360,18 @@ namespace SE.Editor.GUI
             Visible = false;
 
             // Ensure that dock panel has no parent
-            SE.Debug.Assert(HasParent, "Dock window has no parent.");
+            SE.Debug.Assert(!HasParent, "Hidden dock window still has a parent.");
         }
 
         /// <summary>
         /// Closes the window.
         /// </summary>
         /// <param name="reason">Window closing reason.</param>
-        /// <returns>True if action has been cancelled (due to window internal logic).</returns>
+        /// <returns>True if the window closed; false if closing was cancelled.</returns>
         public bool Close(ClosingReason reason = ClosingReason.CloseEvent)
         {
             // Fire events
-            if (!OnClosing(reason))
+            if (OnClosing(reason))
             {
                 return false;
             }
@@ -421,6 +423,20 @@ namespace SE.Editor.GUI
         /// Gets a value indicating whether window uses custom layout data.
         /// </summary>
         public virtual bool UseLayoutData => false;
+
+        /// <summary>
+        /// Writes custom window layout data on the editor thread when UseLayoutData is enabled.
+        /// </summary>
+        public virtual void OnLayoutSerialize(XmlWriter writer)
+        {
+        }
+
+        /// <summary>
+        /// Restores custom window layout data on the editor thread.
+        /// </summary>
+        public virtual void OnLayoutDeserialize(XmlElement node)
+        {
+        }
 
         /// <summary>
         /// Called when during windows layout deserialization if window has no layout data to load. Can be used to

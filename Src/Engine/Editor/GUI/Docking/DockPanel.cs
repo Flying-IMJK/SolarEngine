@@ -144,7 +144,7 @@ namespace SE.Editor.GUI
         /// Closes all the windows.
         /// </summary>
         /// <param name="reason">Window closing reason.</param>
-        /// <returns>True if action has been cancelled (due to window internal logic).</returns>
+        /// <returns>True if all windows closed; false if closing was cancelled.</returns>
         public bool CloseAll(ClosingReason reason = ClosingReason.CloseEvent)
         {
             while (m_Tabs.Count > 0)
