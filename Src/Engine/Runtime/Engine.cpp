@@ -199,7 +199,7 @@ namespace SE
 
 	void Engine::OnUpdate()
 	{
-		PROFILE_CPU_NAMED("Engine.OnUpdate");
+		PROFILE_CPU();
 
 		UpdateCount++;
 
@@ -227,7 +227,7 @@ namespace SE
 
 	void Engine::OnLateUpdate()
 	{
-		PROFILE_CPU_NAMED("Engine.OnLateUpdate");
+		PROFILE_CPU();
 
 		// Call event
 		LateUpdateCall();
@@ -239,7 +239,7 @@ namespace SE
 
 	void Engine::OnRender()
 	{
-		PROFILE_CPU_NAMED("Engine.OnRender");
+		PROFILE_CPU();
 
 		// Begin frame rendering
 		FrameCount++;

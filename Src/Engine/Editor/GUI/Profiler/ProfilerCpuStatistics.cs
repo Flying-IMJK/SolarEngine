@@ -68,10 +68,10 @@ namespace SE.Editor
                         0 => $"{m_Profiler.GetCpuText(row.NameOffset)} [{row.SourceLocationId}]",
                         1 => row.Calls.ToString(),
                         2 => row.IncompleteCalls.ToString(),
-                        3 => row.Calls > 0 ? $"{row.TotalNs / 1_000_000.0:F3}" : "--",
-                        4 => row.SelfIncompleteCalls != 0 ? "incomplete" : row.Calls > 0 ? $"{row.SelfNs / 1_000_000.0:F3}" : "--",
-                        5 => row.Calls > 0 ? $"{row.AverageNs / 1_000_000.0:F3}" : "--",
-                        _ => row.Calls > 0 ? $"{row.MaxNs / 1_000_000.0:F3}" : "--",
+                        3 => row.Calls > 0 ? $"{row.TotalNs / 1_000_000.0:0.##}" : "--",
+                        4 => row.SelfIncompleteCalls != 0 ? "incomplete" : row.Calls > 0 ? $"{row.SelfNs / 1_000_000.0:0.##}" : "--",
+                        5 => row.Calls > 0 ? $"{row.AverageNs / 1_000_000.0:0.##}" : "--",
+                        _ => row.Calls > 0 ? $"{row.MaxNs / 1_000_000.0:0.##}" : "--",
                     };
                     Rectangle cell = Cell(i + 1, column);
                     Render2D.PushClip(cell);

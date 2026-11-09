@@ -8,6 +8,7 @@ RUNTIME_ADD(
         ProfilerSrcLoc.h
         RenderStats.h
         ProfilerStats.h
+        ProfilerLocalData.h
         ProfilingSystem.h
         ProfilingSystem.cpp
 )

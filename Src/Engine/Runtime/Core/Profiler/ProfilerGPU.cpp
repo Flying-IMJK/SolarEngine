@@ -7,13 +7,12 @@ namespace SE
 {
     RenderStatsData RenderStatsData::Counter;
 
-    Function<IGPUTimerQueryProfile*()>                      ProfilerGPU::CreateTimerQueryProfileCall;
-    Function<void(IGPUTimerQueryProfile*)>                  ProfilerGPU::DelateTimerQueryProfileCall;
-    Function<void(const Char*)>                             ProfilerGPU::EventBeginCall;
-    Function<void()>                                        ProfilerGPU::EventEndCall;
-    Function<uint64()>                                      ProfilerGPU::GetFrameCountCall;
-    Function<void(uint64, const ProfilerGPU::EventBuffer*)> ProfilerGPU::s_FrameSubmittedCall;
-    Function<void(const ProfilerGPU::EventBuffer&)>         ProfilerGPU::s_FrameResolvedCall;
+    Function<IGPUTimerQueryProfile*()>     ProfilerGPU::CreateTimerQueryProfileCall;
+    Function<void(IGPUTimerQueryProfile*)> ProfilerGPU::DelateTimerQueryProfileCall;
+    Function<void(const Char*)>            ProfilerGPU::EventBeginCall;
+    Function<void()>                       ProfilerGPU::EventEndCall;
+    Function<uint64()>                     ProfilerGPU::GetFrameCountCall;
+    Function<void(uint64, const ProfilerGPU::EventBuffer*)> ProfilerGPU::s_FrameDataCall;
 
     int32                        ProfilerGPU::m_Depth = 0;
     List<IGPUTimerQueryProfile*> ProfilerGPU::m_TimerQueriesPool;
@@ -28,9 +27,12 @@ namespace SE
     {
         for (int32 i = 0; i < m_Data.Count(); i++)
         {
-            m_Data[i].Timer->End();
-            if (!m_Data[i].Complete)
-                m_Data[i].ForcedEnd = true;
+            auto& event = m_Data[i];
+            if (event.State == EventState::Active)
+            {
+                event.Timer->End();
+                event.State = EventState::Incomplete;
+            }
         }
     }
 
@@ -53,16 +55,15 @@ namespace SE
         // Collect queries results and free them
         for (int32 i = 0; i < m_Data.Count(); i++)
         {
-            auto& e       = m_Data[i];
-            e.TimingValid = e.Timer->IsSupported();
-            e.Time        = e.TimingValid ? e.Timer->GetResult() : -1.0f;
+            auto& e = m_Data[i];
+            e.Time  = e.Timer->IsSupported() ? e.Timer->GetResult() : -1.0f;
             m_TimerQueriesFree.Add(e.Timer);
             e.Timer = nullptr;
         }
 
         m_IsResolved = true;
-        if (s_FrameResolvedCall.IsBinded())
-            s_FrameResolvedCall(*this);
+        if (s_FrameDataCall.IsBinded())
+            s_FrameDataCall(FrameIndex, this);
     }
 
     int32 ProfilerGPU::EventBuffer::Add(const Event& e)
@@ -136,9 +137,12 @@ namespace SE
 
         auto& buffer = Buffers[CurrentBuffer];
         auto  e      = buffer.Get(index);
-        e->Stats.Mix(RenderStatsData::Counter);
-        e->Complete = true;
-        e->Timer->End();
+        if (e->State == EventState::Active)
+        {
+            e->Stats.Mix(RenderStatsData::Counter);
+            e->State = EventState::Completed;
+            e->Timer->End();
+        }
 
         EventEndCall();
     }
@@ -199,8 +203,8 @@ namespace SE
             LOG_WARNING("Profiler", "GPU Profiler events start/end mismatch");
         }
 
-        if (s_FrameSubmittedCall.IsBinded())
-            s_FrameSubmittedCall(GetFrameCountCall(), CurrentBuffer >= 0 ? &Buffers[CurrentBuffer] : nullptr);
+        if (s_FrameDataCall.IsBinded())
+            s_FrameDataCall(GetFrameCountCall(), CurrentBuffer >= 0 ? &Buffers[CurrentBuffer] : nullptr);
         CurrentBuffer = -1;
     }
 

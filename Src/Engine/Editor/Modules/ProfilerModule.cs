@@ -19,36 +19,24 @@ namespace SE.Editor
 {
     /// <summary>
     /// Owns the editor's local capture workflow. All methods run on the editor main thread.
-    /// Transport records are explicit copies, never views of Tracy's internal objects.
+    /// Transport records are explicit copies, independent of rolling native history.
     /// </summary>
     public sealed class ProfilerModule : EditorModule
     {
         public const int MaxViewFrames = 256;
+        public int HistoryCapacity => m_NativeAvailable ? Profiling.GetHistoryCapacity() : 0;
+        public ulong OldestFrame => Info.OldestFrame;
 
         public bool IsMemoryVisible { get; private set; }
-        public bool IsNativeMemoryVisible { get; private set; }
         public ProfilerMemoryOverviewInfo MemoryOverview { get; private set; }
-        public ProfilerAllocationViewInfo AllocationView { get; private set; }
-        public ProfilerAllocationPageInfo AllocationPage { get; private set; }
         public ProfilerMemorySample[] MemorySamples { get; private set; } = Array.Empty<ProfilerMemorySample>();
-        public ProfilerMemoryBucket[] MemoryBuckets { get; private set; } = Array.Empty<ProfilerMemoryBucket>();
-        public ProfilerAllocation[] Allocations { get; private set; } = Array.Empty<ProfilerAllocation>();
-        public string MemoryDetails { get; private set; } = "Select a sample or allocation.";
-        public int SelectedAllocation { get; private set; } = -1;
-        private int m_MemoryFirst = -1;
-        private long m_MemoryBegin = -1;
-        private long m_MemoryEnd = -1;
-        private long m_MemoryInspect = -1;
-        private int m_AllocationFilter;
-        private ulong m_AllocationAddress;
-        private int m_SearchAllocationAddress;
-        private long m_LastAllocationRefresh;
+        public string MemoryDetails { get; private set; } = "Select a memory sample.";
+        private long m_MemoryFirst = -1;
 
-        public void ShowMemoryPage(bool native)
+        public void ShowMemoryPage()
         {
             IsMemoryVisible = true;
             IsGpuVisible = false;
-            IsNativeMemoryVisible = native;
             m_ViewDirty = true;
             Refresh();
         }
@@ -56,90 +44,10 @@ namespace SE.Editor
         public void BrowseMemory(bool newer, bool end)
         {
             Pause();
-            if (IsNativeMemoryVisible)
-            {
-                int last = Math.Max(0, ((AllocationView.MatchingCount - 1) / 256) * 256);
-                int first = end ? newer ? last : 0 : Math.Clamp(AllocationPage.First + (newer ? 256 : -256), 0, last);
-                CaptureResult result = Profiling.ReadAllocationPage(Info.SessionId, AllocationView.SnapshotId, first,
-                    out ProfilerAllocationPageInfo page, out ProfilerAllocation[] rows);
-                ViewResult = result;
-                if (result == CaptureResult.Ok)
-                {
-                    AllocationPage = page;
-                    Allocations = rows ?? Array.Empty<ProfilerAllocation>();
-                    SelectedAllocation = -1;
-                    MemoryDetails = "Select an allocation. This page and its statistics share the frozen snapshot.";
-                }
-                Changed?.Invoke();
-            }
-            else
-            {
-                int last = Math.Max(0, MemoryOverview.TotalSamples - 256);
-                m_MemoryFirst = end ? newer ? last : 0 : Math.Clamp(MemoryOverview.First + (newer ? 256 : -256), 0, last);
-                m_ViewDirty = true;
-                Refresh();
-            }
-        }
-
-        public void SetAllocationFilter(int filter)
-        {
-            if (filter < 0 || filter > 2)
-                return;
-            Pause();
-            m_AllocationFilter = filter;
-            m_ViewDirty = true;
-            Refresh();
-        }
-
-        public void ApplyMemoryRange(string begin, string end, string inspect, string address)
-        {
-            long[] times = { -1, -1, -1 };
-            string[] inputs = { begin, end, inspect };
-            for (int i = 0; i < inputs.Length; i++)
-            {
-                if (string.IsNullOrWhiteSpace(inputs[i]))
-                    continue;
-                if (!decimal.TryParse(inputs[i], System.Globalization.NumberStyles.Float,
-                    System.Globalization.CultureInfo.InvariantCulture, out decimal ms) || ms < 0 || ms > long.MaxValue / 1_000_000m)
-                {
-                    MemoryDetails = "Invalid time. Enter non-negative Tracy milliseconds; empty fields request the latest ten seconds/end/inspection.";
-                    Changed?.Invoke();
-                    return;
-                }
-                times[i] = (long)(ms * 1_000_000m);
-            }
-            ulong value = 0;
-            bool search = !string.IsNullOrWhiteSpace(address);
-            string digits = address.Trim();
-            if (digits.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                digits = digits.Substring(2);
-            if (search && !ulong.TryParse(digits, System.Globalization.NumberStyles.HexNumber,
-                System.Globalization.CultureInfo.InvariantCulture, out value))
-            {
-                MemoryDetails = "Invalid address. Enter a full 64-bit hexadecimal address or leave it empty.";
-                Changed?.Invoke();
-                return;
-            }
-            Pause();
-            m_MemoryBegin = times[0];
-            m_MemoryEnd = times[1];
-            m_MemoryInspect = times[2];
-            m_AllocationAddress = value;
-            m_SearchAllocationAddress = search ? 1 : 0;
-            m_ViewDirty = true;
-            Refresh();
-        }
-
-        public void SelectMemoryInterval(ulong snapshot, long begin, long end, long inspect)
-        {
-            if (snapshot == 0 || snapshot != AllocationView.SnapshotId)
-            {
-                return;
-            }
-            Pause();
-            m_MemoryBegin = begin;
-            m_MemoryEnd = end;
-            m_MemoryInspect = inspect;
+            long oldest = (long)MemoryOverview.OldestSample;
+            long last = Math.Max(oldest, oldest + MemoryOverview.TotalSamples - MaxViewFrames);
+            m_MemoryFirst = end ? newer ? last : oldest :
+                Math.Clamp((long)MemoryOverview.First + (newer ? MaxViewFrames : -MaxViewFrames), oldest, last);
             m_ViewDirty = true;
             Refresh();
         }
@@ -150,80 +58,27 @@ namespace SE.Editor
                 return;
             Pause();
             ProfilerMemorySample sample = MemorySamples[index];
-            string Value(ulong bytes, int mask) => (sample.ValidMask & mask) != 0 ? $"{bytes:N0} bytes ({bytes / 1048576.0:F3} MiB)" : "Unavailable";
-            MemoryDetails = $"Sample {MemoryOverview.First + index} at engine elapsed {sample.TimeSeconds:F6} s, frame {sample.FrameId}\n" +
+            string Value(ulong bytes, int mask) => (sample.ValidMask & mask) != 0 ? $"{bytes:N0} bytes ({bytes / 1048576.0:0.##} MiB)" : "Unavailable";
+            MemoryDetails = $"Sample {MemoryOverview.First + (ulong)index} submitted at {sample.TimeSeconds:0.##} s, frame {sample.FrameId}; OS counters read at {sample.NativeReadSeconds:0.##} s\n" +
                 $"Process working set: {Value(sample.ProcessPhysicalBytes, 1)}\nProcess private committed: {Value(sample.ProcessPrivateBytes, 1)}\n" +
                 $"System physical used: {Value(sample.SystemUsedBytes, 2)}\nSystem physical total: {Value(sample.SystemTotalBytes, 2)}\n" +
                 $"Driver-reported GPU heap total: {Value(sample.GpuTotalBytes, 4)}\nEngine GPU resource estimate: {Value(sample.GpuUsedBytes, 4)}\n";
             if ((sample.ValidMask & 8) != 0)
                 MemoryDetails += $"Managed heap estimate: {sample.ManagedHeapBytes:N0} bytes\nManaged allocated, process cumulative: {sample.ManagedAllocatedBytes:N0} bytes\n" +
                     $"GC collections (process cumulative): {sample.Gc0}/{sample.Gc1}/{sample.Gc2}\n" +
-                    $"Managed receipt elapsed: {sample.ManagedReceiptSeconds:F6} s; counter read took {sample.ManagedReadSeconds:F6} s.\n";
+                    $"Managed receipt elapsed: {sample.ManagedReceiptSeconds:0.##} s; counter read took {sample.ManagedReadSeconds:0.##} s.\n";
             else
                 MemoryDetails += "Managed sample unavailable.\n";
             MemoryDetails += "Sources are sampled separately. Receipt time is not atomic native/managed measurement. Values overlap and must not be summed.";
             Changed?.Invoke();
         }
 
-        public void SelectAllocation(ulong snapshot, int index)
-        {
-            if (snapshot != AllocationView.SnapshotId || index < 0 || index >= Allocations.Length)
-                return;
-            Pause();
-            ProfilerAllocation row = Allocations[index];
-            CaptureResult result = Profiling.ReadAllocationDetails(Info.SessionId, snapshot, row.PoolId, row.RecordId,
-                out ProfilerAllocation detail, out ProfilerAllocationStackFrame[] frames, out byte[] text);
-            ViewResult = result;
-            if (result != CaptureResult.Ok)
-            {
-                MemoryDetails = $"Allocation detail read: {result}. Previous frozen allocation page remains available.";
-                Changed?.Invoke();
-                return;
-            }
-            SelectedAllocation = index;
-            Dictionary<int, string> strings = DecodeCpuText(text);
-            string Text(int offset) => strings.TryGetValue(offset, out string value) ? value : string.Empty;
-            long lifetimeEnd = detail.FreeNs >= 0 && detail.FreeNs <= AllocationView.InspectNs ? detail.FreeNs : AllocationView.InspectNs;
-            MemoryDetails = $"Address 0x{detail.Address:X16}    Size {detail.Size:N0} bytes\nPool {detail.PoolId} / Record {detail.RecordId}\n" +
-                $"Session {Info.SessionId} / Snapshot {snapshot}\nAllocated: {detail.AllocNs / 1_000_000m:F6} ms\n" +
-                (detail.FreeNs >= 0 ? $"Known free: {detail.FreeNs / 1_000_000m:F6} ms\n" : "No free recorded in this snapshot.\n") +
-                $"Allocation thread {detail.AllocThread}; free thread {(detail.FreeNs >= 0 ? detail.FreeThread.ToString() : "--")}\n" +
-                (detail.AllocNs > AllocationView.InspectNs ? "Not allocated yet at inspection.\n" :
-                    $"Active at inspection: {detail.ActiveAtInspection != 0}\nObserved lifetime at inspection: {(lifetimeEnd - detail.AllocNs) / 1_000_000m:F6} ms\n") +
-                "Unreleased records are not proof of a leak. Free callstack is not reported by the current instrumentation.\n\nAllocation callstack:\n";
-            if (detail.CallstackId == 0)
-                MemoryDetails += "No allocation callstack was recorded.\n";
-            else if (frames == null || frames.Length == 0)
-                MemoryDetails += "Callstack payload has no available frames.\n";
-            else
-            {
-                foreach (ProfilerAllocationStackFrame frame in frames)
-                    MemoryDetails += frame.Resolved != 0 ?
-                        $"0x{frame.Address:X16} [inline {frame.InlineDepth}] {Text(frame.NameOffset)}\n{Text(frame.FileOffset)}:{frame.Line}  {Text(frame.ImageOffset)}\n" :
-                        $"0x{frame.Address:X16}  Unresolved\n";
-            }
-            MemoryDetails += "\nRefresh symbols reads currently available symbols without replacing statistics or pagination.";
-            Changed?.Invoke();
-        }
-
-        public void RefreshAllocationSymbols()
-        {
-            if (SelectedAllocation >= 0)
-                SelectAllocation(AllocationView.SnapshotId, SelectedAllocation);
-        }
-
         private void ResetMemoryView()
         {
             MemoryOverview = default;
-            AllocationView = default;
-            AllocationPage = default;
             MemorySamples = Array.Empty<ProfilerMemorySample>();
-            MemoryBuckets = Array.Empty<ProfilerMemoryBucket>();
-            Allocations = Array.Empty<ProfilerAllocation>();
-            SelectedAllocation = -1;
-            MemoryDetails = "Select a sample or allocation.";
+            MemoryDetails = "Select a memory sample.";
         }
-
 
         public enum StatisticSortColumn
         {
@@ -289,7 +144,7 @@ namespace SE.Editor
 
         public CaptureResult SelectGpuFrame(ulong frameId)
         {
-            if (!IsGpuVisible || (Info.State != CaptureState.Capturing && Info.State != CaptureState.Stopping && Info.State != CaptureState.Stopped))
+            if (!IsGpuVisible || (Info.State != CaptureState.Capturing && Info.State != CaptureState.Stopped))
                 return CaptureResult.NotReady;
             Pause();
             m_GpuFrameId = frameId;
@@ -337,13 +192,13 @@ namespace SE.Editor
                 return string.Empty;
             GpuEvent item = m_GpuEvents[index];
             string text = $"{GetGpuText(item.NameOffset)}\nEngine frame: {GpuView.SelectedFrameId}\nSnapshot: {GpuView.SnapshotId}    Event: {index}\nDepth: {item.Depth}    Parent: {item.ParentIndex}\n";
-            text += item.TimingValid != 0 ? $"GPU duration: {item.DurationMs:F6} ms\n" : "GPU duration unavailable.\n";
-            text += item.ParentPercent >= 0 ? $"Parent duration ratio: {item.ParentPercent:F2}%\n" : "Parent duration ratio unavailable.\n";
+            text += item.TimingValid != 0 ? $"GPU duration: {item.DurationMs:0.##} ms\n" : "GPU duration unavailable.\n";
+            text += item.ParentPercent >= 0 ? $"Parent duration ratio: {item.ParentPercent:0.##}%\n" : "Parent duration ratio unavailable.\n";
             if (item.Complete == 0)
                 text += "Event did not finish normally; a forced query end is not its measured scope end.\n";
             text += item.StatsValid != 0 ? $"Draw calls: {item.DrawCalls}\nDispatch calls: {item.DispatchCalls}\nVertices: {item.Vertices}\nTriangles: {item.Triangles}\nPipeline changes: {item.PipelineStateChanges}\n" :
                 "Drawing statistics unavailable for this incomplete event.\n";
-            return text + "Durations have no absolute execution positions here. Engine GPU frames are not mapped to Tracy local CPU frame IDs.";
+            return text + "Durations have no absolute execution positions here. GPU frame IDs retain their engine identity independently of CPU sample indices.";
         }
 
         public int GetVisibleStatisticIndex(int row) => m_VisibleStatistics[row];
@@ -430,9 +285,9 @@ namespace SE.Editor
             text += $"Snapshot: {View.SnapshotId}\nComplete calls: {row.Calls}    End unknown: {row.IncompleteCalls}\n";
             if (row.Calls > 0)
             {
-                text += $"Clipped total: {row.TotalNs / 1_000_000.0:F6} ms\nAverage: {row.AverageNs / 1_000_000.0:F6} ms\nMaximum: {row.MaxNs / 1_000_000.0:F6} ms\n";
-                text += row.SelfIncompleteCalls == 0 ? $"Self: {row.SelfNs / 1_000_000.0:F6} ms\n" :
-                    $"Self total incomplete: {row.SelfIncompleteCalls} calls have children with unknown ends. Known subtotal: {row.SelfNs / 1_000_000.0:F6} ms\n";
+                text += $"Clipped total: {row.TotalNs / 1_000_000.0:0.##} ms\nAverage: {row.AverageNs / 1_000_000.0:0.##} ms\nMaximum: {row.MaxNs / 1_000_000.0:0.##} ms\n";
+                text += row.SelfIncompleteCalls == 0 ? $"Self: {row.SelfNs / 1_000_000.0:0.##} ms\n" :
+                    $"Self total incomplete: {row.SelfIncompleteCalls} calls have children with unknown ends. Known subtotal: {row.SelfNs / 1_000_000.0:0.##} ms\n";
             }
             else
             {
@@ -509,7 +364,7 @@ namespace SE.Editor
         public CaptureFrame? Frame => View.SelectionCount == 1 ? m_Frames[(int)(View.SelectionFirst - View.FirstFrame)] : null;
         public bool IsLive { get; private set; } = true;
         public bool IsViewPending => m_ViewDirty &&
-            (Info.State == CaptureState.Capturing || Info.State == CaptureState.Stopping || Info.State == CaptureState.Stopped);
+            (Info.State == CaptureState.Capturing || Info.State == CaptureState.Stopped);
         /// <summary>The last capture control result; automatic view polling cannot overwrite it.</summary>
         public CaptureResult LastResult { get; private set; }
         public CaptureResult ViewResult { get; private set; }
@@ -518,28 +373,22 @@ namespace SE.Editor
 
         public string MenuLabel => Info.State switch
         {
-            CaptureState.Connecting => "Profiler (connecting)",
             CaptureState.Capturing => "Profiler (REC)",
-            CaptureState.Stopping when Info.StopReason == StopReason.CapacityLimit => "Profiler (capacity stopping)",
-            CaptureState.Stopping when Info.StopReason == StopReason.GpuHistoryCapacity => "Profiler (GPU capacity stopping)",
-            CaptureState.Stopping when Info.StopReason == StopReason.MemoryHistoryCapacity => "Profiler (memory capacity stopping)",
-            CaptureState.Stopping => "Profiler (stopping)",
-            CaptureState.Stopped when Info.StopReason == StopReason.CapacityLimit => "Profiler (capacity stopped)",
-            CaptureState.Stopped when Info.StopReason == StopReason.GpuHistoryCapacity => "Profiler (GPU capacity stopped)",
-            CaptureState.Stopped when Info.StopReason == StopReason.MemoryHistoryCapacity => "Profiler (memory capacity stopped)",
-            CaptureState.Stopped when Info.StopReason == StopReason.ReceiverEnded => "Profiler (receiver ended)",
             CaptureState.Stopped => "Profiler (stopped)",
-            CaptureState.Clearing => "Profiler (cleaning)",
             _ => "Profiler",
         };
 
         public override void OnInit()
         {
             Refresh(false);
+            m_TestRunner = ProfilerModuleTestRunner.TryCreate(this);
         }
+
+        private ProfilerModuleTestRunner m_TestRunner;
 
         public override void OnUpdate()
         {
+            m_TestRunner?.Tick();
             long now = Stopwatch.GetTimestamp();
             if (now - m_LastRefresh >= Stopwatch.Frequency / 10)
             {
@@ -550,8 +399,7 @@ namespace SE.Editor
                     m_ViewDirty = true;
                 m_WasViewVisible = viewVisible;
                 // Idle/stopped snapshots need no polling; hidden windows need only the small state sample.
-                if (IsViewPending || Info.GpuPending > 0 || Info.State == CaptureState.Connecting || Info.State == CaptureState.Capturing ||
-                    Info.State == CaptureState.Stopping || Info.State == CaptureState.Clearing)
+                if (IsViewPending || Info.GpuPending > 0 || Info.State == CaptureState.Capturing)
                 {
                     Refresh(viewVisible);
                 }
@@ -612,15 +460,9 @@ namespace SE.Editor
         public void Pause()
         {
             IsLive = false;
-            if (IsMemoryVisible && (MemoryOverview.SnapshotId != 0 || AllocationView.SnapshotId != 0))
+            if (IsMemoryVisible && MemoryOverview.SnapshotId != 0)
             {
-                m_MemoryFirst = MemoryOverview.First;
-                if (IsNativeMemoryVisible)
-                {
-                    m_MemoryBegin = AllocationView.BeginNs;
-                    m_MemoryEnd = AllocationView.EndNs;
-                    m_MemoryInspect = AllocationView.InspectNs;
-                }
+                m_MemoryFirst = (long)MemoryOverview.First;
                 m_ViewDirty = false;
             }
             if (IsGpuVisible && GpuView.SnapshotId != 0)
@@ -642,9 +484,8 @@ namespace SE.Editor
         public void ShowLatestFrame()
         {
             m_MemoryFirst = -1;
-            m_MemoryBegin = m_MemoryEnd = m_MemoryInspect = -1;
             m_GpuFrameId = ulong.MaxValue;
-            IsLive = Info.State == CaptureState.Capturing || Info.State == CaptureState.Connecting || Info.State == CaptureState.Stopping;
+            IsLive = Info.State == CaptureState.Capturing;
             m_FirstFrame = ulong.MaxValue;
             m_SelectionCount = 0;
             m_ViewDirty = true;
@@ -667,7 +508,7 @@ namespace SE.Editor
                 Changed?.Invoke();
                 return ViewResult;
             }
-            if (Info.State != CaptureState.Capturing && Info.State != CaptureState.Stopping && Info.State != CaptureState.Stopped)
+            if (Info.State != CaptureState.Capturing && Info.State != CaptureState.Stopped)
             {
                 ViewResult = CaptureResult.NotReady;
                 Changed?.Invoke();
@@ -675,7 +516,7 @@ namespace SE.Editor
             }
             // The view copy can observe newer complete frames than the preceding non-blocking state poll.
             ulong completeFrames = Math.Max(Info.CompleteFrames, View.TotalFrames);
-            if (last < first || last >= completeFrames)
+            if (first < OldestFrame || last < first || last >= completeFrames)
             {
                 ViewResult = CaptureResult.InvalidRange;
                 Changed?.Invoke();
@@ -704,9 +545,9 @@ namespace SE.Editor
                 return;
             }
             ulong completeFrames = Math.Max(Info.CompleteFrames, View.TotalFrames);
-            ulong latest = completeFrames > MaxViewFrames ? completeFrames - MaxViewFrames : 0;
+            ulong latest = Math.Max(OldestFrame, completeFrames > MaxViewFrames ? completeFrames - MaxViewFrames : 0);
             m_FirstFrame = newer ? Math.Min(View.FirstFrame + MaxViewFrames, latest) :
-                View.FirstFrame > MaxViewFrames ? View.FirstFrame - MaxViewFrames : 0;
+                Math.Max(OldestFrame, View.FirstFrame > MaxViewFrames ? View.FirstFrame - MaxViewFrames : 0);
             IsLive = false;
             m_SelectionCount = 0;
             m_ViewDirty = true;
@@ -776,6 +617,19 @@ namespace SE.Editor
             return CaptureResult.Ok;
         }
 
+        private static string FormatCpuDuration(CpuEvent item) => item.EndValid != 0 ? $"{(item.EndNs - item.BeginNs) / 1_000_000.0:0.##} ms" : "unavailable";
+
+        internal string GetCpuEventLabel(int index)
+        {
+            if (index < 0 || index >= m_CpuEvents.Length)
+            {
+                return string.Empty;
+            }
+            CpuEvent item = m_CpuEvents[index];
+            string duration = item.EndValid != 0 ? FormatCpuDuration(item) : "Duration unavailable";
+            return $"{GetCpuText(item.NameOffset)} - {duration}";
+        }
+
         public string DescribeCpuEvent(int index)
         {
             if (index < 0 || index >= m_CpuEvents.Length)
@@ -792,12 +646,10 @@ namespace SE.Editor
                     break;
                 }
             }
-            string text = $"{GetCpuText(item.NameOffset)}\nThread: {threadName} [{threadId}]\nSnapshot: {View.SnapshotId}    Event: {index}\n";
-            text += $"Depth: {item.Depth}    Parent: {item.ParentIndex}\nBegin: {item.BeginNs / 1_000_000.0:F6} ms\n";
-            text += item.EndValid != 0 ? $"End: {item.EndNs / 1_000_000.0:F6} ms\nDuration: {(item.EndNs - item.BeginNs) / 1_000_000.0:F6} ms\n" :
-                "End unknown; event incomplete at this snapshot. Duration unavailable.\n";
+            string text = $"{GetCpuEventLabel(index)}\nThread: {threadName} [#{threadId}; OS ID unavailable]\nSnapshot: {View.SnapshotId}    Event: {index}\n";
+            text += $"Depth: {item.Depth}    Parent: {item.ParentIndex}\nDuration: {FormatCpuDuration(item)}\n";
             if (item.BeginNs < View.SelectionBeginNs || (item.EndValid != 0 && item.EndNs > View.SelectionEndNs))
-                text += "Event crosses the selected range; the bar is clipped. Times above are original measurements.\n";
+                text += "Event crosses the selected range; only the bar is clipped.\n";
             text += $"Function: {GetCpuText(item.FunctionOffset)}\nSource ID: {item.SourceLocationId}\nFile: {GetCpuText(item.FileOffset)}\nLine: {item.Line}\n";
             text += "Missing names or source metadata may be shown as ???; they are not resolved by this view.";
             return text;
@@ -871,7 +723,7 @@ namespace SE.Editor
 
         internal void OnWindowShown()
         {
-            if (IsLive || (IsMemoryVisible ? (IsNativeMemoryVisible ? AllocationView.SnapshotId == 0 : MemoryOverview.SnapshotId == 0) :
+            if (IsLive || (IsMemoryVisible ? MemoryOverview.SnapshotId == 0 :
                 IsGpuVisible ? GpuView.SnapshotId == 0 : View.SnapshotId == 0))
                 RefreshView();
         }
@@ -910,11 +762,10 @@ namespace SE.Editor
 
         public override void OnDispose()
         {
-            if (m_NativeAvailable && (Info.State == CaptureState.Capturing || Info.State == CaptureState.Connecting))
+            if (m_NativeAvailable && (Info.State == CaptureState.Capturing))
             {
                 Profiling.StopCapture();
             }
-            // ProfilingSystem owns final shutdown and joins before the runtime facilities exit.
             Changed = null;
         }
 
@@ -927,10 +778,7 @@ namespace SE.Editor
             try
             {
                 bool query = (m_ViewDirty || (IsLive && allowLiveView)) &&
-                    (Info.State == CaptureState.Capturing || Info.State == CaptureState.Stopping || Info.State == CaptureState.Stopped);
-                if (query && IsMemoryVisible && IsNativeMemoryVisible && !m_ViewDirty &&
-                    Stopwatch.GetTimestamp() - m_LastAllocationRefresh < Stopwatch.Frequency / 2)
-                    query = false;
+                    (Info.State == CaptureState.Capturing || Info.State == CaptureState.Stopped);
                 CaptureInfo info;
                 FrameViewInfo view = default;
                 CaptureFrame[] frames = Array.Empty<CaptureFrame>();
@@ -943,22 +791,11 @@ namespace SE.Editor
                 GpuEvent[] gpuEvents = Array.Empty<GpuEvent>();
                 ProfilerMemoryOverviewInfo memoryOverview = default;
                 ProfilerMemorySample[] memorySamples = Array.Empty<ProfilerMemorySample>();
-                ProfilerAllocationViewInfo allocationView = default;
-                ProfilerMemoryBucket[] memoryBuckets = Array.Empty<ProfilerMemoryBucket>();
-                ProfilerAllocation[] allocationRows = Array.Empty<ProfilerAllocation>();
                 CaptureResult result;
                 if (query && IsMemoryVisible)
                 {
-                    if (IsNativeMemoryVisible)
-                    {
-                        m_LastAllocationRefresh = Stopwatch.GetTimestamp();
-                        result = Profiling.RefreshAllocationView(Info.SessionId, IsLive ? -1 : m_MemoryBegin,
-                            IsLive ? -1 : m_MemoryEnd, IsLive ? -1 : m_MemoryInspect, m_AllocationFilter,
-                            m_AllocationAddress, m_SearchAllocationAddress, out info, out allocationView, out memoryBuckets, out allocationRows);
-                    }
-                    else
-                        result = Profiling.RefreshMemoryOverview(Info.SessionId, IsLive ? -1 : m_MemoryFirst,
-                            out info, out memoryOverview, out memorySamples);
+                    result = Profiling.RefreshMemoryOverview(Info.SessionId, IsLive ? -1 : m_MemoryFirst,
+                        out info, out memoryOverview, out memorySamples);
                 }
                 else if (query && IsGpuVisible)
                 {
@@ -976,22 +813,18 @@ namespace SE.Editor
                 {
                     result = Profiling.GetCaptureInfo(out info);
                 }
-                if (Info.SessionId != info.SessionId || info.State == CaptureState.Clearing)
+                if (Info.SessionId != info.SessionId)
                 {
                     ResetView();
                     m_FirstFrame = ulong.MaxValue;
                     m_SelectionCount = 0;
                     m_GpuFrameId = ulong.MaxValue;
                     m_MemoryFirst = -1;
-                    m_MemoryBegin = m_MemoryEnd = m_MemoryInspect = -1;
-                    m_AllocationFilter = 0;
-                    m_SearchAllocationAddress = 0;
                     m_CollapsedGpu.Clear();
                     m_ViewDirty = true;
                 }
                 Info = info;
-                // A throttled state-only poll may observe the final stop before the next analysis query is due.
-                // Keep a final view request alive instead of ending polling with a pre-stop snapshot.
+                // Preserve a final refresh when state polling observes Stop before the next view refresh.
                 if (!query && allowLiveView && IsMemoryVisible && IsLive && info.State == CaptureState.Stopped)
                     m_ViewDirty = true;
                 if (query)
@@ -1001,25 +834,13 @@ namespace SE.Editor
                         ResetView();
                         MemoryOverview = memoryOverview;
                         MemorySamples = memorySamples ?? Array.Empty<ProfilerMemorySample>();
-                        AllocationView = allocationView;
-                        MemoryBuckets = memoryBuckets ?? Array.Empty<ProfilerMemoryBucket>();
-                        Allocations = allocationRows ?? Array.Empty<ProfilerAllocation>();
-                        AllocationPage = new ProfilerAllocationPageInfo { SessionId = allocationView.SessionId,
-                            SnapshotId = allocationView.SnapshotId, Total = allocationView.MatchingCount, Count = Allocations.Length,
-                            HasMore = Allocations.Length < allocationView.MatchingCount ? 1 : 0 };
                         m_ViewDirty = false;
                         ViewResult = result;
                         if (info.State == CaptureState.Stopped)
                             IsLive = false;
                         if (!IsLive)
                         {
-                            m_MemoryFirst = memoryOverview.First;
-                            if (IsNativeMemoryVisible)
-                            {
-                                m_MemoryBegin = allocationView.BeginNs;
-                                m_MemoryEnd = allocationView.EndNs;
-                                m_MemoryInspect = allocationView.InspectNs;
-                            }
+                            m_MemoryFirst = (long)memoryOverview.First;
                         }
                     }
                     else if (result == CaptureResult.Ok && IsGpuVisible)

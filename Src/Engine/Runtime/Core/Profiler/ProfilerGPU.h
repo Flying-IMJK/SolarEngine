@@ -30,6 +30,13 @@ namespace SE
         friend class Engine;
         friend class GPUDevice;
 
+        enum class EventState : byte
+        {
+            Active,
+            Completed,
+            Incomplete
+        };
+
         /// <summary>
         /// Represents single CPU profiling event data.
         /// </summary>
@@ -59,10 +66,8 @@ namespace SE
             /// <summary>
             /// The event depth. Value 0 is used for the root events.
             /// </summary>
-            int32 Depth;
-            bool  Complete    = false;
-            bool  ForcedEnd   = false;
-            bool  TimingValid = false;
+            int32      Depth;
+            EventState State = EventState::Active;
         };
 
         /// <summary>
@@ -138,9 +143,9 @@ namespace SE
         static Function<void(const Char*)>            EventBeginCall;
         static Function<void()>                       EventEndCall;
         static Function<uint64()>                     GetFrameCountCall;
-        // Synchronous render-thread notifications. Consumers copy values and never retain buffer references.
-        static Function<void(uint64, const EventBuffer*)> s_FrameSubmittedCall;
-        static Function<void(const EventBuffer&)>         s_FrameResolvedCall;
+        // Render-thread notification when a frame closes or its data resolves. HasData distinguishes resolution.
+        // Consumers copy immediately; null means no recording buffer was available. History stays in the consumer.
+        static Function<void(uint64, const EventBuffer*)> s_FrameDataCall;
 
     private:
         static int32 m_Depth;

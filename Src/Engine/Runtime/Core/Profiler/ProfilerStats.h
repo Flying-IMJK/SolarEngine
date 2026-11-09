@@ -1,8 +1,7 @@
 #pragma once
 
-#include <Runtime/API.h>
 #include <Runtime/Core/Scripting/ScriptingType.h>
-
+#include <Runtime/API.h>
 
 namespace SE
 {
@@ -14,11 +13,8 @@ namespace SE
     {
         Unavailable,
         Idle,
-        Connecting,
         Capturing,
-        Stopping,
         Stopped,
-        Clearing,
         Failed
     };
 
@@ -32,11 +28,6 @@ namespace SE
         InvalidSession,
         InvalidFrame,
         WrongThread,
-        WrongProcess,
-        ConnectionFailed,
-        ProtocolMismatch,
-        ClientUnavailable,
-        TimedOut,
         InternalError,
         InvalidSnapshot,
         InvalidRange,
@@ -48,10 +39,6 @@ namespace SE
     {
         None,
         User,
-        CapacityLimit,
-        ReceiverEnded,
-        GpuHistoryCapacity,
-        MemoryHistoryCapacity
     };
 
     SE_STRUCT(API())
@@ -64,6 +51,9 @@ namespace SE
         uint64 ProcessId = 0;
         SE_FIELD(API())
         uint64 CompleteFrames = 0;
+        // Absolute first retained sample identity. CompleteFrames is the next sample sequence.
+        SE_FIELD(API())
+        uint64 OldestFrame = 0;
         SE_FIELD(API())
         int64 LastTimeNs = 0;
         SE_FIELD(API())
@@ -74,14 +64,6 @@ namespace SE
         int32 TailMayBeIncomplete = 0;
         SE_FIELD(API())
         ProfilerStopReason StopReason = ProfilerStopReason::None;
-        // Global Tracy Server counted allocations, not process memory or an isolated Worker total.
-        SE_FIELD(API())
-        int64 ServerMemoryBytes = 0;
-        SE_FIELD(API())
-        int64 MemoryLimitBytes = 0;
-        // Sample latched when the engine requested a capacity stop; zero for other stop reasons.
-        SE_FIELD(API())
-        int64 CapacityStopBytes = 0;
         SE_FIELD(API())
         int64 CompleteBeginNs = 0;
         SE_FIELD(API())
@@ -91,9 +73,18 @@ namespace SE
         SE_FIELD(API())
         int32 GpuPending = 0;
         SE_FIELD(API())
-        int32 GpuHistoryLimit = 0;
+        int32 PendingRequests = 0;
         SE_FIELD(API())
-        int32 ReservedGpu = 0;
+        uint64 DroppedRequests = 0;
+        SE_FIELD(API())
+        uint64 CollectorThreadId = 0;
+        // Last CPU/memory request, including OS reads; publication and GPU conversion are separate work.
+        SE_FIELD(API())
+        double CollectMs = 0;
+        SE_FIELD(API())
+        double SubmitWaitMs = 0;
+        SE_FIELD(API())
+        double PublishDelayMs = 0;
     };
 
     SE_STRUCT(API())
@@ -106,6 +97,9 @@ namespace SE
         int64 BeginNs = 0;
         SE_FIELD(API())
         int64 EndNs = 0;
+        // A known submission gap intersects this batch. Raw ring loss is not reported by ProfilerCPU.
+        SE_FIELD(API())
+        int32 DataLost = 0;
     };
 
     SE_STRUCT(API())
@@ -148,6 +142,7 @@ namespace SE
     struct SE_API_RUNTIME ProfilerCpuThread
     {
         SCRIPTING_TYPE_MIN(ProfilerCpuThread)
+        // Session-local display identity assigned by the sampling layer; not an OS thread ID.
         SE_FIELD(API())
         uint64 Id = 0;
         SE_FIELD(API())
@@ -189,7 +184,7 @@ namespace SE
     // Source-location totals for the frozen selected range and explicit thread filter.
     // Calls/Total/Average/Max include complete events only. SelfNs is a known subtotal when
     // SelfIncompleteCalls != 0; it must not be displayed as a complete self-time total.
-    // RepresentativeEvent is the largest clipped complete instance in the same event array, or -1.
+    // RepresentativeEvent is the largest complete instance in the same event array, or -1.
     SE_STRUCT(API())
     struct SE_API_RUNTIME ProfilerCpuStatistic
     {
@@ -230,7 +225,6 @@ namespace SE
         NoEvents,
         BufferUnavailable,
         TimingUnavailable,
-        CapacityExceeded,
         Incomplete
     };
 
@@ -306,6 +300,9 @@ namespace SE
         SCRIPTING_TYPE_MIN(ProfilerMemorySample)
         SE_FIELD(API())
         double TimeSeconds = 0;
+        // OS counters are read by the collector later than the submitted frame boundary.
+        SE_FIELD(API())
+        double NativeReadSeconds = 0;
         SE_FIELD(API())
         uint64 FrameId = 0;
         SE_FIELD(API())
@@ -349,135 +346,11 @@ namespace SE
         SE_FIELD(API())
         int32 TotalSamples = 0;
         SE_FIELD(API())
-        int32 First = 0;
+        uint64 First = 0;
+        SE_FIELD(API())
+        uint64 OldestSample = 0;
         SE_FIELD(API())
         int32 Count = 0;
-        SE_FIELD(API())
-        int32 CapacityReached = 0;
     };
 
-    SE_STRUCT(API())
-    struct SE_API_RUNTIME ProfilerAllocation
-    {
-        SCRIPTING_TYPE_MIN(ProfilerAllocation)
-        SE_FIELD(API())
-        uint64 PoolId = 0;
-        SE_FIELD(API())
-        uint64 RecordId = 0;
-        SE_FIELD(API())
-        uint64 Address = 0;
-        SE_FIELD(API())
-        uint64 Size = 0;
-        SE_FIELD(API())
-        int64 AllocNs = 0;
-        SE_FIELD(API())
-        int64 FreeNs = -1;
-        SE_FIELD(API())
-        uint64 AllocThread = 0;
-        SE_FIELD(API())
-        uint64 FreeThread = 0;
-        SE_FIELD(API())
-        uint32 CallstackId = 0;
-        SE_FIELD(API())
-        int32 ActiveAtInspection = 0;
-    };
-
-    SE_STRUCT(API())
-    struct SE_API_RUNTIME ProfilerMemoryBucket
-    {
-        SCRIPTING_TYPE_MIN(ProfilerMemoryBucket)
-        SE_FIELD(API())
-        int64 BeginNs = 0;
-        SE_FIELD(API())
-        int64 EndNs = 0;
-        SE_FIELD(API())
-        uint64 MinBytes = 0;
-        SE_FIELD(API())
-        uint64 MaxBytes = 0;
-        SE_FIELD(API())
-        uint64 EndBytes = 0;
-        SE_FIELD(API())
-        uint64 Allocations = 0;
-        SE_FIELD(API())
-        uint64 Frees = 0;
-    };
-
-    SE_STRUCT(API())
-    struct SE_API_RUNTIME ProfilerAllocationViewInfo
-    {
-        SCRIPTING_TYPE_MIN(ProfilerAllocationViewInfo)
-        SE_FIELD(API())
-        uint64 SessionId = 0;
-        SE_FIELD(API())
-        uint64 SnapshotId = 0;
-        SE_FIELD(API())
-        int64 BeginNs = 0;
-        SE_FIELD(API())
-        int64 EndNs = 0;
-        SE_FIELD(API())
-        int64 InspectNs = 0;
-        SE_FIELD(API())
-        int64 RecordedUntilNs = 0;
-        SE_FIELD(API())
-        uint64 RecordedAllocations = 0;
-        SE_FIELD(API())
-        uint64 RangeAllocations = 0;
-        SE_FIELD(API())
-        uint64 RangeAllocatedBytes = 0;
-        SE_FIELD(API())
-        uint64 RangeFrees = 0;
-        SE_FIELD(API())
-        uint64 RangeFreedBytes = 0;
-        SE_FIELD(API())
-        uint64 ActiveAllocations = 0;
-        SE_FIELD(API())
-        uint64 ActiveBytes = 0;
-        SE_FIELD(API())
-        int32 MatchingCount = 0;
-        SE_FIELD(API())
-        int32 FrozenCount = 0;
-        SE_FIELD(API())
-        int32 Filter = 0;
-        SE_FIELD(API())
-        int32 Reserved = 0;
-    };
-
-    SE_STRUCT(API())
-    struct SE_API_RUNTIME ProfilerAllocationPageInfo
-    {
-        SCRIPTING_TYPE_MIN(ProfilerAllocationPageInfo)
-        SE_FIELD(API())
-        uint64 SessionId = 0;
-        SE_FIELD(API())
-        uint64 SnapshotId = 0;
-        SE_FIELD(API())
-        int32 First = 0;
-        SE_FIELD(API())
-        int32 Total = 0;
-        SE_FIELD(API())
-        int32 Count = 0;
-        SE_FIELD(API())
-        int32 HasMore = 0;
-    };
-
-    SE_STRUCT(API())
-    struct SE_API_RUNTIME ProfilerAllocationStackFrame
-    {
-        SCRIPTING_TYPE_MIN(ProfilerAllocationStackFrame)
-        SE_FIELD(API())
-        uint64 Address = 0;
-        SE_FIELD(API())
-        int32 NameOffset = 0;
-        SE_FIELD(API())
-        int32 FileOffset = 0;
-        SE_FIELD(API())
-        int32 ImageOffset = 0;
-        SE_FIELD(API())
-        uint32 Line = 0;
-        SE_FIELD(API())
-        int32 Resolved = 0;
-        SE_FIELD(API())
-        int32 InlineDepth = 0;
-    };
-
-}
+} // namespace SE

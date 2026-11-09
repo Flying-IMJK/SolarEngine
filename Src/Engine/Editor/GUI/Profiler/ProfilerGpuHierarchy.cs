@@ -46,7 +46,7 @@ namespace SE.Editor
                 Rectangle cell = Cell(0, column);
                 Render2D.FillRectangle(cell, style.BackgroundNormal);
                 Render2D.PushClip(cell);
-                Render2D.RenderText(style.FontMedium, s_Headers[column], cell, style.TextColor);
+                Render2D.RenderText(style.FontMedium, s_Headers[column], cell, style.TextColor, TextAlignment.Near, TextAlignment.Center);
                 Render2D.PopClip();
             }
             float top = Parent != null ? PointFromParent(Float2.Zero).Y : 0;
@@ -64,9 +64,9 @@ namespace SE.Editor
                 {
                     string text = column switch
                     {
-                        0 => $"{(hasChildren ? m_Profiler.IsGpuEventCollapsed(index) ? "> " : "v " : string.Empty)}{m_Profiler.GetGpuText(item.NameOffset)} [d{item.Depth}]",
-                        1 => item.TimingValid != 0 ? $"{item.DurationMs:F3}" : "--",
-                        2 => item.ParentPercent >= 0 ? $"{item.ParentPercent:F2}" : "--",
+                        0 => $"{m_Profiler.GetGpuText(item.NameOffset)} [d{item.Depth}]",
+                        1 => item.TimingValid != 0 ? $"{item.DurationMs:0.##}" : "--",
+                        2 => item.ParentPercent >= 0 ? $"{item.ParentPercent:0.##}" : "--",
                         3 => item.StatsValid != 0 ? item.DrawCalls.ToString() : "--",
                         4 => item.StatsValid != 0 ? item.DispatchCalls.ToString() : "--",
                         5 => item.StatsValid != 0 ? item.Vertices.ToString() : "--",
@@ -80,8 +80,16 @@ namespace SE.Editor
                         float indent = Math.Clamp(item.Depth * 12.0f, 0, cell.Width - 60);
                         cell.X += indent;
                         cell.Width -= indent;
+                        if (hasChildren)
+                        {
+                            bool collapsed = m_Profiler.IsGpuEventCollapsed(index);
+                            Rectangle arrowRect = new Rectangle(cell.X + 2, cell.Y + (RowHeight - 12) * 0.5f, 12, 12);
+                            Render2D.DrawSprite(collapsed ? style.ArrowRight : style.ArrowDown, arrowRect, style.TextColor);
+                            cell.X += 16;
+                            cell.Width -= 16;
+                        }
                     }
-                    Render2D.RenderText(style.FontMedium, text, cell, style.TextColor);
+                    Render2D.RenderText(style.FontMedium, text, cell, style.TextColor, TextAlignment.Near, TextAlignment.Center);
                     Render2D.PopClip();
                 }
             }

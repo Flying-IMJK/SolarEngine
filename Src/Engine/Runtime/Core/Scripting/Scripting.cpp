@@ -977,12 +977,12 @@ public:
 
     void ScriptingSystem::OnUpdate()
     {
-
+        PROFILE_CPU();
     }
 
     void ScriptingSystem::OnLateUpdate()
     {
-
+        PROFILE_CPU();
     }
 
     void ScriptingSystem::OnBeforeExit()

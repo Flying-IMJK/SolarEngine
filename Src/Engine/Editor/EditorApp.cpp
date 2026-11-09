@@ -9,6 +9,7 @@
 #include "Runtime/Core/Types/Collections/Sorting.h"
 #include "Runtime/Core/IniFile.h"
 #include "Runtime/Core/Platform/FileSystem.h"
+#include "Runtime/Core/Profiler/ProfilerCPU.h"
 
 #include "Runtime/Core/Scripting/ManagedCLR/CLRMethod.h"
 #include "Runtime/Core/Scripting/ManagedCLR/CLRUtils.h"
@@ -269,6 +270,7 @@ namespace SE::Editor
 
 	void EditorApp::OnUpdate()
 	{
+		PROFILE_CPU();
 		if (!m_IconAtlasUpload)
         {
 			UploadIcon();
@@ -282,6 +284,7 @@ namespace SE::Editor
 
 	void EditorApp::OnLateUpdate()
 	{
+        PROFILE_CPU();
 		if (managedEditor != nullptr)
 		{
 			managedEditor->LateUpdate();
@@ -290,6 +293,7 @@ namespace SE::Editor
 
 	void EditorApp::OnRender()
 	{
+        PROFILE_CPU();
 		if (managedEditor != nullptr)
 		{
 			managedEditor->Render();

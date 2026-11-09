@@ -37,7 +37,7 @@ namespace SE.Editor
         private Button m_Next;
         private Label m_Status;
         private Label m_Details;
-        private Button m_DataInfoToggle;
+        private DataInfoButton m_DataInfoToggle;
         private Label m_DataInfo;
         private FrameOverview m_Overview;
         private SplitPanel m_CpuSplit;
@@ -46,17 +46,7 @@ namespace SE.Editor
         private ProfilerGpuHierarchy m_GpuHierarchy;
         private ProfilerMemoryView m_MemoryView;
         private Button m_MemoryPage;
-        private Button m_MemoryOverviewPage;
-        private Button m_AllocationsPage;
-        private Button m_AllocationFilter;
-        private TextBox m_MemoryBegin;
-        private TextBox m_MemoryEnd;
-        private TextBox m_MemoryInspect;
-        private TextBox m_MemoryAddress;
-        private Button m_ApplyMemory;
-        private Button m_RefreshSymbols;
         private bool m_LastMemoryPage;
-        private bool m_LastNativeMemoryPage;
         private Button m_GpuPage;
         private Button m_GpuFrame;
         private Button m_GpuPrevious;
@@ -110,32 +100,33 @@ namespace SE.Editor
             m_GpuPage = m_Content.AddChild(new Button { Text = "GPU" });
             m_GpuPage.Clicked += Editor.Profiler.ShowGpuPage;
             m_MemoryPage = m_Content.AddChild(new Button { Text = "Memory" });
-            m_MemoryPage.Clicked += () => Editor.Profiler.ShowMemoryPage(false);
-            m_MemoryOverviewPage = m_Content.AddChild(new Button { Text = "Memory Overview" });
-            m_MemoryOverviewPage.Clicked += () => Editor.Profiler.ShowMemoryPage(false);
-            m_AllocationsPage = m_Content.AddChild(new Button { Text = "Native Allocations" });
-            m_AllocationsPage.Clicked += () => Editor.Profiler.ShowMemoryPage(true);
-            m_AllocationFilter = m_Content.AddChild(new Button { Text = "Allocation filter" });
-            m_AllocationFilter.Clicked += () =>
+            m_MemoryPage.Clicked += Editor.Profiler.ShowMemoryPage;
+            m_Overview = m_Content.AddChild(new FrameOverview(Editor.Profiler));
+            // Chart-owned controls inherit visibility and scrolling from the frame overview.
+            m_Navigation = m_Overview.AddChild(new ContainerControl());
+            m_Older = m_Navigation.AddChild(new Button { Text = "<<", TooltipText = "PreviousPage" });
+            m_Older.Clicked += () => Editor.Profiler.BrowseFrames(false);
+            m_Previous = m_Navigation.AddChild(new Button { Text = "<", TooltipText = "Previous" });
+            m_Previous.Clicked += () =>
             {
-                ContextMenu menu = new ContextMenu();
-                menu.AddButton("All overlapping interval", () => Editor.Profiler.SetAllocationFilter(0));
-                menu.AddButton("Active at inspection", () => Editor.Profiler.SetAllocationFilter(1));
-                menu.AddButton("Allocated in range", () => Editor.Profiler.SetAllocationFilter(2));
-                menu.Show(m_AllocationFilter, new Float2(0, m_AllocationFilter.Height));
+                FrameViewInfo view = Editor.Profiler.View;
+                if (view.SelectionCount > 0 && view.SelectionFirst > Editor.Profiler.OldestFrame)
+                {
+                    Editor.Profiler.ReadFrame(view.SelectionFirst - 1);
+                }
             };
+            m_Next = m_Navigation.AddChild(new Button { Text = ">", TooltipText = "Next" });
+            m_Next.Clicked += () =>
+            {
+                FrameViewInfo view = Editor.Profiler.View;
+                if (view.SelectionCount > 0)
+                {
+                    Editor.Profiler.ReadFrame(view.SelectionFirst + view.SelectionCount);
+                }
+            };
+            m_Newer = m_Navigation.AddChild(new Button { Text = ">>", TooltipText = "NextPage" });
+            m_Newer.Clicked += () => Editor.Profiler.BrowseFrames(true);
 
-
-            CreateFrameView();
-
-            m_MemoryBegin = m_Content.AddChild(new TextBox { WatermarkText = "Begin ms (latest 10 s)" });
-            m_MemoryEnd = m_Content.AddChild(new TextBox { WatermarkText = "End ms (latest)" });
-            m_MemoryInspect = m_Content.AddChild(new TextBox { WatermarkText = "Inspect ms (end)" });
-            m_MemoryAddress = m_Content.AddChild(new TextBox { WatermarkText = "Address hex (all)" });
-            m_ApplyMemory = m_Content.AddChild(new Button { Text = "Apply range/address" });
-            m_ApplyMemory.Clicked += () => Editor.Profiler.ApplyMemoryRange(m_MemoryBegin.Text, m_MemoryEnd.Text, m_MemoryInspect.Text, m_MemoryAddress.Text);
-            m_RefreshSymbols = m_Content.AddChild(new Button { Text = "Refresh symbols" });
-            m_RefreshSymbols.Clicked += Editor.Profiler.RefreshAllocationSymbols;
             m_GpuFrame = m_Content.AddChild(new Button { Text = "GPU engine frame" });
             m_GpuFrame.Clicked += () => ShowGpuFrames(0);
             m_GpuPrevious = m_Content.AddChild(new Button { Text = "<", TooltipText = "Previous GPU engine frame" });
@@ -171,11 +162,11 @@ namespace SE.Editor
                 Wrapping = TextWrapping.WrapWords,
             });
             m_Details.SetAutoHeight(true);
-            m_DataInfoToggle = m_Content.AddChild(new Button { Text = "> 数据说明" });
+            m_DataInfoToggle = m_Content.AddChild(new DataInfoButton());
             m_DataInfoToggle.Clicked += () =>
             {
                 m_DataInfo.Visible = !m_DataInfo.Visible;
-                m_DataInfoToggle.Text = m_DataInfo.Visible ? "v 数据说明" : "> 数据说明";
+                m_DataInfoToggle.IsExpanded = m_DataInfo.Visible;
                 PerformLayout();
             };
             m_DataInfo = m_Content.AddChild(new Label
@@ -190,35 +181,6 @@ namespace SE.Editor
             UpdateCapture();
         }
 
-        private void CreateFrameView()
-        {
-            m_Overview = m_Content.AddChild(new FrameOverview(Editor.Profiler));
-            // Chart-owned controls inherit visibility and scrolling from the frame overview.
-            m_Navigation = m_Overview.AddChild(new ContainerControl());
-            m_Older = m_Navigation.AddChild(new Button { Text = "<<", TooltipText = "PreviousPage" });
-            m_Older.Clicked += () => Editor.Profiler.BrowseFrames(false);
-            m_Previous = m_Navigation.AddChild(new Button { Text = "<", TooltipText = "Previous" });
-            m_Previous.Clicked += () =>
-            {
-                FrameViewInfo view = Editor.Profiler.View;
-                if (view.SelectionCount > 0 && view.SelectionFirst > 0)
-                {
-                    Editor.Profiler.ReadFrame(view.SelectionFirst - 1);
-                }
-            };
-            m_Next = m_Navigation.AddChild(new Button { Text = ">", TooltipText = "Next" });
-            m_Next.Clicked += () =>
-            {
-                FrameViewInfo view = Editor.Profiler.View;
-                if (view.SelectionCount > 0)
-                {
-                    Editor.Profiler.ReadFrame(view.SelectionFirst + view.SelectionCount);
-                }
-            };
-            m_Newer = m_Navigation.AddChild(new Button { Text = ">>", TooltipText = "NextPage" });
-            m_Newer.Clicked += () => Editor.Profiler.BrowseFrames(true);
-        }
-
         private void UpdateCapture()
         {
             ProfilerModule profiler = Editor.Profiler;
@@ -226,7 +188,6 @@ namespace SE.Editor
             FrameViewInfo view = profiler.View;
             bool gpu = profiler.IsGpuVisible;
             bool memory = profiler.IsMemoryVisible;
-            bool nativeMemory = memory && profiler.IsNativeMemoryVisible;
             bool statistics = !gpu && !memory && profiler.IsCpuStatisticsVisible;
             if (m_StatisticFilter.Text != profiler.StatisticFilter)
                 m_StatisticFilter.Text = profiler.StatisticFilter;
@@ -238,18 +199,6 @@ namespace SE.Editor
             m_MemoryNavigation.Visible = memory;
             m_ThreadFilter.Visible = !gpu && !memory;
             m_MemoryPage.Enabled = !memory;
-            m_MemoryOverviewPage.Visible = memory;
-            m_AllocationsPage.Visible = memory;
-            m_MemoryOverviewPage.Enabled = nativeMemory;
-            m_AllocationsPage.Enabled = !nativeMemory;
-            m_AllocationFilter.Visible = nativeMemory;
-            m_MemoryBegin.Visible = nativeMemory;
-            m_MemoryEnd.Visible = nativeMemory;
-            m_MemoryInspect.Visible = nativeMemory;
-            m_MemoryAddress.Visible = nativeMemory;
-            m_ApplyMemory.Visible = nativeMemory;
-            m_RefreshSymbols.Visible = nativeMemory;
-            m_RefreshSymbols.Enabled = profiler.SelectedAllocation >= 0;
             m_GpuFrame.Visible = gpu;
             m_GpuPrevious.Visible = gpu;
             m_GpuNext.Visible = gpu;
@@ -266,15 +215,16 @@ namespace SE.Editor
             foreach (CpuThread thread in profiler.CpuThreads)
             {
                 if (thread.Id == view.FilterThreadId)
-                    threadFilter = $"{profiler.GetCpuText(thread.NameOffset)} [{thread.Id}]";
+                    threadFilter = $"{profiler.GetCpuText(thread.NameOffset)} [#{thread.Id}; OS ID unavailable]";
             }
             m_ThreadFilter.Text = $"Threads: {threadFilter}";
-            m_ThreadFilter.Enabled = info.State == CaptureState.Capturing || info.State == CaptureState.Stopping || info.State == CaptureState.Stopped;
+            m_ThreadFilter.Enabled = info.State == CaptureState.Capturing || info.State == CaptureState.Stopped;
             m_FitCpu.Enabled = view.SelectionEndNs > view.SelectionBeginNs;
             m_CpuStatus.Text = $"Snapshot: {view.SnapshotId}    CPU events: {profiler.CpuEvents.Length}    End unknown: {view.IncompleteCpuEvents}\n" +
-                $"Statistics: {profiler.VisibleStatisticCount} / {profiler.CpuStatistics.Length} sources    Range: {view.SelectionBeginNs / 1_000_000.0:F3} - {view.SelectionEndNs / 1_000_000.0:F3} ms\n" +
+                $"Statistics: {profiler.VisibleStatisticCount} / {profiler.CpuStatistics.Length} sources    " +
+                $"Range: {view.SelectionBeginNs / 1_000_000.0:0.##} - {view.SelectionEndNs / 1_000_000.0:0.##} ms\n" +
                 (statistics ? "Complete calls only; header: sort, row: inspect, double-click: locate. Not CPU utilization." :
-                    "Ctrl+wheel: zoom    Middle-drag: pan    Click thread: fold    Outlined bar: end unknown");
+                    "Ctrl+wheel: zoom    Middle-drag: pan    Click thread: fold    Incomplete: Duration unavailable");
             m_EventDetails.Text = profiler.CpuEventDetails;
             if (gpu)
             {
@@ -286,91 +236,69 @@ namespace SE.Editor
                     frameStatus = $"GPU frame {frame.FrameId}: {frame.State}    Events: {frame.EventCount}";
                     if (frame.ResolvedAtFrame != 0)
                         frameStatus += $"    First resolved at frame {frame.ResolvedAtFrame} (+{frame.ResolvedAtFrame - frame.FrameId})";
-                    frameStatus += frame.PresentAvailable != 0 ? $"\nCPU Present/flush segment: {frame.PresentMs:F3} ms (not GPU time)" : "\nCPU Present/flush segment unavailable.";
+                    frameStatus += frame.PresentAvailable != 0 ?
+                        $"\nCPU Present/flush segment: {frame.PresentMs:0.##} ms (not GPU time)" : "\nCPU Present/flush segment unavailable.";
                 }
                 m_CpuStatus.Text = frameStatus + $"\nSnapshot: {profiler.GpuView.SnapshotId}    Background GPU pending: {info.GpuPending}. No inferred CPU/GPU frame mapping.";
                 m_EventDetails.Text = profiler.GpuEventDetails;
             }
             ulong completeFrames = Math.Max(info.CompleteFrames, view.TotalFrames);
-            bool readable = info.State == CaptureState.Capturing || info.State == CaptureState.Stopping || info.State == CaptureState.Stopped;
+            bool readable = info.State == CaptureState.Capturing || info.State == CaptureState.Stopped;
             m_Start.Enabled = info.State == CaptureState.Idle;
-            m_Stop.Enabled = info.State == CaptureState.Connecting || info.State == CaptureState.Capturing;
-            m_Stop.Text = info.State == CaptureState.Connecting ? "Cancel" : "Stop";
+            m_Stop.Enabled = info.State == CaptureState.Capturing;
+            m_Stop.Text = "Stop";
             m_Clear.Enabled = info.State == CaptureState.Stopped || info.State == CaptureState.Failed;
-            m_Pause.Enabled = profiler.IsLive && (memory ? (nativeMemory ? profiler.AllocationView.SnapshotId != 0 : profiler.MemoryOverview.SnapshotId != 0) :
+            m_Pause.Enabled = profiler.IsLive && (memory ? profiler.MemoryOverview.SnapshotId != 0 :
                 gpu ? profiler.GpuView.SnapshotId != 0 : view.SnapshotId != 0);
             m_Pause.Checked = !profiler.IsLive;
             m_Live.Enabled = readable;
             m_Live.Checked = profiler.IsLive;
             m_Refresh.Enabled = readable;
-            m_Older.Enabled = !gpu && view.FrameCount > 0 && view.FirstFrame > 0;
+            m_Older.Enabled = !gpu && view.FrameCount > 0 && view.FirstFrame > profiler.OldestFrame;
             m_Newer.Enabled = !gpu && view.FrameCount > 0 && view.FirstFrame + (ulong)view.FrameCount < completeFrames;
-            m_Previous.Enabled = !gpu && view.SelectionCount > 0 && view.SelectionFirst > 0;
+            m_Previous.Enabled = !gpu && view.SelectionCount > 0 && view.SelectionFirst > profiler.OldestFrame;
             m_Next.Enabled = !gpu && view.SelectionCount > 0 && view.SelectionFirst + view.SelectionCount < completeFrames;
             if (memory)
             {
-                int first = nativeMemory ? profiler.AllocationPage.First : profiler.MemoryOverview.First;
-                int count = nativeMemory ? profiler.AllocationPage.Count : profiler.MemoryOverview.Count;
-                int total = nativeMemory ? profiler.AllocationView.MatchingCount : profiler.MemoryOverview.TotalSamples;
-                m_MemoryFirst.Enabled = m_MemoryPrevious.Enabled = first > 0;
-                m_MemoryLast.Enabled = m_MemoryNext.Enabled = first + count < total;
+                ulong first = profiler.MemoryOverview.First;
+                int count = profiler.MemoryOverview.Count;
+                ulong total = profiler.MemoryOverview.OldestSample + (ulong)profiler.MemoryOverview.TotalSamples;
+                m_MemoryFirst.Enabled = m_MemoryPrevious.Enabled = first > profiler.MemoryOverview.OldestSample;
+                m_MemoryLast.Enabled = m_MemoryNext.Enabled = first + (ulong)count < total;
                 m_EventDetails.Text = profiler.MemoryDetails;
-                if (nativeMemory)
-                {
-                    ProfilerAllocationViewInfo allocation = profiler.AllocationView;
-                    m_CpuStatus.Text = $"Snapshot {allocation.SnapshotId}: [{allocation.BeginNs / 1_000_000m:F6}, {allocation.EndNs / 1_000_000m:F6}) ms; inspection {allocation.InspectNs / 1_000_000m:F6} ms\n" +
-                        $"All pools before list filtering: allocated {allocation.RangeAllocations:N0} / {allocation.RangeAllocatedBytes:N0} bytes; freed {allocation.RangeFrees:N0} / {allocation.RangeFreedBytes:N0} bytes\n" +
-                        $"Active at T: {allocation.ActiveAllocations:N0} / {allocation.ActiveBytes:N0} bytes; matches {total:N0}; page {first}-{first + count}";
-                    m_AllocationFilter.Text = allocation.Filter == 1 ? "Active at inspection" : allocation.Filter == 2 ? "Allocated in range" : "All overlapping interval";
-                    if (allocation.SnapshotId == 0)
-                        m_CpuStatus.Text = $"No successful native memory snapshot. Query: {profiler.ViewResult}. Enter a range or refresh.";
-                    else if (allocation.RecordedAllocations == 0)
-                        m_CpuStatus.Text += "\nNo allocation records reported; allocator coverage is unavailable.";
-                }
-                else
-                    m_CpuStatus.Text = $"Overview snapshot {profiler.MemoryOverview.SnapshotId}; samples {first}-{first + count} of {total}\n" +
-                        "Engine elapsed seconds; managed receipt time is separate. Click a sample for exact values.\nSources overlap: do not sum process, system, GPU, managed and Tracy tracked bytes.";
+                m_CpuStatus.Text = $"Overview snapshot {profiler.MemoryOverview.SnapshotId}; samples {first}-{first + (ulong)count} of {total}\n" +
+                    "Engine elapsed seconds; managed receipt time is separate. Click a sample for exact values.\nSources overlap: do not sum process, system, GPU and managed bytes.";
             }
 
             string mode = profiler.IsLive ? "Live" : "Paused";
             string background = !profiler.IsLive && info.State == CaptureState.Capturing ? " (capture continues)" : string.Empty;
             m_Status.Text = $"Capture: {info.State}    View: {mode}{background}\n" +
-                $"Session: {info.SessionId}    Process: {info.ProcessId}\nComplete frames (latest state sample): {info.CompleteFrames}";
+                $"Session: {info.SessionId}    Published: {info.CompleteFrames}    Pending: {info.PendingRequests}\n" +
+                $"Dropped requests: {info.DroppedRequests}    CPU ring loss: unavailable    Publish delay: {info.PublishDelayMs:0.##} ms";
             string text = $"Snapshot: {view.SnapshotId}    Complete frames at snapshot: {view.TotalFrames}\n";
             if (info.StopReason != StopReason.None)
             {
                 text += $"Stop reason: {info.StopReason}\n";
-                if (info.StopReason == StopReason.ReceiverEnded)
-                {
-                    text += "The receiver ended; the cause has not been confirmed.\n";
-                }
             }
-            if (info.State == CaptureState.Stopping)
-            {
-                text += "Stop requested; receiving has not yet been confirmed stopped. Cutoff may still change.\n";
-            }
-            if (info.MemoryLimitBytes > 0)
-            {
-                text += $"Tracy Server counted memory (global sample): {info.ServerMemoryBytes / 1048576.0:F2} MiB\n";
-                text += $"Capture soft threshold: {info.MemoryLimitBytes / 1048576.0:F0} MiB (candidate; not performance measured)\n";
-                if (info.StopReason == StopReason.CapacityLimit)
-                {
-                    text += $"Capacity stop requested at: {info.CapacityStopBytes / 1048576.0:F2} MiB ({info.CapacityStopBytes} bytes)\n";
-                }
-                text += "Checked on system updates; allocation and receiver shutdown may overshoot the threshold.\n";
-                text += "This counter is not process memory or a hard process limit.\n";
-            }
+            text += $"Retained history: up to {profiler.HistoryCapacity} engine samples; oldest identity {profiler.OldestFrame}.\n";
             if (view.FrameCount > 0)
             {
                 text += $"Visible frames: {view.FirstFrame} - {view.FirstFrame + (ulong)view.FrameCount - 1} ({view.FrameCount} of {view.TotalFrames})\n";
-                text += $"View time: {view.BeginNs / 1_000_000.0:F3} - {view.EndNs / 1_000_000.0:F3} ms\n";
+                text += $"View time: {view.BeginNs / 1_000_000.0:0.##} - {view.EndNs / 1_000_000.0:0.##} ms\n";
                 text += $"Selected frames: {view.SelectionFirst} - {view.SelectionFirst + view.SelectionCount - 1}\n";
-                text += $"Selection time: {view.SelectionBeginNs / 1_000_000.0:F3} - {view.SelectionEndNs / 1_000_000.0:F3} ms\n";
+                text += $"Selection time: {view.SelectionBeginNs / 1_000_000.0:0.##} - {view.SelectionEndNs / 1_000_000.0:0.##} ms\n";
                 long duration = view.SelectionEndNs - view.SelectionBeginNs;
-                text += $"Selection duration: {duration / 1_000_000.0:F3} ms\n";
-                text += duration > 0 ? $"Average frame: {duration / 1_000_000.0 / view.SelectionCount:F3} ms    FPS: {view.SelectionCount * 1_000_000_000.0 / duration:F2}\n" :
+                long sampleDuration = 0;
+                foreach (CaptureFrame frame in profiler.Frames)
+                {
+                    if (frame.Index >= view.SelectionFirst && frame.Index - view.SelectionFirst < view.SelectionCount)
+                        sampleDuration += Math.Max(0, frame.EndNs - frame.BeginNs);
+                }
+                text += $"Selection duration: {duration / 1_000_000.0:0.##} ms\n";
+                text += sampleDuration > 0 ?
+                    $"Average frame: {sampleDuration / 1_000_000.0 / view.SelectionCount:0.##} ms    FPS: {view.SelectionCount * 1_000_000_000.0 / sampleDuration:0.##}\n" :
                     "FPS unavailable for a zero-duration interval.\n";
-                text += "Frame timing covers the selected complete intervals; this page is not a whole-session event statistic.\n";
+                text += "Bars show sampling intervals; completed CPU calls may start before their extraction batch.\n";
             }
             else
             {
@@ -382,11 +310,11 @@ namespace SE.Editor
             }
             if (info.State == CaptureState.Stopped)
             {
-                text += $"Recording cutoff (Tracy time): {info.LastTimeNs / 1_000_000.0:F3} ms\nNative history remains available until Clear.\n";
+                text += $"Recording cutoff (local monotonic time): {info.LastTimeNs / 1_000_000.0:0.##} ms\nNative history remains available until Clear.\n";
                 if (info.CompleteFrames > 0)
                 {
-                    text += $"Retained complete frames: 0 - {info.CompleteFrames - 1}\n";
-                    text += $"Complete frame coverage: {info.CompleteBeginNs / 1_000_000.0:F3} - {info.CompleteEndNs / 1_000_000.0:F3} ms\n";
+                    text += $"Retained complete frames: {profiler.OldestFrame} - {info.CompleteFrames - 1}\n";
+                    text += $"Complete frame coverage: {info.CompleteBeginNs / 1_000_000.0:0.##} - {info.CompleteEndNs / 1_000_000.0:0.##} ms\n";
                 }
             }
             if (info.TailMayBeIncomplete != 0)
@@ -399,9 +327,9 @@ namespace SE.Editor
             }
             text += $"Query page limit: {ProfilerModule.MaxViewFrames} complete frames. Native snapshot, temporary List, interop arrays and managed copies cost additional memory.\n";
             text += "CPU query limits: 65536 events, 256 threads, 128 levels, 1 MiB UTF-8 text (candidate limits; not performance measured).\n";
-            text += "CPU events cover the frozen selected interval and explicit thread filter. Folding changes display only.\n";
+            text += "CPU events belong to the selected extraction batches and explicit thread filter. Folding changes display only.\n";
             text += "Native source statistics cover every CPU event in this successful snapshot, independently of display aggregation and name filtering.\n";
-            text += "Total/average/max use clipped complete calls; unknown ends are counted separately. Self subtracts direct-child coverage once; missing child ends make self incomplete.\n";
+            text += "Total/average/max use complete calls with original durations; unknown ends are counted separately. Self subtracts direct-child coverage once; missing child ends make self incomplete.\n";
             text += "Cross-thread and nested inclusive totals can exceed elapsed time; they are not CPU utilization.\n";
             if (profiler.ViewResult == CaptureResult.QueryTooLarge)
             {
@@ -424,31 +352,16 @@ namespace SE.Editor
                 text += $"Native profiler could not be loaded: {profiler.LoadError}\n";
             }
             m_DataInfo.Text = gpu ? $"Capture: {info.State}    Stop reason: {info.StopReason}\nGPU history: {info.GpuFrames} frames, {info.GpuPending} pending\n" +
-                "GPU sample frame IDs are engine frame IDs. Tracy local CPU frame IDs are not automatically associated.\n" +
-                "Pending and unavailable records do not provide measured zero durations. Refresh a paused snapshot to observe later resolution.\n" +
-                "Stop fixes admitted GPU frames; their pending results may finish on later render ticks. Clear releases history.\n" +
-                "Parent ratios use the measured parent scope; roots have no denominator. The first root is not a whole-frame total.\n" +
-                "GPU history candidates: 2048 frames, 65536 events, 4 MiB UTF-8 names. Limits stop capture and retain earlier data.\n" +
-                $"GPU history capacity reached: {info.GpuHistoryLimit != 0}. Tracy server memory is a separate soft threshold.\n" +
+                $"History follows the latest {profiler.HistoryCapacity} engine samples. GPU frame IDs retain their real engine identity.\n" +
+                "Pending and unavailable timings are not measured zero durations. Refresh a paused snapshot to observe resolution.\n" +
+                "After Stop, admitted pending results may finish on later render ticks. Clear releases history.\n" +
                 $"Capture error: {info.Error}    Last operation: {profiler.LastResult}    View read: {profiler.ViewResult}\n{profiler.LoadError}" : text;
             if (memory)
-                m_DataInfo.Text = $"Memory query: {profiler.ViewResult}; capture: {info.State}; stop reason: {info.StopReason}\n" +
-                    "Overview candidates: 10 Hz, 36000 samples; memory queries: 1048576 scanned / 262144 frozen records, 2048 min/max/end buckets, 256 rows/page.\n" +
-                    "Native allocation scopes include every recorded Tracy memory pool. Pool/record identity distinguishes address reuse. All means allocations overlapping the interval.\n" +
-                    "Tracked live bytes exclude unreported allocations and missing pre-connection history; they are not total process memory or proof of leaks.\n" +
-                    "Process private committed bytes come from PrivateUsage. GPU usage is an engine resource estimate, not exact driver residency.\n" +
-                    "GC counters are process cumulative; reading never requests a collection. Samples include profiler overhead. Native and managed sources are not sampled atomically.\n" +
-                    "QueryTooLarge/Busy preserves the previous view. Narrowing a range may still exceed the scan bound when earlier history is large.\n" +
-                    $"Last operation {profiler.LastResult}; capture error {info.Error}; retained Tracy cutoff {info.LastTimeNs / 1_000_000m:F6} ms.\n{profiler.LoadError}";
-            string stopReason = info.StopReason switch
-            {
-                StopReason.User => "Stopped by user",
-                StopReason.CapacityLimit => "Tracy memory threshold reached",
-                StopReason.GpuHistoryCapacity => "GPU history capacity reached",
-                StopReason.MemoryHistoryCapacity => "Memory sample capacity reached",
-                StopReason.ReceiverEnded => "Receiver ended (cause unconfirmed)",
-                _ => info.StopReason.ToString(),
-            };
+                m_DataInfo.Text = $"Memory query: {profiler.ViewResult}; capture: {info.State}\n" +
+                    $"Overview retains {profiler.HistoryCapacity} engine samples. Paused samples remain available until refreshed or cleared.\n" +
+                    "Process, system, GPU and CLR measurements overlap and are sampled independently. GC counters are process cumulative.\n" +
+                    $"Last operation {profiler.LastResult}; capture error {info.Error}.\n{profiler.LoadError}";
+            string stopReason = info.StopReason == StopReason.User ? "Stopped by user" : info.StopReason.ToString();
             string summary = $"Capture: {info.State}";
             if (info.StopReason != StopReason.None)
             {
@@ -483,10 +396,9 @@ namespace SE.Editor
             }
             m_Details.Text = summary;
             PerformLayout();
-            if (m_LastStatisticsPage != statistics || m_LastGpuPage != gpu || m_LastMemoryPage != memory || m_LastNativeMemoryPage != nativeMemory)
+            if (m_LastStatisticsPage != statistics || m_LastGpuPage != gpu || m_LastMemoryPage != memory)
             {
                 m_LastMemoryPage = memory;
-                m_LastNativeMemoryPage = nativeMemory;
                 m_LastStatisticsPage = statistics;
                 m_LastGpuPage = gpu;
                 m_CpuSplit.Panel1.SetViewOffset(Float2.Zero);
@@ -574,68 +486,123 @@ namespace SE.Editor
             {
                 return;
             }
-            m_ToolStrip.SetBounds(0, 0, Width, 24);
-            m_Content.SetBounds(0, 24, Width, MathF.Max(0, Height - 24));
-            float width = MathF.Max(1, m_Content.Width - m_Content.GetScrollBarsSize());
+
+            const float HorizontalPadding = 8;
+            const float RowHeight = 24;
+            const float RowSpacing = 4;
+            const float SectionSpacing = 8;
+            const float StatusHeight = 50;
             bool memory = Editor.Profiler.IsMemoryVisible;
-            float chartHeight = Editor.Profiler.IsGpuVisible || memory ? 0 : Math.Clamp(m_Content.Height * 0.35f, 100, 180);
-            m_Status.SetBounds(8, 4, MathF.Max(1, width - 16), 50);
-            m_Overview.SetBounds(8, 58, MathF.Max(1, width - 16), chartHeight);
-            m_Navigation.SetBounds(0, 0, m_Overview.Width, 24);
+            bool gpu = Editor.Profiler.IsGpuVisible;
+
+            // Fixed capture toolbar and the scrolling content below it.
+            m_ToolStrip.SetBounds(0, 0, Width, RowHeight);
+            m_Content.SetBounds(0, m_ToolStrip.Bottom, Width, MathF.Max(0, Height - m_ToolStrip.Bottom));
+            float width = MathF.Max(1, m_Content.Width - m_Content.GetScrollBarsSize());
+            float contentWidth = MathF.Max(1, width - HorizontalPadding * 2);
+            float y = RowSpacing;
+
+            // Capture status, followed by the four page tabs.
+            m_Status.SetBounds(HorizontalPadding, y, contentWidth, StatusHeight);
+            y = m_Status.Bottom + RowSpacing;
+
+            float tabWidth = MathF.Min(140, contentWidth / 4);
+            m_TimelinePage.SetBounds(HorizontalPadding, y, tabWidth, RowHeight);
+            m_StatisticsPage.SetBounds(HorizontalPadding + tabWidth, y, tabWidth, RowHeight);
+            m_GpuPage.SetBounds(HorizontalPadding + tabWidth * 2, y, tabWidth, RowHeight);
+            m_MemoryPage.SetBounds(HorizontalPadding + tabWidth * 3, y, tabWidth, RowHeight);
+            y = m_MemoryPage.Bottom + RowSpacing;
+
+            // The CPU frame overview includes its own navigation row.
+            float chartHeight = gpu || memory ? 0 : Math.Clamp(m_Content.Height * 0.35f, 100, 180);
+            m_Overview.SetBounds(HorizontalPadding, y, contentWidth, chartHeight);
+            m_Navigation.SetBounds(0, 0, m_Overview.Width, RowHeight);
             float buttonWidth = MathF.Min(28, m_Navigation.Width / 4);
             m_Older.SetBounds(0, 2, buttonWidth, 20);
             m_Previous.SetBounds(buttonWidth, 2, buttonWidth, 20);
             m_Next.SetBounds(m_Navigation.Width - buttonWidth * 2, 2, buttonWidth, 20);
             m_Newer.SetBounds(m_Navigation.Width - buttonWidth, 2, buttonWidth, 20);
-            float cpuY = m_Overview.Visible ? 66 + chartHeight : 58;
-            float cpuWidth = MathF.Max(1, width - 16);
-            float fitWidth = MathF.Min(76, cpuWidth * 0.3f);
-            float tabWidth = MathF.Min(140, cpuWidth / 4);
-            m_TimelinePage.SetBounds(8, cpuY, tabWidth, 24);
-            m_StatisticsPage.SetBounds(8 + tabWidth, cpuY, tabWidth, 24);
-            m_GpuPage.SetBounds(8 + tabWidth * 2, cpuY, tabWidth, 24);
-            m_MemoryPage.SetBounds(8 + tabWidth * 3, cpuY, tabWidth, 24);
-            m_MemoryOverviewPage.SetBounds(8, cpuY + 28, cpuWidth / 2, 24);
-            m_AllocationsPage.SetBounds(8 + cpuWidth / 2, cpuY + 28, cpuWidth / 2, 24);
-            m_MemoryNavigation.SetBounds(8, cpuY + 56, cpuWidth, 24);
-            float memoryButtonWidth = MathF.Min(28, cpuWidth / 4);
-            m_MemoryFirst.SetBounds(0, 2, memoryButtonWidth, 20);
-            m_MemoryPrevious.SetBounds(memoryButtonWidth, 2, memoryButtonWidth, 20);
-            m_MemoryNext.SetBounds(cpuWidth - memoryButtonWidth * 2, 2, memoryButtonWidth, 20);
-            m_MemoryLast.SetBounds(cpuWidth - memoryButtonWidth, 2, memoryButtonWidth, 20);
-            float fieldWidth = cpuWidth / 4;
-            m_MemoryBegin.SetBounds(8, cpuY + 84, fieldWidth, 24);
-            m_MemoryEnd.SetBounds(8 + fieldWidth, cpuY + 84, fieldWidth, 24);
-            m_MemoryInspect.SetBounds(8 + fieldWidth * 2, cpuY + 84, fieldWidth, 24);
-            m_MemoryAddress.SetBounds(8 + fieldWidth * 3, cpuY + 84, fieldWidth, 24);
-            m_AllocationFilter.SetBounds(8, cpuY + 112, cpuWidth / 3, 24);
-            m_ApplyMemory.SetBounds(8 + cpuWidth / 3, cpuY + 112, cpuWidth / 3, 24);
-            m_RefreshSymbols.SetBounds(8 + cpuWidth * 2 / 3, cpuY + 112, cpuWidth / 3, 24);
-            m_GpuFrame.SetBounds(8, cpuY + 28, MathF.Max(1, cpuWidth - 68), 24);
-            m_GpuPrevious.SetBounds(8 + MathF.Max(1, cpuWidth - 64), cpuY + 28, 28, 24);
-            m_GpuNext.SetBounds(8 + MathF.Max(1, cpuWidth - 32), cpuY + 28, 28, 24);
-            float filterWidth = Editor.Profiler.IsCpuStatisticsVisible ? cpuWidth * 0.5f : fitWidth;
-            m_ThreadFilter.SetBounds(8, cpuY + 28, MathF.Max(1, cpuWidth - filterWidth - 4), 24);
-            m_FitCpu.SetBounds(8 + cpuWidth - fitWidth, cpuY + 28, fitWidth, 24);
-            m_StatisticFilter.SetBounds(8 + cpuWidth - filterWidth, cpuY + 28, filterWidth, 24);
-            float memoryExtra = memory && Editor.Profiler.IsNativeMemoryVisible ? 56 : 0;
+            if (m_Overview.Visible)
+            {
+                y = m_Overview.Bottom + SectionSpacing;
+            }
+
+            // Each page contributes its own rows above the shared status and content.
             if (memory)
-                memoryExtra += 28;
-            m_CpuStatus.SetBounds(8, cpuY + 56 + memoryExtra, cpuWidth, memory ? 66 : 50);
-            float cpuHeight = Math.Clamp(m_Content.Height * 0.6f, 220, 420);
-            float splitY = cpuY + 110 + memoryExtra + (memory ? 16 : 0);
-            m_CpuSplit.SetBounds(8, splitY, cpuWidth, cpuHeight);
+            {
+                m_MemoryNavigation.SetBounds(HorizontalPadding, y, contentWidth, RowHeight);
+                float memoryButtonWidth = MathF.Min(28, contentWidth / 4);
+                m_MemoryFirst.SetBounds(0, 2, memoryButtonWidth, 20);
+                m_MemoryPrevious.SetBounds(memoryButtonWidth, 2, memoryButtonWidth, 20);
+                m_MemoryNext.SetBounds(contentWidth - memoryButtonWidth * 2, 2, memoryButtonWidth, 20);
+                m_MemoryLast.SetBounds(contentWidth - memoryButtonWidth, 2, memoryButtonWidth, 20);
+                y = m_MemoryNavigation.Bottom + RowSpacing;
+            }
+            else if (gpu)
+            {
+                m_GpuFrame.SetBounds(HorizontalPadding, y, MathF.Max(1, contentWidth - 68), RowHeight);
+                m_GpuPrevious.SetBounds(HorizontalPadding + MathF.Max(1, contentWidth - 64), y, 28, RowHeight);
+                m_GpuNext.SetBounds(HorizontalPadding + MathF.Max(1, contentWidth - 32), y, 28, RowHeight);
+                y = m_GpuFrame.Bottom + RowSpacing;
+            }
+            else
+            {
+                bool statistics = Editor.Profiler.IsCpuStatisticsVisible;
+                float fitWidth = MathF.Min(76, contentWidth * 0.3f);
+                float filterWidth = statistics ? contentWidth * 0.5f : fitWidth;
+                m_ThreadFilter.SetBounds(HorizontalPadding, y, MathF.Max(1, contentWidth - filterWidth - RowSpacing), RowHeight);
+                if (statistics)
+                {
+                    m_StatisticFilter.SetBounds(HorizontalPadding + contentWidth - filterWidth, y, filterWidth, RowHeight);
+                }
+                else
+                {
+                    m_FitCpu.SetBounds(HorizontalPadding + contentWidth - fitWidth, y, fitWidth, RowHeight);
+                }
+                y = m_ThreadFilter.Bottom + RowSpacing;
+            }
+
+            // Page status and the main view with its inspector.
+            m_CpuStatus.SetBounds(HorizontalPadding, y, contentWidth, memory ? 66 : StatusHeight);
+            y = m_CpuStatus.Bottom + RowSpacing;
+
+            float viewHeight = Math.Clamp(m_Content.Height * 0.6f, 220, 420);
+            m_CpuSplit.SetBounds(HorizontalPadding, y, contentWidth, viewHeight);
             LayoutCpuPanels();
-            m_Details.SetBounds(8, splitY + 8 + cpuHeight, cpuWidth, m_Details.Height);
-            float dataInfoY = m_Details.Bottom + 4;
-            m_DataInfoToggle.SetBounds(8, dataInfoY, MathF.Min(160, cpuWidth), 24);
-            m_DataInfo.SetBounds(8, dataInfoY + 28, cpuWidth, m_DataInfo.Height);
+            y = m_CpuSplit.Bottom + SectionSpacing;
+
+            // Selection details and the optional data information at the bottom.
+            m_Details.SetBounds(HorizontalPadding, y, contentWidth, m_Details.Height);
+            y = m_Details.Bottom + RowSpacing;
+
+            m_DataInfoToggle.SetBounds(HorizontalPadding, y, MathF.Min(160, contentWidth), RowHeight);
+            y = m_DataInfoToggle.Bottom + RowSpacing;
+            m_DataInfo.SetBounds(HorizontalPadding, y, contentWidth, m_DataInfo.Height);
         }
 
         public override void OnExit()
         {
             Editor.Profiler.Changed -= UpdateCapture;
             base.OnExit();
+        }
+
+        private sealed class DataInfoButton : Button
+        {
+            public bool IsExpanded { get; set; }
+
+            public override void DrawSelf()
+            {
+                // Keep the standard button appearance and input, with separate arrow and label areas.
+                base.DrawSelf();
+                Style style = Style.Current;
+                Color color = EnabledInHierarchy ? TextColor : TextColor * 0.6f;
+                Rectangle arrowRect = new Rectangle(4, (Height - 12) * 0.5f, 12, 12);
+                Rectangle textRect = new Rectangle(20, 0, MathF.Max(0, Width - 24), Height);
+                Render2D.PushClip(new Rectangle(Float2.Zero, Size));
+                Render2D.DrawSprite(IsExpanded ? style.ArrowDown : style.ArrowRight, arrowRect, color);
+                Render2D.RenderText(Font, TextMaterial, "数据说明", textRect, color, TextAlignment.Center, TextAlignment.Center);
+                Render2D.PopClip();
+            }
         }
 
         private sealed class FrameOverview : ContainerControl
@@ -676,7 +643,7 @@ namespace SE.Editor
                 float navigationWidth = MathF.Min(56, Width / 2);
                 Rectangle scale = new Rectangle(navigationWidth + 4, 2, MathF.Max(0, Width - navigationWidth * 2 - 8), 20);
                 Render2D.PushClip(scale);
-                Render2D.RenderText(style.FontMedium, $"{maximum:F3} ms", scale, style.TextColor);
+                Render2D.RenderText(style.FontMedium, $"{maximum:0.##} ms", scale, style.TextColor);
                 Render2D.PopClip();
                 float step = plot.Width / frames.Length;
                 for (int i = 0; i < frames.Length; i++)
@@ -795,8 +762,8 @@ namespace SE.Editor
                     area = new Rectangle(Plot.X + m_Hover * step, Plot.Y, step, Plot.Height);
                     CaptureFrame frame = frames[m_Hover];
                     long duration = frame.EndNs - frame.BeginNs;
-                    text = $"Frame {frame.Index}\nBegin: {frame.BeginNs / 1_000_000.0:F3} ms\nEnd: {frame.EndNs / 1_000_000.0:F3} ms\nDuration: {duration / 1_000_000.0:F3} ms\n";
-                    text += duration > 0 ? $"FPS: {1_000_000_000.0 / duration:F2}" : "FPS unavailable";
+                    text = $"Frame {frame.Index}\nDuration: {duration / 1_000_000.0:0.##} ms\n";
+                    text += duration > 0 ? $"FPS: {1_000_000_000.0 / duration:0.##}" : "FPS unavailable";
                     return show;
                 }
                 return false;
