@@ -16,7 +16,7 @@ namespace SE::Editor
         m_Models[2] = AssetContent::LoadAsyncInternal<Model>(SE_TEXT("Assets/Models/GizmoRotationRing"));
         m_Models[3] = AssetContent::LoadAsyncInternal<Model>(SE_TEXT("Assets/Models/GizmoPlane"));
         m_Models[4] = AssetContent::LoadAsyncInternal<Model>(SE_TEXT("Assets/Models/GizmoCenter"));
-        m_Shader    = AssetContent::LoadAsyncInternal<GraphicShader>(SE_TEXT("Shaders/Editor/TransformGizmo"));
+        m_Shader    = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/Editor/TransformGizmo"));
 #if COMPILE_WITH_DEV_ENV
         if (m_Shader.HasReference())
         {

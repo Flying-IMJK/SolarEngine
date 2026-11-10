@@ -367,7 +367,9 @@ namespace SE::Threading
 	{
 		PROFILE_CPU();
 		if (jobCount <= 0)
-			return 0;
+		{
+		    return 0;
+		}
 #if JOB_SYSTEM_ENABLED
 #if JOB_SYSTEM_USE_STATS
 		const auto start = Platform::GetTimeCycles();
@@ -489,6 +491,7 @@ namespace SE::Threading
 	void JobSystem::Wait()
 	{
 #if JOB_SYSTEM_ENABLED
+		PROFILE_CPU();
 		jobSystemData->JobsLocker.Lock();
 		int32 numJobs = jobSystemData->JobContexts.Count();
 		jobSystemData->JobsLocker.Unlock();
@@ -542,6 +545,7 @@ namespace SE::Threading
 	void JobSystem::SetJobStartingOnDispatch(bool value)
 	{
 #if JOB_SYSTEM_ENABLED
+		PROFILE_CPU();
 		jobSystemData->JobStartingOnDispatch = value;
 
 		if (value)

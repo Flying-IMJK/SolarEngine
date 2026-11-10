@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Types.h"
+#include <Runtime/Resource/Importers/Types.h>
 
 namespace SE
 {
@@ -18,18 +18,4 @@ namespace SE
 		static CreateAssetResult Import(CreateAssetContext& context);
 	};
 
-	/// <summary>
-    /// Importing shaders utility
-    /// </summary>
-    class ImportSLC2Shader
-    {
-    public:
-        /// <summary>
-        /// Imports the shader file.
-        /// </summary>
-        /// <param name="context">The importing context.</param>
-        /// <returns>Result.</returns>
-        static CreateAssetResult Import(CreateAssetContext& context);
-    };
-
-} // SE
+} // namespace SE

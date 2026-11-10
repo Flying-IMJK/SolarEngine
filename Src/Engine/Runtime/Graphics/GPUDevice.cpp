@@ -407,4 +407,10 @@ namespace SE
     SLC2GPUPipelineState::SLC2GPUPipelineState() : GPUResource(SpawnParams(UID::New(), TypeInitializer)) {}
 
     GPUResourceType SLC2GPUPipelineState::GetResType() const { return GPUResourceType::PipelineState; }
-} // namespace SE
+
+
+	bool SLC2GPUPipelineState::Description::operator==(const SLC2GPUPipelineState::Description& other) const 
+	{
+		return Platform::MemoryCompare(this, &other, sizeof(Description)) == 0;
+	}
+}

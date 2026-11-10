@@ -12,7 +12,6 @@ RUNTIME_ADD(
         RenderEnum.h
         RendererPass.h
         RenderDrawCall.h
-        SLC2RenderDraw.h
 
         Renderer.h
         Renderer.cpp

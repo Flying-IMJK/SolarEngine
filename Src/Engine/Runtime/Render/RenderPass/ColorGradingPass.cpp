@@ -1,12 +1,14 @@
 
-#include "ColorGradingPass.h"
+#include <Runtime/Render/RenderPass/ColorGradingPass.h>
 
-#include "Runtime/Core/Profiler/Profiler.h"
-#include "Runtime/Graphics/GPUContext.h"
-#include "Runtime/Graphics/RenderTargetPool.h"
-#include "Runtime/Graphics/Shaders/GPUConstantBuffer.h"
-#include "Runtime/Render/RenderList.h"
-#include "Runtime/Resource/Assets/SLC2Materials/GraphicShader.h"
+#include <Runtime/Core/Profiler/Profiler.h>
+#include <Runtime/Graphics/GPUContext.h>
+#include <Runtime/Graphics/GPUDevice.h>
+#include <Runtime/Graphics/RenderTargetPool.h>
+#include <Runtime/Graphics/Shaders/GPUConstantBuffer.h>
+#include <Runtime/Graphics/Shaders/ShaderProgramInstance.h>
+#include <Runtime/Render/RenderList.h>
+#include <Runtime/Resource/Assets/Materials/Shader.h>
 
 namespace SE
 {
@@ -80,39 +82,49 @@ namespace SE
 		}
 
 		// Load shader
-		m_Shader = AssetContent::LoadAsyncInternal<GraphicShader>(SE_TEXT("Shaders/PostProcess/ColorGrading"));
-		if (m_Shader == nullptr)
-		{
-			return false;
-		}
-#if COMPILE_WITH_DEV_ENV
-		_shader.Get()->OnReloading.Bind<ColorGradingPass, &ColorGradingPass::OnShaderReloading>(this);
-#endif
+        m_Shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/PostProcess/ColorGrading"));
+        if (m_Shader == nullptr)
+        {
+            return false;
+        }
+        m_Shader->OnReloadingEvent.Bind<ColorGradingPass, &ColorGradingPass::OnShaderReloading>(this);
 
-		m_ProgramInstance = New<ShaderProgramInstance>();
+        m_ProgramInstance = New<ShaderProgramInstance>();
 
-		m_GPUConstantBuffer = device->CreateConstantBuffer(sizeof(Data), SE_TEXT("ColorGradingCB"));
+        m_GPUConstantBuffer = device->CreateConstantBuffer(sizeof(Data), SE_TEXT("ColorGradingCB"));
 
-		m_PipelineState = device->CreateSLC2PipelineState();
+        m_PipelineState = device->CreateSLC2PipelineState();
 
 		return true;
 	}
 
 	void ColorGradingPass::Dispose()
 	{
-		// Base
-		RendererPass::Dispose();
+        if (m_Shader)
+            m_Shader->OnReloadingEvent.Unbind<ColorGradingPass, &ColorGradingPass::OnShaderReloading>(this);
 
-		// Cleanup
+        // Base
+        RendererPass::Dispose();
+
+        // Cleanup
         Delete(m_GPUConstantBuffer);
         Delete(m_PipelineState);
         Delete(m_ProgramInstance);
 		m_Shader = nullptr;
 	}
 
-	bool ColorGradingPass::SetupResources()
-	{
-		if (m_Shader == nullptr)
+    void ColorGradingPass::OnShaderReloading(Asset* pAsset)
+    {
+        DeleteObjectSafe(m_PipelineState);
+        DeleteObjectSafe(m_ProgramInstance);
+        m_PipelineState   = GPUDevice::instance->CreateSLC2PipelineState();
+        m_ProgramInstance = New<ShaderProgramInstance>();
+        InvalidateResources();
+    }
+
+    bool ColorGradingPass::SetupResources()
+    {
+        if (m_Shader == nullptr)
 		{
 			return false;
 		}
@@ -124,9 +136,9 @@ namespace SE
 		}
 
 		return true;
-	}
+    }
 
-	GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
+    GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
 	{
 		// Ensure to have valid data
 		if (CheckIfSkipPass())

@@ -1490,7 +1490,7 @@ namespace SE
 				continue;
 			}
 
-			const RenderGeometryVertexBuffer* vertexBuffer = geometry.FindVertexBuffer(slot);
+			const GeometryVertexBuffer* vertexBuffer = geometry.FindVertexBuffer(slot);
 			if (vertexBuffer == nullptr)
 			{
 				// 先收集全部缺失 Slot，避免调用方每次修复一个错误后才能看到下一个错误。

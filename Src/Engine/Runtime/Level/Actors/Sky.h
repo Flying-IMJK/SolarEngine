@@ -1,15 +1,16 @@
 #pragma once
 
-#include "DirectionalLight.h"
-#include "Runtime/Level/Actor.h"
-#include "Runtime/Render/RenderDrawCall.h"
-#include "Runtime/Render/Assets/Texture/CubeTexture.h"
-#include "Runtime/Resource/AssetRef.h"
-#include "Runtime/Resource/Assets/Materials/Shader.h"
+#include <Runtime/Level/Actor.h>
+#include <Runtime/Level/Actors/DirectionalLight.h>
+#include <Runtime/Render/Assets/Texture/CubeTexture.h>
+#include <Runtime/Render/RenderDrawCall.h>
+#include <Runtime/Resource/AssetRef.h>
+#include <Runtime/Resource/Assets/Materials/Shader.h>
 
 namespace SE
 {
-    class GPUPipelineState;
+    class SLC2GPUPipelineState;
+    class ShaderProgramInstance;
 
     SE_ENUM(Reflect)
     enum class SkyType
@@ -28,9 +29,10 @@ namespace SE
         SE_DEFINE_CLASS(Sky, RenderActor);
     private:
         AssetRef<Shader> _shader;
-        GPUPipelineState* _psSky;
-        GPUPipelineState* _psFog;
-        GPUPipelineState* _psSkyBox;
+        SLC2GPUPipelineState*  _psSky;
+        ShaderProgramInstance* m_SkyProgram = nullptr;
+        SLC2GPUPipelineState*  _psSkyBox;
+        ShaderProgramInstance* m_SkyBoxProgram    = nullptr;
         int32 _sceneRenderingKey = -1;
 
     public:
@@ -80,13 +82,9 @@ namespace SE
         float SunPower = 8.0f;
 
     private:
-#if COMPILE_WITH_DEV_ENV
-        void OnShaderReloading(Asset* obj)
-        {
-            _psSky = nullptr;
-            _psFog = nullptr;
-        }
-#endif
+        void ReleasePrograms();
+        void OnShaderReloading(Asset* pAsset) { ReleasePrograms(); }
+        bool SetupProgram(const String& name, SLC2GPUPipelineState*& pipeline, ShaderProgramInstance*& instance);
         // void InitConfig(AtmosphericFogData& config) const;
 
     public:
@@ -111,7 +109,8 @@ namespace SE
 
         // [ISkyRenderer]
         bool IsDynamicSky() const override;
-        void ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world) override;
+        ShaderProgramInstance*
+        ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world) override;
 
     protected:
         // [Actor]

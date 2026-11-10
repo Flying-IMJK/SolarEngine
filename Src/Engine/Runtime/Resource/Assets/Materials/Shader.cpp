@@ -1,96 +1,74 @@
+#include <Runtime/Resource/Assets/Materials/Shader.h>
 
-#include "Shader.h"
-
-#include "Runtime/Core/Serialization/MemoryReadStream.h"
-#include "Runtime/Graphics/GPUDevice.h"
-#include "Runtime/Graphics/Shaders/GPUShader.h"
-#include "Runtime/Resource/Factories/BinaryAssetFactory.h"
+#include <Runtime/Graphics/GPUDevice.h>
+#include <Runtime/Resource/Factories/BinaryAssetFactory.h>
 
 namespace SE
 {
-	BINARY_ASSET_FACTORY(Shader, false);
+    BINARY_ASSET_FACTORY(Shader, true);
 
-	Shader::Shader(const SpawnParams& params, const AssetInfo* info) : BinaryAsset(params, info)
-	{
-		ENGINE_ASSERT(GPUDevice::instance);
-		m_GpuShader = GPUDevice::instance->CreateShader(info->path);
-		ENGINE_ASSERT(m_GpuShader);
-	}
+    Shader::Shader(const SpawnParams& params, const AssetInfo* pInfo) : BinaryAsset(params, pInfo)
+    {
+        ENGINE_ASSERT(GPUDevice::instance);
+        Platform::MemoryClear(&m_ShaderHeader, sizeof(m_ShaderHeader));
+        m_GPUShader = GPUDevice::instance->CreateSLC2Shader(pInfo ? StringView(pInfo->path) : StringView::Empty);
+    }
 
-	Shader::~Shader()
-	{
-		Delete(m_GpuShader);
-	}
+    Shader::~Shader() { DeleteObjectSafe(m_GPUShader); }
 
-	bool Shader::Save()
-	{
-		auto parent = GetShaderAsset();
-		AssetInitData data;
-		data.SerializedVersion = ShaderStorage::Header::Version;
-		data.CustomData.Link(&_shaderHeader);
-		parent->metadata.Release();
-		return parent->SaveAsset(data);
-	}
+    bool Shader::SelectProgram(const String& name, const List<String>& selection, SLC2GPUShaderProgram*& output)
+    {
+        output = nullptr;
+        return IsLoaded() && m_GPUShader && m_GPUShader->GetOrCreateProgram(name, selection, output);
+    }
 
-	Asset::LoadResult Shader::load()
-	{
-		// Special case for Null renderer that doesn't need shaders
-		if (IsNullRenderer())
-		{
-			return LoadResult::Ok;
-		}
+    bool Shader::SelectProgram(const String& name, const List<String>& selection, ShaderProgramInstance* pInstance)
+    {
+        SLC2GPUShaderProgram* program = nullptr;
+        return pInstance && SelectProgram(name, selection, program) && pInstance->Initialize(program);
+    }
 
-		// Load shader cache (it may call compilation or gather cached data)
-		ShaderCacheResult shaderCache;
-		if (!LoadShaderCache(shaderCache))
-		{
-			LOG_ERROR("Resource", "Cannot load \'{0}\' shader cache.", ToString());
-			return LoadResult::Failed;
-		}
-		MemoryReadStream shaderCacheStream(shaderCache.Data.Get(), shaderCache.Data.Length());
+    bool Shader::OnInit(AssetInitData& initData)
+    {
+        if (initData.SerializedVersion != ShaderStorage::Header::Version ||
+            initData.CustomData.Length() != sizeof(m_ShaderHeader))
+            return false;
+        Platform::MemoryCopy(&m_ShaderHeader, initData.CustomData.Get(), sizeof(m_ShaderHeader));
+        return true;
+    }
 
-		// Create shader from cache
-		if (!m_GpuShader->Create(shaderCacheStream))
-		{
-			LOG_ERROR("Resource", "Cannot load shader \'{0}\'", ToString());
-			return LoadResult::Failed;
-		}
+    Asset::LoadResult Shader::load()
+    {
+        ShaderCacheResult cache;
+        if (!LoadShaderCache(cache) || !m_GPUShader || !m_GPUShader->Load(cache.Data.Get(), cache.Data.Length()))
+            return LoadResult::Failed;
+        RegisterForShaderReloads(this, cache);
+        return LoadResult::Ok;
+    }
 
-		RegisterForShaderReloads(this, shaderCache);
+    void Shader::Unload(bool isReloading)
+    {
+        UnregisterForShaderReloads(this);
+        if (m_GPUShader)
+            m_GPUShader->ReleaseGPU();
+    }
 
-		return LoadResult::Ok;
-	}
+    AssetChunksFlag Shader::GetChunksToPreload() const
+    {
+        return ShaderStorage::GetCachingMode() == ShaderStorage::CachingMode::AssetInternal ?
+                   GET_CHUNK_FLAG(GetCacheChunkIndex()) | GET_CHUNK_FLAG(SHADER_FILE_CHUNK_DEPENDENCIES) :
+                   0;
+    }
 
-	void Shader::Unload(bool isReloading)
-	{
-		UnregisterForShaderReloads(this);
-		m_GpuShader->ReleaseGPU();
-	}
+    uint32 Shader::GetSerializedVersion() const { return ShaderStorage::Header::Version; }
 
-	bool Shader::OnInit(AssetInitData& initData)
-	{
-		// Validate version
-		if (initData.SerializedVersion != ShaderStorage::Header::Version)
-		{
-			LOG_WARNING("Resource", "Invalid shader serialized version.");
-			return false;
-		}
-
-		// Validate data
-		if (initData.CustomData.Length() != sizeof(_shaderHeader))
-		{
-			LOG_WARNING("Resource", "Invalid shader header.");
-			return false;
-		}
-
-		// Load header 'as-is'
-		Platform::MemoryCopy(&_shaderHeader, initData.CustomData.Get(), sizeof(_shaderHeader));
-
-		return true;
-	}
-
-	uint32 Shader::GetSerializedVersion() const
-	{
-		return 1;
-	}
-} // SE
+#if SE_EDITOR
+    bool Shader::Save()
+    {
+        AssetInitData data;
+        data.SerializedVersion = GetSerializedVersion();
+        data.CustomData.Link(&m_ShaderHeader);
+        return SaveAsset(data);
+    }
+#endif
+} // namespace SE

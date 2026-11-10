@@ -1,11 +1,11 @@
 
-#include "AssetsImportingSystem.h"
+#include <Runtime/Resource/Importers/AssetsImportingSystem.h>
 
-#include "CreateMaterial.h"
-#include "ImportFont.h"
-#include "ImportModel.h"
-#include "ImportTexture.h"
-#include "ImportShader.h"
+#include <Runtime/Resource/Importers/CreateMaterial.h>
+#include <Runtime/Resource/Importers/ImportFont.h>
+#include <Runtime/Resource/Importers/ImportModel.h>
+#include <Runtime/Resource/Importers/ImportShader.h>
+#include <Runtime/Resource/Importers/ImportTexture.h>
 
 #include <Runtime/Core/Serialization/JsonWriters.hpp>
 #include <Runtime/Core/Platform/FileSystem.h>
@@ -78,73 +78,72 @@ namespace SE
 		bool OnInit() override
 		{
 			// Initialize with in-build importers
-			AssetImporter InBuildImporters[] =
-			{
-					// Textures and Cube Textures
-					{ SE_TEXT("tga"), ASSET_FILES_EXTENSION, ImportTexture::Import },
-					{ SE_TEXT("dds"), ASSET_FILES_EXTENSION, ImportTexture::Import },
-					{ SE_TEXT("png"), ASSET_FILES_EXTENSION, ImportTexture::Import },
-					{ SE_TEXT("bmp"), ASSET_FILES_EXTENSION, ImportTexture::Import },
-					{ SE_TEXT("tif"), ASSET_FILES_EXTENSION, ImportTexture::Import },
-					{ SE_TEXT("jpeg"), ASSET_FILES_EXTENSION, ImportTexture::Import },
-					{ SE_TEXT("jpg"), ASSET_FILES_EXTENSION, ImportTexture::Import },
-					{ SE_TEXT("hdr"), ASSET_FILES_EXTENSION, ImportTexture::Import },
-					{ SE_TEXT("raw"), ASSET_FILES_EXTENSION, ImportTexture::Import },
-					{ SE_TEXT("exr"), ASSET_FILES_EXTENSION, ImportTexture::Import },
+            AssetImporter InBuildImporters[] = {
+                // Textures and Cube Textures
+                {SE_TEXT("tga"), ASSET_FILES_EXTENSION, ImportTexture::Import},
+                {SE_TEXT("dds"), ASSET_FILES_EXTENSION, ImportTexture::Import},
+                {SE_TEXT("png"), ASSET_FILES_EXTENSION, ImportTexture::Import},
+                {SE_TEXT("bmp"), ASSET_FILES_EXTENSION, ImportTexture::Import},
+                {SE_TEXT("tif"), ASSET_FILES_EXTENSION, ImportTexture::Import},
+                {SE_TEXT("jpeg"), ASSET_FILES_EXTENSION, ImportTexture::Import},
+                {SE_TEXT("jpg"), ASSET_FILES_EXTENSION, ImportTexture::Import},
+                {SE_TEXT("hdr"), ASSET_FILES_EXTENSION, ImportTexture::Import},
+                {SE_TEXT("raw"), ASSET_FILES_EXTENSION, ImportTexture::Import},
+                {SE_TEXT("exr"), ASSET_FILES_EXTENSION, ImportTexture::Import},
 
-/*				// IES Profiles
-				{ SE_TEXT("ies"), ASSET_FILES_EXTENSION, ImportTexture::ImportIES },
-				*/
-				// Shaders
-				{ SE_TEXT("shader"), ASSET_FILES_EXTENSION, ImportShader::Import },
-                { SE_TEXT("slang"), ASSET_FILES_EXTENSION, ImportSLC2Shader::Import},
+                /*				// IES Profiles
+                                { SE_TEXT("ies"), ASSET_FILES_EXTENSION, ImportTexture::ImportIES },
+                                */
+                // Shaders
+                {SE_TEXT("shader"), ASSET_FILES_EXTENSION, ImportShader::Import},
+                {SE_TEXT("slang"), ASSET_FILES_EXTENSION, ImportShader::Import},
                 /*
-				// Audio
-				{ SE_TEXT("wav"), ASSET_FILES_EXTENSION, ImportAudio::ImportWav },
-				{ SE_TEXT("mp3"), ASSET_FILES_EXTENSION, ImportAudio::ImportMp3 },
+                // Audio
+                { SE_TEXT("wav"), ASSET_FILES_EXTENSION, ImportAudio::ImportWav },
+                { SE_TEXT("mp3"), ASSET_FILES_EXTENSION, ImportAudio::ImportMp3 },
 #if COMPILE_WITH_OGG_VORBIS
-				{ SE_TEXT("ogg"), ASSET_FILES_EXTENSION, ImportAudio::ImportOgg },
+                { SE_TEXT("ogg"), ASSET_FILES_EXTENSION, ImportAudio::ImportOgg },
 #endif
-				*/
-				// Fonts
-				{ SE_TEXT("ttf"), ASSET_FILES_EXTENSION, ImportFont::Import },
-				{ SE_TEXT("otf"), ASSET_FILES_EXTENSION, ImportFont::Import },
+                */
+                // Fonts
+                {SE_TEXT("ttf"), ASSET_FILES_EXTENSION, ImportFont::Import},
+                {SE_TEXT("otf"), ASSET_FILES_EXTENSION, ImportFont::Import},
 
-				// Models
-				{ SE_TEXT("obj"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("fbx"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("gltf"), ASSET_FILES_EXTENSION, ImportModel::Import },
+                // Models
+                {SE_TEXT("obj"), ASSET_FILES_EXTENSION, ImportModel::Import},
+                {SE_TEXT("fbx"), ASSET_FILES_EXTENSION, ImportModel::Import},
+                {SE_TEXT("gltf"), ASSET_FILES_EXTENSION, ImportModel::Import},
 
-				/*// gettext PO files
-				{ SE_TEXT("po"), SE_TEXT("json"), CreateJson::ImportPo },
+                /*// gettext PO files
+                { SE_TEXT("po"), SE_TEXT("json"), CreateJson::ImportPo },
 
-				// Models (untested formats - may fail :/)
-				{ SE_TEXT("blend"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("bvh"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("ase"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("ply"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("dxf"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("ifc"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("nff"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("smd"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("vta"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("mdl"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("md2"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("md3"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("md5mesh"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("q3o"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("q3s"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("ac"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("stl"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("lwo"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("lws"), ASSET_FILES_EXTENSION, ImportModel::Import },
-				{ SE_TEXT("lxo"), ASSET_FILES_EXTENSION, ImportModel::Import },*/
-			};
+                // Models (untested formats - may fail :/)
+                { SE_TEXT("blend"), ASSET_FILES_EXTENSION, ImportModel::Import },
+                { SE_TEXT("bvh"), ASSET_FILES_EXTENSION, ImportModel::Import },
+                { SE_TEXT("ase"), ASSET_FILES_EXTENSION, ImportModel::Import },
+                { SE_TEXT("ply"), ASSET_FILES_EXTENSION, ImportModel::Import },
+                { SE_TEXT("dxf"), ASSET_FILES_EXTENSION, ImportModel::Import },
+                { SE_TEXT("ifc"), ASSET_FILES_EXTENSION, ImportModel::Import },
+                { SE_TEXT("nff"), ASSET_FILES_EXTENSION, ImportModel::Import },
+                { SE_TEXT("smd"), ASSET_FILES_EXTENSION, ImportModel::Import },
+                { SE_TEXT("vta"), ASSET_FILES_EXTENSION, ImportModel::Import },
+                { SE_TEXT("mdl"), ASSET_FILES_EXTENSION, ImportModel::Import },
+                { SE_TEXT("md2"), ASSET_FILES_EXTENSION, ImportModel::Import },
+                { SE_TEXT("md3"), ASSET_FILES_EXTENSION, ImportModel::Import },
+                { SE_TEXT("md5mesh"), ASSET_FILES_EXTENSION, ImportModel::Import },
+                { SE_TEXT("q3o"), ASSET_FILES_EXTENSION, ImportModel::Import },
+                { SE_TEXT("q3s"), ASSET_FILES_EXTENSION, ImportModel::Import },
+                { SE_TEXT("ac"), ASSET_FILES_EXTENSION, ImportModel::Import },
+                { SE_TEXT("stl"), ASSET_FILES_EXTENSION, ImportModel::Import },
+                { SE_TEXT("lwo"), ASSET_FILES_EXTENSION, ImportModel::Import },
+                { SE_TEXT("lws"), ASSET_FILES_EXTENSION, ImportModel::Import },
+                { SE_TEXT("lxo"), ASSET_FILES_EXTENSION, ImportModel::Import },*/
+            };
 
-			systemData->Importers.Add(InBuildImporters, ARRAY_SIZE(InBuildImporters));
+            systemData->Importers.Add(InBuildImporters, ARRAY_SIZE(InBuildImporters));
 
-			// Initialize with in-build creators
-			AssetCreator InBuildCreators[] =
+            // Initialize with in-build creators
+            AssetCreator InBuildCreators[] =
 				{
 					// Textures
 					{ AssetsImporting::CreateTextureTag, ImportTexture::Import },

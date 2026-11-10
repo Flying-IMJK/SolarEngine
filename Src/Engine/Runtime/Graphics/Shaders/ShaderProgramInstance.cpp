@@ -282,11 +282,10 @@ namespace SE
             return false;
         }
 
-        // 先完成全部验证与复制；失败时调用方原有 snapshot 保持不变，不暴露部分结果。
         GPUDevice* device = GPUDevice::instance;
         for (int32 resourceIndex = 0; resourceIndex < m_Resources.Count(); resourceIndex++)
         {
-            const ShaderBindingResource* resource = m_Resources[resourceIndex];
+            ShaderBindingResource* resource = m_Resources[resourceIndex];
             const ShaderLogicalResourceSlot* reflectedSlot = reflection.GetLogicalResourceSlot(static_cast<uint32>(resourceIndex));
             if (reflectedSlot == nullptr)
             {
@@ -305,38 +304,22 @@ namespace SE
             // Bind the dummy resource without setting any resources.
             if (!resource->IsValid())
             {
-                // Resolve only the snapshot copy so an unbound instance remains unbound for later submissions.
-                ShaderBindingResource dummy(reflectedSlot->Kind);
+                GPUTextureView* view = nullptr;
                 switch (reflectedSlot->Kind)
                 {
                     case ShaderProgramBindingKind::Texture:
-                        if (resource->GetTexture() == nullptr)
-                        {
-                            GPUTextureView* view = device->GetDummyTextureView(*type);
-                            dummy.SetTexture(view, static_cast<GPUTexture*>(view->GetParent()));
-                        }
+                        view = device->GetDummyTextureView(*type);
+                        resource->SetTexture(view, static_cast<GPUTexture*>(view->GetParent()));
                         break;
                     case ShaderProgramBindingKind::Buffer:
-                        if (resource->GetBuffer() == nullptr)
-                        {
-                            dummy.SetBuffer(device->GetDummyBuffer());
-                        }
+                        resource->SetBuffer(device->GetDummyBuffer());
                         break;
                     case ShaderProgramBindingKind::Sampler:
-                        if (resource->GetSampler() == nullptr)
-                        {
-                            GPUSampler* sampler = device->GetDummySampler(type->Name == SE_TEXT("SamplerComparisonState"));
-                            dummy.SetSampler(sampler);
-                        }
+                        GPUSampler* sampler = device->GetDummySampler(type->Name == SE_TEXT("SamplerComparisonState"));
+                        resource->SetSampler(sampler);
                         break;
-                    default:
-                        return false;
                 }
-
-                resource = &dummy;
             }
-
-
 
             if (!resource->IsValid() || !pending.AddResource(*resource))
             {

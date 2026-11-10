@@ -9,7 +9,7 @@ namespace SE
 	/// <summary>
 	/// RenderGeometry 中一个显式 Slot 的无所有权顶点缓冲引用。
 	/// </summary>
-	struct SE_API_RUNTIME RenderGeometryVertexBuffer
+	struct SE_API_RUNTIME GeometryVertexBuffer
 	{
 		uint32 Slot = 0;
 		GPUBuffer* Buffer = nullptr;
@@ -22,13 +22,13 @@ namespace SE
 	struct SE_API_RUNTIME RenderGeometry
 	{
 		const VertexFactoryLayout* Layout = nullptr;
-		List<RenderGeometryVertexBuffer> VertexBuffers;
+		List<GeometryVertexBuffer> VertexBuffers;
 		GPUBuffer* IndexBuffer = nullptr;
 		uint32 IndexOffset = 0;
 		// R16_UInt、R32_UInt
 		PixelFormat IndexFormat = PixelFormat::Undefined;
 
-		const RenderGeometryVertexBuffer* FindVertexBuffer(uint32 slot) const;
+		const GeometryVertexBuffer* FindVertexBuffer(uint32 slot) const;
 		bool Validate(bool indexed) const;
 	};
 }

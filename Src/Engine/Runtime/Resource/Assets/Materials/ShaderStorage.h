@@ -1,5 +1,5 @@
 #pragma once
-#include "Runtime/Render/Assets/Material/MaterialInfo.h"
+#include <Runtime/Render/Assets/Material/MaterialInfo.h>
 
 namespace SE
 {
@@ -12,8 +12,9 @@ namespace SE
     #define SHADER_FILE_CHUNK_INTERNAL_VULKAN_SM5_CACHE 5
     #define SHADER_FILE_CHUNK_INTERNAL_GENERIC_CACHE 6
     #define SHADER_FILE_CHUNK_INTERNAL_D3D_SM6_CACHE 7
-    #define SHADER_FILE_CHUNK_VISJECT_SURFACE 14
-    #define SHADER_FILE_CHUNK_SOURCE 15
+#define SHADER_FILE_CHUNK_DEPENDENCIES 9
+#define SHADER_FILE_CHUNK_VISJECT_SURFACE 14
+#define SHADER_FILE_CHUNK_SOURCE 15
 
     /// <summary>
     /// Contains shader data that is used during creating shaders/materials

@@ -85,7 +85,9 @@ namespace SE
 	{
 		Begin(this, context);
 		if (SwapChain)
-			SwapChain->Begin();
+		{
+		    SwapChain->Begin();
+		}
 
 		_prevTask = CurrentTask;
 		CurrentTask = this;
@@ -99,7 +101,7 @@ namespace SE
 
 		if (SwapChain)
 		{
-			PROFILE_GPU_CPU_NAMED("GUI");
+			PROFILE_GPU_CPU_NAMED("RenderTask::OnRender");
 			const Viewport viewport(0, 0, static_cast<float>(SwapChain->GetWidth()), static_cast<float>(SwapChain->GetHeight()));
 			Render2D::Begin(context, SwapChain->GetBackBufferView(), nullptr, viewport);
 			SwapChain->GetWindow()->OnDraw();
@@ -113,14 +115,18 @@ namespace SE
 
 		_prevTask = nullptr;
 		if (SwapChain)
-			SwapChain->End();
+		{
+		    SwapChain->End();
+		}
 		End(this, context);
 	}
 
 	void RenderTask::OnPresent(bool vsync)
 	{
 		if (SwapChain)
-			SwapChain->Present(vsync);
+		{
+		    SwapChain->Present(vsync);
+		}
 		Present(this);
 	}
 

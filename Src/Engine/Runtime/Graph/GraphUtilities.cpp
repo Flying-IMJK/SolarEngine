@@ -580,209 +580,83 @@ namespace SE::GraphUtilities
 
     void GenerateShaderConstantBuffer(TextWriterUnicode& writer, List<SerializedMaterialParam>& parameters)
     {
-        int32 constantsOffset = 0;
-        int32 paddingIndex = 0;
-        for (int32 i = 0; i < parameters.Count(); i++)
+        for (const SerializedMaterialParam& param : parameters)
         {
-            auto& param = parameters[i];
-            const Char* format = nullptr;
-            int32 size;
-            int32 alignment;
-            bool zeroRegister = true;
+            const Char* type = nullptr;
             switch (param.Type)
             {
-            case MaterialParameterType::Bool:
-                size = 4;
-                alignment = 4;
-                format = SE_TEXT("bool {0};");
-                break;
-            case MaterialParameterType::Integer:
-                size = 4;
-                alignment = 4;
-                format = SE_TEXT("int {0};");
-                break;
-            case MaterialParameterType::Float:
-                size = 4;
-                alignment = 4;
-                format = SE_TEXT("float {0};");
-                break;
-            case MaterialParameterType::Vector2:
-                size = 8;
-                alignment = 8;
-                format = SE_TEXT("float2 {0};");
-                break;
-            case MaterialParameterType::Vector3:
-                size = 12;
-                alignment = 16;
-                format = SE_TEXT("float3 {0};");
-                break;
-            case MaterialParameterType::Vector4:
-            case MaterialParameterType::ChannelMask:
-            case MaterialParameterType::Color:
-                size = 16;
-                alignment = 16;
-                format = SE_TEXT("float4 {0};");
-                break;
-            case MaterialParameterType::Matrix:
-                size = 16 * 4;
-                alignment = 16;
-                format = SE_TEXT("float4x4 {0};");
-                break;
-            /*case MaterialParameterType::GameplayGlobal:
-            {
-                auto asset = Content::LoadAsync<GameplayGlobals>(param.AsGuid);
-                if (!asset || asset->WaitForLoaded())
+                case MaterialParameterType::Bool:
+                    type = SE_TEXT("bool");
                     break;
-                GameplayGlobals::Variable variable;
-                if (!asset->Variables.TryGet(param.Name, variable))
+                case MaterialParameterType::Integer:
+                    type = SE_TEXT("int");
                     break;
-                switch (variable.DefaultValue.Type.Type)
-                {
-                case VariantType::Bool:
-                    size = 4;
-                    alignment = 4;
-                    format = SE_TEXT("bool {0};");
+                case MaterialParameterType::Float:
+                    type = SE_TEXT("float");
                     break;
-                case VariantType::Int:
-                    size = 4;
-                    alignment = 4;
-                    format = SE_TEXT("int {0};");
+                case MaterialParameterType::Vector2:
+                    type = SE_TEXT("float2");
                     break;
-                case VariantType::Uint:
-                    size = 4;
-                    alignment = 4;
-                    format = SE_TEXT("uint {0};");
+                case MaterialParameterType::Vector3:
+                    type = SE_TEXT("float3");
                     break;
-                case VariantType::Float:
-                case VariantType::Double:
-                    size = 4;
-                    alignment = 4;
-                    format = SE_TEXT("float {0};");
+                case MaterialParameterType::Vector4:
+                case MaterialParameterType::Color:
+                case MaterialParameterType::ChannelMask:
+                    type = SE_TEXT("float4");
                     break;
-                case VariantType::Float2:
-                case VariantType::Double2:
-                    size = 8;
-                    alignment = 8;
-                    format = SE_TEXT("float2 {0};");
+                case MaterialParameterType::Matrix:
+                    type = SE_TEXT("float4x4");
                     break;
-                case VariantType::Float3:
-                case VariantType::Double3:
-                    size = 12;
-                    alignment = 16;
-                    format = SE_TEXT("float3 {0};");
+                default:
                     break;
-                case VariantType::Float4:
-                case VariantType::Double4:
-                case VariantType::Color:
-                    size = 16;
-                    alignment = 16;
-                    format = SE_TEXT("float4 {0};");
-                    break;
-                }
-                break;
-            }*/
-            /*case MaterialParameterType::GlobalSDF:
-                zeroRegister = false;
-                size = sizeof(GlobalSignDistanceFieldPass::ConstantsData);
-                alignment = 16;
-                format = SE_TEXT("GlobalSDFData {0};");
-                break;*/
             }
-            if (format)
-            {
-                int32 padding = Math::Abs((alignment - (constantsOffset % 16))) % alignment;
-                if (padding != 0)
-                {
-                    constantsOffset += padding;
-                    padding /= 4;
-                    while (padding-- > 0)
-                    {
-                        writer.WriteLine(SE_TEXT("uint PADDING_{0};"), paddingIndex++);
-                    }
-                }
-
-                if (zeroRegister)
-                    param.RegisterIndex = 0;
-                param.Offset = constantsOffset;
-                writer.WriteLine(format, param.ShaderName);
-                constantsOffset += size;
-            }
+            if (type)
+                writer.WriteLine(SE_TEXT("{0} {1};"), type, param.ShaderName);
         }
     }
 
-    const Char* GenerateShaderResources(TextWriterUnicode& writer, List<SerializedMaterialParam>& parameters, int32 startRegister)
+    const Char* GenerateShaderResources(TextWriterUnicode& writer, List<SerializedMaterialParam>& parameters)
     {
-        for (int32 i = 0; i < parameters.Count(); i++)
+        for (const SerializedMaterialParam& param : parameters)
         {
-            auto& param = parameters[i];
-            const Char* format = nullptr;
-            bool zeroOffset = true;
-            int32 registers = 1;
+            const Char* type = nullptr;
             switch (param.Type)
             {
-            case MaterialParameterType::NormalMap:
-            case MaterialParameterType::GPUTexture:
-            case MaterialParameterType::SceneTexture:
-            case MaterialParameterType::Texture:
-                format = SE_TEXT("Texture2D {0} : register(t{1});");
-                break;
-            case MaterialParameterType::GPUTextureCube:
-            case MaterialParameterType::CubeTexture:
-                format = SE_TEXT("TextureCube {0} : register(t{1});");
-                break;
-            case MaterialParameterType::GPUTextureArray:
-                format = SE_TEXT("Texture2DArray {0} : register(t{1});");
-                break;
-            case MaterialParameterType::GPUTextureVolume:
-                format = SE_TEXT("Texture3D {0} : register(t{1});");
-                break;
-            case MaterialParameterType::GlobalSDF:
-                format = SE_TEXT("Texture3D<float> {0}_Tex : register(t{1});");
-                zeroOffset = false;
-                break;
+                case MaterialParameterType::NormalMap:
+                case MaterialParameterType::GPUTexture:
+                case MaterialParameterType::SceneTexture:
+                case MaterialParameterType::Texture:
+                    type = SE_TEXT("Texture2D");
+                    break;
+                case MaterialParameterType::GPUTextureCube:
+                case MaterialParameterType::CubeTexture:
+                    type = SE_TEXT("TextureCube");
+                    break;
+                case MaterialParameterType::GPUTextureArray:
+                    type = SE_TEXT("Texture2DArray");
+                    break;
+                case MaterialParameterType::GPUTextureVolume:
+                    type = SE_TEXT("Texture3D");
+                    break;
+                case MaterialParameterType::GameplayGlobal:
+                case MaterialParameterType::GlobalSDF:
+                    return SE_TEXT("This material parameter type has no SLC2 runtime provider.");
+                default:
+                    break;
             }
-            if (format)
-            {
-                if (zeroOffset)
-                    param.Offset = 0;
-                param.RegisterIndex = (byte)startRegister;
-                writer.WriteLine(format, param.ShaderName, startRegister);
-                startRegister += registers;
-                if (param.RegisterIndex >= GPU_MAX_SR_BINDED)
-                {
-                    return SE_TEXT("Too many textures used. The maximum supported amount is " MACRO_TO_STR(GPU_MAX_SR_BINDED) " (including lightmaps and utility textures for lighting).");
-                }
-            }
+            if (type)
+                writer.WriteLine(SE_TEXT("{0} {1};"), type, param.ShaderName);
         }
         return nullptr;
     }
 
-    const Char* GenerateSamplers(TextWriterUnicode& writer, List<SerializedMaterialParam>& parameters, int32 startRegister)
+    const Char* GenerateSamplers(TextWriterUnicode& writer, List<SerializedMaterialParam>& parameters)
     {
-        for (int32 i = 0; i < parameters.Count(); i++)
+        for (const SerializedMaterialParam& param : parameters)
         {
-            auto& param = parameters[i];
-            const Char* format;
-            switch (param.Type)
-            {
-            case MaterialParameterType::TextureGroupSampler:
-                format = SE_TEXT("sampler {0} : register(s{1});");
-                break;
-            default:
-                format = nullptr;
-                break;
-            }
-            if (format)
-            {
-                param.Offset = 0;
-                param.RegisterIndex = (byte)startRegister;
-                writer.WriteLine(format, param.ShaderName, startRegister);
-                startRegister++;
-                if (param.RegisterIndex >= GPU_MAX_SAMPLER_BINDED)
-                {
-                    return SE_TEXT("Too many samplers used. The maximum supported amount is " MACRO_TO_STR(GPU_MAX_SAMPLER_BINDED) ".");
-                }
-            }
+            if (param.Type == MaterialParameterType::TextureGroupSampler)
+                writer.WriteLine(SE_TEXT("SamplerState {0};"), param.ShaderName);
         }
         return nullptr;
     }

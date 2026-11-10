@@ -81,7 +81,9 @@ namespace SE::Threading
 		PROFILE_CPU();
 
 		for (auto system : _systems)
-			system->PreExecute(this);
+		{
+		    system->PreExecute(this);
+		}
 
 		_queue.Clear();
 		_remaining.Clear();
@@ -130,7 +132,9 @@ namespace SE::Threading
 			// Wait for async jobs to finish
 			JobSystem::SetJobStartingOnDispatch(true);
 			for (const int64 label : _labels)
-				JobSystem::Wait(label);
+			{
+			    JobSystem::Wait(label);
+			}
 		}
 
 		for (auto system : _systems)

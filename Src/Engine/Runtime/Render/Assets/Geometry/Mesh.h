@@ -298,11 +298,6 @@ namespace SE
         void Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticMask flags = StaticMask::None,
             bool receiveDecals = true, DrawPass drawModes = DrawPass::Default, float perInstanceRandom = 0.0f, int16 sortOrder = 0) const;
 
-        // A production mesh can submit a material-owned SLC2 draw through RenderList.
-        void DrawSLC2(const RenderContext& renderContext, const SLC2RenderDraw& slc2,
-            const Matrix& world, DrawPass drawModes, StaticMask flags = StaticMask::None,
-            bool receiveDecals = true, float perInstanceRandom = 0.0f, int16 sortOrder = 0) const;
-
         /// <summary>
         /// Draws the mesh.
         /// </summary>

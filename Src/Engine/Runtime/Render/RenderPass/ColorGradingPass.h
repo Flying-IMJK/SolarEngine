@@ -1,15 +1,15 @@
 #pragma once
-#include "Runtime/Graphics/Base/GPUPipelineStatePermutations.h"
-#include "Runtime/Graphics/Base/PixelFormat.h"
-#include "Runtime/Render/RenderContext.h"
-#include "Runtime/Render/RendererPass.h"
-#include "Runtime/Resource/AssetRef.h"
-#include "Runtime/Resource/Assets/Materials/Shader.h"
+#include <Runtime/Graphics/Base/GPUPipelineStatePermutations.h>
+#include <Runtime/Graphics/Base/PixelFormat.h>
+#include <Runtime/Render/RenderContext.h>
+#include <Runtime/Render/RendererPass.h>
+#include <Runtime/Resource/AssetRef.h>
+#include <Runtime/Resource/Assets/Materials/Shader.h>
 
 namespace SE
 {
     enum class ToneMappingMode;
-    class GraphicShader;
+    class Shader;
 
     /// <summary>
 	/// Color Grading and Tone Mapping rendering service. Generates HDR LUT for PostFx pass.
@@ -19,9 +19,9 @@ namespace SE
 	private:
 		bool m_UseVolumeTexture;
 		PixelFormat m_LutFormat;
-		AssetRef<GraphicShader> m_Shader;
-        SLC2GPUPipelineState* m_PipelineState;
-        ShaderProgramInstance* m_ProgramInstance;
+        AssetRef<Shader>       m_Shader;
+        SLC2GPUPipelineState*  m_PipelineState   = nullptr;
+        ShaderProgramInstance* m_ProgramInstance = nullptr;
         GPUConstantBuffer* m_GPUConstantBuffer;
 
 	public:
@@ -39,19 +39,12 @@ namespace SE
 		GPUTexture* RenderLUT(RenderContext& renderContext);
 
 	private:
+        void OnShaderReloading(Asset* pAsset);
 
-#if COMPILE_WITH_DEV_ENV
-		void OnShaderReloading(Asset* obj)
-		{
-			_psLut.Release();
-			invalidateResources();
-		}
-#endif
+        void UpdateProgram(ToneMappingMode mappingMode);
 
-		void UpdateProgram(ToneMappingMode mappingMode);
-
-	public:
-		// [RendererPass]
+    public:
+        // [RendererPass]
 		String ToString() const override;
 		bool Init() override;
 		void Dispose() override;

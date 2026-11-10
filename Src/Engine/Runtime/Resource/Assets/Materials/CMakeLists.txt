@@ -9,6 +9,7 @@ RUNTIME_ADD(
     MaterialBase.cpp
     Material.h
     Material.cpp
+    Material.Shader.cpp
     Shader.h
     Shader.cpp
     MaterialInstance.h

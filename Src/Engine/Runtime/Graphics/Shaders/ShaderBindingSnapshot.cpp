@@ -11,8 +11,24 @@ namespace SE
     {
     }
 
-    ShaderBindingResource::ShaderBindingResource(const ShaderProgramBindingKind type) : m_Type(type)
-    {}
+    ShaderBindingResource::ShaderBindingResource(const ShaderProgramBindingKind type) : m_Type(type) {}
+
+    ShaderBindingResource::ShaderBindingResource(const ShaderBindingResource& resource) 
+    {
+        m_Type = resource.m_Type;
+        switch (resource.m_Type)
+        {
+            case ShaderProgramBindingKind::Texture:
+            SetTexture(resource.m_Texture, resource.m_TextureOwner);
+            break;
+            case ShaderProgramBindingKind::Buffer:
+            SetBuffer(resource.m_Buffer);
+            break;
+            case ShaderProgramBindingKind::Sampler:
+            SetSampler(resource.m_Sampler);
+            break;
+        }
+    }
 
     ShaderBindingResource::~ShaderBindingResource()
     {
@@ -192,12 +208,7 @@ namespace SE
     bool ShaderBindingSnapshot::AddResource(const ShaderBindingResource& resource)
     {
         // Event subscriptions retain the slot address, so the snapshot owns stable resource objects.
-        ShaderBindingResource* copy = New<ShaderBindingResource>(resource.GetType());
-        if (!copy->CloneFrom(resource))
-        {
-            Delete(copy);
-            return false;
-        }
+        ShaderBindingResource* copy = New<ShaderBindingResource>(resource);
         m_Resources.Add(copy);
         return true;
     }

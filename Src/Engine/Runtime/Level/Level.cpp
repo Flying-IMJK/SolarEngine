@@ -80,11 +80,12 @@ namespace SE
 
 		void OnUpdate() override
 		{
-
+		    PROFILE_CPU();
 		}
 
 		void OnLateUpdate() override
 		{
+            PROFILE_CPU();
 			Threading::ScopeLock lock(systemData->sceneActionsLocker);
 
 			while (systemData->sceneActions.HasItems() && systemData->sceneActions.First()->CanDo())

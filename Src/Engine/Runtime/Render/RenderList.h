@@ -1,7 +1,6 @@
 #pragma once
 #include "PostProcessSettings.h"
 #include "RenderDrawCall.h"
-#include "SLC2RenderDraw.h"
 #include "RenderEnum.h"
 #include "Assets/Geometry/StaticMeshVertexFactory.h"
 #include "Utils/RendererAllocation.hpp"
@@ -10,6 +9,8 @@
 #include "Runtime/Core/Types/Object.h"
 #include "Runtime/Core/Memory/Memory.h"
 #include "Runtime/Graphics/DynamicBuffer.h"
+
+#include "Assets/Material/IMaterial.h"
 
 namespace SE
 {
@@ -445,8 +446,6 @@ namespace SE
         Float3 FrustumCornersVs[8];
 
     public:
-        // Counts calls issued to the typed GPUContext route, independent of GPU completion.
-        uint32 GetSLC2SubmissionCount() const { return _slc2SubmissionCount; }
 
         /// <summary>
         /// Blends the postprocessing settings into the final options.
@@ -534,9 +533,6 @@ namespace SE
         /// <param name="receivesDecals">True if the rendered mesh can receive decals.</param>
         /// <param name="sortOrder">Object sorting key.</param>
         // Copies geometry and selection for this frame; parameters remain current Draw inputs.
-        void AddSLC2DrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticMask staticFlags,
-                             DrawCall& drawCall, const SLC2RenderDraw& slc2,
-                             bool receivesDecals = true, int16 sortOrder = 0);
         void AddDrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticMask staticFlags, DrawCall& drawCall, bool receivesDecals = true, int16 sortOrder = 0);
 
         /// <summary>
@@ -550,10 +546,6 @@ namespace SE
         /// <param name="drawCall">The draw call data.</param>
         /// <param name="receivesDecals">True if the rendered mesh can receive decals.</param>
         /// <param name="sortOrder">Object sorting key.</param>
-        void AddSLC2DrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes,
-                             StaticMask staticFlags, ShadowsCastingMode shadowsMode,
-                             const BoundingSphere& bounds, DrawCall& drawCall, const SLC2RenderDraw& slc2,
-                             bool receivesDecals = true, int16 sortOrder = 0);
         void AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticMask staticFlags, ShadowsCastingMode shadowsMode,
             const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals = true, int16 sortOrder = 0);
 
@@ -585,9 +577,9 @@ namespace SE
         /// <param name="renderContext">The rendering context.</param>
         /// <param name="listType">The collected draw calls list type.</param>
         /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
-        FORCE_INLINE void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsListType listType, GPUTextureView* input = nullptr)
+        FORCE_INLINE void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsListType listType, Function<void(IMaterial*)> prepareDraw = nullptr, GPUTextureView* input = nullptr)
         {
-            ExecuteDrawCalls(renderContext, DrawCallsLists[(int32)listType], DrawCalls, input);
+            ExecuteDrawCalls(renderContext, DrawCallsLists[(int32)listType], DrawCalls, prepareDraw, input);
         }
 
         /// <summary>
@@ -596,9 +588,9 @@ namespace SE
         /// <param name="renderContext">The rendering context.</param>
         /// <param name="list">The collected draw calls indices list.</param>
         /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
-        FORCE_INLINE void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, GPUTextureView* input = nullptr)
+        FORCE_INLINE void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, Function<void(IMaterial*)> prepareDraw = nullptr, GPUTextureView* input = nullptr)
         {
-            ExecuteDrawCalls(renderContext, list, DrawCalls, input);
+            ExecuteDrawCalls(renderContext, list, DrawCalls, prepareDraw, input);
         }
 
         /// <summary>
@@ -608,22 +600,11 @@ namespace SE
         /// <param name="list">The collected draw calls indices list.</param>
         /// <param name="drawCalls">The collected draw calls list.</param>
         /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
-        void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, GPUTextureView* input);
+        void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, Function<void(IMaterial*)> prepareDraw = nullptr, GPUTextureView* input);
 
 
     private:
-        DynamicVertexBuffer                      _instanceBuffer;
-        List<SharedPtr<SLC2RenderDraw>>          _slc2Draws;
-        List<SharedPtr<SLC2MaterialDrawProgram>> _submittedSLC2Draws;
-        uint32                                   _slc2SubmissionCount = 0;
-
-        // All SLC2 paths submit the selected material Instance through one GPUContext route.
-        bool ExecuteSLC2DrawCall(const RenderContext& renderContext,
-                                 const DrawCallsList& list,
-                                 const DrawCall&      drawCall,
-                                 uint32               instanceCount,
-                                 GPUBuffer*           instanceBuffer,
-                                 uint32               instanceByteOffset);
+        DynamicVertexBuffer m_InstanceBuffer;
     };
 
 

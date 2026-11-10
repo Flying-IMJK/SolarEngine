@@ -9,8 +9,7 @@
 
 namespace SE
 {
-    BINARY_ASSET_FACTORY(MaterialInstance, false);
-
+    BINARY_ASSET_FACTORY(MaterialInstance, true);
 
     MaterialInstance::MaterialInstance(const SpawnParams& params, const AssetInfo* info) : MaterialBase(params, info)
     {
@@ -47,8 +46,7 @@ namespace SE
             }
 
             param.m_IsPublic = baseParam.m_IsPublic;
-            param.m_RegisterIndex = baseParam.m_RegisterIndex;
-            param.m_Offset = baseParam.m_Offset;
+            param.m_ShaderName = baseParam.m_ShaderName;
             param.m_Name = baseParam.m_Name;
         }
 
@@ -150,10 +148,7 @@ namespace SE
         return EmptyInfo;
     }
 
-    GPUShader* MaterialInstance::GetShader() const
-    {
-        return _baseMaterial ? _baseMaterial->GetShader() : nullptr;
-    }
+    SLC2GPUShader* MaterialInstance::GetShader() const { return _baseMaterial ? _baseMaterial->GetShader() : nullptr; }
 
     bool MaterialInstance::IsReady() const
     {
@@ -179,6 +174,9 @@ namespace SE
 
     void MaterialInstance::Bind(BindParameters& params)
     {
+        params.Program = nullptr;
+        if (!IsReady())
+            return;
         //ENGINE_ASSERT(IsReady());
         //ENGINE_ASSERT(_baseMaterial->Params.GetVersionHash() == Params.GetVersionHash());
 
@@ -224,9 +222,10 @@ namespace SE
         auto baseMaterial = AssetContent::LoadAsync<MaterialBase>(baseMaterialId);
 
         // Load parameters
-        Params.Load(&headerStream);
+        if (Params.Load(&headerStream))
+            return LoadResult::InvalidData;
 
-        if (baseMaterial && !baseMaterial->WaitForLoaded())
+        if (baseMaterial && baseMaterial->WaitForLoaded())
         {
             _baseMaterial = baseMaterial;
             OnBaseSet();
@@ -259,7 +258,7 @@ namespace SE
 
     void MaterialInstance::SetBaseMaterial(MaterialBase* baseMaterial)
     {
-        if (baseMaterial != nullptr && baseMaterial->WaitForLoaded())
+        if (baseMaterial != nullptr && !baseMaterial->WaitForLoaded())
         {
             LOG_WARNING("Render", "Cannot set base material of {0} to {1} because it failed to load.", ToString(), baseMaterial->ToString());
             return;
@@ -270,7 +269,6 @@ namespace SE
         if (baseMaterial == _baseMaterial)
             return;
 
-#if !BUILD_RELEASE
         // Prevent recursion
         auto mi = TypeCast<MaterialInstance>(baseMaterial);
         while (mi)
@@ -282,7 +280,6 @@ namespace SE
             }
             mi = TypeCast<MaterialInstance>(mi->GetBaseMaterial());
         }
-#endif
 
         // Release previous parameters
         Params.Dispose();
@@ -300,12 +297,17 @@ namespace SE
         }
     }
 
+    ShaderProgramInstance* MaterialInstance::GetProgram()
+    {
+        return _baseMaterial->GetProgram();
+    }
+
 #if SE_EDITOR
 
     bool MaterialInstance::Save(const StringView& path)
     {
         // Validate state
-        if (WaitForLoaded())
+        if (!IsVirtual() && !WaitForLoaded())
         {
             LOG_ERROR("Render","Asset loading failed. Cannot save it.");
             return true;
@@ -332,11 +334,11 @@ namespace SE
 
         // Setup asset data
         AssetInitData data;
-        data.SerializedVersion = 4;
+        data.SerializedVersion = GetSerializedVersion();
 
         // Save data
         const bool saveResult = path.HasChars() ? SaveAsset(path, data) : SaveAsset(data, true);
-        if (saveResult)
+        if (!saveResult)
         {
             LOG_ERROR("Render","Cannot save \'{0}\'", ToString());
             return true;

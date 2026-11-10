@@ -21,8 +21,9 @@ namespace SE
 		~SLC2GPUShader() override;
 
 		bool Load(const byte* data, int dataLength);
+        bool HasProgram(const String& programName) const;
 
-		// 根据 ProgramName 和 变体列表 复用或创建不可变 ShaderProgram。
+        // 根据 ProgramName 和 变体列表 复用或创建不可变 ShaderProgram。
         bool GetOrCreateProgram(const String&                   programName,
                                 const List<String>&             defines, 
                                 SLC2GPUShaderProgram*& program);

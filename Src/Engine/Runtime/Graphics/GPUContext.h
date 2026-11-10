@@ -42,15 +42,13 @@ namespace SE
 
 		GPUContext(GPUDevice* device);
 	public:
-		/// <summary>
-		/// Gets the graphics device.
-		/// </summary>
-		inline GPUDevice* GetDevice() const
-		{
-			return m_Device;
-		}
+        ~GPUContext() override;
+        /// <summary>
+        /// Gets the graphics device.
+        /// </summary>
+        inline GPUDevice* GetDevice() const { return m_Device; }
 
-		bool LoadDefaultResources();
+        bool LoadDefaultResources();
 
 		MaterialBase* GetDefaultMaterial() const;
 

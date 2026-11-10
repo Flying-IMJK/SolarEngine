@@ -1,22 +1,22 @@
 
-#include "GPUContext.h"
+#include <Runtime/Graphics/GPUContext.h>
 
-#include "GPUDevice.h"
-#include "Base/GPUBuffer.h"
-#include "Base/GPUBufferDescription.h"
-#include "Runtime/Core/Math/Rectangle.h"
-#include "Runtime/EngineContext.h"
-#include "Runtime/Graphics//Textures/GPUTexture.h"
-#include "Runtime/Graphics/Base/GPUPipelineState.h"
-#include "Runtime/Render/Assets/Texture/Texture.h"
-#include "Runtime/Resource/AssetRef.h"
-#include "Runtime/Resource/Assets/Materials/Material.h"
-#include "Runtime/Resource/Assets/SLC2Materials/GraphicShader.h"
-#include "Runtime/Resource/Importers/AssetsImportingSystem.h"
+#include <Runtime/Core/Math/Rectangle.h>
+#include <Runtime/EngineContext.h>
+#include <Runtime/Graphics/Base/GPUBuffer.h>
+#include <Runtime/Graphics/Base/GPUBufferDescription.h>
+#include <Runtime/Graphics/Base/GPUPipelineState.h>
+#include <Runtime/Graphics/GPUDevice.h>
+#include <Runtime/Graphics/Textures/GPUTexture.h>
+#include <Runtime/Render/Assets/Texture/Texture.h>
+#include <Runtime/Resource/AssetRef.h>
+#include <Runtime/Resource/Assets/Materials/Material.h>
+#include <Runtime/Resource/Assets/Materials/Shader.h>
+#include <Runtime/Resource/Importers/AssetsImportingSystem.h>
 
-#include "Base/RenderGeometry.h"
-#include "Shaders/GPUShader.h"
-#include "Textures/GPUSampler.h"
+#include <Runtime/Graphics/Base/RenderGeometry.h>
+#include <Runtime/Graphics/Shaders/GPUShader.h>
+#include <Runtime/Graphics/Textures/GPUSampler.h>
 
 namespace SE
 {
@@ -150,13 +150,55 @@ namespace SE
 	{
         RenderGeometry FullscreenTriangleGeometry;
 
-		AssetRef<GraphicShader> QuadShader;
-		SLC2GPUPipelineState* PS_CopyLinear = nullptr;
+        AssetRef<Shader>       QuadShader;
+        SLC2GPUPipelineState*  PS_CopyLinear = nullptr;
         SLC2GPUPipelineState* PS_Clear      = nullptr;
         ShaderProgramInstance* SP_CopyLinear = nullptr;
         ShaderProgramInstance* SP_Clear      = nullptr;
 
-		GPUSampler* SamplerLinearClamp;
+        void OnQuadShaderReloading(Asset* pAsset)
+        {
+            DeleteObjectSafe(PS_CopyLinear);
+            DeleteObjectSafe(PS_Clear);
+            DeleteObjectSafe(SP_CopyLinear);
+            DeleteObjectSafe(SP_Clear);
+        }
+
+        bool PrepareQuadPrograms(GPUDevice* pDevice)
+        {
+            if (PS_CopyLinear && PS_Clear && SP_CopyLinear && SP_Clear)
+                return true;
+            if (!QuadShader || !QuadShader->IsLoaded())
+                return false;
+            OnQuadShaderReloading(nullptr);
+            SLC2GPUShaderProgram* program = nullptr;
+            if (!QuadShader->SelectProgram(SE_TEXT("CopyLinear"), {}, program))
+                return false;
+            PS_CopyLinear = pDevice->CreateSLC2PipelineState();
+            SP_CopyLinear = New<ShaderProgramInstance>();
+            if (!PS_CopyLinear->Init(SLC2GPUPipelineState::Description::DefaultFullscreenTriangle, program) ||
+                !SP_CopyLinear->Initialize(program))
+            {
+                OnQuadShaderReloading(nullptr);
+                return false;
+            }
+            if (!QuadShader->SelectProgram(SE_TEXT("Clear"), {}, program))
+            {
+                OnQuadShaderReloading(nullptr);
+                return false;
+            }
+            PS_Clear = pDevice->CreateSLC2PipelineState();
+            SP_Clear = New<ShaderProgramInstance>();
+            if (!PS_Clear->Init(SLC2GPUPipelineState::Description::DefaultFullscreenTriangle, program) ||
+                !SP_Clear->Initialize(program))
+            {
+                OnQuadShaderReloading(nullptr);
+                return false;
+            }
+            return true;
+        }
+
+        GPUSampler* SamplerLinearClamp;
         GPUSampler* SamplerPointClamp;
         GPUSampler* SamplerLinearWrap;
         GPUSampler* SamplerPointWrap;
@@ -175,48 +217,34 @@ namespace SE
 	{
 	}
 
-	bool GPUContext::LoadDefaultResources()
-	{
-		// Load internal rendering shader for GPU device low-level impl
-		m_PrivateData->QuadShader = AssetContent::LoadAsyncInternal<GraphicShader>(SE_TEXT("Shaders/Quad"));
-		if (m_PrivateData->QuadShader == nullptr || !m_PrivateData->QuadShader->WaitForLoaded())
-		{
-			return false;
-		}
+    GPUContext::~GPUContext()
+    {
+        if (m_PrivateData->QuadShader)
+            m_PrivateData->QuadShader->OnReloadingEvent.Unbind<PrivateData, &PrivateData::OnQuadShaderReloading>(
+                m_PrivateData);
+        m_PrivateData->OnQuadShaderReloading(nullptr);
+        Delete(m_PrivateData);
+    }
 
-        SLC2GPUShaderProgram* progarm;
-        if (!m_PrivateData->QuadShader->SelectProgram(SE_TEXT("CopyLinear"), {}, progarm))
+    bool GPUContext::LoadDefaultResources()
+    {
+        // Load internal rendering shader for GPU device low-level impl
+        m_PrivateData->QuadShader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/Quad"));
+        if (m_PrivateData->QuadShader == nullptr || !m_PrivateData->QuadShader->WaitForLoaded())
         {
             return false;
         }
 
-		m_PrivateData->PS_CopyLinear = m_Device->CreateSLC2PipelineState();
-        if (!m_PrivateData->PS_CopyLinear->Init(SLC2GPUPipelineState::Description::DefaultFullscreenTriangle, progarm))
-        {
+        m_PrivateData->QuadShader->OnReloadingEvent.Bind<PrivateData, &PrivateData::OnQuadShaderReloading>(
+            m_PrivateData);
+        if (!m_PrivateData->PrepareQuadPrograms(m_Device))
             return false;
-        }
-        m_PrivateData->SP_CopyLinear = New<ShaderProgramInstance>();
 
-		m_PrivateData->SP_CopyLinear->Initialize(progarm);
+        // Load default material
+        m_PrivateData->DefaultMaterial =
+            AssetContent::LoadAsyncInternal<Material>(SE_TEXT("Shaders/Materials/DefaultMaterial"));
 
-		if (!m_PrivateData->QuadShader->SelectProgram(SE_TEXT("Clear"), {}, progarm))
-        {
-            return false;
-        }
-
-		m_PrivateData->PS_Clear      = m_Device->CreateSLC2PipelineState();
-        if (!m_PrivateData->PS_Clear->Init(SLC2GPUPipelineState::Description::DefaultFullscreenTriangle, progarm))
-        {
-            return false;
-        }
-        m_PrivateData->SP_Clear      = New<ShaderProgramInstance>();
-        m_PrivateData->SP_Clear->Initialize(progarm);
-
-
-		// Load default material
-		m_PrivateData->DefaultMaterial = AssetContent::LoadAsyncInternal<Material>(SE_TEXT("Shaders/Materials/DefaultMaterial"));
-
-		if (m_PrivateData->DefaultMaterial == nullptr)
+        if (m_PrivateData->DefaultMaterial == nullptr)
 		{
 			String outPath = EngineContext::ProjectCacheFolder / "Shaders/Materials/DefaultMaterial" + ASSET_FILES_EXTENSION_WITH_DOT;
 			AssetsImporting::Create(AssetsImporting::CreateMaterialTag, outPath);
@@ -275,7 +303,7 @@ namespace SE
             };
             // @formatter:on
 
-		    RenderGeometryVertexBuffer vertexBuffer;
+		    GeometryVertexBuffer vertexBuffer;
             vertexBuffer.Slot   = 0;
             vertexBuffer.Offset = 0;
             vertexBuffer.Buffer = m_Device->CreateBuffer(SE_TEXT("QuadVB"));
@@ -340,9 +368,9 @@ namespace SE
         }
 
 		return true;
-	}
+    }
 
-	MaterialBase* GPUContext::GetDefaultMaterial() const
+    MaterialBase* GPUContext::GetDefaultMaterial() const
 	{
 		return m_PrivateData->DefaultMaterial;
 	}
@@ -399,6 +427,8 @@ namespace SE
 		const float height = (float)dst->Height();
 		SetViewport(width, height);
 		SetRenderTarget(dst->View());
+        if (!m_PrivateData->PrepareQuadPrograms(m_Device))
+            return;
         m_PrivateData->SP_CopyLinear->SetTexture(SE_TEXT("Source"), src->View());
         SetSLC2State(m_PrivateData->PS_CopyLinear);
         DrawFullscreenTriangle(m_PrivateData->SP_CopyLinear);
@@ -407,6 +437,8 @@ namespace SE
 	void GPUContext::Draw(GPUTexture* rt)
 	{
 		ENGINE_ASSERT(rt);
+        if (!m_PrivateData->PrepareQuadPrograms(m_Device))
+            return;
         m_PrivateData->SP_CopyLinear->SetTexture(SE_TEXT("Source"), rt->View());
 		SetSLC2State(m_PrivateData->PS_CopyLinear);
         DrawFullscreenTriangle(m_PrivateData->SP_CopyLinear);
@@ -415,6 +447,8 @@ namespace SE
 	void GPUContext::Draw(GPUTextureView* rt)
 	{
 		ENGINE_ASSERT(rt);
+        if (!m_PrivateData->PrepareQuadPrograms(m_Device))
+            return;
         m_PrivateData->SP_CopyLinear->SetTexture(SE_TEXT("Source"), rt);
         SetSLC2State(m_PrivateData->PS_CopyLinear);
         DrawFullscreenTriangle(m_PrivateData->SP_CopyLinear);

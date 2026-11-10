@@ -1,18 +1,19 @@
 #pragma once
 
-#include "MaterialInfo.h"
-#include "MaterialRuntime.h"
 #include "Runtime/API.h"
 #include "Runtime/Render/RenderEnum.h"
+#include "MaterialInfo.h"
 
 namespace SE
 {
-	struct StaticMeshInstanceData;
+    class SLC2GPUPipelineState;
+    struct StaticMeshInstanceData;
     class GPUConstantBuffer;
     class GPUContext;
     struct RenderContext;
     class GPUTextureView;
-    class GPUShader;
+    class SLC2GPUShader;
+    class ShaderProgramInstance;
     class MaterialParamsLink;
     struct DrawCall;
 
@@ -32,8 +33,7 @@ namespace SE
         /// Gets the shader resource.
         /// </summary>
         /// <returns>The material shader resource.</returns>
-        virtual GPUShader* GetShader() const = 0;
-
+        virtual SLC2GPUShader* GetShader() const = 0;
 
         /// <summary>
         /// whether material is a target shader.
@@ -103,6 +103,10 @@ namespace SE
             MaterialParamsLink* paramsLink = nullptr;
             void* customData = nullptr;
             float timeParam;
+            // Bind publishes this only after all material state is ready. Submit on the render thread before
+            // rebinding or unloading the material; the MaterialShader owns the instance and its Program.
+            ShaderProgramInstance* Program       = nullptr;
+            bool                   UseInstancing = false;
 
             /// <summary>
             /// The input scene color. It's optional and used in forward/postFx rendering.
@@ -112,12 +116,6 @@ namespace SE
             BindParameters(GPUContext* context, const RenderContext& renderContext);
             BindParameters(GPUContext* context, const RenderContext& renderContext, const DrawCall& drawCall);
             BindParameters(GPUContext* context, const RenderContext& renderContext, const DrawCall* firstDrawCall, int32 drawCallsCount);
-
-            // Per-view shared constant buffer (see ViewData in MaterialCommon.hlsl).
-            static GPUConstantBuffer* PerViewConstants;
-
-            // Binds the shared per-view constant buffer at slot 1 (see ViewData in MaterialCommon.hlsl)
-            void BindViewData() const;
         };
 
         /// <summary>
@@ -125,5 +123,8 @@ namespace SE
         /// </summary>
         /// <param name="params">The material bind settings.</param>
         virtual void Bind(BindParameters& params) = 0;
+
+        virtual ShaderProgramInstance* GetProgram() = 0;
+
     };
 }

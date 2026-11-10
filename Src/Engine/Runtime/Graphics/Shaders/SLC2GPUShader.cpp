@@ -20,9 +20,19 @@ namespace SE
 		ReleasePrograms();
 	}
 
-	bool SLC2GPUShader::Load(const byte* data, int dataLength)
-	{
-		SLC2Artifact artifact;
+    bool SLC2GPUShader::HasProgram(const String& programName) const
+    {
+        for (const SLC2ProgramRecord& program : m_Artifact.Programs)
+        {
+            if (program.ProgramId == programName)
+                return true;
+        }
+        return false;
+    }
+
+    bool SLC2GPUShader::Load(const byte* data, int dataLength)
+    {
+        SLC2Artifact artifact;
         String       error;
         if (!SLC2Reader::Read(data, dataLength, artifact, error))
 		{
@@ -42,14 +52,14 @@ namespace SE
 		m_Programs.SetCapacity(programCapacity, false);
         m_MemoryUsage = dataLength;
 		return true;
-	}
+    }
 
-	bool SLC2GPUShader::SelectProgram(const String&             programName,
+    bool SLC2GPUShader::SelectProgram(const String&             programName,
                                       const List<String>&       defines,
                                       const SLC2ProgramRecord*& program,
                                       const SLC2TargetRecord*&  target,
                                       const SLC2VariantRecord*& variant) const
-	{
+    {
         return ResolveProgramSelection(m_Artifact, programName, defines, program, target, variant);
 	}
 

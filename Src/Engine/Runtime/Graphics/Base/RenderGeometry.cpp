@@ -4,7 +4,7 @@
 
 namespace SE
 {
-	const RenderGeometryVertexBuffer* RenderGeometry::FindVertexBuffer(const uint32 slot) const
+	const GeometryVertexBuffer* RenderGeometry::FindVertexBuffer(const uint32 slot) const
 	{
 		for (int32 index = 0; index < VertexBuffers.Count(); index++)
 		{
@@ -31,7 +31,7 @@ namespace SE
 
 		for (int32 bufferIndex = 0; bufferIndex < VertexBuffers.Count(); bufferIndex++)
 		{
-			const RenderGeometryVertexBuffer& vertexBuffer = VertexBuffers[bufferIndex];
+			const GeometryVertexBuffer& vertexBuffer = VertexBuffers[bufferIndex];
 			const VertexFactoryBufferBinding* binding = Layout->FindBinding(vertexBuffer.Slot);
 			if (vertexBuffer.Slot >= GPU_MAX_VB_BINDED || binding == nullptr)
 			{

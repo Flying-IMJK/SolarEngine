@@ -13,8 +13,6 @@
 #include "Runtime/Graphics/GPUContext.h"
 #include "Runtime/Graphics/GPUDevice.h"
 #include "Runtime/Resource/Assets/Materials/MaterialBase.h"
-#include "Runtime/Resource/Assets/SLC2Materials/SLC2Material.h"
-#include "Runtime/Resource/Assets/SLC2Materials/SLC2MaterialInstance.h"
 #include "Utils/RenderUtils.h"
 
 namespace SE
@@ -232,7 +230,7 @@ namespace SE
         // , AtmosphericFog(nullptr)
         // , Fog(nullptr)
         // , Blendable(32)
-        , _instanceBuffer(1024 * sizeof(StaticMeshInstanceData), sizeof(StaticMeshInstanceData), SE_TEXT("Instance Buffer"))
+        , m_InstanceBuffer(1024 * sizeof(StaticMeshInstanceData), sizeof(StaticMeshInstanceData), SE_TEXT("Instance Buffer"))
     {
     }
 
@@ -250,11 +248,10 @@ namespace SE
         // Scenes.Clear();
         DrawCalls.Clear();
         BatchedDrawCalls.Clear();
-        _submittedSLC2Draws.Clear();
-        _slc2Draws.Clear();
-        _slc2SubmissionCount = 0;
         for (auto& list : DrawCallsLists)
+        {
             list.Clear();
+        }
         ShadowDepthDrawCallsList.Clear();
         PointLights.Clear();
         SpotLights.Clear();
@@ -269,7 +266,7 @@ namespace SE
         // PostFx.Clear();
         // Settings = PostProcessSettings();
         // Blendable.Clear();
-        _instanceBuffer.Clear();
+        m_InstanceBuffer.Clear();
     }
 
     struct PackedSortKey
@@ -294,34 +291,20 @@ namespace SE
         const float distance = Float3::Dot(planeNormal, drawCall.ObjectPosition) - planePoint;
         PackedSortKey key;
         key.DistanceKey = RenderUtils::ComputeDistanceSortKey(distance);
-        uint32 batchKey = drawCall.SLC2 != nullptr
-            ? GetHash(drawCall.SLC2->Material != nullptr
-                ? static_cast<const void*>(drawCall.SLC2->Material)
-                : static_cast<const void*>(drawCall.SLC2->Instance))
-            : GetHash(drawCall.Material);
+        uint32 batchKey = GetHash(drawCall.Material);
         batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[0]);
         batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[1]);
         batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[2]);
         batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.IndexBuffer);
         IMaterial::InstancingHandler handler;
-        if (drawCall.SLC2 == nullptr && drawCall.Material->CanUseInstancing(handler))
+        if (drawCall.Material->CanUseInstancing(handler))
+        {
             handler.GetHash(drawCall, batchKey);
+        }
         batchKey += (int32)(471 * drawCall.WorldDeterminantSign);
         key.SortKey = (uint16)(sortOrder - Min_int16);
         key.BatchKey = (uint16)batchKey;
         drawCall.SortKey = key.Data;
-    }
-
-    void RenderList::AddSLC2DrawCall(const RenderContext& renderContext, DrawPass drawModes,
-                                      StaticMask staticFlags, DrawCall& drawCall,
-                                      const SLC2RenderDraw& slc2, bool receivesDecals, int16 sortOrder)
-    {
-        // DrawCall is POD; the owning list keeps its non-trivial geometry and defines stable.
-        auto owned = std::make_shared<SLC2RenderDraw>(slc2);
-        drawCall.SLC2 = owned.get();
-        drawCall.Material = nullptr;
-        _slc2Draws.Add(MoveTemp(owned));
-        AddDrawCall(renderContext, drawModes, staticFlags, drawCall, receivesDecals, sortOrder);
     }
 
     void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticMask staticFlags, DrawCall& drawCall, bool receivesDecals, int16 sortOrder)
@@ -341,8 +324,7 @@ namespace SE
         {
             DrawCallsLists[(int32)DrawCallsListType::Depth].Indices.Add(index);
         }
-        if (EnumHasAllFlags(drawModes, DrawPass::GBuffer) &&
-            (drawCall.SLC2 != nullptr || EnumHasAllFlags(drawModes, DrawPass::GlobalSurfaceAtlas)))
+        if (EnumHasAllFlags(drawModes, DrawPass::GBuffer) && EnumHasAllFlags(drawModes, DrawPass::GlobalSurfaceAtlas))
         {
             if (receivesDecals)
                 DrawCallsLists[(int32)DrawCallsListType::GBuffer].Indices.Add(index);
@@ -363,18 +345,6 @@ namespace SE
         }
     }
 
-    void RenderList::AddSLC2DrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes,
-                                      StaticMask staticFlags, ShadowsCastingMode shadowsMode,
-                                      const BoundingSphere& bounds, DrawCall& drawCall,
-                                      const SLC2RenderDraw& slc2, bool receivesDecals, int16 sortOrder)
-    {
-        auto owned = std::make_shared<SLC2RenderDraw>(slc2);
-        drawCall.SLC2 = owned.get();
-        drawCall.Material = nullptr;
-        _slc2Draws.Add(MoveTemp(owned));
-        AddDrawCall(renderContextBatch, drawModes, staticFlags, shadowsMode, bounds, drawCall,
-                    receivesDecals, sortOrder);
-    }
 
     void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticMask staticFlags,
         ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals, int16 sortOrder)
@@ -402,8 +372,7 @@ namespace SE
             {
                 DrawCallsLists[(int32)DrawCallsListType::Depth].Indices.Add(index);
             }
-            if (EnumHasAllFlags(drawModes, DrawPass::GBuffer) &&
-            (drawCall.SLC2 != nullptr || EnumHasAllFlags(drawModes, DrawPass::GlobalSurfaceAtlas)))
+            if (EnumHasAllFlags(drawModes, DrawPass::GBuffer) && EnumHasAllFlags(drawModes, DrawPass::GlobalSurfaceAtlas))
             {
                 if (receivesDecals)
                     DrawCallsLists[(int32)DrawCallsListType::GBuffer].Indices.Add(index);
@@ -448,8 +417,7 @@ namespace SE
         {
             IMaterial::InstancingHandler handler;
             // 自动合批中的每个 DrawCall 只写入一条实例记录。
-            return a.SLC2 == nullptr && b.SLC2 == nullptr &&
-                    a.Material == b.Material &&
+            return a.Material == b.Material &&
                     a.Material->CanUseInstancing(handler) &&
                     Platform::MemoryCompare(&a.Geometry, &b.Geometry, sizeof(a.Geometry)) == 0 &&
                     a.InstanceCount == 1 &&
@@ -545,371 +513,214 @@ namespace SE
         return pass == DrawPass::GBuffer || pass == DrawPass::Depth;
     }
 
-    bool RenderList::ExecuteSLC2DrawCall(const RenderContext& renderContext, const DrawCallsList& list,
-                                          const DrawCall& drawCall, uint32 instanceCount,
-                                          GPUBuffer* instanceBuffer, uint32 instanceByteOffset)
-    {
-/*        const SLC2RenderDraw& slc2 = *drawCall.SLC2;
-        if ((slc2.Material == nullptr) == (slc2.Instance == nullptr)) return false;
-        String pass;
-        if (&list == &ShadowDepthDrawCallsList) pass = SE_TEXT("Shadow");
-        else switch (renderContext.view.Pass)
-        {
-        case DrawPass::Depth: pass = SE_TEXT("Depth"); break;
-        case DrawPass::GBuffer: pass = SE_TEXT("GBuffer"); break;
-        case DrawPass::Forward: pass = SE_TEXT("Forward"); break;
-        case DrawPass::Distortion: pass = SE_TEXT("Distortion"); break;
-        case DrawPass::MotionVectors: pass = SE_TEXT("MotionVectors"); break;
-        default: return false;
-        }
 
-        if (instanceBuffer != nullptr && slc2.GeometryMode == SLC2MaterialGeometryMode::Skinned)
-            return false; // There is no combined SkinnedInstanced Program convention.
-        RenderGeometry geometry = slc2.Geometry;
-        if (instanceBuffer != nullptr &&
-            !StaticMeshVertexFactory::CreateRenderGeometryWithInstanceBuffer(
-                slc2.Geometry, instanceBuffer, instanceByteOffset, geometry)) return false;
-        const auto mode = instanceBuffer != nullptr ? SLC2MaterialGeometryMode::Instanced : slc2.GeometryMode;
-
-        std::unique_ptr<SLC2MaterialDrawProgram> prepared;
-        const bool selected = slc2.Material != nullptr
-            ? slc2.Material->PrepareDraw(pass, mode, slc2.Target, slc2.Defines, sources, prepared)
-            : slc2.Instance->PrepareDraw(pass, mode, slc2.Target, slc2.Defines, sources, prepared);
-        if (!selected || prepared == nullptr ||
-        {
-            !prepared->Prepare(*renderContext.gpuContext, geometry)) return false;
-        }
-
-        // Keep the selected Generation and Pipeline through this RenderList submission.
-        SharedPtr<SLC2MaterialDrawProgram> submitted(prepared.release());
-        _submittedSLC2Draws.Add(submitted);
-        // The GPUContext freezes bindings once for the actual submitted draw.
-        if (drawCall.InstanceCount == 0)
-        {
-            if (geometry.IndexBuffer != nullptr)
-            {
-                renderContext.gpuContext->DrawIndexedInstancedIndirect(
-                    submitted->GetInstance(), drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
-            }
-            else
-            {
-                renderContext.gpuContext->DrawInstancedIndirect(
-                    submitted->GetInstance(), drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
-            }
-        }
-        else if (geometry.IndexBuffer != nullptr)
-        {
-            renderContext.gpuContext->DrawIndexedInstanced(
-                submitted->GetInstance(), drawCall.Draw.IndicesCount, instanceCount, 0, 0, drawCall.Draw.StartIndex);
-        }
-        else
-        {
-            renderContext.gpuContext->DrawInstanced(
-                submitted->GetInstance(), drawCall.Draw.IndicesCount, instanceCount);
-        }
-        ++_slc2SubmissionCount;*/
-        return true;
-    }
-
-    void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, GPUTextureView* input)
+    void RenderList::ExecuteDrawCalls(const RenderContext&              renderContext,
+                                      DrawCallsList&                    list,
+                                      const RenderListBuffer<DrawCall>& drawCalls, 
+                                      Function<void(IMaterial*)>        prepareDraw,
+                                      GPUTextureView*                   input)
     {
         if (list.IsEmpty())
+        {
             return;
+        }
         PROFILE_GPU_CPU("Drawing");
-        const auto* drawCallsData = drawCalls.Get();
-        const auto* listData = list.Indices.Get();
-        const auto* batchesData = list.Batches.Get();
-        const auto context = renderContext.gpuContext;;
-        bool useInstancing = list.CanUseInstancing && CanUseInstancing(renderContext.view.Pass) && GPUDevice::instance->GetGPULimits().HasInstancing;
-        // TaaJitterRemoveContext taaJitterRemove(renderContext.view);
-
-        // Clear SR slots to prevent any resources binding issues (leftovers from the previous passes)
-        context->ResetSR();
-
-        // Prepare instance buffer
+        GPUContext*  context       = renderContext.gpuContext;
+        const int32* indices       = list.Indices.Get();
+        bool         useInstancing = list.CanUseInstancing && CanUseInstancing(renderContext.view.Pass) &&
+                                     GPUDevice::instance->GetGPULimits().HasInstancing;
         if (useInstancing)
         {
-            // Prepare buffer memory
-            int32 instancedBatchesCount = 0;
-            for (int32 i = 0; i < list.Batches.Count(); i++)
+            int32 count = 0;
+            for (const auto& batch : list.Batches)
             {
-                auto& batch = batchesData[i];
-                if (batch.BatchSize > 1)
-                    instancedBatchesCount += batch.BatchSize;
-            }
-            for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
-            {
-                auto& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
-                if (batch.Instances.Count() > 1)
-                    instancedBatchesCount += batch.Instances.Count();
-            }
-            if (instancedBatchesCount == 0)
-            {
-                // Faster path if none of the draw batches requires instancing
-                useInstancing = false;
-                goto DRAW;
-            }
-            _instanceBuffer.Clear();
-            _instanceBuffer.data.Resize(instancedBatchesCount * sizeof(StaticMeshInstanceData));
-            auto instanceData = (StaticMeshInstanceData*)_instanceBuffer.data.Get();
-
-            // Write to instance buffer
-            for (int32 i = 0; i < list.Batches.Count(); i++)
-            {
-                auto& batch = batchesData[i];
                 if (batch.BatchSize > 1)
                 {
-                    IMaterial::InstancingHandler handler;
-                    drawCallsData[listData[batch.StartIndex]].Material->CanUseInstancing(handler);
-                    for (int32 j = 0; j < batch.BatchSize; j++)
-                    {
-                        auto& drawCall = drawCallsData[listData[batch.StartIndex + j]];
-                        handler.WriteDrawCall(instanceData, drawCall);
-                        instanceData++;
-                    }
+                    count += batch.BatchSize;
                 }
             }
-            for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
+            for (int32 index : list.PreBatchedDrawCalls)
             {
-                auto& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
+                const auto& batch = BatchedDrawCalls.Get()[index];
                 if (batch.Instances.Count() > 1)
                 {
-                    Platform::MemoryCopy(instanceData, batch.Instances.Get(), batch.Instances.Count() * sizeof(StaticMeshInstanceData));
-                    instanceData += batch.Instances.Count();
+                    count += batch.Instances.Count();
                 }
             }
+            useInstancing = count != 0;
 
-            // Upload data
-            _instanceBuffer.Flush(context);
-        }
-
-        DRAW:
-
-            // Execute draw calls
-            MaterialBase::BindParameters bindParams(context, renderContext);
-            bindParams.Input = input;
-            bool hasLegacyDraw = false;
-            for (int32 i = 0; i < list.Indices.Count(); ++i)
-                hasLegacyDraw |= drawCallsData[listData[i]].SLC2 == nullptr;
-            for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); ++i)
-                hasLegacyDraw |= BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]].DrawCall.SLC2 == nullptr;
-            // An SLC2-only list never binds legacy per-view constant buffers.
-            if (hasLegacyDraw) bindParams.BindViewData();
             if (useInstancing)
             {
-                int32 instanceBufferOffset = 0;
-                GPUBuffer* vb[4];
-                uint32 vbOffsets[4];
-                for (int32 i = 0; i < list.Batches.Count(); i++)
+                m_InstanceBuffer.Clear();
+                m_InstanceBuffer.data.Resize(count * sizeof(StaticMeshInstanceData));
+                StaticMeshInstanceData* data = reinterpret_cast<StaticMeshInstanceData*>(m_InstanceBuffer.data.Get());
+                for (const auto& batch : list.Batches)
                 {
-                    auto& batch = batchesData[i];
-                    const DrawCall& drawCall = drawCallsData[listData[batch.StartIndex]];
-
-                    int32 vbCount = 0;
-                    while (vbCount < ARRAY_SIZE(drawCall.Geometry.VertexBuffers) && drawCall.Geometry.VertexBuffers[vbCount])
+                    if (batch.BatchSize <= 1)
                     {
-                        vb[vbCount] = drawCall.Geometry.VertexBuffers[vbCount];
-                        vbOffsets[vbCount] = drawCall.Geometry.VertexBuffersOffsets[vbCount];
-                        vbCount++;
-                    }
-                    for (int32 j = vbCount; j < ARRAY_SIZE(drawCall.Geometry.VertexBuffers); j++)
-                    {
-                        vb[j] = nullptr;
-                        vbOffsets[j] = 0;
-                    }
-
-                    if (drawCall.SLC2 != nullptr)
-                    {
-                        ExecuteSLC2DrawCall(renderContext, list, drawCall, batch.InstanceCount,
-                            batch.BatchSize > 1 ? _instanceBuffer.GetBuffer() : nullptr,
-                            instanceBufferOffset * sizeof(StaticMeshInstanceData));
-                        if (batch.BatchSize > 1) instanceBufferOffset += batch.BatchSize;
                         continue;
                     }
-                    bindParams.firstDrawCall = &drawCall;
-                    bindParams.drawCallsCount = batch.BatchSize;
-                    drawCall.Material->Bind(bindParams);
-
-                    context->BindIB(drawCall.Geometry.IndexBuffer);
-
-                    if (drawCall.InstanceCount == 0)
+                    IMaterial::InstancingHandler handler;
+                    const DrawCall& first = drawCalls[indices[batch.StartIndex]];
+                    if (!first.Material || !first.Material->CanUseInstancing(handler))
                     {
-                        // No support for batching indirect draw calls
-                        ASSERT_LOW_LAYER(batch.BatchSize == 1);
-
-                        context->BindVB(ToSpan(vb, vbCount), vbOffsets);
-                        context->DrawIndexedInstancedIndirect(drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
+                        return;
                     }
-                    else
+                    for (int32 i = 0; i < batch.BatchSize; ++i)
                     {
-                        if (batch.BatchSize == 1)
-                        {
-                            context->BindVB(ToSpan(vb, vbCount), vbOffsets);
-                            context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
-                        }
-                        else
-                        {
-                            vbCount = 3;
-                            vb[vbCount] = _instanceBuffer.GetBuffer();
-                            // Buffer Offset 已选择当前批次起点，Draw 不再重复使用非零 startInstance。
-                            vbOffsets[vbCount] = instanceBufferOffset * sizeof(StaticMeshInstanceData);
-                            vbCount++;
-                            context->BindVB(ToSpan(vb, vbCount), vbOffsets);
-                            context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
-                            instanceBufferOffset += batch.BatchSize;
-                        }
+                        handler.WriteDrawCall(data++, drawCalls[indices[batch.StartIndex + i]]);
                     }
                 }
-                for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
+
+                for (int32 index : list.PreBatchedDrawCalls)
                 {
-                    auto& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
-                    auto& drawCall = batch.DrawCall;
+                    const auto& batch = BatchedDrawCalls.Get()[index];
+                    if (batch.Instances.Count() > 1)
+                    {
+                        Platform::MemoryCopy(data, batch.Instances.Get(), batch.Instances.Count() * sizeof(StaticMeshInstanceData));
+                        data += batch.Instances.Count();
+                    }
+                }
+                m_InstanceBuffer.Flush(context);
+            }
+        }
 
-                    int32 vbCount = 0;
-                    while (vbCount < ARRAY_SIZE(drawCall.Geometry.VertexBuffers) && drawCall.Geometry.VertexBuffers[vbCount])
-                    {
-                        vb[vbCount] = drawCall.Geometry.VertexBuffers[vbCount];
-                        vbOffsets[vbCount] = drawCall.Geometry.VertexBuffersOffsets[vbCount];
-                        vbCount++;
-                    }
-                    for (int32 j = vbCount; j < ARRAY_SIZE(drawCall.Geometry.VertexBuffers); j++)
-                    {
-                        vb[j] = nullptr;
-                        vbOffsets[j] = 0;
-                    }
+        IMaterial::BindParameters params(context, renderContext);
+        params.Input      = input;
 
-                    if (drawCall.SLC2 != nullptr)
-                    {
-                        const bool instanced = batch.Instances.Count() > 1;
-                        ExecuteSLC2DrawCall(renderContext, list, drawCall, batch.Instances.Count(),
-                            instanced ? _instanceBuffer.GetBuffer() : nullptr,
-                            instanceBufferOffset * sizeof(StaticMeshInstanceData));
-                        if (instanced) instanceBufferOffset += batch.Instances.Count();
-                        continue;
-                    }
-                    bindParams.firstDrawCall = &drawCall;
-                    bindParams.drawCallsCount = batch.Instances.Count();
-                    drawCall.Material->Bind(bindParams);
+        const auto submit = [&](const DrawCall& draw, uint32 instanceCount, GPUBuffer* pInstances, uint32 offset) {
+            if (!draw.Material || !draw.Material->IsReady())
+            {
+                return;
+            }
+            params.firstDrawCall  = &draw;
+            params.drawCallsCount = instanceCount;
+            params.UseInstancing  = pInstances != nullptr;
+            params.Program        = nullptr;
+            draw.Material->Bind(params);
 
-                    context->BindIB(drawCall.Geometry.IndexBuffer);
+            if (!params.Program)
+            {
+                return;
+            }
 
-                    if (drawCall.InstanceCount == 0)
-                    {
-                        ASSERT_LOW_LAYER(batch.Instances.Count() == 1);
-                        context->BindVB(ToSpan(vb, vbCount), vbOffsets);
-                        context->DrawIndexedInstancedIndirect(drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
-                    }
-                    else
-                    {
-                        if (batch.Instances.Count() == 1)
-                        {
-                            context->BindVB(ToSpan(vb, vbCount), vbOffsets);
-                            context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.Instances.Count(), 0, 0, drawCall.Draw.StartIndex);
-                        }
-                        else
-                        {
-                            vbCount = 3;
-                            vb[vbCount] = _instanceBuffer.GetBuffer();
-                            vbOffsets[vbCount] = instanceBufferOffset * sizeof(StaticMeshInstanceData);
-                            vbCount++;
-                            context->BindVB(ToSpan(vb, vbCount), vbOffsets);
-                            context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.Instances.Count(), 0, 0, drawCall.Draw.StartIndex);
-                            instanceBufferOffset += batch.Instances.Count();
-                        }
-                    }
+            if (prepareDraw.IsBinded())
+            {
+                prepareDraw(draw.Material);
+            }
+
+            RenderGeometry geometry;
+            geometry.Layout      = draw.Geometry.vertexLayout;
+            geometry.IndexBuffer = draw.Geometry.IndexBuffer;
+            geometry.IndexFormat = draw.Geometry.IndexFormat;
+            geometry.IndexOffset = draw.Geometry.IndexOffset;
+            for (uint32 slot = 0; slot < ARRAY_SIZE(draw.Geometry.VertexBuffers); ++slot)
+            {
+                if (draw.Geometry.VertexBuffers[slot])
+                {
+                    geometry.VertexBuffers.Add({slot, draw.Geometry.VertexBuffers[slot], draw.Geometry.VertexBuffersOffsets[slot]});
+                }
+            }
+
+            if (pInstances)
+            {
+                RenderGeometry instanced;
+                if (!StaticMeshVertexFactory::CreateRenderGeometryWithInstanceBuffer(geometry, pInstances, offset, instanced))
+                {
+                    return;
+                }
+                geometry = MoveTemp(instanced);
+            }
+
+            if (!context->BindRenderGeometry(geometry))
+            {
+                return;
+            }
+
+            // The backend freezes the ProgramInstance once for this submission. Byte offsets already select
+            // the instance stream range, so startInstance stays zero for both batched and prebatched draws.
+            if (draw.InstanceCount == 0)
+            {
+                if (geometry.IndexBuffer)
+                {
+                    context->DrawIndexedInstancedIndirect(*params.Program, draw.Draw.IndirectArgsBuffer, draw.Draw.IndirectArgsOffset);
+                }
+                else
+                {
+                    context->DrawInstancedIndirect(*params.Program, draw.Draw.IndirectArgsBuffer, draw.Draw.IndirectArgsOffset);
+                }
+            }
+            else if (geometry.IndexBuffer)
+            {
+                context->DrawIndexedInstanced(params.Program, draw.Draw.IndicesCount, instanceCount, 0, 0, draw.Draw.StartIndex);
+            }
+            else
+            {
+                context->DrawInstanced(params.Program, draw.Draw.IndicesCount, instanceCount);
+            }
+        };
+
+        uint32 instanceOffset = 0;
+        for (const auto& batch : list.Batches)
+        {
+            if (useInstancing)
+            {
+                const bool instanced = batch.BatchSize > 1;
+                submit(drawCalls[indices[batch.StartIndex]], batch.InstanceCount, instanced ? m_InstanceBuffer.GetBuffer() : nullptr, instanceOffset);
+                if (instanced)
+                {
+                    instanceOffset += batch.BatchSize * sizeof(StaticMeshInstanceData);
                 }
             }
             else
             {
-                bindParams.drawCallsCount = 1;
-                for (int32 i = 0; i < list.Batches.Count(); i++)
+                for (int32 i = 0; i < batch.BatchSize; ++i)
                 {
-                    auto& batch = batchesData[i];
-
-                    for (int32 j = 0; j < batch.BatchSize; j++)
-                    {
-                        const DrawCall& drawCall = drawCalls[listData[batch.StartIndex + j]];
-                        if (drawCall.SLC2 != nullptr)
-                        {
-                            ExecuteSLC2DrawCall(renderContext, list, drawCall, drawCall.InstanceCount, nullptr, 0);
-                            continue;
-                        }
-                        bindParams.firstDrawCall = &drawCall;
-                        drawCall.Material->Bind(bindParams);
-
-                        context->BindIB(drawCall.Geometry.IndexBuffer);
-                        context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, 3), drawCall.Geometry.VertexBuffersOffsets);
-
-                        if (drawCall.InstanceCount == 0)
-                        {
-                            context->DrawIndexedInstancedIndirect(drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
-                        }
-                        else
-                        {
-                            context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, drawCall.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
-                        }
-                    }
-                }
-                for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
-                {
-                    auto& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
-                    auto drawCall = batch.DrawCall;
-                    drawCall.ObjectRadius = 0.0f;
-                    bindParams.firstDrawCall = &drawCall;
-                    const auto* instancesData = batch.Instances.Get();
-
-                    for (int32 j = 0; j < batch.Instances.Count(); j++)
-                    {
-                        auto& instance = instancesData[j];
-                        drawCall.ObjectPosition = instance.InstanceOrigin;
-                        drawCall.PerInstanceRandom = instance.PerInstanceRandom;
-                        auto lightmapArea = instance.InstanceLightmapArea.ToFloat4();
-                        drawCall.Surface.LightmapUVsArea = *(Rectangle*)&lightmapArea;
-                        drawCall.Surface.LODDitherFactor = instance.LODDitherFactor;
-                        drawCall.World.SetRow(1, Float4(instance.InstanceTransform1, 0.0f));
-                        drawCall.World.SetRow(2, Float4(instance.InstanceTransform2, 0.0f));
-                        drawCall.World.SetRow(3, Float4(instance.InstanceTransform3, 0.0f));
-                        drawCall.World.SetRow(4, Float4(instance.InstanceOrigin, 1.0f));
-                        if (drawCall.SLC2 != nullptr)
-                        {
-                            ExecuteSLC2DrawCall(renderContext, list, drawCall, drawCall.InstanceCount, nullptr, 0);
-                            continue;
-                        }
-                        drawCall.Material->Bind(bindParams);
-
-                        context->BindIB(drawCall.Geometry.IndexBuffer);
-                        context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, 3), drawCall.Geometry.VertexBuffersOffsets);
-                        context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, drawCall.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
-                    }
-                }
-                if (list.Batches.IsEmpty() && list.Indices.Count() != 0)
-                {
-                    // Draw calls list has nto been batched so execute draw calls separately
-                    for (int32 j = 0; j < list.Indices.Count(); j++)
-                    {
-                        const DrawCall& drawCall = drawCalls[listData[j]];
-                        if (drawCall.SLC2 != nullptr)
-                        {
-                            ExecuteSLC2DrawCall(renderContext, list, drawCall, drawCall.InstanceCount, nullptr, 0);
-                            continue;
-                        }
-                        bindParams.firstDrawCall = &drawCall;
-                        drawCall.Material->Bind(bindParams);
-
-                        context->BindIB(drawCall.Geometry.IndexBuffer);
-                        context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, 3), drawCall.Geometry.VertexBuffersOffsets);
-
-                        if (drawCall.InstanceCount == 0)
-                        {
-                            context->DrawIndexedInstancedIndirect(drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
-                        }
-                        else
-                        {
-                            context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, drawCall.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
-                        }
-                    }
+                    const DrawCall& draw = drawCalls[indices[batch.StartIndex + i]];
+                    submit(draw, draw.InstanceCount, nullptr, 0);
                 }
             }
+        }
+        for (int32 index : list.PreBatchedDrawCalls)
+        {
+            const auto& batch = BatchedDrawCalls.Get()[index];
+            if (useInstancing)
+            {
+                const bool instanced = batch.Instances.Count() > 1;
+                submit(batch.DrawCall, batch.Instances.Count(), instanced ? m_InstanceBuffer.GetBuffer() : nullptr, instanceOffset);
+                if (instanced)
+                {
+                    instanceOffset += batch.Instances.Count() * sizeof(StaticMeshInstanceData);
+                }
+            }
+            else
+            {
+                DrawCall draw     = batch.DrawCall;
+                draw.ObjectRadius = 0.0f;
+                for (const StaticMeshInstanceData& instance : batch.Instances)
+                {
+                    draw.ObjectPosition          = instance.InstanceOrigin;
+                    draw.PerInstanceRandom       = instance.PerInstanceRandom;
+                    const Float4 lightmap        = instance.InstanceLightmapArea.ToFloat4();
+                    draw.Surface.LightmapUVsArea = *reinterpret_cast<const Rectangle*>(&lightmap);
+                    draw.Surface.LODDitherFactor = instance.LODDitherFactor;
+                    draw.World.SetRow(1, Float4(instance.InstanceTransform1, 0.0f));
+                    draw.World.SetRow(2, Float4(instance.InstanceTransform2, 0.0f));
+                    draw.World.SetRow(3, Float4(instance.InstanceTransform3, 0.0f));
+                    draw.World.SetRow(4, Float4(instance.InstanceOrigin, 1.0f));
+                    submit(draw, draw.InstanceCount, nullptr, 0);
+                }
+            }
+        }
+
+        if (list.Batches.IsEmpty())
+        {
+            for (int32 index : list.Indices)
+            {
+                const DrawCall& draw = drawCalls[index];
+                submit(draw, draw.InstanceCount, nullptr, 0);
+            }
+        }
     }
 
     void SurfaceDrawCallHandler::GetHash(const DrawCall& drawCall, uint32& batchKey)

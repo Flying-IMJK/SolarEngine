@@ -85,11 +85,14 @@ struct Material
     float3 WorldDisplacement;
     float Mask;
     float TessellationMultiplier;
+#if USE_CUSTOM_VERTEX_INTERPOLATORS
+    float4 CustomVSToPS[CUSTOM_VERTEX_INTERPOLATORS_COUNT];
+#endif
 };
 
 // Secondary constant buffer (with per-view constants at slot 1)
 #if USE_PER_VIEW_CONSTANTS
-cbuffer ViewData : register(b1)
+cbuffer ViewData
 {
     float4x4 ViewMatrix;
     float4x4 ViewProjectionMatrix;

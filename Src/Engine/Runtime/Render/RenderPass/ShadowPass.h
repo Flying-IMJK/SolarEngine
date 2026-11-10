@@ -8,7 +8,7 @@
 
 namespace SE
 {
-    class GraphicShader;
+    class Shader;
     class GPUConstantBuffer;
     class GPUSampler;
     class ShaderProgramInstance;
@@ -47,7 +47,7 @@ namespace SE
         };
 
         // Shader stuff
-        AssetRef<GraphicShader> m_Shader;
+        AssetRef<Shader> m_Shader;
 
         SLC2GPUPipelineState*  m_SpoShadowDir;
         SLC2GPUPipelineState*  m_SpoShadowPoint;
@@ -133,9 +133,7 @@ namespace SE
         /// <param name="renderContextBatch">The rendering context batch.</param>
         /// <param name="light">The light.</param>
         /// <param name="pShadowMask">The shadow mask (output).</param>
-        void RenderShadow(RenderContextBatch&     renderContextBatch,
-                          RendererPointLightData& light,
-                          GPUTextureView*         pShadowMask);
+        void RenderShadow(RenderContextBatch& renderContextBatch, RendererPointLightData& light, GPUTextureView* pShadowMask);
 
         /// <summary>
         /// Renders the shadow mask for the given light.
@@ -143,8 +141,7 @@ namespace SE
         /// <param name="renderContextBatch">The rendering context batch.</param>
         /// <param name="light">The light.</param>
         /// <param name="pShadowMask">The shadow mask (output).</param>
-        void
-        RenderShadow(RenderContextBatch& renderContextBatch, RendererSpotLightData& light, GPUTextureView* pShadowMask);
+        void RenderShadow(RenderContextBatch& renderContextBatch, RendererSpotLightData& light, GPUTextureView* pShadowMask);
 
         /// <summary>
         /// Renders the shadow mask for the given light.
@@ -153,10 +150,7 @@ namespace SE
         /// <param name="light">The light.</param>
         /// <param name="index">The light index.</param>
         /// <param name="pShadowMask">The shadow mask (output).</param>
-        void RenderShadow(RenderContextBatch&           renderContextBatch,
-                          RendererDirectionalLightData& light,
-                          int32                         index,
-                          GPUTextureView*               pShadowMask);
+        void RenderShadow(RenderContextBatch& renderContextBatch, RendererDirectionalLightData& light, int32 index, GPUTextureView* pShadowMask);
 
     private:
 
@@ -166,9 +160,7 @@ namespace SE
         void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RendererPointLightData& light);
         void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RendererSpotLightData& light);
 
-#if COMPILE_WITH_DEV_ENV
         void OnShaderReloading(Asset* pObj);
-#endif
 
     public:
 

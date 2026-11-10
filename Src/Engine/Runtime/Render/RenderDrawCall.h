@@ -1,8 +1,9 @@
 #pragma once
 
-#include "Runtime/Core/Math/Matrix.h"
-#include "Runtime/Core/Types/Variable.h"
-#include "Runtime/Core/Math/Rectangle.h"
+#include <Runtime/Core/Math/Matrix.h>
+#include <Runtime/Core/Math/Rectangle.h>
+#include <Runtime/Core/Types/Variable.h>
+#include <Runtime/Graphics/Base/PixelFormat.h>
 
 namespace SE
 {
@@ -10,12 +11,14 @@ namespace SE
     struct RenderContext;
     struct DrawCall;
     class IMaterial;
+    class ShaderProgramInstance;
     struct SLC2RenderDraw;
     class MaterialBase;
     class RenderBuffers;
     class GPUTextureView;
     class GPUContext;
     class GPUBuffer;
+    class VertexFactoryLayout;
     class GPUTexture;
 
     /// <summary>
@@ -36,7 +39,8 @@ namespace SE
         /// <param name="context">The context responsible for rendering commands.</param>
         /// <param name="renderContext">The rendering context.</param>
         /// <param name="world">The world matrix to use during sky model vertices transformations.</param>
-        virtual void ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world) = 0;
+        virtual ShaderProgramInstance*
+        ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world) = 0;
     };
 
 
@@ -49,12 +53,13 @@ namespace SE
         /// The material to use for rendering.
         /// </summary>
         IMaterial* Material;
-
-        /// <summary>Optional owned SLC2 draw input. Set by RenderList::AddSLC2DrawCall.</summary>
-        const SLC2RenderDraw* SLC2;
-
+         
         struct
         {
+            const VertexFactoryLayout* vertexLayout;
+            PixelFormat                IndexFormat;
+            uint32                     IndexOffset;
+
             /// <summary>
             /// The geometry index buffer (cannot be null).
             /// </summary>

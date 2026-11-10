@@ -50,12 +50,12 @@ namespace SE
 		return MATERIAL_VERSION;
 	}
 
-
-	/*MaterialInstance* MaterialBase::CreateVirtualInstance()
-	{
-		auto instance = AssetContent::CreateVirtualAsset<MaterialInstance>();
-		instance->SetBaseMaterial(this);
-		return instance;
-	}*/
+    MaterialInstance* MaterialBase::CreateVirtualInstance()
+    {
+        auto instance = AssetContent::CreateVirtualAsset<MaterialInstance>();
+        if (instance)
+            instance->SetBaseMaterial(this);
+        return instance;
+    }
 
 } // SE

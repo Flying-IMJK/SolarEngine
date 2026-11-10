@@ -383,6 +383,11 @@ namespace SE
     void Mesh::GetDrawCallGeometry(DrawCall& drawCall) const
     {
         const RenderGeometry geometry = GetRenderGeometry();
+        // The batching key compares this POD block, including padding. Keep it deterministic.
+        Platform::MemoryClear(&drawCall.Geometry, sizeof(drawCall.Geometry));
+        drawCall.Geometry.vertexLayout = geometry.Layout;
+        drawCall.Geometry.IndexFormat  = geometry.IndexFormat;
+        drawCall.Geometry.IndexOffset  = geometry.IndexOffset;
         drawCall.Geometry.IndexBuffer = geometry.IndexBuffer;
         for (uint32 slot = StaticMeshVertexFactory::PositionSlot; slot <= StaticMeshVertexFactory::ColorSlot; slot++)
         {
@@ -391,7 +396,7 @@ namespace SE
         }
         for (int32 bufferIndex = 0; bufferIndex < geometry.VertexBuffers.Count(); bufferIndex++)
         {
-            const RenderGeometryVertexBuffer& vertexBuffer = geometry.VertexBuffers[bufferIndex];
+            const GeometryVertexBuffer& vertexBuffer = geometry.VertexBuffers[bufferIndex];
             ENGINE_ASSERT(vertexBuffer.Slot <= StaticMeshVertexFactory::ColorSlot);
             drawCall.Geometry.VertexBuffers[vertexBuffer.Slot] = vertexBuffer.Buffer;
             drawCall.Geometry.VertexBuffersOffsets[vertexBuffer.Slot] = vertexBuffer.Offset;
@@ -450,30 +455,6 @@ namespace SE
 
         // Push draw call to the render list
         renderContext.list->AddDrawCall(renderContext, drawModes, flags, drawCall, receiveDecals, sortOrder);
-    }
-
-    void Mesh::DrawSLC2(const RenderContext& renderContext, const SLC2RenderDraw& slc2,
-                         const Matrix& world, DrawPass drawModes, StaticMask flags,
-                         bool receiveDecals, float perInstanceRandom, int16 sortOrder) const
-    {
-        if (!IsInitialized() || renderContext.list == nullptr || drawModes == DrawPass::None ||
-            (slc2.Material == nullptr) == (slc2.Instance == nullptr)) return;
-        DrawCall call;
-        GetDrawCallGeometry(call);
-        call.InstanceCount = 1;
-        call.World = world;
-        call.ObjectPosition = world.GetTranslation();
-        call.ObjectRadius = static_cast<float>(_sphere.Radius) * world.GetScaleVector().GetAbsolute().MaxValue();
-        call.Surface.GeometrySize = _box.GetSize();
-        call.Surface.PrevWorld = world;
-        call.Surface.LightmapUVsArea = Rectangle::Empty;
-        call.Surface.LODDitherFactor = 0.0f;
-        call.WorldDeterminantSign = world.RotDeterminant() >= 0.0f ? 1.0f : -1.0f;
-        call.PerInstanceRandom = perInstanceRandom;
-        SLC2RenderDraw meshDraw = slc2;
-        meshDraw.Geometry = GetRenderGeometry();
-        renderContext.list->AddSLC2DrawCall(renderContext, drawModes, flags, call,
-                                            meshDraw, receiveDecals, sortOrder);
     }
 
     void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float lodDitherFactor) const

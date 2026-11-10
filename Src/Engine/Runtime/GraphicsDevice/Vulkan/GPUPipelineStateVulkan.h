@@ -333,7 +333,7 @@ namespace SE
         struct PipelineCacheEntry
         {
             RenderPassVulkan* RenderPass = nullptr;
-            uint64 LayoutHash = 0;
+            uint64 VertexLayoutHash = 0;
             VkPipeline Pipeline = VK_NULL_HANDLE;
         };
 

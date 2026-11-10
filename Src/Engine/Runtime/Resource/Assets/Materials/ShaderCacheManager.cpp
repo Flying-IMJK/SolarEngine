@@ -1,12 +1,12 @@
 
-#include "ShaderCacheManager.h"
+#include <Runtime/Resource/Assets/Materials/ShaderCacheManager.h>
 
-#include "Runtime/Core/Systems.h"
-#include "Runtime/Core/Platform/File.h"
-#include "Runtime/Core/Platform/FileSystem.h"
-#include "Runtime/Graphics/Shaders/GPUShader.h"
-#include "Runtime/EngineContext.h"
-#include "Runtime/Render/Assets/Material/MaterialShader.h"
+#include <Runtime/Core/Platform/File.h>
+#include <Runtime/Core/Platform/FileSystem.h>
+#include <Runtime/Core/Systems.h>
+#include <Runtime/EngineContext.h>
+#include <Runtime/Graphics/Shaders/GPUShader.h>
+#include <Runtime/Render/Assets/Material/MaterialShader.h>
 
 namespace SE
 {
@@ -75,6 +75,7 @@ namespace SE
             cachedEntry.ID = id;
             cachedEntry.Path = Folder / id.ToString(UID::FormatType::D);
             FileSystem::DeleteFile(cachedEntry.Path);
+            FileSystem::DeleteFile(cachedEntry.Path + SE_TEXT(".deps"));
         }
     };
 
@@ -160,10 +161,17 @@ namespace SE
             String dstPath = folder / dstFilename;
             String srcPath = folder / srcFilename;
 
-            if (FileSystem::FileExists(srcPath))
-                FileSystem::CopyFile(dstPath, srcPath);
-            else if (FileSystem::FileExists(dstPath))
-                FileSystem::DeleteFile(dstPath);
+            // Copy the raw artifact and its matching dependency record as a pair.
+            for (int32 part = 0; part < 2; ++part)
+            {
+                const String suffix      = part == 0 ? String::Empty : String(SE_TEXT(".deps"));
+                const String source      = srcPath + suffix;
+                const String destination = dstPath + suffix;
+                if (FileSystem::FileExists(source))
+                    FileSystem::CopyFile(destination, source);
+                else if (FileSystem::FileExists(destination))
+                    FileSystem::DeleteFile(destination);
+            }
         }
     }
 

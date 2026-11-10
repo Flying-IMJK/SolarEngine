@@ -1397,14 +1397,12 @@ namespace SE
         return m_CurrentVertexInputState != nullptr ? m_CurrentVertexInputState->LayoutHash : 0;
     }
 
-    VkPipeline SLC2GraphicsPipelineStateVulkan::GetStateInternal(
-        RenderPassVulkan* renderPass,
-        const VertexInputState& vertexInputState)
+    VkPipeline SLC2GraphicsPipelineStateVulkan::GetStateInternal(RenderPassVulkan* renderPass, const VertexInputState& vertexInputState)
     {
         for (int32 index = 0; index < m_Pipelines.Count(); index++)
         {
             const PipelineCacheEntry& entry = m_Pipelines[index];
-            if (entry.RenderPass == renderPass && entry.LayoutHash == vertexInputState.LayoutHash)
+            if ( entry.RenderPass == renderPass && entry.VertexLayoutHash == vertexInputState.LayoutHash)
             {
                 return entry.Pipeline;
             }
@@ -1422,21 +1420,15 @@ namespace SE
         LOG_VULKAN_RESULT(result);
         if (result != VK_SUCCESS)
         {
-            LOG_ERROR("Graphic", "SLC2 graphics pipeline creation failed for VertexFactory layout {0}.",
-                vertexInputState.LayoutHash);
+            LOG_ERROR("Graphic", "SLC2 graphics pipeline creation failed for VertexFactory layout {0}.", vertexInputState.LayoutHash);
             return VK_NULL_HANDLE;
         }
 
         PipelineCacheEntry cacheEntry;
         cacheEntry.RenderPass = renderPass;
-        cacheEntry.LayoutHash = vertexInputState.LayoutHash;
+        cacheEntry.VertexLayoutHash = vertexInputState.LayoutHash;
         cacheEntry.Pipeline = pipeline;
         m_Pipelines.Add(MoveTemp(cacheEntry));
-#if !BUILD_RELEASE
-        // 记录真实驱动对象的创建，便于区分 Layout 匹配通过与 Pipeline 创建通过。
-        LOG_INFO("Graphic", "SLC2 graphics pipeline created for program {0}, LayoutHash={1}, Pipeline={2}.",
-            m_Program->GetProgramId(), vertexInputState.LayoutHash, reinterpret_cast<uintptr>(pipeline));
-#endif
         return pipeline;
     }
 

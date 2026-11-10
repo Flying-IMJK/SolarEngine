@@ -1,150 +1,53 @@
-
 #include "Shaders/Common.hlsl"
 #include "Shaders/MaterialCommon.hlsl"
 #include "Shaders/GBuffer.hlsl"
 
-//#include "./Shaders/AtmosphereFog.hlsl"
-#include "Shaders/QuadCommon.hlsl"
-
-struct Data
+struct SkyData
 {
-	float4x4 WVP;
-	float3 ViewOffset;
-	float Padding;
-	GBufferData GBuffer;
-	//AtmosphericFogData AtmosphericFog;
-}
-
-ParameterBlock<Data> data;
-
-DECLARE_GBUFFERDATA_ACCESS(GBuffer)
-
-#if !defined(USE_GBUFFER_CUSTOM_DATA)
-TextureCube SkyBoxTex;
-#endif
-
-struct MaterialInput
-{
-	float4 Position  : SV_Position;
-	float4 ScreenPos : TEXCOORD0;
+    float4x4 WVP;
+    float3 ViewOffset;
+    float Padding;
+    GBufferData GBuffer;
 };
 
+ConstantBuffer<SkyData> data;
+TextureCube SkyBoxTex;
 
-SHADER_PROGRAM(
-	Sky,
-	SHADER_VS(VS),
-	SHADER_VS(PS_Sky)
-)
-
-SHADER_PROGRAM(
-	Fog,
-	SHADER_VS(VS),
-	SHADER_VS(PS_Fog)
-)
-
-SHADER_PROGRAM(
-	SkyBox,
-	SHADER_VS(VS),
-	SHADER_VS(PS_SkyBox)
-)
-
-
-
-
-// Vertex Shader function for GBuffer Pass
-MaterialInput VS(ModelInput_PosOnly input)
+struct SkyInput
 {
-	MaterialInput output;
+    float4 Position : SV_Position;
+    float4 ScreenPos : TEXCOORD0;
+};
 
-	// Compute vertex position
-	output.Position = mul(float4(input.Position.xyz, 1), WVP);
-	output.ScreenPos = output.Position;
+SHADER_PROGRAM(Sky, SHADER_VS(VS), SHADER_PS(PS_Sky))
+SHADER_PROGRAM(SkyBox, SHADER_VS(VS), SHADER_PS(PS_SkyBox))
 
-	// Place pixels on the far plane
-	output.Position = output.Position.xyzz;
-
-	return output;
+SkyInput VS(ModelInput_PosOnly input)
+{
+    SkyInput output;
+    output.Position = mul(float4(input.Position, 1), data.WVP);
+    output.ScreenPos = output.Position;
+    output.Position = output.Position.xyzz;
+    return output;
 }
 
-// Pixel Shader function for GBuffer Pass
-GBufferOutput PS_Sky(MaterialInput input)
+GBufferOutput PackSky(float4 color)
 {
-	GBufferOutput output;
-
-	// Obtain UVs corresponding to the current pixel
-	float2 uv = (input.ScreenPos.xy / input.ScreenPos.w) * float2(0.5, -0.5) + float2(0.5, 0.5);
-
-	// Sample atmosphere color
-	GBufferData gBufferData = GetGBufferData();
-	float3 vsPos = GetViewPos(gBufferData, uv, LinearZ2DeviceDepth(gBufferData, 1));
-	float3 wsPos = mul(float4(vsPos, 1), gBufferData.InvViewMatrix).xyz;
-	float3 viewVector = wsPos - gBufferData.ViewPos;
-	float4 color = 1; //GetAtmosphericFog(AtmosphericFog, gBufferData.ViewFar, wsPos + ViewOffset, gBufferData.ViewPos + ViewOffset);
-
-	// Pack GBuffer
-	output.Light = color;
-	output.RT0 = float4(0, 0, 0, 0);
-	output.RT1 = float4(1, 0, 0, SHADING_MODEL_UNLIT);
-	output.RT2 = float4(0, 0, 0, 0);
-	output.RT3 = float4(0, 0, 0, 0);
-
-	return output;
+    GBufferOutput output = (GBufferOutput)0;
+    output.Light = color;
+    output.RT1 = float4(1, 0, 0, SHADING_MODEL_UNLIT);
+    return output;
 }
 
-
-float4 PS_Fog(Quad_VS2PS input) : SV_Target0
+GBufferOutput PS_Sky(SkyInput input)
 {
-	float4 result;
-	/*
-	// Sample GBuffer
-	GBufferSample gBuffer = SampleGBuffer(GBuffer, input.TexCoord);
-
-	// TODO: set valid scene color for better inscatter reflectance
-	//float3 sceneColor = gBuffer.Color * AtmosphericFogDensityOffset;
-	float3 sceneColor = float3(0, 0, 0);
-
-	// Sample atmosphere color
-	float3 viewVector = gBuffer.WorldPos - GBuffer.ViewPos;
-	float SceneDepth = length(ViewVector);
-	result = GetAtmosphericFog(AtmosphericFog, GBuffer.ViewFar, GBuffer.ViewPos, viewVector, SceneDepth, sceneColor);
-
-	result.rgb = normalize(ViewVector);
-	result.rgb = ViewVector;
-	result.rgb = SceneDepth.xxx / GBuffer.ViewFar * 0.5f;
-
-	result = float4(input.TexCoord, 0, 1);
-	result = AtmosphereTransmittanceTexture.Sample(SamplerLinearClamp, input.TexCoord);
-	result = float4(AtmosphereIrradianceTexture.Sample(SamplerLinearClamp, input.TexCoord).rgb*5.0, 1.0);
-	result = AtmosphereInscatterTexture.Sample(SamplerLinearClamp, float3(input.TexCoord.xy, (AtmosphericFogSunDirection.x+1.0)/2.0));
-	*/
-
-	// TODO: finish fog
-	result = float4(1, 0, 0, 1);
-
-	return result;
+    return PackSky(1.0);
 }
 
-// Pixel Shader function for GBuffer Pass
-GBufferOutput PS_SkyBox(MaterialInput input)
+GBufferOutput PS_SkyBox(SkyInput input)
 {
-	GBufferOutput output;
-
-	// Obtain UVs corresponding to the current pixel
-	float2 uv = (input.ScreenPos.xy / input.ScreenPos.w) * float2(0.5, -0.5) + float2(0.5, 0.5);
-
-	// Sample atmosphere color
-	GBufferData gBufferData = GetGBufferData();
-	float3 vsPos = GetViewPos(gBufferData, uv, LinearZ2DeviceDepth(gBufferData, 1));
-	float3 wsPos = mul(float4(vsPos, 1), gBufferData.InvViewMatrix).xyz;
-	float3 viewVector = wsPos - gBufferData.ViewPos;
-	float4 color = SAMPLE_RT_LINEAR(SkyBoxTex, viewVector);
-
-	// Pack GBuffer
-	output.Light = color;
-	output.RT0 = float4(0, 0, 0, 0);
-	output.RT1 = float4(1, 0, 0, SHADING_MODEL_UNLIT);
-	output.RT2 = float4(0, 0, 0, 0);
-	output.RT3 = float4(0, 0, 0, 0);
-
-	return output;
+    float2 uv = (input.ScreenPos.xy / input.ScreenPos.w) * float2(0.5, -0.5) + 0.5;
+    float3 position = GetViewPos(data.GBuffer, uv, LinearZ2DeviceDepth(data.GBuffer, 1));
+    float3 world = mul(float4(position, 1), data.GBuffer.InvViewMatrix).xyz;
+    return PackSky(SkyBoxTex.SampleLevel(SamplerLinearClamp, world - data.GBuffer.ViewPos, 0));
 }

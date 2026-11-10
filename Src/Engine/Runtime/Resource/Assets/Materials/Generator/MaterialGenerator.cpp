@@ -65,7 +65,7 @@ namespace SE
     bool FeatureData::Init()
     {
         // Load template file
-        const String path = EngineContext::StartupFolder / SE_TEXT("Shaders/Discard/MaterialTemplates/") + Data.Template;
+        const String path = EngineContext::StartupFolder / SE_TEXT("Shaders/MaterialTemplates/") + Data.Template;
         String contents;
         if (!File::ReadAllText(path, contents))
         {
@@ -157,7 +157,7 @@ namespace SE
 
         // Load asset
         Asset* asset = Assets.LoadAsync<MaterialBase>(id);
-        if (asset == nullptr || asset->WaitForLoaded(30000))
+        if (asset == nullptr || !asset->WaitForLoaded(30000))
         {
             OnError(caller, nullptr, SE_TEXT("Failed to load material asset."));
             return nullptr;
@@ -183,7 +183,7 @@ namespace SE
         while (material == nullptr)
         {
             // Wait for material to be loaded
-            if (iterator->WaitForLoaded())
+            if (!iterator->WaitForLoaded())
             {
                 OnError(caller, nullptr, SE_TEXT("Material asset load failed."));
                 return nullptr;
@@ -204,7 +204,12 @@ namespace SE
             }
             else*/
             {
-                material = ((Material*)iterator);
+                material = TypeTryCast<Material>(iterator);
+                if (!material)
+                {
+                    OnError(caller, nullptr, SE_TEXT("Material layer source must be a Material asset."));
+                    return nullptr;
+                }
 
                 // Check if instanced material is not instancing current material
                 ENGINE_ASSERT(GetRootLayer());
@@ -278,7 +283,13 @@ namespace SE
     bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo, BytesContainer& parametersData)
     {
         ASSERT_LOW_LAYER(_layers.Count() > 0);
+        if (materialInfo.Domain != MaterialDomain::Surface && materialInfo.Domain != MaterialDomain::GUI)
+        {
+            LOG_ERROR("Resource", "Unsupported SLC2 material domain {0}.", static_cast<int32>(materialInfo.Domain));
+            return false;
+        }
 
+        SourceFiles.Clear();
         String inputs[In_MAX];
         List<StringAnsiView, FixedAllocation<8>> features;
 
@@ -316,19 +327,17 @@ namespace SE
         const bool isLayered = layerInputBox->HasConnection();
 
         // Initialize features
-#define ADD_FEATURE(type)                                   \
-{                                                           \
-    StringAnsiView typeName(#type, ARRAY_SIZE(#type) - 1);  \
-    features.Add(typeName);                                 \
-    if (!Features.ContainsKey(typeName))                    \
-    {                                                       \
-        Threading::ScopeLock lock(FeaturesLock);            \
-        auto& feature = Features[typeName];                 \
-        type::Generate(feature.Data);                       \
-        if (!feature.Init())                                \
-            return false;                                   \
-    }                                                       \
-}
+#define ADD_FEATURE(type) \
+    { \
+        const StringAnsiView typeName(#type, ARRAY_SIZE(#type) - 1); \
+        features.Add(typeName); \
+        Threading::ScopeLock lock(FeaturesLock); \
+        auto&                feature = Features[typeName]; \
+        type::Generate(feature.Data); \
+        if (!feature.Init()) \
+            return false; \
+        SourceFiles.Add(EngineContext::StartupFolder / SE_TEXT("Shaders/MaterialTemplates/") + feature.Data.Template); \
+    }
 
         switch (baseLayer->Domain)
         {
@@ -605,54 +614,12 @@ namespace SE
 
         // Resources
         {
-            int32 srv = 0, sampler = GPU_STATIC_SAMPLERS_COUNT;
-            switch (baseLayer->Domain)
-            {
-            case MaterialDomain::Surface:
-                srv = 2; // Skinning Bones + Prev Bones
-                break;
-            case MaterialDomain::Decal:
-                srv = 1; // Depth buffer
-                break;
-            case MaterialDomain::Terrain:
-                srv = 3; // Heightmap + 2 splatmaps
-                break;
-            case MaterialDomain::Particle:
-                srv = 2; // Particles data + Sorted indices/Ribbon segments
-                break;
-            case MaterialDomain::Deformable:
-                srv = 1; // Mesh deformation buffer
-                break;
-            case MaterialDomain::VolumeParticle:
-                srv = 1; // Particles data
-                break;
-            }
-            for (auto f : features)
-            {
-                // Process SRV slots used in template
-                const auto& SE_TEXT = Features[f].Inputs[(int32)FeatureTemplateInputsMapping::Resources];
-                const Char* str = SE_TEXT.Get();
-                int32 prevIdx = 0, idx = 0;
-                while (true)
-                {
-                    idx = SE_TEXT.Find(SE_TEXT("__SRV__"), prevIdx, StringSearchCase::CaseSensitive);
-                    if (idx == -1)
-                        break;
-                    int32 len = idx - prevIdx;
-                    _writer.Write(StringView(str, len));
-                    str += len;
-                    _writer.Write(StringUtils::ToString(srv));
-                    srv++;
-                    str += ARRAY_SIZE("__SRV__") - 1;
-                    prevIdx = idx + ARRAY_SIZE("__SRV__") - 1;
-                }
-                _writer.Write(StringView(str));
-            }
+            WRITE_FEATURES(Resources);
             if (_parameters.HasItems())
             {
-                auto error = GraphUtilities::GenerateShaderResources(_writer, _parameters, srv);
+                auto error = GraphUtilities::GenerateShaderResources(_writer, _parameters);
                 if (!error)
-                    error = GraphUtilities::GenerateSamplers(_writer, _parameters, sampler);
+                    error = GraphUtilities::GenerateSamplers(_writer, _parameters);
                 if (error)
                 {
                     OnError(nullptr, nullptr, error);
@@ -690,37 +657,9 @@ namespace SE
         // Create source code
         {
             // Open template file
-            String path = EngineContext::StartupFolder / SE_TEXT("Shaders/Discard/MaterialTemplates/");
-            switch (materialInfo.Domain)
-            {
-            case MaterialDomain::Surface:
-                path /= SE_TEXT("Surface.shader");
-                break;
-            case MaterialDomain::PostProcess:
-                path /= SE_TEXT("PostProcess.shader");
-                break;
-            case MaterialDomain::GUI:
-                path /= SE_TEXT("GUI.shader");
-                break;
-            case MaterialDomain::Decal:
-                path /= SE_TEXT("Decal.shader");
-                break;
-            case MaterialDomain::Terrain:
-                path /= SE_TEXT("Terrain.shader");
-                break;
-            case MaterialDomain::Particle:
-                path /= SE_TEXT("Particle.shader");
-                break;
-            case MaterialDomain::Deformable:
-                path /= SE_TEXT("Deformable.shader");
-                break;
-            case MaterialDomain::VolumeParticle:
-                path /= SE_TEXT("VolumeParticle.shader");
-                break;
-            default:
-                LOG_WARNING("Resource", "Unknown material domain.");
-                return true;
-            }
+            String path = EngineContext::StartupFolder / SE_TEXT("Shaders/MaterialTemplates/");
+            path /= materialInfo.Domain == MaterialDomain::GUI ? SE_TEXT("GUI.shader") : SE_TEXT("Surface.shader");
+            SourceFiles.Add(path);
             auto file = FileReadStream::Open(path);
             if (file == nullptr)
             {

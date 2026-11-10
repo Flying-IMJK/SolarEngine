@@ -318,6 +318,8 @@ namespace SE
             /// </summary>
             BlendingMode BlendMode = BlendingMode::Opaque;
 
+			bool operator==(const Description& other) const;
+
         public:
             /// <summary>
             /// Default description

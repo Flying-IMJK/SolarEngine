@@ -12,7 +12,7 @@
 #include <Runtime/Render/RenderBuffers.h>
 #include <Runtime/Render/RenderPass/GBufferPass.h>
 #include <Runtime/Render/RenderTask.h>
-#include <Runtime/Resource/Assets/SLC2Materials/GraphicShader.h>
+#include <Runtime/Resource/Assets/Materials/Shader.h>
 
 namespace SE
 {
@@ -61,7 +61,7 @@ namespace SE
     bool ShadowsPass::Init()
     {
         // Load assets
-        m_Shader      = AssetContent::LoadAsyncInternal<GraphicShader>(SE_TEXT("Shaders/Shadows"));
+        m_Shader      = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/Shadows"));
         m_SphereModel = AssetContent::LoadAsyncInternal<Model>(SE_TEXT("Assets/Models/Sphere"));
         if (m_Shader == nullptr || m_SphereModel == nullptr)
         {
@@ -74,9 +74,7 @@ namespace SE
         m_ShadowMapCSM  = device->CreateTexture(SE_TEXT("Shadow Map CSM"));
         m_ShadowMapCube = device->CreateTexture(SE_TEXT("Shadow Map Cube"));
 
-#if COMPILE_WITH_DEV_ENV
-        m_Shader.Get()->OnReloading.Bind<ShadowsPass, &ShadowsPass::OnShaderReloading>(this);
-#endif
+        m_Shader->OnReloadingEvent.Bind<ShadowsPass, &ShadowsPass::OnShaderReloading>(this);
 
         // Select format for shadow maps
         m_ShadowMapFormat = PixelFormat::Undefined;
@@ -233,7 +231,9 @@ namespace SE
 
         // Views with orthographic cameras cannot use cascades, we force it to 1 shadow map here
         if (view.Projection.M44 == 1.0f)
+        {
             csmCount = 1;
+        }
 
         // Calculate cascade splits
         auto cameraNear = view.Near;
@@ -536,6 +536,8 @@ namespace SE
         // Base
         RendererPass::Dispose();
 
+        if (m_Shader)
+            m_Shader->OnReloadingEvent.Unbind<ShadowsPass, &ShadowsPass::OnShaderReloading>(this);
         // Cleanup
         Delete(m_SpoShadowDir);
         Delete(m_SpoShadowPoint);
@@ -559,7 +561,6 @@ namespace SE
         DeleteObjectSafe(m_ShadowMapCube);
     }
 
-#if COMPILE_WITH_DEV_ENV
     void ShadowsPass::OnShaderReloading(Asset* pObj)
     {
         // Drop cached Program pointers before the shader releases its GPU programs.
@@ -577,7 +578,6 @@ namespace SE
         m_SPShadowSpot   = nullptr;
         InvalidateResources();
     }
-#endif
 
     void ShadowsPass::Prepare()
     {
@@ -653,9 +653,7 @@ namespace SE
         return m_ShadowMapFormat != PixelFormat::Undefined;
     }
 
-    void ShadowsPass::RenderShadow(RenderContextBatch&     renderContextBatch,
-                                   RendererPointLightData& light,
-                                   GPUTextureView*         pShadowMask)
+    void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererPointLightData& light, GPUTextureView*  pShadowMask)
     {
         if (light.ShadowDataIndex == -1)
         {
@@ -688,10 +686,7 @@ namespace SE
                 context->ClearDepth(rt);
                 auto& shadowContext = renderContextBatch.Contexts[shadowData.ContextIndex + faceIndex];
                 shadowContext.list->ExecuteDrawCalls(shadowContext, DrawCallsListType::Depth);
-                shadowContext.list->ExecuteDrawCalls(shadowContext,
-                                                     shadowContext.list->ShadowDepthDrawCallsList,
-                                                     renderContext.list->DrawCalls,
-                                                     nullptr);
+                shadowContext.list->ExecuteDrawCalls(shadowContext, shadowContext.list->ShadowDepthDrawCallsList, renderContext.list->DrawCalls);
             }
         }
 
@@ -712,8 +707,7 @@ namespace SE
         sperLight.LightShadow = shadowData.Constants;
         Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
         sperLight.ContactShadowsDistance = light.ShadowsDistance;
-        sperLight.ContactShadowsLength =
-            0; // EnumHasAnyFlags(view.Flags, ViewFlags::ContactShadows) ? light.ContactShadowsLength : 0.0f;
+        sperLight.ContactShadowsLength = 0; // EnumHasAnyFlags(view.Flags, ViewFlags::ContactShadows) ? light.ContactShadowsLength : 0.0f;
 
         // Calculate world view projection matrix for the light sphere
         Matrix world, wvp, matrix;
@@ -727,10 +721,14 @@ namespace SE
         List<String> macros;
         macros.Add(String::Format(SE_TEXT("SHADOWS_QUALITY{0}"), shadowQuality));
         if (sperLight.ContactShadowsLength > Math::ZeroTolerance)
+        {
             macros.Add(SE_TEXT("CONTACT_SHADOWS"));
+        }
         SLC2GPUShaderProgram* program = nullptr;
         if (!m_Shader->SelectProgram(SE_TEXT("PointLight"), macros, program))
+        {
             return;
+        }
         if (m_SPShadowPoint->GetProgram() != program || !m_SpoShadowPoint->IsValid())
         {
             auto desc     = SLC2GPUPipelineState::Description::DefaultNoDepth;
@@ -751,15 +749,14 @@ namespace SE
         {
             return;
         }
+
         // Slang may remove GBuffer fields that shadow sampling does not consume.
         ShaderVar var;
-        if (m_SPShadowPoint->FindVar(SE_TEXT("GBuffer0"), var) &&
-            !var.SetTexture(renderContext.buffers->GBuffer0->View()))
+        if (m_SPShadowPoint->FindVar(SE_TEXT("GBuffer0"), var) && !var.SetTexture(renderContext.buffers->GBuffer0->View()))
         {
             return;
         }
-        if (m_SPShadowPoint->FindVar(SE_TEXT("GBuffer2"), var) &&
-            !var.SetTexture(renderContext.buffers->GBuffer2->View()))
+        if (m_SPShadowPoint->FindVar(SE_TEXT("GBuffer2"), var) && !var.SetTexture(renderContext.buffers->GBuffer2->View()))
         {
             return;
         }
@@ -769,9 +766,13 @@ namespace SE
         for (const auto& mesh : m_SphereModel->LODs[0].Meshes)
         {
             if (!mesh.IsInitialized())
+            {
                 continue;
+            }
             if (context->BindRenderGeometry(mesh.GetRenderGeometry()))
+            {
                 context->DrawIndexed(m_SPShadowPoint, mesh.GetTriangleCount() * 3);
+            }
         }
 
         // Cleanup
@@ -895,10 +896,7 @@ namespace SE
         context->ResetRenderTarget();
     }
 
-    void ShadowsPass::RenderShadow(RenderContextBatch&           renderContextBatch,
-                                   RendererDirectionalLightData& light,
-                                   int32                         index,
-                                   GPUTextureView*               pShadowMask)
+    void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererDirectionalLightData& light, int32 index, GPUTextureView* pShadowMask)
     {
         if (light.ShadowDataIndex == -1)
         {
@@ -912,6 +910,9 @@ namespace SE
         const float    shadowMapsSizeCSM = (float)m_ShadowMapsSizeCSM;
         context->SetViewportAndScissors(shadowMapsSizeCSM, shadowMapsSizeCSM);
 
+        Function<void(IMaterial*)> preDraw = [&](IMaterial* material) {
+            
+        };
         // Render shadow map for each projection
         for (int32 cascadeIndex = 0; cascadeIndex < shadowData.ContextCount; cascadeIndex++)
         {
@@ -920,9 +921,8 @@ namespace SE
             context->SetRenderTarget(nullptr, rt);
             context->ClearDepth(rt);
             auto& shadowContext = renderContextBatch.Contexts[shadowData.ContextIndex + cascadeIndex];
-            shadowContext.list->ExecuteDrawCalls(shadowContext, DrawCallsListType::Depth);
-            shadowContext.list->ExecuteDrawCalls(
-                shadowContext, shadowContext.list->ShadowDepthDrawCallsList, renderContext.list->DrawCalls, nullptr);
+            shadowContext.list->ExecuteDrawCalls(shadowContext, DrawCallsListType::Depth/*, preDraw*/);
+            shadowContext.list->ExecuteDrawCalls(shadowContext, shadowContext.list->ShadowDepthDrawCallsList, renderContext.list->DrawCalls, nullptr);
         }
 
         // Restore GPU context

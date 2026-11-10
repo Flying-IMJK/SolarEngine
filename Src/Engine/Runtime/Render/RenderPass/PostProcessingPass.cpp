@@ -1,15 +1,17 @@
 
-#include "PostProcessingPass.h"
+#include <Runtime/Render/RenderPass/PostProcessingPass.h>
 
-#include "Runtime/Core/Profiler/Profiler.h"
-#include "Runtime/Graphics/GPUContext.h"
-#include "Runtime/Graphics/RenderTargetPool.h"
-#include "Runtime/Graphics/Shaders/GPUConstantBuffer.h"
-#include "Runtime/Graphics/Textures/GPUTexture.h"
-#include "Runtime/Render/PostProcessSettings.h"
-#include "Runtime/Render/RenderList.h"
-#include "Runtime/Resource/Assets/SLC2Materials/GraphicShader.h"
-#include "Runtime/Utilities/Time.h"
+#include <Runtime/Core/Profiler/Profiler.h>
+#include <Runtime/Graphics/GPUContext.h>
+#include <Runtime/Graphics/GPUDevice.h>
+#include <Runtime/Graphics/RenderTargetPool.h>
+#include <Runtime/Graphics/Shaders/GPUConstantBuffer.h>
+#include <Runtime/Graphics/Shaders/ShaderProgramInstance.h>
+#include <Runtime/Graphics/Textures/GPUTexture.h>
+#include <Runtime/Render/PostProcessSettings.h>
+#include <Runtime/Render/RenderList.h>
+#include <Runtime/Resource/Assets/Materials/Shader.h>
+#include <Runtime/Utilities/Time.h>
 
 namespace SE
 {
@@ -26,14 +28,12 @@ namespace SE
     {
 
         // Load shader
-        m_Shader = AssetContent::LoadAsyncInternal<GraphicShader>(SE_TEXT("Shaders/PostProcess/PostProcessing"));
+        m_Shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/PostProcess/PostProcessing"));
         if (m_Shader == nullptr)
         {
             return false;
         }
-#if COMPILE_WITH_DEV_ENV
-        m_Shader.Get()->OnReloading.Bind<PostProcessingPass, &PostProcessingPass::OnShaderReloading>(this);
-#endif
+        m_Shader->OnReloadingEvent.Bind<PostProcessingPass, &PostProcessingPass::OnShaderReloading>(this);
 
         GPUDevice* device = GPUDevice::instance;
 
@@ -56,6 +56,35 @@ namespace SE
         m_GaussianBlurBuffer = device->CreateConstantBuffer(sizeof(GaussianBlurData));
 
         return true;
+    }
+
+    void PostProcessingPass::OnShaderReloading(Asset* pAsset)
+    {
+        DeleteObjectSafe(m_PSOThreshold);
+        DeleteObjectSafe(m_SPThreshold);
+        m_PSOThreshold = GPUDevice::instance->CreateSLC2PipelineState();
+        m_SPThreshold  = New<ShaderProgramInstance>();
+        DeleteObjectSafe(m_PSOScale);
+        DeleteObjectSafe(m_SPScale);
+        m_PSOScale = GPUDevice::instance->CreateSLC2PipelineState();
+        m_SPScale  = New<ShaderProgramInstance>();
+        DeleteObjectSafe(m_PSOBlurH);
+        DeleteObjectSafe(m_SPBlurH);
+        m_PSOBlurH = GPUDevice::instance->CreateSLC2PipelineState();
+        m_SPBlurH  = New<ShaderProgramInstance>();
+        DeleteObjectSafe(m_PSOBlurV);
+        DeleteObjectSafe(m_SPBlurV);
+        m_PSOBlurV = GPUDevice::instance->CreateSLC2PipelineState();
+        m_SPBlurV  = New<ShaderProgramInstance>();
+        DeleteObjectSafe(m_PSOGenGhosts);
+        DeleteObjectSafe(m_SPGenGhosts);
+        m_PSOGenGhosts = GPUDevice::instance->CreateSLC2PipelineState();
+        m_SPGenGhosts  = New<ShaderProgramInstance>();
+        DeleteObjectSafe(m_PSOComposite);
+        DeleteObjectSafe(m_SPComposite);
+        m_PSOComposite = GPUDevice::instance->CreateSLC2PipelineState();
+        m_SPComposite  = New<ShaderProgramInstance>();
+        InvalidateResources();
     }
 
     bool PostProcessingPass::SetupResources()
@@ -155,6 +184,9 @@ namespace SE
 
     void PostProcessingPass::Dispose()
     {
+        if (m_Shader)
+            m_Shader->OnReloadingEvent.Unbind<PostProcessingPass, &PostProcessingPass::OnShaderReloading>(this);
+
         // Base
         RendererPass::Dispose();
 

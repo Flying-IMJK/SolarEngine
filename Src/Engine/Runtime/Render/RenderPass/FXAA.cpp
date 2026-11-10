@@ -1,10 +1,12 @@
 
-#include "FXAA.h"
+#include <Runtime/Render/RenderPass/FXAA.h>
 
-#include "Runtime/Core/Profiler/Profiler.h"
-#include "Runtime/Graphics/GPUContext.h"
-#include "Runtime/Graphics/Textures/GPUTexture.h"
-#include "Runtime/Resource/Assets/SLC2Materials/GraphicShader.h"
+#include <Runtime/Core/Profiler/Profiler.h>
+#include <Runtime/Graphics/GPUContext.h>
+#include <Runtime/Graphics/GPUDevice.h>
+#include <Runtime/Graphics/Shaders/ShaderProgramInstance.h>
+#include <Runtime/Graphics/Textures/GPUTexture.h>
+#include <Runtime/Resource/Assets/Materials/Shader.h>
 
 namespace SE
 {
@@ -15,21 +17,26 @@ namespace SE
 
 	bool FXAA::Init()
 	{
-		m_Shader = AssetContent::LoadAsyncInternal<GraphicShader>(SE_TEXT("Shaders/PostProcess/FXAA"));
-		if (m_Shader == nullptr)
-		{
-			return false;
-		}
-#if COMPILE_WITH_DEV_ENV
-		m_Shader.Get()->OnReloading.Bind<FXAA, &FXAA::OnShaderReloading>(this);
-#endif
+        m_Shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/PostProcess/FXAA"));
+        if (m_Shader == nullptr)
+        {
+            return false;
+        }
+        m_Shader->OnReloadingEvent.Bind<FXAA, &FXAA::OnShaderReloading>(this);
 
-		return true;
-	}
+        return true;
+    }
 
-	bool FXAA::SetupResources()
-	{
-		if (!m_Shader.HasReference() || !m_Shader->WaitForLoaded())
+    void FXAA::OnShaderReloading(Asset* pAsset)
+    {
+        DeleteObjectSafe(m_PipelineState);
+        DeleteObjectSafe(m_ProgramInstance);
+        InvalidateResources();
+    }
+
+    bool FXAA::SetupResources()
+    {
+        if (!m_Shader.HasReference() || !m_Shader->WaitForLoaded())
 		{
 			return false;
 		}
@@ -41,14 +48,17 @@ namespace SE
 
 
 		return true;
-	}
+    }
 
-	void FXAA::Dispose()
+    void FXAA::Dispose()
 	{
-		// Base
-		RendererPass::Dispose();
+        if (m_Shader)
+            m_Shader->OnReloadingEvent.Unbind<FXAA, &FXAA::OnShaderReloading>(this);
 
-		Delete(m_ProgramInstance);
+        // Base
+        RendererPass::Dispose();
+
+        Delete(m_ProgramInstance);
         Delete(m_PipelineState);
 		m_Shader = nullptr;
 	}

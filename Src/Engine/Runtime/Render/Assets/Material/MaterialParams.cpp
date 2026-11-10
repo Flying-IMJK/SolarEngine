@@ -1,25 +1,23 @@
 
-#include "MaterialParams.h"
+#include <Runtime/Render/Assets/Material/MaterialParams.h>
 
-#include "../../../Utilities/Variant.h"
-#include "Runtime/Core/Math/Matrix.h"
-#include "Runtime/Core/Serialization/MemoryWriteStream.h"
-#include "Runtime/Core/Serialization/ReadStream.h"
-#include "Runtime/Graphics/GPUContext.h"
-#include "Runtime/Graphics/GPUDevice.h"
-#include "Runtime/Graphics/Textures/GPUTexture.h"
-#include "Runtime/Render/Assets/Texture/TextureBase.h"
-#include "Runtime/Resource/AssetContent.h"
-#include "Runtime/Resource/Streaming/Streaming.h"
+#include <Runtime/Core/Math/Matrix.h>
+#include <Runtime/Core/Serialization/MemoryWriteStream.h>
+#include <Runtime/Core/Serialization/ReadStream.h>
+#include <Runtime/Graphics/GPUDevice.h>
+#include <Runtime/Graphics/Shaders/ShaderProgramInstance.h>
+#include <Runtime/Graphics/Textures/GPUTexture.h>
+#include <Runtime/Render/Assets/Material/MaterialInfo.h>
+#include <Runtime/Render/Assets/Texture/TextureBase.h>
+#include <Runtime/Render/RenderBuffers.h>
+#include <Runtime/Resource/AssetContent.h>
+#include <Runtime/Resource/Streaming/Streaming.h>
+#include <Runtime/Utilities/Variant.h>
 
 namespace SE
 {
-    MaterialParameter::MaterialParameter():
-        m_Id(UID::New()),
-        m_ParamId(UID::New()),
-        m_IsPublic(false), m_Override(false), m_RegisterIndex(0),
-        m_Offset(0), _asBool(false), _asInteger(0), _asFloat(0), _asVector2(),
-        _asVector3(), _asColor(), AsData{}
+    MaterialParameter::MaterialParameter() :
+        m_Id(UID::New()), m_ParamId(UID::New()), m_IsPublic(false), m_Override(false), AsData {}
     {
     }
 
@@ -242,199 +240,118 @@ namespace SE
         }
     }
 
-    void MaterialParameter::Bind(BindMeta& meta) const
+    bool MaterialParameter::Bind(BindMeta& meta) const
     {
+        if (!meta.Program || m_ShaderName.IsEmpty())
+            return false;
+        ShaderVar variable;
+        if (!meta.Program->FindVar(m_ShaderName, variable))
+            return true;
+        const auto write = [&variable](const void* pData, uint32 size) {
+            return variable.GetLocation().UniformByteSize == size && variable.SetUniform(pData, size);
+        };
         switch (m_Type)
         {
-        case MaterialParameterType::Bool:
-            ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= static_cast<int32>(m_Offset) + sizeof(int32));
-            *((int32*)(meta.Constants.Get() + m_Offset)) = _asBool;
-            break;
-        case MaterialParameterType::Integer:
-            ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= static_cast<int32>(m_Offset) + sizeof(int32));
-            *((int32*)(meta.Constants.Get() + m_Offset)) = _asInteger;
-            break;
-        case MaterialParameterType::Float:
-            ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= static_cast<int32>(m_Offset) + sizeof(float));
-            *((float*)(meta.Constants.Get() + m_Offset)) = _asFloat;
-            break;
-        case MaterialParameterType::Vector2:
-            ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= static_cast<int32>(m_Offset) + sizeof(Float2));
-            *((Float2*)(meta.Constants.Get() + m_Offset)) = _asVector2;
-            break;
-        case MaterialParameterType::Vector3:
-            ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= static_cast<int32>(m_Offset) + sizeof(Float3));
-            *((Float3*)(meta.Constants.Get() + m_Offset)) = _asVector3;
-            break;
-        case MaterialParameterType::Vector4:
-            ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= static_cast<int32>(m_Offset) + sizeof(Float4));
-            *((Float4*)(meta.Constants.Get() + m_Offset)) = *(Float4*)&AsData;
-            break;
-        case MaterialParameterType::Color:
-            ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= static_cast<int32>(m_Offset) + sizeof(Float4));
-            *((Color*)(meta.Constants.Get() + m_Offset)) = _asColor;
-            break;
-        case MaterialParameterType::Matrix:
-            ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= (int32)m_Offset + sizeof(Matrix));
-            Matrix::Transpose(*(Matrix*)&AsData, *(Matrix*)(meta.Constants.Get() + m_Offset));
-            break;
-        case MaterialParameterType::NormalMap:
-        {
-            // If normal map texture is set but not loaded yet, use default engine normal map (reduces loading artifacts)
-            GPUTexture* texture = m_AsAsset ? DynamicCast<TextureBase> (DynamicCast<TextureBase>(m_AsAsset.Get()))->GetTexture() : nullptr;
-            if (texture && texture->ResidentMipLevels() <= 0)
-            {
-                // texture = GPUDevice::instance->GetDefaultNormalMap();
+            case MaterialParameterType::Bool: {
+                const uint32 value = _asBool ? 1u : 0u;
+                return write(&value, sizeof(value));
             }
-            GPUTextureView* textureView = GET_TEXTURE_VIEW_SAFE(texture);
-            meta.Context->BindSR(m_RegisterIndex, textureView);
-            break;
-        }
-        case MaterialParameterType::Texture:
-        case MaterialParameterType::CubeTexture:
-        {
-            const auto texture = m_AsAsset ? DynamicCast<TextureBase>(m_AsAsset.Get())->GetTexture() : nullptr;
-            const auto view = GET_TEXTURE_VIEW_SAFE(texture);
-            meta.Context->BindSR(m_RegisterIndex, view);
-            break;
-        }
-        case MaterialParameterType::GPUTexture:
-        {
-            /*const auto texture = m_AsGPUTexture.Get();
-            const auto view = GET_TEXTURE_VIEW_SAFE(texture);
-            meta.Context->BindSR(m_RegisterIndex, view);*/
-            break;
-        }
-        case MaterialParameterType::GPUTextureArray:
-        case MaterialParameterType::GPUTextureCube:
-        {
-            /*const auto view = m_AsGPUTexture ? m_AsGPUTexture->ViewArray() : nullptr;
-            meta.Context->BindSR(m_RegisterIndex, view);*/
-            break;
-        }
-        case MaterialParameterType::GPUTextureVolume:
-        {
-            /*const auto view = m_AsGPUTexture ? m_AsGPUTexture->ViewVolume() : nullptr;
-            meta.Context->BindSR(m_RegisterIndex, view);*/
-            break;
-        }
-        /*case MaterialParameterType::SceneTexture:
-        {
-            GPUTextureView* view = nullptr;
-            const auto type = (MaterialSceneTextures)_asInteger;
-            if (type == MaterialSceneTextures::SceneColor)
-            {
-                view = meta.Input;
+            case MaterialParameterType::Integer:
+                return write(&_asInteger, sizeof(_asInteger));
+            case MaterialParameterType::Float:
+                return write(&_asFloat, sizeof(_asFloat));
+            case MaterialParameterType::Vector2:
+                return write(&_asVector2, sizeof(_asVector2));
+            case MaterialParameterType::Vector3:
+                return write(&_asVector3, sizeof(_asVector3));
+            case MaterialParameterType::Vector4:
+                return write(AsData, sizeof(Float4));
+            case MaterialParameterType::Color:
+                return write(&_asColor, sizeof(_asColor));
+            case MaterialParameterType::Matrix: {
+                Matrix value;
+                Matrix::Transpose(*reinterpret_cast<const Matrix*>(AsData), value);
+                return write(&value, sizeof(value));
             }
-            else if (meta.Buffers)
-            {
-                switch (type)
+            case MaterialParameterType::ChannelMask: {
+                const Float4 value(_asInteger == 0, _asInteger == 1, _asInteger == 2, _asInteger == 3);
+                return write(&value, sizeof(value));
+            }
+            case MaterialParameterType::TextureGroupSampler:
+                return variable.SetSampler(Streaming::GetTextureGroupSampler(_asInteger));
+            case MaterialParameterType::NormalMap:
+            case MaterialParameterType::Texture:
+            case MaterialParameterType::CubeTexture: {
+                auto            asset   = TypeTryCast<TextureBase>(m_AsAsset.Get());
+                GPUTexture*     texture = asset ? asset->GetTexture() : nullptr;
+                GPUTextureView* view =
+                    texture ? (m_Type == MaterialParameterType::CubeTexture ? texture->ViewArray() : texture->View()) :
+                              nullptr;
+                return variable.SetTexture(view);
+            }
+            case MaterialParameterType::GPUTexture:
+            case MaterialParameterType::GPUTextureArray:
+            case MaterialParameterType::GPUTextureCube:
+            case MaterialParameterType::GPUTextureVolume: {
+                GPUTextureView* view = nullptr;
+                if (m_AsGPUTexture)
                 {
-                case MaterialSceneTextures::SceneDepth:
-                case MaterialSceneTextures::WorldPosition:
-                    view = meta.CanSampleDepth
-                               ? EnumHasAnyFlags(meta.Buffers->DepthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView)
-                                     ? meta.Buffers->DepthBuffer->ViewReadOnlyDepth()
-                                     : meta.Buffers->DepthBuffer->View()
-                               : GPUDevice::Instance->GetDefaultWhiteTexture()->View();
-                    break;
-                case MaterialSceneTextures::AmbientOcclusion:
-                case MaterialSceneTextures::BaseColor:
-                case MaterialSceneTextures::DiffuseColor:
-                case MaterialSceneTextures::SpecularColor:
-                    view = meta.CanSampleGBuffer ? meta.Buffers->GBuffer0->View() : nullptr;
-                    break;
-                case MaterialSceneTextures::WorldNormal:
-                case MaterialSceneTextures::ShadingModel:
-                    view = meta.CanSampleGBuffer ? meta.Buffers->GBuffer1->View() : nullptr;
-                    break;
-                case MaterialSceneTextures::Roughness:
-                case MaterialSceneTextures::Metalness:
-                case MaterialSceneTextures::Specular:
-                    view = meta.CanSampleGBuffer ? meta.Buffers->GBuffer2->View() : nullptr;
-                    break;
-                default: ;
+                    if (m_Type == MaterialParameterType::GPUTextureVolume)
+                        view = m_AsGPUTexture->ViewVolume();
+                    else if (m_Type == MaterialParameterType::GPUTextureArray ||
+                             m_Type == MaterialParameterType::GPUTextureCube)
+                        view = m_AsGPUTexture->ViewArray();
+                    else
+                        view = m_AsGPUTexture->View();
                 }
+                return variable.SetTexture(view);
             }
-            else if (type == MaterialSceneTextures::SceneDepth)
-            {
-                view = GPUDevice::Instance->GetDefaultWhiteTexture()->View();
-            }
-            meta.Context->BindSR(m_RegisterIndex, view);
-            break;
-        }*/
-        case MaterialParameterType::ChannelMask:
-            ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= (int32)m_Offset + sizeof(Float4));
-            *((Float4*)(meta.Constants.Get() + m_Offset)) = Float4(_asInteger == 0, _asInteger == 1, _asInteger == 2, _asInteger == 3);
-            break;
-        /*case MaterialParameterType::GameplayGlobal:
-            if (m_AsAsset)
-            {
-                const auto e = m_AsAsset.As<GameplayGlobals>()->Variables.TryGet(m_Name);
-                if (e)
+            case MaterialParameterType::SceneTexture: {
+                GPUTextureView* view = nullptr;
+                const auto      type = static_cast<MaterialSceneTextures>(_asInteger);
+                if (type == MaterialSceneTextures::SceneColor)
+                    view = meta.Input;
+                else if (meta.Buffers)
                 {
-                    switch (e->Value.Type.Type)
+                    GPUTexture* texture = nullptr;
+                    switch (type)
                     {
-                    case MaterialVariantType::Types::Bool:
-                        ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= static_cast<int32>(m_Offset) + sizeof(bool));
-                        *((bool*)(meta.Constants.Get() + m_Offset)) = e->Value.AsBool;
-                        break;
-                    case MaterialVariantType::Types::Int:
-                        ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= static_cast<int32>(m_Offset) + sizeof(int32));
-                        *((int32*)(meta.Constants.Get() + m_Offset)) = e->Value.AsInt;
-                        break;
-                    case MaterialVariantType::Types::Uint:
-                        ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= static_cast<int32>(m_Offset) + sizeof(uint32));
-                        *((uint32*)(meta.Constants.Get() + m_Offset)) = e->Value.AsUint;
-                        break;
-                    case MaterialVariantType::Types::Float:
-                        ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= static_cast<int32>(m_Offset) + sizeof(float));
-                        *((float*)(meta.Constants.Get() + m_Offset)) = e->Value.AsFloat;
-                        break;
-                    case MaterialVariantType::Types::Float2:
-                        ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= static_cast<int32>(m_Offset) + sizeof(Float2));
-                        *((Float2*)(meta.Constants.Get() + m_Offset)) = e->Value.AsFloat2();
-                        break;
-                    case MaterialVariantType::Types::Float3:
-                        ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= static_cast<int32>(m_Offset) + sizeof(Float3));
-                        *((Float3*)(meta.Constants.Get() + m_Offset)) = e->Value.AsFloat3();
-                        break;
-                    case MaterialVariantType::Types::Float4:
-                    case MaterialVariantType::Types::Color:
-                        ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= static_cast<int32>(m_Offset) + sizeof(Float4));
-                        *((Float4*)(meta.Constants.Get() + m_Offset)) = e->Value.AsFloat4();
-                        break;
-                    case MaterialVariantType::Types::Double2:
-                        ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= static_cast<int32>(m_Offset) + sizeof(Float2));
-                        *((Float2*)(meta.Constants.Get() + m_Offset)) = (Float2)e->Value.AsDouble2();
-                        break;
-                    case MaterialVariantType::Types::Double3:
-                        ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= static_cast<int32>(m_Offset) + sizeof(Float3));
-                        *((Float3*)(meta.Constants.Get() + m_Offset)) = (Float3)e->Value.AsDouble3();
-                        break;
-                    case MaterialVariantType::Types::Double4:
-                        ENGINE_ASSERT(meta.Constants.Get() && meta.Constants.Length() >= static_cast<int32>(m_Offset) + sizeof(Float4));
-                        *((Float4*)(meta.Constants.Get() + m_Offset)) = (Float4)e->Value.AsDouble4();
-                        break;
-                    default: ;
+                        case MaterialSceneTextures::SceneDepth:
+                        case MaterialSceneTextures::WorldPosition:
+                            if (meta.CanSampleDepth && meta.Buffers->DepthBuffer)
+                            {
+                                texture = meta.Buffers->DepthBuffer;
+                                view    = EnumHasAnyFlags(texture->Flags(), GPUTextureFlags::ReadOnlyDepthView) ?
+                                              texture->ViewReadOnlyDepth() :
+                                              texture->View();
+                            }
+                            break;
+                        case MaterialSceneTextures::AmbientOcclusion:
+                        case MaterialSceneTextures::BaseColor:
+                        case MaterialSceneTextures::DiffuseColor:
+                        case MaterialSceneTextures::SpecularColor:
+                            texture = meta.CanSampleGBuffer ? meta.Buffers->GBuffer0 : nullptr;
+                            break;
+                        case MaterialSceneTextures::WorldNormal:
+                        case MaterialSceneTextures::ShadingModel:
+                            texture = meta.CanSampleGBuffer ? meta.Buffers->GBuffer1 : nullptr;
+                            break;
+                        case MaterialSceneTextures::Roughness:
+                        case MaterialSceneTextures::Metalness:
+                        case MaterialSceneTextures::Specular:
+                            texture = meta.CanSampleGBuffer ? meta.Buffers->GBuffer2 : nullptr;
+                            break;
+                        default:
+                            break;
                     }
+                    if (!view && texture)
+                        view = texture->View();
                 }
+                return variable.SetTexture(view);
             }
-            break;*/
-        case MaterialParameterType::TextureGroupSampler:
-            meta.Context->BindSampler(m_RegisterIndex, Streaming::GetTextureGroupSampler(_asInteger));
-            break;
-        /*case MaterialParameterType::GlobalSDF:
-        {
-            GlobalSignDistanceFieldPass::BindingData bindingData;
-            if (GlobalSignDistanceFieldPass::Instance()->Get(meta.Buffers, bindingData))
-                Platform::MemoryClear(&bindingData, sizeof(bindingData));
-            meta.Context->BindSR(m_RegisterIndex, bindingData.Texture ? bindingData.Texture->ViewVolume() : nullptr);
-            *((GlobalSignDistanceFieldPass::ConstantsData*)(meta.Constants.Get() + m_Offset)) = bindingData.Constants;
-            break;
-        }*/
-        default:
-            break;
+            default:
+                LOG_ERROR("Render", "Unsupported SLC2 material parameter {0}.", m_Name);
+                return false;
         }
     }
 
@@ -458,8 +375,7 @@ namespace SE
         m_Type = param->m_Type;
         m_IsPublic = param->m_IsPublic;
         m_Override = param->m_Override;
-        m_RegisterIndex = param->m_RegisterIndex;
-        m_Offset = param->m_Offset;
+        m_ShaderName = param->m_ShaderName;
         m_Name = param->m_Name;
         m_ParamId = param->m_ParamId;
 
@@ -595,19 +511,33 @@ namespace SE
         return m_VersionHash;
     }
 
-    void MaterialParams::Bind(MaterialParamsLink* link, MaterialParameter::BindMeta& meta)
+    bool MaterialParams::Bind(MaterialParamsLink* pLink, MaterialParameter::BindMeta& meta)
     {
-        ENGINE_ASSERT(link && link->This);
-        for (int32 i = 0; i < link->This->Count(); i++)
+        if (!pLink)
+            return true;
+        const MaterialParamsLink* base = pLink;
+        while (base->Down)
+            base = base->Down;
+        for (const MaterialParameter& original : *base->This)
         {
-            const MaterialParamsLink* params = link;
-            while (params->Down && !params->This->At(i).IsOverride())
+            const MaterialParameter* value = &original;
+            // Resolve by UID, so ordering and public display names cannot change override precedence.
+            for (const MaterialParamsLink* current = pLink; current != base; current = current->Down)
             {
-                params = params->Down;
+                const MaterialParameter* candidate = current->This->Get(original.GetParameterID());
+                if (candidate && candidate->IsOverride())
+                {
+                    value = candidate;
+                    break;
+                }
             }
-
-            params->This->At(i).Bind(meta);
+            if (value->GetParameterType() != original.GetParameterType() || !value->Bind(meta))
+            {
+                LOG_ERROR("Render", "Cannot bind SLC2 material parameter {0}.", original.GetName());
+                return false;
+            }
         }
+        return true;
     }
 
     void MaterialParams::Clone(MaterialParams& result)
@@ -645,235 +575,83 @@ namespace SE
             stream->ReadUint16(&version);
             switch (version)
             {
-            case 1: // [Deprecated on 15.11.2019, expires on 15.11.2021]
-            {
-                // Size of the collection
-                uint16 paramsCount;
-                stream->ReadUint16(&paramsCount);
-                Resize(paramsCount, false);
+                case 5: {
+                    // Size of the collection
+                    uint16 paramsCount;
+                    stream->ReadUint16(&paramsCount);
+                    Resize(paramsCount, false);
 
-                // Read all parameters
-                UID id;
-                for (int32 i = 0; i < paramsCount; i++)
-                {
-                    auto param = &At(i);
-
-                    // Read properties
-                    param->m_ParamId = UID::New();
-                    param->m_Type = static_cast<MaterialParameterType>(stream->ReadByte());
-                    param->m_IsPublic = stream->ReadBool();
-                    param->m_Override = param->m_IsPublic;
-                    stream->ReadString(&param->m_Name, 10421);
-                    param->m_RegisterIndex = stream->ReadByte();
-                    stream->ReadUint16(&param->m_Offset);
-
-                    // Read value
-                    switch (param->m_Type)
+                    // Read all parameters
+                    UID id;
+                    for (int32 i = 0; i < paramsCount; i++)
                     {
-                    case MaterialParameterType::Bool:
-                        param->_asBool = stream->ReadBool();
-                        break;
-                    case MaterialParameterType::Integer:
-                    case MaterialParameterType::SceneTexture:
-                    case MaterialParameterType::ChannelMask:
-                    case MaterialParameterType::TextureGroupSampler:
-                        stream->ReadInt32(&param->_asInteger);
-                        break;
-                    case MaterialParameterType::Float:
-                        stream->ReadFloat(&param->_asFloat);
-                        break;
-                    case MaterialParameterType::Vector2:
-                        stream->Read(param->_asVector2);
-                        break;
-                    case MaterialParameterType::Vector3:
-                        stream->Read(param->_asVector3);
-                        break;
-                    case MaterialParameterType::Vector4:
-                        stream->Read((Float4&)param->AsData);
-                        break;
-                    case MaterialParameterType::Color:
-                        stream->Read(param->_asColor);
-                        break;
-                    case MaterialParameterType::Matrix:
-                        stream->Read((Matrix&)param->AsData);
-                        break;
-                    case MaterialParameterType::NormalMap:
-                    case MaterialParameterType::Texture:
-                    case MaterialParameterType::CubeTexture:
-                        stream->Read(id);
-                        param->m_AsAsset = AssetContent::LoadAsync<TextureBase>(id);
-                        break;
-                    case MaterialParameterType::GPUTextureVolume:
-                    case MaterialParameterType::GPUTextureCube:
-                    case MaterialParameterType::GPUTextureArray:
-                    case MaterialParameterType::GPUTexture:
-                        /*stream->Read(id);
-                        param->m_AsGPUTexture = id;*/
-                        break;
-                    /*case MaterialParameterType::GameplayGlobal:
-                        stream->Read(id);
-                        param->m_AsAsset = AssetContent::LoadAsync<GameplayGlobals>(id);
-                        break;*/
-                    default:
-                        break;
+                        auto param = &At(i);
+
+                        // Read properties
+                        param->m_Type = static_cast<MaterialParameterType>(stream->ReadByte());
+                        stream->Read(param->m_ParamId);
+                        param->m_IsPublic = stream->ReadBool();
+                        param->m_Override = stream->ReadBool();
+                        stream->ReadString(&param->m_Name, 10421);
+                        stream->ReadString(&param->m_ShaderName, 10421);
+
+                        // Read value
+                        switch (param->m_Type)
+                        {
+                            case MaterialParameterType::Bool:
+                                param->_asBool = stream->ReadBool();
+                                break;
+                            case MaterialParameterType::Integer:
+                            case MaterialParameterType::SceneTexture:
+                            case MaterialParameterType::ChannelMask:
+                            case MaterialParameterType::TextureGroupSampler:
+                                stream->ReadInt32(&param->_asInteger);
+                                break;
+                            case MaterialParameterType::Float:
+                                stream->ReadFloat(&param->_asFloat);
+                                break;
+                            case MaterialParameterType::Vector2:
+                                stream->Read(param->_asVector2);
+                                break;
+                            case MaterialParameterType::Vector3:
+                                stream->Read(param->_asVector3);
+                                break;
+                            case MaterialParameterType::Vector4:
+                                stream->Read((Float4&)param->AsData);
+                                break;
+                            case MaterialParameterType::Color:
+                                stream->Read(param->_asColor);
+                                break;
+                            case MaterialParameterType::Matrix:
+                                stream->Read((Matrix&)param->AsData);
+                                break;
+                            case MaterialParameterType::NormalMap:
+                            case MaterialParameterType::Texture:
+                            case MaterialParameterType::CubeTexture:
+                                stream->Read(id);
+                                param->m_AsAsset = AssetContent::LoadAsync<TextureBase>(id);
+                                break;
+                            case MaterialParameterType::GPUTextureVolume:
+                            case MaterialParameterType::GPUTextureCube:
+                            case MaterialParameterType::GPUTextureArray:
+                            case MaterialParameterType::GPUTexture:
+                                /*stream->Read(id);
+                                param->m_AsGPUTexture = id;*/
+                                break;
+                            case MaterialParameterType::GameplayGlobal:
+                                stream->Read(id);
+                                param->m_AsAsset = AssetContent::LoadAsync<Asset>(id);
+                                break;
+                            default:
+                                break;
+                        }
                     }
                 }
-            }
-                break;
-            case 2: // [Deprecated on 15.11.2019, expires on 15.11.2021]
-            {
-                // Size of the collection
-                uint16 paramsCount;
-                stream->ReadUint16(&paramsCount);
-                Resize(paramsCount, false);
-
-                // Read all parameters
-                UID id;
-                for (int32 i = 0; i < paramsCount; i++)
-                {
-                    auto param = &At(i);
-
-                    // Read properties
-                    param->m_Type = static_cast<MaterialParameterType>(stream->ReadByte());
-                    stream->Read(param->m_ParamId);
-                    param->m_IsPublic = stream->ReadBool();
-                    param->m_Override = param->m_IsPublic;
-                    stream->ReadString(&param->m_Name, 10421);
-                    param->m_RegisterIndex = stream->ReadByte();
-                    stream->ReadUint16(&param->m_Offset);
-
-                    // Read value
-                    switch (param->m_Type)
-                    {
-                    case MaterialParameterType::Bool:
-                        param->_asBool = stream->ReadBool();
-                        break;
-                    case MaterialParameterType::Integer:
-                    case MaterialParameterType::SceneTexture:
-                    case MaterialParameterType::TextureGroupSampler:
-                        stream->ReadInt32(&param->_asInteger);
-                        break;
-                    case MaterialParameterType::Float:
-                        stream->ReadFloat(&param->_asFloat);
-                        break;
-                    case MaterialParameterType::Vector2:
-                        stream->Read(param->_asVector2);
-                        break;
-                    case MaterialParameterType::Vector3:
-                        stream->Read(param->_asVector3);
-                        break;
-                    case MaterialParameterType::Vector4:
-                        stream->Read((Float4&)param->AsData);
-                        break;
-                    case MaterialParameterType::Color:
-                        stream->Read(param->_asColor);
-                        break;
-                    case MaterialParameterType::Matrix:
-                        stream->Read((Matrix&)param->AsData);
-                        break;
-                    case MaterialParameterType::NormalMap:
-                    case MaterialParameterType::Texture:
-                    case MaterialParameterType::CubeTexture:
-                        stream->Read(id);
-                        param->m_AsAsset = AssetContent::LoadAsync<TextureBase>(id);
-                        break;
-                    case MaterialParameterType::GPUTextureVolume:
-                    case MaterialParameterType::GPUTextureCube:
-                    case MaterialParameterType::GPUTextureArray:
-                    case MaterialParameterType::GPUTexture:
-                        /*stream->Read(id);
-                        param->m_AsGPUTexture = id;*/
-                        break;
-                    /*case MaterialParameterType::GameplayGlobal:
-                        stream->Read(id);
-                        param->m_AsAsset = AssetContent::LoadAsync<GameplayGlobals>(id);
-                        break;*/
-                    default:
-                        break;
-                    }
-                }
-            }
-                break;
-            case 3:
-            case 4:
-            {
-                // Size of the collection
-                uint16 paramsCount;
-                stream->ReadUint16(&paramsCount);
-                Resize(paramsCount, false);
-
-                // Read all parameters
-                UID id;
-                for (int32 i = 0; i < paramsCount; i++)
-                {
-                    auto param = &At(i);
-
-                    // Read properties
-                    param->m_Type = static_cast<MaterialParameterType>(stream->ReadByte());
-                    stream->Read(param->m_ParamId);
-                    param->m_IsPublic = stream->ReadBool();
-                    param->m_Override = stream->ReadBool();
-                    stream->ReadString(&param->m_Name, 10421);
-                    param->m_RegisterIndex = stream->ReadByte();
-                    stream->ReadUint16(&param->m_Offset);
-
-                    // Read value
-                    switch (param->m_Type)
-                    {
-                    case MaterialParameterType::Bool:
-                        param->_asBool = stream->ReadBool();
-                        break;
-                    case MaterialParameterType::Integer:
-                    case MaterialParameterType::SceneTexture:
-                    case MaterialParameterType::ChannelMask:
-                    case MaterialParameterType::TextureGroupSampler:
-                        stream->ReadInt32(&param->_asInteger);
-                        break;
-                    case MaterialParameterType::Float:
-                        stream->ReadFloat(&param->_asFloat);
-                        break;
-                    case MaterialParameterType::Vector2:
-                        stream->Read(param->_asVector2);
-                        break;
-                    case MaterialParameterType::Vector3:
-                        stream->Read(param->_asVector3);
-                        break;
-                    case MaterialParameterType::Vector4:
-                        stream->Read((Float4&)param->AsData);
-                        break;
-                    case MaterialParameterType::Color:
-                        stream->Read(param->_asColor);
-                        break;
-                    case MaterialParameterType::Matrix:
-                        stream->Read((Matrix&)param->AsData);
-                        break;
-                    case MaterialParameterType::NormalMap:
-                    case MaterialParameterType::Texture:
-                    case MaterialParameterType::CubeTexture:
-                        stream->Read(id);
-                        param->m_AsAsset = AssetContent::LoadAsync<TextureBase>(id);
-                        break;
-                    case MaterialParameterType::GPUTextureVolume:
-                    case MaterialParameterType::GPUTextureCube:
-                    case MaterialParameterType::GPUTextureArray:
-                    case MaterialParameterType::GPUTexture:
-                        /*stream->Read(id);
-                        param->m_AsGPUTexture = id;*/
-                        break;
-                    case MaterialParameterType::GameplayGlobal:
-                        stream->Read(id);
-                        param->m_AsAsset = AssetContent::LoadAsync<Asset>(id);
-                        break;
-                    default:
-                        break;
-                    }
-                }
-            }
                 break;
 
-            default:
-                result = true;
-                break;
+                default:
+                    result = true;
+                    break;
             }
         }
 
@@ -884,12 +662,8 @@ namespace SE
 
     void MaterialParams::Save(WriteStream* stream)
     {
-        // Skip serialization if no parameters to save
-        if (IsEmpty())
-            return;
-
         // Version
-        stream->WriteUint16(4);
+        stream->WriteUint16(5);
 
         // Size of the collection
         stream->WriteUint16(Count());
@@ -906,8 +680,7 @@ namespace SE
             stream->WriteBool(param->m_IsPublic);
             stream->WriteBool(param->m_Override);
             stream->WriteString(param->m_Name, 10421);
-            stream->WriteByte(param->m_RegisterIndex);
-            stream->WriteUint16(param->m_Offset);
+            stream->WriteString(param->m_ShaderName, 10421);
 
             // Write value
             UID id;
@@ -963,7 +736,7 @@ namespace SE
     void MaterialParams::Save(WriteStream* stream, const List<SerializedMaterialParam>* params)
     {
         // Version
-        stream->WriteUint16(4);
+        stream->WriteUint16(5);
 
         // Size of the collection
         stream->WriteUint16(params ? params->Count() : 0);
@@ -982,8 +755,13 @@ namespace SE
                 stream->WriteBool(param.IsPublic);
                 stream->WriteBool(param.Override);
                 stream->WriteString(param.Name, 10421);
-                stream->WriteByte(param.RegisterIndex);
-                stream->WriteUint16(param.Offset);
+                const bool uniform =
+                    param.Type == MaterialParameterType::Bool || param.Type == MaterialParameterType::Integer ||
+                    param.Type == MaterialParameterType::Float || param.Type == MaterialParameterType::Vector2 ||
+                    param.Type == MaterialParameterType::Vector3 || param.Type == MaterialParameterType::Vector4 ||
+                    param.Type == MaterialParameterType::Color || param.Type == MaterialParameterType::Matrix ||
+                    param.Type == MaterialParameterType::ChannelMask;
+                stream->WriteString(uniform ? SE_TEXT("Data.") + param.ShaderName : param.ShaderName, 10421);
 
                 // Write value
                 switch (param.Type)

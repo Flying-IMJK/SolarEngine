@@ -9,14 +9,14 @@
 namespace SE
 {
     class GPUTextureView;
-    class GraphicShader;
+    class Shader;
     class GPUConstantBuffer;
     class ShaderProgramInstance;
 
     class LightPass final : public RendererPass<LightPass>
     {
     private:
-        AssetRef<GraphicShader> m_Shader;
+        AssetRef<Shader>        m_Shader;
         SLC2GPUPipelineState*   m_PsLightDir           = nullptr;
         SLC2GPUPipelineState*   m_PsLightPointNormal   = nullptr;
         SLC2GPUPipelineState*   m_PsLightPointInverted = nullptr;
@@ -39,9 +39,7 @@ namespace SE
         bool SetupResources() override;
 
     private:
-#if COMPILE_WITH_DEV_ENV
         void OnShaderReloading(Asset* pObj);
-#endif
     };
 
 } // namespace SE

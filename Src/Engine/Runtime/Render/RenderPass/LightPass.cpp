@@ -11,7 +11,7 @@
 #include <Runtime/Render/RenderList.h>
 #include <Runtime/Render/RenderPass/GBufferPass.h>
 #include <Runtime/Render/RenderPass/ShadowPass.h>
-#include <Runtime/Resource/Assets/SLC2Materials/GraphicShader.h>
+#include <Runtime/Resource/Assets/Materials/Shader.h>
 
 namespace SE
 {
@@ -24,16 +24,14 @@ namespace SE
 
     bool LightPass::Init()
     {
-        m_Shader      = AssetContent::LoadAsyncInternal<GraphicShader>(SE_TEXT("Shaders/Lights"));
+        m_Shader      = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/Lights"));
         m_SphereModel = AssetContent::LoadAsyncInternal<Model>(SE_TEXT("Assets/Models/Sphere"));
         if (m_Shader == nullptr || m_SphereModel == nullptr)
         {
             return false;
         }
 
-#if COMPILE_WITH_DEV_ENV
         m_Shader->OnReloadingEvent.Bind<LightPass, &LightPass::OnShaderReloading>(this);
-#endif
 
         auto format = PixelFormat::R8G8_UNorm;
         if (!EnumHasAllFlags(GPUDevice::instance->GetPixelFormatFeatures(format).Support,
@@ -50,12 +48,10 @@ namespace SE
     {
         RendererPass<LightPass>::Dispose();
 
-#if COMPILE_WITH_DEV_ENV
         if (m_Shader.HasReference())
         {
             m_Shader->OnReloadingEvent.Unbind<LightPass, &LightPass::OnShaderReloading>(this);
         }
-#endif
 
         Delete(m_PsLightDir);
         Delete(m_PsLightPointNormal);
@@ -118,7 +114,6 @@ namespace SE
                m_PerFrameBuffer != nullptr;
     }
 
-#if COMPILE_WITH_DEV_ENV
     void LightPass::OnShaderReloading(Asset* pObj)
     {
         // Asset reload runs on the main thread before the old GPU programs are released.
@@ -134,7 +129,6 @@ namespace SE
         m_ProgramLightPoint    = nullptr;
         InvalidateResources();
     }
-#endif
 
     void LightPass::RenderLight(RenderContextBatch& renderContextBatch, GPUTextureView* pLightBuffer)
     {

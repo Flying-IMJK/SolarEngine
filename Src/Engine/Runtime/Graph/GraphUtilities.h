@@ -1,8 +1,8 @@
 #pragma once
-#include "Runtime/Core/Math/Curves.h"
-#include "Runtime/Core/Serialization/TextWriter.h"
-#include "Runtime/Render/Assets/Material/MaterialParams.h"
-#include "Runtime/Utilities/Variant.h"
+#include <Runtime/Core/Math/Curves.h>
+#include <Runtime/Core/Serialization/TextWriter.h>
+#include <Runtime/Render/Assets/Material/MaterialParams.h>
+#include <Runtime/Utilities/Variant.h>
 
 namespace SE::GraphUtilities {
 
@@ -21,10 +21,10 @@ namespace SE::GraphUtilities {
 
 
 	void GenerateShaderConstantBuffer(TextWriterUnicode& writer, List<SerializedMaterialParam>& parameters);
-	const Char* GenerateShaderResources(TextWriterUnicode& writer, List<SerializedMaterialParam>& parameters, int32 startRegister);
-	const Char* GenerateSamplers(TextWriterUnicode& writer, List<SerializedMaterialParam>& parameters, int32 startRegister);
-	template<typename T>
-	void SampleCurve(TextWriterUnicode& writer, const Math::BezierCurve<T>& curve, const String& time, const String& value);
+    const Char* GenerateShaderResources(TextWriterUnicode& writer, List<SerializedMaterialParam>& parameters);
+    const Char* GenerateSamplers(TextWriterUnicode& writer, List<SerializedMaterialParam>& parameters);
+    template<typename T>
+    void SampleCurve(TextWriterUnicode& writer, const Math::BezierCurve<T>& curve, const String& time, const String& value);
 
 } // SE
 

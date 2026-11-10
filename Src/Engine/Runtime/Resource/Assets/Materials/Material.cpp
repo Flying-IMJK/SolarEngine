@@ -1,18 +1,18 @@
 
-#include "Material.h"
+#include <Runtime/Resource/Assets/Materials/Material.h>
 
-#include "ShaderCacheManager.h"
-#include "Runtime/Core/Serialization/MemoryReadStream.h"
-#include "Runtime/Core/Thread/Threading.h"
-#include "Runtime/Core/Encoding.h"
-#include "Runtime/Graphics/GPUDevice.h"
-#include "Runtime/Graphics/Base/GPUUtils.h"
-#include "Runtime/Render/Assets/Material/MaterialShader.h"
-#include "Runtime/ShaderCompilation/ShaderCompilationContext.h"
-#include "Runtime/Resource/Factories/BinaryAssetFactory.h"
+#include <Runtime/Core/Encoding.h>
+#include <Runtime/Core/Serialization/MemoryReadStream.h>
+#include <Runtime/Core/Thread/Threading.h>
+#include <Runtime/Graphics/Base/GPUUtils.h>
+#include <Runtime/Graphics/GPUDevice.h>
+#include <Runtime/Render/Assets/Material/MaterialShader.h>
+#include <Runtime/Resource/Assets/Materials/ShaderCacheManager.h>
+#include <Runtime/Resource/Factories/BinaryAssetFactory.h>
+#include <Runtime/ShaderCompilation/ShaderCompileTypes.h>
 
 #if SE_EDITOR
-#include "Generator/MaterialGenerator.h"
+#include <Runtime/Resource/Assets/Materials/Generator/MaterialGenerator.h>
 #endif
 
 namespace SE
@@ -44,10 +44,7 @@ namespace SE
         return EmptyInfo;
     }
 
-    GPUShader* Material::GetShader() const
-    {
-        return m_MaterialShader ? m_MaterialShader->GetShader() : nullptr;
-    }
+    SLC2GPUShader* Material::GetShader() const { return m_MaterialShader ? m_MaterialShader->GetShader() : nullptr; }
 
     bool Material::IsReady() const
     {
@@ -73,7 +70,11 @@ namespace SE
 
     void Material::Bind(BindParameters& params)
     {
-        ENGINE_ASSERT(IsReady());
+        params.Program = nullptr;
+        if (!IsReady())
+        {
+            return;
+        }
 
         MaterialParamsLink* lastLink = params.paramsLink;
         MaterialParamsLink link;
@@ -81,8 +82,10 @@ namespace SE
         if (lastLink)
         {
             while (lastLink->Down)
+            {
                 lastLink = lastLink->Down;
-            lastLink->Down =&link;
+            }
+            lastLink->Down = &link;
         }
         else
         {
@@ -101,6 +104,11 @@ namespace SE
         {
             params.paramsLink = nullptr;
         }
+    }
+
+    ShaderProgramInstance* Material::GetProgram()
+    { 
+        return m_MaterialShader->GetProgram();
     }
 
 #if SE_EDITOR
@@ -162,35 +170,16 @@ namespace SE
             return LoadResult::Ok;
         }
 
-        // If engine was compiled with shaders compiling service:
-        // - Material should be changed in need to convert it to the newer version (via Visject Surface)
-        //   Shader should be recompiled if shader source code has been modified
-        // otherwise:
-        // - If material version is not supported then material cannot be loaded
+        // Generate the current SLC2 source from the authored graph when needed.
 #if SE_EDITOR
 
-        // Check if current engine has different materials version or convert it by force or has no source generated at all
-        if (_shaderHeader.Material.GraphVersion != MATERIAL_GRAPH_VERSION
-    #if MATERIAL_AUTO_GENERATE_MISSING_SOURCE
-            || !HasChunk(SHADER_FILE_CHUNK_SOURCE)
-    #endif
-            || HasDependenciesModified()
-    #if COMPILE_WITH_DEV_ENV
-            // Set to true to enable force GPU shader regeneration (don't commit it)
-            || false
-    #endif
-        )
+        const bool sourceFilesCurrent = LoadMaterialSourceFiles();
+        if (!HasChunk(SHADER_FILE_CHUNK_SOURCE) || !sourceFilesCurrent || HasDependenciesModified())
         {
-            // Guard file with the lock during shader generation (prevents FlaxStorage::Tick from messing with the file)
             auto lock = storage->Lock();
-
-            // Prepare
             MaterialGenerator generator;
             generator.Error.Bind(&OnGeneratorError);
-            if (_shaderHeader.Material.GraphVersion != MATERIAL_GRAPH_VERSION)
-                LOG_INFO("Resource", "Converting material \'{0}\', from version {1} to {2}...", ToString(), _shaderHeader.Material.GraphVersion, MATERIAL_GRAPH_VERSION);
-            else
-                LOG_INFO("Resource", "Updating material \'{0}\'...", ToString());
+            LOG_INFO("Resource", "Generating SLC2 material '{0}'...", ToString());
 
             // Load or create material surface
             MaterialLayer* layer;
@@ -225,6 +214,15 @@ namespace SE
                 layer->Graph.Save(&stream, false);
                 surfaceChunk->Data.Copy(stream.GetHandle(), stream.GetPosition());
             }
+            if (!layer)
+                return LoadResult::InvalidData;
+            layer->FeaturesFlags    = _shaderHeader.Material.Info.FeaturesFlags;
+            layer->UsageFlags       = _shaderHeader.Material.Info.UsageFlags;
+            layer->Domain           = _shaderHeader.Material.Info.Domain;
+            layer->BlendMode        = _shaderHeader.Material.Info.BlendMode;
+            layer->ShadingModel     = _shaderHeader.Material.Info.ShadingModel;
+            layer->MaskThreshold    = _shaderHeader.Material.Info.MaskThreshold;
+            layer->OpacityThreshold = _shaderHeader.Material.Info.OpacityThreshold;
             generator.AddLayer(layer);
 
             // Get chunk with material parameters
@@ -234,7 +232,6 @@ namespace SE
             materialParamsChunk->Data.Release();
 
             // Generate material source code and metadata
-            MemoryWriteStream newMaterialMeta(1024);
             MemoryWriteStream source(64 * 1024);
             MaterialInfo info = _shaderHeader.Material.Info;
             if (!generator.Generate(source, info, materialParamsChunk->Data))
@@ -270,6 +267,10 @@ namespace SE
             for (int32 chunkIndex = 1; chunkIndex < 14; chunkIndex++)
                 ReleaseChunk(chunkIndex);
 
+            m_SourceFiles = generator.SourceFiles;
+            if (!SaveMaterialSourceFiles())
+                return LoadResult::Failed;
+
             // Setup shader header
             Platform::MemoryClear(&_shaderHeader, sizeof(_shaderHeader));
             _shaderHeader.Material.GraphVersion = MATERIAL_GRAPH_VERSION;
@@ -286,40 +287,13 @@ namespace SE
             ShaderCacheManager::RemoveCache(GetID());
         }
 
-        // Ensure that material is in the current version (whole materials pipeline depends on that)
-        if (_shaderHeader.Material.GraphVersion != MATERIAL_GRAPH_VERSION)
-        {
-            LOG_FATAL("Resource", "Unsupported material version: {0} in material \'{1}\'. Current is {2}.", _shaderHeader.Material.GraphVersion, ToString(), MATERIAL_GRAPH_VERSION);
-            return LoadResult::Failed;
-        }
-
 #endif
         // Load shader cache (it may call compilation or gather cached data)
         ShaderCacheResult shaderCache;
         if (!LoadShaderCache(shaderCache))
         {
             LOG_ERROR("Resource", "Cannot load \'{0}\' shader cache.", ToString());
-#if 1
             return LoadResult::Failed;
-#else
-            // Custom path: don't fail asset loading but use dummy material instead (surface and parameters will be available for editing)
-            LOG(Error, "Using dummy material shader for \'{0}\'.", ToString());
-            MemoryWriteStream dummyShader(64);
-            {
-                dummyShader.WriteInt32(6);
-                dummyShader.WriteInt32(0);
-                dummyShader.WriteInt32(0);
-                dummyShader.WriteByte(0);
-                dummyShader.WriteByte(0);
-            }
-            MemoryReadStream shaderCacheStream(dummyShader.GetHandle(), dummyShader.GetPosition());
-            _materialShader = MaterialShader::CreateDummy(shaderCacheStream, _shaderHeader.Material.Info);
-            if (_materialShader == nullptr)
-            {
-                LOG_WARNING("Resource", "Cannot load material.");
-                return LoadResult::Failed;
-            }
-#endif
         }
         else
         {
@@ -337,6 +311,10 @@ namespace SE
                 return LoadResult::Failed;
             }
         }
+
+        if (HasChunk(SHADER_FILE_CHUNK_MATERIAL_PARAMS) && !HasChunkLoaded(SHADER_FILE_CHUNK_MATERIAL_PARAMS) &&
+            !LoadChunks(GET_CHUNK_FLAG(SHADER_FILE_CHUNK_MATERIAL_PARAMS)))
+            return LoadResult::Failed;
 
         // Load material parameters
         materialParamsChunk = GetChunk(SHADER_FILE_CHUNK_MATERIAL_PARAMS);
@@ -383,6 +361,9 @@ namespace SE
             result |= GET_CHUNK_FLAG(GetCacheChunkIndex());
 
         result |= GET_CHUNK_FLAG(SHADER_FILE_CHUNK_MATERIAL_PARAMS);
+#if SE_EDITOR
+        result |= GET_CHUNK_FLAG(MATERIAL_FILE_CHUNK_SOURCE_FILES);
+#endif
         return result;
     }
 
@@ -395,23 +376,21 @@ namespace SE
         Reload();
     }
 
-    void Material::InitCompilationOptions(ShaderCompilationOptions& options)
+    void Material::InitCompilationRequest(ShaderCompileRequest& request, StringAnsi& preamble)
     {
         // Base
-        IShaderAsset::InitCompilationOptions(options);
-
+        IShaderAsset::InitCompilationRequest(request, preamble);
 
         // Ensure that this call is valid (material features switches may depend on target compilation platform)
-        ENGINE_ASSERT(options.Profile != ShaderProfile::Unknown);
+        ENGINE_ASSERT(request.Targets[0] != ShaderProfile::Unknown);
 
         // Prepare
         auto& info = _shaderHeader.Material.Info;
         const bool isSurfaceOrTerrainOrDeformable = info.Domain == MaterialDomain::Surface || info.Domain == MaterialDomain::Terrain || info.Domain == MaterialDomain::Deformable;
         const bool useCustomData = info.ShadingModel == MaterialShadingModel::Subsurface || info.ShadingModel == MaterialShadingModel::Foliage;
         const bool useForward = ((info.Domain == MaterialDomain::Surface || info.Domain == MaterialDomain::Deformable) && info.BlendMode != MaterialBlendMode::Opaque) || info.Domain == MaterialDomain::Particle;
-        const bool useTess =
-                info.TessellationMode != TessellationMethod::None &&
-                GPUUtils::CanSupportTessellation(options.Profile) && isSurfaceOrTerrainOrDeformable;
+        const bool useTess = info.TessellationMode != TessellationMethod::None &&
+                             GPUUtils::CanSupportTessellation(request.Targets[0]) && isSurfaceOrTerrainOrDeformable;
 
         const bool useDistortion =
                 (info.Domain == MaterialDomain::Surface || info.Domain == MaterialDomain::Deformable || info.Domain == MaterialDomain::Particle) &&
@@ -433,69 +412,82 @@ namespace SE
         };
         // @formatter:on
 
-        // Setup shader macros
-        options.Macros.Add({ "MATERIAL_DOMAIN", Numbers[(int32)info.Domain] });
-        options.Macros.Add({ "MATERIAL_BLEND", Numbers[(int32)info.BlendMode] });
-        options.Macros.Add({ "MATERIAL_SHADING_MODEL", Numbers[(int32)info.ShadingModel] });
-        options.Macros.Add({ "MATERIAL_MASKED", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsage::UseMask) ? 1 : 0] });
-        options.Macros.Add({ "DECAL_BLEND_MODE", Numbers[(int32)info.DecalBlendingMode] });
-        options.Macros.Add({ "USE_EMISSIVE", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsage::UseEmissive) ? 1 : 0] });
-        options.Macros.Add({ "USE_NORMAL", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsage::UseNormal) ? 1 : 0] });
-        options.Macros.Add({ "USE_POSITION_OFFSET", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsage::UsePositionOffset) ? 1 : 0] });
-        options.Macros.Add({ "USE_VERTEX_COLOR", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsage::UseVertexColor) ? 1 : 0] });
-        options.Macros.Add({ "USE_DISPLACEMENT", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsage::UseDisplacement) ? 1 : 0] });
-        options.Macros.Add({ "USE_DITHERED_LOD_TRANSITION", Numbers[EnumHasAnyFlags(info.FeaturesFlags, MaterialFeatures::DitheredLODTransition) ? 1 : 0] });
-        options.Macros.Add({ "USE_GBUFFER_CUSTOM_DATA", Numbers[useCustomData ? 1 : 0] });
-        options.Macros.Add({ "USE_REFLECTIONS", Numbers[EnumHasAnyFlags(info.FeaturesFlags, MaterialFeatures::DisableReflections) ? 0 : 1] });
+        const auto define = [&preamble](const char* pName, const char* pValue) {
+            preamble += "#define ";
+            preamble += pName;
+            preamble += " ";
+            preamble += pValue;
+            preamble += "\n";
+        };
+
+        // Setup material definitions before loading the Slang module.
+        define("MATERIAL_DOMAIN", Numbers[(int32)info.Domain]);
+        define("MATERIAL_BLEND", Numbers[(int32)info.BlendMode]);
+        define("MATERIAL_SHADING_MODEL", Numbers[(int32)info.ShadingModel]);
+        define("MATERIAL_MASKED", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsage::UseMask) ? 1 : 0]);
+        define("DECAL_BLEND_MODE", Numbers[(int32)info.DecalBlendingMode]);
+        define("USE_EMISSIVE", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsage::UseEmissive) ? 1 : 0]);
+        define("USE_NORMAL", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsage::UseNormal) ? 1 : 0]);
+        define("USE_POSITION_OFFSET",
+               Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsage::UsePositionOffset) ? 1 : 0]);
+        define("USE_VERTEX_COLOR", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsage::UseVertexColor) ? 1 : 0]);
+        define("USE_DISPLACEMENT", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsage::UseDisplacement) ? 1 : 0]);
+        define("USE_DITHERED_LOD_TRANSITION",
+               Numbers[EnumHasAnyFlags(info.FeaturesFlags, MaterialFeatures::DitheredLODTransition) ? 1 : 0]);
+        define("USE_GBUFFER_CUSTOM_DATA", Numbers[useCustomData ? 1 : 0]);
+        define("USE_REFLECTIONS",
+               Numbers[EnumHasAnyFlags(info.FeaturesFlags, MaterialFeatures::DisableReflections) ? 0 : 1]);
         if (!EnumHasAnyFlags(info.FeaturesFlags, MaterialFeatures::DisableReflections) && EnumHasAnyFlags(info.FeaturesFlags, MaterialFeatures::ScreenSpaceReflections))
-            options.Macros.Add({ "MATERIAL_REFLECTIONS", Numbers[1] });
-        options.Macros.Add({ "USE_FOG", Numbers[EnumHasAnyFlags(info.FeaturesFlags, MaterialFeatures::DisableFog) ? 0 : 1] });
+            define("MATERIAL_REFLECTIONS", Numbers[1]);
+        define("USE_FOG", Numbers[EnumHasAnyFlags(info.FeaturesFlags, MaterialFeatures::DisableFog) ? 0 : 1]);
         if (useForward)
         {
-            options.Macros.Add({ "USE_PIXEL_NORMAL_OFFSET_REFRACTION", Numbers[EnumHasAnyFlags(info.FeaturesFlags, MaterialFeatures::PixelNormalOffsetRefraction) ? 1 : 0] });
+            define("USE_PIXEL_NORMAL_OFFSET_REFRACTION",
+                   Numbers[EnumHasAnyFlags(info.FeaturesFlags, MaterialFeatures::PixelNormalOffsetRefraction) ? 1 : 0]);
             switch (info.TransparentLightingMode)
             {
             case MaterialTransparentLightingMode::Surface:
                 break;
             case MaterialTransparentLightingMode::SurfaceNonDirectional:
-                options.Macros.Add({ "LIGHTING_NO_DIRECTIONAL", "1" });
+                define("LIGHTING_NO_DIRECTIONAL", "1");
                 break;
             }
         }
 
         // TODO: don't compile VS_Depth for deferred/forward materials if material doesn't use position offset or masking
 
-        options.Macros.Add({ "USE_TESSELLATION", Numbers[useTess ? 1 : 0] });
-        options.Macros.Add({ "TESSELLATION_IN_CONTROL_POINTS", "3" });
+        define("USE_TESSELLATION", Numbers[useTess ? 1 : 0]);
+        define("TESSELLATION_IN_CONTROL_POINTS", "3");
         if (useTess)
         {
             switch (info.TessellationMode)
             {
             case TessellationMethod::Flat:
-                options.Macros.Add({ "MATERIAL_TESSELLATION", "MATERIAL_TESSELLATION_FLAT" });
+                define("MATERIAL_TESSELLATION", "MATERIAL_TESSELLATION_FLAT");
                 break;
             case TessellationMethod::PointNormal:
-                options.Macros.Add({ "MATERIAL_TESSELLATION", "MATERIAL_TESSELLATION_PN" });
+                define("MATERIAL_TESSELLATION", "MATERIAL_TESSELLATION_PN");
                 break;
             case TessellationMethod::Phong:
-                options.Macros.Add({ "MATERIAL_TESSELLATION", "MATERIAL_TESSELLATION_PHONG" });
+                define("MATERIAL_TESSELLATION", "MATERIAL_TESSELLATION_PHONG");
                 break;
             }
-            options.Macros.Add({ "MAX_TESSELLATION_FACTOR", Numbers[Math::Min<int32>(info.MaxTessellationFactor, ARRAY_SIZE(Numbers) - 1)] });
+            define("MAX_TESSELLATION_FACTOR",
+                   Numbers[Math::Min<int32>(info.MaxTessellationFactor, ARRAY_SIZE(Numbers) - 1)]);
         }
 
         // Helper macros (used by the parser)
-        options.Macros.Add({ "IS_SURFACE", Numbers[info.Domain == MaterialDomain::Surface ? 1 : 0] });
-        options.Macros.Add({ "IS_POST_FX", Numbers[info.Domain == MaterialDomain::PostProcess ? 1 : 0] });
-        options.Macros.Add({ "IS_GUI", Numbers[info.Domain == MaterialDomain::GUI ? 1 : 0] });
-        options.Macros.Add({ "IS_DECAL", Numbers[info.Domain == MaterialDomain::Decal ? 1 : 0] });
-        options.Macros.Add({ "IS_TERRAIN", Numbers[info.Domain == MaterialDomain::Terrain ? 1 : 0] });
-        options.Macros.Add({ "IS_PARTICLE", Numbers[info.Domain == MaterialDomain::Particle ? 1 : 0] });
-        options.Macros.Add({ "IS_DEFORMABLE", Numbers[info.Domain == MaterialDomain::Deformable ? 1 : 0] });
-        options.Macros.Add({ "USE_FORWARD", Numbers[useForward ? 1 : 0] });
-        options.Macros.Add({ "USE_DEFERRED", Numbers[isSurfaceOrTerrainOrDeformable && info.BlendMode == MaterialBlendMode::Opaque ? 1 : 0] });
-        options.Macros.Add({ "USE_DISTORTION", Numbers[useDistortion ? 1 : 0] });
-
+        define("IS_SURFACE", Numbers[info.Domain == MaterialDomain::Surface ? 1 : 0]);
+        define("IS_POST_FX", Numbers[info.Domain == MaterialDomain::PostProcess ? 1 : 0]);
+        define("IS_GUI", Numbers[info.Domain == MaterialDomain::GUI ? 1 : 0]);
+        define("IS_DECAL", Numbers[info.Domain == MaterialDomain::Decal ? 1 : 0]);
+        define("IS_TERRAIN", Numbers[info.Domain == MaterialDomain::Terrain ? 1 : 0]);
+        define("IS_PARTICLE", Numbers[info.Domain == MaterialDomain::Particle ? 1 : 0]);
+        define("IS_DEFORMABLE", Numbers[info.Domain == MaterialDomain::Deformable ? 1 : 0]);
+        define("USE_FORWARD", Numbers[useForward ? 1 : 0]);
+        define("USE_DEFERRED",
+               Numbers[isSurfaceOrTerrainOrDeformable && info.BlendMode == MaterialBlendMode::Opaque ? 1 : 0]);
+        define("USE_DISTORTION", Numbers[useDistortion ? 1 : 0]);
     }
 
 #endif
@@ -525,7 +517,7 @@ namespace SE
     BytesContainer Material::LoadSurface(bool createDefaultIfMissing)
     {
         BytesContainer result;
-        if (WaitForLoaded() && !LastLoadFailed())
+        if (!WaitForLoaded() && !LastLoadFailed())
             return result;
         Threading::ScopeLock lock(Locker);
 
@@ -533,7 +525,7 @@ namespace SE
         if (HasChunk(SHADER_FILE_CHUNK_VISJECT_SURFACE))
         {
             // Load graph
-            if (!LoadChunks(GET_CHUNK_FLAG(SHADER_FILE_CHUNK_VISJECT_SURFACE)))
+            if (LoadChunks(GET_CHUNK_FLAG(SHADER_FILE_CHUNK_VISJECT_SURFACE)))
             {
                 // Get stream with graph data
                 const auto data = GetChunk(SHADER_FILE_CHUNK_VISJECT_SURFACE);

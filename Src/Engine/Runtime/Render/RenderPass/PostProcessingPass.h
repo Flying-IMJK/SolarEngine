@@ -1,18 +1,18 @@
 #pragma once
-#include "Runtime/Core/Math/Color.h"
-#include "Runtime/Core/Math/Matrix.h"
-#include "Runtime/Core/Math/Vector2.h"
-#include "Runtime/Core/Math/Vector3.h"
-#include "Runtime/Graphics/Base/GPUPipelineStatePermutations.h"
-#include "Runtime/Render/RenderContext.h"
-#include "Runtime/Render/RendererPass.h"
-#include "Runtime/Render/Assets/Texture/Texture.h"
-#include "Runtime/Resource/AssetRef.h"
-#include "Runtime/Resource/Assets/Materials/Shader.h"
+#include <Runtime/Core/Math/Color.h>
+#include <Runtime/Core/Math/Matrix.h>
+#include <Runtime/Core/Math/Vector2.h>
+#include <Runtime/Core/Math/Vector3.h>
+#include <Runtime/Graphics/Base/GPUPipelineStatePermutations.h>
+#include <Runtime/Render/Assets/Texture/Texture.h>
+#include <Runtime/Render/RenderContext.h>
+#include <Runtime/Render/RendererPass.h>
+#include <Runtime/Resource/AssetRef.h>
+#include <Runtime/Resource/Assets/Materials/Shader.h>
 
 namespace SE
 {
-    class GraphicShader;
+    class Shader;
     class GPUPipelineState;
 
 #define GB_RADIUS 6
@@ -74,7 +74,7 @@ private:
         });
 
     // Post Processing
-    AssetRef<GraphicShader> m_Shader;
+    AssetRef<Shader>      m_Shader;
     SLC2GPUPipelineState* m_PSOThreshold;
     SLC2GPUPipelineState* m_PSOScale;
     SLC2GPUPipelineState* m_PSOBlurH;
@@ -137,18 +137,7 @@ private:
     /// <param name="height">Texture to blur height in pixels</param>
     void GB_ComputeKernel(float sigma, float width, float height);
 
-#if COMPILE_WITH_DEV_ENV
-    void OnShaderReloading(Asset* obj)
-    {
-        _psThreshold->ReleaseGPU();
-        _psScale->ReleaseGPU();
-        _psBlurH->ReleaseGPU();
-        _psBlurV->ReleaseGPU();
-        _psGenGhosts->ReleaseGPU();
-        _psComposite.Release();
-        invalidateResources();
-    }
-#endif
+    void OnShaderReloading(Asset* pAsset);
 
 protected:
 

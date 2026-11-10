@@ -1,16 +1,16 @@
 #pragma once
-#include "Runtime/Core/Math/Color.h"
-#include "Runtime/Core/Math/Vector2.h"
-#include "Runtime/Core/Math/Vector3.h"
-#include "Runtime/Core/Types/Object.h"
-#include "Runtime/Core/Types/UID.h"
-#include "Runtime/Core/Types/Variable.h"
-#include "Runtime/Core/Types/Collections/DataContainer.h"
-#include "Runtime/Core/Types/Strings/String.h"
+#include <Runtime/Core/Math/Color.h>
+#include <Runtime/Core/Math/Vector2.h>
+#include <Runtime/Core/Math/Vector3.h>
+#include <Runtime/Core/Types/Collections/DataContainer.h>
+#include <Runtime/Core/Types/Object.h>
+#include <Runtime/Core/Types/Strings/String.h>
+#include <Runtime/Core/Types/UID.h>
+#include <Runtime/Core/Types/Variable.h>
 
-#include "Runtime/API.h"
-#include "Runtime/Resource/AssetRef.h"
-#include "Runtime/Resource/Storage/StorageReference.h"
+#include <Runtime/API.h>
+#include <Runtime/Resource/AssetRef.h>
+#include <Runtime/Resource/Storage/StorageReference.h>
 
 namespace SE
 {
@@ -18,7 +18,7 @@ namespace SE
     class GPUTexture;
     class RenderBuffers;
     class GPUTextureView;
-    class GPUContext;
+    class ShaderProgramInstance;
     class WriteStream;
     class ReadStream;
     class MaterialParams;
@@ -173,14 +173,7 @@ namespace SE
             byte AsData[16 * 4];
         };
 
-        byte RegisterIndex;
-        uint16 Offset;
-
-        SerializedMaterialParam(): Type(), IsPublic(false), Override(false), RegisterIndex(0), Offset(0), AsBool(false), AsInteger(0), AsFloat(0), AsFloat2(), AsFloat3(),
-                                   AsColor(),
-                                   AsGuid(), AsData{}
-        {
-        }
+        SerializedMaterialParam() : Type(), IsPublic(false), Override(false), AsData {} {}
     };
 
     /// <summary>
@@ -197,8 +190,7 @@ namespace SE
         MaterialParameterType m_Type = MaterialParameterType::Invalid;
         bool m_IsPublic;
         bool m_Override;
-        byte m_RegisterIndex;
-        uint16 m_Offset;
+        String                m_ShaderName;
 
         union
         {
@@ -291,21 +283,8 @@ namespace SE
             m_Override = value;
         }
 
-        /// <summary>
-        /// Gets the parameter resource graphics pipeline binding register index.
-        /// </summary>
-        FORCE_INLINE byte GetRegister() const
-        {
-            return m_RegisterIndex;
-        }
-
-        /// <summary>
-        /// Gets the parameter binding offset since the start of the constant buffer.
-        /// </summary>
-        FORCE_INLINE uint16 GetBindOffset() const
-        {
-            return m_Offset;
-        }
+        /// The stable reflected path generated for this parameter, independent of its display name.
+        const String& GetShaderName() const { return m_ShaderName; }
 
     public:
         /// <summary>
@@ -341,42 +320,15 @@ namespace SE
         /// </summary>
         struct BindMeta
         {
-            /// <summary>
-            /// The GPU commands context.
-            /// </summary>
-            GPUContext* Context;
-
-            /// <summary>
-            /// The pointer to the constants buffer in the memory.
-            /// </summary>
-            Span<byte> Constants;
-
-            /// <summary>
-            /// The input scene color. It's optional and used in forward/postFx rendering.
-            /// </summary>
-            GPUTextureView* Input;
-
-            /// <summary>
-            /// The scene buffers. It's optional and used in forward/postFx rendering.
-            /// </summary>
-            const RenderBuffers* Buffers;
-
-            /// <summary>
-            /// True if parameters can sample depth buffer.
-            /// </summary>
-            bool CanSampleDepth;
-
-            /// <summary>
-            /// True if parameters can sample GBuffer.
-            /// </summary>
-            bool CanSampleGBuffer;
+            ShaderProgramInstance* Program          = nullptr;
+            GPUTextureView*        Input            = nullptr;
+            const RenderBuffers*   Buffers          = nullptr;
+            bool                   CanSampleDepth   = false;
+            bool                   CanSampleGBuffer = false;
         };
 
-        /// <summary>
-        /// Binds the parameter to the pipeline.
-        /// </summary>
-        /// <param name="meta">The bind meta.</param>
-        void Bind(BindMeta& meta) const;
+        // Missing variables are valid for optimized Program variants. Present variables must match the value ABI.
+        bool Bind(BindMeta& meta) const;
 
         bool HasContentLoaded() const;
 
@@ -419,7 +371,7 @@ namespace SE
         /// </summary>
         /// <param name="link">The parameters binding link. Used to support per-parameter override.</param>
         /// <param name="meta">The bind meta.</param>
-        static void Bind(MaterialParamsLink* link, MaterialParameter::BindMeta& meta);
+        static bool Bind(MaterialParamsLink* pLink, MaterialParameter::BindMeta& meta);
 
         /// <summary>
         /// Clones the parameters list.

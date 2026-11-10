@@ -1,30 +1,37 @@
 #pragma once
 
-#include "MaterialBase.h"
-#include "IShaderAsset.h"
+#include <Runtime/Resource/Assets/Materials/IShaderAsset.h>
+#include <Runtime/Resource/Assets/Materials/MaterialBase.h>
 
 namespace SE
 {
 	class MaterialShader;
 
 	#define MATERIAL_VERSION 1
+#define MATERIAL_FILE_CHUNK_SOURCE_FILES 8
 
-	// <summary>
-	/// Material asset that contains shader for rendering models on the GPU.
-	/// </summary>
-	SE_CLASS(Reflect, API(NoSpawn))
-	class SE_API_RUNTIME Material final : public MaterialBase, public IShaderAsset
+    // <summary>
+    /// Material asset that contains shader for rendering models on the GPU.
+    /// </summary>
+    SE_CLASS(Reflect, API(NoSpawn))
+    class SE_API_RUNTIME Material final : public MaterialBase, public IShaderAsset
 	{
-		SE_DEFINE_CLASS(Material, MaterialBase);
+    private:
+        SE_DEFINE_CLASS(Material, MaterialBase);
 		ASSET_HEADER(Material);
 	private:
 		MaterialShader* m_MaterialShader = nullptr;
 		ShaderStorage::Header _shaderHeader;
+#if SE_EDITOR
+        List<String> m_SourceFiles;
+        bool         LoadMaterialSourceFiles();
+        bool         SaveMaterialSourceFiles();
+#endif
 
-	public:
-		explicit Material(const AssetInfo* info);
+    public:
+        explicit Material(const AssetInfo* info);
 
-		/// <summary>
+        /// <summary>
 		/// Tries to load surface graph from the asset.
 		/// </summary>
 		/// <param name="createDefaultIfMissing">True if create default surface if missing.</param>
@@ -41,7 +48,8 @@ namespace SE
 		bool SaveSurface(const BytesContainer& data, const MaterialInfo& info);
 
 		// [ShaderAssetBase]
-		void InitCompilationOptions(ShaderCompilationOptions& options) override;
+        void InitCompilationRequest(ShaderCompileRequest& request, StringAnsi& preamble) override;
+        void GetAdditionalSourceFiles(List<String>& files) const override { files = m_SourceFiles; }
 #endif
 
 	public:
@@ -51,12 +59,14 @@ namespace SE
 
 		// [IMaterial]
 		const MaterialInfo& GetInfo() const override;
-		GPUShader* GetShader() const override;
-		bool IsReady() const override;
-		DrawPass GetDrawModes() const override;
-		bool CanUseLightmap() const override;
+        SLC2GPUShader*      GetShader() const override;
+        bool                IsReady() const override;
+        DrawPass            GetDrawModes() const override;
+        bool CanUseLightmap() const override;
 		bool CanUseInstancing(InstancingHandler& handler) const override;
 		void Bind(BindParameters& params) override;
+
+        ShaderProgramInstance* GetProgram() override;
 
 	protected:
 		// [BinaryAsset]

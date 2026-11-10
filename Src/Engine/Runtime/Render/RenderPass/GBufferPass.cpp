@@ -1,12 +1,12 @@
 
-#include "GBufferPass.h"
+#include <Runtime/Render/RenderPass/GBufferPass.h>
 
-#include "Runtime/Core/Profiler/Profiler.h"
-#include "Runtime/Graphics/GPUContext.h"
-#include "Runtime/Graphics/GPUDevice.h"
-#include "Runtime/Graphics/Textures/GPUTexture.h"
-#include "Runtime/Render/RenderBuffers.h"
-#include "Runtime/Render/RenderList.h"
+#include <Runtime/Core/Profiler/Profiler.h>
+#include <Runtime/Graphics/GPUContext.h>
+#include <Runtime/Graphics/GPUDevice.h>
+#include <Runtime/Graphics/Textures/GPUTexture.h>
+#include <Runtime/Render/RenderBuffers.h>
+#include <Runtime/Render/RenderList.h>
 
 namespace SE
 {
@@ -89,16 +89,19 @@ namespace SE
 		m1 *= m2;
 
 		// Draw sky
-		renderContext.list->Sky->ApplySky(context, renderContext, m1);
-		model->Render(context);
-	}
+        ShaderProgramInstance* program = renderContext.list->Sky->ApplySky(context, renderContext, m1);
+        if (!program || model->LODs.IsEmpty())
+            return;
+        for (const Mesh& mesh : model->LODs[0].Meshes)
+        {
+            if (mesh.IsInitialized() && context->BindRenderGeometry(mesh.GetRenderGeometry()))
+                context->DrawIndexed(program, mesh.GetTriangleCount() * 3);
+        }
+    }
 
-	String GBufferPass::ToString() const
-	{
-		return SE_TEXT("GBuffer");
-	}
+    String GBufferPass::ToString() const { return SE_TEXT("GBuffer"); }
 
-	bool GBufferPass::Init()
+    bool GBufferPass::Init()
 	{
 		m_SkyModel = AssetContent::LoadAsyncInternal<Model>(SE_TEXT("Assets/Models/Sphere"));
 

@@ -7,7 +7,7 @@
 #include <Runtime/Graphics/Base/GPUPipelineState.h>
 #include <Runtime/Render/Assets/Geometry/Model.h>
 #include <Runtime/Resource/AssetRef.h>
-#include <Runtime/Resource/Assets/SLC2Materials/GraphicShader.h>
+#include <Runtime/Resource/Assets/Materials/Shader.h>
 #include <Editor/API.h>
 // #include <Editor/Core/UndoStack.h>
 
@@ -55,7 +55,7 @@ namespace SE::Editor
 #endif
 
         AssetRef<Model>         m_Models[5];
-        AssetRef<GraphicShader> m_Shader;
+        AssetRef<Shader>        m_Shader;
         SLC2GPUPipelineState*   m_Pipeline = nullptr;
         ShaderProgramInstance*  m_Program  = nullptr;
 

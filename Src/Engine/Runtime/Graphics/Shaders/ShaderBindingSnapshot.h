@@ -25,6 +25,7 @@ namespace SE
     public:
         ShaderBindingResource();
         explicit ShaderBindingResource(ShaderProgramBindingKind type);
+        ShaderBindingResource(const ShaderBindingResource& resource);
         ~ShaderBindingResource();
 
         ShaderProgramBindingKind  GetType() const;

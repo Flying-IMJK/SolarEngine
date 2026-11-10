@@ -1,16 +1,16 @@
-#include "ForwardPass.h"
+#include <Runtime/Render/RenderPass/ForwardPass.h>
 
-#include "Runtime/Core/Profiler/Profiler.h"
+#include <Runtime/Core/Profiler/Profiler.h>
 
-#include "Runtime/Graphics/GPUContext.h"
-#include "Runtime/Graphics/GPUDevice.h"
-#include "Runtime/Graphics/RenderTargetPool.h"
-#include "Runtime/Graphics/Base/GPUPipelineState.h"
-#include "Runtime/Graphics/Shaders/GPUShader.h"
-#include "Runtime/Render/RenderBuffers.h"
-#include "Runtime/Render/RenderContext.h"
-#include "Runtime/Render/RenderEnum.h"
-#include "Runtime/Render/RenderList.h"
+#include <Runtime/Graphics/Base/GPUPipelineState.h>
+#include <Runtime/Graphics/GPUContext.h>
+#include <Runtime/Graphics/GPUDevice.h>
+#include <Runtime/Graphics/RenderTargetPool.h>
+#include <Runtime/Graphics/Shaders/GPUShader.h>
+#include <Runtime/Render/RenderBuffers.h>
+#include <Runtime/Render/RenderContext.h>
+#include <Runtime/Render/RenderEnum.h>
+#include <Runtime/Render/RenderList.h>
 
 namespace SE
 {
@@ -25,56 +25,13 @@ namespace SE
         return SE_TEXT("ForwardPass");
     }
 
-    bool ForwardPass::Init()
-    {
-        // Prepare resources
-        _psApplyDistortion = GPUDevice::instance->CreatePipelineState();
-        _shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/Discard/Forward"));
-
-        if (_shader == nullptr)
-        {
-            return false;
-        }
-
-        _shader->WaitForLoaded();
-
-        // #if COMPILE_WITH_DEV_ENV
-        //     _shader.Get()->OnReloading.Bind<ForwardPass, &ForwardPass::OnShaderReloading>(this);
-        // #endif
-
-        return true;
-    }
+    bool ForwardPass::Init() { return true; }
     void ForwardPass::Dispose()
     {
         RendererPass<ForwardPass>::Dispose();
     }
 
-    bool ForwardPass::SetupResources()
-    {
-        if (!_shader.HasReference())
-        {
-            return false;
-        }
-
-        // Check shader
-        if (!_shader->IsLoaded())
-        {
-            return false;
-        }
-        const auto shader = _shader->GetShader();
-
-        // Create pipeline stages
-/*        GPUPipelineState::Description psDesc;
-        if (!_psApplyDistortion->IsValid())
-        {
-            psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-            psDesc.PS = shader->GetPS(SE_TEXT("PS_ApplyDistortion"));
-            if (!_psApplyDistortion->Init(psDesc))
-                return false;
-        }*/
-
-        return true;
-    }
+    bool ForwardPass::SetupResources() { return true; }
 
     void ForwardPass::Render(RenderContext &renderContext, GPUTexture *input, GPUTexture *output)
     {
