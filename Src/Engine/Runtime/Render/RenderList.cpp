@@ -1,19 +1,22 @@
 
-#include "RenderList.h"
+#include <Runtime/Render/RenderList.h>
 
-#include "RenderContext.h"
-#include "RenderTask.h"
-#include "Assets/Material/IMaterial.h"
-#include "Runtime/Core/Systems.h"
-#include "Runtime/Core/Math/Half.h"
-#include "Runtime/Core/Platform/Win32/Application_Win32.h"
-#include "Runtime/Core/Profiler/Profiler.h"
-#include "Runtime/Core/Profiler/ProfilerCPU.h"
-#include "Runtime/Core/Types/Collections/Sorting.h"
-#include "Runtime/Graphics/GPUContext.h"
-#include "Runtime/Graphics/GPUDevice.h"
-#include "Runtime/Resource/Assets/Materials/MaterialBase.h"
-#include "Utils/RenderUtils.h"
+#include <Runtime/Core/Math/BoundingVolumes.h>
+#include <Runtime/Core/Math/CollisionsHelper.h>
+#include <Runtime/Core/Math/Half.h>
+#include <Runtime/Core/Platform/Win32/Application_Win32.h>
+#include <Runtime/Core/Profiler/Profiler.h>
+#include <Runtime/Core/Profiler/ProfilerCPU.h>
+#include <Runtime/Core/Systems.h>
+#include <Runtime/Core/Types/Collections/Sorting.h>
+#include <Runtime/Graphics/GPUContext.h>
+#include <Runtime/Graphics/GPUDevice.h>
+#include <Runtime/Graphics/Shaders/ShaderProgramInstance.h>
+#include <Runtime/Render/Assets/Material/IMaterial.h>
+#include <Runtime/Render/RenderContext.h>
+#include <Runtime/Render/RenderTask.h>
+#include <Runtime/Render/Utils/RenderUtils.h>
+#include <Runtime/Resource/Assets/Materials/MaterialBase.h>
 
 namespace SE
 {
@@ -596,12 +599,141 @@ namespace SE
             params.firstDrawCall  = &draw;
             params.drawCallsCount = instanceCount;
             params.UseInstancing  = pInstances != nullptr;
-            params.Program        = nullptr;
             draw.Material->Bind(params);
 
-            if (!params.Program)
+            ShaderProgramInstance* program = draw.Material->GetProgram();
+            if (!program)
             {
                 return;
+            }
+
+            // Bind after the material has reset its instance and applied material parameter overrides.
+            const auto& view = renderContext.view;
+            Matrix      viewMatrix, viewProjectionMatrix, prevViewProjectionMatrix, mainViewProjectionMatrix;
+            Matrix      worldMatrix, prevWorldMatrix;
+            Matrix::Transpose(view.View, viewMatrix);
+            Matrix::Transpose(view.frustum.GetMatrix(), viewProjectionMatrix);
+            Matrix::Transpose(view.PrevViewProjection, prevViewProjectionMatrix);
+            Matrix::Transpose(view.MainViewProjection, mainViewProjectionMatrix);
+            Matrix::Transpose(draw.World, worldMatrix);
+            Matrix::Transpose(draw.Surface.PrevWorld, prevWorldMatrix);
+            const struct
+            {
+                const Char* Path;
+                const void* Value;
+                uint32      Size;
+            } parameters[] = {
+                {SE_TEXT("ViewData.ViewMatrix"), &viewMatrix, sizeof(viewMatrix)},
+                {SE_TEXT("ViewData.ViewProjectionMatrix"), &viewProjectionMatrix, sizeof(viewProjectionMatrix)},
+                {SE_TEXT("ViewData.PrevViewProjectionMatrix"),
+                 &prevViewProjectionMatrix,
+                 sizeof(prevViewProjectionMatrix)},
+                {SE_TEXT("ViewData.MainViewProjectionMatrix"),
+                 &mainViewProjectionMatrix,
+                 sizeof(mainViewProjectionMatrix)},
+                {SE_TEXT("ViewData.MainScreenSize"), &view.MainScreenSize, sizeof(view.MainScreenSize)},
+                {SE_TEXT("ViewData.ViewPos"), &view.Position, sizeof(view.Position)},
+                {SE_TEXT("ViewData.ViewFar"), &view.Far, sizeof(view.Far)},
+                {SE_TEXT("ViewData.ViewDir"), &view.Direction, sizeof(view.Direction)},
+                {SE_TEXT("ViewData.TimeParam"), &params.timeParam, sizeof(params.timeParam)},
+                {SE_TEXT("ViewData.ViewInfo"), &view.ViewInfo, sizeof(view.ViewInfo)},
+                {SE_TEXT("ViewData.ScreenSize"), &view.ScreenSize, sizeof(view.ScreenSize)},
+                {SE_TEXT("ViewData.TemporalAAJitter"), &view.TemporalAAJitter, sizeof(view.TemporalAAJitter)},
+                {SE_TEXT("Data.WorldMatrix"), &worldMatrix, sizeof(worldMatrix)},
+                {SE_TEXT("Data.PrevWorldMatrix"), &prevWorldMatrix, sizeof(prevWorldMatrix)},
+                {SE_TEXT("Data.WorldDeterminantSign"), &draw.WorldDeterminantSign, sizeof(draw.WorldDeterminantSign)},
+                {SE_TEXT("Data.LODDitherFactor"), &draw.Surface.LODDitherFactor, sizeof(draw.Surface.LODDitherFactor)},
+                {SE_TEXT("Data.PerInstanceRandom"), &draw.PerInstanceRandom, sizeof(draw.PerInstanceRandom)},
+                {SE_TEXT("Data.GeometrySize"), &draw.Surface.GeometrySize, sizeof(draw.Surface.GeometrySize)},
+            };
+            for (const auto& parameter : parameters)
+            {
+                ShaderVar variable;
+                // Preserve optimized-out fields; any present field must match the value's ABI.
+                if (program->FindVar(parameter.Path, variable) &&
+                    (variable.GetLocation().UniformByteSize != parameter.Size ||
+                     !variable.SetUniform(parameter.Value, parameter.Size)))
+                {
+                    return;
+                }
+            }
+
+            if (draw.Material->GetInfo().BlendMode != MaterialBlendMode::Opaque && renderContext.list)
+            {
+                const auto& sceneLights = *renderContext.list;
+                LightData   directional = {};
+                if (sceneLights.DirectionalLights.HasItems())
+                {
+                    sceneLights.DirectionalLights.First().SetupLightData(&directional, false);
+                }
+                LightData            localLights[4]   = {};
+                uint32               localLightsCount = 0;
+                const BoundingSphere bounds(draw.ObjectPosition, draw.ObjectRadius);
+                for (const auto& light : sceneLights.PointLights)
+                {
+                    if (localLightsCount == ARRAY_SIZE(localLights))
+                    {
+                        break;
+                    }
+                    if (CollisionsHelper::SphereIntersectsSphere(bounds, BoundingSphere(light.Position, light.Radius)))
+                    {
+                        light.SetupLightData(&localLights[localLightsCount++], false);
+                    }
+                }
+                for (const auto& light : sceneLights.SpotLights)
+                {
+                    if (localLightsCount == ARRAY_SIZE(localLights))
+                    {
+                        break;
+                    }
+                    if (CollisionsHelper::SphereIntersectsSphere(bounds, BoundingSphere(light.Position, light.Radius)))
+                    {
+                        light.SetupLightData(&localLights[localLightsCount++], false);
+                    }
+                }
+                for (uint32 lightIndex = 0; lightIndex <= localLightsCount; ++lightIndex)
+                {
+                    const LightData& light = lightIndex == 0 ? directional : localLights[lightIndex - 1];
+                    const String     path  = lightIndex == 0 ?
+                                                 SE_TEXT("Data.DirectionalLight.") :
+                                                 String::Format(SE_TEXT("Data.LocalLights[{0}]."), lightIndex - 1);
+                    const struct
+                    {
+                        const Char* Name;
+                        const void* Value;
+                        uint32      Size;
+                    } lightParameters[] = {
+                        {SE_TEXT("SpotAngles"), &light.SpotAngles, sizeof(light.SpotAngles)},
+                        {SE_TEXT("SourceRadius"), &light.SourceRadius, sizeof(light.SourceRadius)},
+                        {SE_TEXT("SourceLength"), &light.SourceLength, sizeof(light.SourceLength)},
+                        {SE_TEXT("Color"), &light.Color, sizeof(light.Color)},
+                        {SE_TEXT("MinRoughness"), &light.MinRoughness, sizeof(light.MinRoughness)},
+                        {SE_TEXT("Position"), &light.Position, sizeof(light.Position)},
+                        {SE_TEXT("CastShadows"), &light.CastShadows, sizeof(light.CastShadows)},
+                        {SE_TEXT("Direction"), &light.Direction, sizeof(light.Direction)},
+                        {SE_TEXT("Radius"), &light.Radius, sizeof(light.Radius)},
+                        {SE_TEXT("FalloffExponent"), &light.FalloffExponent, sizeof(light.FalloffExponent)},
+                        {SE_TEXT("InverseSquared"), &light.InverseSquared, sizeof(light.InverseSquared)},
+                        {SE_TEXT("RadiusInv"), &light.RadiusInv, sizeof(light.RadiusInv)},
+                    };
+                    for (const auto& parameter : lightParameters)
+                    {
+                        ShaderVar variable;
+                        if (program->FindVar(path + parameter.Name, variable) &&
+                            (variable.GetLocation().UniformByteSize != parameter.Size ||
+                             !variable.SetUniform(parameter.Value, parameter.Size)))
+                        {
+                            return;
+                        }
+                    }
+                }
+                ShaderVar variable;
+                if (program->FindVar(SE_TEXT("Data.LocalLightsCount"), variable) &&
+                    (variable.GetLocation().UniformByteSize != sizeof(localLightsCount) ||
+                     !variable.SetUniform(&localLightsCount, sizeof(localLightsCount))))
+                {
+                    return;
+                }
             }
 
             if (prepareDraw.IsBinded())
@@ -643,20 +775,23 @@ namespace SE
             {
                 if (geometry.IndexBuffer)
                 {
-                    context->DrawIndexedInstancedIndirect(*params.Program, draw.Draw.IndirectArgsBuffer, draw.Draw.IndirectArgsOffset);
+                    context->DrawIndexedInstancedIndirect(
+                        *program, draw.Draw.IndirectArgsBuffer, draw.Draw.IndirectArgsOffset);
                 }
                 else
                 {
-                    context->DrawInstancedIndirect(*params.Program, draw.Draw.IndirectArgsBuffer, draw.Draw.IndirectArgsOffset);
+                    context->DrawInstancedIndirect(
+                        *program, draw.Draw.IndirectArgsBuffer, draw.Draw.IndirectArgsOffset);
                 }
             }
             else if (geometry.IndexBuffer)
             {
-                context->DrawIndexedInstanced(params.Program, draw.Draw.IndicesCount, instanceCount, 0, 0, draw.Draw.StartIndex);
+                context->DrawIndexedInstanced(
+                    program, draw.Draw.IndicesCount, instanceCount, 0, 0, draw.Draw.StartIndex);
             }
             else
             {
-                context->DrawInstanced(params.Program, draw.Draw.IndicesCount, instanceCount);
+                context->DrawInstanced(program, draw.Draw.IndicesCount, instanceCount);
             }
         };
 

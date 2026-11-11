@@ -20,7 +20,7 @@ namespace SE
 
     void ForwardMaterialShader::Bind(BindParameters& params)
     {
-        params.Program     = nullptr;
+        m_SelectedProgram  = nullptr;
         auto   description = GetSurfacePipelineDescription(params);
         String program;
         switch (params.renderContext.view.Pass)

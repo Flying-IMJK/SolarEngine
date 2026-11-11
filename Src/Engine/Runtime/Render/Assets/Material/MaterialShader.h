@@ -18,6 +18,7 @@ namespace SE
     {
     protected:
         MaterialInfo m_Info;
+        ShaderProgramInstance* m_SelectedProgram = nullptr;
 
         explicit MaterialShader(const StringView& name);
         bool BindProgram(BindParameters& params, const String& programName, const SLC2GPUPipelineState::Description& description);
@@ -50,11 +51,9 @@ namespace SE
         };
 
         bool Load(MemoryReadStream& shaderCacheStream, const MaterialInfo& info);
-        bool BindRuntimeParameters(ShaderProgramInstance& instance, const BindParameters& params) const;
 
         bool                m_IsLoaded = false;
         SLC2GPUShader*      m_Shader   = nullptr;
         List<ProgramState>  m_Programs;
-        ProgramState*       m_SelectedProgram = nullptr;
     };
 } // namespace SE

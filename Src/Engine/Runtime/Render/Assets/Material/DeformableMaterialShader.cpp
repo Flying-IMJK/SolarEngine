@@ -11,7 +11,7 @@ namespace SE
 
     void DeformableMaterialShader::Bind(BindParameters& params)
     {
-        params.Program = nullptr;
+        m_SelectedProgram = nullptr;
         if (params.UseInstancing)
         {
             return;

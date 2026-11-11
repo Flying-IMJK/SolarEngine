@@ -8,7 +8,7 @@ namespace SE
 
     void GUIMaterialShader::Bind(BindParameters& params)
     {
-        params.Program               = nullptr;
+        m_SelectedProgram            = nullptr;
         auto description             = SLC2GPUPipelineState::Description::DefaultFullscreenTriangle;
         description.Wireframe        = EnumHasAnyFlags(m_Info.FeaturesFlags, MaterialFeatures::Wireframe);
         description.BlendMode        = BlendingMode::AlphaBlend;

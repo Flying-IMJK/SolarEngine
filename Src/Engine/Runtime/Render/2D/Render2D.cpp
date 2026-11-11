@@ -8,20 +8,21 @@
 #include <Runtime/Render/2D/SpriteAtlas.h>
 #include <Runtime/Render/2D/TextLayoutOptions.h>
 
-#include <Runtime/Core/Systems.h>
 #include <Runtime/Core/Math/Half.h>
 #include <Runtime/Core/Math/Matrix3x3.h>
 #include <Runtime/Core/Math/Rectangle.h>
 #include <Runtime/Core/Profiler/Profiler.h>
 #include <Runtime/Core/Profiler/ProfilerGPU.h>
+#include <Runtime/Core/Systems.h>
 #include <Runtime/Graphics/DynamicBuffer.h>
 #include <Runtime/Graphics/GPUContext.h>
 #include <Runtime/Graphics/GPUDevice.h>
 #include <Runtime/Graphics/RenderTargetPool.h>
-#include <Runtime/Graphics/Shaders/GPUShader.h>
 #include <Runtime/Graphics/Shaders/GPUConstantBuffer.h>
-#include <Runtime/Graphics/Textures/GPUTextureDescription.h>
+#include <Runtime/Graphics/Shaders/GPUShader.h>
+#include <Runtime/Graphics/Shaders/ShaderProgramInstance.h>
 #include <Runtime/Graphics/Textures/GPUSampler.h>
+#include <Runtime/Graphics/Textures/GPUTextureDescription.h>
 #include <Runtime/Resource/Assets/Materials/MaterialBase.h>
 #include <Runtime/Resource/Assets/Materials/Shader.h>
 
@@ -982,70 +983,87 @@ namespace SE
             programInstance = render2DData->CurrentPsoSLC2->SP_Font;
             programInstance->SetTexture(SE_TEXT("ImageTex"), d.AsChar.Tex->View());
             break;
-        case DrawCallType::DrawCharMaterial:
-        {
-            // Apply and bind material
-            auto material = d.AsChar.Mat;
-            if (!material || !material->IsReady())
-                return;
-            RenderContext                renderContext;
-            MaterialBase::BindParameters bindParams(render2DData->Context, renderContext);
-            Render2D::CustomData customData;
-            customData.ViewProjection = render2DData->ViewProjection;
-            customData.ViewSize = Float2::One;
-            bindParams.customData = &customData;
-            material->Bind(bindParams);
-
-            if (!bindParams.Program)
-                return;
-            // A font atlas overrides this draw's resource only; the authored material value stays unchanged.
-            static StringView FontParamName = SE_TEXT("Font");
-            const auto        param         = material->Params.Get(FontParamName);
-            ShaderVar         font;
-            if (param && param->GetParameterType() == MaterialParameterType::Texture &&
-                bindParams.Program->FindVar(param->GetShaderName(), font) &&
-                !font.SetTexture(d.AsChar.Tex ? d.AsChar.Tex->View() : nullptr))
-                return;
-            RenderGeometry geometry;
-            geometry.Layout        = &render2DData->vertexLayout;
-            geometry.VertexBuffers = {{0, vb}};
-            geometry.IndexBuffer   = ib;
-            geometry.IndexFormat   = PixelFormat::R32_UInt;
-            if (render2DData->Context->BindRenderGeometry(geometry))
-                render2DData->Context->DrawIndexed(bindParams.Program, countIb, 0, d.StartIB);
-
-            return;
-        }
         case DrawCallType::Custom:
 /*            render2DData->Context->BindSR(0, d.AsCustom.Tex);
             render2DData->Context->SetState(d.AsCustom.Pso);
             programInstance = render2DData->CurrentPsoSLC2->SP_Font;
             programInstance->SetTexture(SE_TEXT("Image"), d.AsCustom.Ptr);*/
             break;
+        case DrawCallType::DrawCharMaterial:
         case DrawCallType::Material:
         {
-            // Bind material
-            auto material = (MaterialBase*)d.AsMaterial.Mat;
+            auto material = d.Type == DrawCallType::DrawCharMaterial ? d.AsChar.Mat : d.AsMaterial.Mat;
             if (!material || !material->IsReady())
+            {
                 return;
+            }
             RenderContext                renderContext;
             MaterialBase::BindParameters bindParams(render2DData->Context, renderContext);
-            Render2D::CustomData customData;
-            customData.ViewProjection = render2DData->ViewProjection;
-            customData.ViewSize = Float2(d.AsMaterial.Width, d.AsMaterial.Height);
-            bindParams.customData = &customData;
             material->Bind(bindParams);
 
-            if (!bindParams.Program)
+            programInstance = material->GetProgram();
+            if (!programInstance)
+            {
                 return;
+            }
+
+            // Material Bind resets the instance; GUI state belongs to this rendering batch.
+            Matrix viewProjection;
+            Matrix::Transpose(render2DData->ViewProjection, viewProjection);
+            const auto&  viewport = Render2D::GetViewport();
+            const Float2 viewSize = d.Type == DrawCallType::DrawCharMaterial ?
+                                        Float2::One :
+                                        Float2(d.AsMaterial.Width, d.AsMaterial.Height);
+            const Float4 screen(viewport.Width, viewport.Height, 1.0f / viewport.Width, 1.0f / viewport.Height);
+            const Float4 size(viewSize.X, viewSize.Y, 1.0f / viewSize.X, 1.0f / viewSize.Y);
+            const struct
+            {
+                const Char* Path;
+                const void* Value;
+                uint32      Size;
+            } parameters[] = {
+                {SE_TEXT("Data.ViewProjectionMatrix"), &viewProjection, sizeof(viewProjection)},
+                {SE_TEXT("Data.WorldMatrix"), &Matrix::Identity, sizeof(Matrix::Identity)},
+                {SE_TEXT("Data.ViewMatrix"), &Matrix::Identity, sizeof(Matrix::Identity)},
+                {SE_TEXT("Data.ViewDir"), &Float3::Forward, sizeof(Float3::Forward)},
+                {SE_TEXT("Data.TimeParam"), &bindParams.timeParam, sizeof(bindParams.timeParam)},
+                {SE_TEXT("Data.ScreenSize"), &screen, sizeof(screen)},
+                {SE_TEXT("Data.ViewSize"), &size, sizeof(size)},
+            };
+            for (const auto& parameter : parameters)
+            {
+                ShaderVar variable;
+                // Preserve optimized-out fields; any present field must match the value's ABI.
+                if (programInstance->FindVar(parameter.Path, variable) &&
+                    (variable.GetLocation().UniformByteSize != parameter.Size ||
+                     !variable.SetUniform(parameter.Value, parameter.Size)))
+                {
+                    return;
+                }
+            }
+
+            if (d.Type == DrawCallType::DrawCharMaterial)
+            {
+                // A font atlas overrides this draw's resource only; the authored material value stays unchanged.
+                static StringView FontParamName = SE_TEXT("Font");
+                const auto        param         = material->Params.Get(FontParamName);
+                ShaderVar         font;
+                if (param && param->GetParameterType() == MaterialParameterType::Texture &&
+                    programInstance->FindVar(param->GetShaderName(), font) &&
+                    !font.SetTexture(d.AsChar.Tex ? d.AsChar.Tex->View() : nullptr))
+                {
+                    return;
+                }
+            }
             RenderGeometry geometry;
             geometry.Layout        = &render2DData->vertexLayout;
             geometry.VertexBuffers = {{0, vb}};
             geometry.IndexBuffer   = ib;
             geometry.IndexFormat   = PixelFormat::R32_UInt;
             if (render2DData->Context->BindRenderGeometry(geometry))
-                render2DData->Context->DrawIndexed(bindParams.Program, countIb, 0, d.StartIB);
-
+            {
+                render2DData->Context->DrawIndexed(programInstance, countIb, 0, d.StartIB);
+            }
             return;
         }
         case DrawCallType::Blur:

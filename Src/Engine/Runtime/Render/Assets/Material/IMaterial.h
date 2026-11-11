@@ -103,10 +103,7 @@ namespace SE
             MaterialParamsLink* paramsLink = nullptr;
             void* customData = nullptr;
             float timeParam;
-            // Bind publishes this only after all material state is ready. Submit on the render thread before
-            // rebinding or unloading the material; the MaterialShader owns the instance and its Program.
-            ShaderProgramInstance* Program       = nullptr;
-            bool                   UseInstancing = false;
+            bool                 UseInstancing = false;
 
             /// <summary>
             /// The input scene color. It's optional and used in forward/postFx rendering.
@@ -124,6 +121,9 @@ namespace SE
         /// <param name="params">The material bind settings.</param>
         virtual void Bind(BindParameters& params) = 0;
 
+        /// Returns the instance selected by the latest successful Bind, or nullptr after a failed Bind or unload.
+        /// Bind render parameters and submit on the render thread before rebinding or unloading the material.
+        /// The material owns the instance and its immutable Program; instances can be shared by material assets.
         virtual ShaderProgramInstance* GetProgram() = 0;
 
     };

@@ -174,7 +174,6 @@ namespace SE
 
     void MaterialInstance::Bind(BindParameters& params)
     {
-        params.Program = nullptr;
         if (!IsReady())
             return;
         //ENGINE_ASSERT(IsReady());
@@ -297,10 +296,7 @@ namespace SE
         }
     }
 
-    ShaderProgramInstance* MaterialInstance::GetProgram()
-    {
-        return _baseMaterial->GetProgram();
-    }
+    ShaderProgramInstance* MaterialInstance::GetProgram() { return IsReady() ? _baseMaterial->GetProgram() : nullptr; }
 
 #if SE_EDITOR
 

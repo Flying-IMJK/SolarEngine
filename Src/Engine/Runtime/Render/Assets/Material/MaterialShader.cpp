@@ -1,14 +1,11 @@
 #include <Runtime/Render/Assets/Material/MaterialShader.h>
 
-#include <Runtime/Core/Math/BoundingVolumes.h>
-#include <Runtime/Core/Math/CollisionsHelper.h>
 #include <Runtime/Core/Serialization/MemoryReadStream.h>
 #include <Runtime/Graphics/GPUContext.h>
 #include <Runtime/Graphics/GPUDevice.h>
 #include <Runtime/Graphics/Shaders/SLC2GPUShader.h>
 #include <Runtime/Graphics/Shaders/SLC2GPUShaderProgram.h>
 #include <Runtime/Graphics/Shaders/ShaderProgramInstance.h>
-#include <Runtime/Render/2D/Render2D.h>
 #include <Runtime/Render/Assets/Material/DeferredMaterialShader.h>
 #include <Runtime/Render/Assets/Material/ForwardMaterialShader.h>
 #include <Runtime/Render/Assets/Material/GUIMaterialShader.h>
@@ -21,43 +18,11 @@ namespace SE
 {
     namespace
     {
-        // A field can disappear from a selected Program after optimization. A present field must match its ABI.
-        template<typename T>
-        bool WriteOptional(ShaderProgramInstance& instance, const String& path, const T& value)
-        {
-            ShaderVar variable;
-            return !instance.FindVar(path, variable) ||
-                   (variable.GetLocation().UniformByteSize == sizeof(T) && variable.SetUniform(&value, sizeof(T)));
-        }
-
-        bool WriteMatrix(ShaderProgramInstance& instance, const String& path, const Matrix& value)
-        {
-            Matrix transposed;
-            Matrix::Transpose(value, transposed);
-            return WriteOptional(instance, path, transposed);
-        }
-
-        bool WriteLight(ShaderProgramInstance& instance, const String& path, const LightData& data)
-        {
-            return WriteOptional(instance, path + SE_TEXT(".SpotAngles"), data.SpotAngles) &&
-                   WriteOptional(instance, path + SE_TEXT(".SourceRadius"), data.SourceRadius) &&
-                   WriteOptional(instance, path + SE_TEXT(".SourceLength"), data.SourceLength) &&
-                   WriteOptional(instance, path + SE_TEXT(".Color"), data.Color) &&
-                   WriteOptional(instance, path + SE_TEXT(".MinRoughness"), data.MinRoughness) &&
-                   WriteOptional(instance, path + SE_TEXT(".Position"), data.Position) &&
-                   WriteOptional(instance, path + SE_TEXT(".CastShadows"), data.CastShadows) &&
-                   WriteOptional(instance, path + SE_TEXT(".Direction"), data.Direction) &&
-                   WriteOptional(instance, path + SE_TEXT(".Radius"), data.Radius) &&
-                   WriteOptional(instance, path + SE_TEXT(".FalloffExponent"), data.FalloffExponent) &&
-                   WriteOptional(instance, path + SE_TEXT(".InverseSquared"), data.InverseSquared) &&
-                   WriteOptional(instance, path + SE_TEXT(".RadiusInv"), data.RadiusInv);
-        }
-
         class DummyMaterial final : public MaterialShader
         {
         public:
             DummyMaterial() : MaterialShader(String::Empty) {}
-            void Bind(BindParameters& params) override { params.Program = nullptr; }
+            void Bind(BindParameters&) override { m_SelectedProgram = nullptr; }
         };
     } // namespace
 
@@ -153,7 +118,8 @@ namespace SE
 
     void MaterialShader::Unload()
     {
-        m_IsLoaded = false;
+        m_IsLoaded        = false;
+        m_SelectedProgram = nullptr;
 
         for (ProgramState& state : m_Programs)
         {
@@ -177,10 +143,7 @@ namespace SE
         return m_Shader && m_Shader->HasProgram(programName);
     }
 
-    ShaderProgramInstance* MaterialShader::GetProgram()
-    {
-        return m_SelectedProgram ? m_SelectedProgram->Instance : nullptr;
-    }
+    ShaderProgramInstance* MaterialShader::GetProgram() { return m_SelectedProgram; }
 
     SLC2GPUPipelineState::Description MaterialShader::GetSurfacePipelineDescription(const BindParameters& params) const
     {
@@ -218,7 +181,7 @@ namespace SE
                                      const String&                            programName,
                                      const SLC2GPUPipelineState::Description& description)
     {
-        params.Program = nullptr;
+        m_SelectedProgram = nullptr;
         if (!m_IsLoaded || !m_Shader)
         {
             return false;
@@ -253,8 +216,9 @@ namespace SE
 
             state.Pipeline = GPUDevice::instance->CreateSLC2PipelineState();
 
-            if (!state.Pipeline->Init(description, selected->Program))
+            if (!state.Pipeline->Init(description, state.Program))
             {
+                DeleteObjectSafe(state.Instance);
                 DeleteObjectSafe(state.Pipeline);
                 return false;
             }
@@ -264,7 +228,7 @@ namespace SE
         }
 
         // Reset every draw, so a cleared override or missing resource never inherits a previous draw's value.
-        if (!selected->Instance->Initialize(selected->Program) || !BindRuntimeParameters(*selected->Instance, params))
+        if (!selected->Instance->Initialize(selected->Program))
         {
             return false;
         }
@@ -281,101 +245,8 @@ namespace SE
             return false;
         }
 
-        m_SelectedProgram = selected;
-
         params.gpuContext->SetSLC2State(selected->Pipeline);
-        params.Program = selected->Instance;
-        return true;
-    }
-
-    bool MaterialShader::BindRuntimeParameters(ShaderProgramInstance& instance, const BindParameters& params) const
-    {
-        if (m_Info.Domain == MaterialDomain::GUI)
-        {
-            if (!params.customData)
-                return false;
-            const auto&  data     = *static_cast<const Render2D::CustomData*>(params.customData);
-            const auto&  viewport = Render2D::GetViewport();
-            const Float4 screen(viewport.Width, viewport.Height, 1.0f / viewport.Width, 1.0f / viewport.Height);
-            const Float4 size(data.ViewSize.X, data.ViewSize.Y, 1.0f / data.ViewSize.X, 1.0f / data.ViewSize.Y);
-            return WriteMatrix(instance, SE_TEXT("Data.ViewProjectionMatrix"), data.ViewProjection) &&
-                   WriteMatrix(instance, SE_TEXT("Data.WorldMatrix"), Matrix::Identity) &&
-                   WriteMatrix(instance, SE_TEXT("Data.ViewMatrix"), Matrix::Identity) &&
-                   WriteOptional(instance, SE_TEXT("Data.ViewDir"), Float3::Forward) &&
-                   WriteOptional(instance, SE_TEXT("Data.TimeParam"), params.timeParam) &&
-                   WriteOptional(instance, SE_TEXT("Data.ScreenSize"), screen) &&
-                   WriteOptional(instance, SE_TEXT("Data.ViewSize"), size);
-        }
-        if (!params.firstDrawCall)
-            return false;
-        const auto& view = params.renderContext.view;
-        const auto& draw = *params.firstDrawCall;
-        if (!WriteMatrix(instance, SE_TEXT("ViewData.ViewMatrix"), view.View) ||
-            !WriteMatrix(instance, SE_TEXT("ViewData.ViewProjectionMatrix"), view.frustum.GetMatrix()) ||
-            !WriteMatrix(instance, SE_TEXT("ViewData.PrevViewProjectionMatrix"), view.PrevViewProjection) ||
-            !WriteMatrix(instance, SE_TEXT("ViewData.MainViewProjectionMatrix"), view.MainViewProjection) ||
-            !WriteOptional(instance, SE_TEXT("ViewData.MainScreenSize"), view.MainScreenSize) ||
-            !WriteOptional(instance, SE_TEXT("ViewData.ViewPos"), view.Position) ||
-            !WriteOptional(instance, SE_TEXT("ViewData.ViewFar"), view.Far) ||
-            !WriteOptional(instance, SE_TEXT("ViewData.ViewDir"), view.Direction) ||
-            !WriteOptional(instance, SE_TEXT("ViewData.TimeParam"), params.timeParam) ||
-            !WriteOptional(instance, SE_TEXT("ViewData.ViewInfo"), view.ViewInfo) ||
-            !WriteOptional(instance, SE_TEXT("ViewData.ScreenSize"), view.ScreenSize) ||
-            !WriteOptional(instance, SE_TEXT("ViewData.TemporalAAJitter"), view.TemporalAAJitter) ||
-            !WriteMatrix(instance, SE_TEXT("Data.WorldMatrix"), draw.World) ||
-            !WriteMatrix(instance, SE_TEXT("Data.PrevWorldMatrix"), draw.Surface.PrevWorld) ||
-            !WriteOptional(instance, SE_TEXT("Data.WorldDeterminantSign"), draw.WorldDeterminantSign) ||
-            !WriteOptional(instance, SE_TEXT("Data.LODDitherFactor"), draw.Surface.LODDitherFactor) ||
-            !WriteOptional(instance, SE_TEXT("Data.PerInstanceRandom"), draw.PerInstanceRandom) ||
-            !WriteOptional(instance, SE_TEXT("Data.GeometrySize"), draw.Surface.GeometrySize))
-        {
-            return false;
-        }
-
-        if (m_Info.BlendMode != MaterialBlendMode::Opaque && params.renderContext.list)
-        {
-            const auto& list        = *params.renderContext.list;
-            LightData   directional = {};
-            if (list.DirectionalLights.HasItems())
-                list.DirectionalLights.First().SetupLightData(&directional, false);
-            if (!WriteLight(instance, SE_TEXT("Data.DirectionalLight"), directional))
-                return false;
-            uint32               count = 0;
-            const BoundingSphere bounds(draw.ObjectPosition, draw.ObjectRadius);
-            for (const auto& light : list.PointLights)
-            {
-                if (count == 4)
-                    break;
-                if (!CollisionsHelper::SphereIntersectsSphere(bounds, BoundingSphere(light.Position, light.Radius)))
-                {
-                    continue;
-                }
-                LightData data = {};
-                light.SetupLightData(&data, false);
-                if (!WriteLight(instance, String::Format(SE_TEXT("Data.LocalLights[{0}]"), count++), data))
-                {
-                    return false;
-                }
-            }
-            for (const auto& light : list.SpotLights)
-            {
-                if (count == 4)
-                {
-                    break;
-                }
-                if (!CollisionsHelper::SphereIntersectsSphere(bounds, BoundingSphere(light.Position, light.Radius)))
-                {
-                    continue;
-                }
-                LightData data = {};
-                light.SetupLightData(&data, false);
-                if (!WriteLight(instance, String::Format(SE_TEXT("Data.LocalLights[{0}]"), count++), data))
-                {
-                    return false;
-                }
-            }
-            return WriteOptional(instance, SE_TEXT("Data.LocalLightsCount"), count);
-        }
+        m_SelectedProgram = selected->Instance;
         return true;
     }
 } // namespace SE

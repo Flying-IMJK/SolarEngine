@@ -18,7 +18,7 @@ namespace SE
 
     void DeferredMaterialShader::Bind(BindParameters& params)
     {
-        params.Program = nullptr;
+        m_SelectedProgram = nullptr;
         String         program;
         const DrawPass pass = params.renderContext.view.Pass;
         if (pass == DrawPass::Depth)
