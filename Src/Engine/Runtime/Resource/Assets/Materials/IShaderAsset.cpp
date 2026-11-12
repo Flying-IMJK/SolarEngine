@@ -10,7 +10,7 @@
 #include <Runtime/Resource/Assets/Materials/ShaderCacheManager.h>
 #include <Runtime/Resource/Storage/StorageChunk.h>
 #include <Runtime/ShaderCompilation/ShadersCompilation.h>
-#include <Runtime/ShaderCompilation/Slang/SLC2/SLC2Reader.h>
+#include <Runtime/ShaderCompilation/Slang/Artifact/ShaderArtifactReader.h>
 #if SE_EDITOR
 #include <Runtime/ShaderCompilation/Slang/SlangShaderCompiler.h>
 #endif
@@ -86,7 +86,7 @@ namespace SE
             return hash;
         }
 
-        // The payload stays a raw SLC2 artifact. Dependency metadata is a separate record, tied to the exact
+        // The payload stays a raw ShaderArtifact artifact. Dependency metadata is a separate record, tied to the exact
         // profile and payload fingerprint so an interrupted cache write cannot publish a mismatched pair.
         bool ReadDependencies(const BytesContainer& metadata,
                               const BytesContainer& shader,
@@ -222,7 +222,7 @@ namespace SE
         }
 
         String error;
-        bool   valid = hasCache && SLC2Reader::ReadAndValidate(cache.Get(), cache.Length(), error);
+        bool   valid = hasCache && ShaderArtifactReader::ReadAndValidate(cache.Get(), cache.Length(), error);
 #if SE_EDITOR
         valid = valid && !GPU_FORCE_RECOMPILE_SHADERS && ReadDependencies(dependencies, cache, profile, result.Includes);
 #endif
@@ -262,10 +262,10 @@ namespace SE
         ShaderCompileResult compiled = compiler.Compile(request);
         if (!compiled.Success)
         {
-            LOG_ERROR("Resource", "Cannot compile SLC2 shader '{0}': {1}", parent->ToString(), compiled.CompileMessage);
+            LOG_ERROR("Resource", "Cannot compile ShaderArtifact shader '{0}': {1}", parent->ToString(), compiled.CompileMessage);
             return false;
         }
-        result.Data.Copy(compiled.SLC2Data);
+        result.Data.Copy(compiled.ShaderData);
         List<String> additional;
         GetAdditionalSourceFiles(additional);
         additional.Add(compiled.SourceDependencies);
@@ -295,11 +295,11 @@ namespace SE
             writer.WriteBytes(result.Data.Get(), result.Data.Length());
             if (!ShaderCacheManager::SetCache(profile, entry, writer) ||
                 !metadata.SaveToFile(entry.Path + SE_TEXT(".deps")))
-                LOG_WARNING("Resource", "Cannot save SLC2 shader cache '{0}'.", parent->ToString());
+                LOG_WARNING("Resource", "Cannot save ShaderArtifact shader cache '{0}'.", parent->ToString());
         }
         return true;
 #else
-        LOG_ERROR("Resource", "Missing or invalid precompiled SLC2 shader '{0}': {1}", parent->ToString(), error);
+        LOG_ERROR("Resource", "Missing or invalid precompiled ShaderArtifact shader '{0}': {1}", parent->ToString(), error);
         return false;
 #endif
     }

@@ -35,19 +35,19 @@ namespace SE
         ReleasePrograms();
     }
 
-    bool Sky::SetupProgram(const String& name, SLC2GPUPipelineState*& pipeline, ShaderProgramInstance*& instance)
+    bool Sky::SetupProgram(const String& name, GPUPipelineState*& pipeline, ShaderProgramInstance*& instance)
     {
         if (pipeline && instance)
             return true;
-        SLC2GPUShaderProgram* program = nullptr;
+        GPUShaderProgram* program = nullptr;
         if (!_shader || !_shader->SelectProgram(name, {}, program))
             return false;
-        auto description             = SLC2GPUPipelineState::Description::Default;
+        auto description             = GPUPipelineState::Description::Default;
         description.CullMode         = CullMode::Inverted;
         description.DepthWriteEnable = false;
         description.DepthClipEnable  = false;
         description.DepthFunc        = ComparisonFunc::LessEqual;
-        pipeline                     = GPUDevice::instance->CreateSLC2PipelineState();
+        pipeline                     = GPUDevice::instance->CreatePipelineState();
         if (!pipeline || !pipeline->Init(description, program))
         {
             DeleteObjectSafe(pipeline);
@@ -123,7 +123,7 @@ namespace SE
     ShaderProgramInstance* Sky::ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world)
     {
         ShaderProgramInstance* instance = nullptr;
-        SLC2GPUPipelineState*  pipeline = nullptr;
+        GPUPipelineState*  pipeline = nullptr;
 
         if (RenderSkyType == SkyType::SkyBox)
         {
@@ -158,7 +158,7 @@ namespace SE
                 return nullptr;
             }
         }
-        context->SetSLC2State(pipeline);
+        context->SetState(pipeline);
         return instance;
     }
 

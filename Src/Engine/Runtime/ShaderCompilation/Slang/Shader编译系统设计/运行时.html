@@ -28,10 +28,10 @@
       <div><strong>归属层级</strong>Layout 位于 <code>targets[].variants[].layout</code>，不是 Program 级、Stage 级或整个 Target 共用；同一 Variant 的全部 Stage 共享。</div>
       <div><strong>根模型</strong>每份 Layout 只有一个 <code>rootBlockId</code>，名称查找和 ShaderVar 累计偏移均从该根块开始；不存在 EntryPoint 专属反射根或 <code>entryPointBlockId</code>。</div>
       <div><strong>生成边界</strong>编译期从已联合链接、已静态 specialization 的 Slang ComponentType 生成引擎自有 <code>ShaderReflectionIR</code>。</div>
-      <div><strong>运行时边界</strong>运行时从 SLC2 重建不可变 <code>ShaderProgramReflection</code>；每个 <code>ShaderProgramInstance</code> 再独立创建一棵以 <code>rootBlockId</code> 为根的 <code>ShaderParameterBlock</code> 树，并从该树取得可读写的 <code>ShaderVar</code>，不依赖 Slang 或 SPIR-V 二次反射。</div>
+      <div><strong>运行时边界</strong>运行时从 ShaderArtifact 重建不可变 <code>ShaderProgramReflection</code>；每个 <code>ShaderProgramInstance</code> 再独立创建一棵以 <code>rootBlockId</code> 为根的 <code>ShaderParameterBlock</code> 树，并从该树取得可读写的 <code>ShaderVar</code>，不依赖 Slang 或 SPIR-V 二次反射。</div>
       <div><strong>Falcor 风格绑定模型</strong>借鉴 Falcor 的 <code>ParameterBlock → ShaderVar → 提交快照</code> 分层，但不导入 Falcor/gfx。ParameterBlock 只保存逻辑 uniform/资源/子块状态；<code>ValidateAllBindings()</code> 产生不可变 <code>ShaderBindingSnapshot</code>；后端 Descriptor Writer 只消费该快照。</div>
       <div><strong>双重地址语义</strong>类型树保存逻辑 ShaderVar 地址；每个逻辑 <code>resourceRange</code> 对应一条 <code>rangeBinding</code>，而该记录可包含 0～N 个当前 Target 的物理 <code>descriptorRanges[]</code>。</div>
-      <div><strong>名称</strong>删除独立 <code>names[]</code>。SLC2 只保存成员局部名称，运行时派生完整路径和 <code>NameId → ShaderVarLocation</code> 索引。</div>
+      <div><strong>名称</strong>删除独立 <code>names[]</code>。ShaderArtifact 只保存成员局部名称，运行时派生完整路径和 <code>NameId → ShaderVarLocation</code> 索引。</div>
       <div><strong>成员偏移</strong><code>uniformByte/resourceRange/resourceIndex</code> 相对于直接父类型保存，运行时逐层累加；跨子 ConstantBuffer/ParameterBlock 后从子块根重新累计。</div>
       <div><strong>Uniform 存储</strong>普通数据只使用其所属块的 descriptor-backed <code>defaultUniformBuffer</code>；<code>uniformByteSize = 0</code> 时该映射为 <code>null</code>，大于 0 时必须存在有效映射。</div>
       <div><strong>Push Constant</strong>当前版本不支持且不序列化；反射中出现任何 Push Constant 布局均使编译单元失败。</div>
@@ -40,7 +40,7 @@
       <div><strong>资源绑定完整性</strong>不存在逐资源的 required/optional 语义或绑定策略。所有需要写入 descriptor 的资源槽都必须在运行时显式绑定类型兼容的非空资源；未绑定或为 <code>null</code> 时直接报错，不进行默认资源 fallback。</div>
       <div><strong>后端绑定</strong>逻辑类型结构保持平台无关，物理 binding 随 Target 保存；所有 Vulkan set/binding 在编译期规范化为相对 Program 根的绝对坐标，不序列化独立 <code>descriptorSets[]</code> 或顶层 <code>backend</code> 对象。</div>
       <div><strong>反射转换</strong>Slang Reflection 必须先按 8.10A 的规范映射生成 <code>ShaderReflectionIR</code>；binding range、descriptor range 与 sub-object range 是三个不同索引域，不允许按相同下标隐式关联。</div>
-      <div><strong>BindingPath</strong>编译期按 8.10B 保存 VariableLayout 访问链及 ConstantBuffer/ParameterBlock 截止点，计算各类别的累计地址；它是临时算法状态，不写入 SLC2。</div>
+      <div><strong>BindingPath</strong>编译期按 8.10B 保存 VariableLayout 访问链及 ConstantBuffer/ParameterBlock 截止点，计算各类别的累计地址；它是临时算法状态，不写入 ShaderArtifact。</div>
       <div><strong>接口</strong>源码可使用 interface/generic，但产出前必须解析为固定具体类型；运行时不能更换具体类型或生成 specialized Pipeline。</div>
       <div><strong>兼容判断</strong><code>pipelineLayoutFingerprint</code> 使用完整 256 位 SHA-256，标识各块默认 Uniform Buffer 与资源 descriptor 规范化后的完整物理 Pipeline Layout；只支持精确相等，不表示代码、名称、逻辑类型图或 Vulkan set 前缀兼容。</div>
     </div>
@@ -101,12 +101,12 @@
 
     <h3 id="layout-reflection-graph">8.3 ID 化反射图</h3>
     <ul>
-      <li><code>types[]</code> 和 <code>parameterBlocks[]</code> 使用从 0 开始的 Layout 局部整数 ID 引用。SLC2 不序列化 C++ 指针、vtable、<code>slang::TypeLayoutReflection*</code>、运行时 <code>NameId</code> 或后端原生枚举整数。</li>
+      <li><code>types[]</code> 和 <code>parameterBlocks[]</code> 使用从 0 开始的 Layout 局部整数 ID 引用。ShaderArtifact 不序列化 C++ 指针、vtable、<code>slang::TypeLayoutReflection*</code>、运行时 <code>NameId</code> 或后端原生枚举整数。</li>
       <li><code>basic</code> 保存标量、向量或矩阵形状、<code>uniformByteSize</code>、矩阵主序和矩阵 stride；<code>struct</code> 保存成员；<code>array</code> 保存元素类型、固定数量和元素 stride；<code>resource</code> 保存资源种类、shape、访问模式、元素类型和可选 image format；<code>parameterBlock</code> 保存 <code>containerKind</code> 并引用其元素类型。</li>
       <li>数组类型按聚合类型保存，不为每个元素复制类型或成员记录。运行时路径解析器识别 <code>[index]</code>，按数组节点的元素数量与 stride 计算元素位置，并可把已解析路径惰性缓存为 <code>NameId → ShaderVarLocation</code>。</li>
       <li>每个成员保存局部名称、<code>typeId</code> 和相对直接父类型的复合偏移：<code>uniformByte</code>、<code>resourceRange</code>、<code>resourceIndex</code>；不存在的偏移使用 JSON <code>null</code>。禁止保存相对根 ParameterBlock 的绝对偏移。</li>
-      <li>SLC2 不保存独立 <code>names</code> 字段，也不重复保存规范全名。运行时遍历成员局部名称构造完整路径，例如 <code>gMaterial.baseColorTex</code>。</li>
-      <li><code>NameId</code> 和 <code>NameId → ShaderVarLocation</code> Hash 索引只在运行时加载 Layout 后派生，不进入 SLC2。</li>
+      <li>ShaderArtifact 不保存独立 <code>names</code> 字段，也不重复保存规范全名。运行时遍历成员局部名称构造完整路径，例如 <code>gMaterial.baseColorTex</code>。</li>
+      <li><code>NameId</code> 和 <code>NameId → ShaderVarLocation</code> Hash 索引只在运行时加载 Layout 后派生，不进入 ShaderArtifact。</li>
       <li>短名称只有在 Program 内唯一时才能作为别名；歧义名称必须报错。</li>
       <li>同一 Variant 的 VS、PS 等 Stage 必须使用这一份共享 Layout；物理 binding 的 Stage 使用范围记录在对应 <code>descriptorRanges[].stageMask</code> 或 <code>defaultUniformBuffer.stageMask</code> 中。</li>
       <li>Layout 会随源码、入口组合、Slang 版本、Target 或 Variant 改变，必须随编译单元保存。</li>
@@ -129,24 +129,24 @@
 
     <h3 id="layout-uniform-storage">8.5 Uniform Buffer 存储契约（已确认）</h3>
     <ul>
-      <li>首版的 ordinary/uniform 数据只使用 descriptor-backed Uniform Buffer，不支持 Push Constant。Layout 和 SLC2 均不存在 storage-domain、Push Constant range 或 Push Constant payload。</li>
+      <li>首版的 ordinary/uniform 数据只使用 descriptor-backed Uniform Buffer，不支持 Push Constant。Layout 和 ShaderArtifact 均不存在 storage-domain、Push Constant range 或 Push Constant payload。</li>
       <li>Module 全局作用域中的普通数据归属根块，写入根块的普通数据区，并由根块的 <code>defaultUniformBuffer</code> 提供当前 Target 的物理绑定。</li>
       <li>允许 <code>ParameterBlock&lt;T&gt;</code> 的元素类型直接包含普通字段；这些字段由 Slang 聚合到该块自己的默认 Uniform Buffer。显式 <code>ConstantBuffer&lt;T&gt;</code> 作为子块，其普通数据同样归属子块自己的 <code>defaultUniformBuffer</code>。</li>
       <li>对每个 <code>parameterBlocks[]</code> 记录，<code>uniformByteSize = 0</code> 当且仅当 <code>defaultUniformBuffer = null</code>；<code>uniformByteSize &gt; 0</code> 时必须存在一条有效物理映射，且 <code>role = "uniformData"</code>。</li>
       <li>普通数据的运行时地址是 <code>(blockId, uniformByte)</code>。沿 struct/array 成员访问时逐层累计 <code>uniformByte</code>；跨 <code>subBlockId</code> 后切换到子块并从子块根零偏移重新累计，不需要额外的 storage-domain 字段。</li>
-      <li>编译器若从 Slang 反射发现 Push Constant binding category、<code>BindingType::PushConstant</code> 或等价布局，必须产生明确诊断并使当前 <code>ProgramId × TargetKey × Variant</code> 编译失败，不得写出部分或降级后的 SLC2。</li>
+      <li>编译器若从 Slang 反射发现 Push Constant binding category、<code>BindingType::PushConstant</code> 或等价布局，必须产生明确诊断并使当前 <code>ProgramId × TargetKey × Variant</code> 编译失败，不得写出部分或降级后的 ShaderArtifact。</li>
     </ul>
 
     <h3 id="layout-arrays">8.6 数组访问契约（已确认）</h3>
     <ul>
       <li>运行时提供 <code>ShaderVar[index]</code> 或等价的 <code>operator[](size_t)</code>；名称路径支持成员与数组下标混合，例如 <code>materials[2].baseColorTex</code>、<code>textures[3]</code> 和 <code>clusters[1].lights[7]</code>。<code>items.0</code> 不是合法的数组语法。</li>
-      <li>SLC2 的 <code>array</code> 类型至少保存 <code>elementTypeId</code>、正整数 <code>elementCount</code>、<code>elementByteStride</code>、聚合字节大小和聚合 <code>resourceRanges[]</code>。数组元素共享同一个元素类型节点，不得按元素展开或复制序列化。</li>
+      <li>ShaderArtifact 的 <code>array</code> 类型至少保存 <code>elementTypeId</code>、正整数 <code>elementCount</code>、<code>elementByteStride</code>、聚合字节大小和聚合 <code>resourceRanges[]</code>。数组元素共享同一个元素类型节点，不得按元素展开或复制序列化。</li>
       <li>普通数据元素的累计位置为 <code>parentUniformByte + index × elementByteStride</code>。资源数组按 <code>nextResourceIndex = currentResourceIndex × elementCount + index</code> 将多维下标按行优先展平，再由当前 <code>blockId</code> 的 <code>rangeBindings[rangeIndex]</code> 映射到物理 descriptor。</li>
       <li>固定数组聚合元素类型的 ranges，但不复制类型节点：<code>arrayRange.count = elementRange.count × elementCount</code>，<code>arrayRange.baseIndex = elementRange.baseIndex × elementCount</code>。<code>baseIndex</code> 属于当前类型统一逻辑资源槽空间，不按 SRV/UAV/Sampler 分组，也不参与 Vulkan binding 查找。</li>
       <li>Vulkan 数组元素更新位置为 <code>dstArrayElement = arrayElementBase + resourceIndex × logicalElementStride</code>；<code>set</code> 与 <code>binding</code> 保持不变，禁止使用 <code>binding + resourceIndex</code>。</li>
       <li>固定数组必须执行边界检查；越界、对非数组使用下标、负数或非十进制下标均返回明确诊断。运行时名称索引不预先展开全部数组元素，而是解析规范路径并惰性缓存最终 <code>ShaderVarLocation</code>。</li>
       <li>固定资源数组的单元素名称绑定属于首期契约；公共 API 还可增加整段数组赋值以减少逐元素调用。资源数组不再因为“存在数组”而统一编译失败。</li>
-      <li>当前设计只支持固定长度数组。Slang 反射对任一数组或资源 range 返回 <code>SLANG_UNBOUNDED_SIZE</code>、<code>SLANG_UNKNOWN_SIZE</code> 或等价的非确定数量时，当前编译单元必须失败且不得生成 SLC2。<code>elementCount</code>、逻辑 range 的 <code>count</code> 和物理 <code>descriptorCount</code> 均为正的有限整数；Schema 不保存 <code>unbounded</code> 字段，也不启用 variable descriptor count、partially-bound 或 update-after-bind 容量契约。</li>
+      <li>当前设计只支持固定长度数组。Slang 反射对任一数组或资源 range 返回 <code>SLANG_UNBOUNDED_SIZE</code>、<code>SLANG_UNKNOWN_SIZE</code> 或等价的非确定数量时，当前编译单元必须失败且不得生成 ShaderArtifact。<code>elementCount</code>、逻辑 range 的 <code>count</code> 和物理 <code>descriptorCount</code> 均为正的有限整数；Schema 不保存 <code>unbounded</code> 字段，也不启用 variable descriptor count、partially-bound 或 update-after-bind 容量契约。</li>
     </ul>
 
     <h3 id="layout-block-arrays">8.7 ConstantBuffer/ParameterBlock 数组限制（已确认）</h3>
@@ -155,7 +155,7 @@
       <li>若某个数组的元素类型直接包含，或经 struct/array 成员间接包含 ConstantBuffer/ParameterBlock，则该数组会重复块实例，同样编译失败。</li>
       <li>不禁止“单个块内部包含数组”。一个非数组的 ConstantBuffer/ParameterBlock 的元素类型可以包含普通数据数组、Texture/Buffer/Sampler 等资源数组及其嵌套数组；它们继续使用 8.6 的通用类型、下标和 range 映射规则。</li>
       <li>因此每个父块的子对象映射始终只有一个 <code>subBlockId</code>。Schema 不增加 <code>subBlockIds[]</code>、块实例下标、块 descriptor stride 或 <code>ShaderVarLocation.blockIndex</code>。</li>
-      <li>序列化器必须验证：<code>parameterBlock.elementTypeId</code> 不能直接指向 <code>array</code>；任一可达 <code>array.elementTypeId</code> 的类型闭包也不能包含 <code>kind = "parameterBlock"</code>。违反任一条件都不能生成有效 SLC2。</li>
+      <li>序列化器必须验证：<code>parameterBlock.elementTypeId</code> 不能直接指向 <code>array</code>；任一可达 <code>array.elementTypeId</code> 的类型闭包也不能包含 <code>kind = "parameterBlock"</code>。违反任一条件都不能生成有效 ShaderArtifact。</li>
     </ul>
     <pre><code>// 允许：一个块内部包含普通数据数组和资源数组
 struct Data
@@ -232,7 +232,7 @@ ParameterBlock&lt;Data[4]&gt; parameterBlockOfArray;</code></pre>
     </ul>
 
     <h3 id="layout-type-records">8.9 types[] Type Record 精确契约（已确认）</h3>
-    <p><code>types[]</code> 是一个以 <code>kind</code> 区分分支的 Tagged Union。每条记录都包含公共字段 <code>id</code>、<code>kind</code>、<code>uniformByteSize</code> 和 <code>resourceRanges[]</code>；其他字段只由对应分支解释。所有枚举均写成 SLC2 自己定义的稳定字符串，禁止写入 Slang、Falcor、Vulkan 或其他后端的原生枚举整数。</p>
+    <p><code>types[]</code> 是一个以 <code>kind</code> 区分分支的 Tagged Union。每条记录都包含公共字段 <code>id</code>、<code>kind</code>、<code>uniformByteSize</code> 和 <code>resourceRanges[]</code>；其他字段只由对应分支解释。所有枚举均写成 ShaderArtifact 自己定义的稳定字符串，禁止写入 Slang、Falcor、Vulkan 或其他后端的原生枚举整数。</p>
 
     <h4>公共字段与确定性 ID</h4>
     <pre><code>TypeRecord
@@ -244,7 +244,7 @@ ParameterBlock&lt;Data[4]&gt; parameterBlockOfArray;</code></pre>
       <li><code>id</code> 从 0 开始连续分配，<code>types[]</code> 必须按 <code>id</code> 升序写入。写入器从 <code>rootBlockId</code> 对应的元素类型开始深度优先遍历，Struct 成员按声明顺序访问，首次遇到某个结构类型时分配 ID；全部类型都必须从根块沿成员和子块关系可达。</li>
       <li>类型去重使用完整的规范化 Type Record 结构，不使用 C++/Slang 指针身份。非空 Struct 名称不同的类型不得互相去重；匿名 Struct 可以按完整成员结构去重。</li>
       <li><code>uniformByteSize</code> 只统计 ordinary/uniform 数据，不统计 Texture、Buffer、Sampler 或其他 descriptor。资源容器自身为 0，其元素普通数据由对应 <code>parameterBlocks[].uniformByteSize</code> 保存。</li>
-      <li>ID、字节大小、stride 和 offset 都是非负 JSON 整数，读取时必须执行 <code>uint32</code> 范围检查；数组 <code>elementCount</code>、<code>resourceRanges[].count</code> 和物理 <code>descriptorCount</code> 还必须大于 0。Slang 对 ordinary data、数组或资源 range 返回 unknown/unbounded size 时，该编译单元失败，不能写入有效 SLC2。</li>
+      <li>ID、字节大小、stride 和 offset 都是非负 JSON 整数，读取时必须执行 <code>uint32</code> 范围检查；数组 <code>elementCount</code>、<code>resourceRanges[].count</code> 和物理 <code>descriptorCount</code> 还必须大于 0。Slang 对 ordinary data、数组或资源 range 返回 unknown/unbounded size 时，该编译单元失败，不能写入有效 ShaderArtifact。</li>
       <li>不序列化通用 <code>alignment</code> 或通用 <code>stride</code>；已保存的成员相对偏移、块大小、数组元素 stride 和矩阵 stride 足以完成运行时寻址。</li>
     </ul>
 
@@ -262,7 +262,7 @@ ParameterBlock&lt;Data[4]&gt; parameterBlockOfArray;</code></pre>
 }</code></pre>
     <ul>
       <li><code>rows = 1, columns = 1</code> 表示标量；<code>rows = 1, columns &gt; 1</code> 表示向量；<code>rows &gt; 1</code> 表示矩阵。行列数量必须被当前 Target 支持。</li>
-      <li><code>scalarType</code> 首期允许 <code>bool</code>、<code>int8</code>、<code>uint8</code>、<code>int16</code>、<code>uint16</code>、<code>int32</code>、<code>uint32</code>、<code>int64</code>、<code>uint64</code>、<code>float16</code>、<code>float32</code> 和 <code>float64</code>。其他 Slang scalar 必须先增加 SLC2 枚举和运行时支持，否则编译失败。</li>
+      <li><code>scalarType</code> 首期允许 <code>bool</code>、<code>int8</code>、<code>uint8</code>、<code>int16</code>、<code>uint16</code>、<code>int32</code>、<code>uint32</code>、<code>int64</code>、<code>uint64</code>、<code>float16</code>、<code>float32</code> 和 <code>float64</code>。其他 Slang scalar 必须先增加 ShaderArtifact 枚举和运行时支持，否则编译失败。</li>
       <li>矩阵的 <code>matrixLayout</code> 为 <code>rowMajor</code> 或 <code>columnMajor</code>，<code>matrixByteStride</code> 是相邻主向量之间的字节距离；标量和向量的这两个字段均为 JSON <code>null</code>。</li>
     </ul>
 
@@ -340,7 +340,7 @@ ParameterBlock&lt;Data[4]&gt; parameterBlockOfArray;</code></pre>
     <ul>
       <li><code>elementTypeId</code> 对 Texture/TypedBuffer 表示 Load/Sample 返回类型，对 StructuredBuffer 表示元素类型；RawBuffer、Sampler 和 AccelerationStructure 为 <code>null</code>。</li>
       <li><code>kind = "resource"</code> 的 <code>resourceRanges[]</code> 必须非空，并完整保存该资源类型直接拥有的主逻辑 range 以及存在时的内部辅助 range。上例的非数组只读 <code>Texture2D</code> 直接拥有一个 <code>textureSrv</code> range，故使用 <code>count = 1</code>、<code>baseIndex = 0</code>；固定数组对 count/baseIndex 的聚合由外层 <code>array</code> Type Record 按 8.6 处理。</li>
-      <li><code>imageFormat</code> 为 <code>null</code> 或 SLC2 规定的稳定格式名称；禁止保存 <code>SlangImageFormat</code> 数值。编译器遇到尚未映射的格式时必须失败。</li>
+      <li><code>imageFormat</code> 为 <code>null</code> 或 ShaderArtifact 规定的稳定格式名称；禁止保存 <code>SlangImageFormat</code> 数值。编译器遇到尚未映射的格式时必须失败。</li>
       <li>Type Record 的 <code>resourceKind</code> 描述源码资源语义；<code>resourceRanges[].resourceKind</code> 描述扁平逻辑 range 的 SRV/UAV/Sampler 等槽位种类。两者作用域不同，不允许互相替代。</li>
       <li><code>auxiliaryRanges[]</code> 保存当前资源的内部 counter 等辅助 range 引用；为空时仍写入空数组，保证 Resource Record 结构确定。</li>
     </ul>
@@ -367,7 +367,7 @@ ParameterBlock&lt;Data[4]&gt; parameterBlockOfArray;</code></pre>
       <li>容器 Type Record 直接拥有一条 <code>count = 1</code> 的逻辑容器 range；<code>resourceKind</code> 与 <code>containerKind</code> 一致。块数组已被禁止，因此该 count 不能大于 1。父 Struct/Array 对该容器 range 的聚合仍遵守通用 <code>resourceRanges[]</code> 规则。</li>
       <li>具体容器出现位置、普通数据大小和物理绑定属于 <code>parameterBlocks[]</code>；父类型通过自己的逻辑 range 和 <code>rangeBindings[].subBlockId</code> 进入对应子块。</li>
       <li><code>elementTypeId</code> 不能指向 <code>kind = "array"</code>；数组元素类型的可达闭包也不能包含本分支。块数组限制以 8.7 为准，读取器与写入器都必须校验。</li>
-      <li>有效 SLC2 只允许上述五种 <code>kind</code>。其他 Slang 类型必须在编译期明确归一化为其中一种；未解析 Interface/Generic、Pointer、未知类型或尚无映射的新增类型直接使编译失败。</li>
+      <li>有效 ShaderArtifact 只允许上述五种 <code>kind</code>。其他 Slang 类型必须在编译期明确归一化为其中一种；未解析 Interface/Generic、Pointer、未知类型或尚无映射的新增类型直接使编译失败。</li>
     </ul>
 
     <h3 id="layout-range-mapping">8.10 resourceRanges → rangeBindings 精确映射（已确认）</h3>
@@ -393,7 +393,7 @@ ParameterBlock&lt;Data[4]&gt; parameterBlockOfArray;</code></pre>
         <tr><td><code>ProgramLayout::getGlobalParamsVarLayout()</code></td><td>作为唯一遍历入口并追加为 BindingPath 根节点；不得用逐参数 API 重建全局作用域。其 TypeLayout 若是 Slang 自动引入的 ConstantBuffer/ParameterBlock，按单元素容器规则拆分 container/element。</td><td>创建唯一 <code>rootBlockId</code>；根块 <code>elementTypeId</code> 指向拆分后的全局元素类型。</td></tr>
         <tr><td><code>TypeLayoutReflection::getKind()</code></td><td>Scalar/Vector/Matrix → basic；Struct → struct；Array → array；Resource/SamplerState/TextureBuffer/ShaderStorageBuffer → resource；ConstantBuffer/ParameterBlock → parameterBlock。其他 kind 未有本表映射即失败。</td><td><code>ShaderTypeRecord.kind</code> 五种稳定分支。</td></tr>
         <tr><td><code>getSize(Uniform)</code></td><td>读取 ordinary/uniform 聚合字节数；<code>SLANG_UNKNOWN_SIZE</code>、<code>SLANG_UNBOUNDED_SIZE</code>、算术溢出或超出 uint32 均失败。</td><td><code>types[].uniformByteSize</code>；块元素同一数值复制到具体 <code>parameterBlocks[].uniformByteSize</code>。</td></tr>
-        <tr><td><code>getScalarType/getRowCount/getColumnCount/getMatrixLayoutMode/getElementStride(Uniform)</code></td><td>映射到 SLC2 稳定标量和矩阵枚举；矩阵 stride 必须有限，标量/向量的矩阵字段为 null。</td><td><code>basic.scalarType/rows/columns/matrixLayout/matrixByteStride</code>。</td></tr>
+        <tr><td><code>getScalarType/getRowCount/getColumnCount/getMatrixLayoutMode/getElementStride(Uniform)</code></td><td>映射到 ShaderArtifact 稳定标量和矩阵枚举；矩阵 stride 必须有限，标量/向量的矩阵字段为 null。</td><td><code>basic.scalarType/rows/columns/matrixLayout/matrixByteStride</code>。</td></tr>
         <tr><td><code>getFieldCount/getFieldByIndex(i)</code> 与字段 <code>VariableLayoutReflection</code></td><td>保持声明顺序；字段名必须非空且同一 Struct 内唯一。字段 TypeLayout 递归 intern。</td><td><code>struct.members[i].name/typeId</code>。</td></tr>
         <tr><td>字段 <code>getOffset(Uniform)</code></td><td>仅当字段 TypeLayout 的 <code>getSize(Uniform) &gt; 0</code> 时读取；值相对于直接父 Struct，有限且可转 uint32。否则写 null，不能把无 ordinary data 的零偏移误写成有效地址。</td><td><code>members[i].offset.uniformByte</code>。</td></tr>
         <tr><td>父 TypeLayout 的 <code>getFieldBindingRangeOffset(i)</code></td><td>仅当字段 TypeLayout 的 <code>getBindingRangeCount() &gt; 0</code> 时读取；必须使字段的全部子 range 落在父 range 数组内。资源起始元素固定为 0。</td><td><code>members[i].offset.resourceRange</code> 与 <code>resourceIndex = 0</code>；无 range 时二者均为 null。</td></tr>
@@ -535,12 +535,12 @@ Array:
     </ul>
 
     <h3 id="layout-binding-path">8.10B BindingPath 完整契约</h3>
-    <p><code>BindingPath</code> 是 Slang 官方 access-path 累加算法在 Builder 内的强类型实现，用于把 VariableLayout 的直接父相对 offset 转成当前 Target 的绝对物理地址。它只在 linked component 与 ProgramLayout 有效期间存在，不进入 IR、SLC2 或运行时对象。</p>
+    <p><code>BindingPath</code> 是 Slang 官方 access-path 累加算法在 Builder 内的强类型实现，用于把 VariableLayout 的直接父相对 offset 转成当前 Target 的绝对物理地址。它只在 linked component 与 ProgramLayout 有效期间存在，不进入 IR、ShaderArtifact 或运行时对象。</p>
     <table class="matrix">
       <thead><tr><th>名称</th><th>生命周期</th><th>职责</th></tr></thead>
       <tbody>
         <tr><td>Builder <code>BindingPath</code></td><td>仅一次 <code>SlangReflectionBuilder::Build()</code></td><td>累加 Slang VariableLayout 的相对 category offset；不含资源名称和运行时数组下标。</td></tr>
-        <tr><td>IR 成员图路径</td><td>SLC2/运行时</td><td>由 <code>types[].members[]</code>、Array Type Record 与 <code>subBlockId</code> 表达；不是一条序列化字符串。</td></tr>
+        <tr><td>IR 成员图路径</td><td>ShaderArtifact/运行时</td><td>由 <code>types[].members[]</code>、Array Type Record 与 <code>subBlockId</code> 表达；不是一条序列化字符串。</td></tr>
         <tr><td>运行时资源名称路径</td><td>加载后的 Program/Variant</td><td>由 IR 图派生，例如 <code>material.albedo</code>；解析为 <code>ShaderVarLocation</code>，与 Builder BindingPath 无共享对象。</td></tr>
       </tbody>
     </table>
@@ -647,7 +647,7 @@ descriptorCount =
   typeLayout.getDescriptorSetDescriptorRangeDescriptorCount(
     setIndex, descriptorRangeIndex)</code></pre>
     <ul>
-      <li><code>ownerBindingPath</code> 是拥有当前 logical range 的块 <code>elementPath</code>；descriptor set/range offset 是该 TypeLayout 内部的局部增量。最终 <code>absoluteSet/absoluteBinding</code> 才写入 SLC2。</li>
+      <li><code>ownerBindingPath</code> 是拥有当前 logical range 的块 <code>elementPath</code>；descriptor set/range offset 是该 TypeLayout 内部的局部增量。最终 <code>absoluteSet/absoluteBinding</code> 才写入 ShaderArtifact。</li>
       <li>默认 Uniform Buffer 使用当前块的 <code>containerPath</code> 解析 <code>DescriptorTableSlot</code>，写出 <code>role = "uniformData"</code>、<code>descriptorType = "uniformBuffer"</code>、<code>descriptorCount = 1</code>、<code>arrayElementBase = 0</code>、<code>logicalElementStride = 1</code>。<code>uniformByteSize = 0</code> 时不解析该地址并写 null。</li>
       <li>simple logical range 的每条物理 mapping 都必须满足 <code>descriptorCount = resourceRanges[rangeIndex].count</code>，并固定写 <code>arrayElementBase = 0</code>、<code>logicalElementStride = 1</code>。因此运行时公式退化为 <code>dstArrayElement = resourceIndex</code>，字段仍保留用于显式声明 Schema 2 契约。</li>
     </ul>
@@ -664,12 +664,12 @@ binding=0;type=sampledImage;count=1;stages=compute;flags=-</code></pre>
       <li><strong>输入收集：</strong>从 <code>rootBlockId</code> 遍历全部可达 ParameterBlock，收集所有非空 <code>defaultUniformBuffer</code> 与全部 <code>rangeBindings[].descriptorRanges[]</code>。默认 Uniform Buffer 先归一化为普通物理 descriptor 记录，再与资源 descriptor 一起处理。</li>
       <li><strong>合并与冲突：</strong>按绝对 <code>(set, binding)</code> 分组。只有 <code>descriptorType</code>、有限 <code>descriptorCount</code>、binding flags 以及 immutable sampler 状态完全一致的重复记录才能合并，合并时取 Stage mask 并集；任一字段冲突均为编译错误。当前版本不支持 immutable sampler，其状态固定为“无”。</li>
       <li><strong>确定性排序：</strong>set 与 binding 按无符号数值升序。<code>setCount = maxSet + 1</code>，中间空 set 仍占索引并写出 set 记录；完全没有 descriptor 时 <code>setCount = 0</code>。v1 Stage 固定顺序为 <code>vertex, hull, domain, geometry, fragment, compute</code>，flags 使用稳定字符串升序；未来新增 Stage 必须提升规范版本并规定新顺序，禁止依赖反射遍历、JSON 对象或容器迭代顺序。</li>
-      <li><strong>规范文本：</strong>首行是域与编码版本；随后写 backend、Pipeline flags、setCount、各 set 的派生 flags 和各 binding 的 type/count/stages/flags。枚举使用 SLC2 定义的稳定小写字符串；整数使用无前导零十进制；空集合写 <code>-</code>。文本编码固定为无 BOM UTF-8、LF 换行，并包含最后一个 LF。</li>
+      <li><strong>规范文本：</strong>首行是域与编码版本；随后写 backend、Pipeline flags、setCount、各 set 的派生 flags 和各 binding 的 type/count/stages/flags。枚举使用 ShaderArtifact 定义的稳定小写字符串；整数使用无前导零十进制；空集合写 <code>-</code>。文本编码固定为无 BOM UTF-8、LF 换行，并包含最后一个 LF。</li>
       <li><strong>当前字段边界：</strong>规范输入包含域/版本、backend、Pipeline flags、setCount、派生 set flags、binding、descriptorType、有限 descriptorCount、stageMask 和 binding flags。v1 的 Pipeline/set flags 均为 <code>-</code>；Target meta 不保存 optimize/debug 等编译选项，它们由统一编译策略固定且不是 Pipeline flags。当前未增加独立 <code>descriptorSets[]</code>。未来若引入非空 Pipeline/set flags、immutable sampler 或 Push Constant，必须先扩展稳定描述并提升规范编码版本。</li>
       <li><strong>明确排除：</strong><code>ProgramId</code>、Variant、EntryPoint、Stage 代码及其 hash、成员和资源名称、type/block/range ID、逻辑 <code>resourceKind</code>/shape/format、uniform 大小与偏移、<code>arrayElementBase</code>、<code>logicalElementStride</code>、role、默认资源和当前绑定资源均不进入输入。这些字段影响代码、名称寻址或 descriptor 更新，但不改变完整物理 Pipeline Layout 定义。</li>
       <li><strong>Hash：</strong><code>pipelineLayoutFingerprint = LowerHex(SHA-256(UTF8(CanonicalPipelineLayoutText)))</code>。结果必须是恰好 64 个小写十六进制字符；禁止对格式化 JSON 或平台原生结构体内存直接求 hash。上例的结果是 <code>5bb34bc5c853d1ac8ea025d063249a99e90331d055a875fce50642578c04c899</code>。</li>
-      <li><strong>加载校验与复用：</strong>读取器必须从 SLC2 的物理记录重新生成规范文本并校验 fingerprint；不一致即缓存无效。运行时 Pipeline Layout 缓存命中同一 hash 后，还必须深比较规范化物理记录，确认完全相等后才复用 GPU 对象。</li>
-      <li><strong>兼容范围：</strong>v1 只定义完整 Pipeline Layout 精确相等，不实现 Vulkan set-prefix compatibility 优化。未来如需按 set 或前缀复用，可在运行时从同一规范记录派生独立 fingerprint；它们不进入当前 SLC2 Schema。</li>
+      <li><strong>加载校验与复用：</strong>读取器必须从 ShaderArtifact 的物理记录重新生成规范文本并校验 fingerprint；不一致即缓存无效。运行时 Pipeline Layout 缓存命中同一 hash 后，还必须深比较规范化物理记录，确认完全相等后才复用 GPU 对象。</li>
+      <li><strong>兼容范围：</strong>v1 只定义完整 Pipeline Layout 精确相等，不实现 Vulkan set-prefix compatibility 优化。未来如需按 set 或前缀复用，可在运行时从同一规范记录派生独立 fingerprint；它们不进入当前 ShaderArtifact Schema。</li>
     </ul>
 
     <h3 id="layout-specialization">8.12 Interface 静态 Specialization 边界（已确认）</h3>
@@ -677,7 +677,7 @@ binding=0;type=sampledImage;count=1;stages=compute;flags=-</code></pre>
       <li>不实现 Falcor/Slang-gfx 式运行时 interface specialization。运行时不得根据当前绑定的 Shader Object 具体类型收集 specialization arguments，不调用 Slang <code>specialize()</code>，也不生成新的 Shader、Layout 或 Pipeline。</li>
       <li>Slang interface、generic 和 type conformance 可以用于源码组织，但在提取目标代码和 <code>ShaderReflectionIR</code> 前必须已经解析为固定具体类型；仍包含未解析 existential/interface specialization 参数的 linked component 编译失败。</li>
       <li>运行时可以修改具体对象中的 Texture、Buffer、Sampler 和 uniform 数据，但不能把同一个接口槽位从一种具体类型切换成另一种具体类型。</li>
-      <li>SLC2 v3 不增加 <code>SpecializationKey</code> 或 <code>specializations[]</code> 层级，只保存已经完全静态 specialization 的代码与 Layout。若未来需要同一 Program 的多个离线类型组合，必须作为独立的编译期缓存维度另行设计，不能隐式退化为运行时编译。</li>
+      <li>ShaderArtifact v3 不增加 <code>SpecializationKey</code> 或 <code>specializations[]</code> 层级，只保存已经完全静态 specialization 的代码与 Layout。若未来需要同一 Program 的多个离线类型组合，必须作为独立的编译期缓存维度另行设计，不能隐式退化为运行时编译。</li>
       <li>运行时不携带 Slang compiler、未 specialization 的 Slang ComponentType 或用于即时 specialization 的 Module IR。</li>
     </ul>
 
@@ -687,14 +687,14 @@ binding=0;type=sampledImage;count=1;stages=compute;flags=-</code></pre>
       <li>每个运行时资源槽保存一个可为 <code>null</code> 的显式资源值。设置非空资源表示绑定该槽位；从未设置或设置 <code>null</code> 都表示该槽位当前未绑定，不触发任何缺省资源解析。</li>
       <li>提交 backend descriptor 前，运行时必须验证当前 ParameterBlock 中所有需要写入 descriptor 的资源槽。任一槽位未绑定或资源类型不兼容时，立即返回包含完整资源路径、期望资源类型及 <code>(blockId, rangeIndex, resourceIndex)</code> 的绑定错误，中止 descriptor 更新以及对应的 Draw/Dispatch。</li>
       <li>固定资源数组按元素执行完整性校验；每个元素都必须显式绑定类型兼容的非空资源，缺少任一元素均使本次提交失败。所有数组槽位数量在编译期确定；当前设计不存在无界 range 或运行时容量配置。</li>
-      <li>SLC2 不保存 <code>bindingRequirement</code>、<code>required</code>、<code>optional</code>、默认资源标识或 fallback 策略。<code>ShaderReflectionIR</code> 只保存名称路径所需的类型结构、资源类型与逻辑/物理绑定映射；统一的运行时绑定完整性校验不改变 Layout、Variant 或 <code>pipelineLayoutFingerprint</code>。</li>
+      <li>ShaderArtifact 不保存 <code>bindingRequirement</code>、<code>required</code>、<code>optional</code>、默认资源标识或 fallback 策略。<code>ShaderReflectionIR</code> 只保存名称路径所需的类型结构、资源类型与逻辑/物理绑定映射；统一的运行时绑定完整性校验不改变 Layout、Variant 或 <code>pipelineLayoutFingerprint</code>。</li>
       <li>当前阶段不实现默认资源库。运行时不得为未绑定槽位自动创建、选择或填充 Texture、Buffer、Sampler 或其他替代资源。</li>
     </ul>
 
     <h3 id="layout-vertex-input">8.14 顶点输入签名、缓冲布局与运行时状态（已确认）</h3>
     <pre><code>Program.vertexBufferLayout                 // Shader 源码声明的物理布局，跨 Target/Variant 固定
   + VertexStage.vertexInputSignature       // Slang Reflection 提取的逻辑签名，Location 属于 Target
-  = SLC2ShaderProgramVulkan vertex input state
+  = ShaderProgramVulkan vertex input state
       - VkVertexInputBindingDescription[]
       - VkVertexInputAttributeDescription[]
       - requiredVertexBufferSlotsMask</code></pre>
@@ -703,14 +703,14 @@ binding=0;type=sampledImage;count=1;stages=compute;flags=-</code></pre>
       <li>编译期按 Semantic + SemanticIndex 做双向匹配：每个物理 Element 必须出现在每个 Variant 的 Vertex 签名中，每个非 system-value 签名项也必须有物理 Element。<code>SV_VertexID</code>、<code>SV_InstanceID</code> 等 system-value 只做合法性检查，不写入签名，也不要求 Vertex Buffer。</li>
       <li>格式兼容采用严格规则：Shader <code>float/floatN</code> 接受 Float、UNorm 或 SNorm，<code>uint/uintN</code> 只接受 UInt，<code>int/intN</code> 只接受 SInt；PixelFormat 分量数必须不少于 Shader 需要的分量，允许多余分量。深度/模板、块压缩、YUV 和其他不能作为 Vertex Attribute 的格式直接失败。</li>
       <li>Program 级布局在所有 Target/Variant 中固定；同一 Target 的所有 Variant 还必须保持 Semantic、SemanticIndex、Location 和 ShaderType 完全一致。不同 Target 只允许 Location 变化。即使某个 Variant 的代码没有实际读取一个已声明输入，也不能裁剪该输入。</li>
-      <li><code>SLC2ShaderProgramVulkan</code> 在 Program 创建时把布局与当前 Vertex Stage 签名连接为不可变 Vulkan vertex input state，并验证 VkFormat 映射、设备格式能力、Binding/Attribute 数量、最大 Slot、Offset 与 Stride 上限。PipelineState 只引用该 Program 状态，不重新解释 SLC2 或反射 SPIR-V。</li>
+      <li><code>ShaderProgramVulkan</code> 在 Program 创建时把布局与当前 Vertex Stage 签名连接为不可变 Vulkan vertex input state，并验证 VkFormat 映射、设备格式能力、Binding/Attribute 数量、最大 Slot、Offset 与 Stride 上限。PipelineState 只引用该 Program 状态，不重新解释 ShaderArtifact 或反射 SPIR-V。</li>
       <li>Slot 编号允许稀疏。运行时从实际声明的 Binding 构造 <code>requiredVertexBufferSlotsMask</code>，Draw 前以 <code>missing = required &amp; ~bound</code> 校验；不得用 binding 数量或最高 Slot 推断连续范围。绑定额外 Slot 合法，缺少任一必需 Slot 则报告 ProgramId 与 Slot 并中止当前 Draw。</li>
       <li>首期只有 <code>PER_VERTEX + stepRate 0</code> 与 <code>PER_INSTANCE + stepRate 1</code>。不支持可选顶点流、未绑定 Slot 的默认/零值 Buffer、Vertex Attribute divisor 大于 1 或运行时替换物理布局。</li>
     </ul>
 
     <h4>运行时 Falcor 风格参数对象（已确认）</h4>
-    <pre><code>SLC2GPUShader                         // 不可变资产与 Program 缓存
-  → SLC2ShaderProgram                 // 不可变 Variant、Reflection、后端布局
+    <pre><code>GPUShader                         // 不可变资产与 Program 缓存
+  → ShaderProgram                 // 不可变 Variant、Reflection、后端布局
     → ShaderProgramInstance            // 每个 Material/Pass 独立的可变实例
       → Root ShaderParameterBlock      // 按 subBlockId 重建的参数块树
         → ShaderVar                    // 绑定到“块实例 + ShaderVarLocation”的访问句柄
@@ -721,7 +721,7 @@ ShaderProgramInstance::ValidateAllBindings()
     <ul>
       <li><code>ShaderProgramReflection</code> 是 Variant 共享的不可变布局、类型图和名称索引；它不保存 Texture、Buffer、Sampler、uniform 值或 descriptor set。</li>
       <li><code>ShaderParameterBlock</code> 对应一个具体 <code>blockId</code>，保存该块自己的 CPU uniform 字节、<code>resources[logicalRange][logicalElement]</code> 和由 block-flavor <code>rangeBinding.subBlockId</code> 连接的子块。它不按 Vulkan set/binding 保存资源，也不直接调用后端。</li>
-      <li><code>ShaderProgramInstance</code> 只拥有一个根 ParameterBlock；所有子块由根按反射树拥有。不同 Material/Pass 创建的 Instance 不共享可变绑定状态，但可共享同一个 <code>SLC2ShaderProgram</code>、Reflection、VkShaderModule 和 Vulkan Program Layout。</li>
+      <li><code>ShaderProgramInstance</code> 只拥有一个根 ParameterBlock；所有子块由根按反射树拥有。不同 Material/Pass 创建的 Instance 不共享可变绑定状态，但可共享同一个 <code>ShaderProgram</code>、Reflection、VkShaderModule 和 Vulkan Program Layout。</li>
       <li><code>ShaderVar</code> 不是只有反射位置的值对象；它绑定到 <code>ShaderParameterBlock*</code> 与该块内的 <code>ShaderVarLocation</code>，提供成员、固定数组、资源和 uniform 的访问。名称路径解析只是获得根 ShaderVar 的一种入口。</li>
       <li><code>ShaderBindingSnapshot</code> 按逻辑地址保存已验证的资源和已物化的块 Uniform Buffer。它冻结后不得回写 ParameterBlock；一次 Draw/Dispatch 使用一个完整快照，避免部分 descriptor 更新。</li>
     </ul>
@@ -733,7 +733,7 @@ public:
     bool ValidateAllBindings(ShaderBindingSnapshot&amp; snapshot, String&amp; error);
 
 private:
-    const SLC2ShaderProgram* _program;
+    const ShaderProgram* _program;
     ShaderParameterBlock _rootParameters;
 };
 
@@ -751,16 +751,16 @@ class ShaderParameterBlock
   <section>
     <h2 id="runtime">10. 运行时读取、Variant 匹配与绑定</h2>
     <ol>
-      <li>规范化 Shader Resource Path，计算 SHA-256 并定位唯一 SLC2 文件。</li>
-      <li>解析 JSON，验证文件名、Magic、Major 版本、必选字段、字段类型和基本结构；SLC2 v3 Reader 严格拒绝其他 Major。</li>
+      <li>规范化 Shader Resource Path，计算 SHA-256 并定位唯一 ShaderArtifact 文件。</li>
+      <li>解析 JSON，验证文件名、Magic、Major 版本、必选字段、字段类型和基本结构；ShaderArtifact v3 Reader 严格拒绝其他 Major。</li>
       <li>使用调用者传入的区分大小写 <code>ProgramId</code> 字符串，在 <code>programs[]</code> 中做完全匹配并选择 Program。</li>
-      <li>从 <code>meta</code> 生成 <code>TargetKey</code>，按调用者请求的 <code>Platform × Backend × ShaderModel</code> 完全匹配唯一 Target。API/目标二进制版本和 capability 基线由当前引擎的统一编译策略保证，不作为 SLC2 内的第二套可变匹配维度。</li>
+      <li>从 <code>meta</code> 生成 <code>TargetKey</code>，按调用者请求的 <code>Platform × Backend × ShaderModel</code> 完全匹配唯一 Target。API/目标二进制版本和 capability 基线由当前引擎的统一编译策略保证，不作为 ShaderArtifact 内的第二套可变匹配维度。</li>
       <li>使用 Program 的 <code>variantGroups</code> 对运行时宏集合执行 <code>NormalizeVariant</code>。</li>
       <li>在 Target 的 <code>variants[]</code> 中按规范化字符串完全匹配并选择唯一 Variant。</li>
       <li>验证共享 Layout 的 <code>schema = 2</code>、ID 引用、类型图、ParameterBlock、<code>(blockId, rangeIndex)</code> 完整映射、descriptor/subBlock 互斥关系、固定有限数量、物理 binding 唯一所有权、<code>StageRecordKey</code> 唯一性和阶段集合完整性；按 8.11 重建规范物理布局并重算 <code>pipelineLayoutFingerprint</code>，再按需解码各 Stage 代码并校验长度和 SHA-256。</li>
       <li>验证 Program 级 <code>vertexBufferLayout</code>、Vertex Stage <code>vertexInputSignature</code>、格式兼容、Target/Variant 稳定性及 system-value 排除规则；Compute/无 Vertex Stage Program 必须使用空物理布局。</li>
       <li>先从 <code>types[]</code> 和 <code>parameterBlocks[]</code> 重建单根不可变运行时反射对象，再从 <code>rootBlockId</code> 沿成员局部名称与子块连接派生完整路径并建立 <code>NameId → ShaderVarLocation</code> 索引；不得为 Stage 创建额外参数根。</li>
-      <li>从 <code>rootBlockId</code> 遍历全部可达块，收集非空 <code>defaultUniformBuffer</code> 和 <code>rangeBindings[].descriptorRanges[]</code>，按绝对 <code>(set, binding)</code> 分组创建 Vulkan DescriptorSetLayout/PipelineLayout；SLC2 不提供独立 <code>descriptorSets[]</code>，也不创建 Push Constant range。</li>
+      <li>从 <code>rootBlockId</code> 遍历全部可达块，收集非空 <code>defaultUniformBuffer</code> 和 <code>rangeBindings[].descriptorRanges[]</code>，按绝对 <code>(set, binding)</code> 分组创建 Vulkan DescriptorSetLayout/PipelineLayout；ShaderArtifact 不提供独立 <code>descriptorSets[]</code>，也不创建 Push Constant range。</li>
       <li>每次 <code>CreateProgramInstance()</code> 都从 rootBlockId 递归创建独立 <code>ShaderParameterBlock</code> 树：每个 blockId 初始化自己的 CPU 普通数据区、逻辑资源槽和由 block-flavor mapping 指向的唯一子块。<code>ShaderProgramReflection</code>、后端布局和 Stage GPU 对象继续共享。</li>
       <li>按名称或由根 <code>ShaderVar</code> 访问成员时，先得到 ShaderVarLocation，再绑定到对应运行时 ParameterBlock。写入普通数据时，以该 blockId 的 CPU 普通数据区和累计 uniformByte 定位成员；写入资源时，以 <code>(blockId, rangeIndex, resourceIndex)</code> 定位可空显式资源槽。设置 <code>null</code> 后该槽位处于未绑定状态。</li>
       <li>提交前 <code>ValidateAllBindings()</code> 执行两阶段遍历：第一阶段验证全部可达块的 simple logical range、每个固定数组元素和资源类型，并把逻辑资源复制到待冻结快照；第二阶段才物化所有非空 defaultUniformBuffer 对应的 GPU Buffer 并加入快照。任一失败都不产生快照、不写 descriptor，并中止对应 Draw/Dispatch。</li>

@@ -12,11 +12,11 @@
 
 namespace SE
 {
-    class SLC2GPUPipelineState;
+    class GPUPipelineState;
 	class GPUContext;
 	class GPUTexture;
 	class GPUTextureView;
-	class SLC2GPUShader;
+	class GPUShader;
 	class GPUBuffer;
 	class GPUSampler;
 	class GPUSwapChain;
@@ -126,12 +126,12 @@ namespace SE
 		// Create a SwapChain.
 		virtual GPUSwapChain* CreateSwapChain(Window* window) = 0;
 
-		virtual SLC2GPUPipelineState* CreateSLC2PipelineState() = 0;
+		virtual GPUPipelineState* CreatePipelineState() = 0;
 
 		SE_FUNCTION(API())
 		virtual GPUTexture* CreateTexture(const StringView& name = StringView::Empty) = 0;
 
-		virtual SLC2GPUShader* CreateSLC2Shader(const StringView& name = StringView::Empty) = 0;
+		virtual GPUShader* CreateShader(const StringView& name = StringView::Empty) = 0;
 
 //		virtual GPUTimerQuery* CreateTimerQuery() = 0;
 

@@ -17,9 +17,9 @@ namespace SE
     {
     private:
         AssetRef<Shader>        m_Shader;
-        SLC2GPUPipelineState*   m_PsLightDir           = nullptr;
-        SLC2GPUPipelineState*   m_PsLightPointNormal   = nullptr;
-        SLC2GPUPipelineState*   m_PsLightPointInverted = nullptr;
+        GPUPipelineState*   m_PsLightDir           = nullptr;
+        GPUPipelineState*   m_PsLightPointNormal   = nullptr;
+        GPUPipelineState*   m_PsLightPointInverted = nullptr;
         ShaderProgramInstance*  m_ProgramLightDir      = nullptr;
         ShaderProgramInstance*  m_ProgramLightPoint    = nullptr;
         GPUConstantBuffer*      m_PerLightBuffer       = nullptr;

@@ -28,7 +28,7 @@ namespace SE
 	{
         bool       Success;
         String     CompileMessage;
-		List<byte> SLC2Data;
+		List<byte> ShaderData;
 		List<String> SourceDependencies;
 	};
 

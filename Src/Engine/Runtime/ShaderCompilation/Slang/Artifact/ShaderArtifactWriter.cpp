@@ -1,4 +1,4 @@
-#include "SLC2Writer.h"
+#include "ShaderArtifactWriter.h"
 
 #include "Runtime/Core/Serialization/JsonWriters.hpp"
 
@@ -40,28 +40,28 @@ namespace SE
 		}
 
 		// Writer 只接受当前票据支持的受控枚举，避免把未知内存值静默写成合法缓存文本。
-		namespace SLC2VertexInputWriter
+		namespace VertexInputWriter
 		{
-			const char* ShaderTypeName(const SLC2VertexInputType type)
+			const char* ShaderTypeName(const VertexInputType type)
 			{
 				switch (type)
 				{
-				case SLC2VertexInputType::Float: return "float";
-				case SLC2VertexInputType::Float2: return "float2";
-				case SLC2VertexInputType::Float3: return "float3";
-				case SLC2VertexInputType::Float4: return "float4";
-				case SLC2VertexInputType::Int: return "int";
-				case SLC2VertexInputType::Int2: return "int2";
-				case SLC2VertexInputType::Int3: return "int3";
-				case SLC2VertexInputType::Int4: return "int4";
-				case SLC2VertexInputType::UInt: return "uint";
-				case SLC2VertexInputType::UInt2: return "uint2";
-				case SLC2VertexInputType::UInt3: return "uint3";
-				case SLC2VertexInputType::UInt4: return "uint4";
-				case SLC2VertexInputType::Half: return "half";
-				case SLC2VertexInputType::Half2: return "half2";
-				case SLC2VertexInputType::Half3: return "half3";
-				case SLC2VertexInputType::Half4: return "half4";
+				case VertexInputType::Float: return "float";
+				case VertexInputType::Float2: return "float2";
+				case VertexInputType::Float3: return "float3";
+				case VertexInputType::Float4: return "float4";
+				case VertexInputType::Int: return "int";
+				case VertexInputType::Int2: return "int2";
+				case VertexInputType::Int3: return "int3";
+				case VertexInputType::Int4: return "int4";
+				case VertexInputType::UInt: return "uint";
+				case VertexInputType::UInt2: return "uint2";
+				case VertexInputType::UInt3: return "uint3";
+				case VertexInputType::UInt4: return "uint4";
+				case VertexInputType::Half: return "half";
+				case VertexInputType::Half2: return "half2";
+				case VertexInputType::Half3: return "half3";
+				case VertexInputType::Half4: return "half4";
 				default: return nullptr;
 			}
 			}
@@ -77,7 +77,7 @@ namespace SE
 					const char* shaderType = ShaderTypeName(element.ShaderType);
 					if (element.Semantic.IsEmpty() || element.Semantic.StartsWith(SE_TEXT("SV_")) || shaderType == nullptr)
 					{
-						error = SE_TEXT("SLC2 vertex input signature contains an invalid semantic or ShaderType.");
+						error = SE_TEXT("ShaderArtifact vertex input signature contains an invalid semantic or ShaderType.");
 						return false;
 					}
 					for (int32 otherIndex = 0; otherIndex < elementIndex; otherIndex++)
@@ -86,7 +86,7 @@ namespace SE
 						if ((other.Semantic == element.Semantic && other.SemanticIndex == element.SemanticIndex) ||
 							other.Location == element.Location)
 						{
-							error = SE_TEXT("SLC2 vertex input signature contains a duplicated semantic or location.");
+							error = SE_TEXT("ShaderArtifact vertex input signature contains a duplicated semantic or location.");
 							return false;
 						}
 					}
@@ -104,11 +104,11 @@ namespace SE
 				writer.EndArray(signature.Count());
 				return true;
 			}
-		} // namespace SLC2VertexInputWriter
+		} // namespace VertexInputWriter
 
 		void WriteLayout(JsonWriter& writer, const ShaderReflectionIR& layout)
 		{
-			// SLC2 只序列化引擎自定义 ShaderReflectionIR，不保存 Slang 对象指针或原生枚举值。
+			// ShaderArtifact 只序列化引擎自定义 ShaderReflectionIR，不保存 Slang 对象指针或原生枚举值。
 			writer.StartObject();
 			writer.Key(SE_TEXT("schema"));
 			writer.Uint(layout.Schema);
@@ -281,13 +281,13 @@ namespace SE
 		}
 	}
 
-	bool SLC2Writer::WriteDeterministic(const SLC2Artifact& artifact, List<byte>& output, String& error)
+	bool ShaderArtifactWriter::WriteDeterministic(const ShaderArtifact& artifact, List<byte>& output, String& error)
 	{
 		output.Clear();
 
 		if (artifact.Format != SE_TEXT("SLC2") || artifact.Version != 4)
 		{
-			error = SE_TEXT("Invalid SLC2 artifact header.");
+			error = SE_TEXT("Invalid ShaderArtifact artifact header.");
 			return false;
 		}
 
@@ -306,7 +306,7 @@ namespace SE
 		writer.StartArray();
 		for (int32 programIndex = 0; programIndex < artifact.Programs.Count(); programIndex++)
 		{
-			const SLC2ProgramRecord& program = artifact.Programs[programIndex];
+			const ShaderProgramRecord& program = artifact.Programs[programIndex];
 			writer.StartObject();
 			writer.Key(SE_TEXT("programId"));
 			writer.String(program.ProgramId);
@@ -317,7 +317,7 @@ namespace SE
 			writer.StartArray();
 			for (int32 targetIndex = 0; targetIndex < program.Targets.Count(); targetIndex++)
 			{
-				const SLC2TargetRecord& target = program.Targets[targetIndex];
+				const ShaderTargetRecord& target = program.Targets[targetIndex];
 				writer.StartObject();
 				writer.Key(SE_TEXT("shaderProfile"));
 				writer.String(ToString(target.Target));
@@ -326,7 +326,7 @@ namespace SE
 				writer.StartArray();
 				for (int32 variantIndex = 0; variantIndex < target.Variants.Count(); variantIndex++)
 				{
-					const SLC2VariantRecord& variant = target.Variants[variantIndex];
+					const ShaderVariantRecord& variant = target.Variants[variantIndex];
 					writer.StartObject();
 					writer.Key(SE_TEXT("variant"));
 					writer.String(variant.Variant);
@@ -337,10 +337,10 @@ namespace SE
 					writer.StartArray();
 					for (int32 stageIndex = 0; stageIndex < variant.Stages.Count(); stageIndex++)
 					{
-						const SLC2StageRecord& stage = variant.Stages[stageIndex];
+						const ShaderStageRecord& stage = variant.Stages[stageIndex];
 						if (stage.Stage != ShaderStage::Vertex && stage.VertexInputSignature.HasItems())
 						{
-							error = SE_TEXT("SLC2 non-vertex stage cannot contain a vertex input signature.");
+							error = SE_TEXT("ShaderArtifact non-vertex stage cannot contain a vertex input signature.");
 							output.Clear();
 							return false;
 						}
@@ -352,7 +352,7 @@ namespace SE
 						if (stage.Stage == ShaderStage::Vertex)
 						{
 							writer.Key(SE_TEXT("vertexInputSignature"));
-							if (!SLC2VertexInputWriter::WriteVertexInputSignature(
+							if (!VertexInputWriter::WriteVertexInputSignature(
 									writer, stage.VertexInputSignature, error))
 							{
 								output.Clear();

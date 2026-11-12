@@ -16,7 +16,7 @@
 <main class="module-content">
   <header class="module-only" id="compiler-top">
     <h1>编译器实现 <span class="version-badge">v2</span></h1>
-    <p class="subtitle">从公开请求到 Slang linked component，再到完整、可提交的 SLC2 数据。</p>
+    <p class="subtitle">从公开请求到 Slang linked component，再到完整、可提交的 ShaderArtifact 数据。</p>
   </header>
 
   <section>
@@ -35,7 +35,7 @@
       <thead><tr><th>路径</th><th>类型</th><th>单一职责</th></tr></thead>
       <tbody>
         <tr><td class="path">Src/Engine/Runtime/ShaderCompilation/ShaderCompileTypes.h</td><td><span class="tag">公共</span></td><td>请求、Target、Variant selection、状态和结果数据结构。</td></tr>
-        <tr><td class="path">Src/Engine/Runtime/ShaderCompilation/Slang/SlangShaderCompiler.h/.cpp</td><td><span class="tag">协调器</span></td><td>执行单次全有或全无的编译事务，聚合 diagnostics 和 SLC2。</td></tr>
+        <tr><td class="path">Src/Engine/Runtime/ShaderCompilation/Slang/SlangShaderCompiler.h/.cpp</td><td><span class="tag">协调器</span></td><td>执行单次全有或全无的编译事务，聚合 diagnostics 和 ShaderArtifact。</td></tr>
         <tr><td class="path">Src/Engine/Runtime/ShaderCompilation/Slang/SlangSessionFactory.h/.cpp</td><td><span class="tag">Slang</span></td><td>创建 GlobalSession/Session，应用 Target、宏和 Slang 文件系统挂接策略。</td></tr>
         <tr><td class="path">Src/Engine/Runtime/ShaderCompilation/Slang/SlangShaderFileSystem.h/.cpp</td><td><span class="tag">IO</span></td><td>编译侧 import/include 路径解析；首版以根 Shader 文件目录为默认查找根，后续扩展引擎虚拟路径；首版不持久化依赖索引。</td></tr>
         <tr><td class="path">Src/Engine/Runtime/ShaderCompilation/Slang/SlangProgramDiscovery.h/.cpp</td><td><span class="tag">反射</span></td><td>在空 Variant 宏的根 Module 中发现 <code>SolarShaderProgram</code> marker struct、Stage 和宏组；已实现。</td></tr>
@@ -103,7 +103,7 @@ struct ShaderCompileResult
 {
     ShaderCompileStatus Status;
     String CompileMessage;
-    Array&lt;byte&gt; SLC2Data;
+    Array&lt;byte&gt; ShaderData;
 };</code></pre>
 
     <h3 id="compiler-api-semantics">公开语义</h3>
@@ -115,7 +115,7 @@ struct ShaderCompileResult
       <li>Slang 的 <code>const char*</code> API 边界使用 <code>StringAnsi</code> 桥接；宏名、入口名、源码路径和源码文本不得默认以 <code>std::string</code> 作为生命周期持有对象。</li>
       <li>控制流分支必须显式使用 <code>{}</code>，包括单语句 <code>if</code> / <code>else</code> / <code>for</code> / <code>while</code>。</li>
       <li>请求不暴露优化级别、调试信息、matrix layout、SPIR-V 版本、capability 或 binding shift，这些都属于版本化 Target 策略。</li>
-      <li><code>Success</code> 必须携带一份完整、UTF-8、通过自读校验的 SLC2；<code>Failed</code> 必须清空 <code>SLC2Data</code>。</li>
+      <li><code>Success</code> 必须携带一份完整、UTF-8、通过自读校验的 ShaderArtifact；<code>Failed</code> 必须清空 <code>ShaderData</code>。</li>
       <li>Warning 和 Error 保持原始顺序合入一个 <code>CompileMessage</code>；不返回结构化 diagnostics 或部分结果。</li>
     </ul>
 
@@ -129,7 +129,7 @@ struct ShaderCompileResult
     compiler.Compile(request, result);
     // 文件提交不在 compiler 内发生。
 }</code></pre>
-    <p>编译器本身只产生内存结果。资产导入器或缓存服务在 <code>Status == Success</code> 后负责临时文件、flush 和 rename；这保证编译失败不会破坏现有有效缓存。该入口必须能在没有 <code>ShaderProgramInstance</code>、GPU 设备、Vulkan backend 和资源绑定状态的进程中独立执行，编译验收以完整 <code>SLC2Data</code>、self-read、语义 manifest 和确定性为准。</p>
+    <p>编译器本身只产生内存结果。资产导入器或缓存服务在 <code>Status == Success</code> 后负责临时文件、flush 和 rename；这保证编译失败不会破坏现有有效缓存。该入口必须能在没有 <code>ShaderProgramInstance</code>、GPU 设备、Vulkan backend 和资源绑定状态的进程中独立执行，编译验收以完整 <code>ShaderData</code>、self-read、语义 manifest 和确定性为准。</p>
 
     <h3 id="compiler-pseudocode-orchestrator">公开入口伪代码</h3>
     <div class="pseudo">
@@ -139,14 +139,14 @@ struct ShaderCompileResult
       </div>
       <div class="pseudo-io">
         <div><strong>输入</strong>一个 Shader Resource、多个 Target、可选 VariantSelections</div>
-        <div><strong>不变量</strong>失败时 SLC2Data 为空；旧缓存不在函数内改写</div>
+        <div><strong>不变量</strong>失败时 ShaderData 为空；旧缓存不在函数内改写</div>
         <div><strong>输出</strong>最小 ShaderCompileResult</div>
       </div>
       <pre><code>Compile(request, out result):
     result = {
         Status = Failed,
         CompileMessage = "",
-        SLC2Data = {}
+        ShaderData = {}
     }
     diagnostics = DiagnosticSink(request.ResourcePath)
 
@@ -165,7 +165,7 @@ struct ShaderCompileResult
         diagnostics,
         result)
 
-    artifact = NewSLC2Artifact(format = 3.0)
+    artifact = NewShaderArtifact(format = 3.0)
     FOR sessionGroup IN plan.GroupBy(TargetKey, Variant):
         session = TRY_OR_FINISH(
             CreateVariantSession(sessionGroup),
@@ -188,14 +188,14 @@ struct ShaderCompileResult
         return FinishFailed(diagnostics, result)
 
     bytes = TRY_OR_FINISH(
-        SLC2Writer.WriteDeterministic(artifact),
+        ShaderArtifactWriter.WriteDeterministic(artifact),
         diagnostics,
         result)
-    TRY_OR_FINISH(SLC2Reader.ReadAndValidate(bytes), diagnostics, result)
+    TRY_OR_FINISH(ShaderArtifactReader.ReadAndValidate(bytes), diagnostics, result)
 
     result.Status = Success
     result.CompileMessage = diagnostics.Text()
-    result.SLC2Data = Move(bytes)</code></pre>
+    result.ShaderData = Move(bytes)</code></pre>
       <p class="pseudo-note">伪代码中的 TRY_OR_FINISH 只修改公开 result，不写磁盘；原子文件替换始终由调用者在 Success 后执行。</p>
     </div>
   </section>
@@ -211,7 +211,7 @@ struct ShaderCompileResult
       <li><strong>Emit：</strong>从 linked component 取得共享 Layout，并为每个 EntryPoint 取得目标代码 blob。</li>
       <li><strong>BuildIR：</strong>把 Slang Layout 转为引擎 ShaderReflectionIR，从 Vertex EntryPoint 提取输入签名，并执行资源反射及顶点输入的完整性校验。</li>
       <li><strong>Aggregate：</strong>按确定性顺序聚合 Program、Target、Variant、Layout 与 Stage code。</li>
-      <li><strong>WriteAndSelfRead：</strong>生成 SLC2 UTF-8 JSON，再立即用共享的无后端 <code>SLC2Reader</code> 严格读取和重算 fingerprint；该 reader 不依赖 Vulkan、GPU 资源或运行时 Program 对象。</li>
+      <li><strong>WriteAndSelfRead：</strong>生成 ShaderArtifact UTF-8 JSON，再立即用共享的无后端 <code>ShaderArtifactReader</code> 严格读取和重算 fingerprint；该 reader 不依赖 Vulkan、GPU 资源或运行时 Program 对象。</li>
       <li><strong>CommitResult：</strong>仅在全部步骤成功后设置 <code>Success</code>；否则清空数据并返回完整错误文本。</li>
     </ol>
     <p class="note">首版每次都实际编译请求中的完整单元。跨调用的 source/import 内容命中、<code>DependencyIndex</code>、import 反向索引和孤儿缓存清理不在本实施范围；不得在这里先引入一个未设计的半成品缓存索引。</p>
@@ -499,7 +499,7 @@ struct PlannedVariant
         <tr><td><code>(LIT, UNLIT) × (_, FOG)</code>，全量</td><td><code>LIT</code>、<code>UNLIT</code>、<code>FOG;LIT</code>、<code>FOG;UNLIT</code></td></tr>
         <tr><td>显式空 Defines</td><td>必选组取第一项，可空组选空。</td></tr>
         <tr><td><code>{FOG, LIT}</code> 与 <code>{LIT, FOG}</code></td><td>同一 CanonicalText，只编译一次。</td></tr>
-        <tr><td><code>FOG=1</code>、未知宏、同组多选</td><td>整个请求失败，无 SLC2。</td></tr>
+        <tr><td><code>FOG=1</code>、未知宏、同组多选</td><td>整个请求失败，无 ShaderArtifact。</td></tr>
       </tbody>
     </table>
   </section>
@@ -528,7 +528,7 @@ TargetKey = LowerHex(SHA-256(UTF8(上面的精确文本)))</code></pre>
     <p>首版优先正确性：一个 Target × Variant 使用一个 Session，同一 Session 可编译该资源中选中的多个 Program。这样同一宏环境只加载一次 Module，同时不同 Target/Variant 不共享可变状态。</p>
     <ul>
       <li>基线发现使用独立空宏 Session。</li>
-      <li>每个 Variant Session 的 preprocessorMacros 只包含 CanonicalText 中的宏，值统一为 <code>1</code>；SLC2 仍只保存宏名。</li>
+      <li>每个 Variant Session 的 preprocessorMacros 只包含 CanonicalText 中的宏，值统一为 <code>1</code>；ShaderArtifact 仍只保存宏名。</li>
       <li>Session cache 仅存在于当前 Compile 调用，key 为 TargetKey × CanonicalText；请求结束即释放。</li>
       <li>将来如需跨请求缓存 Session，必须先单独定义线程安全、文件内容失效与 Slang 对象生命周期，不在首版实现。</li>
     </ul>
@@ -570,20 +570,20 @@ CreateVariantSession(group):
     <h2 id="compiler-diagnostics">7. 错误、警告与事务终止</h2>
     <h3 id="compiler-diagnostic-order">CompileMessage 规则</h3>
     <ul>
-      <li>按“请求校验 → Module load → EntryPoint check → link → codegen → IR 构建 → SLC2 自检”的发生顺序追加文本。</li>
+      <li>按“请求校验 → Module load → EntryPoint check → link → codegen → IR 构建 → ShaderArtifact 自检”的发生顺序追加文本。</li>
       <li>Slang diagnostics 原文保留文件、行列和 severity；引擎错误使用固定前缀并包含 Resource、Program、Target、Variant 和 Stage 上下文。</li>
       <li>多个调用产生相同文本时不做模糊去重，避免删除不同阶段的有效上下文。</li>
       <li><code>TreatWarningsAsErrors</code> 只作用于当次实际编译产生的 warning；若触发则状态为 Failed，但保留 warning 文本。</li>
-      <li>CompileMessage 不写入 SLC2，也不在缓存命中时重放。</li>
+      <li>CompileMessage 不写入 ShaderArtifact，也不在缓存命中时重放。</li>
     </ul>
 
     <h3 id="compiler-failure-policy">全有或全无</h3>
     <table>
       <thead><tr><th>失败点</th><th>结果</th><th>已有缓存</th></tr></thead>
       <tbody>
-        <tr><td>任一 Program/Target/Variant/Stage 编译失败</td><td><code>Failed</code>，SLC2Data 为空</td><td>不变</td></tr>
+        <tr><td>任一 Program/Target/Variant/Stage 编译失败</td><td><code>Failed</code>，ShaderData 为空</td><td>不变</td></tr>
         <tr><td>反射出现不支持结构</td><td><code>Failed</code>，指出反射路径</td><td>不变</td></tr>
-        <tr><td>SLC2 写入或 self-read 失败</td><td><code>Failed</code>，指出 JSON 路径</td><td>不变</td></tr>
+        <tr><td>ShaderArtifact 写入或 self-read 失败</td><td><code>Failed</code>，指出 JSON 路径</td><td>不变</td></tr>
         <tr><td>只有 warning 且未提升为 error</td><td><code>Success</code>，数据完整</td><td>允许原子替换</td></tr>
       </tbody>
     </table>
@@ -596,7 +596,7 @@ CreateVariantSession(group):
       </div>
       <div class="pseudo-io">
         <div><strong>输入</strong>Slang diagnostic blobs + 引擎校验错误</div>
-        <div><strong>不变量</strong>保持发生顺序；不写入 SLC2</div>
+        <div><strong>不变量</strong>保持发生顺序；不写入 ShaderArtifact</div>
         <div><strong>输出</strong>CompileMessage 与最终 Status</div>
       </div>
       <pre><code>AppendSlang(blob, context):
@@ -614,13 +614,13 @@ AppendEngineError(context, message):
 FinishFailed(out result):
     result.Status = Failed
     result.CompileMessage = RenderInOccurrenceOrder(entries)
-    result.SLC2Data.Clear()
+    result.ShaderData.Clear()
 
 FinishSuccess(bytes, out result):
     ASSERT(NOT HasError)
     result.Status = Success
     result.CompileMessage = RenderInOccurrenceOrder(entries)
-    result.SLC2Data = Move(bytes)</code></pre>
+    result.ShaderData = Move(bytes)</code></pre>
       <p class="pseudo-note">内部 entry 仅用于正确聚合；不会扩展公开 ShaderCompileResult，也不会持久化历史 Warning。</p>
     </div>
   </section>

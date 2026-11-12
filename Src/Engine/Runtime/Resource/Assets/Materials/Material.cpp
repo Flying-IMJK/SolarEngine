@@ -44,7 +44,7 @@ namespace SE
         return EmptyInfo;
     }
 
-    SLC2GPUShader* Material::GetShader() const { return m_MaterialShader ? m_MaterialShader->GetShader() : nullptr; }
+    GPUShader* Material::GetShader() const { return m_MaterialShader ? m_MaterialShader->GetShader() : nullptr; }
 
     bool Material::IsReady() const
     {
@@ -166,7 +166,7 @@ namespace SE
             return LoadResult::Ok;
         }
 
-        // Generate the current SLC2 source from the authored graph when needed.
+        // Generate the current ShaderArtifact source from the authored graph when needed.
 #if SE_EDITOR
 
         const bool sourceFilesCurrent = LoadMaterialSourceFiles();
@@ -175,7 +175,7 @@ namespace SE
             auto lock = storage->Lock();
             MaterialGenerator generator;
             generator.Error.Bind(&OnGeneratorError);
-            LOG_INFO("Resource", "Generating SLC2 material '{0}'...", ToString());
+            LOG_INFO("Resource", "Generating ShaderArtifact material '{0}'...", ToString());
 
             // Load or create material surface
             MaterialLayer* layer;

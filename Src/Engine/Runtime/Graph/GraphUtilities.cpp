@@ -641,7 +641,7 @@ namespace SE::GraphUtilities
                     break;
                 case MaterialParameterType::GameplayGlobal:
                 case MaterialParameterType::GlobalSDF:
-                    return SE_TEXT("This material parameter type has no SLC2 runtime provider.");
+                    return SE_TEXT("This material parameter type has no ShaderArtifact runtime provider.");
                 default:
                     break;
             }

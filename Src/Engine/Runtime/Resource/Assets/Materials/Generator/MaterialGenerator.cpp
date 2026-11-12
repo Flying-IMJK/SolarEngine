@@ -285,7 +285,7 @@ namespace SE
         ASSERT_LOW_LAYER(_layers.Count() > 0);
         if (materialInfo.Domain != MaterialDomain::Surface && materialInfo.Domain != MaterialDomain::GUI)
         {
-            LOG_ERROR("Resource", "Unsupported SLC2 material domain {0}.", static_cast<int32>(materialInfo.Domain));
+            LOG_ERROR("Resource", "Unsupported ShaderArtifact material domain {0}.", static_cast<int32>(materialInfo.Domain));
             return false;
         }
 

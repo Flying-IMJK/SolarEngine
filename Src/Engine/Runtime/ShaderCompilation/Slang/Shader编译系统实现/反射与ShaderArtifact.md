@@ -1,6 +1,6 @@
-# 反射 IR 与 SLC2
+# 反射 IR 与 ShaderArtifact
 
-目标：编译期从 Slang `ProgramLayout` 生成引擎自有 `ShaderReflectionIR`，再写入 SLC2。运行时只读 SLC2，不依赖 Slang 或 SPIR-V 二次反射。
+目标：编译期从 Slang `ProgramLayout` 生成引擎自有 `ShaderReflectionIR`，再写入 ShaderArtifact。运行时只读 ShaderArtifact，不依赖 Slang 或 SPIR-V 二次反射。
 
 ## 组件边界
 
@@ -9,13 +9,13 @@ slang::ProgramLayout
   -> SlangReflectionBuilder
   -> ShaderReflectionIR
   -> ShaderReflectionValidator
-  -> SLC2Writer
-  -> SLC2Reader self-read
+  -> ShaderArtifactWriter
+  -> ShaderArtifactReader self-read
 ```
 
 ```text
-SLC2 Text
-  -> SLC2Reader
+ShaderArtifact Text
+  -> ShaderArtifactReader
   -> ShaderProgramArtifact
   -> Runtime Reflection
 ```
@@ -96,7 +96,7 @@ Resource:
   elementTypeId?
   imageFormat?
   structuredKind?
-    // 当前 SLC2 只描述主逻辑资源；附属 counter 不进入 IR 资源树。
+    // 当前 ShaderArtifact 只描述主逻辑资源；附属 counter 不进入 IR 资源树。
 
 ParameterBlock:
   containerKind = ConstantBuffer | ParameterBlock
@@ -141,7 +141,7 @@ struct ShaderDescriptorRange
 
 - `resourceRanges[]` 是逻辑范围。
 - `rangeBindings[]` 是当前 block 对逻辑 range 的落点。
-- 当前 SLC2 一条 simple range 必须映射一个 primary descriptor，并可为 Append/Consume 增加一个 counter descriptor；两者共享同一逻辑 range。
+- 当前 ShaderArtifact 一条 simple range 必须映射一个 primary descriptor，并可为 Append/Consume 增加一个 counter descriptor；两者共享同一逻辑 range。
 - `ConstantBuffer` / `ParameterBlock` range 必须映射一个 `SubBlockId`。
 - `defaultUniformBuffer` 使用同一物理字段集合，Role 固定为 `uniformData`。
 - Schema 3 固定：
@@ -172,7 +172,7 @@ Builder 必须：
 
 ## BindingPath
 
-`BindingPath` 是 Builder 内部算法状态，不写入 SLC2。
+`BindingPath` 是 Builder 内部算法状态，不写入 ShaderArtifact。
 
 ```cpp
 struct BindingPathNode
@@ -253,7 +253,7 @@ Vulkan 只接受 `DescriptorTableSlot` 作为 descriptor range category。
 
 Counter：
 
-- SLC2 逻辑资源只保留一个主 resource range；counter 不创建独立的逻辑槽或 IR range。
+- ShaderArtifact 逻辑资源只保留一个主 resource range；counter 不创建独立的逻辑槽或 IR range。
 - Builder 先用 `getExplicitCounter()` 确认语义关系，再用 `getExplicitCounterBindingRangeOffset()` 将 primary/counter raw binding ranges 归到同一个 logical range；该映射只存在于 Builder 临时状态。
 - 最终 `ShaderIRRangeBinding::DescriptorRanges` 保存一条 `primary` 和可选的一条 `counter`；两者 count 与 StageMask 必须一致，counter 必须是 storage-buffer descriptor。
 - `GPUBuffer` 负责附属 counter 的创建和生命周期；Snapshot 只保存父 Buffer，Vulkan 提交阶段再通过父 `GPUBufferVulkan` 取得 `Counter->View()`。
@@ -334,10 +334,10 @@ Writer 和 Reader 共用同一个 Validator。
 - physical `(set,binding)` 写入所有者唯一
 - fingerprint 重算一致
 
-## SLC2 聚合模型
+## ShaderArtifact 聚合模型
 
 ```text
-SLC2Artifact (format 3.0)
+ShaderArtifact (format 3.0)
   format
   programs[]
     programId
@@ -370,7 +370,7 @@ SLC2Artifact (format 3.0)
           code
 ```
 
-SLC2 v3 顶点输入规则：
+ShaderArtifact v3 顶点输入规则：
 
 - `vertexBufferLayout` 位于 Program 级，所有 Program 都必须写该字段；无顶点数据时 `bindings` 与 `elements` 都是空数组。
 - `bindings` 按 slot 排序，`elements` 按 slot/offset/semantic/semanticIndex 排序；字段使用平台无关的 Slot、Stride、PixelFormat 与 inputRate，不保存 VkFormat 或 Vulkan 结构体。
@@ -397,7 +397,7 @@ SLC2 v3 顶点输入规则：
 要求：
 
 - 使用固定字段顺序。
-- 固定写 SLC2 format 3.0；资源反射子对象的 `ShaderReflectionIR.Schema` 为 3，两者是独立版本域。
+- 固定写 ShaderArtifact format 3.0；资源反射子对象的 `ShaderReflectionIR.Schema` 为 3，两者是独立版本域。
 - UTF-8 without BOM。
 - LF 换行，最终换行。
 - Base64 不换行。

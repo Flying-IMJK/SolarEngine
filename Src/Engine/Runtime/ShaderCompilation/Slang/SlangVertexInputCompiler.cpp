@@ -4,7 +4,7 @@ namespace SE
 {
     namespace
     {
-        bool BuildShaderType(slang::TypeLayoutReflection* typeLayout, SLC2VertexInputType& shaderType)
+        bool BuildShaderType(slang::TypeLayoutReflection* typeLayout, VertexInputType& shaderType)
         {
             if (typeLayout == nullptr)
             {
@@ -37,19 +37,19 @@ namespace SE
             }
             if (isHalf)
             {
-                shaderType = static_cast<SLC2VertexInputType>(static_cast<byte>(SLC2VertexInputType::Half) + componentCount - 1);
+                shaderType = static_cast<VertexInputType>(static_cast<byte>(VertexInputType::Half) + componentCount - 1);
             }
             else if (isFloat)
             {
-                shaderType = static_cast<SLC2VertexInputType>(static_cast<byte>(SLC2VertexInputType::Float) + componentCount - 1);
+                shaderType = static_cast<VertexInputType>(static_cast<byte>(VertexInputType::Float) + componentCount - 1);
             }
             else if (isInt)
             {
-                shaderType = static_cast<SLC2VertexInputType>(static_cast<byte>(SLC2VertexInputType::Int) + componentCount - 1);
+                shaderType = static_cast<VertexInputType>(static_cast<byte>(VertexInputType::Int) + componentCount - 1);
             }
             else
             {
-                shaderType = static_cast<SLC2VertexInputType>(static_cast<byte>(SLC2VertexInputType::UInt) + componentCount - 1);
+                shaderType = static_cast<VertexInputType>(static_cast<byte>(VertexInputType::UInt) + componentCount - 1);
             }
             return true;
         }
@@ -70,7 +70,7 @@ namespace SE
         }
     }
 
-    bool SLC2VertexInputCompiler::AppendVertexInput(
+    bool VertexInputCompiler::AppendVertexInput(
         slang::VariableLayoutReflection* variable,
         List<VertexInputSignatureElement>& signature,
         String& error)
@@ -96,7 +96,7 @@ namespace SE
             const size_t location = variable->getOffset(slang::ParameterCategory::VaryingInput);
             if (semanticIndex > static_cast<size_t>(0xffffffffu) || location > static_cast<size_t>(0xffffffffu))
             {
-                error = SE_TEXT("Vertex input semantic index or location exceeds the SLC2 range.");
+                error = SE_TEXT("Vertex input semantic index or location exceeds the ShaderArtifact range.");
                 return false;
             }
             element.SemanticIndex = static_cast<uint32>(semanticIndex);
@@ -131,7 +131,7 @@ namespace SE
         return true;
     }
 
-    bool SLC2VertexInputCompiler::ReadVertexInputSignature(
+    bool VertexInputCompiler::ReadVertexInputSignature(
         slang::ProgramLayout* layout,
         const int32 entryPointIndex,
         List<VertexInputSignatureElement>& signature,
@@ -159,7 +159,7 @@ namespace SE
         return ValidateVertexInputSignature(signature, error);
     }
 
-    bool SLC2VertexInputCompiler::ValidateVertexInputSignature(
+    bool VertexInputCompiler::ValidateVertexInputSignature(
         const List<VertexInputSignatureElement>& signature, String& error)
     {
         for (int32 index = 0; index < signature.Count(); index++)
@@ -170,7 +170,7 @@ namespace SE
                 error = SE_TEXT("Vertex input signature contains an invalid system or empty semantic.");
                 return false;
             }
-            if (static_cast<byte>(element.ShaderType) > static_cast<byte>(SLC2VertexInputType::Half4))
+            if (static_cast<byte>(element.ShaderType) > static_cast<byte>(VertexInputType::Half4))
             {
                 error = SE_TEXT("Vertex input signature contains an unknown ShaderType.");
                 return false;
@@ -193,7 +193,7 @@ namespace SE
         return true;
     }
 
-    bool SLC2VertexInputCompiler::SameVertexInputSignature(
+    bool VertexInputCompiler::SameVertexInputSignature(
         const List<VertexInputSignatureElement>& a,
         const List<VertexInputSignatureElement>& b,
         const bool includeLocation)

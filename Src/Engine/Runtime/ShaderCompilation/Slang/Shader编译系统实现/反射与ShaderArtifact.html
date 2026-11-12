@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Shader 编译系统实现 v2 · 反射 IR 与 SLC2</title>
+  <title>Shader 编译系统实现 v2 · 反射 IR 与 ShaderArtifact</title>
   <link rel="stylesheet" href="styles.css">
   <script defer src="section-frame.js"></script>
 </head>
-<body class="module-page impl-page" data-module-label="反射与 SLC2">
+<body class="module-page impl-page" data-module-label="反射与 ShaderArtifact">
 <aside class="sidebar module-only" aria-label="文档导航">
   <a class="brand" href="index.html">Shader 编译系统实现<small>ShaderReflectionIR 与文本缓存 · v2</small></a>
   <nav class="module-nav"></nav>
@@ -15,7 +15,7 @@
 
 <main class="module-content">
   <header class="module-only" id="reflection-top">
-    <h1>反射 IR 与 SLC2 <span class="version-badge">v2</span></h1>
+    <h1>反射 IR 与 ShaderArtifact <span class="version-badge">v2</span></h1>
     <p class="subtitle">编译期从 Slang Layout 建立引擎数据，运行时不依赖 Slang，也不从 SPIR-V 二次反射。</p>
   </header>
 
@@ -25,11 +25,11 @@
       <div>slang::ProgramLayout</div><div class="arrow">→</div>
       <div>SlangReflectionBuilder</div><div class="arrow">→</div>
       <div>ShaderReflectionIR</div><div class="arrow">→</div>
-      <div>SLC2 Writer</div>
+      <div>ShaderArtifact Writer</div>
     </div>
     <div class="flow">
-      <div>SLC2 Text</div><div class="arrow">→</div>
-      <div>SLC2 Reader</div><div class="arrow">→</div>
+      <div>ShaderArtifact Text</div><div class="arrow">→</div>
+      <div>ShaderArtifact Reader</div><div class="arrow">→</div>
       <div>ShaderProgramArtifact</div><div class="arrow">→</div>
       <div>Runtime Reflection</div>
     </div>
@@ -38,14 +38,14 @@
       <thead><tr><th>路径</th><th>职责</th><th>可链接 Slang</th></tr></thead>
       <tbody>
         <tr><td class="path">ShaderCompilation/Slang/SlangReflectionBuilder.h/.cpp</td><td>查询 Slang Type/Variable/Program Layout，构建稳定的引擎 IR。</td><td>是</td></tr>
-        <tr><td class="path">ShaderCompilation/Slang/ShaderReflectionIR.h</td><td>编译期内存模型；字段一一对应 SLC2 schema，但使用强类型稳定枚举。</td><td>否</td></tr>
+        <tr><td class="path">ShaderCompilation/Slang/ShaderReflectionIR.h</td><td>编译期内存模型；字段一一对应 ShaderArtifact schema，但使用强类型稳定枚举。</td><td>否</td></tr>
         <tr><td class="path">ShaderCompilation/Slang/ShaderReflectionValidator.h/.cpp</td><td>检查可达性、映射完整性、块数组、无界数量、冲突和 fingerprint。</td><td>否</td></tr>
-        <tr><td class="path">ShaderCompilation/SLC2/SLC2Writer.h/.cpp</td><td>固定顺序写 UTF-8 JSON、Base64 代码并执行 self-read。</td><td>否</td></tr>
-        <tr><td class="path">Graphics/Shaders/SLC2/SLC2Reader.h/.cpp</td><td>运行时严格解析、范围检查、结构校验和 fingerprint 重算。</td><td>否</td></tr>
+        <tr><td class="path">ShaderCompilation/Artifact/ShaderArtifactWriter.h/.cpp</td><td>固定顺序写 UTF-8 JSON、Base64 代码并执行 self-read。</td><td>否</td></tr>
+        <tr><td class="path">Graphics/Shaders/Artifact/ShaderArtifactReader.h/.cpp</td><td>运行时严格解析、范围检查、结构校验和 fingerprint 重算。</td><td>否</td></tr>
         <tr><td class="path">Graphics/Shaders/Reflection/ShaderReflectionTypes.h</td><td>编译器和运行时共享的稳定枚举与无 Slang 指针的数据结构。</td><td>否</td></tr>
       </tbody>
     </table>
-    <p class="contract"><strong>依赖方向：</strong>共享类型和 SLC2 reader 不得 include <code>slang.h</code>。只有 Builder 适配 Slang 原生枚举与 API；所有未映射的 Slang 类型都在这里失败，不能把 unknown 数字泄露到缓存。</p>
+    <p class="contract"><strong>依赖方向：</strong>共享类型和 ShaderArtifact reader 不得 include <code>slang.h</code>。只有 Builder 适配 Slang 原生枚举与 API；所有未映射的 Slang 类型都在这里失败，不能把 unknown 数字泄露到缓存。</p>
   </section>
 
   <section>
@@ -136,7 +136,7 @@ struct ShaderDescriptorRange
     ShaderDescriptorFlags Flags;
 };</code></pre>
     <ul>
-      <li>当前 SLC2 simple resource range 必须映射一个 primary descriptor，并可为 Append/Consume 增加一个 counter descriptor；两者共享同一 logical range。</li>
+      <li>当前 ShaderArtifact simple resource range 必须映射一个 primary descriptor，并可为 Append/Consume 增加一个 counter descriptor；两者共享同一 logical range。</li>
       <li><code>Simple</code> 必须有 descriptor mapping、没有 SubBlock；块 flavor 必须有一个 SubBlock、没有 descriptor mapping。</li>
       <li><code>defaultUniformBuffer</code> 与普通 descriptor 使用相同物理字段，但 Role 固定为 <code>uniformData</code>。</li>
       <li>set/binding 是当前 Target 下相对 Program 根的绝对坐标，不保存 Slang 子块局部坐标。</li>
@@ -909,9 +909,9 @@ BuildPrunedRange(candidateRange):
   </section>
 
   <section>
-    <h2 id="slc2-writer">5. SLC2 Writer</h2>
-    <h3 id="slc2-model">聚合模型</h3>
-    <pre><code>SLC2Artifact (format 3.0)
+    <h2 id="shader-artifact-writer">5. ShaderArtifact Writer</h2>
+    <h3 id="shader-artifact-model">聚合模型</h3>
+    <pre><code>ShaderArtifact (format 3.0)
   format
   programs[]
     programId
@@ -931,7 +931,7 @@ BuildPrunedRange(candidateRange):
             { semantic, semanticIndex, location, shaderType }
           code</code></pre>
     <ul>
-      <li>一个 SLC2 对应一个 Shader Resource；顶层不保存 shaderId 或资源路径。</li>
+      <li>一个 ShaderArtifact 对应一个 Shader Resource；顶层不保存 shaderId 或资源路径。</li>
       <li>ProgramId 位于 <code>programs[]</code> 元素内；Target 在 Program 内聚合多个 Variant。</li>
       <li><code>vertexBufferLayout</code> 位于 Program 级并跨全部 Target/Variant 固定；无顶点数据时 bindings/elements 使用空数组。</li>
       <li>Layout 位于 Variant 层并由全部 Stage 共享；Stage 不复制 Layout。</li>
@@ -940,26 +940,26 @@ BuildPrunedRange(candidateRange):
       <li>不保存 source/import 路径、DependencyIndex、diagnostics、默认资源或运行时生命周期信息。</li>
     </ul>
 
-    <h3 id="slc2-json">JSON 写入规则</h3>
+    <h3 id="shader-artifact-json">JSON 写入规则</h3>
     <ul>
       <li>使用 SolarEngine 当前 JSON Writer；字段调用顺序就是规范顺序。</li>
-      <li>固定写 SLC2 format 3.0；资源反射子对象的 <code>ShaderReflectionIR.Schema</code> 为 3，两者是独立版本域。</li>
+      <li>固定写 ShaderArtifact format 3.0；资源反射子对象的 <code>ShaderReflectionIR.Schema</code> 为 3，两者是独立版本域。</li>
       <li>Vertex Binding 按 slot 排序，Element 按 slot/offset/semantic/semanticIndex 排序，Signature 按 location/semantic/semanticIndex 排序；Semantic 写大写规范字符串。</li>
       <li>输出无 BOM UTF-8、LF、最终换行；字符串必须是有效 UTF-8，禁止平台本地编码。</li>
       <li>代码 blob 使用 JSON Base64 字符串；另存明确的 <code>encoding</code> 和完整 SHA-256，读取时先 Base64 解码再验证 hash。</li>
       <li>SPIR-V 首先检查长度是 4 的倍数、magic 为 <code>0x07230203</code>，并由 Slang 验证；测试示例必须是完整 Module，不使用只有 4 字节 magic 的伪产物。</li>
-      <li>写入前执行 IR Validator；写入后立即用运行时 <code>SLC2Reader</code> 读取同一字节并深比较关键语义。</li>
+      <li>写入前执行 IR Validator；写入后立即用运行时 <code>ShaderArtifactReader</code> 读取同一字节并深比较关键语义。</li>
       <li>Writer 不写文件。调用者拿到完整 byte array 后才执行原子文件替换。</li>
     </ul>
 
-    <h3 id="slc2-pseudocode-write">确定性 Writer 伪代码</h3>
+    <h3 id="shader-artifact-pseudocode-write">确定性 Writer 伪代码</h3>
     <div class="pseudo">
       <div class="pseudo-header">
-        <strong>SLC2Writer.WriteDeterministic</strong>
+        <strong>ShaderArtifactWriter.WriteDeterministic</strong>
         <small>计划实现 · 固定字段顺序，不遍历无序 Dictionary</small>
       </div>
       <div class="pseudo-io">
-        <div><strong>输入</strong>完整 SLC2Artifact</div>
+        <div><strong>输入</strong>完整 ShaderArtifact</div>
         <div><strong>不变量</strong>相同输入字节完全一致；不写路径/时间/指针</div>
         <div><strong>输出</strong>UTF-8 JSON byte[]</div>
       </div>
@@ -1010,13 +1010,13 @@ BuildPrunedRange(candidateRange):
 
     bytes = NormalizeNewlinesToLf(buffer.Bytes())
     AppendFinalLfIfMissing(bytes)
-    TRY(SLC2Reader.ReadAndValidate(bytes)) // 同款 Reader 自检。
+    TRY(ShaderArtifactReader.ReadAndValidate(bytes)) // 同款 Reader 自检。
     return bytes</code></pre>
     </div>
 
-    <h3 id="slc2-determinism">确定性要求</h3>
+    <h3 id="shader-artifact-determinism">确定性要求</h3>
     <ul>
-      <li>同一输入、CompilerBuildTag 和 SolarEngine 当前 Slang 编译器标识连续编译两次，SLC2 字节必须完全一致。</li>
+      <li>同一输入、CompilerBuildTag 和 SolarEngine 当前 Slang 编译器标识连续编译两次，ShaderArtifact 字节必须完全一致。</li>
       <li>所有数组按编译器实施文档规定排序；JSON Object 字段顺序固定。</li>
       <li>禁止把内存地址、构建时间、绝对路径、随机 ID 或原生枚举数值写入缓存。</li>
       <li>Base64 不换行；SHA-256 统一为 64 个小写十六进制字符。</li>
@@ -1024,8 +1024,8 @@ BuildPrunedRange(candidateRange):
   </section>
 
   <section>
-    <h2 id="slc2-reader">6. SLC2 Reader 与错误模型</h2>
-    <h3 id="slc2-reader-phases">读取阶段</h3>
+    <h2 id="shader-artifact-reader">6. ShaderArtifact Reader 与错误模型</h2>
+    <h3 id="shader-artifact-reader-phases">读取阶段</h3>
     <ol class="sequence">
       <li>Parse JSON；拒绝语法错误、非 UTF-8 和根类型错误。</li>
       <li>校验 <code>format.magic == "SLC2"</code> 且 <code>major == 3</code>；其他 Major 全部拒绝，不兼容读取 v2。</li>
@@ -1038,14 +1038,14 @@ BuildPrunedRange(candidateRange):
     </ol>
     <p>布局验证先检查类型与 ID 引用，再按 <code>rootBlockId</code> 验证 ParameterBlock 树：每个 block 的 <code>rangeBindings[]</code> 必须覆盖 element type 的全部 logical range；block/simple mapping 字段互斥；每个子块只有一个父块，且不存在环或不可达块。任一失败都拒绝整个 Artifact。</p>
 
-    <h3 id="slc2-pseudocode-read">严格 Reader 伪代码</h3>
+    <h3 id="shader-artifact-pseudocode-read">严格 Reader 伪代码</h3>
     <div class="pseudo">
       <div class="pseudo-header">
-        <strong>SLC2Reader.ReadAndValidate</strong>
+        <strong>ShaderArtifactReader.ReadAndValidate</strong>
         <small>计划实现 · 不使用允许 trailing comma 的宽松 Parse flags</small>
       </div>
       <div class="pseudo-io">
-        <div><strong>输入</strong>不可信 SLC2 UTF-8 bytes</div>
+        <div><strong>输入</strong>不可信 ShaderArtifact UTF-8 bytes</div>
         <div><strong>不变量</strong>先完整验证，后发布不可变对象</div>
         <div><strong>输出</strong>ShaderProgramArtifact</div>
       </div>
@@ -1089,10 +1089,10 @@ BuildPrunedRange(candidateRange):
                     TRY(ValidateTargetCode(target.Meta, bytes))
 
     return Freeze(artifact)</code></pre>
-      <p class="pseudo-note">若 SolarEngine 通用 Json 解析配置允许 trailing commas，SLC2 Reader 必须显式选择严格解析 flags，保证格式契约不会因引擎通用 JSON 宽松策略而变化。</p>
+      <p class="pseudo-note">若 SolarEngine 通用 Json 解析配置允许 trailing commas，ShaderArtifact Reader 必须显式选择严格解析 flags，保证格式契约不会因引擎通用 JSON 宽松策略而变化。</p>
     </div>
 
-    <h3 id="slc2-reader-strictness">严格字段策略</h3>
+    <h3 id="shader-artifact-reader-strictness">严格字段策略</h3>
     <ul>
       <li>缺失必需字段、重复 Program/Target/Variant/Stage、未知枚举、非法 null 都是缓存损坏；Program 缺少 vertexBufferLayout 或 Vertex Stage 缺少 vertexInputSignature 同样失败。</li>
       <li>同一 major 内允许忽略未知的可选字段，但 Writer 当前不产生扩展字段；改变必需语义必须提升 major。</li>
@@ -1163,7 +1163,7 @@ BuildPrunedRange(candidateRange):
     <p>fingerprint 只作为缓存第一层 key。hash 命中后必须深比较规范化物理记录，再复用 Vulkan PipelineLayout；这同时防止 hash 碰撞和错误 Writer 产生的假相等。</p>
   </section>
 
-  <footer class="module-only">实施文档 v2 · 反射 IR 与 SLC2</footer>
+  <footer class="module-only">实施文档 v2 · 反射 IR 与 ShaderArtifact</footer>
 </main>
 </body>
 </html>

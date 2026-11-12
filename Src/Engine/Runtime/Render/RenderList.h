@@ -19,7 +19,7 @@ namespace SE
     struct BoundingSphere;
     struct DrawCall;
     struct RenderContext;
-    class SLC2MaterialDrawProgram;
+    class MaterialDrawProgram;
 
     /// <summary>
     /// Structure that contains information about light for shaders.

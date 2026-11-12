@@ -11,12 +11,12 @@ namespace SE
     {
         ENGINE_ASSERT(GPUDevice::instance);
         Platform::MemoryClear(&m_ShaderHeader, sizeof(m_ShaderHeader));
-        m_GPUShader = GPUDevice::instance->CreateSLC2Shader(pInfo ? StringView(pInfo->path) : StringView::Empty);
+        m_GPUShader = GPUDevice::instance->CreateShader(pInfo ? StringView(pInfo->path) : StringView::Empty);
     }
 
     Shader::~Shader() { DeleteObjectSafe(m_GPUShader); }
 
-    bool Shader::SelectProgram(const String& name, const List<String>& selection, SLC2GPUShaderProgram*& output)
+    bool Shader::SelectProgram(const String& name, const List<String>& selection, GPUShaderProgram*& output)
     {
         output = nullptr;
         return IsLoaded() && m_GPUShader && m_GPUShader->GetOrCreateProgram(name, selection, output);
@@ -24,7 +24,7 @@ namespace SE
 
     bool Shader::SelectProgram(const String& name, const List<String>& selection, ShaderProgramInstance* pInstance)
     {
-        SLC2GPUShaderProgram* program = nullptr;
+        GPUShaderProgram* program = nullptr;
         return pInstance && SelectProgram(name, selection, program) && pInstance->Initialize(program);
     }
 

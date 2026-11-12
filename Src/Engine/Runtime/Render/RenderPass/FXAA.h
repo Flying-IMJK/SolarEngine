@@ -18,7 +18,7 @@ namespace SE
 	{
 	private:
         AssetRef<Shader>       m_Shader;
-        SLC2GPUPipelineState*  m_PipelineState   = nullptr;
+        GPUPipelineState*  m_PipelineState   = nullptr;
         ShaderProgramInstance* m_ProgramInstance = nullptr;
 
     public:

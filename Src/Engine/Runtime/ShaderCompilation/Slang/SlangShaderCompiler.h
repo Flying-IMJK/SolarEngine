@@ -3,7 +3,7 @@
 #include "Runtime/API.h"
 #include "Runtime/Core/Types/Strings/String.h"
 #include "Runtime/ShaderCompilation/ShaderCompileTypes.h"
-#include "Runtime/ShaderCompilation/Slang/SLC2/SLC2Artifact.h"
+#include "Runtime/ShaderCompilation/Slang/Artifact/ShaderArtifact.h"
 
 #include <slang.h>
 

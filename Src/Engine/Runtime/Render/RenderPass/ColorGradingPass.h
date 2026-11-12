@@ -20,7 +20,7 @@ namespace SE
 		bool m_UseVolumeTexture;
 		PixelFormat m_LutFormat;
         AssetRef<Shader>       m_Shader;
-        SLC2GPUPipelineState*  m_PipelineState   = nullptr;
+        GPUPipelineState*  m_PipelineState   = nullptr;
         ShaderProgramInstance* m_ProgramInstance = nullptr;
         GPUConstantBuffer* m_GPUConstantBuffer;
 

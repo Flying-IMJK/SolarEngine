@@ -117,9 +117,9 @@ namespace SE
 
         auto device = GPUDevice::instance;
 
-        m_SpoShadowDir      = device->CreateSLC2PipelineState();
-        m_SpoShadowPoint    = device->CreateSLC2PipelineState();
-        m_SpoShadowSpot     = device->CreateSLC2PipelineState();
+        m_SpoShadowDir      = device->CreatePipelineState();
+        m_SpoShadowPoint    = device->CreatePipelineState();
+        m_SpoShadowSpot     = device->CreatePipelineState();
         m_SPShadowDir       = New<ShaderProgramInstance>();
         m_SPShadowPoint     = New<ShaderProgramInstance>();
         m_SPShadowSpot      = New<ShaderProgramInstance>();
@@ -722,14 +722,14 @@ namespace SE
         {
             macros.Add(SE_TEXT("CONTACT_SHADOWS"));
         }
-        SLC2GPUShaderProgram* program = nullptr;
+        GPUShaderProgram* program = nullptr;
         if (!m_Shader->SelectProgram(SE_TEXT("PointLight"), macros, program))
         {
             return;
         }
         if (m_SPShadowPoint->GetProgram() != program || !m_SpoShadowPoint->IsValid())
         {
-            auto desc     = SLC2GPUPipelineState::Description::DefaultNoDepth;
+            auto desc     = GPUPipelineState::Description::DefaultNoDepth;
             desc.CullMode = CullMode::TwoSided;
             if (!m_SPShadowPoint->Initialize(program) || !m_SpoShadowPoint->Init(desc, program))
             {
@@ -760,7 +760,7 @@ namespace SE
         }
 
         context->SetRenderTarget(pShadowMask);
-        context->SetSLC2State(m_SpoShadowPoint);
+        context->SetState(m_SpoShadowPoint);
         for (const auto& mesh : m_SphereModel->LODs[0].Meshes)
         {
             if (!mesh.IsInitialized())
@@ -841,12 +841,12 @@ namespace SE
         macros.Add(String::Format(SE_TEXT("SHADOWS_QUALITY{0}"), shadowQuality));
         if (sperLight.ContactShadowsLength > Math::ZeroTolerance)
             macros.Add(SE_TEXT("CONTACT_SHADOWS"));
-        SLC2GPUShaderProgram* program = nullptr;
+        GPUShaderProgram* program = nullptr;
         if (!m_Shader->SelectProgram(SE_TEXT("SpotLight"), macros, program))
             return;
         if (m_SPShadowSpot->GetProgram() != program || !m_SpoShadowSpot->IsValid())
         {
-            auto desc     = SLC2GPUPipelineState::Description::DefaultNoDepth;
+            auto desc     = GPUPipelineState::Description::DefaultNoDepth;
             desc.CullMode = CullMode::TwoSided;
             if (!m_SPShadowSpot->Initialize(program) || !m_SpoShadowSpot->Init(desc, program))
             {
@@ -878,7 +878,7 @@ namespace SE
         }
 
         context->SetRenderTarget(pShadowMask);
-        context->SetSLC2State(m_SpoShadowSpot);
+        context->SetState(m_SpoShadowSpot);
         for (const auto& mesh : m_SphereModel->LODs[0].Meshes)
         {
             if (!mesh.IsInitialized())
@@ -949,7 +949,7 @@ namespace SE
         {
             macros.Add(SE_TEXT("CONTACT_SHADOWS"));
         }
-        SLC2GPUShaderProgram* program = nullptr;
+        GPUShaderProgram* program = nullptr;
         if (!m_Shader->SelectProgram(SE_TEXT("DirLight"), macros, program))
         {
             return;
@@ -958,7 +958,7 @@ namespace SE
         if (m_SPShadowDir->GetProgram() != program || !m_SpoShadowDir->IsValid())
         {
             if (!m_SPShadowDir->Initialize(program) ||
-                !m_SpoShadowDir->Init(SLC2GPUPipelineState::Description::DefaultFullscreenTriangle, program))
+                !m_SpoShadowDir->Init(GPUPipelineState::Description::DefaultFullscreenTriangle, program))
             {
                 return;
             }
@@ -990,7 +990,7 @@ namespace SE
         }
 
         context->SetRenderTarget(pShadowMask);
-        context->SetSLC2State(m_SpoShadowDir);
+        context->SetState(m_SpoShadowDir);
         context->DrawFullscreenTriangle(m_SPShadowDir);
 
         // Cleanup

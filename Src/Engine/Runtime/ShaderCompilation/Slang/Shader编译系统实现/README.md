@@ -1,5 +1,7 @@
 # SolarEngine Slang Shader 编译系统实施指南
 
+命名说明：ShaderArtifact 的缓存格式标识仍为 `"SLC2"`，缓存版本与数据结构保持不变。
+
 本目录同时保留两套文档：
 
 - HTML：审查版，用于浏览、跳转和讨论。
@@ -11,7 +13,7 @@
 
 1. [依赖与工程.md](./依赖与工程.md)
 2. [编译器实现.md](./编译器实现.md)
-3. [反射与SLC2.md](./反射与SLC2.md)
+3. [反射与ShaderArtifact.md](./反射与ShaderArtifact.md)
 4. [运行时与Vulkan.md](./运行时与Vulkan.md)
 5. [测试与交付.md](./测试与交付.md)
 
@@ -25,12 +27,12 @@ Compile-only:
     -> Program/Variant/Target plan + Program VertexBufferLayout
     -> linked component
     -> target code + ShaderReflectionIR + VertexInputSignature
-    -> SLC2 v3 JSON
-    -> SLC2Reader + Validator
+    -> ShaderArtifact v3 JSON
+    -> ShaderArtifactReader + Validator
     -> semantic manifest + byte determinism
 
 Runtime/GPU:
-  SLC2 JSON
+  ShaderArtifact JSON
     -> Program/Target/Variant selection
     -> runtime reflection
     -> name binding
@@ -48,9 +50,9 @@ Runtime/GPU:
 - Target 策略、`TargetKey`、目标代码生成。
 - `SlangReflectionBuilder` 生成 `ShaderReflectionIR`。
 - `ShaderReflectionValidator` 强校验。
-- `SLC2Writer` 写 UTF-8 JSON。
-- 通过共享无后端 `SLC2Reader` self-read。
-- 返回 `ShaderCompileResult { Status, CompileMessage, SLC2Data }`。
+- `ShaderArtifactWriter` 写 UTF-8 JSON。
+- 通过共享无后端 `ShaderArtifactReader` self-read。
+- 返回 `ShaderCompileResult { Status, CompileMessage, ShaderData }`。
 
 编译侧不依赖：
 
@@ -62,7 +64,7 @@ Runtime/GPU:
 
 ## 运行时侧负责
 
-- 严格读取 SLC2。
+- 严格读取 ShaderArtifact。
 - 选择 Program / Target / Variant。
 - 从 IR 重建 `ShaderProgramReflection`。
 - 解析 `a.b[2].c` 名称路径。
@@ -76,8 +78,8 @@ Runtime/GPU:
 
 - 调用 Slang。
 - 从 SPIR-V 二次反射。
-- 修复或猜测不完整 SLC2。
-- 参与 Program 发现、Variant 规划、Target codegen 或 SLC2 写入。
+- 修复或猜测不完整 ShaderArtifact。
+- 参与 Program 发现、Variant 规划、Target codegen 或 ShaderArtifact 写入。
 
 ## 共享无后端层
 
@@ -86,10 +88,10 @@ Runtime/GPU:
 - `ShaderReflectionTypes`
 - `ShaderReflectionIR`
 - `ShaderReflectionValidator`
-- `SLC2Reader`
+- `ShaderArtifactReader`
 - `Variant Normalize`
 - `PipelineLayoutFingerprint`
-- `SLC2VertexBufferLayout` / `SLC2VertexInputSignature`
+- `VertexBufferLayout` / `VertexInputSignature`
 
 ## 阶段划分
 
@@ -97,7 +99,7 @@ Runtime/GPU:
 P0  Slang 依赖与骨架
 P1  最小 Compute 编译
 P2  Program / Variant / Target
-P3  ReflectionIR + SLC2 v3 + Vertex Input Artifact
+P3  ReflectionIR + ShaderArtifact v3 + Vertex Input Artifact
 P4  Runtime Reflection + Name Binding
 P5  Vulkan Compute
 P6  Vulkan Graphics + Vertex Input
@@ -105,7 +107,7 @@ P7  完整已设计能力
 P8  调用点迁移与清理
 ```
 
-P0-P3 是编译独立闭环，不创建 GPU 设备、不创建 `ShaderProgramInstance`。P4 从已通过 self-read 的 SLC2 开始。P5 之后才接入 Vulkan。
+P0-P3 是编译独立闭环，不创建 GPU 设备、不创建 `ShaderProgramInstance`。P4 从已通过 self-read 的 ShaderArtifact 开始。P5 之后才接入 Vulkan。
 
 ## 非目标
 

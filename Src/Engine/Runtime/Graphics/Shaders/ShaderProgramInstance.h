@@ -11,7 +11,7 @@ namespace SE
     class GPUConstantBuffer;
     class GPUSampler;
     class GPUTextureView;
-    class SLC2GPUShaderProgram;
+    class GPUShaderProgram;
     class ShaderProgramReflection;
     enum class ShaderProgramBindingKind : byte;
 
@@ -25,7 +25,7 @@ namespace SE
         ShaderProgramInstance();
         ~ShaderProgramInstance() override;
 
-        bool      Initialize(SLC2GPUShaderProgram* program);
+        bool      Initialize(GPUShaderProgram* program);
         ShaderVar GetRootVar();
         bool      FindVar(const String& path, ShaderVar& result);
         // Passing nullptr clears a resource binding; BuildSnapshot supplies the device-owned dummy resource.
@@ -50,7 +50,7 @@ namespace SE
         // The snapshot retains the Program pointer identity and any external CB identity.
         bool BuildSnapshot(ShaderBindingSnapshot& snapshot) const;
 
-        SLC2GPUShaderProgram* GetProgram() const;
+        GPUShaderProgram* GetProgram() const;
 
     private:
         friend class ShaderVar;
@@ -70,7 +70,7 @@ namespace SE
                                                ShaderProgramBindingKind expectedKind) const;
         void ClearResources();
 
-        SLC2GPUShaderProgram*         m_Program = nullptr;
+        GPUShaderProgram*         m_Program = nullptr;
         List<ShaderBindingResource*>  m_Resources;
         List<ShaderUniformBlockState> m_UniformBlocks;
     };

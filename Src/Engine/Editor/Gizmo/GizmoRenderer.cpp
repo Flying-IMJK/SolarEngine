@@ -132,13 +132,13 @@ namespace SE::Editor
         if (m_Program == nullptr)
         {
             m_Program  = New<ShaderProgramInstance>();
-            m_Pipeline = GPUDevice::instance->CreateSLC2PipelineState();
+            m_Pipeline = GPUDevice::instance->CreatePipelineState();
         }
         if (m_Pipeline == nullptr)
         {
             return;
         }
-        SLC2GPUShaderProgram* program = nullptr;
+        GPUShaderProgram* program = nullptr;
         if (!m_Shader->SelectProgram(SE_TEXT("TransformGizmo"), {}, program))
         {
             return;
@@ -146,7 +146,7 @@ namespace SE::Editor
         if (m_Program->GetProgram() != program || !m_Pipeline->IsValid())
         {
             m_Pipeline->ReleaseGPU();
-            auto desc      = SLC2GPUPipelineState::Description::DefaultNoDepth;
+            auto desc      = GPUPipelineState::Description::DefaultNoDepth;
             desc.CullMode  = CullMode::TwoSided;
             desc.BlendMode = BlendingMode::AlphaBlend;
             if (!m_Program->Initialize(program) || !m_Pipeline->Init(desc, program))
@@ -173,7 +173,7 @@ namespace SE::Editor
         // Gizmos are editor overlays, drawn after the scene and its post processing.
         pContext->SetViewportAndScissors(pTask->GetOutputViewport());
         pContext->SetRenderTarget(pTask->Output->View());
-        pContext->SetSLC2State(m_Pipeline);
+        pContext->SetState(m_Pipeline);
         for (const auto& mesh : m_Models[modelIndex]->LODs[0].Meshes)
         {
             if (mesh.IsInitialized() && pContext->BindRenderGeometry(mesh.GetRenderGeometry()))

@@ -431,7 +431,7 @@ void PS_Depth(PixelInput input)
 
 @9
 
-// SLC2 graphics Programs require both VS and PS, including a depth-only Program.
+// ShaderArtifact graphics Programs require both VS and PS, including a depth-only Program.
 void PS_DepthOnly(float4 position : SV_Position) {}
 
 // Static and instanced geometry have different vertex signatures, so they use distinct Programs.

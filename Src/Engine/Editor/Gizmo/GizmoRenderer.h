@@ -56,7 +56,7 @@ namespace SE::Editor
 
         AssetRef<Model>         m_Models[5];
         AssetRef<Shader>        m_Shader;
-        SLC2GPUPipelineState*   m_Pipeline = nullptr;
+        GPUPipelineState*   m_Pipeline = nullptr;
         ShaderProgramInstance*  m_Program  = nullptr;
 
         // UndoStack m_Undo;

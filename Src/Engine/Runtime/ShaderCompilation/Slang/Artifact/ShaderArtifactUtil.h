@@ -5,7 +5,7 @@
 
 namespace SE
 {
-    class SLC2Util
+    class ShaderArtifactUtil
     {
     public:
         static bool ReadAttributeInt(slang::Attribute* attribute, const uint32 argumentIndex, int32& value);

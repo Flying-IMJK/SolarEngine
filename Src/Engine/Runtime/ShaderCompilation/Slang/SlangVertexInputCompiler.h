@@ -1,13 +1,13 @@
 #pragma once
 
 #include <slang.h>
-#include "SLC2/SLC2Artifact.h"
+#include "Artifact/ShaderArtifact.h"
 
 namespace SE
 {
-    // 编译端只负责把 Slang 的逻辑 Vertex Input Signature 固化到 SLC2，
+    // 编译端只负责把 Slang 的逻辑 Vertex Input Signature 固化到 ShaderArtifact，
     // 物理 VertexFactory/Buffer Layout 属于运行时绘制路径，不在此模块声明。
-    class SLC2VertexInputCompiler
+    class VertexInputCompiler
     {
     public:
         static bool AppendVertexInput(slang::VariableLayoutReflection* variable,

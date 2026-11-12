@@ -38,12 +38,12 @@ namespace SE
         GPUDevice* device = GPUDevice::instance;
 
         // Create pipeline states
-        m_PSOThreshold = device->CreateSLC2PipelineState();
-        m_PSOScale     = device->CreateSLC2PipelineState();
-        m_PSOBlurH     = device->CreateSLC2PipelineState();
-        m_PSOBlurV     = device->CreateSLC2PipelineState();
-        m_PSOGenGhosts = device->CreateSLC2PipelineState();
-        m_PSOComposite = device->CreateSLC2PipelineState();
+        m_PSOThreshold = device->CreatePipelineState();
+        m_PSOScale     = device->CreatePipelineState();
+        m_PSOBlurH     = device->CreatePipelineState();
+        m_PSOBlurV     = device->CreatePipelineState();
+        m_PSOGenGhosts = device->CreatePipelineState();
+        m_PSOComposite = device->CreatePipelineState();
 
         m_SPThreshold = New<ShaderProgramInstance>();
         m_SPScale     = New<ShaderProgramInstance>();
@@ -62,27 +62,27 @@ namespace SE
     {
         DeleteObjectSafe(m_PSOThreshold);
         DeleteObjectSafe(m_SPThreshold);
-        m_PSOThreshold = GPUDevice::instance->CreateSLC2PipelineState();
+        m_PSOThreshold = GPUDevice::instance->CreatePipelineState();
         m_SPThreshold  = New<ShaderProgramInstance>();
         DeleteObjectSafe(m_PSOScale);
         DeleteObjectSafe(m_SPScale);
-        m_PSOScale = GPUDevice::instance->CreateSLC2PipelineState();
+        m_PSOScale = GPUDevice::instance->CreatePipelineState();
         m_SPScale  = New<ShaderProgramInstance>();
         DeleteObjectSafe(m_PSOBlurH);
         DeleteObjectSafe(m_SPBlurH);
-        m_PSOBlurH = GPUDevice::instance->CreateSLC2PipelineState();
+        m_PSOBlurH = GPUDevice::instance->CreatePipelineState();
         m_SPBlurH  = New<ShaderProgramInstance>();
         DeleteObjectSafe(m_PSOBlurV);
         DeleteObjectSafe(m_SPBlurV);
-        m_PSOBlurV = GPUDevice::instance->CreateSLC2PipelineState();
+        m_PSOBlurV = GPUDevice::instance->CreatePipelineState();
         m_SPBlurV  = New<ShaderProgramInstance>();
         DeleteObjectSafe(m_PSOGenGhosts);
         DeleteObjectSafe(m_SPGenGhosts);
-        m_PSOGenGhosts = GPUDevice::instance->CreateSLC2PipelineState();
+        m_PSOGenGhosts = GPUDevice::instance->CreatePipelineState();
         m_SPGenGhosts  = New<ShaderProgramInstance>();
         DeleteObjectSafe(m_PSOComposite);
         DeleteObjectSafe(m_SPComposite);
-        m_PSOComposite = GPUDevice::instance->CreateSLC2PipelineState();
+        m_PSOComposite = GPUDevice::instance->CreatePipelineState();
         m_SPComposite  = New<ShaderProgramInstance>();
         InvalidateResources();
     }
@@ -96,8 +96,8 @@ namespace SE
         }
 
         // Create pipeline stages
-        SLC2GPUPipelineState::Description psDesc = SLC2GPUPipelineState::Description::DefaultFullscreenTriangle;
-        SLC2GPUShaderProgram*             program;
+        GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+        GPUShaderProgram*             program;
 
         if (!m_Shader->SelectProgram(SE_TEXT("Threshold"), {}, program) || !m_PSOThreshold->Init(psDesc, program))
         {
@@ -509,7 +509,7 @@ namespace SE
 
         bool validComposite = false;
         if (m_Shader->SelectProgram(SE_TEXT("Composite"), macro, m_SPComposite) &&
-            m_PSOComposite->Init(SLC2GPUPipelineState::Description::DefaultFullscreenTriangle, m_SPComposite->GetProgram()))
+            m_PSOComposite->Init(GPUPipelineState::Description::DefaultFullscreenTriangle, m_SPComposite->GetProgram()))
         {
             validComposite = true;
         }
@@ -537,7 +537,7 @@ namespace SE
             // Composite final frame during single pass (done in full resolution)
             context->SetViewportAndScissors((float)output->Width(), (float)output->Height());
             context->SetRenderTarget(*output);
-            context->SetSLC2State(m_PSOComposite);
+            context->SetState(m_PSOComposite);
             context->DrawFullscreenTriangle(m_SPComposite);
         }
 

@@ -345,7 +345,7 @@ namespace SE
                 return variable.SetTexture(view);
             }
             default:
-                LOG_ERROR("Render", "Unsupported SLC2 material parameter {0}.", m_Name);
+                LOG_ERROR("Render", "Unsupported ShaderArtifact material parameter {0}.", m_Name);
                 return false;
         }
     }
@@ -528,7 +528,7 @@ namespace SE
             }
             if (value->GetParameterType() != original.GetParameterType() || !value->Bind(meta))
             {
-                LOG_ERROR("Render", "Cannot bind SLC2 material parameter {0}.", original.GetName());
+                LOG_ERROR("Render", "Cannot bind ShaderArtifact material parameter {0}.", original.GetName());
                 return false;
             }
         }

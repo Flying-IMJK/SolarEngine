@@ -1,4 +1,4 @@
-#include "SLC2Reader.h"
+#include "ShaderArtifactReader.h"
 
 #include "Runtime/Core/Encoding.h"
 #include "Runtime/Core/Serialization/Json.h"
@@ -11,13 +11,13 @@ namespace SE
 		{
 			if (!object.IsObject())
 			{
-				error = SE_TEXT("SLC2 node is not an object.");
+				error = SE_TEXT("ShaderArtifact node is not an object.");
 				return false;
 			}
 			member = object.FindMember(name);
 			if (member == object.MemberEnd())
 			{
-				error = String(SE_TEXT("SLC2 missing field: ")) + StringAnsi(name).ToString();
+				error = String(SE_TEXT("ShaderArtifact missing field: ")) + StringAnsi(name).ToString();
 				return false;
 			}
 			return true;
@@ -30,7 +30,7 @@ namespace SE
 			{
 				if (error.IsEmpty())
 				{
-					error = String::Format(SE_TEXT("SLC2 field must be string: {0}"), StringAnsiView(name));
+					error = String::Format(SE_TEXT("ShaderArtifact field must be string: {0}"), StringAnsiView(name));
 				}
 				return false;
 			}
@@ -45,7 +45,7 @@ namespace SE
             {
                 if (error.IsEmpty())
                 {
-                    error = String(SE_TEXT("SLC2 field must be string: ")) + StringAnsi(name).ToString();
+                    error = String(SE_TEXT("ShaderArtifact field must be string: ")) + StringAnsi(name).ToString();
                 }
                 return false;
             }
@@ -60,7 +60,7 @@ namespace SE
 			{
 				if (error.IsEmpty())
 				{
-					error = String(SE_TEXT("SLC2 field must be uint: ")) + StringAnsi(name).ToString();
+					error = String(SE_TEXT("ShaderArtifact field must be uint: ")) + StringAnsi(name).ToString();
 				}
 				return false;
 			}
@@ -75,7 +75,7 @@ namespace SE
 			{
 				if (error.IsEmpty())
 				{
-					error = String(SE_TEXT("SLC2 field must be array: ")) + StringAnsi(name).ToString();
+					error = String(SE_TEXT("ShaderArtifact field must be array: ")) + StringAnsi(name).ToString();
 				}
 				return false;
 			}
@@ -84,28 +84,28 @@ namespace SE
 		}
 
 		// Reader 顶点输入边界同时区分“显式空数组”和“字段缺失”，禁止为旧缓存补默认值。
-		namespace SLC2VertexInputReader
+		namespace VertexInputReader
 		{
-			const char* ShaderTypeName(const SLC2VertexInputType type)
+			const char* ShaderTypeName(const VertexInputType type)
 			{
 				switch (type)
 				{
-				case SLC2VertexInputType::Float: return "float";
-				case SLC2VertexInputType::Float2: return "float2";
-				case SLC2VertexInputType::Float3: return "float3";
-				case SLC2VertexInputType::Float4: return "float4";
-				case SLC2VertexInputType::Int: return "int";
-				case SLC2VertexInputType::Int2: return "int2";
-				case SLC2VertexInputType::Int3: return "int3";
-				case SLC2VertexInputType::Int4: return "int4";
-				case SLC2VertexInputType::UInt: return "uint";
-				case SLC2VertexInputType::UInt2: return "uint2";
-				case SLC2VertexInputType::UInt3: return "uint3";
-				case SLC2VertexInputType::UInt4: return "uint4";
-				case SLC2VertexInputType::Half: return "half";
-				case SLC2VertexInputType::Half2: return "half2";
-				case SLC2VertexInputType::Half3: return "half3";
-				case SLC2VertexInputType::Half4: return "half4";
+				case VertexInputType::Float: return "float";
+				case VertexInputType::Float2: return "float2";
+				case VertexInputType::Float3: return "float3";
+				case VertexInputType::Float4: return "float4";
+				case VertexInputType::Int: return "int";
+				case VertexInputType::Int2: return "int2";
+				case VertexInputType::Int3: return "int3";
+				case VertexInputType::Int4: return "int4";
+				case VertexInputType::UInt: return "uint";
+				case VertexInputType::UInt2: return "uint2";
+				case VertexInputType::UInt3: return "uint3";
+				case VertexInputType::UInt4: return "uint4";
+				case VertexInputType::Half: return "half";
+				case VertexInputType::Half2: return "half2";
+				case VertexInputType::Half3: return "half3";
+				case VertexInputType::Half4: return "half4";
 				default: return nullptr;
 				}
 			}
@@ -117,7 +117,7 @@ namespace SE
 				output.Clear();
 				if (!value.IsArray())
 				{
-					error = SE_TEXT("SLC2 vertex input signature must be an array.");
+					error = SE_TEXT("ShaderArtifact vertex input signature must be an array.");
 					return false;
 				}
 				for (auto it = value.Begin(); it != value.End(); ++it)
@@ -126,7 +126,7 @@ namespace SE
 					String shaderType;
 					if (!it->IsObject())
 					{
-						error = SE_TEXT("SLC2 vertex input signature element must be an object.");
+						error = SE_TEXT("ShaderArtifact vertex input signature element must be an object.");
 						return false;
 					}
 					if (!ReadString(*it, "semantic", element.Semantic, error) ||
@@ -138,9 +138,9 @@ namespace SE
 					}
 					element.Semantic.ToUpper();
 					const char* typeName = nullptr;
-					for (byte typeIndex = 0; typeIndex <= static_cast<byte>(SLC2VertexInputType::Half4); typeIndex++)
+					for (byte typeIndex = 0; typeIndex <= static_cast<byte>(VertexInputType::Half4); typeIndex++)
 					{
-						const SLC2VertexInputType candidate = static_cast<SLC2VertexInputType>(typeIndex);
+						const VertexInputType candidate = static_cast<VertexInputType>(typeIndex);
 						if (shaderType == StringAnsi(ShaderTypeName(candidate)).ToString())
 						{
 							element.ShaderType = candidate;
@@ -150,7 +150,7 @@ namespace SE
 					}
 					if (element.Semantic.IsEmpty() || element.Semantic.StartsWith(SE_TEXT("SV_")) || typeName == nullptr)
 					{
-						error = SE_TEXT("SLC2 vertex input signature contains an invalid semantic or ShaderType.");
+						error = SE_TEXT("ShaderArtifact vertex input signature contains an invalid semantic or ShaderType.");
 						return false;
 					}
 					for (int32 existing = 0; existing < output.Count(); existing++)
@@ -159,7 +159,7 @@ namespace SE
 							 output[existing].SemanticIndex == element.SemanticIndex) ||
 							output[existing].Location == element.Location)
 						{
-							error = SE_TEXT("SLC2 vertex input signature contains a duplicated semantic or location.");
+							error = SE_TEXT("ShaderArtifact vertex input signature contains a duplicated semantic or location.");
 							return false;
 						}
 					}
@@ -167,7 +167,7 @@ namespace SE
 				}
 				return true;
 			}
-		} // namespace SLC2VertexInputReader
+		} // namespace VertexInputReader
 
 		int32 GetStageMaskOrder(const String& stage)
 		{
@@ -211,14 +211,14 @@ namespace SE
 				}
 				if (index == tokenStart)
 				{
-					error = SE_TEXT("SLC2 stage mask contains an empty token.");
+					error = SE_TEXT("ShaderArtifact stage mask contains an empty token.");
 					return false;
 				}
 				const String token = StringAnsi(ansi.Get() + tokenStart, index - tokenStart).ToString();
 				const int32 order = GetStageMaskOrder(token);
 				if (order < 0 || order <= previousOrder)
 				{
-					error = SE_TEXT("SLC2 stage mask is unknown, duplicated, or unordered.");
+					error = SE_TEXT("ShaderArtifact stage mask is unknown, duplicated, or unordered.");
 					return false;
 				}
 				previousOrder = order;
@@ -236,14 +236,14 @@ namespace SE
 			}
 			if (output.Role.IsEmpty() || output.DescriptorType.IsEmpty() || output.StageMask.IsEmpty() || output.LogicalElementStride == 0 || output.DescriptorCount == 0 || !ValidateStageMask(output.StageMask, error))
 			{
-				error = SE_TEXT("SLC2 descriptor range has invalid required values.");
+				error = SE_TEXT("ShaderArtifact descriptor range has invalid required values.");
 				return false;
 			}
 			for (auto it = flags->Begin(); it != flags->End(); ++it)
 			{
 				if (!it->IsString())
 				{
-					error = SE_TEXT("SLC2 descriptor flag is not a string.");
+					error = SE_TEXT("ShaderArtifact descriptor flag is not a string.");
 					return false;
 				}
 				output.Flags.Add(StringAnsi(it->GetString(), static_cast<int32>(it->GetStringLength())).ToString());
@@ -277,7 +277,7 @@ namespace SE
 				}
 				if (range.Count == 0)
 				{
-					error = SE_TEXT("SLC2 resource range count must be non-zero.");
+					error = SE_TEXT("ShaderArtifact resource range count must be non-zero.");
 					return false;
 				}
 				output.ResourceRanges.Add(range);
@@ -304,14 +304,14 @@ namespace SE
 				{
 					if (error.IsEmpty())
 					{
-						error = SE_TEXT("SLC2 default uniform buffer must use uniformData role.");
+						error = SE_TEXT("ShaderArtifact default uniform buffer must use uniformData role.");
 					}
 					return false;
 				}
 			}
 			if ((output.UniformByteSize == 0) == output.HasDefaultUniformBuffer)
 			{
-				error = SE_TEXT("SLC2 uniform byte size and default uniform buffer do not agree.");
+				error = SE_TEXT("ShaderArtifact uniform byte size and default uniform buffer do not agree.");
 				return false;
 			}
 			for (auto it = bindings->Begin(); it != bindings->End(); ++it)
@@ -331,7 +331,7 @@ namespace SE
 				{
 					if (!subBlock->value.IsUint())
 					{
-						error = SE_TEXT("SLC2 subBlockId must be uint or null.");
+						error = SE_TEXT("ShaderArtifact subBlockId must be uint or null.");
 						return false;
 					}
 					binding.SubBlockId = static_cast<int32>(subBlock->value.GetUint());
@@ -349,7 +349,7 @@ namespace SE
 				const bool isBlock = binding.Flavor == SE_TEXT("constantBuffer") || binding.Flavor == SE_TEXT("parameterBlock");
 				if ((!isSimple && !isBlock) || (isSimple && (binding.SubBlockId >= 0 || binding.DescriptorRanges.Count() == 0)) || (isBlock && (binding.SubBlockId < 0 || binding.DescriptorRanges.Count() != 0)))
 				{
-					error = SE_TEXT("SLC2 range binding shape is invalid.");
+					error = SE_TEXT("ShaderArtifact range binding shape is invalid.");
 					return false;
 				}
 				output.RangeBindings.Add(binding);
@@ -408,12 +408,12 @@ namespace SE
 		{
 			if (blockId >= static_cast<uint32>(layout.ParameterBlocks.Count()))
 			{
-				error = SE_TEXT("SLC2 parameter block references an unknown block.");
+				error = SE_TEXT("ShaderArtifact parameter block references an unknown block.");
 				return false;
 			}
 			if (visitState[blockId] != 0)
 			{
-				error = visitState[blockId] == 1 ? SE_TEXT("SLC2 parameter block graph contains a cycle.") : SE_TEXT("SLC2 parameter block is reached more than once.");
+				error = visitState[blockId] == 1 ? SE_TEXT("ShaderArtifact parameter block graph contains a cycle.") : SE_TEXT("ShaderArtifact parameter block is reached more than once.");
 				return false;
 			}
 			visitState[blockId] = 1;
@@ -421,7 +421,7 @@ namespace SE
 			const ShaderIRTypeRecord& type = layout.Types[block.ElementTypeId];
 			if (block.RangeBindings.Count() != type.ResourceRanges.Count())
 			{
-				error = SE_TEXT("SLC2 parameter block does not map every logical resource range.");
+				error = SE_TEXT("ShaderArtifact parameter block does not map every logical resource range.");
 				return false;
 			}
 			for (int32 rangeIndex = 0; rangeIndex < type.ResourceRanges.Count(); rangeIndex++)
@@ -431,7 +431,7 @@ namespace SE
 				const bool isBlock = binding.Flavor == SE_TEXT("constantBuffer") || binding.Flavor == SE_TEXT("parameterBlock");
 				if (binding.RangeIndex != static_cast<uint32>(rangeIndex) || (range.ResourceKind == SE_TEXT("ParameterBlock")) != isBlock)
 				{
-					error = SE_TEXT("SLC2 logical range and range binding flavor do not agree.");
+					error = SE_TEXT("ShaderArtifact logical range and range binding flavor do not agree.");
 					return false;
 				}
 				if (isBlock)
@@ -447,14 +447,14 @@ namespace SE
 						layout, block.ElementTypeId, static_cast<uint32>(rangeIndex));
 					if (resourceType == nullptr)
 					{
-						error = SE_TEXT("SLC2 logical resource range does not resolve to a leaf type.");
+						error = SE_TEXT("ShaderArtifact logical resource range does not resolve to a leaf type.");
 						return false;
 					}
 					const bool requiresCounter = resourceType->Shape == SE_TEXT("6") &&
 						(resourceType->Access == SE_TEXT("4") || resourceType->Access == SE_TEXT("5"));
 					if (binding.DescriptorRanges.Count() < 1 || binding.DescriptorRanges.Count() > 2)
 					{
-						error = SE_TEXT("SLC2 logical resources must contain one primary descriptor and at most one counter descriptor.");
+						error = SE_TEXT("ShaderArtifact logical resources must contain one primary descriptor and at most one counter descriptor.");
 						return false;
 					}
 					bool hasPrimary = false;
@@ -466,14 +466,14 @@ namespace SE
 						const ShaderIRDescriptorRange& descriptor = binding.DescriptorRanges[descriptorIndex];
 						if (descriptor.DescriptorCount != range.Count)
 						{
-							error = SE_TEXT("SLC2 descriptor count does not match its logical resource range.");
+							error = SE_TEXT("ShaderArtifact descriptor count does not match its logical resource range.");
 							return false;
 						}
 						if (descriptor.Role == "primary")
 						{
 							if (hasPrimary)
 							{
-								error = SE_TEXT("SLC2 logical resource has multiple primary descriptors.");
+								error = SE_TEXT("ShaderArtifact logical resource has multiple primary descriptors.");
 								return false;
 							}
 							hasPrimary = true;
@@ -484,7 +484,7 @@ namespace SE
 							if (hasCounter || (descriptor.DescriptorType != SE_TEXT("RawBuffer") &&
 								descriptor.DescriptorType != SE_TEXT("StorageBuffer")))
 							{
-								error = SE_TEXT("SLC2 logical resource has an invalid counter descriptor.");
+								error = SE_TEXT("ShaderArtifact logical resource has an invalid counter descriptor.");
 								return false;
 							}
 							hasCounter = true;
@@ -492,23 +492,23 @@ namespace SE
 						}
 						else
 						{
-							error = SE_TEXT("SLC2 logical resource uses an unknown physical descriptor role.");
+							error = SE_TEXT("ShaderArtifact logical resource uses an unknown physical descriptor role.");
 							return false;
 						}
 					}
 					if (!hasPrimary)
 					{
-						error = SE_TEXT("SLC2 logical resource has no primary descriptor.");
+						error = SE_TEXT("ShaderArtifact logical resource has no primary descriptor.");
 						return false;
 					}
 					if (hasCounter != requiresCounter)
 					{
-						error = SE_TEXT("SLC2 counter descriptor does not match the logical resource type.");
+						error = SE_TEXT("ShaderArtifact counter descriptor does not match the logical resource type.");
 						return false;
 					}
 					if (hasCounter && primaryStageMask != counterStageMask)
 					{
-						error = SE_TEXT("SLC2 primary and counter descriptors have different stage usage.");
+						error = SE_TEXT("ShaderArtifact primary and counter descriptors have different stage usage.");
 						return false;
 					}
 				}
@@ -521,12 +521,12 @@ namespace SE
 		{
 			if (typeId >= static_cast<uint32>(layout.Types.Count()))
 			{
-				error = SE_TEXT("SLC2 type references an unknown type.");
+				error = SE_TEXT("ShaderArtifact type references an unknown type.");
 				return false;
 			}
 			if (visitState[typeId] == 1)
 			{
-				error = SE_TEXT("SLC2 type graph contains a cycle.");
+				error = SE_TEXT("ShaderArtifact type graph contains a cycle.");
 				return false;
 			}
 			if (visitState[typeId] == 2)
@@ -554,7 +554,7 @@ namespace SE
 		{
 			if (layout.Schema != 3 || layout.Types.Count() == 0 || layout.ParameterBlocks.Count() == 0 || layout.RootBlockId >= static_cast<uint32>(layout.ParameterBlocks.Count()))
 			{
-				error = SE_TEXT("SLC2 layout header is invalid.");
+				error = SE_TEXT("ShaderArtifact layout header is invalid.");
 				return false;
 			}
 			for (int32 typeIndex = 0; typeIndex < layout.Types.Count(); typeIndex++)
@@ -562,14 +562,14 @@ namespace SE
 				const ShaderIRTypeRecord& type = layout.Types[typeIndex];
 				if (type.Id != static_cast<uint32>(typeIndex) || type.Kind.IsEmpty())
 				{
-					error = SE_TEXT("SLC2 type IDs are not contiguous.");
+					error = SE_TEXT("ShaderArtifact type IDs are not contiguous.");
 					return false;
 				}
 				for (int32 memberIndex = 0; memberIndex < type.Members.Count(); memberIndex++)
 				{
 					if (type.Members[memberIndex].TypeId >= static_cast<uint32>(layout.Types.Count()))
 					{
-						error = SE_TEXT("SLC2 member references an unknown type.");
+						error = SE_TEXT("ShaderArtifact member references an unknown type.");
 						return false;
 					}
 				}
@@ -579,7 +579,7 @@ namespace SE
 					const ShaderIRResourceRange& range = type.ResourceRanges[rangeIndex];
 					if (range.Count == 0 || expectedBaseIndex > Max_uint32 || range.BaseIndex != expectedBaseIndex)
 					{
-						error = SE_TEXT("SLC2 resource range count or base index is invalid.");
+						error = SE_TEXT("ShaderArtifact resource range count or base index is invalid.");
 						return false;
 					}
 					expectedBaseIndex += range.Count;
@@ -590,7 +590,7 @@ namespace SE
 				const ShaderIRParameterBlock& block = layout.ParameterBlocks[blockIndex];
 				if (block.Id != static_cast<uint32>(blockIndex) || block.ElementTypeId >= static_cast<uint32>(layout.Types.Count()))
 				{
-					error = SE_TEXT("SLC2 parameter block is invalid.");
+					error = SE_TEXT("ShaderArtifact parameter block is invalid.");
 					return false;
 				}
 				for (int32 left = 0; left < block.RangeBindings.Count(); left++)
@@ -598,14 +598,14 @@ namespace SE
 					const ShaderIRRangeBinding& binding = block.RangeBindings[left];
 					if (binding.SubBlockId >= static_cast<int32>(layout.ParameterBlocks.Count()))
 					{
-						error = SE_TEXT("SLC2 range binding references an unknown block.");
+						error = SE_TEXT("ShaderArtifact range binding references an unknown block.");
 						return false;
 					}
 					for (int32 right = left + 1; right < block.RangeBindings.Count(); right++)
 					{
 						if (binding.RangeIndex == block.RangeBindings[right].RangeIndex)
 						{
-							error = SE_TEXT("SLC2 range binding index is duplicated.");
+							error = SE_TEXT("ShaderArtifact range binding index is duplicated.");
 							return false;
 						}
 					}
@@ -625,7 +625,7 @@ namespace SE
 			{
 				if (visitState[blockIndex] != 2)
 				{
-					error = SE_TEXT("SLC2 parameter block is not reachable from rootBlockId.");
+					error = SE_TEXT("ShaderArtifact parameter block is not reachable from rootBlockId.");
 					return false;
 				}
 			}
@@ -643,7 +643,7 @@ namespace SE
 			{
 				if (typeVisitState[typeIndex] != 2)
 				{
-					error = SE_TEXT("SLC2 type is not reachable from rootBlockId.");
+					error = SE_TEXT("ShaderArtifact type is not reachable from rootBlockId.");
 					return false;
 				}
 			}
@@ -653,13 +653,13 @@ namespace SE
 			}
 			if (BuildPipelineLayoutFingerprint(layout) != layout.PipelineLayoutFingerprint)
 			{
-				error = SE_TEXT("SLC2 pipeline layout fingerprint mismatch.");
+				error = SE_TEXT("ShaderArtifact pipeline layout fingerprint mismatch.");
 				return false;
 			}
 			return true;
 		}
 
-		bool ParseStage(const Json::Value& value, SLC2StageRecord& output, String& error)
+		bool ParseStage(const Json::Value& value, ShaderStageRecord& output, String& error)
 		{
 			String stageName;
 			String encodedCode;
@@ -673,7 +673,7 @@ namespace SE
             if (!ParseShaderStage(stageAnsi.Get(), output.Stage) || output.Stage == ShaderStage::Max ||
                 encodedCode.IsEmpty())
 			{
-				error = SE_TEXT("SLC2 stage is invalid.");
+				error = SE_TEXT("ShaderArtifact stage is invalid.");
 				return false;
 			}
 
@@ -681,25 +681,25 @@ namespace SE
 			Json::Value::ConstMemberIterator signature = value.FindMember("vertexInputSignature");
 			if (output.Stage == ShaderStage::Vertex)
 			{
-				if (signature == value.MemberEnd() || !SLC2VertexInputReader::ParseVertexInputSignature(
+				if (signature == value.MemberEnd() || !VertexInputReader::ParseVertexInputSignature(
 														  signature->value, output.VertexInputSignature, error))
 				{
 					if (error.IsEmpty())
 					{
-						error = SE_TEXT("SLC2 vertex stage is missing vertexInputSignature.");
+						error = SE_TEXT("ShaderArtifact vertex stage is missing vertexInputSignature.");
 					}
 					return false;
 				}
 			}
 			else if (signature != value.MemberEnd())
 			{
-				error = SE_TEXT("SLC2 non-vertex stage cannot contain vertexInputSignature.");
+				error = SE_TEXT("ShaderArtifact non-vertex stage cannot contain vertexInputSignature.");
 				return false;
 			}
 			if ((output.Stage == ShaderStage::Hull && (outputControlPoints == 0 || outputControlPoints > 32)) ||
 				(output.Stage != ShaderStage::Hull && outputControlPoints != 0))
 			{
-				error = SE_TEXT("SLC2 stage output control points are invalid.");
+				error = SE_TEXT("ShaderArtifact stage output control points are invalid.");
 				return false;
 			}
 			output.OutputControlPoints = static_cast<int32>(outputControlPoints);
@@ -707,13 +707,13 @@ namespace SE
 			Encoding::Base64::Decode(encodedAnsi.Get(), encodedAnsi.Length(), output.Code);
 			if (output.Code.Count() < 4 || (output.Code.Count() & 3) != 0 || output.Code[0] != 0x03 || output.Code[1] != 0x02 || output.Code[2] != 0x23 || output.Code[3] != 0x07 || ComputeSHA256Hex(output.Code.Get(), output.Code.Count()) != codeHash)
 			{
-				error = SE_TEXT("SLC2 stage code is invalid.");
+				error = SE_TEXT("ShaderArtifact stage code is invalid.");
 				return false;
 			}
 			return true;
 		}
 
-		bool ParseTarget(const Json::Value& value, SLC2TargetRecord& output, String& error)
+		bool ParseTarget(const Json::Value& value, ShaderTargetRecord& output, String& error)
 		{
 			String shaderProfile;
 			String featureLevel;
@@ -735,13 +735,13 @@ namespace SE
 
 			if (output.Target == ShaderProfile::Unknown || variants->Empty())
 			{
-				error = SE_TEXT("SLC2 target identity is invalid.");
+				error = SE_TEXT("ShaderArtifact target identity is invalid.");
 				return false;
 			}
 
 			for (auto it = variants->Begin(); it != variants->End(); ++it)
 			{
-				SLC2VariantRecord variant;
+				ShaderVariantRecord variant;
 				const Json::Value* stages = nullptr;
 				Json::Value::ConstMemberIterator layout;
 				if (!ReadString(*it, "variant", variant.Variant, error) || !RequireMember(*it, "layout", layout, error) || !layout->value.IsObject() || !ReadArray(*it, "stages", stages, error) || stages->Empty())
@@ -783,7 +783,7 @@ namespace SE
 				}
 				for (auto stage = stages->Begin(); stage != stages->End(); ++stage)
 				{
-					SLC2StageRecord record;
+					ShaderStageRecord record;
 					if (!ParseStage(*stage, record, error))
 					{
 						return false;
@@ -792,7 +792,7 @@ namespace SE
 					{
 						if (variant.Stages[existing].Stage == record.Stage)
 						{
-							error = SE_TEXT("SLC2 variant has duplicate stages.");
+							error = SE_TEXT("ShaderArtifact variant has duplicate stages.");
 							return false;
 						}
 					}
@@ -809,14 +809,14 @@ namespace SE
 				}
 				if ((hasCompute && variant.Stages.Count() != 1) || (!hasCompute && (!hasVertex || !hasPixel)))
 				{
-					error = SE_TEXT("SLC2 variant stage contract is invalid.");
+					error = SE_TEXT("ShaderArtifact variant stage contract is invalid.");
 					return false;
 				}
 				for (int32 existing = 0; existing < output.Variants.Count(); existing++)
 				{
 					if (output.Variants[existing].Variant == variant.Variant)
 					{
-						error = SE_TEXT("SLC2 target has duplicate variants.");
+						error = SE_TEXT("ShaderArtifact target has duplicate variants.");
 						return false;
 					}
 				}
@@ -826,7 +826,7 @@ namespace SE
 		}
 
 		// 逻辑签名是 Program 合约：语义/类型跨 Target 稳定，同一 Target 的 Location 跨 Variant 稳定。
-		namespace SLC2VertexInputReader
+		namespace VertexInputReader
 		{
 			bool SameSignature(const List<VertexInputSignatureElement>& a,
 							   const List<VertexInputSignatureElement>& b,
@@ -857,21 +857,21 @@ namespace SE
 				return true;
 			}
 
-			bool ValidateProgramVertexInput(const SLC2ProgramRecord& program, String& error)
+			bool ValidateProgramVertexInput(const ShaderProgramRecord& program, String& error)
 			{
 				List<VertexInputSignatureElement> programSignature;
 				bool hasProgramSignature = false;
 				for (int32 targetIndex = 0; targetIndex < program.Targets.Count(); targetIndex++)
 				{
-					const SLC2TargetRecord& target = program.Targets[targetIndex];
+					const ShaderTargetRecord& target = program.Targets[targetIndex];
 					List<VertexInputSignatureElement> targetSignature;
 					bool hasTargetSignature = false;
 					for (int32 variantIndex = 0; variantIndex < target.Variants.Count(); variantIndex++)
 					{
-						const SLC2VariantRecord& variant = target.Variants[variantIndex];
+						const ShaderVariantRecord& variant = target.Variants[variantIndex];
 						for (int32 stageIndex = 0; stageIndex < variant.Stages.Count(); stageIndex++)
 						{
-							const SLC2StageRecord& stage = variant.Stages[stageIndex];
+							const ShaderStageRecord& stage = variant.Stages[stageIndex];
 							if (stage.Stage != ShaderStage::Vertex)
 							{
 								continue;
@@ -883,7 +883,7 @@ namespace SE
 							}
 							else if (!SameSignature(programSignature, stage.VertexInputSignature, false))
 							{
-								error = SE_TEXT("SLC2 vertex input semantic/type changed between variants or targets.");
+								error = SE_TEXT("ShaderArtifact vertex input semantic/type changed between variants or targets.");
 								return false;
 							}
 							if (!hasTargetSignature)
@@ -893,7 +893,7 @@ namespace SE
 							}
 							else if (!SameSignature(targetSignature, stage.VertexInputSignature, true))
 							{
-								error = SE_TEXT("SLC2 vertex input locations changed between variants of one target.");
+								error = SE_TEXT("ShaderArtifact vertex input locations changed between variants of one target.");
 								return false;
 							}
 						}
@@ -901,23 +901,23 @@ namespace SE
 				}
 				return true;
 			}
-		} // namespace SLC2VertexInputReader
+		} // namespace VertexInputReader
 	} // namespace
 
-	bool SLC2Reader::Read(const byte* data, const int32 length, SLC2Artifact& artifact, String& error)
+	bool ShaderArtifactReader::Read(const byte* data, const int32 length, ShaderArtifact& artifact, String& error)
 	{
-		artifact = SLC2Artifact();
+		artifact = ShaderArtifact();
 		error = String::Empty;
 		if (data == nullptr || length <= 0)
 		{
-			error = SE_TEXT("SLC2 data is empty.");
+			error = SE_TEXT("ShaderArtifact data is empty.");
 			return false;
 		}
 		Json::Document document;
 		document.Parse(reinterpret_cast<const char*>(data), length);
 		if (document.HasParseError() || !document.IsObject())
 		{
-			error = SE_TEXT("SLC2 data is not valid JSON.");
+			error = SE_TEXT("ShaderArtifact data is not valid JSON.");
 			return false;
 		}
 		if (!ReadString(document, "format", artifact.Format, error) ||
@@ -927,7 +927,7 @@ namespace SE
 		{
 			if (error.IsEmpty())
 			{
-				error = SE_TEXT("SLC2 header is invalid.");
+				error = SE_TEXT("ShaderArtifact header is invalid.");
 			}
 			return false;
 		}
@@ -938,7 +938,7 @@ namespace SE
 		}
 		for (auto it = programs->Begin(); it != programs->End(); ++it)
 		{
-			SLC2ProgramRecord program;
+			ShaderProgramRecord program;
 			const Json::Value* groups = nullptr;
 			const Json::Value* targets = nullptr;
 			if (!ReadString(*it, "programId", program.ProgramId, error))
@@ -947,7 +947,7 @@ namespace SE
 			}
 			if ((*it).FindMember("vertexBufferLayout") != (*it).MemberEnd())
 			{
-				error = SE_TEXT("SLC2 v4 must not contain a Program vertexBufferLayout.");
+				error = SE_TEXT("ShaderArtifact v4 must not contain a Program vertexBufferLayout.");
 				return false;
 			}
 			if (!ReadArray(*it, "variantGroups", groups, error) || !ReadArray(*it, "targets", targets, error) ||
@@ -967,7 +967,7 @@ namespace SE
 				{
 					if (!member->IsString())
 					{
-						error = SE_TEXT("SLC2 variant group member is invalid.");
+						error = SE_TEXT("ShaderArtifact variant group member is invalid.");
 						return false;
 					}
                     record.Members.Add(member->GetText());
@@ -976,7 +976,7 @@ namespace SE
 			}
 			for (auto target = targets->Begin(); target != targets->End(); ++target)
 			{
-				SLC2TargetRecord record;
+				ShaderTargetRecord record;
 				if (!ParseTarget(*target, record, error))
 				{
 					return false;
@@ -985,13 +985,13 @@ namespace SE
 				{
 					if (program.Targets[existing].Target == record.Target)
 					{
-						error = SE_TEXT("SLC2 program has duplicate targets.");
+						error = SE_TEXT("ShaderArtifact program has duplicate targets.");
 						return false;
 					}
 				}
 				program.Targets.Add(record);
 			}
-			if (!SLC2VertexInputReader::ValidateProgramVertexInput(program, error))
+			if (!VertexInputReader::ValidateProgramVertexInput(program, error))
 			{
 				return false;
 			}
@@ -999,7 +999,7 @@ namespace SE
 			{
 				if (artifact.Programs[existing].ProgramId == program.ProgramId)
 				{
-					error = SE_TEXT("SLC2 has duplicate ProgramId values.");
+					error = SE_TEXT("ShaderArtifact has duplicate ProgramId values.");
 					return false;
 				}
 			}
@@ -1008,18 +1008,18 @@ namespace SE
 		return true;
 	}
 
-	bool SLC2Reader::Read(const List<byte>& data, SLC2Artifact& artifact, String& error)
+	bool ShaderArtifactReader::Read(const List<byte>& data, ShaderArtifact& artifact, String& error)
 	{
 		return Read(data.Get(), data.Count(), artifact, error);
 	}
 
-	bool SLC2Reader::ReadAndValidate(const byte* data, const int32 length, String& error)
+	bool ShaderArtifactReader::ReadAndValidate(const byte* data, const int32 length, String& error)
 	{
-		SLC2Artifact artifact;
+		ShaderArtifact artifact;
 		return Read(data, length, artifact, error);
 	}
 
-	bool SLC2Reader::ReadAndValidate(const List<byte>& data, String& error)
+	bool ShaderArtifactReader::ReadAndValidate(const List<byte>& data, String& error)
 	{
 		return ReadAndValidate(data.Get(), data.Count(), error);
 	}

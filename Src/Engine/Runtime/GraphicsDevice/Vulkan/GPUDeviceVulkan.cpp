@@ -1094,9 +1094,9 @@ namespace SE
 		return New<GPUSwapChainVulkan>(this, window);
 	}
 
-    SLC2GPUPipelineState* GPUDeviceVulkan::CreateSLC2PipelineState()
+    GPUPipelineState* GPUDeviceVulkan::CreatePipelineState()
     { 
-        return New<SLC2GraphicsPipelineStateVulkan>(this); 
+        return New<GraphicsPipelineStateVulkan>(this);
     }
 
 	GPUTexture* GPUDeviceVulkan::CreateTexture(const StringView& name)
@@ -1104,9 +1104,9 @@ namespace SE
 		return New<GPUTextureVulkan>(this, name);
 	}
 
-	SLC2GPUShader* GPUDeviceVulkan::CreateSLC2Shader(const StringView& name)
+	GPUShader* GPUDeviceVulkan::CreateShader(const StringView& name)
 	{
-		return New<SLC2GPUShaderVulkan>(this, name);
+		return New<GPUShaderVulkan>(this, name);
 	}
 
 	GPUBuffer* GPUDeviceVulkan::CreateBuffer(const StringView& name)

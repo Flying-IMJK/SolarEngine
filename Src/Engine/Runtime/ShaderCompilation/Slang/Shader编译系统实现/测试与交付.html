@@ -21,21 +21,21 @@
 
   <section>
     <h2 id="delivery-strategy">1. 交付策略</h2>
-    <p>实施采用“先建立可独立运行的编译闭环，再接入运行时名称解析，最后打通 Vulkan Compute 和 Graphics”的依赖顺序。依赖图允许的阶段可以并行开发，但下游只能消费已满足退出条件的上游接口；不得在 Vulkan 调试期间同时修改 Variant 规范或 SLC2 schema。</p>
+    <p>实施采用“先建立可独立运行的编译闭环，再接入运行时名称解析，最后打通 Vulkan Compute 和 Graphics”的依赖顺序。依赖图允许的阶段可以并行开发，但下游只能消费已满足退出条件的上游接口；不得在 Vulkan 调试期间同时修改 Variant 规范或 ShaderArtifact schema。</p>
     <div class="contract">
       <strong>Compile-only 闭环：</strong>
-      Slang 源码 → Program/Variant 发现 + Program VertexBufferLayout → Target 编译计划 → linked component → SPIR-V + ShaderReflectionIR + VertexInputSignature → SLC2 v3 → 严格 Reader/Validator → 语义 manifest 与字节确定性。
+      Slang 源码 → Program/Variant 发现 + Program VertexBufferLayout → Target 编译计划 → linked component → SPIR-V + ShaderReflectionIR + VertexInputSignature → ShaderArtifact v3 → 严格 Reader/Validator → 语义 manifest 与字节确定性。
     </div>
     <div class="contract">
       <strong>运行时/GPU 闭环：</strong>
-      已存在 SLC2 → Program/Target/Variant 选择 → runtime reflection → 名称绑定 Texture/Buffer/Sampler → Vulkan shared PipelineLayout + Vertex Input State → Descriptor 写入 → Dispatch/Draw。
+      已存在 ShaderArtifact → Program/Target/Variant 选择 → runtime reflection → 名称绑定 Texture/Buffer/Sampler → Vulkan shared PipelineLayout + Vertex Input State → Descriptor 写入 → Dispatch/Draw。
     </div>
 
     <h3 id="delivery-branching">提交边界</h3>
     <ul>
       <li>第三方 Slang 依赖固定与许可证单独提交。</li>
       <li>共享数据类型、纯算法与测试先于调用点提交。</li>
-      <li>编译器、SLC2、runtime reflection、Vulkan adapter 分开提交，但每个合入点保持主分支可构建。</li>
+      <li>编译器、ShaderArtifact、runtime reflection、Vulkan adapter 分开提交，但每个合入点保持主分支可构建。</li>
       <li>旧调用点的移除独立于新路径功能提交，便于确认不是 Legacy 行为掩盖测试成功。</li>
       <li>不在本轮提交 Cook/发布、DependencyIndex、默认资源或 runtime lifecycle 优化。</li>
     </ul>
@@ -51,8 +51,8 @@
       </div>
       <div class="phase-card">
         <strong>P1 · 最小 Compute 编译</strong>
-        无资源、无 Variant 的单 CS Program，联合 component、SPIR-V code 与最小 SLC2。
-        <div class="exit">退出：无需 GPU 即可通过 SLC2 Reader/Validator；两次编译字节一致；SPIR-V 通过基础格式与 hash 校验。</div>
+        无资源、无 Variant 的单 CS Program，联合 component、SPIR-V code 与最小 ShaderArtifact。
+        <div class="exit">退出：无需 GPU 即可通过 ShaderArtifact Reader/Validator；两次编译字节一致；SPIR-V 通过基础格式与 hash 校验。</div>
       </div>
       <div class="phase-card">
         <strong>P2 · Program 与 Variant</strong>
@@ -60,13 +60,13 @@
         <div class="exit">退出：正负 fixture 全通过；空宏 Variant 与必选默认项正确。</div>
       </div>
       <div class="phase-card">
-        <strong>P3 · Reflection IR 与 SLC2</strong>
+        <strong>P3 · Reflection IR 与 ShaderArtifact</strong>
         完整 types/blocks/range mapping、Program 顶点缓冲布局、Vertex Stage 输入签名、Writer/Reader/self-read、fingerprint。
         <div class="exit">退出：所有 schema invariant 可由 mutation test 捕获；compile-only fixture 可输出语义 manifest；runtime 无 Slang。</div>
       </div>
       <div class="phase-card">
         <strong>P4 · Runtime Reflection 与名称绑定</strong>
-        从已存在 SLC2 重建 Program/Target/Variant、ShaderVar、名称解析、逻辑资源状态和提交前完整性验证。
+        从已存在 ShaderArtifact 重建 Program/Target/Variant、ShaderVar、名称解析、逻辑资源状态和提交前完整性验证。
         <div class="exit">退出：不创建 GPU 对象即可按名称解析 Texture/Buffer/Sampler、固定数组和子块路径；缺失资源可确定性阻止提交。</div>
       </div>
       <div class="phase-card">
@@ -109,7 +109,7 @@
     <table>
       <thead><tr><th>路径</th><th>内容</th></tr></thead>
       <tbody>
-        <tr><td class="path">Src/Engine/Runtime/Test.cpp · TestSystem</td><td>统一承载 Slang API probe、Variant、ReflectionIR、SLC2、NameResolver、Fingerprint、compile-only 与 Vulkan 测试入口；按独立函数分区，不新增平行 Test.cpp。</td></tr>
+        <tr><td class="path">Src/Engine/Runtime/Test.cpp · TestSystem</td><td>统一承载 Slang API probe、Variant、ReflectionIR、ShaderArtifact、NameResolver、Fingerprint、compile-only 与 Vulkan 测试入口；按独立函数分区，不新增平行 Test.cpp。</td></tr>
         <tr><td class="path">Tests/Shaders/Slang/*.slang</td><td>编译与反射集成 fixture；VertexInput fixture 覆盖多 Slot/Element、ALIGN、Instance、稀疏 Slot、system-only、Variant 稳定性和非法声明。</td></tr>
       </tbody>
     </table>
@@ -238,7 +238,7 @@ RunSemanticSmoke():
       </div>
       <div class="pseudo-io">
         <div><strong>输入</strong>.slang fixture + request + expected manifest</div>
-        <div><strong>不变量</strong>失败没有部分 SLC2；成功必须 self-read</div>
+        <div><strong>不变量</strong>失败没有部分 ShaderArtifact；成功必须 self-read</div>
         <div><strong>输出</strong>语义断言结果</div>
       </div>
       <pre><code>RunShaderCompileFixture(fixture):
@@ -252,21 +252,21 @@ RunSemanticSmoke():
 
     IF fixture.ExpectedStatus == Failed:
         CHECK(result.Status == Failed)
-        CHECK(result.SLC2Data.IsEmpty)
+        CHECK(result.ShaderData.IsEmpty)
         FOR text IN fixture.RequiredDiagnostics:
             CHECK(result.CompileMessage.Contains(text))
         return
 
     REQUIRE(result.Status == Success)
     artifact = REQUIRE_SUCCESS(
-        SLC2Reader.ReadAndValidate(result.SLC2Data))
+        ShaderArtifactReader.ReadAndValidate(result.ShaderData))
     CHECK(ExtractSemanticManifest(artifact) ==
           fixture.ExpectedSemanticManifest)
 
     // 同一固定工具链下验证确定性。
     ShadersCompilation.Compile(request, second)
     REQUIRE(second.Status == Success)
-    CHECK(second.SLC2Data == result.SLC2Data)</code></pre>
+    CHECK(second.ShaderData == result.ShaderData)</code></pre>
       <p class="pseudo-note">ExpectedSemanticManifest 比较 Program/Target/Variant/Stage、IR 和关键 mapping，不把整段 SPIR-V 文本作为跨 Slang 版本的永久 golden。</p>
     </div>
   </section>
@@ -297,10 +297,10 @@ RunSemanticSmoke():
         <tr><td><code>SHADER_MACRO(_, FOG_ON)</code></td><td>生成 <code>""</code> 与 <code>"FOG_ON"</code>。</td></tr>
         <tr><td>两个 2 项组</td><td>4 个物化 Variant。</td></tr>
         <tr><td>显式空 Defines</td><td>必选组取第一项，含下划线组选空。</td></tr>
-        <tr><td>输入宏顺序不同</td><td>匹配同一个 SLC2 variant。</td></tr>
+        <tr><td>输入宏顺序不同</td><td>匹配同一个 ShaderArtifact variant。</td></tr>
         <tr><td>NAME=VALUE、未知宏、同组多选</td><td>整个请求失败。</td></tr>
         <tr><td>声明依赖 Variant 宏才出现</td><td>基线/Variant 结构比较失败。</td></tr>
-        <tr><td>顶点布局或 Vertex 签名随 Variant 改变</td><td>结构/签名稳定性校验失败；不生成部分 SLC2。</td></tr>
+        <tr><td>顶点布局或 Vertex 签名随 Variant 改变</td><td>结构/签名稳定性校验失败；不生成部分 ShaderArtifact。</td></tr>
       </tbody>
     </table>
 
@@ -320,10 +320,10 @@ RunSemanticSmoke():
         <tr><td>显式 UAV counter</td><td>Append/Consume 只生成一个 logical range/slot，但该 range 包含 primary + counter 两条 physical descriptors；普通 RW Structured Buffer 绑定到 Append/Consume 参数失败。GPU 正向用例执行 Append 3 次、Consume 1 次，并通过父 Buffer 的 <code>CopyCounter()</code> 读回 2。</td></tr>
         <tr><td>块数组与含块数组闭包</td><td>编译失败。</td></tr>
         <tr><td>无界数组/range</td><td>所有 Target 确定性失败。</td></tr>
-        <tr><td>Push Constant</td><td>编译失败，SLC2Data 为空。</td></tr>
-        <tr><td>同输入重复编译</td><td>SLC2 byte-for-byte 相同。</td></tr>
+        <tr><td>Push Constant</td><td>编译失败，ShaderData 为空。</td></tr>
+        <tr><td>同输入重复编译</td><td>ShaderArtifact byte-for-byte 相同。</td></tr>
         <tr><td>JSON 修改 ID/count/hash/fingerprint</td><td>Reader 在精确路径失败。</td></tr>
-        <tr><td>SLC2 v3 顶点输入 round-trip</td><td>Program vertexBufferLayout 与 Vertex Stage vertexInputSignature 字段、归属和确定性排序保持一致。</td></tr>
+        <tr><td>ShaderArtifact v3 顶点输入 round-trip</td><td>Program vertexBufferLayout 与 Vertex Stage vertexInputSignature 字段、归属和确定性排序保持一致。</td></tr>
         <tr><td>Binding/Element/ALIGN</td><td>重复 Slot、未知 Slot、重叠、越过 Stride、非法格式/频率失败；每 Slot 独立 ALIGN，首项为 0，显式 Stride 保留尾部 padding。</td></tr>
         <tr><td>Semantic 与格式兼容</td><td>Semantic 规范化大写并双向匹配；覆盖 float/uint/int 与 Float/UNorm/SNorm/UInt/SInt 兼容矩阵及多余分量规则。</td></tr>
         <tr><td>system-value 与 Variant</td><td>system-value-only 生成空签名/布局；所有 Variant 保留完整顶点输入，不按使用情况裁剪。</td></tr>
@@ -397,28 +397,28 @@ RunSemanticSmoke():
     <h2 id="test-golden">5. Golden 与 Mutation 策略</h2>
     <h3 id="test-golden-policy">不把易漂移的代码 blob 当唯一真值</h3>
     <ul>
-      <li>SLC2 schema golden 只保存小型、手写且含有效完整 SPIR-V 的文件。</li>
+      <li>ShaderArtifact schema golden 只保存小型、手写且含有效完整 SPIR-V 的文件。</li>
       <li>Slang codegen 回归主要验证成功、Stage、入口、非空代码、SPIR-V 基础结构和同版本确定性，不要求不同 Slang commit 产生相同二进制。</li>
       <li>Reflection golden 比较稳定 IR 语义，不比较 Slang 原生枚举或指针。</li>
       <li>SolarEngine 更新内置 Slang 时，先运行语义 diff；只有确认变化符合 Target 策略才更新 golden 和 CompilerBuildTag。</li>
     </ul>
 
     <h3 id="test-mutations">Reader Mutation</h3>
-    <p>对一份有效 SLC2 逐次只修改一个字段：magic/major、重复 ProgramId、Target 枚举、variant、vertexBufferLayout、vertexInputSignature、typeId、blockId、elementCount、rangeIndex、descriptorCount、code hash、fingerprint。每个 mutation 必须在 Reader 阶段失败，并验证错误路径。</p>
+    <p>对一份有效 ShaderArtifact 逐次只修改一个字段：magic/major、重复 ProgramId、Target 枚举、variant、vertexBufferLayout、vertexInputSignature、typeId、blockId、elementCount、rangeIndex、descriptorCount、code hash、fingerprint。每个 mutation 必须在 Reader 阶段失败，并验证错误路径。</p>
 
-    <h3 id="test-pseudocode-mutation">SLC2 Mutation 测试伪代码</h3>
+    <h3 id="test-pseudocode-mutation">ShaderArtifact Mutation 测试伪代码</h3>
     <div class="pseudo">
       <div class="pseudo-header">
-        <strong>RunSLC2MutationCases</strong>
+        <strong>RunMutationCases</strong>
         <small>计划实现 · 每次只破坏一个不变量</small>
       </div>
       <div class="pseudo-io">
-        <div><strong>输入</strong>一份已通过 Reader 的最小有效 SLC2</div>
+        <div><strong>输入</strong>一份已通过 Reader 的最小有效 ShaderArtifact</div>
         <div><strong>不变量</strong>mutation 相互独立；验证精确错误路径</div>
         <div><strong>输出</strong>Reader 防御覆盖</div>
       </div>
       <pre><code>RunMutationCases(validBytes, cases):
-    REQUIRE_SUCCESS(SLC2Reader.ReadAndValidate(validBytes))
+    REQUIRE_SUCCESS(ShaderArtifactReader.ReadAndValidate(validBytes))
     validJson = ParseTestJson(validBytes)
 
     FOR case IN cases:
@@ -427,7 +427,7 @@ RunSemanticSmoke():
         mutatedBytes = SerializeTestJson(mutated)
 
         error = REQUIRE_FAILURE(
-            SLC2Reader.ReadAndValidate(mutatedBytes))
+            ShaderArtifactReader.ReadAndValidate(mutatedBytes))
         CHECK(error.Path == case.ExpectedJsonPath)
         CHECK(error.Message.Contains(case.ExpectedReason))
 
@@ -448,9 +448,9 @@ cases = [
     <h2 id="delivery-gates">6. 合入门禁</h2>
     <ol>
       <li><strong>Build：</strong>Windows x64 Editor + Vulkan 编译器模块干净构建；Linux x64 至少编译公共/编译模块；两端 Slang API probe 均使用各自同源头库编译并链接。</li>
-      <li><strong>Unit：</strong>Variant、IR Validator、SLC2、NameResolver、Fingerprint 全通过。</li>
-      <li><strong>Compile-only：</strong>P0-P3 不创建 GPU 设备、不创建 ShaderProgramInstance，也能从请求得到完整 SLC2，通过 self-read、语义 manifest、mutation 和 byte determinism 验收。</li>
-      <li><strong>Integration：</strong>正向/负向 Slang fixture 全通过，失败结果没有部分 SLC2。</li>
+      <li><strong>Unit：</strong>Variant、IR Validator、ShaderArtifact、NameResolver、Fingerprint 全通过。</li>
+      <li><strong>Compile-only：</strong>P0-P3 不创建 GPU 设备、不创建 ShaderProgramInstance，也能从请求得到完整 ShaderArtifact，通过 self-read、语义 manifest、mutation 和 byte determinism 验收。</li>
+      <li><strong>Integration：</strong>正向/负向 Slang fixture 全通过，失败结果没有部分 ShaderArtifact。</li>
       <li><strong>Determinism：</strong>相同输入连续两次输出 byte-for-byte 相等。</li>
       <li><strong>GPU：</strong>Compute 主闭环与 Graphics 阶段对应测试通过。</li>
       <li><strong>Validation：</strong>Vulkan validation layer 无 descriptor/pipeline layout 问题。</li>
@@ -467,7 +467,7 @@ cases = [
         <tr><td>Slang reflection API 名称、签名或语义误读</td><td>API probe 编译/链接失败，或最小 fixture 的名称、Attribute、入口、binding range 断言失败。</td><td>SolarEngine 当前接入 Slang 的 API probe、独立 Builder adapter、最小 fixture 和精确 mapping invariant；不提供伪兼容别名，也不在后端猜测。</td></tr>
         <tr><td>Stage 独立布局残留</td><td>VS/PS 为同一资源生成不同 set。</td><td>只从联合 linked component 构建 IR；Vulkan 新路径禁用 AddBindingsForStage。</td></tr>
         <tr><td>Variant 爆炸</td><td>笛卡尔积溢出或编译时间不可控。</td><td>生成前 checked multiply 和明确上限；支持显式 VariantSelections。</td></tr>
-        <tr><td>SLC2 不确定</td><td>相同输入出现无语义 diff。</td><td>固定排序/字段顺序，排除路径时间和指针，加入 byte determinism gate。</td></tr>
+        <tr><td>ShaderArtifact 不确定</td><td>相同输入出现无语义 diff。</td><td>固定排序/字段顺序，排除路径时间和指针，加入 byte determinism gate。</td></tr>
         <tr><td>Slang 升级破坏 ABI/布局</td><td>加载失败或 IR golden 变化。</td><td>SolarEngine 内置 Slang 标识、头库同源、升级单独审查并提升 CompilerBuildTag。</td></tr>
         <tr><td>缺失资源到 Vulkan 才崩溃</td><td>空 image/buffer info。</td><td>逻辑绑定完整性先于任何 descriptor write。</td></tr>
         <tr><td>过渡期误用旧入口</td><td>新 Shader 仍生成 GPU cache v13。</td><td>显式资产入口、调用图测试和 Legacy audit，不做内容嗅探。</td></tr>
@@ -481,7 +481,7 @@ cases = [
     <ul>
       <li>新 Slang Shader 资产只调用新请求/结果 API，旧 HLSL parser 和旧二进制 cache 不在其调用链。</li>
       <li>Vulkan Compute 与 Graphics 都以完整 Program Variant 的共享 Layout 工作。</li>
-      <li>Vulkan Graphics 使用 SLC2 v3 Program 顶点缓冲布局与 Vertex Stage 输入签名构造不可变 Vertex Input State，并在 Draw 前验证 required Slot mask。</li>
+      <li>Vulkan Graphics 使用 ShaderArtifact v3 Program 顶点缓冲布局与 Vertex Stage 输入签名构造不可变 Vertex Input State，并在 Draw 前验证 required Slot mask。</li>
       <li>运行时按名称与固定数组下标绑定资源，不依赖显式 set/binding、Slang 或 SPIR-V 二次反射。</li>
       <li>缺失资源、非法缓存、非法 Variant 和不支持反射结构都产生确定性错误。</li>
       <li>Cook/发布、DependencyIndex、默认资源、运行时生命周期优化和其他后端仍明确留在后续设计，不以临时实现冒充完成。</li>

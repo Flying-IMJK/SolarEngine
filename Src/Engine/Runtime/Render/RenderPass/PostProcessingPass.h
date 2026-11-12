@@ -74,12 +74,12 @@ private:
 
     // Post Processing
     AssetRef<Shader>      m_Shader;
-    SLC2GPUPipelineState* m_PSOThreshold;
-    SLC2GPUPipelineState* m_PSOScale;
-    SLC2GPUPipelineState* m_PSOBlurH;
-    SLC2GPUPipelineState* m_PSOBlurV;
-    SLC2GPUPipelineState* m_PSOGenGhosts;
-    SLC2GPUPipelineState* m_PSOComposite;
+    GPUPipelineState* m_PSOThreshold;
+    GPUPipelineState* m_PSOScale;
+    GPUPipelineState* m_PSOBlurH;
+    GPUPipelineState* m_PSOBlurV;
+    GPUPipelineState* m_PSOGenGhosts;
+    GPUPipelineState* m_PSOComposite;
 
     ShaderProgramInstance* m_SPThreshold;
     ShaderProgramInstance* m_SPScale;

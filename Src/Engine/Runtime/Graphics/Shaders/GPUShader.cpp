@@ -1,28 +1,28 @@
-#include "SLC2GPUShader.h"
+#include "GPUShader.h"
 
 #include "ShaderProgramInstance.h"
-#include "SLC2GPUShaderProgram.h"
+#include "GPUShaderProgram.h"
 #include "Runtime/Core/Memory/Memory.h"
 
 #include "Runtime/Graphics/GPUDevice.h"
-#include "Runtime/ShaderCompilation/Slang/SLC2/SLC2Reader.h"
+#include "Runtime/ShaderCompilation/Slang/Artifact/ShaderArtifactReader.h"
 #include "Runtime/ShaderCompilation/Slang/ShaderVariantPlanner.h"
 
 namespace SE
 {
-	SLC2GPUShader::SLC2GPUShader()
+	GPUShader::GPUShader()
 		: GPUResource()
 	{
 	}
 
-	SLC2GPUShader::~SLC2GPUShader()
+	GPUShader::~GPUShader()
 	{
 		ReleasePrograms();
 	}
 
-    bool SLC2GPUShader::HasProgram(const String& programName) const
+    bool GPUShader::HasProgram(const String& programName) const
     {
-        for (const SLC2ProgramRecord& program : m_Artifact.Programs)
+        for (const ShaderProgramRecord& program : m_Artifact.Programs)
         {
             if (program.ProgramId == programName)
                 return true;
@@ -30,13 +30,13 @@ namespace SE
         return false;
     }
 
-    bool SLC2GPUShader::Load(const byte* data, int dataLength)
+    bool GPUShader::Load(const byte* data, int dataLength)
     {
-        SLC2Artifact artifact;
+        ShaderArtifact artifact;
         String       error;
-        if (!SLC2Reader::Read(data, dataLength, artifact, error))
+        if (!ShaderArtifactReader::Read(data, dataLength, artifact, error))
 		{
-            LOG_ERROR("Graphics", "Failed to read SLC2 artifact: {0}", error);
+            LOG_ERROR("Graphics", "Failed to read ShaderArtifact artifact: {0}", error);
 			return false;
 		}
 		ReleasePrograms();
@@ -54,21 +54,21 @@ namespace SE
 		return true;
     }
 
-    bool SLC2GPUShader::SelectProgram(const String&             programName,
+    bool GPUShader::SelectProgram(const String&             programName,
                                       const List<String>&       defines,
-                                      const SLC2ProgramRecord*& program,
-                                      const SLC2TargetRecord*&  target,
-                                      const SLC2VariantRecord*& variant) const
+                                      const ShaderProgramRecord*& program,
+                                      const ShaderTargetRecord*&  target,
+                                      const ShaderVariantRecord*& variant) const
     {
         return ResolveProgramSelection(m_Artifact, programName, defines, program, target, variant);
 	}
 
-	bool SLC2GPUShader::ResolveProgramSelection(const SLC2Artifact& artifact,
+	bool GPUShader::ResolveProgramSelection(const ShaderArtifact& artifact,
                                                 const String&       programName,
                                                 const List<String>& Defines,
-                                                const SLC2ProgramRecord*& program,
-                                                const SLC2TargetRecord*&  target,
-                                                const SLC2VariantRecord*& variant)
+                                                const ShaderProgramRecord*& program,
+                                                const ShaderTargetRecord*&  target,
+                                                const ShaderVariantRecord*& variant)
 	{
 		program = nullptr;
 		target = nullptr;
@@ -125,14 +125,14 @@ namespace SE
 		}
 		if (variant == nullptr)
 		{
-			LOG_ERROR("Graphics", "SLC2 requested variant was not compiled.");
+			LOG_ERROR("Graphics", "ShaderArtifact requested variant was not compiled.");
 			return false;
 		}
 		return true;
 	}
 
 
-	bool SLC2GPUShader::CreateProgram(const SLC2ProgramRecord* program, const SLC2TargetRecord* target, const SLC2VariantRecord* variant, SLC2GPUShaderProgram*& shaderProgram)
+	bool GPUShader::CreateProgram(const ShaderProgramRecord* program, const ShaderTargetRecord* target, const ShaderVariantRecord* variant, GPUShaderProgram*& shaderProgram)
 	{
 		// Variant 记录来自 _artifact，指针在下一次 Load/Release 前稳定，可作为当前 GPUShader 内部缓存 key。
 		for (int32 index = 0; index < m_Programs.Count(); index++)
@@ -144,7 +144,7 @@ namespace SE
 			}
 		}
 
-		SLC2GPUShaderProgram* created = CreateSLC2ShaderProgram(program, target, variant);
+		GPUShaderProgram* created = CreateShaderProgram(program, target, variant);
 		if (created == nullptr)
 		{
 			return false;
@@ -155,17 +155,17 @@ namespace SE
 		return true;
 	}
 
-	bool SLC2GPUShader::GetOrCreateProgram(const String& programName, const List<String>& defines, SLC2GPUShaderProgram*& program)
+	bool GPUShader::GetOrCreateProgram(const String& programName, const List<String>& defines, GPUShaderProgram*& program)
 	{
-		const SLC2ProgramRecord* programRecord;
-		const SLC2TargetRecord* target;
-		const SLC2VariantRecord* variant;
+		const ShaderProgramRecord* programRecord;
+		const ShaderTargetRecord* target;
+		const ShaderVariantRecord* variant;
         if (!SelectProgram(programName, defines, programRecord, target, variant))
 		{
 			return false;
 		}
 
-		SLC2GPUShaderProgram* shaderProgram = nullptr;
+		GPUShaderProgram* shaderProgram = nullptr;
         if (!CreateProgram(programRecord, target, variant, shaderProgram))
 		{
 			return false;
@@ -176,23 +176,23 @@ namespace SE
 		return true;
 	}
 
-    bool SLC2GPUShader::GetOrCreateProgram(const String& programName, SLC2GPUShaderProgram*& program)
+    bool GPUShader::GetOrCreateProgram(const String& programName, GPUShaderProgram*& program)
     {
         List<String> defines;
         return GetOrCreateProgram(programName, defines, program);
     }
 
-    void SLC2GPUShader::ReleasePrograms()
+    void GPUShader::ReleasePrograms()
 	{
 		m_Programs.ClearDelete();
 	}
 
-	GPUResourceType SLC2GPUShader::GetResType() const
+	GPUResourceType GPUShader::GetResType() const
 	{
 		return GPUResourceType::Shader;
 	}
 
-	void SLC2GPUShader::OnReleaseGPU()
+	void GPUShader::OnReleaseGPU()
 	{
 		ReleasePrograms();
 		m_MemoryUsage = 0;

@@ -47,11 +47,11 @@ namespace SE
 
 		GPUSwapChain* CreateSwapChain(Window* window) override;
 
-		SLC2GPUPipelineState* CreateSLC2PipelineState() override;
+		GPUPipelineState* CreatePipelineState() override;
 
 		GPUTexture* CreateTexture(const StringView& name) override;
 
-		SLC2GPUShader* CreateSLC2Shader(const StringView& name) override;
+		GPUShader* CreateShader(const StringView& name) override;
 
 //		virtual GPUTimerQuery* CreateTimerQuery() = 0;
 

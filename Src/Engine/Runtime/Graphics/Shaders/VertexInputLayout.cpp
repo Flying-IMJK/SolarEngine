@@ -1,4 +1,4 @@
-#include "SLC2VertexInputLayout.h"
+#include "VertexInputLayout.h"
 
 namespace SE
 {
@@ -20,26 +20,26 @@ namespace SE
             int32 Components = 0;
         };
 
-        ValueInfo GetShaderInfo(const SLC2VertexInputType type)
+        ValueInfo GetShaderInfo(const VertexInputType type)
         {
             switch (type)
             {
-            case SLC2VertexInputType::Float:  return {ValueCategory::Float, 1};
-            case SLC2VertexInputType::Float2: return {ValueCategory::Float, 2};
-            case SLC2VertexInputType::Float3: return {ValueCategory::Float, 3};
-            case SLC2VertexInputType::Float4: return {ValueCategory::Float, 4};
-            case SLC2VertexInputType::Int:    return {ValueCategory::SInt, 1};
-            case SLC2VertexInputType::Int2:   return {ValueCategory::SInt, 2};
-            case SLC2VertexInputType::Int3:   return {ValueCategory::SInt, 3};
-            case SLC2VertexInputType::Int4:   return {ValueCategory::SInt, 4};
-            case SLC2VertexInputType::UInt:   return {ValueCategory::UInt, 1};
-            case SLC2VertexInputType::UInt2:  return {ValueCategory::UInt, 2};
-            case SLC2VertexInputType::UInt3:  return {ValueCategory::UInt, 3};
-            case SLC2VertexInputType::UInt4:  return {ValueCategory::UInt, 4};
-            case SLC2VertexInputType::Half:   return {ValueCategory::Float, 1};
-            case SLC2VertexInputType::Half2:  return {ValueCategory::Float, 2};
-            case SLC2VertexInputType::Half3:  return {ValueCategory::Float, 3};
-            case SLC2VertexInputType::Half4:  return {ValueCategory::Float, 4};
+            case VertexInputType::Float:  return {ValueCategory::Float, 1};
+            case VertexInputType::Float2: return {ValueCategory::Float, 2};
+            case VertexInputType::Float3: return {ValueCategory::Float, 3};
+            case VertexInputType::Float4: return {ValueCategory::Float, 4};
+            case VertexInputType::Int:    return {ValueCategory::SInt, 1};
+            case VertexInputType::Int2:   return {ValueCategory::SInt, 2};
+            case VertexInputType::Int3:   return {ValueCategory::SInt, 3};
+            case VertexInputType::Int4:   return {ValueCategory::SInt, 4};
+            case VertexInputType::UInt:   return {ValueCategory::UInt, 1};
+            case VertexInputType::UInt2:  return {ValueCategory::UInt, 2};
+            case VertexInputType::UInt3:  return {ValueCategory::UInt, 3};
+            case VertexInputType::UInt4:  return {ValueCategory::UInt, 4};
+            case VertexInputType::Half:   return {ValueCategory::Float, 1};
+            case VertexInputType::Half2:  return {ValueCategory::Float, 2};
+            case VertexInputType::Half3:  return {ValueCategory::Float, 3};
+            case VertexInputType::Half4:  return {ValueCategory::Float, 4};
             default:                          return {};
             }
         }
@@ -108,8 +108,8 @@ namespace SE
         }
     }
 
-    bool SLC2VertexInputLayoutMatcher::IsCompatible(
-        const SLC2VertexInputType shaderType,
+    bool VertexInputLayoutMatcher::IsCompatible(
+        const VertexInputType shaderType,
         const PixelFormat format)
     {
         const ValueInfo shader = GetShaderInfo(shaderType);
@@ -128,10 +128,10 @@ namespace SE
         return shader.Category == physical.Category;
     }
 
-    bool SLC2VertexInputLayoutMatcher::Match(
+    bool VertexInputLayoutMatcher::Match(
         const List<VertexInputSignatureElement>& signature,
         const VertexFactoryLayout& layout,
-        SLC2VertexInputMatchResult& output,
+        VertexInputMatchResult& output,
         String& error)
     {
         if (!layout.IsValid())
@@ -140,7 +140,7 @@ namespace SE
             return false;
         }
 
-        SLC2VertexInputMatchResult candidate;
+        VertexInputMatchResult candidate;
         candidate.Elements.EnsureCapacity(signature.Count());
         for (int32 index = 0; index < signature.Count(); index++)
         {

@@ -184,7 +184,7 @@ namespace SE
 
     bool ShaderBindingSnapshot::IsFrozen() const { return _frozen; }
 
-    const SLC2GPUShaderProgram* ShaderBindingSnapshot::GetProgram() const { return m_Program; }
+    const GPUShaderProgram* ShaderBindingSnapshot::GetProgram() const { return m_Program; }
 
     uint32 ShaderBindingSnapshot::GetResourceCount() const { return static_cast<uint32>(m_Resources.Count()); }
 
@@ -236,7 +236,7 @@ namespace SE
         _uniformData.Add(MoveTemp(uniformData));
     }
 
-    void ShaderBindingSnapshot::Freeze(const SLC2GPUShaderProgram* program)
+    void ShaderBindingSnapshot::Freeze(const GPUShaderProgram* program)
     {
         m_Program = program;
         _frozen   = true;

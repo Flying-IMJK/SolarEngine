@@ -1,9 +1,9 @@
-#include "SLC2Util.h"
+#include "ShaderArtifactUtil.h"
 #include <Runtime/Core/Types/Strings/String.h>
 
 namespace SE
 {
-    bool SLC2Util::ReadAttributeInt(slang::Attribute* attribute, const uint32 argumentIndex, int32& value)
+    bool ShaderArtifactUtil::ReadAttributeInt(slang::Attribute* attribute, const uint32 argumentIndex, int32& value)
     {
         int slangValue = 0;
         if (!SLANG_SUCCEEDED(attribute->getArgumentValueInt(argumentIndex, &slangValue)))
@@ -14,7 +14,7 @@ namespace SE
         return true;
     }
 
-    bool SLC2Util::ReadAttributeString(slang::Attribute* attribute, const uint32 argumentIndex, String& value)
+    bool ShaderArtifactUtil::ReadAttributeString(slang::Attribute* attribute, const uint32 argumentIndex, String& value)
     {
         size_t      length = 0;
         const char* text   = attribute->getArgumentValueString(argumentIndex, &length);
@@ -26,7 +26,7 @@ namespace SE
         return true;
     }
 
-    bool SLC2Util::IsAttribute(slang::Attribute* attribute, const char* name)
+    bool ShaderArtifactUtil::IsAttribute(slang::Attribute* attribute, const char* name)
     {
         if (attribute == nullptr)
         {
@@ -43,7 +43,7 @@ namespace SE
         return actual == expected || actual == expected2;
     }
 
-    bool SLC2Util::HasAttribute(slang::TypeReflection* type, const char* name)
+    bool ShaderArtifactUtil::HasAttribute(slang::TypeReflection* type, const char* name)
     {
         if (type == nullptr)
         {
@@ -59,7 +59,7 @@ namespace SE
         return false;
     }
 
-    SlangStage SLC2Util::ToSlangStage(const ShaderStage stage)
+    SlangStage ShaderArtifactUtil::ToSlangStage(const ShaderStage stage)
     {
         switch (stage)
         {

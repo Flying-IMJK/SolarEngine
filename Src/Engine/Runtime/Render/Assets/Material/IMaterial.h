@@ -6,13 +6,13 @@
 
 namespace SE
 {
-    class SLC2GPUPipelineState;
+    class GPUPipelineState;
     struct StaticMeshInstanceData;
     class GPUConstantBuffer;
     class GPUContext;
     struct RenderContext;
     class GPUTextureView;
-    class SLC2GPUShader;
+    class GPUShader;
     class ShaderProgramInstance;
     class MaterialParamsLink;
     struct DrawCall;
@@ -35,7 +35,7 @@ namespace SE
         /// Gets the shader resource.
         /// </summary>
         /// <returns>The material shader resource.</returns>
-        virtual SLC2GPUShader* GetShader() const = 0;
+        virtual GPUShader* GetShader() const = 0;
 
         /// <summary>
         /// whether material is a target shader.

@@ -7,7 +7,7 @@
 
 namespace SE
 {
-    struct SLC2RenderDraw;
+    struct RenderDraw;
     struct DrawCall;
     class GPUContext;
     class Model;

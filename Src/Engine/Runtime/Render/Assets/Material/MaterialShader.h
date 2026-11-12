@@ -9,10 +9,10 @@ namespace SE
 #define MATERIAL_GRAPH_VERSION 1
 
     class MemoryReadStream;
-    class SLC2GPUShader;
-    class SLC2GPUShaderProgram;
+    class GPUShader;
+    class GPUShaderProgram;
 
-    /// Owns the compiled SLC2 material and its render-thread Program instances and pipeline states.
+    /// Owns the compiled ShaderArtifact material and its render-thread Program instances and pipeline states.
     /// Release all instances and pipelines before releasing the immutable Programs they reference.
     class MaterialShader : public IMaterial
     {
@@ -21,8 +21,8 @@ namespace SE
         ShaderProgramInstance* m_SelectedProgram = nullptr;
 
         explicit MaterialShader(const StringView& name);
-        bool BindProgram(BindParameters& params, const String& programName, const SLC2GPUPipelineState::Description& description);
-        SLC2GPUPipelineState::Description GetSurfacePipelineDescription(const BindParameters& params) const;
+        bool BindProgram(BindParameters& params, const String& programName, const GPUPipelineState::Description& description);
+        GPUPipelineState::Description GetSurfacePipelineDescription(const BindParameters& params) const;
         bool HasProgram(const String& programName) const;
 
     public:
@@ -31,7 +31,7 @@ namespace SE
         ShaderProgramInstance* GetProgram() override;
 
         const MaterialInfo& GetInfo() const override;
-        SLC2GPUShader*      GetShader() const override;
+        GPUShader*      GetShader() const override;
         bool                IsReady() const override;
         virtual void Unload();
 
@@ -43,17 +43,17 @@ namespace SE
         {
             String                 Name;
             bool                   Instanced = false;
-            SLC2GPUShaderProgram*  Program   = nullptr;
+            GPUShaderProgram*  Program   = nullptr;
             ShaderProgramInstance* Instance  = nullptr;
 
-            SLC2GPUPipelineState::Description Description;
-            SLC2GPUPipelineState*             Pipeline = nullptr;
+            GPUPipelineState::Description Description;
+            GPUPipelineState*             Pipeline = nullptr;
         };
 
         bool Load(MemoryReadStream& shaderCacheStream, const MaterialInfo& info);
 
         bool                m_IsLoaded = false;
-        SLC2GPUShader*      m_Shader   = nullptr;
+        GPUShader*      m_Shader   = nullptr;
         List<ProgramState>  m_Programs;
     };
 } // namespace SE

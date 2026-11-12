@@ -3,12 +3,12 @@ RUNTIME_ADD(
         Config.h
         GPUConstantBuffer.h
 
-        SLC2GPUShader.h
-        SLC2GPUShader.cpp
-        SLC2GPUShaderProgram.h
-        SLC2GPUShaderProgram.cpp
-        SLC2VertexInputLayout.h
-        SLC2VertexInputLayout.cpp
+        GPUShader.h
+        GPUShader.cpp
+        GPUShaderProgram.h
+        GPUShaderProgram.cpp
+        VertexInputLayout.h
+        VertexInputLayout.cpp
         ShaderBindingSnapshot.h
         ShaderBindingSnapshot.cpp
         ShaderProgramInstance.h

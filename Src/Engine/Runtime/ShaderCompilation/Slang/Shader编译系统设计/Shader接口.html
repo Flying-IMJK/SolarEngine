@@ -77,7 +77,7 @@
       <li>只允许 Slang 反射为 varying input、varying output 或 system-value 的参数，例如 vertex attribute、fragment output、<code>SV_DispatchThreadID</code> 等阶段输入输出。</li>
       <li>任何在 EntryPoint 参数中分配 ordinary/uniform 数据、Texture、Buffer、Sampler、ConstantBuffer、ParameterBlock 或其他 descriptor/register-space 资源的声明均为非法；即使 Slang 语言本身接受该声明，SolarEngine Shader 编译也必须失败并报告具体入口与参数名称。</li>
       <li>所有运行时可设置的 uniform 和资源必须声明在当前 Module 的全局参数作用域，或声明为该根作用域下的显式 ConstantBuffer/ParameterBlock 子对象。</li>
-      <li>SLC2 不创建 EntryPoint 专属 ParameterBlock，也不序列化 <code>entryPointBlockId</code>；所有 Stage 共享 Program 的唯一根 Layout。</li>
+      <li>ShaderArtifact 不创建 EntryPoint 专属 ParameterBlock，也不序列化 <code>entryPointBlockId</code>；所有 Stage 共享 Program 的唯一根 Layout。</li>
     </ul>
 
     <h3 id="vertex-input-declaration">顶点输入声明（已确认）</h3>

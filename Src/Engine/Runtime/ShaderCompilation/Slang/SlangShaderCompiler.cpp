@@ -5,10 +5,10 @@
 #include <Runtime/Core/Platform/StringUtils.h>
 #include <Runtime/Core/Types/Collections/List.h>
 #include <Runtime/Core/Types/Collections/Sorting.h>
-#include <Runtime/ShaderCompilation/Slang/SLC2/SLC2Artifact.h>
-#include <Runtime/ShaderCompilation/Slang/SLC2/SLC2Reader.h>
-#include <Runtime/ShaderCompilation/Slang/SLC2/SLC2Writer.h>
-#include <Runtime/ShaderCompilation/Slang/SLC2/SLC2Util.h>
+#include <Runtime/ShaderCompilation/Slang/Artifact/ShaderArtifact.h>
+#include <Runtime/ShaderCompilation/Slang/Artifact/ShaderArtifactReader.h>
+#include <Runtime/ShaderCompilation/Slang/Artifact/ShaderArtifactWriter.h>
+#include <Runtime/ShaderCompilation/Slang/Artifact/ShaderArtifactUtil.h>
 #include <Runtime/ShaderCompilation/Slang/SlangShaderFileSystem.h>
 #include <Runtime/ShaderCompilation/Slang/SlangVertexInputCompiler.h>
 
@@ -21,7 +21,7 @@ namespace SE
 {
 	namespace
 	{
-		bool ReadOutputControlPoints(slang::IGlobalSession* globalSession, slang::ProgramLayout* layout, const int32 entryPointIndex, const SLC2ProgramStageDeclaration& stage, int32& outputControlPoints, String& error)
+		bool ReadOutputControlPoints(slang::IGlobalSession* globalSession, slang::ProgramLayout* layout, const int32 entryPointIndex, const ShaderProgramStageDeclaration& stage, int32& outputControlPoints, String& error)
 		{
 			outputControlPoints = 0;
 			if (stage.Stage != ShaderStage::Hull)
@@ -120,7 +120,7 @@ namespace SE
 			group.DefaultMember = group.Members.Count() > 0 ? group.Members[0] : String::Empty;
 		}
 
-		bool HasStage(const SLC2ProgramDeclaration& program, const ShaderStage stage)
+		bool HasStage(const ShaderProgramDeclaration& program, const ShaderStage stage)
 		{
 			for (int32 i = 0; i < program.Stages.Count(); i++)
 			{
@@ -132,7 +132,7 @@ namespace SE
 			return false;
 		}
 
-		bool ValidateStageContract(const SLC2ProgramDeclaration& program, String& error)
+		bool ValidateStageContract(const ShaderProgramDeclaration& program, String& error)
 		{
 			for (int32 i = 0; i < program.Stages.Count(); i++)
 			{
@@ -178,7 +178,7 @@ namespace SE
 			return true;
 		}
 
-		bool DiscoverPrograms(slang::IModule* module, List<SLC2ProgramDeclaration>& programs, String& error)
+		bool DiscoverPrograms(slang::IModule* module, List<ShaderProgramDeclaration>& programs, String& error)
 		{
 			programs.Clear();
 			if (module == nullptr)
@@ -203,7 +203,7 @@ namespace SE
 				}
 
 				slang::TypeReflection* type = child->getType();
-				if (!SLC2Util::HasAttribute(type, "SolarShaderProgram"))
+				if (!ShaderArtifactUtil::HasAttribute(type, "SolarShaderProgram"))
 				{
 					continue;
 				}
@@ -215,7 +215,7 @@ namespace SE
 					return false;
 				}
 
-				SLC2ProgramDeclaration program;
+				ShaderProgramDeclaration program;
 				program.ProgramId = String(programName);
 
 				for (int32 existingIndex = 0; existingIndex < programs.Count(); existingIndex++)
@@ -230,7 +230,7 @@ namespace SE
 				for (unsigned int attrIndex = 0; attrIndex < type->getUserAttributeCount(); attrIndex++)
 				{
 					slang::Attribute* attribute = type->getUserAttributeByIndex(attrIndex);
-					if (SLC2Util::IsAttribute(attribute, "SolarShaderStage"))
+					if (ShaderArtifactUtil::IsAttribute(attribute, "SolarShaderStage"))
 					{
 						if (attribute->getArgumentCount() != 2)
 						{
@@ -247,7 +247,7 @@ namespace SE
 							return false;
 						}
 
-						SLC2ProgramStageDeclaration stageDecl;
+						ShaderProgramStageDeclaration stageDecl;
                         const StringAnsi            stageName(stageText, stageSize);
                         if (!ParseShaderStage(stageName.Get(), stageDecl.Stage))
 						{
@@ -262,7 +262,7 @@ namespace SE
 						}
 						program.Stages.Add(stageDecl);
 					}
-                    else if (SLC2Util::IsAttribute(attribute, "SolarShaderMacroGroup"))
+                    else if (ShaderArtifactUtil::IsAttribute(attribute, "SolarShaderMacroGroup"))
 					{
 						if (attribute->getArgumentCount() != 1)
 						{
@@ -304,7 +304,7 @@ namespace SE
 			return true;
 		}
 
-		bool SameProgramShape(const SLC2ProgramDeclaration& a, const SLC2ProgramDeclaration& b)
+		bool SameProgramShape(const ShaderProgramDeclaration& a, const ShaderProgramDeclaration& b)
 		{
 			if (a.ProgramId != b.ProgramId || a.Stages.Count() != b.Stages.Count() ||
 				a.VariantGroups.Count() != b.VariantGroups.Count())
@@ -335,7 +335,7 @@ namespace SE
 			return true;
 		}
 
-		SLC2ProgramDeclaration* FindProgram(List<SLC2ProgramDeclaration>& programs, const String& programId)
+		ShaderProgramDeclaration* FindProgram(List<ShaderProgramDeclaration>& programs, const String& programId)
 		{
 			for (int32 i = 0; i < programs.Count(); i++)
 			{
@@ -348,7 +348,7 @@ namespace SE
 		}
 
 		bool PlanProgramVariants(const ShaderCompileRequest& request, 
-		    const SLC2ProgramDeclaration& program, 
+		    const ShaderProgramDeclaration& program,
 		    List<ShaderVariantPlan>& variants, 
 		    String& error)
 		{
@@ -562,7 +562,7 @@ namespace SE
 			return result;
 		}
 
-		List<SLC2ProgramDeclaration> baselinePrograms;
+		List<ShaderProgramDeclaration> baselinePrograms;
 		if (!DiscoverPrograms(baselineModule, baselinePrograms, error))
 		{
 			AddDiagnostic(error);
@@ -570,14 +570,14 @@ namespace SE
 			return result;
 		}
 
-		SLC2Artifact artifact;
+		ShaderArtifact artifact;
         artifact.CompilerBuildTag = String::Format(SE_TEXT("SolarSlangCompiler/1;Slang/{0};SLC2/{1}"),
                                                    StringAnsiView(SLANG_TAG_VERSION),
                                                    StringUtils::ToString(4));
 
 		for (int32 program_index = 0; program_index < baselinePrograms.Count(); program_index++)
 		{
-			const SLC2ProgramDeclaration& baselineProgram = baselinePrograms[program_index];
+			const ShaderProgramDeclaration& baselineProgram = baselinePrograms[program_index];
 			List<ShaderVariantPlan> variants;
 			if (!PlanProgramVariants(request, baselineProgram, variants, error))
 			{
@@ -590,7 +590,7 @@ namespace SE
 				continue;
 			}
 
-			SLC2ProgramRecord programRecord;
+			ShaderProgramRecord programRecord;
 			programRecord.ProgramId = baselineProgram.ProgramId;
 			programRecord.VariantGroups = baselineProgram.VariantGroups;
 			List<VertexInputSignatureElement> programVertexSignature;
@@ -599,7 +599,7 @@ namespace SE
 			for (int32 targetIndex = 0; targetIndex < request.Targets.Count(); targetIndex++)
 			{
                 const ShaderProfile& target = request.Targets[targetIndex];
-				SLC2TargetRecord targetRecord;
+				ShaderTargetRecord targetRecord;
 				targetRecord.Target = target;
 				List<VertexInputSignatureElement> targetVertexSignature;
 				bool hasTargetVertexSignature = false;
@@ -626,7 +626,7 @@ namespace SE
 						return result;
 					}
 
-					List<SLC2ProgramDeclaration> variantPrograms;
+					List<ShaderProgramDeclaration> variantPrograms;
 					// Variant 环境会重新加载 Module，但不允许宏改变 Program 声明形状，只允许改变 shader 实现代码。
 					if (!DiscoverPrograms(module, variantPrograms, error))
 					{
@@ -635,7 +635,7 @@ namespace SE
 						return result;
 					}
 
-					SLC2ProgramDeclaration* variantProgram = FindProgram(variantPrograms, baselineProgram.ProgramId);
+					ShaderProgramDeclaration* variantProgram = FindProgram(variantPrograms, baselineProgram.ProgramId);
 					if (variantProgram == nullptr || !SameProgramShape(baselineProgram, *variantProgram))
 					{
                         AddDiagnostic(String::Format(SE_TEXT("Variant-controlled Program/Stage/Macro declarations are not allowed: {0}") ,baselineProgram.ProgramId));
@@ -649,11 +649,11 @@ namespace SE
 					entryPoints.Resize(baselineProgram.Stages.Count());
 					for (int32 stageIndex = 0; stageIndex < baselineProgram.Stages.Count(); stageIndex++)
 					{
-						const SLC2ProgramStageDeclaration& stage = baselineProgram.Stages[stageIndex];
+						const ShaderProgramStageDeclaration& stage = baselineProgram.Stages[stageIndex];
 						Slang::ComPtr<slang::IBlob> entryDiagnostics;
 						const StringAnsi entryName(stage.EntryPoint);
                         if (!SLANG_SUCCEEDED(module->findAndCheckEntryPoint(entryName.Get(),
-                                                                           SLC2Util::ToSlangStage(stage.Stage),
+                                                                           ShaderArtifactUtil::ToSlangStage(stage.Stage),
                                                                            entryPoints[stageIndex].writeRef(),
                                                                            entryDiagnostics.writeRef())))
                         {
@@ -701,7 +701,7 @@ namespace SE
 						return result;
 					}
 
-					SLC2VariantRecord variantRecord;
+					ShaderVariantRecord variantRecord;
 					variantRecord.Variant = variant.Variant;
 					List<ShaderStage> reflectionStages;
 					reflectionStages.Resize(baselineProgram.Stages.Count());
@@ -735,12 +735,12 @@ namespace SE
 							return result;
 						}
 
-						SLC2StageRecord stageRecord;
+						ShaderStageRecord stageRecord;
 						stageRecord.Stage = baselineProgram.Stages[stageIndex].Stage;
 						stageRecord.EntryPoint = baselineProgram.Stages[stageIndex].EntryPoint;
 						// 顶点逻辑签名来自当前 linked Program，运行时不需要重新加载 Slang 或反射 SPIR-V。
 						if (stageRecord.Stage == ShaderStage::Vertex && 
-						    !SLC2VertexInputCompiler::ReadVertexInputSignature(layout, stageIndex, stageRecord.VertexInputSignature, error))
+						    !VertexInputCompiler::ReadVertexInputSignature(layout, stageIndex, stageRecord.VertexInputSignature, error))
 						{
 							AddDiagnostic(baselineProgram.ProgramId + SE_TEXT(": ") + error);
 							result.CompileMessage = m_Diagnostics;
@@ -753,7 +753,7 @@ namespace SE
 								programVertexSignature = stageRecord.VertexInputSignature;
 								hasProgramVertexSignature = true;
 							}
-							else if (!SLC2VertexInputCompiler::SameVertexInputSignature(
+							else if (!VertexInputCompiler::SameVertexInputSignature(
 									programVertexSignature, stageRecord.VertexInputSignature, false))
 							{
 								AddDiagnostic(baselineProgram.ProgramId + SE_TEXT(": vertex input semantic/type changed between variants or targets."));
@@ -765,7 +765,7 @@ namespace SE
 								targetVertexSignature = stageRecord.VertexInputSignature;
 								hasTargetVertexSignature = true;
 							}
-							else if (!SLC2VertexInputCompiler::SameVertexInputSignature(
+							else if (!VertexInputCompiler::SameVertexInputSignature(
 									targetVertexSignature, stageRecord.VertexInputSignature, true))
 							{
 								AddDiagnostic(baselineProgram.ProgramId + SE_TEXT(": vertex input locations changed between variants of one target."));
@@ -792,22 +792,22 @@ namespace SE
 			artifact.Programs.Add(programRecord);
 		}
 
-		Sorting::QuickSort(artifact.Programs, [](const SLC2ProgramRecord& a, const SLC2ProgramRecord& b) {
+		Sorting::QuickSort(artifact.Programs, [](const ShaderProgramRecord& a, const ShaderProgramRecord& b) {
 			return a.ProgramId < b.ProgramId;
 		});
 
-		if (!SLC2Writer::WriteDeterministic(artifact, result.SLC2Data, error))
+		if (!ShaderArtifactWriter::WriteDeterministic(artifact, result.ShaderData, error))
 		{
 			AddDiagnostic(error);
-			result.SLC2Data.Clear();
+			result.ShaderData.Clear();
 			result.CompileMessage = m_Diagnostics;
 			return result;
 		}
 
-		if (!SLC2Reader::ReadAndValidate(result.SLC2Data, error))
+		if (!ShaderArtifactReader::ReadAndValidate(result.ShaderData, error))
 		{
 			AddDiagnostic(error);
-			result.SLC2Data.Clear();
+			result.ShaderData.Clear();
 			result.CompileMessage = m_Diagnostics;
 			return result;
 		}

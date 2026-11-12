@@ -8,20 +8,20 @@ namespace SE
 	class Asset;
 
 	/// <summary>
-	/// Compiles Slang shader sources to SLC2 and tracks source includes for automatic reloads.
+	/// Compiles Slang shader sources to ShaderArtifact and tracks source includes for automatic reloads.
 	/// </summary>
 	class SE_API_RUNTIME ShadersCompilation
 	{
 	public:
 		/// <summary>
-		/// Compiles a Slang-only shader resource into SLC2 text data. This path is offline-only and does not touch GPU runtime objects.
+		/// Compiles a Slang-only shader resource into ShaderArtifact text data. This path is offline-only and does not touch GPU runtime objects.
 		/// </summary>
 		/// <param name="request">Compilation request.</param>
-		/// <returns>Compilation status, diagnostics and SLC2 data.</returns>
+		/// <returns>Compilation status, diagnostics and ShaderArtifact data.</returns>
 		static ShaderCompileResult CompileSlang(const ShaderCompileRequest& request);
 
 		/// <summary>
-		/// Runs a minimal offline Slang compilation self-test and returns the generated SLC2 data.
+		/// Runs a minimal offline Slang compilation self-test and returns the generated ShaderArtifact data.
 		/// </summary>
 		/// <remarks>
 		/// This helper is intentionally offline-only. It allows editor commands or tests to verify

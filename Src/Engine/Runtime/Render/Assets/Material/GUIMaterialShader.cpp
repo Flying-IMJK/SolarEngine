@@ -9,7 +9,7 @@ namespace SE
     void GUIMaterialShader::Bind(BindParameters& params)
     {
         m_SelectedProgram            = nullptr;
-        auto description             = SLC2GPUPipelineState::Description::DefaultFullscreenTriangle;
+        auto description             = GPUPipelineState::Description::DefaultFullscreenTriangle;
         description.Wireframe        = EnumHasAnyFlags(m_Info.FeaturesFlags, MaterialFeatures::Wireframe);
         description.BlendMode        = BlendingMode::AlphaBlend;
         description.DepthEnable      = params.gpuContext->IsDepthBufferBinded();

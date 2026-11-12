@@ -161,8 +161,8 @@ namespace SE
 	public:
 
 		/**
-		 * Executes an SLC2 compute shader program instance.
-		 * @param instance The SLC2 shader program instance to execute.
+		 * Executes a compute shader program instance.
+		 * @param instance The shader program instance to execute.
 		 * @param threadGroupCountX The number of groups dispatched in the x direction.
 		 * @param threadGroupCountY The number of groups dispatched in the y direction.
 		 * @param threadGroupCountZ The number of groups dispatched in the z direction.
@@ -171,8 +171,8 @@ namespace SE
 		virtual void Dispatch(ShaderProgramInstance& instance, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ) = 0;
 
 		/**
-		 * Executes an SLC2 compute shader program instance from an indirect dispatch argument buffer. Buffer must contain GPUDispatchIndirectArgs.
-		 * @param instance The SLC2 shader program instance to execute.
+		 * Executes a compute shader program instance from an indirect dispatch argument buffer. Buffer must contain GPUDispatchIndirectArgs.
+		 * @param instance The shader program instance to execute.
 		 * @param bufferForArgs The buffer with dispatch arguments.
 		 * @param offsetForArgs The aligned byte offset for arguments.
 		 * @param error The dispatch error output.
@@ -246,7 +246,7 @@ namespace SE
 		 */
 		virtual void DrawIndexedInstanced(ShaderProgramInstance* instance, uint32 indicesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0, int32 startIndex = 0) = 0;
 
-        // SLC2 indirect draws freeze the same instance snapshot as direct draws.
+        // ShaderArtifact indirect draws freeze the same instance snapshot as direct draws.
         virtual void DrawInstancedIndirect(ShaderProgramInstance& instance, GPUBuffer* bufferForArgs, uint32 offsetForArgs) = 0;
 
         virtual void DrawIndexedInstancedIndirect(ShaderProgramInstance& instance, GPUBuffer* bufferForArgs, uint32 offsetForArgs) = 0;
@@ -275,7 +275,7 @@ namespace SE
 
 		/**
 		 * 根据当前图形 Pipeline 准备顶点输入，并立即绑定 RenderGeometry 中本次绘制需要的 VB/IB。
-		 * 必须先设置图形 Pipeline；返回 false 后，SLC2 Draw 不得使用之前遗留的 Geometry 状态。
+		 * 必须先设置图形 Pipeline；返回 false 后，ShaderArtifact Draw 不得使用之前遗留的 Geometry 状态。
 		 */
 		virtual bool BindRenderGeometry(const RenderGeometry& geometry) = 0;
 
@@ -330,13 +330,13 @@ namespace SE
         /// Sets the graphics pipeline state.
         /// </summary>
         /// <param name="state">The state to bind.</param>
-        virtual void SetSLC2State(SLC2GPUPipelineState* state) = 0;
+        virtual void SetState(GPUPipelineState* state) = 0;
 
         /// <summary>
         /// Gets the current pipeline state binded to the graphics pipeline.
         /// </summary>
         /// <returns>The current state.</returns>
-        virtual SLC2GPUPipelineState* GetSLC2State() const = 0;
+        virtual GPUPipelineState* GetState() const = 0;
 
 		/// <summary>
 		/// Clears the context state.

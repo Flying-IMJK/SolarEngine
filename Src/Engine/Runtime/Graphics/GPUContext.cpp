@@ -19,7 +19,7 @@
 
 namespace SE
 {
-	SLC2GPUPipelineState::Description SLC2GPUPipelineState::Description::Default = {
+	GPUPipelineState::Description GPUPipelineState::Description::Default = {
         true,                            // DepthEnable
         true,                            // DepthWriteEnable
         true,                            // DepthClipEnable
@@ -37,7 +37,7 @@ namespace SE
         BlendingMode::Opaque,            // BlendMode
     };
 
-    SLC2GPUPipelineState::Description SLC2GPUPipelineState::Description::DefaultNoDepth = {
+    GPUPipelineState::Description GPUPipelineState::Description::DefaultNoDepth = {
         false,                           // DepthEnable
         false,                           // DepthWriteEnable
         false,                           // DepthClipEnable
@@ -55,7 +55,7 @@ namespace SE
         BlendingMode::Opaque,            // BlendMode
     };
 
-    SLC2GPUPipelineState::Description SLC2GPUPipelineState::Description::DefaultFullscreenTriangle = {
+    GPUPipelineState::Description GPUPipelineState::Description::DefaultFullscreenTriangle = {
         false,                           // DepthEnable
         false,                           // DepthWriteEnable
         false,                           // DepthClipEnable
@@ -78,8 +78,8 @@ namespace SE
         RenderGeometry FullscreenTriangleGeometry;
 
         AssetRef<Shader>       QuadShader;
-        SLC2GPUPipelineState*  PS_CopyLinear = nullptr;
-        SLC2GPUPipelineState* PS_Clear      = nullptr;
+        GPUPipelineState*  PS_CopyLinear = nullptr;
+        GPUPipelineState* PS_Clear      = nullptr;
         ShaderProgramInstance* SP_CopyLinear = nullptr;
         ShaderProgramInstance* SP_Clear      = nullptr;
 
@@ -98,12 +98,12 @@ namespace SE
             if (!QuadShader || !QuadShader->IsLoaded())
                 return false;
             OnQuadShaderReloading(nullptr);
-            SLC2GPUShaderProgram* program = nullptr;
+            GPUShaderProgram* program = nullptr;
             if (!QuadShader->SelectProgram(SE_TEXT("CopyLinear"), {}, program))
                 return false;
-            PS_CopyLinear = pDevice->CreateSLC2PipelineState();
+            PS_CopyLinear = pDevice->CreatePipelineState();
             SP_CopyLinear = New<ShaderProgramInstance>();
-            if (!PS_CopyLinear->Init(SLC2GPUPipelineState::Description::DefaultFullscreenTriangle, program) ||
+            if (!PS_CopyLinear->Init(GPUPipelineState::Description::DefaultFullscreenTriangle, program) ||
                 !SP_CopyLinear->Initialize(program))
             {
                 OnQuadShaderReloading(nullptr);
@@ -114,9 +114,9 @@ namespace SE
                 OnQuadShaderReloading(nullptr);
                 return false;
             }
-            PS_Clear = pDevice->CreateSLC2PipelineState();
+            PS_Clear = pDevice->CreatePipelineState();
             SP_Clear = New<ShaderProgramInstance>();
-            if (!PS_Clear->Init(SLC2GPUPipelineState::Description::DefaultFullscreenTriangle, program) ||
+            if (!PS_Clear->Init(GPUPipelineState::Description::DefaultFullscreenTriangle, program) ||
                 !SP_Clear->Initialize(program))
             {
                 OnQuadShaderReloading(nullptr);
@@ -349,7 +349,7 @@ namespace SE
         if (!m_PrivateData->PrepareQuadPrograms(m_Device))
             return;
         m_PrivateData->SP_CopyLinear->SetTexture(SE_TEXT("Source"), src->View());
-        SetSLC2State(m_PrivateData->PS_CopyLinear);
+        SetState(m_PrivateData->PS_CopyLinear);
         DrawFullscreenTriangle(m_PrivateData->SP_CopyLinear);
 	}
 
@@ -359,7 +359,7 @@ namespace SE
         if (!m_PrivateData->PrepareQuadPrograms(m_Device))
             return;
         m_PrivateData->SP_CopyLinear->SetTexture(SE_TEXT("Source"), rt->View());
-		SetSLC2State(m_PrivateData->PS_CopyLinear);
+		SetState(m_PrivateData->PS_CopyLinear);
         DrawFullscreenTriangle(m_PrivateData->SP_CopyLinear);
 	}
 
@@ -369,7 +369,7 @@ namespace SE
         if (!m_PrivateData->PrepareQuadPrograms(m_Device))
             return;
         m_PrivateData->SP_CopyLinear->SetTexture(SE_TEXT("Source"), rt);
-        SetSLC2State(m_PrivateData->PS_CopyLinear);
+        SetState(m_PrivateData->PS_CopyLinear);
         DrawFullscreenTriangle(m_PrivateData->SP_CopyLinear);
 	}
 

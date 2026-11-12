@@ -339,18 +339,18 @@ namespace SE
         ScriptingObject::OnDeleteObject();
     }
 
-    SLC2GPUPipelineState* SLC2GPUPipelineState::Spawn(const SpawnParams& params)
+    GPUPipelineState* GPUPipelineState::Spawn(const SpawnParams& params)
     {
-        return GPUDevice::instance->CreateSLC2PipelineState();
+        return GPUDevice::instance->CreatePipelineState();
     }
 
-    SLC2GPUPipelineState* SLC2GPUPipelineState::New() { return GPUDevice::instance->CreateSLC2PipelineState(); }
+    GPUPipelineState* GPUPipelineState::New() { return GPUDevice::instance->CreatePipelineState(); }
 
-    SLC2GPUPipelineState::SLC2GPUPipelineState() : GPUResource(SpawnParams(UID::New(), TypeInitializer)) {}
+    GPUPipelineState::GPUPipelineState() : GPUResource(SpawnParams(UID::New(), TypeInitializer)) {}
 
-    GPUResourceType SLC2GPUPipelineState::GetResType() const { return GPUResourceType::PipelineState; }
+    GPUResourceType GPUPipelineState::GetResType() const { return GPUResourceType::PipelineState; }
 
-	bool SLC2GPUPipelineState::Description::operator==(const SLC2GPUPipelineState::Description& other) const 
+	bool GPUPipelineState::Description::operator==(const GPUPipelineState::Description& other) const
 	{
 		return Platform::MemoryCompare(this, &other, sizeof(Description)) == 0;
 	}

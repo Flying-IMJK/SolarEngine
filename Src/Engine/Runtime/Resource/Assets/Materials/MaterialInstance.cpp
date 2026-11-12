@@ -148,7 +148,7 @@ namespace SE
         return EmptyInfo;
     }
 
-    SLC2GPUShader* MaterialInstance::GetShader() const { return _baseMaterial ? _baseMaterial->GetShader() : nullptr; }
+    GPUShader* MaterialInstance::GetShader() const { return _baseMaterial ? _baseMaterial->GetShader() : nullptr; }
 
     bool MaterialInstance::IsReady() const
     {

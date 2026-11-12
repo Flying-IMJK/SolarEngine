@@ -9,7 +9,7 @@
 
 namespace SE
 {
-    class SLC2GPUPipelineState;
+    class GPUPipelineState;
     class ShaderProgramInstance;
 
     SE_ENUM(Reflect)
@@ -29,9 +29,9 @@ namespace SE
         SE_DEFINE_CLASS(Sky, RenderActor);
     private:
         AssetRef<Shader> _shader;
-        SLC2GPUPipelineState*  _psSky;
+        GPUPipelineState*  _psSky;
         ShaderProgramInstance* m_SkyProgram = nullptr;
-        SLC2GPUPipelineState*  _psSkyBox;
+        GPUPipelineState*  _psSkyBox;
         ShaderProgramInstance* m_SkyBoxProgram    = nullptr;
         int32 _sceneRenderingKey = -1;
 
@@ -84,7 +84,7 @@ namespace SE
     private:
         void ReleasePrograms();
         void OnShaderReloading(Asset* pAsset) { ReleasePrograms(); }
-        bool SetupProgram(const String& name, SLC2GPUPipelineState*& pipeline, ShaderProgramInstance*& instance);
+        bool SetupProgram(const String& name, GPUPipelineState*& pipeline, ShaderProgramInstance*& instance);
         // void InitConfig(AtmosphericFogData& config) const;
 
     public:

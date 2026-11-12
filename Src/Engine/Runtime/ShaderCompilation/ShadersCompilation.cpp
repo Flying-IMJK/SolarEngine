@@ -145,16 +145,16 @@ SHADER_PROGRAM(SelfTestProgram, SHADER_VS(VSMain) SHADER_PS(PSMain) SHADER_MACRO
 
         request.Targets.Add(ShaderProfile::Vulkan_SM5);
 
-		// 自测只调用离线编译入口；CompileSlang 内部会完成 SLC2 写出与结构校验。
+		// 自测只调用离线编译入口；CompileSlang 内部会完成 ShaderArtifact 写出与结构校验。
 		ShaderCompileResult result = CompileSlang(request);
-		if (result.Success && result.SLC2Data.Count() == 0)
+		if (result.Success && result.ShaderData.Count() == 0)
 		{
             result.Success = false;
 			if (!result.CompileMessage.IsEmpty())
 			{
 				result.CompileMessage += SE_TEXT("\n");
 			}
-			result.CompileMessage += SE_TEXT("Slang offline self-test produced empty SLC2 data.");
+			result.CompileMessage += SE_TEXT("Slang offline self-test produced empty ShaderArtifact data.");
 		}
 		return result;
 	}

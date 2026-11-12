@@ -3,8 +3,8 @@
 #include <Runtime/Core/Serialization/MemoryReadStream.h>
 #include <Runtime/Graphics/GPUContext.h>
 #include <Runtime/Graphics/GPUDevice.h>
-#include <Runtime/Graphics/Shaders/SLC2GPUShader.h>
-#include <Runtime/Graphics/Shaders/SLC2GPUShaderProgram.h>
+#include <Runtime/Graphics/Shaders/GPUShader.h>
+#include <Runtime/Graphics/Shaders/GPUShaderProgram.h>
 #include <Runtime/Graphics/Shaders/ShaderProgramInstance.h>
 #include <Runtime/Render/Assets/Material/DeferredMaterialShader.h>
 #include <Runtime/Render/Assets/Material/ForwardMaterialShader.h>
@@ -51,7 +51,7 @@ namespace SE
     MaterialShader::MaterialShader(const StringView& name)
     {
         if (GPUDevice::instance)
-            m_Shader = GPUDevice::instance->CreateSLC2Shader(name);
+            m_Shader = GPUDevice::instance->CreateShader(name);
     }
 
     MaterialShader::~MaterialShader()
@@ -74,7 +74,7 @@ namespace SE
                 material = New<GUIMaterialShader>(name);
                 break;
             default:
-                LOG_ERROR("Render", "Unsupported SLC2 material domain {0}.", static_cast<int32>(info.Domain));
+                LOG_ERROR("Render", "Unsupported ShaderArtifact material domain {0}.", static_cast<int32>(info.Domain));
                 return nullptr;
         }
         if (!material->Load(shaderCacheStream, info))
@@ -109,7 +109,7 @@ namespace SE
                                       (!HasProgram(required + SE_TEXT("Instanced")) || !HasProgram(SE_TEXT("Depth")) ||
                                        !HasProgram(SE_TEXT("DepthInstanced")))))
         {
-            LOG_ERROR("Render", "SLC2 material is missing required Programs.");
+            LOG_ERROR("Render", "ShaderArtifact material is missing required Programs.");
             return false;
         }
         m_IsLoaded = true;
@@ -135,7 +135,7 @@ namespace SE
     }
 
     const MaterialInfo& MaterialShader::GetInfo() const { return m_Info; }
-    SLC2GPUShader* MaterialShader::GetShader() const { return m_Shader; }
+    GPUShader* MaterialShader::GetShader() const { return m_Shader; }
     bool MaterialShader::IsReady() const { return m_IsLoaded; }
 
     bool MaterialShader::HasProgram(const String& programName) const
@@ -145,9 +145,9 @@ namespace SE
 
     ShaderProgramInstance* MaterialShader::GetProgram() { return m_SelectedProgram; }
 
-    SLC2GPUPipelineState::Description MaterialShader::GetSurfacePipelineDescription(const BindParameters& params) const
+    GPUPipelineState::Description MaterialShader::GetSurfacePipelineDescription(const BindParameters& params) const
     {
-        auto        description      = SLC2GPUPipelineState::Description::Default;
+        auto        description      = GPUPipelineState::Description::Default;
         const auto& view             = params.renderContext.view;
         description.DepthWriteEnable = EnumHasNoneFlags(m_Info.FeaturesFlags, MaterialFeatures::DisableDepthWrite);
         if (EnumHasAnyFlags(m_Info.FeaturesFlags, MaterialFeatures::DisableDepthTest))
@@ -179,7 +179,7 @@ namespace SE
 
     bool MaterialShader::BindProgram(BindParameters&                          params,
                                      const String&                            programName,
-                                     const SLC2GPUPipelineState::Description& description)
+                                     const GPUPipelineState::Description& description)
     {
         m_SelectedProgram = nullptr;
         if (!m_IsLoaded || !m_Shader)
@@ -214,7 +214,7 @@ namespace SE
             }
             state.Instance = New<ShaderProgramInstance>();
 
-            state.Pipeline = GPUDevice::instance->CreateSLC2PipelineState();
+            state.Pipeline = GPUDevice::instance->CreatePipelineState();
 
             if (!state.Pipeline->Init(description, state.Program))
             {
@@ -245,7 +245,7 @@ namespace SE
             return false;
         }
 
-        params.gpuContext->SetSLC2State(selected->Pipeline);
+        params.gpuContext->SetState(selected->Pipeline);
         m_SelectedProgram = selected->Instance;
         return true;
     }

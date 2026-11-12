@@ -6,7 +6,7 @@
 
 namespace SE
 {
-    /// Common source compilation, SLC2 storage, and reload dependencies for shader-bearing assets.
+    /// Common source compilation, ShaderArtifact storage, and reload dependencies for shader-bearing assets.
     class SE_API_RUNTIME IShaderAsset
     {
     public:
@@ -30,7 +30,7 @@ namespace SE
 #endif
         struct ShaderCacheResult
         {
-            // Owns raw SLC2 bytes independently of asset chunks, including across Save().
+            // Owns raw ShaderArtifact bytes independently of asset chunks, including across Save().
             BytesContainer Data;
             List<String> Includes;
         };

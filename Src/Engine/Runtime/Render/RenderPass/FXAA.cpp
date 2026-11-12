@@ -43,7 +43,7 @@ namespace SE
 
 		GPUDevice* device = GPUDevice::instance;
 
-		m_PipelineState = device->CreateSLC2PipelineState();
+		m_PipelineState = device->CreatePipelineState();
         m_ProgramInstance       = New<ShaderProgramInstance>();
 
 
@@ -94,7 +94,7 @@ namespace SE
                 break;
         }
 
-		SLC2GPUShaderProgram* program;
+		GPUShaderProgram* program;
         if (!m_Shader->SelectProgram(SE_TEXT("FXAA"), {macro}, program))
         {
             return;
@@ -104,7 +104,7 @@ namespace SE
         {
             m_ProgramInstance->Initialize(program);
 
-			m_PipelineState->Init(SLC2GPUPipelineState::Description::DefaultFullscreenTriangle, program);
+			m_PipelineState->Init(GPUPipelineState::Description::DefaultFullscreenTriangle, program);
         }
 
 		// Bind input
@@ -113,7 +113,7 @@ namespace SE
 
 		// Render
 		context->SetRenderTarget(output);
-        context->SetSLC2State(m_PipelineState);
+        context->SetState(m_PipelineState);
         context->DrawFullscreenTriangle(m_ProgramInstance);
 	}
 } // SE

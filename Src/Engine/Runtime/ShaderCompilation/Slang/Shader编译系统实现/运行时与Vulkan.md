@@ -1,12 +1,12 @@
 # 运行时与 Vulkan
 
-目标：从已存在且已通过编译侧 self-read 的 SLC2 开始，构造运行时反射、名称绑定状态和 Vulkan Program 级 Pipeline Layout。
+目标：从已存在且已通过编译侧 self-read 的 ShaderArtifact 开始，构造运行时反射、名称绑定状态和 Vulkan Program 级 Pipeline Layout。
 
 ## 运行时边界
 
 运行时只消费：
 
-- `SLC2GPUShader`（及其不可变的 `SLC2ShaderProgram` 缓存）
+- `GPUShader`（及其不可变的 `ShaderProgram` 缓存）
 - `ShaderReflectionIR`
 - Program 级 `VertexBufferLayout` 与 Vertex Stage `VertexInputSignature`
 - Stage code
@@ -18,13 +18,13 @@
 - 参与 Program 发现。
 - 参与 Variant 规划。
 - 参与 Target codegen。
-- 参与 SLC2 写入。
+- 参与 ShaderArtifact 写入。
 
 ## 新增对象
 
 | 文件 | 类型 | 职责 |
 | --- | --- | --- |
-| `SLC2GPUShader.h/.cpp` | `SLC2GPUShader` | 不可变 SLC2 Program/Target/Variant 数据与共享 Program 缓存；负责创建独立实例 |
+| `GPUShader.h/.cpp` | `GPUShader` | 不可变 ShaderArtifact Program/Target/Variant 数据与共享 Program 缓存；负责创建独立实例 |
 | `ShaderProgramReflection.h/.cpp` | `ShaderProgramReflection` | type/block 索引和物理布局描述 |
 | `ShaderVar.h/.cpp` | `ShaderVar` | 绑定到运行时 ParameterBlock 的成员、固定数组、资源与 uniform 访问句柄 |
 | `ShaderNameResolver.h/.cpp` | `ShaderNameResolver` | 解析 `a.b[2].c` |
@@ -33,14 +33,14 @@
 | `ShaderProgramInstance.h/.cpp` | `ShaderProgramInstance` | 完整 Program 实例及其统一参数状态 |
 | `ShaderProgramLayoutVulkan.h/.cpp` | `ShaderProgramLayoutVulkan` | Vulkan layout 创建/复用 |
 | `ShaderDescriptorWriterVulkan.h/.cpp` | `ShaderDescriptorWriterVulkan` | descriptor write |
-| `GPUShaderProgramVulkan.h/.cpp` | `SLC2ShaderProgramVulkan` | 持有 SLC2 Program 的不可变 VkShaderModule、descriptor layout 与 Vertex Input State |
+| `GPUShaderProgramVulkan.h/.cpp` | `ShaderProgramVulkan` | 持有 ShaderArtifact Program 的不可变 VkShaderModule、descriptor layout 与 Vertex Input State |
 
 ## 过渡策略
 
 - 旧 `GPUShaderProgram` 仍表示单 Stage。
 - 新增完整 `ShaderProgramInstance` 表示 graphics/compute Program。
-- 新 Slang Shader 资产显式加载 SLC2。
-- 不通过文件内容嗅探在旧 cache 和 SLC2 之间分流。
+- 新 Slang Shader 资产显式加载 ShaderArtifact。
+- 不通过文件内容嗅探在旧 cache 和 ShaderArtifact 之间分流。
 - 新路径可复用旧 Vulkan stage module 所有者，但不读取旧 `ShaderBindings` 或 `SpirvShaderDescriptorInfo`。
 
 ## Program / Target / Variant 选择
@@ -60,7 +60,7 @@ struct ShaderProgramSelection
 - Target 使用 `platform/backend/shaderModel` 精确匹配。
 - 不选择最接近 ShaderModel。
 - Defines 输入无序。
-- 使用 SLC2 中 `variantGroups` 执行与编译期相同的 `NormalizeVariant`。
+- 使用 ShaderArtifact 中 `variantGroups` 执行与编译期相同的 `NormalizeVariant`。
 - 未知宏、同组多选、带值宏或 Variant 不存在均失败。
 - 不做运行时 specialization。
 - 选择完成后严格验证 Program 顶点缓冲布局和当前 Vertex Stage 输入签名；不从 SPIR-V 补充或覆盖顶点输入。
@@ -81,8 +81,8 @@ Select(programId, target, defines):
 不引入 Falcor/gfx；只采用其“不可变反射、可变 ParameterBlock、绑定 ShaderVar、冻结提交快照”的对象边界：
 
 ```text
-SLC2GPUShader (immutable)
-  -> SLC2ShaderProgram (immutable Reflection / backend layout / stages)
+GPUShader (immutable)
+  -> ShaderProgram (immutable Reflection / backend layout / stages)
     -> ShaderProgramInstance (per Material/Pass)
       -> Uniform Block / Resource Binding state
         -> ShaderVar (block + location)
@@ -93,7 +93,7 @@ BuildSnapshot(root)
 ```
 
 - `ShaderProgramReflection` 只保存 type/block 图、名称索引和物理 mapping；不保存资源值或 descriptor set。
-- `ShaderProgramInstance` 每次由 `SLC2GPUShader::CreateProgramInstance()` 创建，拥有独立根块；不同实例不共享任何可变绑定状态。
+- `ShaderProgramInstance` 每次由 `GPUShader::CreateProgramInstance()` 创建，拥有独立根块；不同实例不共享任何可变绑定状态。
 - `ShaderProgramInstance` 统一持有各 `blockId` 的 CPU uniform bytes、`resourceBindings[logicalSlot][logicalElement]` 及子块关系；资源永远以逻辑位置保存，不再维护独立 ParameterBlock 资源树。
 - `ShaderVar` 同时持有 ParameterBlock 与该块内的 `ShaderVarLocation`。`FindVar(path)` 只是从根块取得它的入口；成员和数组访问不重新解析全路径。
 - `ShaderBindingSnapshot` 是唯一允许交给后端的绑定数据。Descriptor Writer 不读取可变 ParameterBlock，也不修改它。
@@ -178,7 +178,7 @@ Resolve(path):
   return FinalizeLeafLocation(cursor)
 ```
 
-路径成功后可缓存规范路径到 `ShaderVarLocation`。缓存不写入 SLC2。
+路径成功后可缓存规范路径到 `ShaderVarLocation`。缓存不写入 ShaderArtifact。
 
 ## 资源与 Uniform API
 
@@ -255,7 +255,7 @@ BuildSnapshot(root):
 
 - `binding = descriptorIndex`
 - Stage index 当 descriptor set
-- SPIR-V 二次反射覆盖 SLC2
+- SPIR-V 二次反射覆盖 ShaderArtifact
 
 ## Descriptor 写入
 
@@ -284,7 +284,7 @@ Compute：
 
 - Program Variant 只能包含 CS。
 - 从 Stage code 创建 VkShaderModule。
-- 使用 SLC2 `entryPoint`。
+- 使用 ShaderArtifact `entryPoint`。
 - 从共享 Layout 创建 compute pipeline。
 - Dispatch 前执行绑定完整性、descriptor 写入和 set bind。
 
@@ -292,7 +292,7 @@ Graphics：
 
 - Program Variant 包含 VS/PS，可选 HS/DS/GS。
 - 所有 Stage 共享同一 VkPipelineLayout。
-- `SLC2ShaderProgramVulkan` 从 Program `VertexBufferLayout` 和当前 Vertex Stage `VertexInputSignature` 构造并持有不可变 Vertex Input State；PipelineState 只引用该状态。
+- `ShaderProgramVulkan` 从 Program `VertexBufferLayout` 和当前 Vertex Stage `VertexInputSignature` 构造并持有不可变 Vertex Input State；PipelineState 只引用该状态。
 - HS/DS 成对和 PS 必须存在已由编译/Reader 验证。
 - PipelineState 持有固定功能状态。
 - Program 可被多个兼容 PipelineState 复用。
@@ -327,14 +327,14 @@ BuildVertexInputState(programLayout, vertexSignature, device):
 
 规则：
 
-- SLC2 只保存平台无关 `PixelFormat`；Vulkan adapter 是 `PixelFormat -> VkFormat` 的唯一入口，并检查设备是否支持作为 Vertex Buffer format。
+- ShaderArtifact 只保存平台无关 `PixelFormat`；Vulkan adapter 是 `PixelFormat -> VkFormat` 的唯一入口，并检查设备是否支持作为 Vertex Buffer format。
 - Shader `float/floatN` 只兼容 Float/UNorm/SNorm，`uint/uintN` 只兼容 UInt，`int/intN` 只兼容 SInt；物理格式分量数必须不少于 Shader 分量数。
 - Binding Slot 可以稀疏。`requiredVertexBufferSlotsMask` 按实际 Slot 置位，不使用 Binding 数量表示连续 Slot。
 - `GPUContextVulkan` 保存 `_vbBoundMask`。绑定非空 Vertex Buffer 时设置对应 bit，显式解绑时清除，`ClearState()` 清空；绑定额外 Slot 不构成错误。
-- SLC2 Draw 前计算 `missing = requiredVertexBufferSlotsMask & ~_vbBoundMask`。`missing != 0` 时记录 ProgramId 与缺失 Slot，终止当前 Draw；不创建或绑定默认 Vertex Buffer。
+- ShaderArtifact Draw 前计算 `missing = requiredVertexBufferSlotsMask & ~_vbBoundMask`。`missing != 0` 时记录 ProgramId 与缺失 Slot，终止当前 Draw；不创建或绑定默认 Vertex Buffer。
 - 所有声明 Binding 都是必需项。Mesh 缺少切线等数据时，资产导入阶段补齐，或选择具有不同布局的 ProgramId；运行时不根据 Mesh 自动裁剪 Attribute。
 - 首期仅映射 `PER_VERTEX/stepRate=0` 与 `PER_INSTANCE/stepRate=1`，不创建 Vertex Attribute divisor 扩展链。
-- Vertex Input State 与 Stage modules 一样由 `SLC2ShaderProgramVulkan` 拥有，并要求其生命周期覆盖引用它的 Graphics PipelineState。
+- Vertex Input State 与 Stage modules 一样由 `ShaderProgramVulkan` 拥有，并要求其生命周期覆盖引用它的 Graphics PipelineState。
 
 ## 错误分层
 

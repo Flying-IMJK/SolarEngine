@@ -3,18 +3,18 @@
 #include <Runtime/Core/TypeSystem/IType.h>
 #include <Runtime/Graphics/Base/GPUEnums.h>
 #include <Runtime/Graphics/Base/GPUResource.h>
-#include <Runtime/Graphics/Shaders/SLC2GPUShaderProgram.h>
+#include <Runtime/Graphics/Shaders/GPUShaderProgram.h>
 
 namespace SE
 {
 	SE_CLASS(API(Sealed))
-    class SE_API_RUNTIME SLC2GPUPipelineState : public GPUResource
+    class SE_API_RUNTIME GPUPipelineState : public GPUResource
     {
-        SCRIPTING_TYPE_NO_SPAWN(SLC2GPUPipelineState);
+        SCRIPTING_TYPE_NO_SPAWN(GPUPipelineState);
 
     public:
-        static SLC2GPUPipelineState* Spawn(const SpawnParams& params);
-        static SLC2GPUPipelineState* New();
+        static GPUPipelineState* Spawn(const SpawnParams& params);
+        static GPUPipelineState* New();
 
     public:
         /// <summary>
@@ -119,7 +119,7 @@ namespace SE
         };
 
     protected:
-        SLC2GPUPipelineState();
+        GPUPipelineState();
 
     public:
         // #if BUILD_DEBUG
@@ -143,9 +143,9 @@ namespace SE
         /// Create new state data
         /// </summary>
         /// <param name="desc">Full pipeline state description</param>
-        /// <param name="program">SLC2 shader program</param>
+        /// <param name="program">ShaderArtifact shader program</param>
         /// <returns>True if cannot create state, otherwise false</returns>
-        virtual bool Init(const Description& desc, const SLC2GPUShaderProgram* program) = 0;
+        virtual bool Init(const Description& desc, const GPUShaderProgram* program) = 0;
 
     public:
         // [GPUResource]

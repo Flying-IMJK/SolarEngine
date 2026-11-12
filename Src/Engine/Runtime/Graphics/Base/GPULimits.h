@@ -273,7 +273,7 @@ namespace SE
 		bool HasDepthAsSRV;
 
 		/// <summary>
-		/// True if device supports depth buffer clipping (see SLC2GPUPipelineState::Description::DepthClipEnable).
+		/// True if device supports depth buffer clipping (see GPUPipelineState::Description::DepthClipEnable).
 		/// </summary>
 		SE_FIELD(API())
 		bool HasDepthClip;

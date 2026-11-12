@@ -82,15 +82,15 @@ namespace SE
         GPUDevice* device = GPUDevice::instance;
         if (m_PsLightDir == nullptr)
         {
-            m_PsLightDir = device->CreateSLC2PipelineState();
+            m_PsLightDir = device->CreatePipelineState();
         }
         if (m_PsLightPointNormal == nullptr)
         {
-            m_PsLightPointNormal = device->CreateSLC2PipelineState();
+            m_PsLightPointNormal = device->CreatePipelineState();
         }
         if (m_PsLightPointInverted == nullptr)
         {
-            m_PsLightPointInverted = device->CreateSLC2PipelineState();
+            m_PsLightPointInverted = device->CreatePipelineState();
         }
         if (m_ProgramLightDir == nullptr)
         {
@@ -184,7 +184,7 @@ namespace SE
             {
                 macros.Add(SE_TEXT("USE_SHADOW_MASK"));
             }
-            SLC2GPUShaderProgram* program = nullptr;
+            GPUShaderProgram* program = nullptr;
             if (!m_Shader->SelectProgram(SE_TEXT("PointLight"), macros, program))
             {
                 continue;
@@ -200,7 +200,7 @@ namespace SE
                     continue;
                 }
 
-                auto desc = SLC2GPUPipelineState::Description::DefaultNoDepth;
+                auto desc = GPUPipelineState::Description::DefaultNoDepth;
                 desc.BlendMode                       = BlendingMode::Add;
                 desc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
                 desc.CullMode                        = CullMode::Inverted;
@@ -249,7 +249,7 @@ namespace SE
             }
 
             context->SetRenderTarget(pLightBuffer, depthBufferRTV);
-            context->SetSLC2State(isViewInside ? m_PsLightPointInverted : m_PsLightPointNormal);
+            context->SetState(isViewInside ? m_PsLightPointInverted : m_PsLightPointNormal);
             for (const auto& mesh : m_SphereModel->LODs[0].Meshes)
             {
                 if (!mesh.IsInitialized())
@@ -278,7 +278,7 @@ namespace SE
             {
                 macros.Add(SE_TEXT("USE_SHADOW_MASK"));
             }
-            SLC2GPUShaderProgram* program = nullptr;
+            GPUShaderProgram* program = nullptr;
             if (!m_Shader->SelectProgram(SE_TEXT("DirectionalLight"), macros, program))
             {
                 continue;
@@ -286,7 +286,7 @@ namespace SE
             if (m_ProgramLightDir->GetProgram() != program || !m_PsLightDir->IsValid())
             {
                 m_PsLightDir->ReleaseGPU();
-                auto desc                            = SLC2GPUPipelineState::Description::DefaultFullscreenTriangle;
+                auto desc                            = GPUPipelineState::Description::DefaultFullscreenTriangle;
                 desc.BlendMode                       = BlendingMode::Add;
                 desc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
                 if (!m_ProgramLightDir->Initialize(program) || !m_PsLightDir->Init(desc, program))
@@ -325,7 +325,7 @@ namespace SE
             }
 
             context->SetRenderTarget(pLightBuffer, depthBufferRTV);
-            context->SetSLC2State(m_PsLightDir);
+            context->SetState(m_PsLightDir);
             context->DrawFullscreenTriangle(m_ProgramLightDir);
         }
 

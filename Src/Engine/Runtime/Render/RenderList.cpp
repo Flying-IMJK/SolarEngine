@@ -313,7 +313,7 @@ namespace SE
     {
 #if ENABLE_ASSERTION_LOW_LAYERS
         // Ensure that draw modes are non-empty and in conjunction with material draw modes
-        auto materialDrawModes = drawCall.SLC2 != nullptr ? drawModes : drawCall.Material->GetDrawModes();
+        auto materialDrawModes = drawCall.ShaderArtifact != nullptr ? drawModes : drawCall.Material->GetDrawModes();
         ASSERT_LOW_LAYER(drawModes != DrawPass::None && ((uint32)drawModes & ~(uint32)materialDrawModes) == 0);
 #endif
 
@@ -353,7 +353,7 @@ namespace SE
     {
 #if ENABLE_ASSERTION_LOW_LAYERS
         // Ensure that draw modes are non-empty and in conjunction with material draw modes
-        auto materialDrawModes = drawCall.SLC2 != nullptr ? drawModes : drawCall.Material->GetDrawModes();
+        auto materialDrawModes = drawCall.ShaderArtifact != nullptr ? drawModes : drawCall.Material->GetDrawModes();
         ASSERT_LOW_LAYER(drawModes != DrawPass::None && ((uint32)drawModes & ~(uint32)materialDrawModes) == 0);
 #endif
         const RenderContext& mainRenderContext = renderContextBatch.Contexts.Get()[0];

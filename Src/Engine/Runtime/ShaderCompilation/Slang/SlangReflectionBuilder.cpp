@@ -88,7 +88,7 @@ namespace SE
 		String ToBindingTypeString(const slang::BindingType type)
 		{
 			// Slang encodes writable resources by adding MutableFlag to the
-			// descriptor type. SLC2 keeps the base descriptor category; write
+			// descriptor type. ShaderArtifact keeps the base descriptor category; write
 			// capability remains represented by the reflected resource access.
 			const uint32 baseType = static_cast<uint32>(type) & static_cast<uint32>(slang::BindingType::BaseMask);
 			switch (static_cast<slang::BindingType>(baseType))

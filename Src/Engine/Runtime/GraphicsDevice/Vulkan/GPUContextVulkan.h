@@ -14,7 +14,7 @@ namespace SE
 	class CmdBufferManagerVulkan;
 	class CmdBufferVulkan;
 	class RenderPassVulkan;
-	class SLC2GraphicsPipelineStateVulkan;
+	class GraphicsPipelineStateVulkan;
 	class GPUTextureViewVulkan;
 	class GPUTextureVulkan;
 	class GPUBufferVulkan;
@@ -77,14 +77,14 @@ namespace SE
 		uint32 m_RenderGeometryVertexElementCounts[GPU_MAX_VB_BINDED];
 
 		RenderPassVulkan* m_RenderPass;
-		SLC2GraphicsPipelineStateVulkan* m_CurrentSLC2GraphicsState;
+		GraphicsPipelineStateVulkan* m_CurrentGraphicsState;
 		GPUTextureViewVulkan* _rtDepth;
 		GPUTextureViewVulkan* _rtHandles[GPU_MAX_RT_BINDED];
 
 		typedef List<DescriptorPoolVulkan*> DescriptorPoolArray;
 		Dictionary<uint32, DescriptorPoolArray> _descriptorPools;
 	private:
-		bool OnSLC2DrawCall(ShaderProgramInstance& instance);
+		bool OnDrawCall(ShaderProgramInstance& instance);
 		void ClearRenderGeometry();
 
 	public:
@@ -143,7 +143,7 @@ namespace SE
 		void SetScissor(const Rectangle& scissorRect) override;
 
 	public:
-		// SLC2 新路径：从 ShaderProgramInstance 冻结绑定快照，再交给 Vulkan 后端绑定 pipeline/descriptor。
+		// ShaderArtifact 新路径：从 ShaderProgramInstance 冻结绑定快照，再交给 Vulkan 后端绑定 pipeline/descriptor。
 		void Dispatch(ShaderProgramInstance& instance, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ) override;
         void DispatchIndirect(ShaderProgramInstance& instance, GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
 		void ResolveMultisample(GPUTexture* sourceMultisampleTexture, GPUTexture* destTexture, int32 sourceSubResource, int32 destSubResource, PixelFormat format) override;
@@ -165,8 +165,8 @@ namespace SE
 		void ClearUA(GPUTexture* texture, const uint32 value[4]) override;
 		void ClearUA(GPUTexture* texture, const Float4& value) override;
 
-        void SetSLC2State(SLC2GPUPipelineState* state) override;
-        SLC2GPUPipelineState* GetSLC2State() const override;
+        void SetState(GPUPipelineState* state) override;
+        GPUPipelineState* GetState() const override;
 
 		void ClearState() override;
 		void FlushState() override;

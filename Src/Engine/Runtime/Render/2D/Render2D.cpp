@@ -118,7 +118,7 @@ namespace SE
             struct
             {
                 GPUTexture* Tex;
-                SLC2GPUPipelineState* Pso;
+                GPUPipelineState* Pso;
                 ShaderProgramInstance* Program;
             } AsCustom;
 
@@ -159,40 +159,40 @@ namespace SE
         RotatedRectangle ClipMask;
     };
 
-    struct CachedPSOSLC2
+    struct CachedPSO
     {
         bool Inited = false;
         bool UseDepth;
 
-        SLC2GPUPipelineState* PS_Image;
+        GPUPipelineState* PS_Image;
         ShaderProgramInstance* SP_Image;
 
-        SLC2GPUPipelineState* PS_ImagePoint;
+        GPUPipelineState* PS_ImagePoint;
         ShaderProgramInstance* SP_ImagePoint;
 
-        SLC2GPUPipelineState* PS_Color;
-        SLC2GPUPipelineState* PS_Color_NoAlpha;
+        GPUPipelineState* PS_Color;
+        GPUPipelineState* PS_Color_NoAlpha;
         ShaderProgramInstance* SP_Color;
         ShaderProgramInstance* SP_Color_NoAlpha;
 
-        SLC2GPUPipelineState* PS_Font;
+        GPUPipelineState* PS_Font;
         ShaderProgramInstance* SP_Font;
 
-        SLC2GPUPipelineState* PS_BlurH;
-        SLC2GPUPipelineState* PS_BlurV;
-        SLC2GPUPipelineState* PS_Downscale;
+        GPUPipelineState* PS_BlurH;
+        GPUPipelineState* PS_BlurV;
+        GPUPipelineState* PS_Downscale;
 
         ShaderProgramInstance* SP_BlurH;
         ShaderProgramInstance* SP_BlurV;
         ShaderProgramInstance* SP_Downscale;
 
-        SLC2GPUPipelineState* PS_LineAA;
+        GPUPipelineState* PS_LineAA;
         ShaderProgramInstance* SP_LineAA;
 
         GPUConstantBuffer* ConstantBuffer = nullptr;
 
 
-        bool Init(SLC2GPUShader* shader, bool useDepth);
+        bool Init(GPUShader* shader, bool useDepth);
         void Dispose();
     };
 
@@ -239,9 +239,9 @@ namespace SE
 
         // Shader
         AssetRef<Shader> GUIShader;
-        CachedPSOSLC2    PsoDepthSLC2;
-        CachedPSOSLC2 PsoNoDepthSLC2;
-        CachedPSOSLC2* CurrentPsoSLC2 = nullptr;
+        CachedPSO    PsoDepth;
+        CachedPSO PsoNoDepth;
+        CachedPSO* CurrentPso = nullptr;
 
         DynamicVertexBuffer VB = DynamicVertexBuffer(RENDER2D_INITIAL_VB_CAPACITY, (uint32)sizeof(Render2DVertex), SE_TEXT("Render2D.VB"));
         DynamicIndexBuffer IB = DynamicIndexBuffer(RENDER2D_INITIAL_IB_CAPACITY, sizeof(uint32), SE_TEXT("Render2D.IB"));
@@ -527,15 +527,15 @@ namespace SE
 
     void OnGUIShaderReloading(Asset* pAsset)
     {
-        render2DData->PsoDepthSLC2.Dispose();
-        render2DData->PsoNoDepthSLC2.Dispose();
+        render2DData->PsoDepth.Dispose();
+        render2DData->PsoNoDepth.Dispose();
     }
 
     bool Render2DSystem::OnInit()
     {
         render2DData = New<Render2DData>();
 
-        // Every GUI Program now comes from the unified SLC2 Shader asset.
+        // Every GUI Program now comes from the unified ShaderArtifact Shader asset.
         render2DData->GUIShader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/GUI"));
         if (!render2DData->GUIShader)
             return false;
@@ -558,8 +558,8 @@ namespace SE
 
         if (render2DData->GUIShader)
             render2DData->GUIShader->OnReloadingEvent.Unbind<OnGUIShaderReloading>();
-        render2DData->PsoDepthSLC2.Dispose();
-        render2DData->PsoNoDepthSLC2.Dispose();
+        render2DData->PsoDepth.Dispose();
+        render2DData->PsoNoDepth.Dispose();
         render2DData->GUIShader = nullptr;
 
         render2DData->VB.Dispose();
@@ -677,7 +677,7 @@ namespace SE
         PROFILE_GPU_CPU_NAMED("Render2D");
 
         // Prepare shader
-        SLC2GPUShader* shader;
+        GPUShader* shader;
         {
             if (!render2DData->GUIShader->IsLoaded() && !render2DData->GUIShader->WaitForLoaded())
             {
@@ -708,16 +708,16 @@ namespace SE
         render2DData->Context->FlushState();
 
         // Prepare PSO
-        if (!render2DData->PsoDepthSLC2.Inited)
+        if (!render2DData->PsoDepth.Inited)
         {
-            render2DData->PsoDepthSLC2.Init(render2DData->GUIShader->GetGPUShader(), true);
-            render2DData->PsoNoDepthSLC2.Init(render2DData->GUIShader->GetGPUShader(), false);
+            render2DData->PsoDepth.Init(render2DData->GUIShader->GetGPUShader(), true);
+            render2DData->PsoNoDepth.Init(render2DData->GUIShader->GetGPUShader(), false);
         }
-        render2DData->CurrentPsoSLC2 = render2DData->DepthBuffer ? &render2DData->PsoDepthSLC2 : &render2DData->PsoNoDepthSLC2;
+        render2DData->CurrentPso = render2DData->DepthBuffer ? &render2DData->PsoDepth : &render2DData->PsoNoDepth;
 
         
         // Prepare constant buffer
-        GPUConstantBuffer* constantBuffer = render2DData->CurrentPsoSLC2->ConstantBuffer;
+        GPUConstantBuffer* constantBuffer = render2DData->CurrentPso->ConstantBuffer;
         Data               data;
         data.ViewProjection = render2DData->ViewProjection;
         //Matrix::Transpose(render2DData->ViewProjection, data.ViewProjection);
@@ -935,12 +935,12 @@ namespace SE
         switch (d.Type)
         {
         case DrawCallType::FillRect:
-            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_Color);
-            programInstance = render2DData->CurrentPsoSLC2->SP_Color;
+            render2DData->Context->SetState(render2DData->CurrentPso->PS_Color);
+            programInstance = render2DData->CurrentPso->SP_Color;
             break;
         case DrawCallType::FillRectNoAlpha:
-            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_Color_NoAlpha);
-            programInstance = render2DData->CurrentPsoSLC2->SP_Color_NoAlpha;
+            render2DData->Context->SetState(render2DData->CurrentPso->PS_Color_NoAlpha);
+            programInstance = render2DData->CurrentPso->SP_Color_NoAlpha;
             break;
         case DrawCallType::FillRT:
             if (d.AsRT.Ptr == nullptr)
@@ -948,8 +948,8 @@ namespace SE
                 return;
             }
 
-            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_Image);
-            programInstance = render2DData->CurrentPsoSLC2->SP_Image;
+            render2DData->Context->SetState(render2DData->CurrentPso->PS_Image);
+            programInstance = render2DData->CurrentPso->SP_Image;
             programInstance->SetTexture(SE_TEXT("ImageTex"), d.AsRT.Ptr);
             break;
         case DrawCallType::FillTexture:
@@ -958,8 +958,8 @@ namespace SE
                 return;
             }
 
-            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_Image);
-            programInstance = render2DData->CurrentPsoSLC2->SP_Image;
+            render2DData->Context->SetState(render2DData->CurrentPso->PS_Image);
+            programInstance = render2DData->CurrentPso->SP_Image;
             programInstance->SetTexture(SE_TEXT("ImageTex"), d.AsTexture.Ptr->View());
             break;
         case DrawCallType::FillTexturePoint:
@@ -968,8 +968,8 @@ namespace SE
                 return;
             }
 
-            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_ImagePoint);
-            programInstance = render2DData->CurrentPsoSLC2->SP_ImagePoint;
+            render2DData->Context->SetState(render2DData->CurrentPso->PS_ImagePoint);
+            programInstance = render2DData->CurrentPso->SP_ImagePoint;
             programInstance->SetTexture(SE_TEXT("ImageTex"), d.AsTexture.Ptr->View());
             break;
         case DrawCallType::DrawChar:
@@ -978,12 +978,12 @@ namespace SE
                 return;
             }
 
-            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_Font);
-            programInstance = render2DData->CurrentPsoSLC2->SP_Font;
+            render2DData->Context->SetState(render2DData->CurrentPso->PS_Font);
+            programInstance = render2DData->CurrentPso->SP_Font;
             programInstance->SetTexture(SE_TEXT("ImageTex"), d.AsChar.Tex->View());
             break;
         case DrawCallType::Custom:
-            render2DData->Context->SetSLC2State(d.AsCustom.Pso);
+            render2DData->Context->SetState(d.AsCustom.Pso);
             programInstance = d.AsCustom.Program;
             programInstance->SetTexture(SE_TEXT("ImageTex"), d.AsCustom.Tex->View());
             break;
@@ -1104,7 +1104,7 @@ namespace SE
             data.InvBufferSize.X = 1.0f / (float)renderTargetWidth;
             data.InvBufferSize.Y = 1.0f / (float)renderTargetHeight;
             data.SampleCount = ComputeBlurWeights(kernelSize, blurStrength, data.WeightAndOffsets);
-            auto pso             = render2DData->CurrentPsoSLC2;
+            auto pso             = render2DData->CurrentPso;
             if (!pso->SP_Downscale->SetConstantBuffer(SE_TEXT("data"), constantBuffer) ||
                 !pso->SP_Downscale->SetConstantBuffer(SE_TEXT("blurData"), &data, sizeof(data)) ||
                 !pso->SP_BlurH->SetConstantBuffer(SE_TEXT("blurData"), &data, sizeof(data)) ||
@@ -1120,22 +1120,22 @@ namespace SE
             render2DData->Context->SetRenderTarget(blurA->View());
             render2DData->Context->SetViewportAndScissors((float)renderTargetWidth, (float)renderTargetHeight);
             pso->SP_Downscale->SetTexture(SE_TEXT("ImageTex"), render2DData->Output);
-            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_Downscale);
-            render2DData->Context->DrawFullscreenTriangle(render2DData->CurrentPsoSLC2->SP_Downscale);
+            render2DData->Context->SetState(render2DData->CurrentPso->PS_Downscale);
+            render2DData->Context->DrawFullscreenTriangle(render2DData->CurrentPso->SP_Downscale);
 
             // Render the blur (1st pass)
             render2DData->Context->ResetRenderTarget();
             render2DData->Context->SetRenderTarget(blurB->View());
             pso->SP_BlurH->SetTexture(SE_TEXT("ImageTex"), blurA->View());
-            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_BlurH);
-            render2DData->Context->DrawFullscreenTriangle(render2DData->CurrentPsoSLC2->SP_BlurH);
+            render2DData->Context->SetState(render2DData->CurrentPso->PS_BlurH);
+            render2DData->Context->DrawFullscreenTriangle(render2DData->CurrentPso->SP_BlurH);
 
             // Render the blur (2nd pass)
             render2DData->Context->ResetRenderTarget();
             render2DData->Context->SetRenderTarget(blurA->View());
             pso->SP_BlurV->SetTexture(SE_TEXT("ImageTex"), blurB->View());
-            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_BlurV);
-            render2DData->Context->DrawFullscreenTriangle(render2DData->CurrentPsoSLC2->SP_BlurV);
+            render2DData->Context->SetState(render2DData->CurrentPso->PS_BlurV);
+            render2DData->Context->DrawFullscreenTriangle(render2DData->CurrentPso->SP_BlurV);
 
             // Restore output
             render2DData->Context->ResetRenderTarget();
@@ -1145,7 +1145,7 @@ namespace SE
             // Link for drawing final blur as a texture
             programInstance = pso->SP_Image;
             programInstance->SetTexture(SE_TEXT("ImageTex"), blurA->View());
-            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_Image);
+            render2DData->Context->SetState(render2DData->CurrentPso->PS_Image);
 
             // Cleanup
             RenderTargetPool::Release(blurA);
@@ -1157,8 +1157,8 @@ namespace SE
             render2DData->Context->SetScissor(*(Rectangle*)&d.AsClipScissors.X);
             return;
         case DrawCallType::LineAA:
-            render2DData->Context->SetSLC2State(render2DData->CurrentPsoSLC2->PS_LineAA);
-            programInstance = render2DData->CurrentPsoSLC2->SP_LineAA;
+            render2DData->Context->SetState(render2DData->CurrentPso->PS_LineAA);
+            programInstance = render2DData->CurrentPso->SP_LineAA;
             break;
 #if !BUILD_RELEASE
         default:
@@ -1770,7 +1770,7 @@ namespace SE
         Write9SlicingRect(rect, color, border, borderUVs, sprite->Area.Location, sprite->Area.Size);
     }*/
 
-    void Render2D::DrawCustom(GPUTexture* t, const Rectangle& rect, SLC2GPUPipelineState* pso, ShaderProgramInstance* program, const Color& color)
+    void Render2D::DrawCustom(GPUTexture* t, const Rectangle& rect, GPUPipelineState* pso, ShaderProgramInstance* program, const Color& color)
     {
         RENDER2D_CHECK_RENDERING_STATE;
         if (pso == nullptr || !pso->IsValid())
@@ -2130,7 +2130,7 @@ namespace SE
         End();
     }
 
-    bool CachedPSOSLC2::Init(SLC2GPUShader* shader, bool useDepth)
+    bool CachedPSO::Init(GPUShader* shader, bool useDepth)
     {
         if (Inited)
         {
@@ -2143,16 +2143,16 @@ namespace SE
 
         ConstantBuffer = device->CreateConstantBuffer(sizeof(Data), SE_TEXT("Render2DConst"));
 
-        SLC2GPUShaderProgram* program;
+        GPUShaderProgram* program;
 
         // Create pipeline states
-        SLC2GPUPipelineState::Description desc = SLC2GPUPipelineState::Description::DefaultFullscreenTriangle;
+        GPUPipelineState::Description desc = GPUPipelineState::Description::DefaultFullscreenTriangle;
         desc.DepthEnable = desc.DepthWriteEnable = useDepth;
         desc.DepthWriteEnable                    = false;
         desc.DepthClipEnable                     = false;
         desc.CullMode                            = CullMode::TwoSided;
         desc.BlendMode                           = BlendingMode::AlphaBlend;
-        PS_Image                                 = device->CreateSLC2PipelineState();
+        PS_Image                                 = device->CreatePipelineState();
         SP_Image                                 = New<ShaderProgramInstance>();
 
         if (!shader->GetOrCreateProgram(SE_TEXT("Image"), program) || !PS_Image->Init(desc, program))
@@ -2163,7 +2163,7 @@ namespace SE
 
         //
         desc.BlendMode = BlendingMode::AlphaBlend;
-        PS_ImagePoint  = device->CreateSLC2PipelineState();
+        PS_ImagePoint  = device->CreatePipelineState();
         SP_ImagePoint  = New<ShaderProgramInstance>();
 
         if (!shader->GetOrCreateProgram(SE_TEXT("ImagePoint"), program) || !PS_ImagePoint->Init(desc, program))
@@ -2174,7 +2174,7 @@ namespace SE
 
         //
         desc.BlendMode = BlendingMode::AlphaBlend;
-        PS_Color       = device->CreateSLC2PipelineState();
+        PS_Color       = device->CreatePipelineState();
         SP_Color       = New<ShaderProgramInstance>();
 
         if (!shader->GetOrCreateProgram(SE_TEXT("Color"), program) || !PS_Color->Init(desc, program))
@@ -2186,7 +2186,7 @@ namespace SE
 
         //
         desc.BlendMode   = BlendingMode::Opaque;
-        PS_Color_NoAlpha = device->CreateSLC2PipelineState();
+        PS_Color_NoAlpha = device->CreatePipelineState();
         SP_Color_NoAlpha = New<ShaderProgramInstance>();
 
         if (!shader->GetOrCreateProgram(SE_TEXT("Color"), program) || !PS_Color_NoAlpha->Init(desc, program))
@@ -2197,7 +2197,7 @@ namespace SE
 
         //
         desc.BlendMode = BlendingMode::AlphaBlend;
-        PS_Font        = device->CreateSLC2PipelineState();
+        PS_Font        = device->CreatePipelineState();
         SP_Font        = New<ShaderProgramInstance>();
 
         if (!shader->GetOrCreateProgram(SE_TEXT("Font"), program) || !PS_Font->Init(desc, program))
@@ -2207,7 +2207,7 @@ namespace SE
         SP_Font->Initialize(program);
 
         //
-        PS_LineAA = device->CreateSLC2PipelineState();
+        PS_LineAA = device->CreatePipelineState();
         SP_LineAA = New<ShaderProgramInstance>();
 
         if (!shader->GetOrCreateProgram(SE_TEXT("LineAA"), program) || !PS_LineAA->Init(desc, program))
@@ -2217,8 +2217,8 @@ namespace SE
         SP_LineAA->Initialize(program);
 
         // Fullscreen blur passes do not consume GUI vertex streams.
-        desc           = SLC2GPUPipelineState::Description::DefaultFullscreenTriangle;
-        PS_BlurH       = device->CreateSLC2PipelineState();
+        desc           = GPUPipelineState::Description::DefaultFullscreenTriangle;
+        PS_BlurH       = device->CreatePipelineState();
         SP_BlurH       = New<ShaderProgramInstance>();
 
         if (!shader->GetOrCreateProgram(SE_TEXT("Blur"), program) || !PS_BlurH->Init(desc, program))
@@ -2228,7 +2228,7 @@ namespace SE
         SP_BlurH->Initialize(program);
 
         //
-        PS_BlurV = device->CreateSLC2PipelineState();
+        PS_BlurV = device->CreatePipelineState();
         SP_BlurV = New<ShaderProgramInstance>();
 
         if (!shader->GetOrCreateProgram(SE_TEXT("Blur"), {SE_TEXT("BLUR_V")}, program) ||
@@ -2239,7 +2239,7 @@ namespace SE
         SP_BlurV->Initialize(program);
 
         //
-        PS_Downscale = device->CreateSLC2PipelineState();
+        PS_Downscale = device->CreatePipelineState();
         SP_Downscale = New<ShaderProgramInstance>();
 
         if (!shader->GetOrCreateProgram(SE_TEXT("Downscale"), program) || !PS_Downscale->Init(desc, program))
@@ -2253,7 +2253,7 @@ namespace SE
         return true;
     }
 
-    void CachedPSOSLC2::Dispose()
+    void CachedPSO::Dispose()
     {
         if (!Inited)
         {

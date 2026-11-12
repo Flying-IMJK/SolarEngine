@@ -10,13 +10,13 @@
 namespace SE
 {
 	// 顶点输入频率是跨后端缓存语义，不能直接保存 VkVertexInputRate 等平台枚举。
-	enum class SLC2VertexInputRate : byte
+	enum class VertexInputRate : byte
 	{
 		PerVertex,
 	};
 
 	// Shader 数值类型使用受控枚举保存，避免运行时依赖任意字符串解释类型。
-	enum class SLC2VertexInputType : byte
+	enum class VertexInputType : byte
 	{
 		Float,
 		Float2,
@@ -57,10 +57,10 @@ namespace SE
 		///		  UV  -> Location 1
 		/// </summary>
 		uint32 Location = 0;
-		SLC2VertexInputType ShaderType = SLC2VertexInputType::Float3;
+		VertexInputType ShaderType = VertexInputType::Float3;
 	};
 
-	struct SE_API_RUNTIME SLC2StageRecord
+	struct SE_API_RUNTIME ShaderStageRecord
 	{
         ShaderStage Stage = ShaderStage::Max;
         StringAnsi  EntryPoint;
@@ -70,45 +70,45 @@ namespace SE
 		int32 OutputControlPoints = 0;
 	};
 
-	struct SE_API_RUNTIME SLC2VariantRecord
+	struct SE_API_RUNTIME ShaderVariantRecord
 	{
 		StringAnsi Variant;
 		ShaderReflectionIR Layout;
-		List<SLC2StageRecord> Stages;
+		List<ShaderStageRecord> Stages;
 	};
 
-	struct SE_API_RUNTIME SLC2TargetRecord
+	struct SE_API_RUNTIME ShaderTargetRecord
 	{
 		ShaderProfile Target;
-		List<SLC2VariantRecord> Variants;
+		List<ShaderVariantRecord> Variants;
 	};
 
-	struct SE_API_RUNTIME SLC2ProgramRecord
+	struct SE_API_RUNTIME ShaderProgramRecord
 	{
 		String ProgramId;
 		List<ShaderVariantGroup> VariantGroups;
-		List<SLC2TargetRecord> Targets;
+		List<ShaderTargetRecord> Targets;
 	};
 
-	struct SE_API_RUNTIME SLC2Artifact
+	struct SE_API_RUNTIME ShaderArtifact
 	{
 		String Format = SE_TEXT("SLC2");
 		uint32 Version = 4;
 		String CompilerBuildTag;
-		List<SLC2ProgramRecord> Programs;
+		List<ShaderProgramRecord> Programs;
 	};
 
 
-	struct SE_API_RUNTIME SLC2ProgramStageDeclaration
+	struct SE_API_RUNTIME ShaderProgramStageDeclaration
     {
         ShaderStage Stage = ShaderStage::Max;
         StringAnsi  EntryPoint;
     };
 
-    struct SE_API_RUNTIME SLC2ProgramDeclaration
+    struct SE_API_RUNTIME ShaderProgramDeclaration
     {
         String                            ProgramId;
-        List<SLC2ProgramStageDeclaration> Stages;
+        List<ShaderProgramStageDeclaration> Stages;
         List<ShaderVariantGroup>          VariantGroups;
     };
 }

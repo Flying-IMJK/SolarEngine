@@ -12,7 +12,7 @@ namespace SE
     struct DrawCall;
     class IMaterial;
     class ShaderProgramInstance;
-    struct SLC2RenderDraw;
+    struct RenderDraw;
     class MaterialBase;
     class RenderBuffers;
     class GPUTextureView;

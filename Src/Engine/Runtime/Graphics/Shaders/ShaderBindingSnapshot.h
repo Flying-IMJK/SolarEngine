@@ -14,7 +14,7 @@ namespace SE
     class GPUTextureView;
     class GPUResource;
     class ScriptingObject;
-    class SLC2GPUShaderProgram;
+    class GPUShaderProgram;
     class ShaderProgramInstance;
 
 
@@ -82,7 +82,7 @@ namespace SE
 
         bool                                  IsFrozen() const;
         // Valid only for a frozen snapshot; the pointer must remain alive through backend descriptor submission.
-        const SLC2GPUShaderProgram*           GetProgram() const;
+        const GPUShaderProgram*           GetProgram() const;
         uint32                                GetResourceCount() const;
         const ShaderBindingResource*          GetResource(uint32 logicalSlotIndex) const;
         const List<ShaderBindingUniformData>& GetUniformData() const;
@@ -95,10 +95,10 @@ namespace SE
         bool AddResource(const ShaderBindingResource& resource);
         void AddUniformData(uint32 uniformBlockIndex, const List<byte>& data);
         void AddExternalUniformBuffer(uint32 uniformBlockIndex, GPUConstantBuffer* buffer);
-        void Freeze(const SLC2GPUShaderProgram* program);
+        void Freeze(const GPUShaderProgram* program);
 
         bool                           _frozen   = false;
-        const SLC2GPUShaderProgram*    m_Program = nullptr;
+        const GPUShaderProgram*    m_Program = nullptr;
         List<ShaderBindingResource*>   m_Resources;
         List<ShaderBindingUniformData> _uniformData;
     };

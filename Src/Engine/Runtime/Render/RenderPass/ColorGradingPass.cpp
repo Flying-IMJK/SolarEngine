@@ -93,7 +93,7 @@ namespace SE
 
         m_GPUConstantBuffer = device->CreateConstantBuffer(sizeof(Data), SE_TEXT("ColorGradingCB"));
 
-        m_PipelineState = device->CreateSLC2PipelineState();
+        m_PipelineState = device->CreatePipelineState();
 
 		return true;
 	}
@@ -117,7 +117,7 @@ namespace SE
     {
         DeleteObjectSafe(m_PipelineState);
         DeleteObjectSafe(m_ProgramInstance);
-        m_PipelineState   = GPUDevice::instance->CreateSLC2PipelineState();
+        m_PipelineState   = GPUDevice::instance->CreatePipelineState();
         m_ProgramInstance = New<ShaderProgramInstance>();
         InvalidateResources();
     }
@@ -210,7 +210,7 @@ namespace SE
 
 		m_ProgramInstance->SetConstantBuffer(SE_TEXT("data"), m_GPUConstantBuffer);
 		context->SetViewportAndScissors((float)lutDesc.Width, (float)lutDesc.Height);
-        context->SetSLC2State(m_PipelineState);
+        context->SetState(m_PipelineState);
 
 		ShaderVar lutVar;
         if (useLut && m_ProgramInstance->FindVar(SE_TEXT("LutTexture"), lutVar))
@@ -266,14 +266,14 @@ namespace SE
                 break;
         }
 
-		SLC2GPUShaderProgram* program;
+		GPUShaderProgram* program;
 
         if (m_Shader->SelectProgram(programName, {toneMappingMacro}, program))
         {
             if (m_ProgramInstance->GetProgram() == nullptr || m_ProgramInstance->GetProgram() != program)
             {
                 // Create pipeline stages
-                m_PipelineState->Init(SLC2GPUPipelineState::Description::DefaultFullscreenTriangle, program);
+                m_PipelineState->Init(GPUPipelineState::Description::DefaultFullscreenTriangle, program);
 
                 m_ProgramInstance->Initialize(program);
             }

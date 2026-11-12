@@ -9,8 +9,8 @@
 #include <Runtime/Graphics/Shaders/GPUConstantBuffer.h>
 #include <Runtime/Graphics/Shaders/Reflection/ShaderNameResolver.h>
 #include <Runtime/Graphics/Shaders/Reflection/ShaderProgramReflection.h>
-#include <Runtime/Graphics/Shaders/SLC2GPUShader.h>
-#include <Runtime/Graphics/Shaders/SLC2GPUShaderProgram.h>
+#include <Runtime/Graphics/Shaders/GPUShader.h>
+#include <Runtime/Graphics/Shaders/GPUShaderProgram.h>
 #include <Runtime/Graphics/Textures/GPUSampler.h>
 #include <Runtime/Graphics/Textures/GPUTexture.h>
 
@@ -47,7 +47,7 @@ namespace SE
         ClearResources();
     }
 
-    bool ShaderProgramInstance::Initialize(SLC2GPUShaderProgram* program)
+    bool ShaderProgramInstance::Initialize(GPUShaderProgram* program)
     {
         m_Program = nullptr;
         ClearResources();
@@ -365,7 +365,7 @@ namespace SE
         return true;
     }
 
-    SLC2GPUShaderProgram* ShaderProgramInstance::GetProgram() const { return m_Program; }
+    GPUShaderProgram* ShaderProgramInstance::GetProgram() const { return m_Program; }
 
 
     ShaderBindingResource* ShaderProgramInstance::GetResourceSlot(const ShaderVarLocation& location,

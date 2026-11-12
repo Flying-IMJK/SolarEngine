@@ -9,7 +9,7 @@
 #include "GPUDeviceVulkan.h"
 #include "GPUPipelineStateVulkan.h"
 #include "GPUContextVulkan.h"
-#include <Runtime/Graphics/Shaders/SLC2GPUShaderProgram.h>
+#include <Runtime/Graphics/Shaders/GPUShaderProgram.h>
 
 namespace SE
 {
@@ -102,15 +102,15 @@ namespace SE
 
 	/// /////////////////////////////////////////////////////////////////////////
 
-	SLC2GPUShaderVulkan::SLC2GPUShaderVulkan(GPUDeviceVulkan* device, const StringView& name) :
-        GPUResourceVulkan<SLC2GPUShader>(device, name)
+	GPUShaderVulkan::GPUShaderVulkan(GPUDeviceVulkan* device, const StringView& name) :
+        GPUResourceVulkan<GPUShader>(device, name)
     {}
 
-    SLC2GPUShaderProgram* SLC2GPUShaderVulkan::CreateSLC2ShaderProgram(const SLC2ProgramRecord* program,
-                                                                       const SLC2TargetRecord*  target,
-                                                                       const SLC2VariantRecord* variant)
+    GPUShaderProgram* GPUShaderVulkan::CreateShaderProgram(const ShaderProgramRecord* program,
+                                                                       const ShaderTargetRecord*  target,
+                                                                       const ShaderVariantRecord* variant)
     {
-        SLC2ShaderProgramVulkan* shaderProgram = New<SLC2ShaderProgramVulkan>(m_Device);
+        ShaderProgramVulkan* shaderProgram = New<ShaderProgramVulkan>(m_Device);
         if (!shaderProgram->Initialize(program, target, variant))
         {
             Delete(shaderProgram);
@@ -126,14 +126,14 @@ namespace SE
             return range.ArrayElementBase + (range.DescriptorCount - 1) * range.LogicalElementStride + 1;
         }
 
-        bool HasPhysicalDescriptorOwner(const List<SLC2VulkanDescriptorBinding>& bindings,
+        bool HasPhysicalDescriptorOwner(const List<VulkanDescriptorBinding>& bindings,
                                         const uint32                             set,
                                         const uint32                             bindingIndex,
                                         const uint32                             arrayElement)
         {
             for (int32 index = 0; index < bindings.Count(); index++)
             {
-                const SLC2VulkanDescriptorBinding& binding = bindings[index];
+                const VulkanDescriptorBinding& binding = bindings[index];
                 if (binding.Set == set && binding.Binding == bindingIndex && binding.ArrayElement == arrayElement)
                 {
                     return true;
@@ -176,7 +176,7 @@ namespace SE
         }
 
         void ResolveDescriptorWriteIndices(const DescriptorSetLayoutInfoVulkan& layout,
-                                           List<SLC2VulkanDescriptorBinding>&   bindings)
+                                           List<VulkanDescriptorBinding>&   bindings)
         {
             uint32 descriptorWriteIndex = 0;
             for (int32 setIndex = 0; setIndex < layout.setLayouts.Count(); setIndex++)
@@ -187,7 +187,7 @@ namespace SE
                     const VkDescriptorSetLayoutBinding& layoutBinding = layoutBindings[layoutBindingIndex];
                     for (int32 bindingIndex = 0; bindingIndex < bindings.Count(); bindingIndex++)
                     {
-                        SLC2VulkanDescriptorBinding& binding = bindings[bindingIndex];
+                        VulkanDescriptorBinding& binding = bindings[bindingIndex];
                         if (binding.Set == static_cast<uint32>(setIndex) && binding.Binding == layoutBinding.binding)
                         {
                             binding.DescriptorWriteIndex = descriptorWriteIndex;
@@ -204,7 +204,7 @@ namespace SE
             // Sparse register spaces still occupy every preceding Vulkan pipeline-layout set slot.
             if (range.Set >= maxBoundDescriptorSets)
             {
-                LOG_ERROR("Graphic", "SLC2 descriptor set exceeds device maxBoundDescriptorSets.");
+                LOG_ERROR("Graphic", "ShaderArtifact descriptor set exceeds device maxBoundDescriptorSets.");
                 return false;
             }
             if (range.DescriptorCount == 0 || range.LogicalElementStride == 0)
@@ -263,7 +263,7 @@ namespace SE
                                      const uint32                       rangeIndex,
                                      const ShaderIRResourceRange*       logicalRange,
                                      const bool                         isUniformData,
-                                     List<SLC2VulkanDescriptorBinding>& bindings)
+                                     List<VulkanDescriptorBinding>& bindings)
         {
             if (range.DescriptorCount == 0 || range.LogicalElementStride == 0)
             {
@@ -280,10 +280,10 @@ namespace SE
                 const uint32 arrayElement = range.ArrayElementBase + resourceIndex * range.LogicalElementStride;
                 if (HasPhysicalDescriptorOwner(bindings, range.Set, range.Binding, arrayElement))
                 {
-                    LOG_ERROR("Graphic", "Multiple SLC2 runtime resources map to the same Vulkan descriptor element.");
+                    LOG_ERROR("Graphic", "Multiple ShaderArtifact runtime resources map to the same Vulkan descriptor element.");
                     return false;
                 }
-                SLC2VulkanDescriptorBinding binding;
+                VulkanDescriptorBinding binding;
                 binding.Set            = range.Set;
                 binding.Binding        = range.Binding;
                 binding.ArrayElement   = arrayElement;
@@ -303,7 +303,7 @@ namespace SE
                         LOG_ERROR("Graphic", "Vulkan default uniform descriptor has an invalid reflected byte size.");
                         return false;
                     }
-                    binding.Target            = SLC2VulkanDescriptorTarget::UniformBlock;
+                    binding.Target            = VulkanDescriptorTarget::UniformBlock;
                     binding.UniformBlockIndex = uniformBlockIndex;
                     binding.UniformByteSize   = uniformLayout->ByteSize;
                 }
@@ -325,23 +325,23 @@ namespace SE
                     }
 					if (range.Role == "primary")
 					{
-						binding.ResourceRole = SLC2VulkanResourceRole::Primary;
+						binding.ResourceRole = VulkanResourceRole::Primary;
 					}
 					else if (range.Role == "counter")
 					{
 						if (descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 						{
-							LOG_ERROR("Graphic", "SLC2 counter descriptor must use a Vulkan storage buffer.");
+							LOG_ERROR("Graphic", "ShaderArtifact counter descriptor must use a Vulkan storage buffer.");
 							return false;
 						}
-						binding.ResourceRole = SLC2VulkanResourceRole::Counter;
+						binding.ResourceRole = VulkanResourceRole::Counter;
 					}
 					else
 					{
-						LOG_ERROR("Graphic", "SLC2 Vulkan resource descriptor has an unsupported physical role.");
+						LOG_ERROR("Graphic", "ShaderArtifact Vulkan resource descriptor has an unsupported physical role.");
 						return false;
 					}
-                    binding.Target = SLC2VulkanDescriptorTarget::Resource;
+                    binding.Target = VulkanDescriptorTarget::Resource;
                 }
                 bindings.Add(binding);
             }
@@ -352,7 +352,7 @@ namespace SE
                               const uint32                       blockId,
                               const uint32                       maxBoundDescriptorSets,
                               DescriptorSetLayoutInfoVulkan&     output,
-                              List<SLC2VulkanDescriptorBinding>& bindings)
+                              List<VulkanDescriptorBinding>& bindings)
         {
             const ShaderReflectionIR& layout = reflection.GetLayout();
             if (blockId >= static_cast<uint32>(layout.ParameterBlocks.Count()))
@@ -416,10 +416,10 @@ namespace SE
             return true;
         }
 
-        bool BuildSLC2DescriptorSetLayoutInfo(const ShaderProgramReflection&     reflection,
+        bool BuildDescriptorSetLayoutInfo(const ShaderProgramReflection&     reflection,
                                               const uint32                       maxBoundDescriptorSets,
                                               DescriptorSetLayoutInfoVulkan&     output,
-                                              List<SLC2VulkanDescriptorBinding>& bindings)
+                                              List<VulkanDescriptorBinding>& bindings)
         {
             output.hash                      = 0;
             output.setLayoutsHash            = 0;
@@ -438,10 +438,10 @@ namespace SE
         }
     } // namespace
 
-    SLC2ShaderProgramVulkan::SLC2ShaderProgramVulkan(GPUDeviceVulkan* device) : m_Device(device)
+    ShaderProgramVulkan::ShaderProgramVulkan(GPUDeviceVulkan* device) : m_Device(device)
     {}
 
-    SLC2ShaderProgramVulkan::~SLC2ShaderProgramVulkan()
+    ShaderProgramVulkan::~ShaderProgramVulkan()
     {
         Delete(m_ComputeState);
         m_ComputeState = nullptr;
@@ -458,17 +458,17 @@ namespace SE
         m_DescriptorBindings.Clear();
     }
 
-    bool SLC2ShaderProgramVulkan::Initialize(const SLC2ProgramRecord* program,
-                                             const SLC2TargetRecord*  target,
-                                             const SLC2VariantRecord* variant)
+    bool ShaderProgramVulkan::Initialize(const ShaderProgramRecord* program,
+                                             const ShaderTargetRecord*  target,
+                                             const ShaderVariantRecord* variant)
     {
-        if (!SLC2GPUShaderProgram::Initialize(program, target, variant))
+        if (!GPUShaderProgram::Initialize(program, target, variant))
         {
             return false;
         }
 
         DescriptorSetLayoutInfoVulkan descriptorSetLayoutInfo;
-        if (!BuildSLC2DescriptorSetLayoutInfo(GetReflection(), m_Device->physicalDeviceLimits.maxBoundDescriptorSets,
+        if (!BuildDescriptorSetLayoutInfo(GetReflection(), m_Device->physicalDeviceLimits.maxBoundDescriptorSets,
                                               descriptorSetLayoutInfo, m_DescriptorBindings))
         {
             return false;
@@ -484,13 +484,13 @@ namespace SE
         for (int32 stageIndex = 0; stageIndex < variant->Stages.Count(); stageIndex++)
         {
             // 每个 Stage 只创建 shader module；pipeline 按具体用途延迟创建，避免加载 shader 时立即铺开全部状态。
-            const SLC2StageRecord&   stage = variant->Stages[stageIndex];
+            const ShaderStageRecord&   stage = variant->Stages[stageIndex];
             VkShaderModuleCreateInfo createInfo;
             VulkanTool::ZeroStruct(createInfo, VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
             createInfo.codeSize = static_cast<size_t>(stage.Code.Count());
             createInfo.pCode    = reinterpret_cast<const uint32_t*>(stage.Code.Get());
 
-            SLC2VulkanStageModule module;
+            VulkanStageModule module;
             module.Stage               = stage.Stage;
             module.EntryPointAnsi      = stage.EntryPoint;
             module.OutputControlPoints = stage.OutputControlPoints;
@@ -506,19 +506,19 @@ namespace SE
         return true;
     }
 
-    PipelineLayoutVulkan* SLC2ShaderProgramVulkan::GetPipelineLayout() const { return m_PipelineLayout; }
+    PipelineLayoutVulkan* ShaderProgramVulkan::GetPipelineLayout() const { return m_PipelineLayout; }
 
-    const DescriptorSetLayoutVulkan* SLC2ShaderProgramVulkan::GetDescriptorSetLayout() const
+    const DescriptorSetLayoutVulkan* ShaderProgramVulkan::GetDescriptorSetLayout() const
     {
         return m_PipelineLayout != nullptr ? &m_PipelineLayout->descriptorSetLayout : nullptr;
     }
 
-    const List<SLC2VulkanDescriptorBinding>& SLC2ShaderProgramVulkan::GetDescriptorBindings() const
+    const List<VulkanDescriptorBinding>& ShaderProgramVulkan::GetDescriptorBindings() const
     {
         return m_DescriptorBindings;
     }
 
-    VkShaderModule SLC2ShaderProgramVulkan::GetShaderModule(const ShaderStage stage) const
+    VkShaderModule ShaderProgramVulkan::GetShaderModule(const ShaderStage stage) const
     {
         for (int32 index = 0; index < m_StageModules.Count(); index++)
         {
@@ -530,7 +530,7 @@ namespace SE
         return VK_NULL_HANDLE;
     }
 
-    const char* SLC2ShaderProgramVulkan::GetEntryPoint(const ShaderStage stage) const
+    const char* ShaderProgramVulkan::GetEntryPoint(const ShaderStage stage) const
     {
         for (int32 index = 0; index < m_StageModules.Count(); index++)
         {
@@ -542,14 +542,14 @@ namespace SE
         return nullptr;
     }
 
-    SLC2ComputePipelineStateVulkan* SLC2ShaderProgramVulkan::GetOrCreateComputeState()
+    ComputePipelineStateVulkan* ShaderProgramVulkan::GetOrCreateComputeState()
     {
         if (m_ComputeState != nullptr)
         {
             return m_ComputeState;
         }
 
-        const SLC2VariantRecord* variant = GetVariant();
+        const ShaderVariantRecord* variant = GetVariant();
         if (variant == nullptr)
         {
             LOG_ERROR("Graphic", "compute pipeline requires a selected variant.");
@@ -589,23 +589,23 @@ namespace SE
         LOG_VULKAN_RESULT(result);
         if (result != VK_SUCCESS)
         {
-            LOG_ERROR("Graphic", "Failed to create SLC2 Vulkan compute pipeline.");
+            LOG_ERROR("Graphic", "Failed to create ShaderArtifact Vulkan compute pipeline.");
             return nullptr;
         }
 
-        m_ComputeState = New<SLC2ComputePipelineStateVulkan>(m_Device, pipeline, m_PipelineLayout);
+        m_ComputeState = New<ComputePipelineStateVulkan>(m_Device, pipeline, m_PipelineLayout);
         return m_ComputeState;
     }
 
-    bool SLC2ShaderProgramVulkan::PrepareAndBindComputeDescriptors(GPUContextVulkan*            context,
+    bool ShaderProgramVulkan::PrepareAndBindComputeDescriptors(GPUContextVulkan*            context,
                                                                    const ShaderBindingSnapshot& snapshot)
     {
         if (snapshot.GetProgram() != this)
         {
-            LOG_ERROR("Graphic", "SLC2 compute descriptor snapshot belongs to a different shader program.");
+            LOG_ERROR("Graphic", "ShaderArtifact compute descriptor snapshot belongs to a different shader program.");
             return false;
         }
-        SLC2ComputePipelineStateVulkan* computeState = GetOrCreateComputeState();
+        ComputePipelineStateVulkan* computeState = GetOrCreateComputeState();
         if (computeState == nullptr)
         {
             return false;
@@ -613,18 +613,18 @@ namespace SE
         return computeState->PrepareAndBindDescriptors(context, snapshot, m_DescriptorBindings);
     }
 
-    bool SLC2ShaderProgramVulkan::BindGraphicsDescriptors(GPUContextVulkan* context,
+    bool ShaderProgramVulkan::BindGraphicsDescriptors(GPUContextVulkan* context,
                                                                     const ShaderBindingSnapshot&     snapshot,
-                                                                    SLC2GraphicsPipelineStateVulkan* state)
+                                                                    GraphicsPipelineStateVulkan* state)
     {
         if (snapshot.GetProgram() != this)
         {
-            LOG_ERROR("Graphic", "SLC2 graphics descriptor snapshot belongs to a different shader program.");
+            LOG_ERROR("Graphic", "ShaderArtifact graphics descriptor snapshot belongs to a different shader program.");
             return false;
         }
         if (state == nullptr)
         {
-            LOG_ERROR("Graphic", "SLC2 graphics descriptor binding requires a graphics pipeline state.");
+            LOG_ERROR("Graphic", "ShaderArtifact graphics descriptor binding requires a graphics pipeline state.");
             return false;
         }
         return state->PrepareAndBindDescriptors(context, snapshot, m_DescriptorBindings);

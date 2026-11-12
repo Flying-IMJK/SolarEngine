@@ -49,9 +49,9 @@ namespace SE
         // Shader stuff
         AssetRef<Shader> m_Shader;
 
-        SLC2GPUPipelineState*  m_SpoShadowDir;
-        SLC2GPUPipelineState*  m_SpoShadowPoint;
-        SLC2GPUPipelineState*  m_SpoShadowSpot;
+        GPUPipelineState*  m_SpoShadowDir;
+        GPUPipelineState*  m_SpoShadowPoint;
+        GPUPipelineState*  m_SpoShadowSpot;
         ShaderProgramInstance* m_SPShadowDir;
         ShaderProgramInstance* m_SPShadowPoint;
         ShaderProgramInstance* m_SPShadowSpot;

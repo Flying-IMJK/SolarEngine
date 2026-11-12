@@ -63,7 +63,7 @@ namespace SE
     class SE_API_RUNTIME ShaderProgramReflection
     {
     public:
-        // layout 由所属 SLC2 Program 持有，并且必须在本对象的整个使用期间保持存活且不可变。
+        // layout 由所属 ShaderArtifact Program 持有，并且必须在本对象的整个使用期间保持存活且不可变。
         bool Initialize(const ShaderReflectionIR& layout);
         // 仅在 Initialize 成功后调用；按稳定 NamePath 返回可绑定叶子，output 由调用方持有。
         bool                            EnumerateBindings(List<ShaderProgramBinding>& output) const;
