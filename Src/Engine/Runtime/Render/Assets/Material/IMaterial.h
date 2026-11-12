@@ -23,6 +23,8 @@ namespace SE
     class SE_API_RUNTIME IMaterial
     {
     public:
+        virtual ~IMaterial() = default;
+
         /// <summary>
         /// Gets the material info, structure which describes material surface.
         /// </summary>
@@ -97,7 +99,7 @@ namespace SE
         struct BindParameters
         {
             GPUContext* gpuContext;
-            const RenderContext& renderContext;
+            const RenderContext&  renderContext;
             const DrawCall* firstDrawCall;
             int32 drawCallsCount;
             MaterialParamsLink* paramsLink = nullptr;

@@ -1,35 +1,9 @@
 
-#include "DescriptorSetVulkan.h"
-#include "Runtime/Core/Types/Hash.h"
-#include "Runtime/Engine.h"
+#include <Runtime/GraphicsDevice/Vulkan/DescriptorSetVulkan.h>
+#include <Runtime/Engine.h>
 
 namespace SE
 {
-	void DescriptorSetLayoutInfoVulkan::AddBindingsForStage(VkShaderStageFlagBits stageFlags, DescriptorSet::Stage descSet, const SpirvShaderDescriptorInfo* descriptorInfo)
-	{
-		const int32 descriptorSetIndex = descSet;
-		if (descriptorSetIndex >= setLayouts.Count())
-		{
-			setLayouts.Resize(descriptorSetIndex + 1);
-		}
-
-		SetLayout& descSetLayout = setLayouts[descriptorSetIndex];
-
-		VkDescriptorSetLayoutBinding binding;
-		binding.stageFlags = stageFlags;
-		binding.pImmutableSamplers = nullptr;
-		for (uint32 descriptorIndex = 0; descriptorIndex < descriptorInfo->descriptorTypesCount; descriptorIndex++)
-		{
-			auto& descriptor = descriptorInfo->descriptorTypes[descriptorIndex];
-			binding.binding = descriptorIndex;
-			binding.descriptorType = descriptor.descriptorType;
-			binding.descriptorCount = descriptor.count;
-
-			layoutTypes[binding.descriptorType]++;
-			descSetLayout.LayoutBindings.Add(binding);
-			hash = HashCombine(hash, &binding, sizeof(binding));
-		}
-	}
 
 	bool DescriptorSetLayoutInfoVulkan::operator==(const DescriptorSetLayoutInfoVulkan& other) const
 	{
@@ -350,54 +324,4 @@ namespace SE
 			device->deferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::PipelineLayout, handle);
 	}
 
-	uint32 DescriptorSetWriterVulkan::SetupDescriptorWrites(const SpirvShaderDescriptorInfo& info, VkWriteDescriptorSet* writeDescriptors,
-		VkDescriptorImageInfo* imageInfo, VkDescriptorBufferInfo* bufferInfo,
-		VkBufferView* texelBufferView, uint8* bindingToDynamicOffset)
-	{
-		ENGINE_ASSERT(info.descriptorTypesCount <= SpirvShaderDescriptorInfo::MaxDescriptors);
-		this->writeDescriptors = writeDescriptors;
-		writesCount = info.descriptorTypesCount;
-		this->bindingToDynamicOffset = bindingToDynamicOffset;
-		uint32 dynamicOffsetIndex = 0;
-		for (uint32 i = 0; i < info.descriptorTypesCount; i++)
-		{
-			const auto& descriptor = info.descriptorTypes[i];
-			writeDescriptors->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptors->dstBinding = i;
-			writeDescriptors->descriptorCount = descriptor.count;
-			writeDescriptors->descriptorType = descriptor.descriptorType;
-
-			switch (writeDescriptors->descriptorType)
-			{
-			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-				bindingToDynamicOffset[i] = dynamicOffsetIndex;
-				dynamicOffsetIndex++;
-				writeDescriptors->pBufferInfo = bufferInfo++;
-				break;
-			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-			case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-				writeDescriptors->pBufferInfo = bufferInfo;
-				bufferInfo += descriptor.count;
-				break;
-			case VK_DESCRIPTOR_TYPE_SAMPLER:
-			case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-			case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-			case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-				writeDescriptors->pImageInfo = imageInfo;
-				imageInfo += descriptor.count;
-				break;
-			case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-			case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-				writeDescriptors->pTexelBufferView = texelBufferView;
-				texelBufferView += descriptor.count;
-				break;
-			default:
-				ENGINE_UNREACHABLE_CODE();
-				break;
-			}
-
-			writeDescriptors++;
-		}
-		return dynamicOffsetIndex;
-	}
 }

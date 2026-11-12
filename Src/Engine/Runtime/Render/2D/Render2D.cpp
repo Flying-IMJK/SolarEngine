@@ -19,7 +19,6 @@
 #include <Runtime/Graphics/GPUDevice.h>
 #include <Runtime/Graphics/RenderTargetPool.h>
 #include <Runtime/Graphics/Shaders/GPUConstantBuffer.h>
-#include <Runtime/Graphics/Shaders/GPUShader.h>
 #include <Runtime/Graphics/Shaders/ShaderProgramInstance.h>
 #include <Runtime/Graphics/Textures/GPUSampler.h>
 #include <Runtime/Graphics/Textures/GPUTextureDescription.h>
@@ -119,7 +118,8 @@ namespace SE
             struct
             {
                 GPUTexture* Tex;
-                GPUPipelineState* Pso;
+                SLC2GPUPipelineState* Pso;
+                ShaderProgramInstance* Program;
             } AsCustom;
 
             struct
@@ -465,7 +465,7 @@ namespace SE
 
     bool CanDrawCallCallbackCustom(const Render2DDrawCall& d1, const Render2DDrawCall& d2)
     {
-        return d1.AsCustom.Tex == d2.AsCustom.Tex && d1.AsCustom.Pso == d2.AsCustom.Pso;
+        return d1.AsCustom.Tex == d2.AsCustom.Tex && d1.AsCustom.Pso == d2.AsCustom.Pso && d1.AsCustom.Program == d2.AsCustom.Program;
     }
 
     bool CanDrawCallCallbackMaterial(const Render2DDrawCall& d1, const Render2DDrawCall& d2)
@@ -695,7 +695,6 @@ namespace SE
         render2DData->IB.Flush(render2DData->Context);
 
         // Set output
-        render2DData->Context->ResetSR();
         if (render2DData->DepthBuffer != nullptr)
         {
             render2DData->Context->SetRenderTarget(render2DData->Output, render2DData->DepthBuffer);
@@ -984,10 +983,9 @@ namespace SE
             programInstance->SetTexture(SE_TEXT("ImageTex"), d.AsChar.Tex->View());
             break;
         case DrawCallType::Custom:
-/*            render2DData->Context->BindSR(0, d.AsCustom.Tex);
-            render2DData->Context->SetState(d.AsCustom.Pso);
-            programInstance = render2DData->CurrentPsoSLC2->SP_Font;
-            programInstance->SetTexture(SE_TEXT("Image"), d.AsCustom.Ptr);*/
+            render2DData->Context->SetSLC2State(d.AsCustom.Pso);
+            programInstance = d.AsCustom.Program;
+            programInstance->SetTexture(SE_TEXT("ImageTex"), d.AsCustom.Tex->View());
             break;
         case DrawCallType::DrawCharMaterial:
         case DrawCallType::Material:
@@ -1008,8 +1006,7 @@ namespace SE
             }
 
             // Material Bind resets the instance; GUI state belongs to this rendering batch.
-            Matrix viewProjection;
-            Matrix::Transpose(render2DData->ViewProjection, viewProjection);
+            const Matrix viewProjection = render2DData->ViewProjection;
             const auto&  viewport = Render2D::GetViewport();
             const Float2 viewSize = d.Type == DrawCallType::DrawCharMaterial ?
                                         Float2::One :
@@ -1773,10 +1770,10 @@ namespace SE
         Write9SlicingRect(rect, color, border, borderUVs, sprite->Area.Location, sprite->Area.Size);
     }*/
 
-    void Render2D::DrawCustom(GPUTexture* t, const Rectangle& rect, GPUPipelineState* ps, const Color& color)
+    void Render2D::DrawCustom(GPUTexture* t, const Rectangle& rect, SLC2GPUPipelineState* pso, ShaderProgramInstance* program, const Color& color)
     {
         RENDER2D_CHECK_RENDERING_STATE;
-        if (ps == nullptr || !ps->IsValid())
+        if (pso == nullptr || !pso->IsValid())
             return;
 
         Render2DDrawCall& drawCall = render2DData->DrawCalls.AddOne();
@@ -1784,7 +1781,8 @@ namespace SE
         drawCall.StartIB = render2DData->IBIndex;
         drawCall.CountIB = 6;
         drawCall.AsCustom.Tex = t;
-        drawCall.AsCustom.Pso = ps;
+        drawCall.AsCustom.Pso = pso;
+        drawCall.AsCustom.Program = program;
         WriteRect(rect, color);
     }
 

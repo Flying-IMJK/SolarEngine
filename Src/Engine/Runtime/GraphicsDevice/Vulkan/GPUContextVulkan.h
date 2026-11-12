@@ -14,14 +14,11 @@ namespace SE
 	class CmdBufferManagerVulkan;
 	class CmdBufferVulkan;
 	class RenderPassVulkan;
-	class GPUPipelineStateVulkan;
-	class ComputePipelineStateVulkan;
 	class SLC2GraphicsPipelineStateVulkan;
 	class GPUTextureViewVulkan;
 	class GPUTextureVulkan;
 	class GPUBufferVulkan;
 	class DescriptorPoolVulkan;
-	class DescriptorResourceVulkan;
 	class DescriptorSetLayoutVulkan;
 
 	/// <summary>
@@ -65,7 +62,6 @@ namespace SE
 
 		int32 m_PsoDirtyFlag : 1;
 		int32 m_RtDirtyFlag : 1;
-		int32 _cbDirtyFlag : 1;
 
 		int32 _rtCount;
 		int32 _vbCount;
@@ -81,23 +77,13 @@ namespace SE
 		uint32 m_RenderGeometryVertexElementCounts[GPU_MAX_VB_BINDED];
 
 		RenderPassVulkan* m_RenderPass;
-		GPUPipelineStateVulkan* _currentState;
 		SLC2GraphicsPipelineStateVulkan* m_CurrentSLC2GraphicsState;
 		GPUTextureViewVulkan* _rtDepth;
 		GPUTextureViewVulkan* _rtHandles[GPU_MAX_RT_BINDED];
-		DescriptorResourceVulkan* _cbHandles[GPU_MAX_CB_BINDED];
-		DescriptorResourceVulkan* _srHandles[GPU_MAX_SR_BINDED];
-		DescriptorResourceVulkan* _uaHandles[GPU_MAX_UA_BINDED];
-		VkSampler _samplerHandles[GPU_MAX_SAMPLER_BINDED];
-		DescriptorResourceVulkan** _handles[(int32)SpirvShaderResourceBindingType::MAX];
-		uint32 _handlesSizes[(int32)SpirvShaderResourceBindingType::MAX];
 
 		typedef List<DescriptorPoolVulkan*> DescriptorPoolArray;
 		Dictionary<uint32, DescriptorPoolArray> _descriptorPools;
 	private:
-		void UpdateDescriptorSets(const struct SpirvShaderDescriptorInfo& descriptorInfo, class DescriptorSetWriterVulkan& dsWriter, bool& needsWrite);
-		void UpdateDescriptorSets(ComputePipelineStateVulkan* pipelineState);
-		void OnDrawCall();
 		bool OnSLC2DrawCall(ShaderProgramInstance& instance);
 		void ClearRenderGeometry();
 
@@ -112,7 +98,7 @@ namespace SE
 		/// <summary>
 		/// Finalizes an instance of the <see cref="GPUContextVulkan"/> class.
 		/// </summary>
-		~GPUContextVulkan();
+		~GPUContextVulkan() override;
 	public:
 
 		inline QueueVulkan* GetQueue() const
@@ -157,33 +143,20 @@ namespace SE
 		void SetScissor(const Rectangle& scissorRect) override;
 
 	public:
-		void Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ) override;
 		// SLC2 新路径：从 ShaderProgramInstance 冻结绑定快照，再交给 Vulkan 后端绑定 pipeline/descriptor。
 		void Dispatch(ShaderProgramInstance& instance, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ) override;
-		void DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
         void DispatchIndirect(ShaderProgramInstance& instance, GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
 		void ResolveMultisample(GPUTexture* sourceMultisampleTexture, GPUTexture* destTexture, int32 sourceSubResource, int32 destSubResource, PixelFormat format) override;
-		void DrawInstanced(uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex) override;
 		void DrawInstanced(ShaderProgramInstance* instance, uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex) override;
-		void DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex) override;
 		void DrawIndexedInstanced(ShaderProgramInstance* instance, uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex) override;
-		void DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
-		void DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
         void DrawInstancedIndirect(ShaderProgramInstance& instance, GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
         void DrawIndexedInstancedIndirect(ShaderProgramInstance& instance, GPUBuffer* bufferForArgs, uint32 offsetForArgs) override;
 
 	public:
-		void ResetSR() override;
-		void ResetUA() override;
-		void ResetCB() override;
-		void BindSR(int32 slot, GPUResourceView* view) override;
-		void BindUA(int32 slot, GPUResourceView* view) override;
-		void BindCB(int32 slot, GPUConstantBuffer* cb) override;
 		void BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets) override;
 		void BindVB(GPUBuffer* vertexBuffers, const uint32 vertexBuffersOffsets) override;
 		void BindIB(GPUBuffer* indexBuffer) override;
 		bool BindRenderGeometry(const RenderGeometry& geometry) override;
-		void BindSampler(int32 slot, GPUSampler* sampler) override;
 
 		void Clear(GPUTextureView* rt, const Color& color) override;
 		void ClearDepth(GPUTextureView* depthBuffer, float depthValue) override;
@@ -192,8 +165,6 @@ namespace SE
 		void ClearUA(GPUTexture* texture, const uint32 value[4]) override;
 		void ClearUA(GPUTexture* texture, const Float4& value) override;
 
-		void SetState(GPUPipelineState* state) override;
-		GPUPipelineState* GetState() const override;
         void SetSLC2State(SLC2GPUPipelineState* state) override;
         SLC2GPUPipelineState* GetSLC2State() const override;
 

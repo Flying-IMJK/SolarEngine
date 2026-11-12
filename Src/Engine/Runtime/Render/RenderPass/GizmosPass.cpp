@@ -1,15 +1,14 @@
 
 
-#include "GizmosPass.h"
+#include <Runtime/Render/RenderPass/GizmosPass.h>
 
-#include "Runtime/Core/Profiler/Profiler.h"
-#include "Runtime/Graphics/DynamicBuffer.h"
-#include "Runtime/Graphics/GPUContext.h"
-#include "Runtime/Graphics/GPUDevice.h"
-#include "Runtime/Graphics/Base/GPUPipelineState.h"
-#include "Runtime/Graphics/Shaders/GPUShader.h"
-#include "Runtime/Graphics/Textures/GPUTexture.h"
-#include "Runtime/Render/RenderContext.h"
+#include <Runtime/Core/Profiler/Profiler.h>
+#include <Runtime/Graphics/DynamicBuffer.h>
+#include <Runtime/Graphics/GPUContext.h>
+#include <Runtime/Graphics/GPUDevice.h>
+#include <Runtime/Graphics/Base/GPUPipelineState.h>
+#include <Runtime/Graphics/Textures/GPUTexture.h>
+#include <Runtime/Render/RenderContext.h>
 
 namespace SE
 {

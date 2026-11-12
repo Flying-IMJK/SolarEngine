@@ -392,7 +392,6 @@ namespace SE
 		return VK_SAMPLE_COUNT_1_BIT;
 	}
 
-
 	VkInstance GPUDeviceVulkan::instance;
 	List<const char*> GPUDeviceVulkan::instanceExtensions;
 	List<const char*> GPUDeviceVulkan::instanceLayers;
@@ -418,7 +417,6 @@ namespace SE
 //		appInfo.engineVersion = VK_MAKE_VERSION(FLAXENGINE_VERSION_MAJOR, FLAXENGINE_VERSION_MINOR, FLAXENGINE_VERSION_BUILD);
 		appInfo.apiVersion = VULKAN_API_VERSION;
 
-
 		VkInstanceCreateInfo instInfo;
 		VulkanTool::ZeroStruct(instInfo, VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO);
 #if PLATFORM_APPLE_FAMILY
@@ -431,7 +429,6 @@ namespace SE
 		instInfo.enabledLayerCount = instanceLayers.Count();
 		instInfo.ppEnabledLayerNames = instInfo.enabledLayerCount > 0 ? instanceLayers.Get() : nullptr;
 		SupportsDebugCallbackExt = !SupportsDebugUtilsExt && VulkanTool::HasExtension(instanceExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-
 
 		// Create Vulkan instance
 		result = vkCreateInstance(&instInfo, nullptr, &instance);
@@ -482,7 +479,6 @@ namespace SE
 		volkLoadInstance(instance);
 
 		SetupDebugLayerCallback();
-
 
 		// Enumerate all GPU devices and pick one
 		int32 selectedAdapterIndex = -1;
@@ -557,7 +553,6 @@ namespace SE
 
 		return device;
 	}
-
 
 	GPUDeviceVulkan::GPUDeviceVulkan(GPUGlobalSettings settings, GPUAdapterVulkan* gpuAdapter) :
 		GPUDevice(settings),
@@ -806,10 +801,8 @@ namespace SE
 		}
 
 //			limits.HasCompute = GetShaderProfile() == ShaderProfile::Vulkan_SM5 && physicalDeviceLimits.maxComputeWorkGroupCount[0] >= GPU_MAX_CS_DISPATCH_THREAD_GROUPS && physicalDeviceLimits.maxComputeWorkGroupCount[1] >= GPU_MAX_CS_DISPATCH_THREAD_GROUPS;
-		limits.HasTessellation = !!physicalDeviceFeatures.tessellationShader
-			&& physicalDeviceLimits.maxBoundDescriptorSets > (uint32)DescriptorSet::Domain;
-		limits.HasGeometryShaders = !!physicalDeviceFeatures.geometryShader
-			&& physicalDeviceLimits.maxBoundDescriptorSets > (uint32)DescriptorSet::Geometry;
+		limits.HasTessellation = !!physicalDeviceFeatures.tessellationShader;
+		limits.HasGeometryShaders = !!physicalDeviceFeatures.geometryShader;
 
 		limits.HasInstancing = true;
 		limits.HasVolumeTextureRendering = true;
@@ -1101,11 +1094,6 @@ namespace SE
 		return New<GPUSwapChainVulkan>(this, window);
 	}
 
-	GPUPipelineState* GPUDeviceVulkan::CreatePipelineState()
-	{
-		return New<GPUPipelineStateVulkan>(this); 
-    }
-
     SLC2GPUPipelineState* GPUDeviceVulkan::CreateSLC2PipelineState()
     { 
         return New<SLC2GraphicsPipelineStateVulkan>(this); 
@@ -1114,11 +1102,6 @@ namespace SE
 	GPUTexture* GPUDeviceVulkan::CreateTexture(const StringView& name)
 	{
 		return New<GPUTextureVulkan>(this, name);
-	}
-
-	GPUShader* GPUDeviceVulkan::CreateShader(const StringView& name)
-	{
-		return New<GPUShaderVulkan>(this, name);
 	}
 
 	SLC2GPUShader* GPUDeviceVulkan::CreateSLC2Shader(const StringView& name)
@@ -1210,7 +1193,6 @@ namespace SE
 	{
 		return New<GPUConstantBufferVulkan>(this, size);
 	}
-
 
 	RenderPassVulkan* GPUDeviceVulkan::GetOrCreateRenderPass(RenderTargetLayoutVulkan& layout)
 	{
@@ -1382,7 +1364,6 @@ namespace SE
 	{
 		return mainContext;
 	}
-
 
 /*    bool CheckExtensionSupport(const char *checkExtension, const List<VkExtensionProperties> &available_extensions)
     {
@@ -1741,7 +1722,6 @@ namespace SE
 		  	available_m_DeviceExtensions.Resize(extensionCount);
             res = vkEnumerateDeviceExtensionProperties(dev, nullptr, &extensionCount, available_m_DeviceExtensions.Get());
             ENGINE_ASSERT(res == VK_SUCCESS);
-
 
             for (auto &extensions : required_m_DeviceExtensions)
             {
@@ -2784,6 +2764,5 @@ namespace SE
         label.color[3] = 1.0f;
         vkCmdInsertDebugUtilsLabelEXT(commandlist.GetCommandBuffer(), &label);
     }*/
-
 
 } // namespace SE

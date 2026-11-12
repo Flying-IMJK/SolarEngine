@@ -339,64 +339,6 @@ namespace SE
         ScriptingObject::OnDeleteObject();
     }
 
-    // GPUPipelineState
-    GPUPipelineState* GPUPipelineState::Spawn(const SpawnParams& params)
-    {
-        return GPUDevice::instance->CreatePipelineState();
-    }
-
-    GPUPipelineState* GPUPipelineState::New() { return GPUDevice::instance->CreatePipelineState(); }
-
-    GPUPipelineState::GPUPipelineState() : GPUResource(SpawnParams(UID::New(), TypeInitializer)), complexity(0) {}
-
-    bool GPUPipelineState::Init(const Description& desc)
-    {
-        // Cache description in debug builds
-        // #if BUILD_DEBUG
-        debugDesc = desc;
-        // #endif
-
-        // Cache shader stages usage flags for pipeline state
-        m_Meta.instructionsCount = 0;
-        m_Meta.usedCBsMask       = 0;
-        m_Meta.usedSRsMask       = 0;
-        m_Meta.usedUAsMask       = 0;
-#define CHECK_STAGE(stage) \
-    if (desc.stage) \
-    { \
-        m_Meta.usedCBsMask |= desc.stage->GetBindings().usedCBsMask; \
-        m_Meta.usedSRsMask |= desc.stage->GetBindings().usedSRsMask; \
-        m_Meta.usedUAsMask |= desc.stage->GetBindings().usedUAsMask; \
-    }
-        CHECK_STAGE(VS);
-        CHECK_STAGE(HS);
-        CHECK_STAGE(DS);
-        CHECK_STAGE(GS);
-        CHECK_STAGE(PS);
-#undef CHECK_STAGE
-
-        // #if USE_EDITOR
-        //  Estimate somehow performance cost of this pipeline state for the content profiling
-        const int32 textureLookupCost = 20;
-        const int32 tessCost          = 300;
-        complexity                    = Math::CountBits(m_Meta.usedSRsMask) * textureLookupCost;
-        if (desc.PS)
-            complexity += desc.PS->GetBindings().instructionsCount;
-        if (desc.HS || desc.DS)
-            complexity += tessCost;
-        if (desc.DepthWriteEnable)
-            complexity += 5;
-        if (desc.DepthEnable)
-            complexity += 5;
-        if (desc.BlendMode.BlendEnable)
-            complexity += 20;
-        // #endif
-
-        return true;
-    }
-
-    GPUResourceType GPUPipelineState::GetResType() const { return GPUResourceType::PipelineState; }
-
     SLC2GPUPipelineState* SLC2GPUPipelineState::Spawn(const SpawnParams& params)
     {
         return GPUDevice::instance->CreateSLC2PipelineState();
@@ -407,7 +349,6 @@ namespace SE
     SLC2GPUPipelineState::SLC2GPUPipelineState() : GPUResource(SpawnParams(UID::New(), TypeInitializer)) {}
 
     GPUResourceType SLC2GPUPipelineState::GetResType() const { return GPUResourceType::PipelineState; }
-
 
 	bool SLC2GPUPipelineState::Description::operator==(const SLC2GPUPipelineState::Description& other) const 
 	{

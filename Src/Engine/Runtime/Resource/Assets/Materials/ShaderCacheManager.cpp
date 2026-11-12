@@ -5,11 +5,12 @@
 #include <Runtime/Core/Platform/FileSystem.h>
 #include <Runtime/Core/Systems.h>
 #include <Runtime/EngineContext.h>
-#include <Runtime/Graphics/Shaders/GPUShader.h>
 #include <Runtime/Render/Assets/Material/MaterialShader.h>
 
 namespace SE
 {
+    constexpr int32 ShaderCacheVersion = 1;
+
     const Char* ShaderProfileCacheDirNames[] =
 {
         // @formatter:off
@@ -202,7 +203,7 @@ namespace SE
             }
         }
         if (/*cacheVersion.EngineVersion != ENGINE_V FLAXENGINE_VERSION_BUILD
-            || */cacheVersion.ShaderCacheVersion != GPU_SHADER_CACHE_VERSION
+            || */cacheVersion.ShaderCacheVersion != ShaderCacheVersion
             || cacheVersion.MaterialGraphVersion != MATERIAL_GRAPH_VERSION
             /*|| cacheVersion.ParticleGraphVersion != PARTICLE_GPU_GRAPH_VERSION*/
         )
@@ -219,7 +220,7 @@ namespace SE
             }
 
             // cacheVersion.EngineVersion = FLAXENGINE_VERSION_BUILD;
-            cacheVersion.ShaderCacheVersion = GPU_SHADER_CACHE_VERSION;
+            cacheVersion.ShaderCacheVersion = ShaderCacheVersion;
             cacheVersion.MaterialGraphVersion = MATERIAL_GRAPH_VERSION;
             // cacheVersion.ParticleGraphVersion = PARTICLE_GPU_GRAPH_VERSION;
             if (!File::WriteAllBytes(cacheVerFile, (byte*)&cacheVersion, sizeof(cacheVersion)))

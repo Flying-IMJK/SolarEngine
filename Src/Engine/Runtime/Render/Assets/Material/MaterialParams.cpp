@@ -268,11 +268,8 @@ namespace SE
                 return write(AsData, sizeof(Float4));
             case MaterialParameterType::Color:
                 return write(&_asColor, sizeof(_asColor));
-            case MaterialParameterType::Matrix: {
-                Matrix value;
-                Matrix::Transpose(*reinterpret_cast<const Matrix*>(AsData), value);
-                return write(&value, sizeof(value));
-            }
+            case MaterialParameterType::Matrix:
+                return write(AsData, sizeof(Matrix));
             case MaterialParameterType::ChannelMask: {
                 const Float4 value(_asInteger == 0, _asInteger == 1, _asInteger == 2, _asInteger == 3);
                 return write(&value, sizeof(value));
@@ -284,9 +281,7 @@ namespace SE
             case MaterialParameterType::CubeTexture: {
                 auto            asset   = TypeTryCast<TextureBase>(m_AsAsset.Get());
                 GPUTexture*     texture = asset ? asset->GetTexture() : nullptr;
-                GPUTextureView* view =
-                    texture ? (m_Type == MaterialParameterType::CubeTexture ? texture->ViewArray() : texture->View()) :
-                              nullptr;
+                GPUTextureView* view = texture ? texture->View() : nullptr;
                 return variable.SetTexture(view);
             }
             case MaterialParameterType::GPUTexture:

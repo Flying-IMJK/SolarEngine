@@ -12,12 +12,10 @@
 
 namespace SE
 {
-	class GPUPipelineState;
     class SLC2GPUPipelineState;
 	class GPUContext;
 	class GPUTexture;
 	class GPUTextureView;
-	class GPUShader;
 	class SLC2GPUShader;
 	class GPUBuffer;
 	class GPUSampler;
@@ -58,7 +56,6 @@ namespace SE
 	public:
 		GPUDevice(GPUGlobalSettings settings);
 
-
 		virtual bool Init();
 
 		/**
@@ -89,7 +86,6 @@ namespace SE
 		{
 			return m_IsRendering;
 		}
-
 
 	public:
 		virtual void DrawBegin();
@@ -130,14 +126,10 @@ namespace SE
 		// Create a SwapChain.
 		virtual GPUSwapChain* CreateSwapChain(Window* window) = 0;
 
-		virtual GPUPipelineState* CreatePipelineState() = 0;
-
 		virtual SLC2GPUPipelineState* CreateSLC2PipelineState() = 0;
 
 		SE_FUNCTION(API())
 		virtual GPUTexture* CreateTexture(const StringView& name = StringView::Empty) = 0;
-
-		virtual GPUShader* CreateShader(const StringView& name = StringView::Empty) = 0;
 
 		virtual SLC2GPUShader* CreateSLC2Shader(const StringView& name = StringView::Empty) = 0;
 
@@ -191,7 +183,6 @@ namespace SE
 		{
 			return FeaturesPerFormat[(int32)format];
 		}
-
 
 		SE_FUNCTION(API(Prop, ReadOnly))
 		GPULimits GetGPULimits() const

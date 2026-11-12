@@ -427,7 +427,7 @@ namespace SE
                     0.5f, 0.5f, 0.0f, 1.0f);
                 Matrix m;
                 Matrix::Multiply(shadowVP, T, m);
-                Matrix::Transpose(m, shadowData.Constants.ShadowVP[cascadeIndex]);
+                shadowData.Constants.ShadowVP[cascadeIndex] = m;
             }
 
             // Setup context for cascade
@@ -478,7 +478,7 @@ namespace SE
             shadowContext.view.SetUpCube(PointLight_NearPlane, light.Radius, light.Position);
             shadowContext.view.SetFace(faceIndex);
             shadowContext.view.PrepareCache(shadowContext, shadowMapsSizeCube, shadowMapsSizeCube, Float2::Zero, &view);
-            Matrix::Transpose(shadowContext.view.ViewProjection(), shadowData.Constants.ShadowVP[faceIndex]);
+            shadowData.Constants.ShadowVP[faceIndex] = shadowContext.view.ViewProjection();
         }
 
         // Setup constant buffer data
@@ -517,7 +517,7 @@ namespace SE
             shadowContext.list->Clear();
             shadowContext.view.SetProjector(SpotLight_NearPlane, light.Radius, light.Position, light.Direction, light.UpVector, light.OuterConeAngle * 2.0f);
             shadowContext.view.PrepareCache(shadowContext, shadowMapsSizeCube, shadowMapsSizeCube, Float2::Zero, &view);
-            Matrix::Transpose(shadowContext.view.ViewProjection(), shadowData.Constants.ShadowVP[faceIndex]);
+            shadowData.Constants.ShadowVP[faceIndex] = shadowContext.view.ViewProjection();
         }
 
         // Setup constant buffer data
@@ -681,17 +681,15 @@ namespace SE
             for (int32 faceIndex = 0; faceIndex < 6; faceIndex++)
             {
                 auto rt = m_ShadowMapCube->View(faceIndex);
-                context->ResetSR();
                 context->SetRenderTarget(nullptr, rt);
                 context->ClearDepth(rt);
                 auto& shadowContext = renderContextBatch.Contexts[shadowData.ContextIndex + faceIndex];
                 shadowContext.list->ExecuteDrawCalls(shadowContext, DrawCallsListType::Depth);
-                shadowContext.list->ExecuteDrawCalls(shadowContext, shadowContext.list->ShadowDepthDrawCallsList, renderContext.list->DrawCalls);
+                shadowContext.list->ExecuteDrawCalls(shadowContext, shadowContext.list->ShadowDepthDrawCallsList, renderContext.list->DrawCalls, {}, nullptr);
             }
         }
 
         // Restore GPU context
-        context->ResetSR();
         context->ResetRenderTarget();
         const Viewport  viewport       = renderContext.task->GetViewport();
         GPUTexture*     depthBuffer    = renderContext.buffers->DepthBuffer;
@@ -705,7 +703,7 @@ namespace SE
         GBufferPass::SetInputs(view, sperLight.GBuffer);
         light.SetupLightData(&sperLight.Light, true);
         sperLight.LightShadow = shadowData.Constants;
-        Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
+        sperLight.ViewProjectionMatrix = view.ViewProjection();
         sperLight.ContactShadowsDistance = light.ShadowsDistance;
         sperLight.ContactShadowsLength = 0; // EnumHasAnyFlags(view.Flags, ViewFlags::ContactShadows) ? light.ContactShadowsLength : 0.0f;
 
@@ -715,7 +713,7 @@ namespace SE
         Matrix::Translation(light.Position, matrix);
         Matrix::Multiply(wvp, matrix, world);
         Matrix::Multiply(world, view.ViewProjection(), wvp);
-        Matrix::Transpose(wvp, sperLight.WVP);
+        sperLight.WVP = wvp;
 
         // Render shadow in screen space
         List<String> macros;
@@ -804,17 +802,14 @@ namespace SE
         constexpr int32 faceIndex = 0;
         {
             auto rt = m_ShadowMapCube->View(faceIndex);
-            context->ResetSR();
             context->SetRenderTarget(nullptr, rt);
             context->ClearDepth(rt);
             auto& shadowContext = renderContextBatch.Contexts[shadowData.ContextIndex + faceIndex];
             shadowContext.list->ExecuteDrawCalls(shadowContext, DrawCallsListType::Depth);
-            shadowContext.list->ExecuteDrawCalls(
-                shadowContext, shadowContext.list->ShadowDepthDrawCallsList, renderContext.list->DrawCalls, nullptr);
+            shadowContext.list->ExecuteDrawCalls(shadowContext, shadowContext.list->ShadowDepthDrawCallsList, renderContext.list->DrawCalls, {} ,nullptr);
         }
 
         // Restore GPU context
-        context->ResetSR();
         context->ResetRenderTarget();
         const Viewport  viewport       = renderContext.task->GetViewport();
         GPUTexture*     depthBuffer    = renderContext.buffers->DepthBuffer;
@@ -828,7 +823,7 @@ namespace SE
         GBufferPass::SetInputs(view, sperLight.GBuffer);
         light.SetupLightData(&sperLight.Light, true);
         sperLight.LightShadow = shadowData.Constants;
-        Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
+        sperLight.ViewProjectionMatrix = view.ViewProjection();
         sperLight.ContactShadowsDistance = light.ShadowsDistance;
         sperLight.ContactShadowsLength =
             0; // EnumHasAnyFlags(view.Flags, ViewFlags::ContactShadows) ? light.ContactShadowsLength : 0.0f;
@@ -839,7 +834,7 @@ namespace SE
         Matrix::Translation(light.Position, matrix);
         Matrix::Multiply(wvp, matrix, world);
         Matrix::Multiply(world, view.ViewProjection(), wvp);
-        Matrix::Transpose(wvp, sperLight.WVP);
+        sperLight.WVP = wvp;
 
         // Render shadow in screen space
         List<String> macros;
@@ -917,16 +912,14 @@ namespace SE
         for (int32 cascadeIndex = 0; cascadeIndex < shadowData.ContextCount; cascadeIndex++)
         {
             const auto rt = m_ShadowMapCSM->View(cascadeIndex);
-            context->ResetSR();
             context->SetRenderTarget(nullptr, rt);
             context->ClearDepth(rt);
             auto& shadowContext = renderContextBatch.Contexts[shadowData.ContextIndex + cascadeIndex];
             shadowContext.list->ExecuteDrawCalls(shadowContext, DrawCallsListType::Depth/*, preDraw*/);
-            shadowContext.list->ExecuteDrawCalls(shadowContext, shadowContext.list->ShadowDepthDrawCallsList, renderContext.list->DrawCalls, nullptr);
+            shadowContext.list->ExecuteDrawCalls(shadowContext, shadowContext.list->ShadowDepthDrawCallsList, renderContext.list->DrawCalls, {} ,nullptr);
         }
 
         // Restore GPU context
-        context->ResetSR();
         context->ResetRenderTarget();
         GPUTexture*     depthBuffer    = renderContext.buffers->DepthBuffer;
         GPUTextureView* depthBufferSRV = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView) ?
@@ -940,7 +933,7 @@ namespace SE
         GBufferPass::SetInputs(view, sperLight.GBuffer);
         light.SetupLightData(&sperLight.Light, true);
         sperLight.LightShadow = shadowData.Constants;
-        Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
+        sperLight.ViewProjectionMatrix = view.ViewProjection();
         sperLight.ContactShadowsDistance = light.ShadowsDistance;
         sperLight.ContactShadowsLength =
             0; // EnumHasAnyFlags(view.Flags, ViewFlags::ContactShadows) ? light.ContactShadowsLength : 0.0f;

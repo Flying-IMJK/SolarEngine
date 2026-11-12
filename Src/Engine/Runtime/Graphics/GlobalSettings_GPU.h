@@ -27,18 +27,6 @@ namespace SE
 	// 绑定渲染目标的最大数量
 	#define GPU_MAX_RT_BINDED 6
 
-	// 绑定的着色器资源的最大数量
-	#define GPU_MAX_SR_BINDED 32
-
-	// 绑定常量缓冲区的最大数量
-	#define GPU_MAX_CB_BINDED 4
-
-	// 绑定的无序访问资源的最大数量
-	#define GPU_MAX_UA_BINDED 4
-
-	// 绑定纹理采样器资源的最大数量
-	#define GPU_MAX_SAMPLER_BINDED 16
-
 	// 全局采样器的初始插槽数量(静态，4个普通采样器+ 2个比较采样器)
 	#define GPU_STATIC_SAMPLERS_COUNT 6
 

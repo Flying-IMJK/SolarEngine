@@ -102,6 +102,10 @@ namespace SE
 				case SLC2VertexInputType::UInt2: return "uint2";
 				case SLC2VertexInputType::UInt3: return "uint3";
 				case SLC2VertexInputType::UInt4: return "uint4";
+				case SLC2VertexInputType::Half: return "half";
+				case SLC2VertexInputType::Half2: return "half2";
+				case SLC2VertexInputType::Half3: return "half3";
+				case SLC2VertexInputType::Half4: return "half4";
 				default: return nullptr;
 				}
 			}
@@ -134,7 +138,7 @@ namespace SE
 					}
 					element.Semantic.ToUpper();
 					const char* typeName = nullptr;
-					for (byte typeIndex = 0; typeIndex <= static_cast<byte>(SLC2VertexInputType::UInt4); typeIndex++)
+					for (byte typeIndex = 0; typeIndex <= static_cast<byte>(SLC2VertexInputType::Half4); typeIndex++)
 					{
 						const SLC2VertexInputType candidate = static_cast<SLC2VertexInputType>(typeIndex);
 						if (shaderType == StringAnsi(ShaderTypeName(candidate)).ToString())

@@ -16,7 +16,6 @@ namespace SE
 	class DynamicVertexBuffer;
 	struct RenderContext;
 	class GPUTexture;
-	class GPUPipelineState;
 
 	/*struct GizmosViewData
 	{

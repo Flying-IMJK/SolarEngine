@@ -7,7 +7,7 @@
 namespace SE
 {
     struct RenderContext;
-    class GPUPipelineState;
+    class SLC2GPUPipelineState;
     class GPUTexture;
 
     class ForwardPass : public RendererPass<ForwardPass>
@@ -15,7 +15,7 @@ namespace SE
     private:
 
         AssetRef<Shader> _shader;
-        GPUPipelineState* _psApplyDistortion;
+        SLC2GPUPipelineState* _psApplyDistortion;
 
     public:
         /// <summary>

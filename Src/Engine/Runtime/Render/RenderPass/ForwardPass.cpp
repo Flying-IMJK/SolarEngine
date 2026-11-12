@@ -6,7 +6,6 @@
 #include <Runtime/Graphics/GPUContext.h>
 #include <Runtime/Graphics/GPUDevice.h>
 #include <Runtime/Graphics/RenderTargetPool.h>
-#include <Runtime/Graphics/Shaders/GPUShader.h>
 #include <Runtime/Render/RenderBuffers.h>
 #include <Runtime/Render/RenderContext.h>
 #include <Runtime/Render/RenderEnum.h>
@@ -26,6 +25,7 @@ namespace SE
     }
 
     bool ForwardPass::Init() { return true; }
+
     void ForwardPass::Dispose()
     {
         RendererPass<ForwardPass>::Dispose();
@@ -41,7 +41,6 @@ namespace SE
         auto mainCache = renderContext.list;
     
         context->ResetRenderTarget();
-        context->ResetSR();
     
         // Try to use read-only depth if supported
         GPUTexture* depthBuffer = renderContext.buffers->DepthBuffer;
@@ -54,7 +53,7 @@ namespace SE
         // Check if there is no objects to render or no resources ready
         auto& forwardList = mainCache->DrawCallsLists[(int32)DrawCallsListType::Forward];
         auto& distortionList = mainCache->DrawCallsLists[(int32)DrawCallsListType::Distortion];
-        if (/*distortionList.IsEmpty() || */CheckIfSkipPass())
+        if (/*distortionList.IsEmpty() || */!CheckIfSkipPass())
         {
             // Copy frame
             context->SetRenderTarget(output->View());
@@ -86,7 +85,6 @@ namespace SE
             // Copy combined frame with distortion from transparent materials
             context->SetViewportAndScissors((float)width, (float)height);
             context->ResetRenderTarget();
-            context->ResetSR();
             context->BindSR(0, input);
             context->BindSR(1, distortionRT);
             context->SetRenderTarget(output->View());

@@ -410,9 +410,11 @@ namespace SE
         if (!IsInitialized())
             return;
 
-        context->BindVB(ToSpan((GPUBuffer**)_vertexBuffers, 3));
+        ENGINE_UNIMPLEMENTED_FUNCTION();
+
+        /*context->BindVB(ToSpan((GPUBuffer**)_vertexBuffers, 3));
         context->BindIB(_indexBuffer);
-        context->DrawIndexedInstanced(_triangles * 3, 1, 0, 0, 0);
+        context->DrawIndexedInstanced(_triangles * 3, 1, 0, 0, 0);*/
     }
 
     void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticMask flags,

@@ -1,6 +1,5 @@
 ﻿
 add_subdirectory(Base)
-#add_subdirectory(Compiler)
 add_subdirectory(Textures)
 add_subdirectory(Shaders)
 add_subdirectory(Async)

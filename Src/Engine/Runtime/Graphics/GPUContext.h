@@ -13,20 +13,12 @@ namespace SE
 	class MaterialBase;
 	class GPUDevice;
 	class GPUConstantBuffer;
-	class GPUShaderProgramCS;
 	class GPUBuffer;
-	class GPUPipelineState;
 	class GPUTexture;
-	class GPUSampler;
 	class GPUResource;
-	class GPUResourceView;
 	class GPUTextureView;
-	class GPUBufferView;
 	class ShaderProgramInstance;
 	struct RenderGeometry;
-
-	// Gets the GPU texture view. Checks if pointer is not null and texture has one or more mip levels loaded.
-	#define GET_TEXTURE_VIEW_SAFE(t) (t && t->ResidentMipLevels() > 0 ? t->View() : nullptr)
 
 	SE_CLASS(API(Sealed, NoSpawn))
 	class SE_API_RUNTIME GPUContext : public ScriptingObject
@@ -169,15 +161,6 @@ namespace SE
 	public:
 
 		/**
-		 * Executes a command list from a thread group.
-		 * @param shader
-		 * @param threadGroupCountX The number of groups dispatched in the x direction.
-		 * @param threadGroupCountY The number of groups dispatched in the y direction.
-		 * @param threadGroupCountZ The number of groups dispatched in the z direction.
-		 */
-		virtual void Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ) = 0;
-
-		/**
 		 * Executes an SLC2 compute shader program instance.
 		 * @param instance The SLC2 shader program instance to execute.
 		 * @param threadGroupCountX The number of groups dispatched in the x direction.
@@ -186,14 +169,6 @@ namespace SE
 		 * @param error The dispatch error output.
 		 */
 		virtual void Dispatch(ShaderProgramInstance& instance, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ) = 0;
-
-		/**
-		 * Executes a command list from a thread group. Buffer must contain GPUDispatchIndirectArgs.
-		 * @param shader The compute shader program to execute.
-		 * @param bufferForArgs The buffer with drawing arguments.
-		 * @param offsetForArgs The aligned byte offset for arguments.
-		 */
-		virtual void DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* bufferForArgs, uint32 offsetForArgs) = 0;
 
 		/**
 		 * Executes an SLC2 compute shader program instance from an indirect dispatch argument buffer. Buffer must contain GPUDispatchIndirectArgs.
@@ -245,27 +220,6 @@ namespace SE
 		void Draw(GPUTextureView* rt);
 
 		/**
-		 * Draws non-indexed, non-instanced primitives.
-		 * @param startVertex A value added to each index before reading a vertex from the vertex buffer.
-		 * @param verticesCount The vertices count.
-		 */
-		SE_FUNCTION(API())
-		inline void Draw(uint32 startVertex, uint32 verticesCount)
-		{
-			DrawInstanced(verticesCount, 1, 0, startVertex);
-		}
-
-		/**
-		 * Draws the instanced primitives.
-		 * @param verticesCount The vertices count.
-		 * @param instanceCount Number of instances to draw.
-		 * @param startInstance A value added to each index before reading per-instance data from a vertex buffer.
-		 * @param startVertex A value added to each index before reading a vertex from the vertex buffer.
-		 */
-		SE_FUNCTION(API())
-		virtual void DrawInstanced(uint32 verticesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0) = 0;
-
-		/**
 		 * 使用 ShaderProgramInstance 绘制非索引图元。
 		 * @param instance shader program instance。
 		 * @param verticesCount 顶点数量。
@@ -275,34 +229,11 @@ namespace SE
 		 */
 		virtual void DrawInstanced(ShaderProgramInstance* instance, uint32 verticesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0) = 0;
 
-		/**
-		 * Draws the indexed primitives.
-		 * @param indicesCount The indices count.
-		 * @param startVertex A value added to each index before reading a vertex from the vertex buffer.
-		 * @param startIndex The location of the first index read by the GPU from the index buffer.
-		 */
-		SE_FUNCTION(API())
-		void DrawIndexed(uint32 indicesCount, int32 startVertex = 0, int32 startIndex = 0)
-		{
-			DrawIndexedInstanced(indicesCount, 1, 0, startVertex, startIndex);
-		}
-
 		SE_FUNCTION(API())
 		void DrawIndexed(ShaderProgramInstance* instance, uint32 indicesCount, int32 startVertex = 0, int32 startIndex = 0)
         {
             DrawIndexedInstanced(instance, indicesCount, 1, 0, startVertex, startIndex);
         }
-
-		/**
-		 * Draws the indexed, instanced primitives.
-		 * @param indicesCount The indices count.
-		 * @param instanceCount Number of instances to draw.
-		 * @param startInstance A value added to each index before reading per-instance data from a vertex buffer.
-		 * @param startVertex A value added to each index before reading a vertex from the vertex buffer.
-		 * @param startIndex The location of the first index read by the GPU from the index buffer.
-		 */
-		SE_FUNCTION(API())
-		virtual void DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0, int32 startIndex = 0) = 0;
 
 		/**
 		 * 使用 ShaderProgramInstance 绘制索引图元。
@@ -315,104 +246,12 @@ namespace SE
 		 */
 		virtual void DrawIndexedInstanced(ShaderProgramInstance* instance, uint32 indicesCount, uint32 instanceCount, int32 startInstance = 0, int32 startVertex = 0, int32 startIndex = 0) = 0;
 
-		/**
-		 * Draws the instanced GPU-generated primitives. Buffer must contain GPUDrawIndirectArgs.
-		 * @param bufferForArgs The buffer with drawing arguments.
-		 * @param offsetForArgs The aligned byte offset for arguments.
-		 */
-		SE_FUNCTION(API())
-		virtual void DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) = 0;
-
         // SLC2 indirect draws freeze the same instance snapshot as direct draws.
         virtual void DrawInstancedIndirect(ShaderProgramInstance& instance, GPUBuffer* bufferForArgs, uint32 offsetForArgs) = 0;
 
-		/**
-		 * Draws the instanced GPU-generated indexed primitives. Buffer must contain GPUDrawIndexedIndirectArgs.
-		 * @param bufferForArgs The buffer with drawing arguments.
-		 * @param offsetForArgs The aligned byte offset for arguments.
-		 */
-		SE_FUNCTION(API())
-		virtual void DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs) = 0;
         virtual void DrawIndexedInstancedIndirect(ShaderProgramInstance& instance, GPUBuffer* bufferForArgs, uint32 offsetForArgs) = 0;
 
 	public:
-		/**
-		 * 取消绑定的所有着色器资，并将更改与驱动程序刷新（用于防止驱动程序检测到资源危害，例如，在缩小纹理时）。
-		 */
-		SE_FUNCTION(API())
-		virtual void ResetSR() = 0;
-
-		/**
-		 * 取消绑定的所有无序访问资，并将更改与驱动程序刷新（用于防止驱动程序检测到资源危害，例如，在缩小纹理时）。
-		 */
-		SE_FUNCTION(API())
-		virtual void ResetUA() = 0;
-
-		/**
-		 * 取消绑定的所有常量缓冲区，并使用驱动程序刷新更改（用于防止驱动程序检测到资源危害，例如，在缩小纹理时）。
-		 */
-		SE_FUNCTION(API())
-		virtual void ResetCB() = 0;
-
-		/**
-		 * 解除指定位置绑定的shader resource
-		 * @param slot 位置
-		 */
-		inline void UnBindSR(int32 slot)
-		{
-			BindSR(slot, static_cast<GPUResourceView*>(nullptr));
-		}
-
-		/**
-		 * 解除指定位置绑定的unordered access resource
-		 * @param slot 位置
-		 */
-		inline void UnBindUA(int32 slot)
-		{
-			BindUA(slot, static_cast<GPUResourceView*>(nullptr));
-		}
-
-		/**
-		 * 解除指定位置绑定的constant buffer
-		 * @param slot 位置
-		 */
-		inline void UnBindCB(int32 slot)
-		{
-			BindCB(slot, nullptr);
-		}
-
-		/**
-		 * 将texture作为shader资源绑定到指定位置
-		 * @param slot 绑定位置
-		 * @param texture 纹理
-		 */
-		SE_FUNCTION(API())
-		void BindSR(int32 slot, GPUTexture* texture);
-
-		/**
-		 * 将resource view作为shader资源绑定到指定的位置
-		 * @param slot 绑定位置
-		 * @param view 资源view
-		 */
-		SE_FUNCTION(API())
-		virtual void BindSR(int32 slot, GPUResourceView* view) = 0;
-
-		/**
-		 * 将resource view作为无序访问资源绑定到指定的位置
-		 * @param slot 绑定位置
-		 * @param view 资源view
-		 */
-		SE_FUNCTION(API())
-		virtual void BindUA(int32 slot, GPUResourceView* view) = 0;
-
-		/**
-		 * 绑定constant buffer到指定绑定点
-		 * @param slot 绑定位置
-		 * @param cb constant buffer
-		 */
-		virtual void BindCB(int32 slot, GPUConstantBuffer* cb) = 0;
-
-
 		/**
 		 * 绑定多个顶点buffer
 		 * @param vertexBuffers 顶点buffer数组
@@ -440,13 +279,6 @@ namespace SE
 		 */
 		virtual bool BindRenderGeometry(const RenderGeometry& geometry) = 0;
 
-		/**
-		 * 绑定采样器到指定位置
-		 * @param slot 绑定位置
-		 * @param sampler 采样器
-		 */
-		SE_FUNCTION(API())
-		virtual void BindSampler(int32 slot, GPUSampler* sampler) = 0;
 	public:
 		/// <summary>
 		/// Clears texture surface with a color. Supports volumetric textures and texture arrays (including cube textures).
@@ -495,20 +327,6 @@ namespace SE
 		virtual void ClearUA(GPUTexture* texture, const Float4& value) = 0;
 
 		/// <summary>
-		/// Sets the graphics pipeline state.
-		/// </summary>
-		/// <param name="state">The state to bind.</param>
-		SE_FUNCTION(API())
-		virtual void SetState(GPUPipelineState* state) = 0;
-
-		/// <summary>
-		/// Gets the current pipeline state binded to the graphics pipeline.
-		/// </summary>
-		/// <returns>The current state.</returns>
-		SE_FUNCTION(API())
-		virtual GPUPipelineState* GetState() const = 0;
-
-		/// <summary>
         /// Sets the graphics pipeline state.
         /// </summary>
         /// <param name="state">The state to bind.</param>
@@ -519,7 +337,6 @@ namespace SE
         /// </summary>
         /// <returns>The current state.</returns>
         virtual SLC2GPUPipelineState* GetSLC2State() const = 0;
-
 
 		/// <summary>
 		/// Clears the context state.

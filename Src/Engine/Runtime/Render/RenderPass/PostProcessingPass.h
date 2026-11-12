@@ -3,7 +3,7 @@
 #include <Runtime/Core/Math/Matrix.h>
 #include <Runtime/Core/Math/Vector2.h>
 #include <Runtime/Core/Math/Vector3.h>
-#include <Runtime/Graphics/Base/GPUPipelineStatePermutations.h>
+#include <Runtime/Graphics/Base/GPUPipelineState.h>
 #include <Runtime/Render/Assets/Texture/Texture.h>
 #include <Runtime/Render/RenderContext.h>
 #include <Runtime/Render/RendererPass.h>
@@ -13,7 +13,6 @@
 namespace SE
 {
     class Shader;
-    class GPUPipelineState;
 
 #define GB_RADIUS 6
 #define GB_KERNEL_SIZE (GB_RADIUS * 2 + 1)

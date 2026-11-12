@@ -229,7 +229,7 @@ namespace SE
             }
 
             light.SetupLightData(&perLight.Light, renderShadow);
-            Matrix::Transpose(wvp, perLight.WVP);
+            perLight.WVP = wvp;
             context->UpdateCB(m_PerLightBuffer, &perLight);
 
             if (!m_ProgramLightPoint->SetConstantBuffer(SE_TEXT("perLight"), m_PerLightBuffer) ||
@@ -332,8 +332,6 @@ namespace SE
         // Detach the output before returning the temporary mask to the pool.
         context->ResetRenderTarget();
         RenderTargetPool::Release(shadowMask);
-        context->ResetSR();
-        context->ResetCB();
     }
 
     String LightPass::ToString() const { return SE_TEXT("LightPass"); }

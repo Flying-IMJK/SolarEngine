@@ -15,83 +15,10 @@
 #include <Runtime/Resource/Importers/AssetsImportingSystem.h>
 
 #include <Runtime/Graphics/Base/RenderGeometry.h>
-#include <Runtime/Graphics/Shaders/GPUShader.h>
 #include <Runtime/Graphics/Textures/GPUSampler.h>
 
 namespace SE
 {
-	GPUPipelineState::Description GPUPipelineState::Description::Default =
-		{
-			true, // DepthEnable
-			true, // DepthWriteEnable
-			true, // DepthClipEnable
-			ComparisonFunc::Less, // DepthFunc
-			false, // StencilEnable
-			0xff, // StencilReadMask
-			0xff, // StencilWriteMask
-			ComparisonFunc::Always, // StencilFunc
-			StencilOperation::Keep, // StencilFailOp
-			StencilOperation::Keep, // StencilDepthFailOp
-			StencilOperation::Keep, // StencilPassOp
-			nullptr, // VS
-			nullptr, // HS
-			nullptr, // DS
-			nullptr, // GS
-			nullptr, // PS
-			PrimitiveTopologyType::Triangle, // PrimitiveTopology
-			false, // Wireframe
-			CullMode::Normal, // CullMode
-			BlendingMode::Opaque, // BlendMode
-		};
-
-	GPUPipelineState::Description GPUPipelineState::Description::DefaultNoDepth =
-		{
-			false, // DepthEnable
-			false, // DepthWriteEnable
-			false, // DepthClipEnable
-			ComparisonFunc::Less, // DepthFunc
-			false, // StencilEnable
-			0xff, // StencilReadMask
-			0xff, // StencilWriteMask
-			ComparisonFunc::Always, // StencilFunc
-			StencilOperation::Keep, // StencilFailOp
-			StencilOperation::Keep, // StencilDepthFailOp
-			StencilOperation::Keep, // StencilPassOp
-			nullptr, // VS
-			nullptr, // HS
-			nullptr, // DS
-			nullptr, // GS
-			nullptr, // PS
-			PrimitiveTopologyType::Triangle, // PrimitiveTopology
-			false, // Wireframe
-			CullMode::Normal, // CullMode
-			BlendingMode::Opaque, // BlendMode
-		};
-
-	GPUPipelineState::Description GPUPipelineState::Description::DefaultFullscreenTriangle =
-		{
-			false, // DepthEnable
-			false, // DepthWriteEnable
-			false, // DepthClipEnable
-			ComparisonFunc::Less, // DepthFunc
-			false, // StencilEnable
-			0xff, // StencilReadMask
-			0xff, // StencilWriteMask
-			ComparisonFunc::Always, // StencilFunc
-			StencilOperation::Keep, // StencilFailOp
-			StencilOperation::Keep, // StencilDepthFailOp
-			StencilOperation::Keep, // StencilPassOp
-			nullptr, // VS (Set to default quad VS via GPUDevice)
-			nullptr, // HS
-			nullptr, // DS
-			nullptr, // GS
-			nullptr, // PS
-			PrimitiveTopologyType::Triangle, // PrimitiveTopology
-			false, // Wireframe
-			CullMode::TwoSided, // CullMode
-			BlendingMode::Opaque, // BlendMode
-		};
-
 	SLC2GPUPipelineState::Description SLC2GPUPipelineState::Description::Default = {
         true,                            // DepthEnable
         true,                            // DepthWriteEnable
@@ -210,7 +137,6 @@ namespace SE
 		AssetRef<Texture> DefaultBlackTexture;
 	};
 
-
 	GPUContext::GPUContext(GPUDevice* device) : ScriptingObject(ScriptingObjectSpawnParams(UID::New(), TypeInitializer)),
 	                                            m_Device(device),
 	                                            m_PrivateData(New<PrivateData>())
@@ -280,7 +206,6 @@ namespace SE
 		{
 			return false;
 		}*/
-
 
 		// Create fullscreen triangle vertex buffer
         {
@@ -386,12 +311,6 @@ namespace SE
 		FlushState();
 	}
 
-	void GPUContext::BindSR(int32 slot, GPUTexture* texture)
-	{
-		ENGINE_ASSERT(texture == nullptr || texture->ResidentMipLevels() == 0 || texture->IsShaderResource());
-		BindSR(slot, GET_TEXTURE_VIEW_SAFE(texture));
-	}
-
     void GPUContext::SetViewportAndScissors(float width, float height)
 	{
 		const Viewport viewport(0.0f, 0.0f, width, height);
@@ -454,7 +373,6 @@ namespace SE
         DrawFullscreenTriangle(m_PrivateData->SP_CopyLinear);
 	}
 
-	
     void GPUContext::GlobalBinding(ShaderProgramInstance* program)
 	{
 	    // Default
@@ -481,7 +399,6 @@ namespace SE
         }
 
 	}
-
 
 	/*	void GPUContext::SetResourceState(GPUResource* resource, uint64 state, int32 subresource)
 	{

@@ -13,35 +13,6 @@ namespace SE
 	#define VULKAN_DESCRIPTOR_TYPE_BEGIN VK_DESCRIPTOR_TYPE_SAMPLER
 	#define VULKAN_DESCRIPTOR_TYPE_END VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT
 
-	namespace DescriptorSet
-	{
-		enum Stage
-		{
-			// Vertex shader stage
-			Vertex,
-			// Pixel shader stage
-			Pixel,
-			// Geometry shader stage
-        	Geometry,
-			// Hull shader stage
-        	Hull,
-        	// Domain shader stage
-        	Domain,
-			// Graphics pipeline stages count
-			GraphicsStagesCount,
-			// Compute pipeline slot
-			Compute = 0,
-		};
-
-		template<typename T>
-		inline bool CopyAndReturnNotEqual(T& a, T b)
-		{
-			const bool result = a != b;
-			a = b;
-			return result;
-		}
-	};
-
 	class DescriptorSetLayoutInfoVulkan
 	{
 	public:
@@ -60,8 +31,6 @@ namespace SE
 		{
 			Platform::MemoryClear(layoutTypes, sizeof(layoutTypes));
 		}
-
-		void AddBindingsForStage(VkShaderStageFlagBits stageFlags, DescriptorSet::Stage descSet, const SpirvShaderDescriptorInfo* descriptorInfo);
 
 		void CopyFrom(const DescriptorSetLayoutInfoVulkan& info)
 		{
@@ -82,8 +51,7 @@ namespace SE
 	class DescriptorSetLayoutVulkan : public DescriptorSetLayoutInfoVulkan
 	{
 	public:
-		// Stage-indexed legacy layouts stay inline; SLC2 physical sets may extend beyond the stage count.
-		typedef List<VkDescriptorSetLayout, InlinedAllocation<DescriptorSet::GraphicsStagesCount>> HandlesArray;
+		typedef List<VkDescriptorSetLayout, InlinedAllocation<5>> HandlesArray;
 
 		GPUDeviceVulkan* device;
 		HandlesArray handles;
@@ -255,104 +223,4 @@ namespace SE
 		}
 	};
 
-	class DescriptorSetWriterVulkan
-	{
-	public:
-		VkWriteDescriptorSet* writeDescriptors = nullptr;
-		byte* bindingToDynamicOffset = nullptr;
-		uint32* dynamicOffsets = nullptr;
-		uint32 writesCount = 0;
-
-	public:
-		uint32 SetupDescriptorWrites(const SpirvShaderDescriptorInfo& info, VkWriteDescriptorSet* writeDescriptors, VkDescriptorImageInfo* imageInfo, VkDescriptorBufferInfo* bufferInfo, VkBufferView* texelBufferView, byte* bindingToDynamicOffset);
-
-		bool WriteUniformBuffer(uint32 descriptorIndex, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range, uint32 index = 0) const
-		{
-			ENGINE_ASSERT(descriptorIndex < writesCount);
-			ENGINE_ASSERT(writeDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-			auto* bufferInfo = const_cast<VkDescriptorBufferInfo*>(writeDescriptors[descriptorIndex].pBufferInfo + index);
-			bool edited = DescriptorSet::CopyAndReturnNotEqual(bufferInfo->buffer, buffer);
-			edited |= DescriptorSet::CopyAndReturnNotEqual(bufferInfo->offset, offset);
-			edited |= DescriptorSet::CopyAndReturnNotEqual(bufferInfo->range, range);
-			return edited;
-		}
-
-		bool WriteDynamicUniformBuffer(uint32 descriptorIndex, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range, uint32 dynamicOffset, uint32 index = 0) const
-		{
-			ENGINE_ASSERT(descriptorIndex < writesCount);
-			ENGINE_ASSERT(writeDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
-			auto* bufferInfo = const_cast<VkDescriptorBufferInfo*>(writeDescriptors[descriptorIndex].pBufferInfo + index);
-			bool edited = DescriptorSet::CopyAndReturnNotEqual(bufferInfo->buffer, buffer);
-			edited |= DescriptorSet::CopyAndReturnNotEqual(bufferInfo->offset, offset);
-			edited |= DescriptorSet::CopyAndReturnNotEqual(bufferInfo->range, range);
-			const byte dynamicOffsetIndex = bindingToDynamicOffset[descriptorIndex];
-			dynamicOffsets[dynamicOffsetIndex] = dynamicOffset;
-			return edited;
-		}
-
-		bool WriteSampler(uint32 descriptorIndex, VkSampler sampler, uint32 index = 0) const
-		{
-			ENGINE_ASSERT(descriptorIndex < writesCount);
-			ENGINE_ASSERT(writeDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER || writeDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-			auto* imageInfo = const_cast<VkDescriptorImageInfo*>(writeDescriptors[descriptorIndex].pImageInfo + index);
-			bool edited = DescriptorSet::CopyAndReturnNotEqual(imageInfo->sampler, sampler);
-			return edited;
-		}
-
-		bool WriteImage(uint32 descriptorIndex, VkImageView imageView, VkImageLayout layout, uint32 index = 0) const
-		{
-			ENGINE_ASSERT(descriptorIndex < writesCount);
-			ENGINE_ASSERT(writeDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE || writeDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-			auto* imageInfo = const_cast<VkDescriptorImageInfo*>(writeDescriptors[descriptorIndex].pImageInfo + index);
-			bool edited = DescriptorSet::CopyAndReturnNotEqual(imageInfo->imageView, imageView);
-			edited |= DescriptorSet::CopyAndReturnNotEqual(imageInfo->imageLayout, layout);
-			return edited;
-		}
-
-		bool WriteStorageImage(uint32 descriptorIndex, VkImageView imageView, VkImageLayout layout, uint32 index = 0) const
-		{
-			ENGINE_ASSERT(descriptorIndex < writesCount);
-			ENGINE_ASSERT(writeDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-			auto* imageInfo = const_cast<VkDescriptorImageInfo*>(writeDescriptors[descriptorIndex].pImageInfo + index);
-			bool edited = DescriptorSet::CopyAndReturnNotEqual(imageInfo->imageView, imageView);
-			edited |= DescriptorSet::CopyAndReturnNotEqual(imageInfo->imageLayout, layout);
-			return edited;
-		}
-
-		bool WriteStorageTexelBuffer(uint32 descriptorIndex, VkBufferView bufferView, uint32 index = 0) const
-		{
-			ENGINE_ASSERT(descriptorIndex < writesCount);
-			ENGINE_ASSERT(writeDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER);
-			auto* bufferInfo = const_cast<VkBufferView*>(writeDescriptors[descriptorIndex].pTexelBufferView + index);
-			*bufferInfo = bufferView;
-			return true;
-		}
-
-		bool WriteStorageBuffer(uint32 descriptorIndex, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range, uint32 index = 0) const
-		{
-			ENGINE_ASSERT(descriptorIndex < writesCount);
-			ENGINE_ASSERT(writeDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER || writeDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC);
-			auto* bufferInfo = const_cast<VkDescriptorBufferInfo*>(writeDescriptors[descriptorIndex].pBufferInfo + index);
-			bool edited = DescriptorSet::CopyAndReturnNotEqual(bufferInfo->buffer, buffer);
-			edited |= DescriptorSet::CopyAndReturnNotEqual(bufferInfo->offset, offset);
-			edited |= DescriptorSet::CopyAndReturnNotEqual(bufferInfo->range, range);
-			return edited;
-		}
-
-		bool WriteUniformTexelBuffer(uint32 descriptorIndex, VkBufferView view, uint32 index = 0) const
-		{
-			ENGINE_ASSERT(descriptorIndex < writesCount);
-			ENGINE_ASSERT(writeDescriptors[descriptorIndex].descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER);
-			auto* bufferInfo = const_cast<VkBufferView*>(writeDescriptors[descriptorIndex].pTexelBufferView + index);
-			return DescriptorSet::CopyAndReturnNotEqual(*bufferInfo, view);
-		}
-
-		void SetDescriptorSet(VkDescriptorSet descriptorSet) const
-		{
-			for (uint32 i = 0; i < writesCount; i++)
-			{
-				writeDescriptors[i].dstSet = descriptorSet;
-			}
-		}
-	};
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Runtime/Graphics/Base/GPUPipelineStatePermutations.h>
+#include <Runtime/Graphics/Base/GPUPipelineState.h>
 #include <Runtime/Render/RenderContext.h>
 #include <Runtime/Render/RenderEnum.h>
 #include <Runtime/Render/RendererPass.h>

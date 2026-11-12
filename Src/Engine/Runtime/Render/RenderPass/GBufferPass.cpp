@@ -22,8 +22,8 @@ namespace SE
 		gBuffer.ScreenSize = view.ScreenSize;
 		gBuffer.ViewPos = view.Position;
 		gBuffer.ViewFar = view.Far;
-		Matrix::Transpose(view.IV, gBuffer.InvViewMatrix);
-		Matrix::Transpose(view.IP, gBuffer.InvProjectionMatrix);
+        gBuffer.InvViewMatrix = view.IV;
+        gBuffer.InvProjectionMatrix = view.IP;
 	}
 
 	void GBufferPass::Execute(RenderContext& renderContext, GPUTexture* lightBuffer)
@@ -91,11 +91,16 @@ namespace SE
 		// Draw sky
         ShaderProgramInstance* program = renderContext.list->Sky->ApplySky(context, renderContext, m1);
         if (!program || model->LODs.IsEmpty())
+        {
             return;
+        }
+
         for (const Mesh& mesh : model->LODs[0].Meshes)
         {
             if (mesh.IsInitialized() && context->BindRenderGeometry(mesh.GetRenderGeometry()))
+            {
                 context->DrawIndexed(program, mesh.GetTriangleCount() * 3);
+            }
         }
     }
 

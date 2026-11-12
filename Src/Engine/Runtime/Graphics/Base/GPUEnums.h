@@ -513,34 +513,6 @@ namespace SE
     SE_API_RUNTIME bool ParseShaderStage(const char* text, ShaderStage& stage);
 
 	/// <summary>
-	/// Describes the shader function flags used for shader compilation.
-	/// </summary>
-	SE_ENUM(Reflect, API(Attributes = "Flags"))
-	enum class ShaderFlags : uint32
-	{
-		/// <summary>
-		/// The default set for flags.
-		/// </summary>
-		Default = 0,
-
-		/// <summary>
-		/// Hides the shader. It will exist in source and will be parsed but won't be compiled for the rendering.
-		/// </summary>
-		Hidden = 1,
-
-		/// <summary>
-		/// Disables any fast-math optimizations performed by the shader compiler.
-		/// </summary>
-		NoFastMath = 2,
-
-		/// <summary>
-		/// Indicates that vertex shader function outputs data for the geometry shader.
-		/// </summary>
-		VertexToGeometryShader = 4,
-	};
-
-
-	/// <summary>
 	/// Describes the different tessellation methods supported by the graphics system.
 	/// </summary>
 	SE_ENUM(Reflect, API())

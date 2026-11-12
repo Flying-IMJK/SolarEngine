@@ -36,6 +36,10 @@ namespace SE
             case SLC2VertexInputType::UInt2:  return {ValueCategory::UInt, 2};
             case SLC2VertexInputType::UInt3:  return {ValueCategory::UInt, 3};
             case SLC2VertexInputType::UInt4:  return {ValueCategory::UInt, 4};
+            case SLC2VertexInputType::Half:   return {ValueCategory::Float, 1};
+            case SLC2VertexInputType::Half2:  return {ValueCategory::Float, 2};
+            case SLC2VertexInputType::Half3:  return {ValueCategory::Float, 3};
+            case SLC2VertexInputType::Half4:  return {ValueCategory::Float, 4};
             default:                          return {};
             }
         }

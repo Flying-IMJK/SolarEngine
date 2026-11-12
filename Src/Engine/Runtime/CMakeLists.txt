@@ -2,7 +2,6 @@
 set(RUNTIME_TARGET SERuntime)
 
 include(${EngineLibDir}/ISPCTextureCompressor/link.cmake)
-include(${EngineLibDir}/ShaderCompiler/DirectXShaderCompiler/DCCompiler.cmake)
 include(${EngineLibDir}/GameNetworkingSockets/link.cmake)
 include(${EngineLibDir}/slang/link.cmake)
 include(${EngineLibDir}/NetHost/link.cmake)
@@ -79,7 +78,7 @@ target_include_directories(${RUNTIME_TARGET}
 )
 
 
-target_link_libraries(${RUNTIME_TARGET} PUBLIC assimp ShaderCompiler sqlite3 fmt ws2_32 freetype)
+target_link_libraries(${RUNTIME_TARGET} PUBLIC assimp sqlite3 fmt ws2_32 freetype)
 if (WIN32)
     target_link_libraries(${RUNTIME_TARGET} PUBLIC Xinput Dbghelp)
     target_compile_definitions(${RUNTIME_TARGET} PRIVATE TRACY_DBGHELP_LOCK=SEDbgHelp)
@@ -94,11 +93,7 @@ if(USE_EDITOR AND USE_PROFILER)
     target_compile_definitions(${RUNTIME_TARGET} PRIVATE TRACY_ON_DEMAND)
 endif()
 
-# 运行时库 第三方链接库
-ADD_DELAYLOAD_FLAGS(${RUNTIME_TARGET} ShaderCompiler)
-#assimp-vc143-mt
 # 第三方链接库
-DirectXShaderCompilerCopy(${RUNTIME_TARGET})
 GameNetworkingSocketsLink(${RUNTIME_TARGET})
 ISPCTextureCompressorLink(${RUNTIME_TARGET})
 SlangLink(${RUNTIME_TARGET})

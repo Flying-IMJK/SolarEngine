@@ -1,7 +1,6 @@
 
 #include "AssetContent.h"
 #include "AssetsCache.h"
-#include "spirv_common.hpp"
 
 #include "Runtime/Core/Systems.h"
 #include "Runtime/Core/Profiler/Profiler.h"

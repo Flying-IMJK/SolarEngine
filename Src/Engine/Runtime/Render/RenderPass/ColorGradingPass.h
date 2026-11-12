@@ -1,5 +1,5 @@
 #pragma once
-#include <Runtime/Graphics/Base/GPUPipelineStatePermutations.h>
+#include <Runtime/Graphics/Base/GPUPipelineState.h>
 #include <Runtime/Graphics/Base/PixelFormat.h>
 #include <Runtime/Render/RenderContext.h>
 #include <Runtime/Render/RendererPass.h>

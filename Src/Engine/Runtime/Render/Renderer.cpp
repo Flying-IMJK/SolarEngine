@@ -208,7 +208,6 @@ namespace SE
 
 		// Cleanup
 		context->ResetRenderTarget();
-		context->ResetSR();
 		context->FlushState();
 		RenderTargetPool::Release(lightBuffer);
 
@@ -228,7 +227,6 @@ namespace SE
 
 		// Cleanup
 		context->ResetRenderTarget();
-		context->ResetSR();
 		context->FlushState();
 
 		// Draw Gizmos

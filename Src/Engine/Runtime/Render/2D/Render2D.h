@@ -421,7 +421,7 @@ namespace SE
         /// <param name="ps">The custom pipeline state to use (input must match default Render2D vertex shader and can use single texture).</param>
         /// <param name="color">The color to multiply all texture pixels.</param>
         SE_FUNCTION(API())
-        static void DrawCustom(GPUTexture* t, const Rectangle& rect, GPUPipelineState* ps, const Color& color = Colors::White);
+        static void DrawCustom(GPUTexture* t, const Rectangle& rect, SLC2GPUPipelineState* pso, ShaderProgramInstance* program, const Color& color = Colors::White);
 
         /// <summary>
         /// Draws a line.

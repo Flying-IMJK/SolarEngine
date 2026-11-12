@@ -1,37 +1,14 @@
 #pragma once
 
-#include "Runtime/Graphics/Shaders/GPUShader.h"
-#include "Runtime/Graphics/Shaders/SLC2GPUShader.h"
-#include "Runtime/Graphics/Shaders/GPUConstantBuffer.h"
-#include "VulkanNative.h"
-#include "ResourceOwnerVulkan.h"
-
-#include "Runtime/Core/Serialization/MemoryReadStream.h"
+#include <Runtime/Graphics/Shaders/SLC2GPUShader.h>
+#include <Runtime/Graphics/Shaders/GPUConstantBuffer.h>
+#include <Runtime/GraphicsDevice/Vulkan/VulkanNative.h>
+#include <Runtime/GraphicsDevice/Vulkan/ResourceOwnerVulkan.h>
 
 namespace SE
 {
 	class GPUContextVulkan;
 	class GPUConstantBuffer;
-
-	/// <summary>
-	/// Shader for Vulkan backend.
-	/// </summary>
-	class GPUShaderVulkan : public GPUResourceVulkan<GPUShader>
-	{
-	public:
-		/// <summary>
-		/// Initializes a new instance of the <see cref="GPUShaderVulkan"/> class.
-		/// </summary>
-		/// <param name="device">The device.</param>
-		/// <param name="name">The resource name.</param>
-		GPUShaderVulkan(GPUDeviceVulkan* device, const StringView& name);
-
-	protected:
-		// [GPUShader]
-		GPUShaderProgram* CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, byte* cacheBytes,
-			uint32 cacheSize, MemoryReadStream& stream) override;
-	};
-
 
 	// Vulkan 版本的 SLC2GPUShader，只负责把平台无关的 SLC2ShaderProgram 创建为 Vulkan 后端实现。
     class SLC2GPUShaderVulkan final : public GPUResourceVulkan<SLC2GPUShader>
@@ -44,9 +21,7 @@ namespace SE
                                                               const SLC2TargetRecord*  target,
                                                               const SLC2VariantRecord* variant) override;
 
-
     };
-
 
 	/// <summary>
 	/// The shared ring buffer for uniform buffers uploading for Vulkan backend.
@@ -146,6 +121,5 @@ namespace SE
 			dynamicOffset = (uint32)Allocation.Offset;
 		}
 	};
-
 
 }

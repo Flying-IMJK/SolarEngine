@@ -9,7 +9,6 @@
 #include "DescriptorSetVulkan.h"
 #include "VulkanTool.h"
 
-
 namespace SE
 {
 	class GPUSwapChainVulkan;
@@ -35,7 +34,6 @@ namespace SE
 		void InitDeviceLimits(VkPhysicalDevice_T* gpu);
 		void InitMemory(VkPhysicalDevice_T* gpu);
 
-
 		void Dispose() override;
 
 	public:
@@ -49,13 +47,9 @@ namespace SE
 
 		GPUSwapChain* CreateSwapChain(Window* window) override;
 
-		GPUPipelineState* CreatePipelineState() override;
-
 		SLC2GPUPipelineState* CreateSLC2PipelineState() override;
 
 		GPUTexture* CreateTexture(const StringView& name) override;
-
-		GPUShader* CreateShader(const StringView& name) override;
 
 		SLC2GPUShader* CreateSLC2Shader(const StringView& name) override;
 
@@ -140,7 +134,6 @@ namespace SE
 			return FindAvailableQueryPool(TimestampQueryPools, VK_QUERY_TYPE_TIMESTAMP);
 		}
 
-
 		static VkInstance instance;
 
 		/// <summary>
@@ -152,7 +145,6 @@ namespace SE
 		/// The Vulkan instance layers.
 		/// </summary>
 		static List<const char*> instanceLayers;
-
 
 		VkDevice device = VK_NULL_HANDLE;
 		VkPipelineCache pipelineCache = VK_NULL_HANDLE;

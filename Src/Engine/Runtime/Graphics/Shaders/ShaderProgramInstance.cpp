@@ -396,12 +396,12 @@ namespace SE
             slot->SetTexture(nullptr, nullptr);
             return true;
         }
-        if (slot == nullptr || value->GetParent() == nullptr ||
-            !IsTextureResource(value->GetParent()))
+        if (slot == nullptr || value->GetParent() == nullptr ||!IsTextureResource(value->GetParent()))
         {
             LOG_ERROR("Graphics", "Texture binding requires a valid texture view and parent texture.");
             return false;
         }
+
         GPUTexture* parent = static_cast<GPUTexture*>(value->GetParent());
         const ShaderIRTypeRecord* type = m_Program->GetReflection().GetType(location.TypeId);
         if (type == nullptr || 

@@ -30,6 +30,10 @@ namespace SE
 		UInt2,
 		UInt3,
 		UInt4,
+		Half,
+		Half2,
+		Half3,
+		Half4,
 	};
 
 	struct SE_API_RUNTIME VertexInputSignatureElement

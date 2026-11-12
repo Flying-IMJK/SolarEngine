@@ -24,14 +24,6 @@ include(cmake/Tools.cmake)
     NoWarning(TracyClient)
 endif()]]
 
-if(NOT TARGET ShaderCompiler)
-    set(SE_PREVIOUS_CMAKE_FOLDER "${CMAKE_FOLDER}")
-    set(CMAKE_FOLDER "ThirdParty/ShaderCompiler")
-    add_subdirectory(ShaderCompiler)
-    set(CMAKE_FOLDER "${SE_PREVIOUS_CMAKE_FOLDER}")
-    set_target_properties(ShaderCompiler PROPERTIES FOLDER "ThirdParty/ShaderCompiler")
-endif()
-
 # version 9.1.0
 if(NOT TARGET fmt)
     set(SE_PREVIOUS_CMAKE_FOLDER "${CMAKE_FOLDER}")

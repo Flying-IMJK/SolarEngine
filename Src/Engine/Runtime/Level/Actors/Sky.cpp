@@ -122,14 +122,27 @@ namespace SE
 
     ShaderProgramInstance* Sky::ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world)
     {
-        ShaderProgramInstance* instance = RenderSkyType == SkyType::SkyBox ? m_SkyBoxProgram : m_SkyProgram;
-        SLC2GPUPipelineState*  pipeline = RenderSkyType == SkyType::SkyBox ? _psSkyBox : _psSky;
-        if (!instance || !pipeline)
+        ShaderProgramInstance* instance = nullptr;
+        SLC2GPUPipelineState*  pipeline = nullptr;
+
+        if (RenderSkyType == SkyType::SkyBox)
+        {
+            instance = m_SkyBoxProgram;
+            pipeline = _psSkyBox;
+        }
+        else
+        {
+            instance = m_SkyProgram;
+            pipeline = _psSky;
+        }
+
+        if (instance == nullptr || pipeline == nullptr)
+        {
             return nullptr;
+        }
+
         Data   data = {};
-        Matrix matrix;
-        Matrix::Multiply(world, renderContext.view.frustum.GetMatrix(), matrix);
-        Matrix::Transpose(matrix, data.WVP);
+        Matrix::Multiply(world, renderContext.view.frustum.GetMatrix(), data.WVP);
         GBufferPass::SetInputs(renderContext.view, data.GBuffer);
         data.ViewOffset = renderContext.view.Origin + GetPosition();
         if (!instance->SetConstantBuffer(SE_TEXT("data"), &data, sizeof(data)))
@@ -140,7 +153,7 @@ namespace SE
         if (RenderSkyType == SkyType::SkyBox)
         {
             GPUTexture* texture = CubeTexture ? CubeTexture->GetTexture() : nullptr;
-            if (!texture || !instance->SetTexture(SE_TEXT("SkyBoxTex"), texture->ViewArray()))
+            if (!texture || !instance->SetTexture(SE_TEXT("SkyBoxTex"), texture->View()))
             {
                 return nullptr;
             }

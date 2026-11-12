@@ -15,7 +15,6 @@ RUNTIME_ADD(
         RenderGeometry.h
         RenderGeometry.cpp
         GPUPipelineState.h
-        GPUPipelineStatePermutations.h
         GPUUtils.h
         GPUUtils.cpp
 )

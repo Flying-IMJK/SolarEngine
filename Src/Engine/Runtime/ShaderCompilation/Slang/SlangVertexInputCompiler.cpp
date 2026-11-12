@@ -27,14 +27,19 @@ namespace SE
                 return false;
             }
 
+            const bool isHalf  = scalar == slang::TypeReflection::ScalarType::Float16;
             const bool isFloat = scalar == slang::TypeReflection::ScalarType::Float32;
-            const bool isInt = scalar == slang::TypeReflection::ScalarType::Int32;
-            const bool isUInt = scalar == slang::TypeReflection::ScalarType::UInt32;
-            if (!isFloat && !isInt && !isUInt)
+            const bool isInt   = scalar == slang::TypeReflection::ScalarType::Int32;
+            const bool isUInt  = scalar == slang::TypeReflection::ScalarType::UInt32;
+            if (!isHalf && !isFloat && !isInt && !isUInt)
             {
                 return false;
             }
-            if (isFloat)
+            if (isHalf)
+            {
+                shaderType = static_cast<SLC2VertexInputType>(static_cast<byte>(SLC2VertexInputType::Half) + componentCount - 1);
+            }
+            else if (isFloat)
             {
                 shaderType = static_cast<SLC2VertexInputType>(static_cast<byte>(SLC2VertexInputType::Float) + componentCount - 1);
             }
@@ -165,7 +170,7 @@ namespace SE
                 error = SE_TEXT("Vertex input signature contains an invalid system or empty semantic.");
                 return false;
             }
-            if (static_cast<byte>(element.ShaderType) > static_cast<byte>(SLC2VertexInputType::UInt4))
+            if (static_cast<byte>(element.ShaderType) > static_cast<byte>(SLC2VertexInputType::Half4))
             {
                 error = SE_TEXT("Vertex input signature contains an unknown ShaderType.");
                 return false;

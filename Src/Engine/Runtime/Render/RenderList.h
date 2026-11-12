@@ -577,7 +577,7 @@ namespace SE
         /// <param name="renderContext">The rendering context.</param>
         /// <param name="listType">The collected draw calls list type.</param>
         /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
-        FORCE_INLINE void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsListType listType, Function<void(IMaterial*)> prepareDraw = nullptr, GPUTextureView* input = nullptr)
+        FORCE_INLINE void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsListType listType, Function<void(IMaterial*)> prepareDraw = {}, GPUTextureView* input = nullptr)
         {
             ExecuteDrawCalls(renderContext, DrawCallsLists[(int32)listType], DrawCalls, prepareDraw, input);
         }
@@ -588,7 +588,7 @@ namespace SE
         /// <param name="renderContext">The rendering context.</param>
         /// <param name="list">The collected draw calls indices list.</param>
         /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
-        FORCE_INLINE void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, Function<void(IMaterial*)> prepareDraw = nullptr, GPUTextureView* input = nullptr)
+        FORCE_INLINE void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, Function<void(IMaterial*)> prepareDraw = {}, GPUTextureView* input = nullptr)
         {
             ExecuteDrawCalls(renderContext, list, DrawCalls, prepareDraw, input);
         }
@@ -600,11 +600,24 @@ namespace SE
         /// <param name="list">The collected draw calls indices list.</param>
         /// <param name="drawCalls">The collected draw calls list.</param>
         /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
-        void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, Function<void(IMaterial*)> prepareDraw = nullptr, GPUTextureView* input);
+        void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, Function<void(IMaterial*)> prepareDraw, GPUTextureView* input);
 
 
     private:
         DynamicVertexBuffer m_InstanceBuffer;
+
+        struct DrawSubmitContext
+        {
+            const RenderContext*       renderContext;
+            const DrawCall*            draw;
+            uint32                     instanceCount;
+            GPUBuffer*                 pInstances;
+            uint32                     offset;
+            IMaterial::BindParameters* bindParameters;
+            Function<void(IMaterial*)>* PrepareDraw;
+        };
+
+        void DrawSubmit(DrawSubmitContext& submitContext);
     };
 
 
