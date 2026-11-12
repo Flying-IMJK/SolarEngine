@@ -12,12 +12,12 @@ namespace SE.Editor
         public const float MinimumWidth = 900;
         private const float RowHeight = 24;
         private static readonly string[] s_Headers = { "GPU event", "GPU ms", "Parent %", "Draw", "Dispatch", "Vertices", "Triangles", "PS changes" };
-        private readonly ProfilerModule m_Profiler;
+        private readonly ProfilerGpuMode m_Profiler;
         private ulong m_Snapshot;
         private int m_Version;
         private int m_Hover = -1;
 
-        public ProfilerGpuHierarchy(ProfilerModule profiler)
+        public ProfilerGpuHierarchy(ProfilerGpuMode profiler)
         {
             m_Profiler = profiler;
             TooltipText = "Click to inspect. Double-click to fold/unfold. GPU durations have no absolute positions in this view.";

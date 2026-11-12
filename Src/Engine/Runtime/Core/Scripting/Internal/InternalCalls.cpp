@@ -1,10 +1,7 @@
 #include "InternalCalls.h"
 
-#include "Runtime/Core/Profiler/ProfilerCPU.h"
-#include "Runtime/Core/Profiler/ProfilerGPU.h"
 #include "Runtime/Core/Logging/LoggingSystem.h"
 #include "Runtime/Core/Thread/ThreadLocal.h"
-#include "Runtime/Core/Types/Collections/ChunkedArray.h"
 #include "Runtime/Core/Thread/Threading.h"
 #include "Runtime/Core/Scripting/ScriptingObject.h"
 #include "Runtime/Core/Scripting/ManagedCLR/CLRException.h"
@@ -79,97 +76,6 @@ namespace SE
 		ex.Log(Log::Severity::Error, objName.GetText());
 	}
 
-	namespace
-	{
-#if SE_PROFILER
-		List<int32, InlinedAllocation<32>> ManagedEventsGPU;
-#if TRACY_ENABLE && !PROFILE_CPU_USE_TRANSIENT_DATA
-		CriticalSection ManagedSourceLocationsLocker;
-
-		struct Location
-		{
-			String Name;
-			StringAnsi NameAnsi;
-			tracy::SourceLocationData SrcLocation;
-		};
-
-		ChunkedArray<Location, 256> ManagedSourceLocations;
-		Threading::ThreadLocal<uint32> ManagedEventsCount;
-#endif
-#endif
-	}
-
-	DEFINE_INTERNAL_CALL(void) Internal_BeginEvent(CLRString* nameObj)
-	{
-#if SE_PROFILER
-		StringView name;
-		CLRUtils::ToString(nameObj, name);
-		ProfilerCPU::BeginEvent(*name);
-#if TRACY_ENABLE
-#if PROFILE_CPU_USE_TRANSIENT_DATA
-		tracy::ScopedZone::Begin(__LINE__, __FILE__, strlen( __FILE__ ), __FUNCTION__, strlen( __FUNCTION__ ), name.Get(), name.Length() );
-#else
-		Threading::ScopeLock lock(ManagedSourceLocationsLocker);
-		tracy::SourceLocationData* srcLoc = nullptr;
-		for (auto e = ManagedSourceLocations.Begin(); e.IsNotEnd(); ++e)
-		{
-			if (name == e->Name)
-			{
-				srcLoc = &e->SrcLocation;
-				break;
-			}
-		}
-		if (!srcLoc)
-		{
-			auto& e = ManagedSourceLocations.AddOne();
-			e.Name = name;
-			e.NameAnsi = name.Get();
-			srcLoc = &e.SrcLocation;
-			srcLoc->name = e.NameAnsi.Get();
-			srcLoc->function = nullptr;
-			srcLoc->file = nullptr;
-			srcLoc->line = 0;
-			srcLoc->color = 0;
-		}
-		//static constexpr tracy::SourceLocationData tracySrcLoc{ nullptr, __FUNCTION__, __FILE__, (uint32_t)__LINE__, 0 };
-		if (tracy::ScopedZone::Begin(srcLoc))
-			ManagedEventsCount.Get()++;
-#endif
-#endif
-#endif
-	}
-
-	DEFINE_INTERNAL_CALL(void) Internal_EndEvent()
-	{
-#if SE_PROFILER
-#if TRACY_ENABLE
-		uint32& tracyActive = ManagedEventsCount.Get();
-		if (tracyActive > 0)
-		{
-			tracyActive--;
-			tracy::ScopedZone::End();
-		}
-#endif
-		ProfilerCPU::EndEvent();
-#endif
-	}
-
-	DEFINE_INTERNAL_CALL(void) Internal_BeginEventGPU(CLRString* nameObj)
-	{
-#if SE_PROFILER
-		const StringView nameChars = CLRCore::String::GetChars(nameObj);
-		const auto index = ProfilerGPU::BeginEvent(nameChars.Get());
-		ManagedEventsGPU.Push(index);
-#endif
-	}
-
-	DEFINE_INTERNAL_CALL(void) Internal_EndEventGPU()
-	{
-#if SE_PROFILER
-		const auto index = ManagedEventsGPU.Pop();
-		ProfilerGPU::EndEvent(index);
-#endif
-	}
 
 	void RegisterInternalCalls()
 	{

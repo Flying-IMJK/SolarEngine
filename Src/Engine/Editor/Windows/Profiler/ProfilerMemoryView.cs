@@ -6,7 +6,7 @@ namespace SE.Editor
     /// <summary>Cached process, system, GPU and managed memory trends.</summary>
     internal sealed class ProfilerMemoryView : Control
     {
-        private readonly ProfilerModule m_Profiler;
+        private readonly ProfilerMemoryMode m_Profiler;
         private ulong m_Snapshot;
         private ulong m_OverviewFirst;
         private static readonly string[] s_Titles =
@@ -19,7 +19,7 @@ namespace SE.Editor
             "GC: gen0 / gen1 / gen2, process cumulative"
         };
 
-        public ProfilerMemoryView(ProfilerModule profiler)
+        public ProfilerMemoryView(ProfilerMemoryMode profiler)
         {
             m_Profiler = profiler;
             TooltipText = "Click a memory sample for exact values.";

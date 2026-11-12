@@ -12,7 +12,7 @@ namespace SE.Editor
     internal sealed class ProfilerCpuTimeline : Control
     {
         private const float RowHeight = 22;
-        private readonly ProfilerModule m_Profiler;
+        private readonly ProfilerCpuMode m_Profiler;
         private readonly List<Bar> m_Bars = new List<Bar>();
         private readonly List<Header> m_Headers = new List<Header>();
         private ulong m_Snapshot;
@@ -43,9 +43,11 @@ namespace SE.Editor
             public bool Incomplete;
         }
 
-        public ProfilerCpuTimeline(ProfilerModule profiler)
+        public ProfilerCpuTimeline(ProfilerCpuMode profiler)
         {
             AnchorPreset = AnchorPresets.HorizontalStretchTop;
+            // Stretching the width disables scrolling by default; the thread tracks still need a vertical scroll extent.
+            IsScrollable = true;
             m_Profiler = profiler;
             TooltipText = "Click to inspect. Double-click to focus. Ctrl+wheel to zoom. Middle-drag to pan. Scroll vertically.";
         }
@@ -283,7 +285,7 @@ namespace SE.Editor
             }
             if (button == MouseButton.Middle && m_End > m_Begin)
             {
-                m_Profiler.Pause();
+                m_Profiler.Profiler.Pause();
                 m_Panning = true;
                 m_PanSnapshot = m_Snapshot;
                 m_PanX = location.X;

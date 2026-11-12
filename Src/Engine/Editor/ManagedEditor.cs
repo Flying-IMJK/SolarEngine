@@ -91,7 +91,9 @@ namespace SE.Editor
 
             foreach (EditorModule module in m_Modules)
             {
+                SE.Profiler.BeginEvent($"{module.GetType().Name}.Update");
                 module.OnUpdate();
+                SE.Profiler.EndEvent();
             }
         }
 
@@ -104,7 +106,9 @@ namespace SE.Editor
 
             foreach (EditorModule module in m_Modules)
             {
+                SE.Profiler.BeginEvent($"{module.GetType().Name}.LateUpdate");
                 module.OnLateUpdate();
+                SE.Profiler.EndEvent();
             }
         }
 
@@ -117,7 +121,9 @@ namespace SE.Editor
 
             foreach (EditorModule module in m_Modules)
             {
+                SE.Profiler.BeginEvent($"{module.GetType().Name}.Render");
                 module.OnRender();
+                SE.Profiler.EndEvent();
             }
         }
 

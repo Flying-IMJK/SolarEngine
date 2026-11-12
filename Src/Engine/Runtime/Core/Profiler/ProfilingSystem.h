@@ -13,16 +13,18 @@ namespace SE
 {
     struct ProfilerLocalData;
 
+    using CaptureState  = ProfilerCaptureState;
+    using StopReason    = ProfilerStopReason;
+    using CaptureResult = ProfilerCaptureResult;
+    using CaptureInfo   = ProfilerCaptureInfo;
+    using CaptureFrame  = ProfilerCaptureFrame;
+    using FrameViewInfo = ProfilerFrameViewInfo;
+
     class SE_API_RUNTIME ProfilingSystem : public ISystem
     {
         ENGINE_SYSTEM(ProfilingSystem)
     public:
-        using CaptureState  = ProfilerCaptureState;
-        using StopReason    = ProfilerStopReason;
-        using CaptureResult = ProfilerCaptureResult;
-        using CaptureInfo   = ProfilerCaptureInfo;
-        using CaptureFrame  = ProfilerCaptureFrame;
-        using FrameViewInfo = ProfilerFrameViewInfo;
+
 
         // The single capacity setting for CPU, GPU and memory sample histories.
         static constexpr int32 MaxSamples         = 600;
@@ -73,8 +75,7 @@ namespace SE
                                        List<byte>&                 text,
                                        List<ProfilerCpuStatistic>& statistics);
 
-        CaptureResult
-        ReadFrameView(uint64 sessionId, uint64 snapshotId, FrameViewInfo& info, List<CaptureFrame>& frames);
+        CaptureResult ReadFrameView(uint64 sessionId, uint64 snapshotId, FrameViewInfo& info, List<CaptureFrame>& frames);
         CaptureResult ReadCaptureThreads(uint64                   sessionId,
                                          int32                    first,
                                          int32&                   total,

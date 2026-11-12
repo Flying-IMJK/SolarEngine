@@ -1,7 +1,7 @@
 using System;
 using SE.GUI;
 using CpuStatistic = SE.ProfilerCpuStatistic;
-using SortColumn = SE.Editor.ProfilerModule.StatisticSortColumn;
+using SortColumn = SE.Editor.ProfilerCpuMode.StatisticSortColumn;
 
 namespace SE.Editor
 {
@@ -11,12 +11,12 @@ namespace SE.Editor
         public const float RowHeight = 24;
         public const float MinimumWidth = 800;
         private static readonly string[] s_Headers = { "Source", "Calls", "End unknown", "Total (ms)", "Self (ms)", "Average (ms)", "Max (ms)" };
-        private readonly ProfilerModule m_Profiler;
+        private readonly ProfilerCpuMode m_Profiler;
         private ulong m_DrawnSnapshot;
         private int m_DrawnVersion = -1;
         private int m_Hover = -1;
 
-        public ProfilerCpuStatistics(ProfilerModule profiler)
+        public ProfilerCpuStatistics(ProfilerCpuMode profiler)
         {
             m_Profiler = profiler;
             TooltipText = "Click a header to sort. Click a source to inspect its largest complete instance. Double-click to locate it on the timeline.";

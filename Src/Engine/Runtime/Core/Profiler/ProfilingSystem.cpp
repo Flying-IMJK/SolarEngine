@@ -1,10 +1,15 @@
 #include <Runtime/Core/Profiler/ProfilingSystem.h>
+
+#include "Runtime/Core/Scripting/ManagedCLR/CLRUtils.h"
+#include "Runtime/Core/Thread/ThreadLocal.h"
+#include "Runtime/Core/Types/Collections/ChunkedArray.h"
 #include <Runtime/Core/Profiler/ProfilerLocalData.h>
 #include <Runtime/Core/Thread/Threading.h>
 #include <Runtime/Engine.h>
 #include <Runtime/Graphics/GPUContext.h>
 #include <Runtime/Graphics/GPUDevice.h>
 #include <Runtime/Graphics/GPUTimerQuery.h>
+#include <Runtime/Core/Scripting/Internal/InternalCalls.h>
 
 namespace SE
 {
@@ -35,6 +40,103 @@ namespace SE
         text.Add(reinterpret_cast<const byte*>(pValue), static_cast<int32>(StringUtils::Length(pValue)) + 1);
         return offset;
     }
+
+
+    
+	namespace
+    {
+#if SE_PROFILER
+        List<int32, InlinedAllocation<32>> ManagedEventsGPU;
+#if TRACY_ENABLE && !PROFILE_CPU_USE_TRANSIENT_DATA
+        CriticalSection ManagedSourceLocationsLocker;
+
+        struct Location
+        {
+            String                    Name;
+            StringAnsi                NameAnsi;
+            tracy::SourceLocationData SrcLocation;
+        };
+
+        ChunkedArray<Location, 256>    ManagedSourceLocations;
+        Threading::ThreadLocal<uint32> ManagedEventsCount;
+#endif
+#endif
+    } // namespace
+
+    DEFINE_INTERNAL_CALL(void) Native_BeginEvent(CLRString* nameObj)
+    {
+#if SE_PROFILER
+        StringView name;
+        CLRUtils::ToString(nameObj, name);
+        ProfilerCPU::BeginEvent(*name);
+#if TRACY_ENABLE
+#if PROFILE_CPU_USE_TRANSIENT_DATA
+        tracy::ScopedZone::Begin(
+            __LINE__, __FILE__, strlen(__FILE__), __FUNCTION__, strlen(__FUNCTION__), name.Get(), name.Length());
+#else
+        Threading::ScopeLock       lock(ManagedSourceLocationsLocker);
+        tracy::SourceLocationData* srcLoc = nullptr;
+        for (auto e = ManagedSourceLocations.Begin(); e.IsNotEnd(); ++e)
+        {
+            if (name == e->Name)
+            {
+                srcLoc = &e->SrcLocation;
+                break;
+            }
+        }
+        if (!srcLoc)
+        {
+            auto& e          = ManagedSourceLocations.AddOne();
+            e.Name           = name;
+            e.NameAnsi       = name.Get();
+            srcLoc           = &e.SrcLocation;
+            srcLoc->name     = e.NameAnsi.Get();
+            srcLoc->function = nullptr;
+            srcLoc->file     = nullptr;
+            srcLoc->line     = 0;
+            srcLoc->color    = 0;
+        }
+        // static constexpr tracy::SourceLocationData tracySrcLoc{ nullptr, __FUNCTION__, __FILE__, (uint32_t)__LINE__,
+        // 0 };
+        if (tracy::ScopedZone::Begin(srcLoc))
+            ManagedEventsCount.Get()++;
+#endif
+#endif
+#endif
+    }
+
+    DEFINE_INTERNAL_CALL(void) Native_EndEvent()
+    {
+#if SE_PROFILER
+#if TRACY_ENABLE
+        uint32& tracyActive = ManagedEventsCount.Get();
+        if (tracyActive > 0)
+        {
+            tracyActive--;
+            tracy::ScopedZone::End();
+        }
+#endif
+        ProfilerCPU::EndEvent();
+#endif
+    }
+
+    DEFINE_INTERNAL_CALL(void) Native_BeginEventGPU(CLRString* nameObj)
+    {
+#if SE_PROFILER
+        const StringView nameChars = CLRCore::String::GetChars(nameObj);
+        const auto       index     = ProfilerGPU::BeginEvent(nameChars.Get());
+        ManagedEventsGPU.Push(index);
+#endif
+    }
+
+    DEFINE_INTERNAL_CALL(void) Native_EndEventGPU()
+    {
+#if SE_PROFILER
+        const auto index = ManagedEventsGPU.Pop();
+        ProfilerGPU::EndEvent(index);
+#endif
+    }
+
 
     ProfilingSystem::ProfilingSystem() : ISystem(SE_TEXT("Profiling"))
     {
@@ -432,7 +534,7 @@ namespace SE
         return 0;
     }
 
-    ProfilingSystem::CaptureResult ProfilingSystem::StartCapture()
+    CaptureResult ProfilingSystem::StartCapture()
     {
         if (!Threading::IsMainThread())
         {
@@ -486,7 +588,7 @@ namespace SE
         return CaptureResult::Ok;
     }
 
-    ProfilingSystem::CaptureResult ProfilingSystem::StopCapture()
+    CaptureResult ProfilingSystem::StopCapture()
     {
         if (!Threading::IsMainThread())
             return CaptureResult::WrongThread;
@@ -508,14 +610,16 @@ namespace SE
         return CaptureResult::Ok;
     }
 
-    ProfilingSystem::CaptureResult ProfilingSystem::ClearCapture()
+    CaptureResult ProfilingSystem::ClearCapture()
     {
         if (!Threading::IsMainThread())
             return CaptureResult::WrongThread;
         Threading::ScopeLock lock(m_CaptureLocker);
         UpdateCaptureState();
         if (m_Local->Recording)
+        {
             return CaptureResult::Busy;
+        }
         DrainCollector(true);
         ResetView();
         ResetMemoryHistory();
@@ -535,7 +639,7 @@ namespace SE
         return CaptureResult::Ok;
     }
 
-    ProfilingSystem::CaptureResult ProfilingSystem::GetCaptureInfo(CaptureInfo& info)
+    CaptureResult ProfilingSystem::GetCaptureInfo(CaptureInfo& info)
     {
         info = CaptureInfo();
         if (!Threading::IsMainThread())
@@ -546,8 +650,7 @@ namespace SE
         return CaptureResult::Ok;
     }
 
-    ProfilingSystem::CaptureResult
-    ProfilingSystem::ReadCaptureFrame(uint64 sessionId, uint64 index, CaptureFrame& frame)
+    CaptureResult ProfilingSystem::ReadCaptureFrame(uint64 sessionId, uint64 index, CaptureFrame& frame)
     {
         frame = CaptureFrame();
         if (!Threading::IsMainThread())
@@ -644,7 +747,7 @@ namespace SE
         m_Local->Wake.NotifyOne();
     }
 
-    ProfilingSystem::CaptureResult ProfilingSystem::RefreshGpuView(uint64                  sessionId,
+    CaptureResult ProfilingSystem::RefreshGpuView(uint64                  sessionId,
                                                                    uint64                  frameId,
                                                                    CaptureInfo&            capture,
                                                                    ProfilerGpuViewInfo&    info,
@@ -700,7 +803,7 @@ namespace SE
         m_Local->CpuCursors.SetCapacity(0);
     }
 
-    ProfilingSystem::CaptureResult ProfilingSystem::RefreshMemoryOverview(uint64                      sessionId,
+    CaptureResult ProfilingSystem::RefreshMemoryOverview(uint64                      sessionId,
                                                                           int64                       first,
                                                                           ProfilerCaptureInfo&        capture,
                                                                           ProfilerMemoryOverviewInfo& info,
@@ -736,7 +839,7 @@ namespace SE
         m_CurrentMemorySamples  = samples;
         return CaptureResult::Ok;
     }
-    ProfilingSystem::CaptureResult ProfilingSystem::SubmitManagedMemory(uint64 sessionId,
+    CaptureResult ProfilingSystem::SubmitManagedMemory(uint64 sessionId,
                                                                         int64  heapBytes,
                                                                         int64  allocatedBytes,
                                                                         int32  gc0,
@@ -813,8 +916,7 @@ namespace SE
 
     int32 ProfilingSystem::CopyCpuText(const char* pText) { return AddText(m_PendingCpuText, pText); }
 
-    ProfilingSystem::CaptureResult
-    ProfilingSystem::CopyCpuView(uint64 firstSample, int32 sampleCount, uint64 threadId, int32& incomplete)
+    CaptureResult ProfilingSystem::CopyCpuView(uint64 firstSample, int32 sampleCount, uint64 threadId, int32& incomplete)
     {
         m_PendingCpuThreads.Clear();
         m_PendingCpuEvents.Clear();
@@ -946,7 +1048,7 @@ namespace SE
             row.AverageNs = row.Calls != 0 ? static_cast<double>(row.TotalNs) / row.Calls : 0;
     }
 
-    ProfilingSystem::CaptureResult ProfilingSystem::RefreshFrameView(uint64                      sessionId,
+    CaptureResult ProfilingSystem::RefreshFrameView(uint64                      sessionId,
                                                                      uint64                      firstFrame,
                                                                      int32                       count,
                                                                      uint64                      selectionFirst,
@@ -1050,8 +1152,7 @@ namespace SE
         return CaptureResult::Ok;
     }
 
-    ProfilingSystem::CaptureResult
-    ProfilingSystem::ReadFrameView(uint64 sessionId, uint64 snapshotId, FrameViewInfo& info, List<CaptureFrame>& frames)
+    CaptureResult ProfilingSystem::ReadFrameView(uint64 sessionId, uint64 snapshotId, FrameViewInfo& info, List<CaptureFrame>& frames)
     {
         info = FrameViewInfo();
         frames.Clear();
@@ -1069,7 +1170,7 @@ namespace SE
         return CaptureResult::Ok;
     }
 
-    ProfilingSystem::CaptureResult ProfilingSystem::ReadCaptureThreads(uint64                   sessionId,
+    CaptureResult ProfilingSystem::ReadCaptureThreads(uint64                   sessionId,
                                                                        int32                    first,
                                                                        int32&                   total,
                                                                        List<ProfilerCpuThread>& threads,
@@ -1080,23 +1181,35 @@ namespace SE
         text.Clear();
         text.Add(0);
         if (!Threading::IsMainThread())
+        {
             return CaptureResult::WrongThread;
+        }
         Threading::ScopeLock lock(m_CaptureLocker);
         UpdateCaptureState();
         if (!sessionId || sessionId != m_CaptureStateData.SessionId)
+        {
             return CaptureResult::InvalidSession;
+        }
         Dictionary<uint64, const ProfilerLocalData::CpuThread*> directory;
         for (const auto& sample : m_Local->View->Samples)
+        {
             for (const auto& thread : sample->Threads)
+            {
                 directory[thread.Id] = &thread;
+            }
+        }
         total = static_cast<int32>(directory.Count());
         if (first < 0 || first > total)
+        {
             return CaptureResult::InvalidRange;
+        }
         int32 position = 0;
         for (const auto& entry : directory)
         {
             if (position++ < first || threads.Count() == MaxCpuThreads)
+            {
                 continue;
+            }
             ProfilerCpuThread thread;
             thread.Id         = entry.Key;
             thread.NameOffset = AddText(text, entry.Value->Name.Get());
