@@ -1,4 +1,5 @@
-﻿using SE.GUI;
+﻿using SE.Editor.GUI;
+using SE.GUI;
 
 using System;
 
@@ -6,7 +7,7 @@ namespace SE.Editor
 {
     public sealed class ModelOperate : BinaryAssetOperate
     {
-        //private ModelPreview _preview;
+        private ModelPreview m_Preview;
 
         public override string Name => "Model";
         public override string FileExtension => "sge";
@@ -22,48 +23,85 @@ namespace SE.Editor
             return new ModelItem(path, id, typeId);
         }
 
-        /*
-                /// <inheritdoc />
-                public override void OnThumbnailDrawPrepare(ThumbnailRequest request)
+
+        /// <inheritdoc />
+        public override void OnThumbnailDrawPrepare(ThumbnailRequest request)
+        {
+            if (m_Preview == null)
+            {
+                m_Preview = new ModelPreview(false)
                 {
-                    if (_preview == null)
-                    {
-                        _preview = new ModelPreview(false)
-                        {
-                            ScaleToFit = false,
-                        };
-                        InitAssetPreview(_preview);
-                    }
-                }
+                    UseAutomaticTaskManagement = false,
+                    CustomResolution = new Int2(PreviewsCache.AssetIconSize, PreviewsCache.AssetIconSize),
+                };
 
-                /// <inheritdoc />
-                public override bool CanDrawThumbnail(ThumbnailRequest request)
+                // Each atlas entry renders once, without temporal history from a previous model.
+                SceneRenderTask task = m_Preview.GetTask();
+                RenderView view = task.View;
+                view.IsSingleFrame = true;
+                task.View = view;
+            }
+        }
+
+        /// <inheritdoc />
+        public override bool CanDrawThumbnail(ThumbnailRequest request)
+        {
+            Model model = (Model)request.asset;
+            if (!model.IsLoaded() || model.GetLoadedLODs() == 0)
+            {
+                return false;
+            }
+
+            int slotsCount = model.GetMaterialSlotsCount();
+            for (int slotIndex = 0; slotIndex < slotsCount; slotIndex++)
+            {
+                MaterialBase material = model.GetMaterialSlotMaterial(slotIndex);
+                if (material != null && (!material.IsLoaded() || !material.IsReady()))
                 {
-                    return _preview.HasContentLoaded && ThumbnailsModule.HasMinimumQuality((Model)request.Asset);
+                    return false;
                 }
+            }
+            return true;
+        }
 
-                /// <inheritdoc />
-                public override void OnThumbnailDrawBegin(ThumbnailRequest request, ContainerControl guiRoot, GPUContext context)
-                {
-                    _preview.Model = (Model)request.Asset;
-                    _preview.Parent = guiRoot;
-                    _preview.SyncBackbufferSize();
-                    var bounds = _preview.Model.GetBox();
-                    var maxSize = Math.Max(0.001f, (float)bounds.Size.MaxValue);
-                    _preview.ViewportCamera.SetArcBallView(bounds);
-                    _preview.NearPlane = Mathf.Min(10.0f, maxSize * 0.5f);
-                    _preview.FarPlane = Mathf.Max(1000.0f, maxSize * 2 + 100.0f);
+        /// <inheritdoc />
+        public override void OnThumbnailDrawBegin(ThumbnailRequest request, ContainerControl guiRoot, GPUContext context)
+        {
+            m_Preview.Model = (Model)request.asset;
+            m_Preview.Parent = guiRoot;
+            m_Preview.SyncBackbufferSize();
+            m_Preview.ResetCamera();
+            m_Preview.GetTask().OnRender();
+        }
 
-                    _preview.Task.OnDraw();
-                }
+        /// <inheritdoc />
+        public override void OnThumbnailDrawEnd(ThumbnailRequest request, ContainerControl guiRoot)
+        {
+            m_Preview.Model = null;
+            m_Preview.Parent = null;
+        }
 
-                /// <inheritdoc />
-                public override void OnThumbnailDrawEnd(ThumbnailRequest request, ContainerControl guiRoot)
-                {
-                    _preview.Model = null;
-                    _preview.Parent = null;
-                }
-        */
+        public override void OnThumbnailDrawCleanup(ThumbnailRequest request)
+        {
+            // Failed rendering skips DrawEnd; unlink before the scheduler disposes its GUI children.
+            if (m_Preview != null && m_Preview.Model == request.asset)
+            {
+                m_Preview.Model = null;
+                m_Preview.Parent = null;
+            }
+        }
 
+        public override void Dispose()
+        {
+            if (m_Preview != null)
+            {
+                m_Preview.Parent = null;
+                m_Preview.Model = null;
+                m_Preview.Dispose();
+                m_Preview = null;
+            }
+
+            base.Dispose();
+        }
     }
 }
