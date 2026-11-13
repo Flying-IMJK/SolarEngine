@@ -56,6 +56,7 @@ namespace SE
 		/// <summary>
 		/// Gets actor bounding sphere that defines 3D space intersecting with the actor (for determination of the visibility for actor).
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE const BoundingSphere& GetSphere() const
 		{
 			return m_Sphere;
@@ -64,6 +65,7 @@ namespace SE
 		/// <summary>
 		/// Gets actor bounding box that defines 3D space intersecting with the actor (for determination of the visibility for actor).
 		/// </summary>
+		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE const BoundingBox& GetBox() const
 		{
 			return m_Box;

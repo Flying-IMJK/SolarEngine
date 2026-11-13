@@ -122,6 +122,8 @@ namespace SE
 		/// <summary>
 		/// Called by graphics device to draw this task. Can be used to invoke task rendering nested inside another task - use on own risk!
 		/// </summary>
+		/// Call only during rendering on the GPU context thread. Output resources must remain alive through End.
+		SE_FUNCTION(API())
 		virtual void OnRender();
 
 		/// <summary>
@@ -283,6 +285,7 @@ namespace SE
 		/// <summary>
 		/// The actors source to use (configures what objects to render).
 		/// </summary>
+		SE_FIELD(API())
 		ActorsSources ActorsSource = ActorsSources::Scenes;
 
 		/// <summary>

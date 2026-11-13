@@ -32,6 +32,12 @@ namespace SE
         /// Returns true if material is an material instance.
         /// </summary>
         virtual bool IsMaterialInstance() const = 0;
+
+        /// <summary>
+        /// Queries renderer readiness without waiting. Referenced texture residency is checked separately.
+        /// </summary>
+        SE_FUNCTION(API())
+        virtual bool IsReady() const override = 0;
         virtual MaterialShader* GetMaterialShaderObject() const = 0;
 
     public:
@@ -41,6 +47,27 @@ namespace SE
         const List<MaterialParameter>& GetParameters() const
         {
             return Params;
+        }
+
+        /// <summary>
+        /// Gets the parameter count of a loaded material. Query on the thread that owns material edits.
+        /// </summary>
+        SE_FUNCTION(API())
+        int32 GetParametersCount() const
+        {
+            return Params.Count();
+        }
+
+        /// <summary>
+        /// Gets a borrowed asset reference from a valid parameter of a loaded material.
+        /// Returns null for a non-asset or empty value. Does not load assets or resolve base-material overrides.
+        /// Query on the thread that owns material edits; keep the material alive while querying.
+        /// </summary>
+        SE_FUNCTION(API())
+        Asset* GetParameterAsset(int32 parameterIndex) const
+        {
+            ENGINE_ASSERT(IsLoaded() && parameterIndex >= 0 && parameterIndex < Params.Count());
+            return Params[parameterIndex].GetAssetValue();
         }
 
         /// <summary>

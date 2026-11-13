@@ -19,6 +19,8 @@ namespace SE
         /// <summary>
         /// Gets the base material. If value gets changed parameters collection is restored to the default values of the new material.
         /// </summary>
+        /// Returns a borrowed reference, or null if unassigned. Does not wait for loading.
+        SE_FUNCTION(API())
         FORCE_INLINE MaterialBase* GetBaseMaterial() const
         {
             return _baseMaterial;

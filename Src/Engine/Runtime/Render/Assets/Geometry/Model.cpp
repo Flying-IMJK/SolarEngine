@@ -135,6 +135,34 @@ namespace SE
         return LODs[lodIndex].GetBox();
     }
 
+    float Model::GetLODScreenSize(int32 lodIndex) const
+    {
+        ENGINE_ASSERT(IsLoaded() && lodIndex >= 0 && lodIndex < LODs.Count());
+        return LODs[lodIndex].ScreenSize;
+    }
+
+    int32 Model::GetLODVertexCount(int32 lodIndex) const
+    {
+        ENGINE_ASSERT(IsLoaded() && lodIndex >= HighestResidentLODIndex() && lodIndex < LODs.Count());
+        int32 count = 0;
+        for (const Mesh& mesh : LODs[lodIndex].Meshes)
+        {
+            count += mesh.GetVertexCount();
+        }
+        return count;
+    }
+
+    int32 Model::GetLODTriangleCount(int32 lodIndex) const
+    {
+        ENGINE_ASSERT(IsLoaded() && lodIndex >= HighestResidentLODIndex() && lodIndex < LODs.Count());
+        int32 count = 0;
+        for (const Mesh& mesh : LODs[lodIndex].Meshes)
+        {
+            count += mesh.GetTriangleCount();
+        }
+        return count;
+    }
+
     void Model::Render(GPUContext* context, int32 lodIndex)
     {
         LODs[lodIndex].Render(context);

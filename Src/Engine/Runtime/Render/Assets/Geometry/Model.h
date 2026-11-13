@@ -67,6 +67,7 @@ namespace SE
         /// <summary>
         /// Gets the amount of loaded model LODs.
         /// </summary>
+        SE_FUNCTION(API())
         FORCE_INLINE int32 GetLoadedLODs() const
         {
             return m_LoadedLODs;
@@ -172,7 +173,29 @@ namespace SE
         /// </summary>
         /// <param name="lodIndex">The Level Of Detail index.</param>
         /// <returns>The bounding box.</returns>
+        /// The model must be loaded and lodIndex must be valid. Does not wait for loading.
+        SE_FUNCTION(API())
         BoundingBox GetBox(int32 lodIndex = 0) const;
+
+        /// <summary>
+        /// Gets the screen-size threshold of a valid LOD of a loaded model. Does not wait for loading.
+        /// </summary>
+        SE_FUNCTION(API())
+        float GetLODScreenSize(int32 lodIndex) const;
+
+        /// <summary>
+        /// Gets the vertex count of a resident LOD. Query on the thread that owns asset edits.
+        /// The model must be loaded and lodIndex must identify a resident LOD. Does not wait for streaming.
+        /// </summary>
+        SE_FUNCTION(API())
+        int32 GetLODVertexCount(int32 lodIndex) const;
+
+        /// <summary>
+        /// Gets the triangle count of a resident LOD. Query on the thread that owns asset edits.
+        /// The model must be loaded and lodIndex must identify a resident LOD. Does not wait for streaming.
+        /// </summary>
+        SE_FUNCTION(API())
+        int32 GetLODTriangleCount(int32 lodIndex) const;
 
     public:
         /// <summary>

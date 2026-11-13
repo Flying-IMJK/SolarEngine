@@ -101,6 +101,10 @@ namespace SE
         void Serialize(SerializeContext& context) override;
         void Deserialize(DeserializeContext& context) override;
 
+        /// <summary>
+        /// Queries sky resource loading without waiting. Texture mip residency must be checked separately.
+        /// </summary>
+        SE_FUNCTION(API())
         bool HasContentLoaded() const;
         // bool IntersectsItself(const Ray& ray, float& distance, Float3& normal) override;
 

@@ -4,6 +4,12 @@
 
 namespace SE
 {
+    MaterialBase* ModelBase::GetMaterialSlotMaterial(int32 slotIndex) const
+    {
+        ENGINE_ASSERT(IsLoaded() && slotIndex >= 0 && slotIndex < MaterialSlots.Count());
+        return MaterialSlots[slotIndex].Material.Get();
+    }
+
 	void ModelBase::SetupMaterialSlots(int32 slotsCount)
 	{
 		ENGINE_ASSERT(slotsCount >= 0 && slotsCount < 4096);

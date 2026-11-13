@@ -1,12 +1,13 @@
 
-#include "StaticModel.h"
+#include <Runtime/Level/Actors/StaticModel.h>
 
-#include "Runtime/Core/Serialization/Serialization.h"
-#include "Runtime/Engine.h"
-#include "../Scene/Scene.h"
-#include "Runtime/Render/RenderDrawCall.h"
-#include "Runtime/Render/Assets/Geometry/MeshDeformation.h"
-#include "Runtime/Resource/AssetRefSerialize.h"
+#include <Runtime/Core/Serialization/Serialization.h>
+#include <Runtime/Engine.h>
+#include <Runtime/Level/Scene/Scene.h>
+#include <Runtime/Render/RenderDrawCall.h>
+#include <Runtime/Render/Assets/Geometry/MeshDeformation.h>
+#include <Runtime/Render/Utils/RenderUtils.h>
+#include <Runtime/Resource/AssetRefSerialize.h>
 
 namespace SE
 {
@@ -41,6 +42,41 @@ namespace SE
 	{
 		return _lodBias;
 	}
+
+    int32 StaticModel::GetForcedLOD() const
+    {
+        return _forcedLod;
+    }
+
+    void StaticModel::SetForcedLOD(int32 value)
+    {
+        ENGINE_ASSERT(value >= -1 && value < MODEL_MAX_LODS);
+        _forcedLod = static_cast<char>(value);
+    }
+
+    int32 StaticModel::ComputeLODIndex(const RenderContext& renderContext, float& screenSize) const
+    {
+        screenSize = 0.0f;
+        const SE::Model* model = Model.Get();
+        if (!model || !model->IsLoaded() || !model->CanBeRendered())
+        {
+            return -1;
+        }
+
+        const RenderView& view = renderContext.lodProxyView ? *renderContext.lodProxyView : renderContext.view;
+        const Float3 center = m_Sphere.Center - renderContext.view.Origin;
+        screenSize = Math::Sqrt(RenderUtils::ComputeBoundsScreenRadiusSquared(center, m_Sphere.Radius, view)) * 2.0f;
+        int32 lodIndex = _forcedLod;
+        if (lodIndex == -1)
+        {
+            lodIndex = RenderUtils::ComputeModelLOD(model, center, m_Sphere.Radius, renderContext);
+            if (lodIndex == -1)
+            {
+                return -1;
+            }
+        }
+        return model->ClampLODIndex(lodIndex + _lodBias + renderContext.view.ModelLODBias);
+    }
 
 	void StaticModel::SetLODBias(int32 value)
 	{

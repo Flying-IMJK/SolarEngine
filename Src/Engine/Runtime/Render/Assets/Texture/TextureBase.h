@@ -123,6 +123,7 @@ namespace SE
 		/// <summary>
 		/// Gets the total mip levels count of the texture. Actual resident mipmaps count may be different due to dynamic content streaming.
 		/// </summary>
+		SE_FUNCTION(API())
 		int32 GetMipLevels() const;
 
 		/// <summary>

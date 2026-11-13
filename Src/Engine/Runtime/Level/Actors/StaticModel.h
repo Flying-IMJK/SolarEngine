@@ -53,6 +53,27 @@ namespace SE
 		SE_FUNCTION(API(Prop))
 		int32 GetLODBias() const;
 
+        /// <summary>
+        /// Gets the requested LOD, or -1 for automatic selection. The rendered LOD is clamped to residency.
+        /// </summary>
+        SE_FUNCTION(API(Prop))
+        int32 GetForcedLOD() const;
+
+        /// <summary>
+        /// Sets the requested LOD (-1 for automatic, otherwise 0 through MODEL_MAX_LODS - 1).
+        /// Call on the actor update thread. Values outside this range are programming errors.
+        /// </summary>
+        SE_FUNCTION(API(Prop))
+        void SetForcedLOD(int32 value);
+
+        /// <summary>
+        /// Computes the target resident LOD using the renderer selection and bias rules for this context.
+        /// Returns -1 when no loaded resident model is available or the model is culled. During transitions two LODs may be drawn.
+        /// Call on the rendering thread; screenSize receives the diameter relative to the LOD view. Does not wait for streaming.
+        /// </summary>
+        SE_FUNCTION(API())
+        int32 ComputeLODIndex(const RenderContext& renderContext, float& screenSize) const;
+
 		/// <summary>
 		/// Sets the model Level Of Detail bias value. Allows to increase or decrease rendered model quality.
 		/// </summary>
@@ -73,6 +94,10 @@ namespace SE
 		void Deserialize(DeserializeContext& context) override;
 
 		// [ModelInstanceActor]
+        /// <summary>
+        /// Queries model and instance-material loading without waiting. This does not guarantee LOD or texture residency.
+        /// </summary>
+        SE_FUNCTION(API())
 		bool HasContentLoaded() const;
 		const Span<MaterialSlot> GetMaterialSlots() const override;
 		MaterialBase* GetMaterial(int32 entryIndex) override;

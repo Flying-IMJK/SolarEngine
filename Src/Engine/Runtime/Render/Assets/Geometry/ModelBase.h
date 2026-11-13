@@ -99,10 +99,19 @@ namespace SE
         /// <summary>
         /// Gets the amount of the material slots used by this model asset.
         /// </summary>
+        /// Query after loading, on the thread that owns asset edits. Does not wait for loading.
+        SE_FUNCTION(API())
         int32 GetMaterialSlotsCount() const
         {
             return MaterialSlots.Count();
         }
+
+        /// <summary>
+        /// Gets a borrowed material reference from a valid slot of a loaded model, or null for an empty slot.
+        /// Call on the thread that owns asset edits; keep the model alive while querying.
+        /// </summary>
+        SE_FUNCTION(API())
+        MaterialBase* GetMaterialSlotMaterial(int32 slotIndex) const;
 
         /// <summary>
         /// Resizes the material slots collection. Updates meshes that were using removed slots.
@@ -119,6 +128,8 @@ namespace SE
         /// <summary>
         /// Gets amount of the level of details in the model.
         /// </summary>
+        /// Query after loading, on the thread that owns asset edits. Does not wait for loading.
+        SE_FUNCTION(API())
         virtual int32 GetLODsCount() const = 0;
 
         /// <summary>
