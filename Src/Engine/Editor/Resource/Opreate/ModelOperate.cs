@@ -31,6 +31,7 @@ namespace SE.Editor
             {
                 m_Preview = new ModelPreview(false)
                 {
+                    ScaleToFit = false,
                     UseAutomaticTaskManagement = false,
                     CustomResolution = new Int2(PreviewsCache.AssetIconSize, PreviewsCache.AssetIconSize),
                 };
