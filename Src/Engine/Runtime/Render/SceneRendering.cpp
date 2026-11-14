@@ -113,7 +113,7 @@ namespace SE
 		}
 	}
 
-	void SceneRendering::AddRender(IRender* render, int32& key)
+	void SceneRendering::AddRender(RenderActor* render, int32& key)
 	{
 		if (key != -1)
 			return;
@@ -138,7 +138,7 @@ namespace SE
 			listener->OnSceneRenderingAddActor(render);
 	}
 
-	void SceneRendering::UpdateRender(IRender* render, int32& key)
+	void SceneRendering::UpdateRender(RenderActor* render, int32& key)
 	{
 		const int32 category = render->RenderGetDrawCategory();
 		Threading::ScopeLock lock(Locker);
@@ -157,7 +157,7 @@ namespace SE
 		}
 	}
 
-	void SceneRendering::RemoveRender(IRender* render, int32& key)
+	void SceneRendering::RemoveRender(RenderActor* render, int32& key)
 	{
 		const int32 category = render->RenderGetDrawCategory();
 		Threading::ScopeLock lock(Locker);

@@ -2,12 +2,13 @@
 
 #include "RenderContext.h"
 #include "Runtime/Core/Math/BoundingVolumes.h"
-#include "Runtime/Core/Platform/Win32/Win32CriticalSection.h"
-#include "Runtime/Core/Types/Delegate.h"
+#include "Runtime/Core/Platform/CriticalSection.h"
 
 namespace SE
 {
-	class SE_API_RUNTIME IRender
+    class RenderActor;
+
+    class SE_API_RUNTIME IRender
 	{
 	public:
 		virtual ~IRender() = default;
@@ -90,9 +91,9 @@ namespace SE
 		/// </summary>
 		void Clear();
 
-		void AddRender(IRender* render, int32& key);
-		void UpdateRender(IRender* render, int32& key);
-		void RemoveRender(IRender* render, int32& key);
+		void AddRender(RenderActor* render, int32& key);
+        void UpdateRender(RenderActor* render, int32& key);
+        void RemoveRender(RenderActor* render, int32& key);
 
 	private:
 

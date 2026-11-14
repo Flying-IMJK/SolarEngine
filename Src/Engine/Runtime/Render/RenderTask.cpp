@@ -158,9 +158,13 @@ namespace SE
 	SceneRenderTask::~SceneRenderTask()
 	{
 		if (Buffers)
-			Buffers->DeleteObjectNow();
-		/*if (_customActorsScene)
-			Delete(_customActorsScene);*/
+		{
+            Buffers->DeleteObjectNow();
+		}
+		if (m_CustomActorsScene)
+		{
+            Delete(m_CustomActorsScene);
+		}
 	}
 
 	void SceneRenderTask::CameraCut()
@@ -173,13 +177,13 @@ namespace SE
 		return Buffers->GetSize();
 	}
 
-	/*
-	void SceneRenderTask::AddCustomActor(Actor* actor)
+	
+	void SceneRenderTask::AddCustomActor(RenderActor* actor)
 	{
 		CustomActors.AddUnique(actor);
 	}
 
-	void SceneRenderTask::RemoveCustomActor(Actor* actor)
+	void SceneRenderTask::RemoveCustomActor(RenderActor* actor)
 	{
 		CustomActors.Remove(actor);
 	}
@@ -188,7 +192,7 @@ namespace SE
 	{
 		CustomActors.Clear();
 	}
-
+    /*
 	void SceneRenderTask::AddCustomPostFx(PostProcessEffect* fx)
 	{
 		CustomPostFx.AddUnique(fx);
@@ -238,17 +242,26 @@ namespace SE
 		}*/
 	}
 
-	/*void AddActorToSceneRendering(SceneRendering* s, Actor* a)
+	void AddActorToSceneRendering(SceneRendering* s, RenderActor* a)
 	{
 		if (a && a->IsActiveInHierarchy())
 		{
 			int32 key = -1;
-			s->AddActor(a, key);
-			for (Actor* child : a->Children)
-				AddActorToSceneRendering(s, child);
+            s->AddRender(a, key);
+
+			int childrenCount = a->GetChildrenCount();
+            for (int i = 0; i < childrenCount; ++i)
+            {
+                RenderActor* renderActor;
+                if (TypeTryCast<RenderActor>(a->GetChild(i), renderActor))
+                {
+                    AddActorToSceneRendering(s, renderActor);
+                }
+            }
 		}
 	}
 
+    /*
 	bool SortPostFx(PostProcessEffect* const& a, PostProcessEffect* const& b)
 	{
 		return a->Order < b->Order;
@@ -293,26 +306,34 @@ namespace SE
 		// Draw actors (collect draw calls)
 		if (EnumHasAnyFlags(ActorsSource, ActorsSources::CustomActors))
 		{
-			/*if (category == SceneRendering::DrawCategory::PreRender)
+			if (category == SceneRendering::DrawCategory::PreRender)
 			{
-				if (_customActorsScene == nullptr)
-					_customActorsScene = New<SceneRendering>();
+				if (m_CustomActorsScene == nullptr)
+				{
+                    m_CustomActorsScene = New<SceneRendering>();
+				}
 				else
-					_customActorsScene->Clear();
-				for (Actor* a : CustomActors)
-					AddActorToSceneRendering(_customActorsScene, a);
+				{
+                    m_CustomActorsScene->Clear();
+				}
+                for (RenderActor* a : CustomActors)
+				{
+                    AddActorToSceneRendering(m_CustomActorsScene, a);
+				}
 			}
-			ASSERT_LOW_LAYER(_customActorsScene);
-			_customActorsScene->Draw(renderContextBatch, category);*/
+            ASSERT_LOW_LAYER(m_CustomActorsScene);
+			m_CustomActorsScene->Draw(renderContextBatch, category);
 		}
 
 		if (EnumHasAnyFlags(ActorsSource, ActorsSources::CustomScenes))
 		{
-			/*for (Scene* scene : CustomScenes)
+			for (Scene* scene : CustomScenes)
 			{
 				if (scene && scene->IsActiveInHierarchy())
-					scene->Rendering.Draw(renderContextBatch, category);
-			}*/
+				{
+                    scene->Rendering.Draw(renderContextBatch, category);
+				}
+			}
 		}
 
 		if (EnumHasAnyFlags(ActorsSource, ActorsSources::Scenes))

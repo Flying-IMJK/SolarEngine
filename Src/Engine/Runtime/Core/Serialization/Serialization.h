@@ -12,7 +12,7 @@
 //struct Version;
 //struct VariantType;
 //template<typename T>
-//class ScriptingObjectReference;
+//class ScriptingObjectRef;
 //template<typename T>
 //class SoftObjectReference;
 //template<typename T>
@@ -501,49 +501,6 @@ namespace SE
 			v.Deserialize(context);
 		}
 /*
-
-		// Scripting Object
-
-		template<typename T>
-		FORCE_INLINE typename TEnableIf<TIsBaseOf<ScriptingObject, T>::Value, bool>::Type ShouldSerialize(const T*& v, const void* otherObj)
-		{
-			return !otherObj || v != *(T**)otherObj;
-		}
-		template<typename T>
-		FORCE_INLINE typename TEnableIf<TIsBaseOf<ScriptingObject, T>::Value>::Type Serialize(SerializeContext& context, const T*& v)
-		{
-			context.stream.Guid(v ? v->GetID() : Guid::Empty);
-		}
-		template<typename T>
-		FORCE_INLINE typename TEnableIf<TIsBaseOf<ScriptingObject, T>::Value>::Type Deserialize(DeserializeContext& context, T*& v)
-		{
-			Guid id;
-			Deserialize(stream, id);
-			modifier->IdsMapping.TryGet(id, id);
-			v = (T*)::FindObject(id, T::GetStaticClass());
-		}
-
-		// Scripting Object Reference
-
-		template<typename T>
-		FORCE_INLINE bool ShouldSerialize(const ScriptingObjectReference<T>& v, const void* otherObj)
-		{
-			return !otherObj || v.Get() != ((ScriptingObjectReference<T>*)otherObj)->Get();
-		}
-		template<typename T>
-		FORCE_INLINE void Serialize(SerializeContext& context, const ScriptingObjectReference<T>& v)
-		{
-			context.stream.Guid(v.GetID());
-		}
-		template<typename T>
-		FORCE_INLINE void Deserialize(DeserializeContext& context, ScriptingObjectReference<T>& v)
-		{
-			Guid id;
-			Deserialize(stream, id);
-			modifier->IdsMapping.TryGet(id, id);
-			v = id;
-		}
-
 		// Soft Object Reference
 
 		template<typename T>
@@ -562,26 +519,6 @@ namespace SE
 			Guid id;
 			Deserialize(stream, id);
 			modifier->IdsMapping.TryGet(id, id);
-			v = id;
-		}
-
-		// Soft Asset Reference
-
-		template<typename T>
-		FORCE_INLINE bool ShouldSerialize(const SoftAssetReference<T>& v, const void* otherObj)
-		{
-			return !otherObj || v.Get() != ((SoftAssetReference<T>*)otherObj)->Get();
-		}
-		template<typename T>
-		FORCE_INLINE void Serialize(SerializeContext& context, const SoftAssetReference<T>& v)
-		{
-			context.stream.Guid(v.GetID());
-		}
-		template<typename T>
-		FORCE_INLINE void Deserialize(DeserializeContext& context, SoftAssetReference<T>& v)
-		{
-			Guid id;
-			Deserialize(stream, id);
 			v = id;
 		}
 */

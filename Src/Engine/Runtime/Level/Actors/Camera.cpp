@@ -11,7 +11,7 @@ namespace SE
 {
     List<Camera*> Camera::Cameras;
     Camera* Camera::CutSceneCamera = nullptr;
-    // ScriptingObjectReference<Camera> Camera::OverrideMainCamera;
+    // ScriptingObjectRef<Camera> Camera::OverrideMainCamera;
 
     Camera* Camera::GetMainCamera()
     {

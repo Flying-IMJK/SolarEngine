@@ -55,8 +55,7 @@ namespace SE.Editor.GUI
             }
         }
 
-        public ModelPreview(bool useWidgets)
-            : base(new SceneRenderTask(), new FPSCamera(), useWidgets)
+        public ModelPreview(bool useWidgets) : base(new SceneRenderTask(), new FPSCamera(), useWidgets)
         {
             m_Task.Enabled = false;
             m_Task.ActorsSource = ActorsSources.CustomActors;
@@ -65,13 +64,12 @@ namespace SE.Editor.GUI
             FarPlane = 1000.0f;
             RelativePanning = true;
 
-            m_PreviewModel = new StaticModel();
-            m_PreviewLight = new DirectionalLight
-            {
-                Brightness = 8.0f,
-                ShadowsMode = ShadowsCastingMode.None,
-                Orientation = Quaternion.Euler(new Float3(52.1477f, -109.109f, -111.739f)),
-            };
+            m_PreviewModel = Object.New<StaticModel>();
+            m_PreviewLight = Object.New<DirectionalLight>();
+            m_PreviewLight.Brightness = 8.0f;
+            m_PreviewLight.ShadowsMode = ShadowsCastingMode.None;
+            m_PreviewLight.Orientation = Quaternion.Euler(new Float3(52.1477f, -109.109f, -111.739f));
+
             m_Task.AddCustomActor(m_PreviewModel);
             m_Task.AddCustomActor(m_PreviewLight);
             m_Task.Begin += OnPreviewRenderBegin;

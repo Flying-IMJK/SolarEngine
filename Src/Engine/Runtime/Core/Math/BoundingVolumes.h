@@ -643,9 +643,10 @@ namespace SE
         }
     };
 
-
+    SE_STRUCT(API())
     struct SE_API_RUNTIME BoundingSphere
     {
+        SCRIPTING_TYPE_MIN(BoundingSphere)
     public:
         /// <summary>
         /// An empty bounding sphere (Center = 0 and Radius = 0).

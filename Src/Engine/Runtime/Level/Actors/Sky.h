@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Runtime/Core/Scripting/ScriptingObjectRef.h"
+
 #include <Runtime/Level/Actor.h>
 #include <Runtime/Level/Actors/DirectionalLight.h>
 #include <Runtime/Render/Assets/Texture/CubeTexture.h>
@@ -63,20 +65,18 @@ namespace SE
         /// <summary>
         /// Directional light that is used to simulate the sun.
         /// </summary>
-        // SE_PROPERTY(API(Attributes="EditorOrder(10), DefaultValue(null), EditorDisplay(\"Sky\")"))
-        // ScriptingObjectReference<DirectionalLight> SunLight;
+        SE_FIELD(API(Attributes = "EditorOrder(10), DefaultValue(null), EditorDisplay(\"Sky\")"))
+        ScriptingObjectRef<DirectionalLight> SunLight;
 
         /// <summary>
         /// The sun disc scale.
         /// </summary>
-        // SE_PROPERTY(API(Attributes="EditorOrder(20), DefaultValue(2.0f), EditorDisplay(\"Sky\"), Limit(0, 100, 0.01f)"))
         SE_FIELD(API(Attributes="EditorOrder(20), DefaultValue(2.0f), EditorDisplay(\"Sky\"), Limit(0, 100, 0.01f)"))
         float SunDiscScale = 2.0f;
 
         /// <summary>
         /// The sun power.
         /// </summary>
-        // SE_PROPERTY(API(Attributes="EditorOrder(30), DefaultValue(8.0f), EditorDisplay(\"Sky\"), Limit(0, 1000, 0.01f)"))
         SE_FIELD(API(Attributes="EditorOrder(30), DefaultValue(8.0f), EditorDisplay(\"Sky\"), Limit(0, 1000, 0.01f)"))
         float SunPower = 8.0f;
 

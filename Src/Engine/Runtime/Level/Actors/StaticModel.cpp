@@ -57,7 +57,7 @@ namespace SE
     int32 StaticModel::ComputeLODIndex(const RenderContext& renderContext, float& screenSize) const
     {
         screenSize = 0.0f;
-        const SE::Model* model = Model.Get();
+        const ::SE::Model* model = Model.Get();
         if (!model || !model->IsLoaded() || !model->CanBeRendered())
         {
             return -1;

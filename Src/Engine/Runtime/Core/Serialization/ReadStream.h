@@ -177,7 +177,7 @@ namespace SE
 		}
 
 		template<typename T>
-		inline void Read(ScriptingObjectReference<T>& v)
+		inline void Read(ScriptingObjectRef<T>& v)
 		{
 			T* ptr;
 			Read(ptr);

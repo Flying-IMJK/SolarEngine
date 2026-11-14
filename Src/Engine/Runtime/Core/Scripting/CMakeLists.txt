@@ -13,7 +13,6 @@ RUNTIME_ADD(
         ScriptingTypeDefine.h
         ScriptingObject.h
         ScriptingObject.cpp
-
-#        CS
+        ScriptingObjectRef.h
 )
 

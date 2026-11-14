@@ -194,7 +194,7 @@ namespace SE
 		}
 
 		template<typename T>
-		inline void Write(const ScriptingObjectReference<T>& v)
+		inline void Write(const ScriptingObjectRef<T>& v)
 		{
 			Write(v.Get());
 		}

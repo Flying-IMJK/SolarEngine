@@ -190,10 +190,13 @@ namespace SE
 
 	namespace Serialization
 	{
+        SE_API_RUNTIME bool ShouldSerializeRef(const SceneObject* v, const SceneObject* other);
+
 		bool ShouldSerialize(const SceneObject* v, const void* otherObj);
 
 		void Serialize(SerializeContext& context, SceneObject* v);
 
 		void Deserialize(DeserializeContext& context, SceneObject* v);
+
 	}
 } // SE

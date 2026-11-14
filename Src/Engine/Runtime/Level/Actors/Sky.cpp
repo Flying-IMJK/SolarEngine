@@ -83,6 +83,7 @@ namespace SE
         {
             return;
         }
+
         const bool ready = RenderSkyType == SkyType::SkyBox ?
                                SetupProgram(SE_TEXT("SkyBox"), m_PsoSkyBox, m_SkyBoxProgram) :
                                SetupProgram(SE_TEXT("Sky"), m_PsoSky, m_SkyProgram);
@@ -99,7 +100,7 @@ namespace SE
 
         SERIALIZE_GET_OTHER_OBJ(Sky, context.otherObj);
 
-        // SERIALIZE_MEMBER(Sun, SunLight);
+        SERIALIZE_MEMBER(Sun, SunLight);
         SERIALIZE(SunDiscScale);
         SERIALIZE(SunPower);
     }
@@ -109,15 +110,24 @@ namespace SE
         // Base
         Actor::Deserialize(context);
 
-        // DESERIALIZE_MEMBER(Sun, SunLight);
+        DESERIALIZE_MEMBER(Sun, SunLight);
         DESERIALIZE(SunDiscScale);
         DESERIALIZE(SunPower);
     }
 
     bool Sky::HasContentLoaded() const
     {
-        return m_Shader && m_Shader->IsLoaded() &&
-            (RenderSkyType == SkyType::SkyBox && CubeTexture != nullptr && CubeTexture.Get()->IsLoaded());// && AtmospherePreCompute::GetCache(nullptr);
+        if (!m_Shader || !m_Shader->IsLoaded())
+        {
+            return false;
+        }
+
+        if ((RenderSkyType == SkyType::SkyBox && (CubeTexture == nullptr || !CubeTexture.Get()->IsLoaded())))
+        {
+            return false;
+        }
+
+        return true; // && AtmospherePreCompute::GetCache(nullptr);
     }
 
     /*bool Sky::IntersectsItself(const Ray& ray, float& distance, Float3& normal)

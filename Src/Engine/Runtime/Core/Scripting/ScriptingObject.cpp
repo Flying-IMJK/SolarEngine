@@ -8,6 +8,7 @@
 #include "Runtime/Core/Scripting/Internal/InternalCalls.h"
 #include "Runtime/Core/Scripting/ManagedCLR/CLRField.h"
 #include "Runtime/Core/Scripting/ManagedCLR/CLRUtils.h"
+#include "Runtime/Core/Scripting/ScriptingObjectRef.h"
 #include "Runtime/Level/Actor.h"
 
 #include "Runtime/Core/Logging/Logging.h"
@@ -23,6 +24,40 @@ namespace SE
 
     typedef Pair<ScriptingObject*, ScriptingTypeHandle> ScriptingObjectsInterfaceKey;
     Dictionary<ScriptingObjectsInterfaceKey, void*> ScriptingObjectsInterfaceWrappers;
+
+    
+    // =========================================================================
+    // ScriptingObjectRef
+    // =========================================================================
+
+    void ScriptingObjectRefBase::OnSet(ScriptingObject* object)
+    {
+        auto e = m_Object;
+        if (e != object)
+        {
+            if (e)
+            {
+                e->Deleted.Unbind<ScriptingObjectRefBase, &ScriptingObjectRefBase::OnDeleted>(this);
+            }
+            m_Object = e = object;
+            if (e)
+            {
+                e->Deleted.Bind<ScriptingObjectRefBase, &ScriptingObjectRefBase::OnDeleted>(this);
+            }
+            Changed();
+        }
+    }
+
+    void ScriptingObjectRefBase::OnDeleted(ScriptingObject* obj)
+    {
+        if (m_Object == obj)
+        {
+            m_Object->Deleted.Unbind<ScriptingObjectRefBase, &ScriptingObjectRefBase::OnDeleted>(this);
+            m_Object = nullptr;
+            Changed();
+        }
+    }
+
 
     // =========================================================================
     // ScriptingObject

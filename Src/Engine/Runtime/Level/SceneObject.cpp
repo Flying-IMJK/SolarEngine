@@ -138,7 +138,19 @@ namespace SE
 		}*/
 	}
 
-	bool Serialization::ShouldSerialize(const SceneObject* v, const void* otherObj)
+    bool Serialization::ShouldSerializeRef(const SceneObject* v, const SceneObject* other)
+    {
+        bool result = v != other;
+        if (result && v && other && v->HasPrefabLink() && other->HasPrefabLink())
+        {
+            // Special case when saving reference to prefab object and the objects are different but the point to the same prefab object
+            // In that case, skip saving reference as it's defined in prefab (will be populated via IdsMapping during deserialization)
+            result = v->GetPrefabObjectID() != other->GetPrefabObjectID();
+        }
+        return result;
+    }
+
+    bool Serialization::ShouldSerialize(const SceneObject* v, const void* otherObj)
 	{
 		return !otherObj || v != (SceneObject*)otherObj;
 	}

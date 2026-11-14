@@ -64,6 +64,7 @@ namespace SE
 	struct ReadOnly : public API::Mark
     {};
 
+	// Reuse the existing managed types
 	struct InBuild : public API::Mark
     {
     public:

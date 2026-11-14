@@ -2,6 +2,7 @@
 
 #include "Runtime/Core/Types/UID.h"
 #include "Runtime/Core/Types/Collections/Dictionary.h"
+#include "Runtime/Core/Memory/Allocation.h"
 
 namespace SE
 {

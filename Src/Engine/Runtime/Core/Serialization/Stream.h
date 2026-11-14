@@ -15,7 +15,7 @@ namespace SE
 	class ISerializable;
 	class ScriptingObject;
 	template<typename T>
-	class ScriptingObjectReference;
+	class ScriptingObjectRef;
 	template<typename T>
 	class SoftObjectReference;
 	template<typename T>

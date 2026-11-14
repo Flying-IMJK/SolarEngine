@@ -267,22 +267,22 @@ namespace SE
 
     // Converter for ScriptingObject References.
     template<typename T>
-    class ScriptingObjectReference;
+    class ScriptingObjectRef;
 
     template<typename T>
-    struct CLRConverter<ScriptingObjectReference<T>>
+    struct CLRConverter<ScriptingObjectRef<T>>
     {
-        CLRObject* Box(const ScriptingObjectReference<T>& data, const CLRClass* klass)
+        CLRObject* Box(const ScriptingObjectRef<T>& data, const CLRClass* klass)
         {
             return data.GetManagedInstance();
         }
 
-        void Unbox(ScriptingObjectReference<T>& result, CLRObject* data)
+        void Unbox(ScriptingObjectRef<T>& result, CLRObject* data)
         {
             result = (T*)ScriptingObject::ToNative(data);
         }
 
-        void ToManagedArray(CLRArray* result, const Span<ScriptingObjectReference<T>>& data)
+        void ToManagedArray(CLRArray* result, const Span<ScriptingObjectRef<T>>& data)
         {
             if (data.Length() == 0)
                 return;
@@ -293,7 +293,7 @@ namespace SE
             PlatformAllocator::Free(objects);
         }
 
-        void ToNativeArray(Span<ScriptingObjectReference<T>>& result, const CLRArray* data)
+        void ToNativeArray(Span<ScriptingObjectRef<T>>& result, const CLRArray* data)
         {
             CLRObject** dataPtr = CLRCore::Array::GetAddress<CLRObject*>(data);
             for (int32 i = 0; i < result.Length(); i++)

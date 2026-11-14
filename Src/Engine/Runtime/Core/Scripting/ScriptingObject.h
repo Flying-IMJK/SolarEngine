@@ -5,6 +5,7 @@
 #include "Runtime/Core/Types/Object.h"
 #include "Runtime/Core/Types/Delegate.h"
 #include "Runtime/Core/Types/UID.h"
+#include <Runtime/Core/Serialization/Serialization.h>
 
 namespace SE
 {
@@ -27,7 +28,7 @@ namespace SE
         CLRGCHandle m_GcHandle;
         ScriptingTypeHandle m_Type;
         UID m_Id;
-        bool m_IsRegistered;
+        bool m_IsRegistered = false;
 
     public:
         /// <summary>
@@ -255,4 +256,30 @@ namespace SE
 
     extern SE_API_RUNTIME class ScriptingObject* FindObject(const UID& id, class CLRClass* type);
     
+    namespace Serialization
+    {
+        // Scripting Object
+
+        inline bool ShouldSerializeRef(const ScriptingObject* v, const ScriptingObject* other) { return v != other; }
+
+        template<typename T>
+        FORCE_INLINE typename TEnableIf<TIsBaseOf<ScriptingObject, T>::Value, bool>::Type ShouldSerialize(const T*& v, const void* otherObj)
+        {
+            return !otherObj || v != *(T**)otherObj;
+        }
+        template<typename T>
+        FORCE_INLINE typename TEnableIf<TIsBaseOf<ScriptingObject, T>::Value>::Type Serialize(SerializeContext& context, const T*& v)
+        {
+            context.stream.UUID(v ? v->GetID() : UID::Empty);
+        }
+        template<typename T>
+        FORCE_INLINE typename TEnableIf<TIsBaseOf<ScriptingObject, T>::Value>::Type Deserialize(DeserializeContext& context, T*& v)
+        {
+            UID id;
+            Deserialize(context.stream, id);
+            context.modifier->IdsMapping.TryGet(id, id);
+            v = (T*)FindObject(id, T::GetStaticClass());
+        }
+    }
+
 } // namespace SE

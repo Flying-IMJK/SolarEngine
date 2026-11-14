@@ -25,7 +25,7 @@ class SE_API_RUNTIME Camera final : public Actor
     static Camera* CutSceneCamera;
 
     // The overriden main camera.
-    // static ScriptingObjectReference<Camera> OverrideMainCamera;
+    // static ScriptingObjectRef<Camera> OverrideMainCamera;
 
     // Gets the main camera.
     static Camera* GetMainCamera();

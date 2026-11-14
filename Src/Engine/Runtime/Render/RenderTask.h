@@ -8,13 +8,18 @@
 #include "Runtime/Core/Types/Object.h"
 #include "Runtime/Core/Types/Delegate.h"
 #include "Runtime/Core/Scripting/ScriptingObject.h"
+#include "Runtime/Core/Scripting/ScriptingObjectRef.h"
 
 #include "Runtime/API.h"
 #include "Runtime/Graphics/Viewport.h"
+#include "Runtime/Resource/Storage/AssetStorages.h"
 
 namespace SE
 {
-	struct RenderContext;
+    class RenderActor;
+    class Scene;
+    class Actor;
+    struct RenderContext;
 	class RenderBuffers;
 	class GPUDevice;
 	class GPUContext;
@@ -228,7 +233,7 @@ namespace SE
 	{
 		SCRIPTING_TYPE(SceneRenderTask);
 	protected:
-		// class SceneRendering* _customActorsScene = nullptr;
+		class SceneRendering* m_CustomActorsScene = nullptr;
 
 	public:
 		/// <summary>
@@ -274,7 +279,7 @@ namespace SE
 		/// <summary>
 		/// The scene rendering camera. Can be used to override the rendering view properties based on the current camera setup.
 		/// </summary>
-		// ScriptingObjectReference<Camera> Camera;
+		ScriptingObjectRef<Camera> Camera;
 
 		/// <summary>
 		/// The render view description.
@@ -299,11 +304,10 @@ namespace SE
 		// RenderingUpscaleLocation UpscaleLocation = RenderingUpscaleLocation::AfterAntiAliasingPass;
 
 	public:
-		/*
 		/// <summary>
 		/// The custom set of actors to render. Used when ActorsSources::CustomActors flag is active.
 		/// </summary>
-		List<Actor*> CustomActors;
+        List<RenderActor*> CustomActors;
 
 		/// <summary>
 		/// The custom set of scenes to render. Used when ActorsSources::CustomScenes flag is active.
@@ -314,19 +318,21 @@ namespace SE
 		/// Adds the custom actor to the rendering.
 		/// </summary>
 		/// <param name="actor">The actor.</param>
-		void AddCustomActor(Actor* actor);
+		SE_FUNCTION(API())
+        void AddCustomActor(RenderActor* actor);
 
 		/// <summary>
 		/// Removes the custom actor from the rendering.
 		/// </summary>
 		/// <param name="actor">The actor.</param>
-		void RemoveCustomActor(Actor* actor);
+		SE_FUNCTION(API())
+        void RemoveCustomActor(RenderActor* actor);
 
 		/// <summary>
 		/// Removes all the custom actors from the rendering.
 		/// </summary>
+        SE_FUNCTION(API())
 		void ClearCustomActors();
-		*/
 
 	public:
 /*		/// <summary>
