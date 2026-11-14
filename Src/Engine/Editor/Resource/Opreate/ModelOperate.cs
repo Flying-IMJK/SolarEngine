@@ -1,7 +1,8 @@
-﻿using SE.Editor.GUI;
-using SE.GUI;
 
 using System;
+
+using SE.Editor.GUI;
+using SE.GUI;
 
 namespace SE.Editor
 {
@@ -56,7 +57,8 @@ namespace SE.Editor
             int slotsCount = model.GetMaterialSlotsCount();
             for (int slotIndex = 0; slotIndex < slotsCount; slotIndex++)
             {
-                MaterialBase material = model.GetMaterialSlotMaterial(slotIndex);
+                MaterialBase material = model.GetMaterial(slotIndex);
+
                 if (material != null && (!material.IsLoaded() || !material.IsReady()))
                 {
                     return false;

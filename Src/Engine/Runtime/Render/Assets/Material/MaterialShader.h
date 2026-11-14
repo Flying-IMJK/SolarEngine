@@ -26,13 +26,13 @@ namespace SE
         bool HasProgram(const String& programName) const;
 
     public:
-        virtual ~MaterialShader();
+        ~MaterialShader() override;
 
         ShaderProgramInstance* GetProgram() override;
 
         const MaterialInfo& GetInfo() const override;
-        GPUShader*      GetShader() const override;
-        bool                IsReady() const override;
+        GPUShader* GetShader() const override;
+        bool IsReady() const override;
         virtual void Unload();
 
         static MaterialShader* Create(const StringView& name, MemoryReadStream& shaderCacheStream, const MaterialInfo& info);
@@ -41,10 +41,10 @@ namespace SE
     private:
         struct ProgramState
         {
-            String                 Name;
-            bool                   Instanced = false;
-            GPUShaderProgram*  Program   = nullptr;
-            ShaderProgramInstance* Instance  = nullptr;
+            String                      Name;
+            bool                        Instanced = false;
+            GPUShaderProgram*           Program   = nullptr;
+            ShaderProgramInstance*      Instance  = nullptr;
 
             GPUPipelineState::Description Description;
             GPUPipelineState*             Pipeline = nullptr;
@@ -53,7 +53,7 @@ namespace SE
         bool Load(MemoryReadStream& shaderCacheStream, const MaterialInfo& info);
 
         bool                m_IsLoaded = false;
-        GPUShader*      m_Shader   = nullptr;
+        GPUShader*          m_Shader   = nullptr;
         List<ProgramState>  m_Programs;
     };
 } // namespace SE

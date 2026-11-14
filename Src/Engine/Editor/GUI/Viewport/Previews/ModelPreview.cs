@@ -68,7 +68,6 @@ namespace SE.Editor.GUI
             m_PreviewLight = Object.New<DirectionalLight>();
             m_PreviewLight.Brightness = 8.0f;
             m_PreviewLight.ShadowsMode = ShadowsCastingMode.None;
-            m_PreviewLight.Orientation = Quaternion.Euler(new Float3(52.1477f, -109.109f, -111.739f));
 
             m_Task.AddCustomActor(m_PreviewModel);
             m_Task.AddCustomActor(m_PreviewLight);
@@ -201,6 +200,9 @@ namespace SE.Editor.GUI
 
         private void OnPreviewRenderBegin(RenderTask task, GPUContext context)
         {
+            // Tilt the light 45 degrees down from the camera's local view direction.
+            m_PreviewLight.Orientation = ViewOrientation * Quaternion.Euler(45.0f, 0.0f, 0.0f);
+
             // Directional lighting is position-independent; keep its point bounds visible after panning or rotating.
             float distance = NearPlane + (FarPlane - NearPlane) * 0.5f;
             m_PreviewLight.Position = ViewPosition + ViewDirection * distance;

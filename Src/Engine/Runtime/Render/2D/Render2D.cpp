@@ -1046,10 +1046,8 @@ namespace SE
             for (const auto& parameter : parameters)
             {
                 ShaderVar variable;
-                // Preserve optimized-out fields; any present field must match the value's ABI.
-                if (programInstance->FindVar(parameter.Path, variable) &&
-                    (variable.GetLocation().UniformByteSize != parameter.Size ||
-                     !variable.SetUniform(parameter.Value, parameter.Size)))
+                if (programInstance->FindVar(parameter.Path, variable) && 
+                    (variable.GetLocation().UniformByteSize != parameter.Size || !variable.SetUniform(parameter.Value, parameter.Size)))
                 {
                     return;
                 }

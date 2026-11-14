@@ -111,7 +111,10 @@ namespace SE
         /// Call on the thread that owns asset edits; keep the model alive while querying.
         /// </summary>
         SE_FUNCTION(API())
-        MaterialBase* GetMaterialSlotMaterial(int32 slotIndex) const;
+        MaterialBase* GetMaterial(int32 slotIndex) const;
+
+        SE_FUNCTION(API())
+        void SetMaterial(int32 slotIndex, MaterialBase* material);
 
         /// <summary>
         /// Resizes the material slots collection. Updates meshes that were using removed slots.

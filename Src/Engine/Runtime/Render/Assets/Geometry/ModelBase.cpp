@@ -4,17 +4,25 @@
 
 namespace SE
 {
-    MaterialBase* ModelBase::GetMaterialSlotMaterial(int32 slotIndex) const
+    MaterialBase* ModelBase::GetMaterial(int32 slotIndex) const
     {
         ENGINE_ASSERT(IsLoaded() && slotIndex >= 0 && slotIndex < MaterialSlots.Count());
         return MaterialSlots[slotIndex].Material.Get();
     }
 
-	void ModelBase::SetupMaterialSlots(int32 slotsCount)
+    void ModelBase::SetMaterial(int32 slotIndex, MaterialBase* material)
+    {
+		ENGINE_ASSERT(IsLoaded() && slotIndex >= 0 && slotIndex < MaterialSlots.Count());
+        return MaterialSlots[slotIndex].Material.Set(material);
+    }
+
+    void ModelBase::SetupMaterialSlots(int32 slotsCount)
 	{
 		ENGINE_ASSERT(slotsCount >= 0 && slotsCount < 4096);
 		if (!IsVirtual() && WaitForLoaded())
-			return;
+		{
+		    return;
+		}
 
 		Threading::ScopeLock lock(Locker);
 
@@ -23,7 +31,9 @@ namespace SE
 
 		// Initialize slot names
 		for (int32 i = prevCount; i < slotsCount; i++)
-			MaterialSlots[i].Name = String::Format(SE_TEXT("Material {0}"), i + 1);
+		{
+		    MaterialSlots[i].Name = String::Format(SE_TEXT("Material {0}"), i + 1);
+		}
 	}
 
 	MaterialSlot* ModelBase::GetSlot(const StringView& name)

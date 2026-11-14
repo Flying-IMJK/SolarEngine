@@ -1,5 +1,6 @@
 
 using System;
+using System.Drawing;
 
 namespace SE
 {
@@ -27,8 +28,7 @@ namespace SE
         /// <param name="rect">The target rectangle to draw.</param>
         public static void DrawMaterial(MaterialBase material, Rectangle rect)
         {
-            Color color = Color.White;
-            Internal_DrawMaterial(Object.GetUnmanagedPtr(material), rect, color);
+            Internal_DrawMaterial(Object.GetUnmanagedPtr(material), rect, Color.White);
         }
 
         /// <summary>
@@ -43,10 +43,15 @@ namespace SE
         /// <param name="textWrapping">Describes how wrap text inside a layout rectangle.</param>
         /// <param name="baseLinesGapScale">The scale for distance one baseline from another. Default is 1.</param>
         /// <param name="scale">The text drawing scale. Default is 1.</param>
-        public static void DrawText(Font font, string text, Rectangle layoutRect, Color color,
-            TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment
-                .Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f,
-                    float scale = 1.0f)
+        public static void DrawText(Font font,
+                                    string text,
+                                    Rectangle layoutRect,
+                                    Color color,
+                                    TextAlignment horizontalAlignment = TextAlignment.Near,
+                                    TextAlignment verticalAlignment = TextAlignment.Near,
+                                    TextWrapping textWrapping = TextWrapping.NoWrap,
+                                    float baseLinesGapScale = 1.0f,
+                                    float scale = 1.0f)
         {
             TextLayoutOptions layout = new TextLayoutOptions
             {
@@ -75,10 +80,16 @@ namespace SE
         /// <param name="textWrapping">Describes how wrap text inside a layout rectangle.</param>
         /// <param name="baseLinesGapScale">The scale for distance one baseline from another. Default is 1.</param>
         /// <param name="scale">The text drawing scale. Default is 1.</param>
-        public static void DrawText(Font font, MaterialBase customMaterial, string text, Rectangle layoutRect,
-            Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment =
-                TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f,
-                    float scale = 1.0f)
+        public static void DrawText(Font font, 
+                                    MaterialBase customMaterial, 
+                                    string text, 
+                                    Rectangle layoutRect,
+                                    Color color, 
+                                    TextAlignment horizontalAlignment = TextAlignment.Near, 
+                                    TextAlignment verticalAlignment = TextAlignment.Near, 
+                                    TextWrapping textWrapping = TextWrapping.NoWrap, 
+                                    float baseLinesGapScale = 1.0f,
+                                    float scale = 1.0f)
         {
             TextLayoutOptions layout = new TextLayoutOptions
             {
@@ -126,8 +137,7 @@ namespace SE
         /// <param name="depthBuffer"> The depth buffer render target. It's optional parameter but if provided must
         /// match output texture.</param>
         /// <param name="viewProjection">The View*Projection matrix used to transform all rendered vertices.</param>
-        public static void CallDrawing(IDrawable drawableElement, GPUContext context, GPUTexture output,
-            GPUTexture depthBuffer, ref Matrix viewProjection)
+        public static void CallDrawing(IDrawable drawableElement, GPUContext context, GPUTexture output, GPUTexture depthBuffer, ref Matrix viewProjection)
         {
             if (context == null || output == null || drawableElement == null)
             {
@@ -137,8 +147,7 @@ namespace SE
             {
                 if (!depthBuffer.IsAllocated)
                 {
-                    throw new InvalidOperationException(
-"Depth buffer is not allocated. Use GPUTexture.Init before rendering.");
+                    throw new InvalidOperationException("Depth buffer is not allocated. Use GPUTexture.Init before rendering.");
                 }
                 if (output.Size != depthBuffer.Size)
                 {

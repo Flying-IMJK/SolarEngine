@@ -134,6 +134,8 @@ namespace SE
 		renderContext.buffers->Prepare();
 		ShadowsPass::Instance().Prepare();
 
+		renderContextBatch.GetMainContext() = renderContext;
+
 		// Build batch of render contexts (main view and shadow projections)
 		{
 			PROFILE_CPU_NAMED("Collect Draw Calls");

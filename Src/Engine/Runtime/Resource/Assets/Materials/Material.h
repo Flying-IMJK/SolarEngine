@@ -8,7 +8,7 @@ namespace SE
 	class MaterialShader;
 
 	#define MATERIAL_VERSION 1
-#define MATERIAL_FILE_CHUNK_SOURCE_FILES 8
+    #define MATERIAL_FILE_CHUNK_SOURCE_FILES 8
 
     // <summary>
     /// Material asset that contains shader for rendering models on the GPU.

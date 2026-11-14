@@ -4,8 +4,6 @@
 #include <Runtime/Core/Profiler/Profiler.h>
 #include <Runtime/Graphics/GPUContext.h>
 #include <Runtime/Graphics/GPUDevice.h>
-#include <Runtime/Graphics/RenderTargetPool.h>
-#include <Runtime/Graphics/Shaders/GPUConstantBuffer.h>
 #include <Runtime/Graphics/Shaders/ShaderProgramInstance.h>
 #include <Runtime/Graphics/Textures/GPUTexture.h>
 #include <Runtime/Render/PostProcessSettings.h>
@@ -127,13 +125,13 @@ namespace SE
         return true;
     }
 
-    GPUTexture* PostProcessingPass::GetCustomOrDefault(Texture*           customTexture,
-                                                       AssetRef<Texture>& defaultTexture,
-                                                       const Char*        defaultName)
+    GPUTexture* PostProcessingPass::GetCustomOrDefault(Texture* customTexture, AssetRef<Texture>& defaultTexture, const Char* defaultName)
     {
         // Check if use custom texture
         if (customTexture)
+        {
             return customTexture->GetTexture();
+        }
 
         // Check if need to load default texture
         if (defaultTexture == nullptr)
@@ -185,7 +183,9 @@ namespace SE
     void PostProcessingPass::Dispose()
     {
         if (m_Shader)
+        {
             m_Shader->OnReloadingEvent.Unbind<PostProcessingPass, &PostProcessingPass::OnShaderReloading>(this);
+        }
 
         // Base
         RendererPass::Dispose();
@@ -210,10 +210,7 @@ namespace SE
         _defaultLensStar  = nullptr;
     }
 
-    void PostProcessingPass::Render(RenderContext& renderContext,
-                                    GPUTexture*    input,
-                                    GPUTexture*    output,
-                                    GPUTexture*    colorGradingLUT)
+    void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input, GPUTexture* output, GPUTexture* colorGradingLUT)
     {
         PROFILE_GPU_CPU("Post Processing");
         auto  device  = GPUDevice::instance;

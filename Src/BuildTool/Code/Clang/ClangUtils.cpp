@@ -498,9 +498,7 @@ namespace SE::BuildTool
             }
 
             const std::string& name = type.typeID.ToString();
-            return name == "AssetRef" || name == "WeakAssetRef" || name == "SoftAssetRef" ||
-                   name == "AssetReference" || name == "WeakAssetReference" || name == "SoftAssetReference" ||
-                   name == "ScriptingObjectReference";
+            return name == "AssetRef" || name == "WeakAssetRef" || name == "SoftAssetRef" || name == "ScriptingObjectRef";
         }
 
         static bool IsDynamicCollection(TypeInfo const& type)

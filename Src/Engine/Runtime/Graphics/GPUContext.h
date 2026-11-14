@@ -33,6 +33,7 @@ namespace SE
 		double m_LastRenderTime = -1;
 
 		GPUContext(GPUDevice* device);
+
 	public:
         ~GPUContext() override;
         /// <summary>
@@ -42,6 +43,7 @@ namespace SE
 
         bool LoadDefaultResources();
 
+		SE_FUNCTION(API())
 		MaterialBase* GetDefaultMaterial() const;
 
 		/// <summary>
@@ -106,6 +108,7 @@ namespace SE
 		 * @param depthBuffer
 		 * @param rts
 		 */
+		SE_FUNCTION(API())
 		virtual void SetRenderTarget(const Span<GPUTextureView*>& rts, GPUTextureView* depthBuffer) = 0;
 
 		/// <summary>

@@ -115,22 +115,30 @@ namespace SE::BuildTool
     static bool IsStrongObjectReference(TypeInfo const& type)
     {
         return type.genericityArgs.size() == 1 && IsOneOf(type.typeID.ToString(),
-            { "SE::AssetRef", "AssetRef", "SE::AssetReference", "AssetReference",
-              "SE::ScriptingObjectReference", "ScriptingObjectReference" });
+            { 
+                    "SE::AssetRef", "AssetRef", 
+                    "SE::ScriptingObjectRef", "ScriptingObjectRef"
+            });
     }
 
     static bool IsWeakOrSoftReference(TypeInfo const& type)
     {
         return type.genericityArgs.size() == 1 && IsOneOf(type.typeID.ToString(),
-            { "SE::WeakAssetRef", "WeakAssetRef", "SE::SoftAssetRef", "SoftAssetRef",
-              "SE::WeakAssetReference", "WeakAssetReference", "SE::SoftAssetReference", "SoftAssetReference" });
+            { 
+                "SE::WeakAssetRef", "WeakAssetRef", 
+                "SE::SoftAssetRef", "SoftAssetRef"
+            });
     }
 
     static bool IsExplicitlyUnsupportedFamily(TypeInfo const& type)
     {
         return IsOneOf(type.typeID.ToString(),
-            { "SE::Dictionary", "Dictionary", "SE::HashSet", "HashSet", "SE::Function", "Function",
-              "SE::BitArray", "BitArray", "SE::StringAnsi", "StringAnsi", "SE::StringAnsiView", "StringAnsiView" });
+            { "SE::Dictionary", "Dictionary", 
+                    "SE::HashSet", "HashSet", 
+                    "SE::Function", "Function", 
+                    "SE::BitArray", "BitArray", 
+                    "SE::StringAnsi", "StringAnsi", 
+                    "SE::StringAnsiView", "StringAnsiView" });
     }
 
     CollectionInfo GetCollectionInfo(TypeInfo const& type)

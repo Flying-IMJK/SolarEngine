@@ -204,8 +204,15 @@ namespace SE
         /// <param name="baseLinesGapScale">The scale for distance one baseline from another. Default is 1.</param>
         /// <param name="scale">The text drawing scale. Default is 1.</param>
         SE_FUNCTION(API())
-        static void RenderText(Font* font, const StringView& text, const Rectangle& layoutRect, const Color& color, TextAlignment horizontalAlignment = TextAlignment::Near,
-            TextAlignment verticalAlignment = TextAlignment::Near, TextWrapping textWrapping = TextWrapping::NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f);
+        static void RenderText(Font* font, 
+                                const StringView& text, 
+                                const Rectangle& layoutRect, 
+                                const Color& color, 
+                                TextAlignment horizontalAlignment = TextAlignment::Near,
+                                TextAlignment verticalAlignment = TextAlignment::Near, 
+                                TextWrapping textWrapping = TextWrapping::NoWrap,
+                                float baseLinesGapScale = 1.0f, 
+                                float scale = 1.0f);
 
 
         /// <summary>
@@ -222,9 +229,16 @@ namespace SE
         /// <param name="baseLinesGapScale">The scale for distance one baseline from another. Default is 1.</param>
         /// <param name="scale">The text drawing scale. Default is 1.</param>
         SE_FUNCTION(API())
-        static void RenderText(Font* font, MaterialBase* customMaterial, const StringView& text, const Rectangle& layoutRect, const Color& color,
-            TextAlignment horizontalAlignment = TextAlignment::Near, TextAlignment verticalAlignment = TextAlignment::Near,
-            TextWrapping textWrapping = TextWrapping::NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f);
+        static void RenderText(Font* font, 
+                                MaterialBase* customMaterial, 
+                                const StringView& text, 
+                                const Rectangle& layoutRect, 
+                                const Color& color,
+                                TextAlignment horizontalAlignment = TextAlignment::Near, 
+                                TextAlignment verticalAlignment = TextAlignment::Near,
+                                TextWrapping textWrapping = TextWrapping::NoWrap, 
+                                float baseLinesGapScale = 1.0f, 
+                                float scale = 1.0f);
 
         /// <summary>
         /// Draws a text.

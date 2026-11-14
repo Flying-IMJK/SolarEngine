@@ -34,7 +34,9 @@ namespace SE
 		{
 			// Register scene
 			for (const auto& renderContext : renderContextBatch.Contexts)
-				renderContext.list->Scenes.Add(this);
+			{
+			    renderContext.list->Scenes.Add(this);
+			}
 
 			// Add additional lock during scene rendering (prevents any Actors cache modifications on content streaming threads - eg. when model residency changes)
 			Locker.Lock();
@@ -55,7 +57,9 @@ namespace SE
 		const int32 frustumsCount = renderContextBatch.Contexts.Count();
 		m_DrawFrustumsData.Resize(frustumsCount);
 		for (int32 i = 0; i < frustumsCount; i++)
-			m_DrawFrustumsData.Get()[i] = renderContextBatch.Contexts.Get()[i].view.cullingFrustum;
+		{
+		    m_DrawFrustumsData.Get()[i] = renderContextBatch.Contexts.Get()[i].view.cullingFrustum;
+		}
 
 		// Draw all visual components
 		m_DrawListIndex = -1;
@@ -125,17 +129,23 @@ namespace SE
 		for (; key < list.Count(); key++)
 		{
 			if (list.Get()[key].render == nullptr)
-				break;
+			{
+			    break;
+			}
 		}
 		if (key == list.Count())
-			list.AddOne();
+		{
+		    list.AddOne();
+		}
 		auto& e = list[key];
 		e.render = render;
 		e.LayerMask = render->RenderGetLayerMask();
 		e.Bounds = render->RenderGetSphere();
 		// e.NoCulling = a->_drawNoCulling;
 		for (auto* listener : _listeners)
-			listener->OnSceneRenderingAddActor(render);
+		{
+		    listener->OnSceneRenderingAddActor(render);
+		}
 	}
 
 	void SceneRendering::UpdateRender(RenderActor* render, int32& key)
