@@ -470,6 +470,7 @@ namespace SE.Editor
             AssetContent.AssetDisposing += OnContentAssetDisposing;
             Editor.Importing.ImportFileEnd += OnImportFileEnd;
 
+            Operate.Add(new CubeTextureOperate());
             Operate.Add(new TextureOperate());
             Operate.Add(new ModelOperate());
             Operate.Add(new SceneOperate());

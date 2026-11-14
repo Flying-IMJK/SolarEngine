@@ -157,8 +157,8 @@ namespace SE.Editor.GUI
             // Draw asset picker button
             if (CanEdit)
             {
-                Render2D.DrawSprite(EditorIcons.ArrowDown12, pickerIconRect, button1Rect.Contains(m_MousePos) ? style
-                    .Foreground : style.ForegroundGrey);
+                Color pickerColor = button1Rect.Contains(m_MousePos) ? style.Foreground : style.ForegroundGrey;
+                Render2D.DrawSprite(EditorIcons.ArrowDown12, pickerIconRect, pickerColor);
             }
 
             // Keep locate visible even when there is no content item to select.
@@ -174,8 +174,8 @@ namespace SE.Editor.GUI
             {
                 // No element selected
                 Render2D.FillRectangle(iconRect, style.BackgroundNormal);
-                Render2D.DrawText(style.FontMedium, "Multiple\nValues", iconRect, style.Foreground, TextAlignment
-                    .Center, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, Height / DefaultIconSize);
+                Render2D.DrawText(style.FontMedium, "Multiple\nValues", iconRect, style.Foreground, 
+                    TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, Height / DefaultIconSize);
             }
             else if (Validator.SelectedItem != null)
             {
@@ -185,8 +185,8 @@ namespace SE.Editor.GUI
                 // Draw remove button
                 if (CanEdit)
                 {
-                    Render2D.DrawSprite(EditorIcons.Cross16, clearIconRect, button3Rect.Contains(m_MousePos) ? style
-                        .Foreground : style.ForegroundGrey);
+                    Color clearIconColor = button3Rect.Contains(m_MousePos) ? style.Foreground : style.ForegroundGrey;
+                    Render2D.DrawSprite(EditorIcons.Cross16, clearIconRect, clearIconColor);
                 }
             }
             // Check if has no item but has an asset (eg. virtual asset)
@@ -195,8 +195,8 @@ namespace SE.Editor.GUI
                 // Draw remove button
                 if (CanEdit)
                 {
-                    Render2D.DrawSprite(EditorIcons.Cross16, clearIconRect, button3Rect.Contains(m_MousePos) ? style
-                        .Foreground : style.ForegroundGrey);
+                    Color clearIconColor = button3Rect.Contains(m_MousePos) ? style.Foreground : style.ForegroundGrey;
+                    Render2D.DrawSprite(EditorIcons.Cross16, clearIconRect, clearIconColor);
                 }
                 Render2D.FillRectangle(iconRect, style.BackgroundNormal);
             }
@@ -204,8 +204,8 @@ namespace SE.Editor.GUI
             {
                 // No element selected
                 Render2D.FillRectangle(iconRect, style.BackgroundNormal);
-                Render2D.DrawText(style.FontMedium, "No asset\nselected", iconRect, Color.Orange, TextAlignment
-                    .Center, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, Height / DefaultIconSize);
+                Render2D.DrawText(style.FontMedium, "No asset\nselected", iconRect, Color.Orange, 
+                    TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, Height / DefaultIconSize);
             }
 
             // Draw the reference name once for both file-backed and virtual assets.
@@ -227,13 +227,7 @@ namespace SE.Editor.GUI
                     name = Validator.SelectedAsset.GetType().Name;
                 }
                 Render2D.PushClip(nameRect);
-                Render2D.DrawText(
-                                  style.FontSmall,
-                                  name,
-                                  nameRect,
-                                  style.Foreground,
-                                  TextAlignment.Near,
-                                  TextAlignment.Center);
+                Render2D.DrawText(style.FontSmall, name, nameRect, style.Foreground, TextAlignment.Near, TextAlignment.Center);
                 Render2D.PopClip();
             }
 

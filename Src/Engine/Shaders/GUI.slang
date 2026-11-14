@@ -28,6 +28,7 @@ struct BlurData
 ParameterBlock<Data> data;
 ParameterBlock<BlurData> blurData;
 Texture2D ImageTex;
+TextureCube CubeTex;
 SamplerState SamplerLinearClamp;
 SamplerState SamplerPointClamp;
 
@@ -39,6 +40,11 @@ SHADER_PROGRAM(Image,
 SHADER_PROGRAM(ImagePoint,
 	SHADER_VS(VS),
 	SHADER_PS(PS_ImagePoint)
+)
+
+SHADER_PROGRAM(CubeImage,
+	SHADER_VS(VS),
+	SHADER_PS(PS_CubeImage)
 )
 
 SHADER_PROGRAM(Color, 
@@ -102,6 +108,22 @@ float4 PS_ImagePoint(VS2PS input) : SV_Target0
     return ImageTex.Sample(SamplerPointClamp, input.TexCoord) * input.Color;
 }
 
+
+float4 PS_CubeImage(VS2PS input) : SV_Target0
+{
+	PerformClipping(input);
+
+	float2 position = input.TexCoord * float2(2.0, -2.0) + float2(-1.0, 1.0);
+	float radiusSquared = dot(position, position);
+	float radius = sqrt(radiusSquared);
+	float coverage = saturate((1.0 - radius) / max(fwidth(radius), 0.0001));
+
+	// Reconstruct the visible hemisphere and reflect a fixed camera ray into the cube map.
+	float3 normal = float3(position, sqrt(saturate(1.0 - radiusSquared)));
+	float3 direction = reflect(float3(0.0, 0.0, -1.0), normal);
+	float3 color = CubeTex.Sample(SamplerLinearClamp, direction).rgb * input.Color.rgb;
+	return float4(color, coverage * input.Color.a);
+}
 
 float4 PS_Color(VS2PS input) : SV_Target0
 {

@@ -1,6 +1,5 @@
 
 add_subdirectory(Import)
-add_subdirectory(Opreate)
 add_subdirectory(Items)
 add_subdirectory(Tree)
 add_subdirectory(Thumbnails)

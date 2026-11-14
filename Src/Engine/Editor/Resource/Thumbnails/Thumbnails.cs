@@ -418,7 +418,7 @@ asset.GetPath()));
                     m_GuiRoot.UnlockChildrenRecursive();
 
                     // Draw preview
-                    context.Clear(m_Output.View(), Color.Black);
+                    context.Clear(m_Output.View(), Color.Transparent);
                     Render2D.CallDrawing(m_GuiRoot, context, m_Output);
 
                     // Call proxy and cleanup UI (delete create controls, shared controls should be unlinked during

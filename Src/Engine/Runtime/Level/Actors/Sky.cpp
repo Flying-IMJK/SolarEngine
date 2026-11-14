@@ -22,7 +22,7 @@ namespace SE
     });
 
     Sky::Sky(const SpawnParams& params) :
-        RenderActor(params), _shader(nullptr), _psSky(nullptr), _psSkyBox(nullptr), RenderSkyType()
+        RenderActor(params), m_Shader(nullptr), m_PsoSky(nullptr), m_PsoSkyBox(nullptr), RenderSkyType()
     {
         m_DrawNoCulling = 1;
         m_DrawCategory = SceneRendering::PreRender;
@@ -30,18 +30,24 @@ namespace SE
 
     Sky::~Sky()
     {
-        if (_shader)
-            _shader->OnReloadingEvent.Unbind<Sky, &Sky::OnShaderReloading>(this);
+        if (m_Shader)
+        {
+            m_Shader->OnReloadingEvent.Unbind<Sky, &Sky::OnShaderReloading>(this);
+        }
         ReleasePrograms();
     }
 
     bool Sky::SetupProgram(const String& name, GPUPipelineState*& pipeline, ShaderProgramInstance*& instance)
     {
         if (pipeline && instance)
+        {
             return true;
+        }
         GPUShaderProgram* program = nullptr;
-        if (!_shader || !_shader->SelectProgram(name, {}, program))
+        if (!m_Shader || !m_Shader->SelectProgram(name, {}, program))
+        {
             return false;
+        }
         auto description             = GPUPipelineState::Description::Default;
         description.CullMode         = CullMode::Inverted;
         description.DepthWriteEnable = false;
@@ -65,8 +71,8 @@ namespace SE
 
     void Sky::ReleasePrograms()
     {
-        DeleteObjectSafe(_psSky);
-        DeleteObjectSafe(_psSkyBox);
+        DeleteObjectSafe(m_PsoSky);
+        DeleteObjectSafe(m_PsoSkyBox);
         DeleteObjectSafe(m_SkyProgram);
         DeleteObjectSafe(m_SkyBoxProgram);
     }
@@ -74,12 +80,16 @@ namespace SE
     void Sky::RenderDraw(RenderContext& renderContext)
     {
         if (!HasContentLoaded())
+        {
             return;
+        }
         const bool ready = RenderSkyType == SkyType::SkyBox ?
-                               SetupProgram(SE_TEXT("SkyBox"), _psSkyBox, m_SkyBoxProgram) :
-                               SetupProgram(SE_TEXT("Sky"), _psSky, m_SkyProgram);
+                               SetupProgram(SE_TEXT("SkyBox"), m_PsoSkyBox, m_SkyBoxProgram) :
+                               SetupProgram(SE_TEXT("Sky"), m_PsoSky, m_SkyProgram);
         if (ready)
+        {
             renderContext.list->Sky = this;
+        }
     }
 
     void Sky::Serialize(SerializeContext& context)
@@ -106,7 +116,7 @@ namespace SE
 
     bool Sky::HasContentLoaded() const
     {
-        return _shader && _shader->IsLoaded() &&
+        return m_Shader && m_Shader->IsLoaded() &&
             (RenderSkyType == SkyType::SkyBox && CubeTexture != nullptr && CubeTexture.Get()->IsLoaded());// && AtmospherePreCompute::GetCache(nullptr);
     }
 
@@ -128,12 +138,12 @@ namespace SE
         if (RenderSkyType == SkyType::SkyBox)
         {
             instance = m_SkyBoxProgram;
-            pipeline = _psSkyBox;
+            pipeline = m_PsoSkyBox;
         }
         else
         {
             instance = m_SkyProgram;
-            pipeline = _psSky;
+            pipeline = m_PsoSky;
         }
 
         if (instance == nullptr || pipeline == nullptr)
@@ -145,6 +155,7 @@ namespace SE
         Matrix::Multiply(world, renderContext.view.frustum.GetMatrix(), data.WVP);
         GBufferPass::SetInputs(renderContext.view, data.GBuffer);
         data.ViewOffset = renderContext.view.Origin + GetPosition();
+
         if (!instance->SetConstantBuffer(SE_TEXT("data"), &data, sizeof(data)))
         {
             return nullptr;
@@ -170,12 +181,12 @@ namespace SE
 
     void Sky::OnEnable()
     {
-        _shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/Sky"));
-        if (!_shader)
+        m_Shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/Sky"));
+        if (!m_Shader)
             LOG_ERROR("Level", "Cannot load sky shader.");
         else
-            _shader->OnReloadingEvent.Bind<Sky, &Sky::OnShaderReloading>(this);
-        GetScene()->Rendering.AddRender(this, _sceneRenderingKey);
+            m_Shader->OnReloadingEvent.Bind<Sky, &Sky::OnShaderReloading>(this);
+        GetScene()->Rendering.AddRender(this, m_SceneRenderingKey);
 #if USE_EDITOR
         GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -184,13 +195,13 @@ namespace SE
 
     void Sky::OnDisable()
     {
-        if (_shader)
-            _shader->OnReloadingEvent.Unbind<Sky, &Sky::OnShaderReloading>(this);
+        if (m_Shader)
+            m_Shader->OnReloadingEvent.Unbind<Sky, &Sky::OnShaderReloading>(this);
         ReleasePrograms();
 #if USE_EDITOR
         GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-        GetScene()->Rendering.RemoveRender(this, _sceneRenderingKey);
+        GetScene()->Rendering.RemoveRender(this, m_SceneRenderingKey);
         Actor::OnDisable();
     }
 

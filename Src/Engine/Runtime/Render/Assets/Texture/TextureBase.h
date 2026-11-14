@@ -129,6 +129,7 @@ namespace SE
 		/// <summary>
 		/// Gets the current mip levels count of the texture that are on GPU ready to use.
 		/// </summary>
+		SE_FUNCTION(API())
 		int32 GetResidentMipLevels() const;
 
 		/// <summary>

@@ -27,6 +27,7 @@
 
 #include <Runtime/Graphics/Base/RenderGeometry.h>
 #include <Runtime/Graphics/Base/VertexFactoryLayout.h>
+#include <Runtime/Render/Assets/Texture/CubeTexture.h>
 #include <Runtime/Render/RenderContext.h>
 #include <Runtime/Resource/Assets/Materials/Shader.h>
 
@@ -80,6 +81,7 @@ namespace SE
         FillRT,
         FillTexture,
         FillTexturePoint,
+        FillCubeTexture,
         DrawChar,
         DrawCharMaterial,
         Custom,
@@ -169,6 +171,9 @@ namespace SE
 
         GPUPipelineState* PS_ImagePoint;
         ShaderProgramInstance* SP_ImagePoint;
+
+        GPUPipelineState*       PS_CubeImage;
+        ShaderProgramInstance* SP_CubeImage;
 
         GPUPipelineState* PS_Color;
         GPUPipelineState* PS_Color_NoAlpha;
@@ -481,6 +486,7 @@ namespace SE
         CanDrawCallCallbackRT, // FillRT,
         CanDrawCallCallbackTexture, // FillTexture,
         CanDrawCallCallbackTexture, // FillTexturePoint,
+        CanDrawCallCallbackTexture, // FillCubeTexture,
         CanDrawCallCallbackChar, // DrawChar,
         CanDrawCallCallbackCharMaterial, // DrawCharMaterial,
         CanDrawCallCallbackFalse, // Custom,
@@ -971,6 +977,16 @@ namespace SE
             render2DData->Context->SetState(render2DData->CurrentPso->PS_ImagePoint);
             programInstance = render2DData->CurrentPso->SP_ImagePoint;
             programInstance->SetTexture(SE_TEXT("ImageTex"), d.AsTexture.Ptr->View());
+            break;
+        case DrawCallType::FillCubeTexture:
+            if (d.AsTexture.Ptr == nullptr || d.AsTexture.Ptr->ResidentMipLevels() <= 0)
+            {
+                return;
+            }
+
+            render2DData->Context->SetState(render2DData->CurrentPso->PS_CubeImage);
+            programInstance = render2DData->CurrentPso->SP_CubeImage;
+            programInstance->SetTexture(SE_TEXT("CubeTex"), d.AsTexture.Ptr->View());
             break;
         case DrawCallType::DrawChar:
             if (d.AsChar.Tex == nullptr || d.AsChar.Tex->ResidentMipLevels() <= 0)
@@ -1672,6 +1688,19 @@ namespace SE
         DrawTexture(static_cast<TextureBase*>(t), rect, color);
     }
 
+    void Render2D::DrawCubeTexture(CubeTexture* pTexture, const Rectangle& rect, const Color& color)
+    {
+        RENDER2D_CHECK_RENDERING_STATE;
+
+        Render2DDrawCall drawCall;
+        drawCall.Type          = DrawCallType::FillCubeTexture;
+        drawCall.StartIB       = render2DData->IBIndex;
+        drawCall.CountIB       = 6;
+        drawCall.AsTexture.Ptr = pTexture ? pTexture->GetTexture() : nullptr;
+        render2DData->DrawCalls.Add(drawCall);
+        WriteRect(rect, color);
+    }
+
     void Render2D::DrawSprite(const SpriteHandle& spriteHandle, const Rectangle& rect, const Color& color)
     {
         RENDER2D_CHECK_RENDERING_STATE;
@@ -2173,6 +2202,16 @@ namespace SE
         SP_ImagePoint->Initialize(program);
 
         //
+        PS_CubeImage = device->CreatePipelineState();
+        SP_CubeImage = New<ShaderProgramInstance>();
+
+        if (!shader->GetOrCreateProgram(SE_TEXT("CubeImage"), program) || !PS_CubeImage->Init(desc, program))
+        {
+            return false;
+        }
+        SP_CubeImage->Initialize(program);
+
+        //
         desc.BlendMode = BlendingMode::AlphaBlend;
         PS_Color       = device->CreatePipelineState();
         SP_Color       = New<ShaderProgramInstance>();
@@ -2264,6 +2303,7 @@ namespace SE
 
         DeleteObjectSafe(PS_Image);
         DeleteObjectSafe(PS_ImagePoint);
+        DeleteObjectSafe(PS_CubeImage);
         DeleteObjectSafe(PS_Color);
         DeleteObjectSafe(PS_Color_NoAlpha);
         DeleteObjectSafe(PS_Font);
@@ -2275,6 +2315,7 @@ namespace SE
 
         Delete(SP_Image);
         Delete(SP_ImagePoint);
+        Delete(SP_CubeImage);
         Delete(SP_Color);
         Delete(SP_Color_NoAlpha);
         Delete(SP_Font);

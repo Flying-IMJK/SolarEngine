@@ -12,7 +12,7 @@ namespace SE
     class GPUPipelineState;
     class ShaderProgramInstance;
 
-    SE_ENUM(Reflect)
+    SE_ENUM(Reflect, API())
     enum class SkyType
     {
         SkyBox = 0,
@@ -28,35 +28,34 @@ namespace SE
         SCRIPTING_TYPE(Sky);
         SE_DEFINE_CLASS(Sky, RenderActor);
     private:
-        AssetRef<Shader> _shader;
-        GPUPipelineState*  _psSky;
+        AssetRef<Shader> m_Shader;
+        GPUPipelineState*  m_PsoSky;
         ShaderProgramInstance* m_SkyProgram = nullptr;
-        GPUPipelineState*  _psSkyBox;
+        GPUPipelineState*  m_PsoSkyBox;
         ShaderProgramInstance* m_SkyBoxProgram    = nullptr;
-        int32 _sceneRenderingKey = -1;
+        int32 m_SceneRenderingKey = -1;
 
     public:
         ~Sky() override;
 
+        SE_FIELD(API(Attributes = "EditorOrder(10), DefaultValue(null), EditorDisplay(\"Skybox\")"))
         SkyType RenderSkyType;
 
         /// <summary>
         /// The cube texture to draw.
-        /// </summary>
-        // SE_PROPERTY(API(Attributes="EditorOrder(10), DefaultValue(null), EditorDisplay(\"Skybox\")"))
+        /// </summary> 
+        SE_FIELD(API(Attributes = "EditorOrder(20), DefaultValue(null), EditorDisplay(\"Skybox\")"))
         AssetRef<CubeTexture> CubeTexture;
 
         /// <summary>
         /// The skybox texture tint color.
         /// </summary>
-        // SE_PROPERTY(API(Attributes="EditorOrder(40), DefaultValue(typeof(Color), \"1,1,1,1\"), EditorDisplay(\"Skybox\")"))
         SE_FIELD(API(Attributes="EditorOrder(40), DefaultValue(typeof(Color), \"1,1,1,1\"), EditorDisplay(\"Skybox\")"))
         Color Color = Colors::White;
 
         /// <summary>
         /// The skybox texture exposure value. Can be used to make skybox brighter or dimmer.
         /// </summary>
-        // SE_PROPERTY(API(Attributes="EditorOrder(50), DefaultValue(0.0f), Limit(-100, 100, 0.01f), EditorDisplay(\"Skybox\")"))
         SE_FIELD(API(Attributes="EditorOrder(50), DefaultValue(0.0f), Limit(-100, 100, 0.01f), EditorDisplay(\"Skybox\")"))
         float Exposure = 0.0f;
 

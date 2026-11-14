@@ -1,4 +1,4 @@
-﻿
+
 using SE.Editor.GUI;
 using SE.GUI;
 
@@ -16,7 +16,7 @@ namespace SE.Editor
 
         public override Color AccentColor => Color.FromRGB(0x25B84C);
 
-        public override bool IsProxyFor(Type typeId) => typeId != null && typeof(TextureBase).IsAssignableFrom(typeId);
+        public override bool IsProxyFor(Type typeId) => typeId != null && typeof(TextureBase).IsAssignableFrom(typeId) && !typeof(CubeTexture).IsAssignableFrom(typeId);
         public override bool CanReimport(ContentItem item) => item is BinaryAssetItem;
 
         public override AssetItem ConstructItem(string path, Type typeId, Guid id)
@@ -49,6 +49,12 @@ namespace SE.Editor
         {
             m_Preview.Asset = null;
             m_Preview.Parent = null;
+        }
+
+        public override bool CanDrawThumbnail(ThumbnailRequest request)
+        {
+            // Wait for GPU residency before storing the rendered thumbnail in the atlas.
+            return ((Texture)request.asset).GetResidentMipLevels() > 0;
         }
 
     }

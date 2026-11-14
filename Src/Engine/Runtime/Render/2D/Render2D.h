@@ -10,6 +10,7 @@
 namespace SE
 {
     class Texture;
+    class CubeTexture;
     struct SpriteHandle;
     struct TextRange;
     class MaterialBase;
@@ -343,6 +344,16 @@ namespace SE
 
         SE_FUNCTION(API())
         static void DrawTexture(Texture* t, const Rectangle& rect, const Color& color = Colors::White);
+
+        /// <summary>
+        /// Draws a resident cube texture as a reflection sphere during GUI rendering.
+        /// The caller keeps the texture alive until the drawing batch has been submitted.
+        /// </summary>
+        /// <param name="pTexture">The cube texture to draw. Null or nonresident textures are skipped.</param>
+        /// <param name="rect">The square target rectangle.</param>
+        /// <param name="color">The color to multiply the sphere pixels and coverage.</param>
+        SE_FUNCTION(API())
+        static void DrawCubeTexture(CubeTexture* pTexture, const Rectangle& rect, const Color& color = Colors::White);
 
         /// <summary>
         /// Draws a sprite.
