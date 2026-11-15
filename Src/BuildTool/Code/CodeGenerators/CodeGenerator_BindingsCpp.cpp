@@ -259,9 +259,21 @@ namespace SE::BuildTool
             expr = Utils::String::Format("CLRUtils::UnboxScriptingTypeHandle((CLRTypeObject*){0})", expr);
             return true;
         }
-        if (conversion.kind == BindingTypeKind::ScriptingObject || conversion.kind == BindingTypeKind::NativeObject ||
+        if (conversion.kind == BindingTypeKind::ScriptingObject || 
+            conversion.kind == BindingTypeKind::NativeObject ||
             conversion.kind == BindingTypeKind::OpaquePointer)
         {
+            if (conversion.kind == BindingTypeKind::ScriptingObject && type.isRef && !type.isPointer && type.pointerDepth == 0)
+            {
+                TypeInfo pointerType = type;
+                pointerType.isRef = false;
+                pointerType.isMoveRef = false;
+                pointerType.isPointer = true;
+                pointerType.pointerDepth = 1;
+                expr = Utils::String::Format("InternalGetReference(({0}){1})",
+                    CodeGeneratorUtils::QualifyCppType(pointerType.ToString(false)), expr);
+                return true;
+            }
             std::string nativeType = conversion.nativeValueType;
 
             expr = Utils::String::Format("({0}){1}", nativeType, expr);
@@ -284,7 +296,9 @@ namespace SE::BuildTool
             return Utils::String::Format("Variant({0})", expr);
         if (conversion.kind == BindingTypeKind::ScriptingObject)
         {
-            return Utils::String::Format("Variant((ScriptingObject*){0})", expr);
+            const bool isPointer = type.isPointer || type.pointerDepth > 0;
+            return Utils::String::Format("Variant((ScriptingObject*){0})",
+                isPointer ? expr : Utils::String::Format("&({0})", expr));
         }
         if (conversion.kind == BindingTypeKind::ObjectRef)
         {
@@ -340,10 +354,12 @@ namespace SE::BuildTool
                 conversion.declaration->structScopeList,
                 conversion.declaration->name,
                 true);
-            return Utils::String::Format(
+            const bool isPointer = type.isPointer || type.pointerDepth > 0;
+            const std::string objectPointer = Utils::String::Format(
                 "({1}.AsObject && ScriptingObject::CanCast({1}.AsObject->GetClass(), {0}::GetScriptingClass()) ? "
                 " ({2}){1}.AsObject : nullptr)",
-                targetType, expr, nativeType);
+                targetType, expr, isPointer ? nativeType : nativeType + "*");
+            return isPointer ? objectPointer : "*" + objectPointer;
         }
         if (conversion.kind == BindingTypeKind::ObjectRef)
         {
@@ -492,22 +508,41 @@ namespace SE::BuildTool
                             : Utils::String::Format("(__{0}Count != nullptr ? *__{0}Count : 0)", param.name))
                         : Utils::String::Format("CLRCore::Array::GetLength({0})", arrayName);
                     const bool isSpan = typeName == "SE::Span" || typeName == "Span";
+                    TypeInfo nativeCollection = paramType;
+                    nativeCollection.isConst = false;
+                    nativeCollection.isRef = false;
+                    nativeCollection.isMoveRef = false;
                     const std::string nativeCollectionType = isSpan
                         ? Utils::String::Format("::SE::List<{0}, ::SE::HeapAllocation>", nativeElementType)
-                        : CodeGeneratorUtils::QualifyCppType(paramType.ToNativeType());
+                        : CodeGeneratorUtils::QualifyCppType(nativeCollection.ToString(false));
                     setupOut += Utils::String::Format("        {0} {1};\n", nativeCollectionType, localName);
                     setupOut += Utils::String::Format("        const int32 {0} = {1} ? Math::Min((int32)CLRCore::Array::GetLength({1}), (int32){2}) : 0;\n",
                         countName, arrayName, direction == ApiParameterDirection::Out ? "0" : requestedCount);
                     setupOut += Utils::String::Format("        {0}.Resize({1});\n", localName, countName);
-                    setupOut += Utils::String::Format("        if ({0} > 0)\n        {{\n", countName);
-                    setupOut += Utils::String::Format("            auto* __{0}Items = CLRCore::Array::GetAddress<{1}>({2});\n",
-                        param.name, GetInteropValueType(elementType), arrayName);
+                    if (direction != ApiParameterDirection::Out)
+                    {
+                        setupOut += Utils::String::Format("        if ({0} > 0)\n        {{\n", countName);
+                        const BindingTypeSemantics elementSemantics = ResolveBindingTypeSemantics(m_Database, elementType);
+                        if (elementSemantics.kind == BindingTypeKind::ScriptingObject || elementSemantics.kind == BindingTypeKind::ObjectRef)
+                        {
+                            // Object arrays contain managed handles; the element converter resolves the native references.
+                            setupOut += Utils::String::Format("            CLRConverter<{0}> __{1}Converter;\n", nativeElementType, param.name);
+                            setupOut += Utils::String::Format("            ::SE::Span<{0}> __{1}Span({2}.Get(), {3});\n",
+                                nativeElementType, param.name, localName, countName);
+                            setupOut += Utils::String::Format("            __{0}Converter.ToNativeArray(__{0}Span, {1});\n", param.name, arrayName);
+                        }
+                        else
+                        {
+                            setupOut += Utils::String::Format("            auto* __{0}Items = CLRCore::Array::GetAddress<{1}>({2});\n",
+                                param.name, GetInteropValueType(elementType), arrayName);
 
-                    std::string elementExpression = Utils::String::Format("__{0}Items[i]", param.name);
-                    GetManagedToNativeConvert(elementType, elementExpression);
-                    setupOut += Utils::String::Format("            for (int32 i = 0; i < {0}; ++i) {1}[i] = {2};\n",
-                        countName, localName, elementExpression);
-                    setupOut += "        }\n";
+                            std::string elementExpression = Utils::String::Format("__{0}Items[i]", param.name);
+                            GetManagedToNativeConvert(elementType, elementExpression);
+                            setupOut += Utils::String::Format("            for (int32 i = 0; i < {0}; ++i) {1}[i] = {2};\n",
+                                countName, localName, elementExpression);
+                        }
+                        setupOut += "        }\n";
+                    }
 
                     if (isSpan)
                         converted = Utils::String::Format("::SE::Span<{0}>({1}.Get(), {1}.Count())", nativeElementType, localName);
@@ -559,7 +594,24 @@ namespace SE::BuildTool
                 const BindingTypeSemantics semantics = ResolveBindingTypeSemantics(m_Database, paramType, param.marshalAs);
                 const bool manualWriteBack = direction != ApiParameterDirection::In &&
                     (semantics.kind == BindingTypeKind::InteropStruct || semantics.kind == BindingTypeKind::ObjectRef);
-                if (manualWriteBack)
+                if (semantics.kind == BindingTypeKind::ScriptingObject && direction != ApiParameterDirection::In)
+                {
+                    // C# supplies a native address on input and receives a managed handle on output.
+                    TypeInfo pointerType = paramType;
+                    pointerType.isRef = false;
+                    pointerType.isMoveRef = false;
+                    pointerType.isPointer = true;
+                    pointerType.pointerDepth = 1;
+                    const std::string nativePointerType = CodeGeneratorUtils::QualifyCppType(pointerType.ToString(false));
+                    const std::string localName = Utils::String::Format("__{0}Native", param.name);
+                    setupOut += Utils::String::Format("        {0} {1} = {2};\n", nativePointerType, localName,
+                        direction == ApiParameterDirection::Out ? "nullptr" : Utils::String::Format("({0}){1}", nativePointerType, abiExpression));
+                    converted = semantics.reference.pointerDepth > 0
+                        ? localName : Utils::String::Format("InternalGetReference({0})", localName);
+                    postCallOut += Utils::String::Format("        *{0} = ScriptingObject::ToManaged(reinterpret_cast<ScriptingObject*>({1}));\n",
+                        param.name, localName);
+                }
+                else if (manualWriteBack)
                 {
                     const std::string localName = Utils::String::Format("__{0}Native", param.name);
                     std::string initialValue = abiExpression;
@@ -598,7 +650,9 @@ namespace SE::BuildTool
             output += Utils::String::Format("        const int32 __collectionCount = {0};\n", collection.fixedElementCount);
         else
         {
-            output += Utils::String::Format("        const int32 __collectionCount = __collectionValue{0};\n", (fn.returnType.typeID == TypeID("Span") ? ".Length()": ".Count()"));
+            const std::string typeName = fn.returnType.typeID.ToString();
+            const bool usesLength = IsTypeName(typeName, "Span") || IsTypeName(typeName, "BytesContainer") || IsTypeName(typeName, "DataContainer");
+            output += Utils::String::Format("        const int32 __collectionCount = __collectionValue{0};\n", usesLength ? ".Length()" : ".Count()");
         }
         if (collection.HasRuntimeCount())
         {
@@ -1117,14 +1171,25 @@ namespace SE::BuildTool
             const std::string elementInteropType = GetInteropValueType(elementType);
             bodyOut += Utils::String::Format("        if ({0} == nullptr || CLRCore::Array::GetLength({0}) != {1}) return;\n",
                 valueName, valueCollection.fixedElementCount);
-            bodyOut += Utils::String::Format("        auto* __valueItems = CLRCore::Array::GetAddress<{0}>({1});\n", elementInteropType, valueName);
-
-            std::string out = "__valueItems[i]";
-            if (!GetManagedToNativeConvert(elementType, out) && (elementType.isPointer || elementType.isRef))
+            const BindingTypeSemantics elementSemantics = ResolveBindingTypeSemantics(m_Database, elementType);
+            if (elementSemantics.kind == BindingTypeKind::ScriptingObject || elementSemantics.kind == BindingTypeKind::ObjectRef)
             {
-                out = Utils::String::Format("*{0}", out);
+                const std::string nativeElementType = CodeGeneratorUtils::QualifyCppType(elementType.ToString(false));
+                bodyOut += Utils::String::Format("        CLRConverter<{0}> __valueConverter;\n", nativeElementType);
+                bodyOut += Utils::String::Format("        ::SE::Span<{0}> __valueSpan({1}, {2});\n", nativeElementType, target, valueCollection.fixedElementCount);
+                bodyOut += Utils::String::Format("        __valueConverter.ToNativeArray(__valueSpan, (CLRArray*){0});\n", valueName);
             }
-            bodyOut += Utils::String::Format("        for (int32 i = 0; i < {0}; ++i) {1}[i] = {2};\n", valueCollection.fixedElementCount, target, out);
+            else
+            {
+                bodyOut += Utils::String::Format("        auto* __valueItems = CLRCore::Array::GetAddress<{0}>({1});\n", elementInteropType, valueName);
+
+                std::string out = "__valueItems[i]";
+                if (!GetManagedToNativeConvert(elementType, out) && (elementType.isPointer || elementType.isRef))
+                {
+                    out = Utils::String::Format("*{0}", out);
+                }
+                bodyOut += Utils::String::Format("        for (int32 i = 0; i < {0}; ++i) {1}[i] = {2};\n", valueCollection.fixedElementCount, target, out);
+            }
         }
         else if (retIsVoid)
         {

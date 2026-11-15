@@ -356,7 +356,8 @@ namespace SE::BuildTool
         }
         if (!structType->isStruct)
         {
-            if (pointerDepth == 0)
+            // Scripting objects retain reference semantics even when a native container stores them inline.
+            if (pointerDepth == 0 && !structType->isScriptingObject)
             {
                 return Unsupported(type, "SEBIND004", "native class values require an explicit pointer semantic");
             }
@@ -670,6 +671,18 @@ namespace SE::BuildTool
                 plan.diagnostics.push_back("SEBIND001 " + owner.name + "::" + function.name + " parameter '" + parameter.name +
                     "' type '" + parameter.type.ToString() + "': " +
                     (!semantics.IsSupported() ? semantics.diagnostic : csharp.diagnostic));
+            if (semantics.kind == BindingTypeKind::ScriptingObject && semantics.reference.pointerDepth == 0 &&
+                direction == ApiParameterDirection::Out)
+                plan.diagnostics.push_back("SEBIND001 " + owner.name + "::" + function.name + " parameter '" + parameter.name +
+                    "' type '" + parameter.type.ToString() + "': out scripting object values require an object pointer reference");
+            if (semantics.kind == BindingTypeKind::Collection && direction != ApiParameterDirection::Out)
+            {
+                const BindingTypeSemantics element = ResolveBindingTypeSemantics(database, semantics.collection.elementType);
+                if (element.kind == BindingTypeKind::ScriptingObject && element.reference.pointerDepth == 0)
+                    plan.diagnostics.push_back("SEBIND001 " + owner.name + "::" + function.name + " parameter '" + parameter.name +
+                        "' type '" + parameter.type.ToString() +
+                        "': scripting object value collections have no managed-to-native element converter; use an object pointer collection");
+            }
             if (semantics.kind == BindingTypeKind::Collection && direction != ApiParameterDirection::In &&
                 IsOneOf(parameter.type.typeID.ToString(), { "SE::Span", "Span" }))
                 plan.diagnostics.push_back("SEBIND001 " + owner.name + "::" + function.name + " parameter '" + parameter.name +
