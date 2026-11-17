@@ -12,6 +12,7 @@ namespace SE.Editor.GUI.Dialogs
     {
         private readonly Color m_InitialValue;
         private readonly bool m_UseDynamicEditing;
+        private readonly bool m_UseAlpha;
         private readonly ColorValueBox.ColorPickerEvent m_OnChanged;
         private readonly ColorValueBox.ColorPickerClosedEvent m_OnClosed;
         private readonly ColorSelectorWithSliders m_Selector;
@@ -30,6 +31,10 @@ namespace SE.Editor.GUI.Dialogs
             get => m_Value;
             private set
             {
+                if (!m_UseAlpha)
+                {
+                    value.A = m_InitialValue.A;
+                }
                 if (m_DisableEvents || value == m_Value)
                 {
                     return;
@@ -45,7 +50,8 @@ namespace SE.Editor.GUI.Dialogs
                 m_Hsv[0].SetValue(hsv.X);
                 m_Hsv[1].SetValue(hsv.Y * 100);
                 m_Hsv[2].SetValue(hsv.Z * 100);
-                m_Hex.Text = Color.Min(Color.White, value).ToHexString();
+                string hex = Color.Min(Color.White, value).ToHexString();
+                m_Hex.Text = m_UseAlpha ? hex : hex.Substring(0, 6);
                 if (m_UseDynamicEditing)
                 {
                     m_OnChanged(value, true);
@@ -55,7 +61,7 @@ namespace SE.Editor.GUI.Dialogs
         }
 
         public ColorPickerDialog(Color initialValue, ColorValueBox.ColorPickerEvent onChanged,
-            ColorValueBox.ColorPickerClosedEvent onClosed, bool useDynamicEditing)
+            ColorValueBox.ColorPickerClosedEvent onClosed, bool useDynamicEditing, bool useAlpha)
             : base("Pick a color!")
         {
             m_InitialValue = initialValue;
@@ -63,8 +69,9 @@ namespace SE.Editor.GUI.Dialogs
             m_OnChanged = onChanged;
             m_OnClosed = onClosed;
             m_UseDynamicEditing = useDynamicEditing;
+            m_UseAlpha = useAlpha;
 
-            m_Selector = new ColorSelectorWithSliders(180, 21)
+            m_Selector = new ColorSelectorWithSliders(180, 21, useAlpha)
             {
                 Parent = this,
                 Location = new Float2(6, 6),
@@ -126,18 +133,19 @@ namespace SE.Editor.GUI.Dialogs
             {
                 Text = "A",
                 Parent = this,
-                Bounds = new Rectangle(panelX, 126, 18, 18)
+                Bounds = new Rectangle(panelX, 126, 18, 18),
+                Visible = useAlpha
             };
             m_Alpha = new FloatValueBox(0, panelX + 24, 126, 102, 0, float.MaxValue, 0.001f)
-            { Parent = this };
+            { Parent = this, Visible = useAlpha };
             m_Alpha.ValueChanged += OnRGBAChanged;
             new Label
             {
                 Text = "Hex",
                 Parent = this,
-                Bounds = new Rectangle(panelX, 154, 24, 18)
+                Bounds = new Rectangle(panelX, useAlpha ? 154 : 126, 24, 18)
             };
-            m_Hex = new TextBox(false, panelX + 30, 154, 96) { Parent = this };
+            m_Hex = new TextBox(false, panelX + 30, useAlpha ? 154 : 126, 96) { Parent = this };
             m_Hex.EditEnd += OnHexChanged;
 
             Button accept = new Button

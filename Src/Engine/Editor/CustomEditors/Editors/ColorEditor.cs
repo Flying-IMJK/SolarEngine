@@ -1,3 +1,4 @@
+using System.Linq;
 using SE.Editor.GUI;
 
 namespace SE.Editor
@@ -10,7 +11,11 @@ namespace SE.Editor
 
         public override void Initialize(LayoutElementsContainer layout)
         {
-            m_Box = new ColorValueBox { Parent = layout.ContainerControl };
+            m_Box = new ColorValueBox
+            {
+                Parent = layout.ContainerControl,
+                UseAlpha = !Values.GetAttributes().OfType<HideAlphaChannelAttribute>().Any()
+            };
             m_Box.ValueChanged += () => SetValue(m_Box.Value, m_Box.IsSliding ? this : null);
         }
 

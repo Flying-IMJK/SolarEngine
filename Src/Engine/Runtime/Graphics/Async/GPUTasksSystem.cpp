@@ -61,8 +61,8 @@ namespace SE
 	}
 
 	String GPUTask::ToString() const
-	{
-		return String::Format(SE_TEXT("GPU Async Task {0} ({1})"), Types::GetEnumString(GetType()), (int32)GetState());
+	{ 
+	    return String::Format(SE_TEXT("GPU Async Task {0} ({1})"), ::SE::ToString(GetType()), ::SE::ToString(GetState()));
 	}
 
 	void GPUTask::Enqueue()
@@ -96,7 +96,38 @@ namespace SE
 		Task::OnCancel();
 	}
 
-	GPUTasksSystem::GPUTasksSystem()
+    Char* ToString(GPUTask::Type value)
+    {
+        switch (value)
+        {
+
+            case GPUTask::Type::Custom:
+				return SE_TEXT("Custom");
+            case GPUTask::Type::CopyResource:
+                return SE_TEXT("CopyResource");
+            case GPUTask::Type::UploadTexture:
+                return SE_TEXT("UploadTexture");
+            case GPUTask::Type::UploadBuffer:
+                return SE_TEXT("UploadBuffer");
+        }
+    }
+
+    Char* ToString(GPUTask::Result value)
+    {
+        switch (value)
+        {
+            case GPUTask::Result::Ok:
+                return SE_TEXT("Ok");
+            case GPUTask::Result::Failed:
+                return SE_TEXT("Failed");
+            case GPUTask::Result::MissingResources:
+                return SE_TEXT("MissingResources");
+            case GPUTask::Result::MissingData:
+                return SE_TEXT("MissingData");
+        }
+    }
+
+    GPUTasksSystem::GPUTasksSystem()
 	{
 		_buffers[0].EnsureCapacity(64);
 		_buffers[1].EnsureCapacity(64);

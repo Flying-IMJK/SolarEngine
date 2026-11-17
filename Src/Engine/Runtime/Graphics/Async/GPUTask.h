@@ -108,4 +108,7 @@ namespace SE
 		GPUTasksContext* m_Context;
 
 	};
+
+	Char* ToString(GPUTask::Type value);
+    Char* ToString(GPUTask::Result value);
 }

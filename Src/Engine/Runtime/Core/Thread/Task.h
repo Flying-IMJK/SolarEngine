@@ -14,8 +14,6 @@ namespace SE::Threading
 		Finished
 	};
 
-	StringView GetTaskStateName(TaskState state);
-
 	/// <summary>
 	/// Represents an asynchronous operation.
 	/// </summary>
@@ -272,4 +270,9 @@ namespace SE::Threading
 	};
 
 } // SE
+
+namespace SE
+{
+    Char* ToString(Threading::TaskState state);
+}
 

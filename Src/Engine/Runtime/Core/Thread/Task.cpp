@@ -8,35 +8,32 @@
 #include "Runtime/Core/Math/Math.h"
 #include "Runtime/Core/Profiler/ProfilerCPU.h"
 
+namespace SE
+{
+    Char* ToString(Threading::TaskState state)
+    {
+        switch (state)
+        {
+            case Threading::TaskState::Created:
+                return SE_TEXT("Create");
+            case Threading::TaskState::Failed:
+                return SE_TEXT("Failed");
+            case Threading::TaskState::Canceled:
+                return SE_TEXT("Canceled");
+            case Threading::TaskState::Queued:
+                return SE_TEXT("Queued");
+            case Threading::TaskState::Running:
+                return SE_TEXT("Running");
+            case Threading::TaskState::Finished:
+                return SE_TEXT("Finished");
+        }
+
+        return SE_TEXT("");
+    }
+}
+
 namespace SE::Threading
 {
-	StringView GetTaskStateName(TaskState state)
-	{
-		switch (state)
-		{
-		case TaskState::Created:
-			return SE_TEXT("Create");
-			break;
-		case TaskState::Failed:
-			return SE_TEXT("Failed");
-			break;
-		case TaskState::Canceled:
-			return SE_TEXT("Canceled");
-			break;
-		case TaskState::Queued:
-			return SE_TEXT("Queued");
-			break;
-		case TaskState::Running:
-			return SE_TEXT("Running");
-			break;
-		case TaskState::Finished:
-			return SE_TEXT("Finished");
-			break;
-		}
-
-		return String::Empty;
-	}
-
 	void Task::SetState(TaskState state)
 	{
 		Platform::AtomicStore((int64 volatile*)&m_State, (uint64)state);

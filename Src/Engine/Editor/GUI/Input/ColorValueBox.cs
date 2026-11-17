@@ -12,9 +12,9 @@ namespace SE.Editor.GUI
         public delegate void ColorPickerEvent(Color color, bool sliding);
         /// <summary>Reports that the picker has closed.</summary>
         public delegate void ColorPickerClosedEvent();
-        /// <summary>Creates a picker owned by the caller, which must invoke pickerClosed on close.</summary>
+        /// <summary>Creates a picker owned by the caller. Honor useAlpha and invoke pickerClosed on close.</summary>
         public delegate IColorPickerDialog ShowPickColorDialogDelegate(Control targetControl, Color initialValue,
-            ColorPickerEvent colorChanged, ColorPickerClosedEvent pickerClosed, bool useDynamicEditing);
+            ColorPickerEvent colorChanged, ColorPickerClosedEvent pickerClosed, bool useDynamicEditing, bool useAlpha);
         /// <summary>Optional picker factory. If null, the built-in dialog is used.</summary>
         public static ShowPickColorDialogDelegate ShowPickColorDialog;
 
@@ -23,6 +23,8 @@ namespace SE.Editor.GUI
         private Color m_Value;
         private bool m_IsSliding;
         public bool UseDynamicEditing = true;
+        /// <summary>Enables alpha controls in the picker and transparency in the swatch.</summary>
+        public bool UseAlpha = true;
         public event Action ValueChanged;
         public event Action<ColorValueBox> ColorValueChanged;
 
@@ -50,7 +52,7 @@ namespace SE.Editor.GUI
         {
             base.Draw();
             Color color = m_Value.ToSRgb();
-            bool transparent = color.A < 1;
+            bool transparent = UseAlpha && color.A < 1;
             Rectangle swatch = new Rectangle(0, 0, transparent ? Width * 0.7f : Width, Height);
             if (transparent)
             {
@@ -102,13 +104,13 @@ namespace SE.Editor.GUI
         {
             base.OnSubmit();
             ShowPickColorDialogDelegate show = ShowPickColorDialog ?? DefaultShowPicker;
-            m_CurrentDialog = show(this, m_Value, OnColorChanged, OnPickerClosed, UseDynamicEditing);
+            m_CurrentDialog = show(this, m_Value, OnColorChanged, OnPickerClosed, UseDynamicEditing, UseAlpha);
         }
 
         private static IColorPickerDialog DefaultShowPicker(Control target, Color initial,
-            ColorPickerEvent changed, ColorPickerClosedEvent closed, bool dynamic)
+            ColorPickerEvent changed, ColorPickerClosedEvent closed, bool dynamic, bool useAlpha)
         {
-            ColorPickerDialog dialog = new ColorPickerDialog(initial, changed, closed, dynamic);
+            ColorPickerDialog dialog = new ColorPickerDialog(initial, changed, closed, dynamic, useAlpha);
             dialog.Show(target);
             return dialog;
         }

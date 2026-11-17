@@ -66,7 +66,7 @@ namespace SE
 
 	String LoadAssetTask::ToString() const
 	{
-        return String::Format(SE_TEXT("Load Task ({0}) Content ({1})"), GetTaskStateName(GetState()), Asset->GetPath());
+        return String::Format(SE_TEXT("Load Task ({0}) Content ({1})"), ::SE::ToString(GetState()), Asset->GetPath());
 	}
 
 	void LoadAssetTask::OnFail()

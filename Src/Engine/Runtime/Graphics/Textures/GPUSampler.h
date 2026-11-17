@@ -45,7 +45,7 @@ namespace SE
 		/// Creates new sampler.
 		/// </summary>
 		/// <param name="desc">The sampler description.</param>
-		/// <returns>True if cannot create sampler, otherwise false.</returns>
+		/// <returns>false if cannot create sampler, otherwise True.</returns>
 		SE_FUNCTION(API())
 		bool Init(const GPUSamplerDescription& desc);
 
