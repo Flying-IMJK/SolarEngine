@@ -1,8 +1,9 @@
 #pragma once
 
-#include "Runtime/Api.h"
-#include "Runtime/Graphics/Textures/GPUTexture.h"
-#include "Runtime/Graphics/Viewport.h"
+#include <Runtime/API.h>
+#include <Runtime/Graphics/Textures/GPUTexture.h>
+#include <Runtime/Graphics/Viewport.h>
+#include <Runtime/Render/RenderFeatures/SkyAtmospherePreCompute.h>
 
 namespace SE
 {
@@ -91,6 +92,22 @@ namespace SE
 
         // Maps the custom buffer type into the object that holds the state.
         List<CustomBuffer*, HeapAllocation> CustomBuffers;
+
+        // Per-render-task atmosphere LUTs and base cache; not redirected by LinkedCustomBuffers.
+        GPUTexture* SkyAtmosphereTransmittanceLut = nullptr;
+        GPUTexture* SkyAtmosphereMultiScatteringLut = nullptr;
+        SkyAtmosphereParameters SkyAtmosphereCachedParameters = {};
+        uint64 SkyAtmosphereShaderVersion = 0;
+        bool SkyAtmosphereBaseLutsSubmitted = false;
+        // Submitted only for this rendering of these buffers, not a GPU completion flag.
+        GPUTexture* SkyAtmosphereSkyViewLut = nullptr;
+        GPUTexture* SkyAtmosphereAerialPerspectiveLut = nullptr;
+        // Two RGBA32F texels: distant sky luminance and ground-transmitted sun illuminance.
+        GPUTexture* SkyAtmosphereDistantSkyLightLut = nullptr;
+        // Reset per rendering; means queued GPU writes, not GPU completion.
+        bool SkyAtmosphereHeightFogSubmitted = false;
+        SkyAtmosphereViewParameters SkyAtmosphereView = {};
+        bool SkyAtmosphereLutsSubmitted = false;
 
     public:
         RenderBuffers();

@@ -22,7 +22,7 @@ namespace SE
     });
 
     Sky::Sky(const SpawnParams& params) :
-        RenderActor(params), m_Shader(nullptr), m_PsoSky(nullptr), m_PsoSkyBox(nullptr), RenderSkyType()
+        RenderActor(params), m_Shader(nullptr), m_PsoSkyBox(nullptr), RenderSkyType()
     {
         m_DrawNoCulling = 1;
         m_DrawCategory = SceneRendering::PreRender;
@@ -37,14 +37,14 @@ namespace SE
         ReleasePrograms();
     }
 
-    bool Sky::SetupProgram(const String& name, GPUPipelineState*& pipeline, ShaderProgramInstance*& instance)
+    bool Sky::SetupProgram()
     {
-        if (pipeline && instance)
+        if (m_PsoSkyBox && m_SkyBoxProgram)
         {
             return true;
         }
         GPUShaderProgram* program = nullptr;
-        if (!m_Shader || !m_Shader->SelectProgram(name, {}, program))
+        if (!m_Shader || !m_Shader->SelectProgram(SE_TEXT("SkyBox"), {}, program))
         {
             return false;
         }
@@ -53,17 +53,17 @@ namespace SE
         description.DepthWriteEnable = false;
         description.DepthClipEnable  = false;
         description.DepthFunc        = ComparisonFunc::LessEqual;
-        pipeline                     = GPUDevice::instance->CreatePipelineState();
-        if (!pipeline || !pipeline->Init(description, program))
+        m_PsoSkyBox                     = GPUDevice::instance->CreatePipelineState();
+        if (!m_PsoSkyBox || !m_PsoSkyBox->Init(description, program))
         {
-            DeleteObjectSafe(pipeline);
+            DeleteObjectSafe(m_PsoSkyBox);
             return false;
         }
-        instance = New<ShaderProgramInstance>();
-        if (!instance->Initialize(program))
+        m_SkyBoxProgram = New<ShaderProgramInstance>();
+        if (!m_SkyBoxProgram->Initialize(program))
         {
-            DeleteObjectSafe(instance);
-            DeleteObjectSafe(pipeline);
+            DeleteObjectSafe(m_SkyBoxProgram);
+            DeleteObjectSafe(m_PsoSkyBox);
             return false;
         }
         return true;
@@ -71,23 +71,21 @@ namespace SE
 
     void Sky::ReleasePrograms()
     {
-        DeleteObjectSafe(m_PsoSky);
         DeleteObjectSafe(m_PsoSkyBox);
-        DeleteObjectSafe(m_SkyProgram);
         DeleteObjectSafe(m_SkyBoxProgram);
     }
 
     void Sky::RenderDraw(RenderContext& renderContext)
     {
-        if (!HasContentLoaded())
+        // A Sky actor selects exactly one rendering path for this view.
+        renderContext.list->Sky = nullptr;
+        renderContext.list->SkyAtmosphere = nullptr;
+        if (RenderSkyType == SkyType::Physical)
         {
+            renderContext.list->SkyAtmosphere = this;
             return;
         }
-
-        const bool ready = RenderSkyType == SkyType::SkyBox ?
-                               SetupProgram(SE_TEXT("SkyBox"), m_PsoSkyBox, m_SkyBoxProgram) :
-                               SetupProgram(SE_TEXT("Sky"), m_PsoSky, m_SkyProgram);
-        if (ready)
+        if (HasContentLoaded() && SetupProgram())
         {
             renderContext.list->Sky = this;
         }
@@ -103,6 +101,29 @@ namespace SE
         SERIALIZE_MEMBER(Sun, SunLight);
         SERIALIZE(SunDiscScale);
         SERIALIZE(SunPower);
+        context.stream.JKEY("AtmosphereData");
+        context.stream.StartObject();
+        SERIALIZE_MEMBER(GroundRadius, AtmosphereData.GroundRadius);
+        SERIALIZE_MEMBER(AtmosphereHeight, AtmosphereData.AtmosphereHeight);
+        SERIALIZE_MEMBER(RayleighScaleHeight, AtmosphereData.RayleighScaleHeight);
+        SERIALIZE_MEMBER(RayleighScatteringScale, AtmosphereData.RayleighScatteringScale);
+        SERIALIZE_MEMBER(RayleighScattering, AtmosphereData.RayleighScattering);
+        SERIALIZE_MEMBER(MieScaleHeight, AtmosphereData.MieScaleHeight);
+        SERIALIZE_MEMBER(MieScatteringScale, AtmosphereData.MieScatteringScale);
+        SERIALIZE_MEMBER(MieScattering, AtmosphereData.MieScattering);
+        SERIALIZE_MEMBER(MieAbsorptionScale, AtmosphereData.MieAbsorptionScale);
+        SERIALIZE_MEMBER(MieAbsorption, AtmosphereData.MieAbsorption);
+        SERIALIZE_MEMBER(MieAnisotropy, AtmosphereData.MieAnisotropy);
+        SERIALIZE_MEMBER(AbsorptionExtinctionScale, AtmosphereData.AbsorptionExtinctionScale);
+        SERIALIZE_MEMBER(AbsorptionExtinction, AtmosphereData.AbsorptionExtinction);
+        SERIALIZE_MEMBER(AbsorptionTipAltitude, AtmosphereData.AbsorptionTipAltitude);
+        SERIALIZE_MEMBER(AbsorptionWidth, AtmosphereData.AbsorptionWidth);
+        SERIALIZE_MEMBER(GroundAlbedo, AtmosphereData.GroundAlbedo);
+        SERIALIZE_MEMBER(MultiScatteringFactor, AtmosphereData.MultiScatteringFactor);
+        SERIALIZE_MEMBER(HeightFogContribution, AtmosphereData.HeightFogContribution);
+        SERIALIZE_MEMBER(AerialPerspectiveStartDepth, AtmosphereData.AerialPerspectiveStartDepth);
+        SERIALIZE_MEMBER(AerialPerspectiveDepth, AtmosphereData.AerialPerspectiveDepth);
+        context.stream.EndObject();
     }
 
     void Sky::Deserialize(DeserializeContext& context)
@@ -113,10 +134,39 @@ namespace SE
         DESERIALIZE_MEMBER(Sun, SunLight);
         DESERIALIZE(SunDiscScale);
         DESERIALIZE(SunPower);
+        const auto atmosphere = SERIALIZE_FIND_MEMBER(context.stream, "AtmosphereData");
+        if (atmosphere != context.stream->MemberEnd() && atmosphere->value.IsObject())
+        {
+            DeserializeContext::StreamScope scope(context, atmosphere->value);
+            DESERIALIZE_MEMBER(GroundRadius, AtmosphereData.GroundRadius);
+            DESERIALIZE_MEMBER(AtmosphereHeight, AtmosphereData.AtmosphereHeight);
+            DESERIALIZE_MEMBER(RayleighScaleHeight, AtmosphereData.RayleighScaleHeight);
+            DESERIALIZE_MEMBER(RayleighScatteringScale, AtmosphereData.RayleighScatteringScale);
+            DESERIALIZE_MEMBER(RayleighScattering, AtmosphereData.RayleighScattering);
+            DESERIALIZE_MEMBER(MieScaleHeight, AtmosphereData.MieScaleHeight);
+            DESERIALIZE_MEMBER(MieScatteringScale, AtmosphereData.MieScatteringScale);
+            DESERIALIZE_MEMBER(MieScattering, AtmosphereData.MieScattering);
+            DESERIALIZE_MEMBER(MieAbsorptionScale, AtmosphereData.MieAbsorptionScale);
+            DESERIALIZE_MEMBER(MieAbsorption, AtmosphereData.MieAbsorption);
+            DESERIALIZE_MEMBER(MieAnisotropy, AtmosphereData.MieAnisotropy);
+            DESERIALIZE_MEMBER(AbsorptionExtinctionScale, AtmosphereData.AbsorptionExtinctionScale);
+            DESERIALIZE_MEMBER(AbsorptionExtinction, AtmosphereData.AbsorptionExtinction);
+            DESERIALIZE_MEMBER(AbsorptionTipAltitude, AtmosphereData.AbsorptionTipAltitude);
+            DESERIALIZE_MEMBER(AbsorptionWidth, AtmosphereData.AbsorptionWidth);
+            DESERIALIZE_MEMBER(GroundAlbedo, AtmosphereData.GroundAlbedo);
+            DESERIALIZE_MEMBER(MultiScatteringFactor, AtmosphereData.MultiScatteringFactor);
+            DESERIALIZE_MEMBER(HeightFogContribution, AtmosphereData.HeightFogContribution);
+            DESERIALIZE_MEMBER(AerialPerspectiveStartDepth, AtmosphereData.AerialPerspectiveStartDepth);
+            DESERIALIZE_MEMBER(AerialPerspectiveDepth, AtmosphereData.AerialPerspectiveDepth);
+        }
     }
 
     bool Sky::HasContentLoaded() const
     {
+        if (RenderSkyType == SkyType::Physical)
+        {
+            return true;
+        }
         if (!m_Shader || !m_Shader->IsLoaded())
         {
             return false;
@@ -127,7 +177,7 @@ namespace SE
             return false;
         }
 
-        return true; // && AtmospherePreCompute::GetCache(nullptr);
+        return true;
     }
 
     /*bool Sky::IntersectsItself(const Ray& ray, float& distance, Float3& normal)
@@ -142,21 +192,9 @@ namespace SE
 
     ShaderProgramInstance* Sky::ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world)
     {
-        ShaderProgramInstance* instance = nullptr;
-        GPUPipelineState*  pipeline = nullptr;
-
-        if (RenderSkyType == SkyType::SkyBox)
-        {
-            instance = m_SkyBoxProgram;
-            pipeline = m_PsoSkyBox;
-        }
-        else
-        {
-            instance = m_SkyProgram;
-            pipeline = m_PsoSky;
-        }
-
-        if (instance == nullptr || pipeline == nullptr)
+        ShaderProgramInstance* instance = m_SkyBoxProgram;
+        GPUPipelineState* pipeline = m_PsoSkyBox;
+        if (RenderSkyType != SkyType::SkyBox || instance == nullptr || pipeline == nullptr)
         {
             return nullptr;
         }
@@ -171,16 +209,28 @@ namespace SE
             return nullptr;
         }
 
-        if (RenderSkyType == SkyType::SkyBox)
+        GPUTexture* texture = CubeTexture ? CubeTexture->GetTexture() : nullptr;
+        if (!texture || !instance->SetTexture(SE_TEXT("SkyBoxTex"), texture->View()))
         {
-            GPUTexture* texture = CubeTexture ? CubeTexture->GetTexture() : nullptr;
-            if (!texture || !instance->SetTexture(SE_TEXT("SkyBoxTex"), texture->View()))
-            {
-                return nullptr;
-            }
+            return nullptr;
         }
         context->SetState(pipeline);
         return instance;
+    }
+
+    void Sky::ApplySkyAtmosphere(SkyAtmosphereData& data)
+    {
+        data = AtmosphereData;
+        data.SunDiscScale = SunDiscScale;
+
+        data.GroundPosition = GetPosition();
+        data.SunDirection = Float3::Up;
+        data.SunIlluminance = Float3::Zero;
+        if (SunLight && SunLight->IsActiveInHierarchy())
+        {
+            data.SunDirection = -SunLight->GetForward();
+            data.SunIlluminance = SunLight->Color.ToFloat3() * (SunLight->Color.A * SunLight->Brightness);
+        }
     }
 
     void Sky::EndPlay()

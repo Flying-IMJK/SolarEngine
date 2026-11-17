@@ -8,6 +8,7 @@
 namespace SE
 {
 	class GPUTexture;
+    class PhysicalSky;
 
 	/// <summary>
 	/// Structure that contains information about GBuffer for shaders.
@@ -33,7 +34,7 @@ namespace SE
 		/// <param name="gBuffer">GBuffer input to setup</param>
 		static void SetInputs(const RenderView& view, GBufferData& gBuffer);
 
-		void Execute(RenderContext& renderContext, GPUTexture* lightBuffer);
+		void Execute(RenderContext& renderContext, GPUTexture* lightBuffer, PhysicalSky& physicalSky);
 
 	private:
 		void DrawSky(RenderContext& renderContext, GPUContext* context);

@@ -229,7 +229,8 @@ namespace SE
         // , EnvironmentProbes(32)
         // , Decals(64)
         , Sky(nullptr)
-        // , AtmosphericFog(nullptr)
+        , SkyAtmosphere(nullptr)
+        , AtmosphericFog(nullptr)
         // , Fog(nullptr)
         // , Blendable(32)
         , m_InstanceBuffer(1024 * sizeof(StaticMeshInstanceData), sizeof(StaticMeshInstanceData), SE_TEXT("Instance Buffer"))
@@ -262,8 +263,9 @@ namespace SE
         // EnvironmentProbes.Clear();
         // Decals.Clear();
         VolumetricFogParticles.Clear();
-        // Sky = nullptr;
-        // AtmosphericFog = nullptr;
+        Sky = nullptr;
+        SkyAtmosphere = nullptr;
+        AtmosphericFog = nullptr;
         // Fog = nullptr;
         // PostFx.Clear();
         // Settings = PostProcessSettings();

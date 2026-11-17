@@ -42,6 +42,8 @@ namespace SE
 
     void RenderBuffers::Prepare()
     {
+        SkyAtmosphereLutsSubmitted = false;
+        SkyAtmosphereHeightFogSubmitted = false;
         // Auto release temporal buffer if not used for some time
         const uint64 frameIndex = Engine::FrameCount;
         if (VolumetricFog)
@@ -149,6 +151,16 @@ LastFrame##name = 0; \
         uint64 result = 0;
         for (int32 i = 0; i < _resources.Count(); i++)
             result += _resources[i]->GetMemoryUsage();
+        if (SkyAtmosphereTransmittanceLut)
+            result += SkyAtmosphereTransmittanceLut->GetMemoryUsage();
+        if (SkyAtmosphereMultiScatteringLut)
+            result += SkyAtmosphereMultiScatteringLut->GetMemoryUsage();
+        if (SkyAtmosphereSkyViewLut)
+            result += SkyAtmosphereSkyViewLut->GetMemoryUsage();
+        if (SkyAtmosphereAerialPerspectiveLut)
+            result += SkyAtmosphereAerialPerspectiveLut->GetMemoryUsage();
+        if (SkyAtmosphereDistantSkyLightLut)
+            result += SkyAtmosphereDistantSkyLightLut->GetMemoryUsage();
         return result;
     }
 
@@ -207,6 +219,15 @@ LastFrame##name = 0; \
 
     void RenderBuffers::Release()
     {
+        SkyAtmosphereLutsSubmitted = false;
+        SkyAtmosphereHeightFogSubmitted = false;
+        SkyAtmosphereBaseLutsSubmitted = false;
+        SkyAtmosphereShaderVersion = 0;
+        DeleteObjectSafe(SkyAtmosphereTransmittanceLut);
+        DeleteObjectSafe(SkyAtmosphereMultiScatteringLut);
+        DeleteObjectSafe(SkyAtmosphereSkyViewLut);
+        DeleteObjectSafe(SkyAtmosphereAerialPerspectiveLut);
+        DeleteObjectSafe(SkyAtmosphereDistantSkyLightLut);
         LastEyeAdaptationTime = 0;
         LinkedCustomBuffers = nullptr;
 

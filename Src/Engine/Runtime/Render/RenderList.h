@@ -394,14 +394,14 @@ namespace SE
         ISkyRenderer* Sky;
 
         /// <summary>
-        /// Atmospheric fog renderer proxy to use (only one per frame)
+        /// SkyAtmosphere renderer proxy to use (only one per frame)
         /// </summary>
-        // IAtmosphericFogRenderer* AtmosphericFog;
+        ISkyAtmosphereRenderer* SkyAtmosphere;
 
         /// <summary>
-        /// Fog renderer proxy to use (only one per frame)
+        /// Atmospheric fog renderer proxy to use (only one per frame)
         /// </summary>
-        // IFogRenderer* Fog;
+        IAtmosphericFogRenderer* AtmosphericFog;
 
         /// <summary>
         /// Post effects to render.

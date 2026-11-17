@@ -102,63 +102,6 @@ namespace SE
 		return result;
 	}
 
-	ShaderCompileResult ShadersCompilation::CompileSlangOfflineSelfTest()
-	{
-		PROFILE_CPU_NAMED("Shader.CompileSlangOfflineSelfTest");
-
-		ShaderCompileRequest request;
-		request.ShaderName = SE_TEXT("SolarSlangOfflineSelfTest");
-		request.SourcePath = SE_TEXT("SolarSlangOfflineSelfTest.slang");
-		request.SourceCode = R"(
-#include "Shaders/ProgramCommon.hlsl"
-
-struct VSInput
-{
-	float3 Position : POSITION;
-};
-
-struct VSOutput
-{
-	float4 Position : SV_POSITION;
-	float4 Color : COLOR0;
-};
-
-VSOutput VSMain(VSInput input)
-{
-	VSOutput output;
-	output.Position = float4(input.Position, 1.0);
-#if defined(USE_TINT)
-	output.Color = float4(1.0, 0.5, 0.25, 1.0);
-#else
-	output.Color = float4(1.0, 1.0, 1.0, 1.0);
-#endif
-	return output;
-}
-
-float4 PSMain(VSOutput input) : SV_Target0
-{
-	return input.Color;
-}
-
-SHADER_PROGRAM(SelfTestProgram, SHADER_VS(VSMain) SHADER_PS(PSMain) SHADER_MACRO(_, USE_TINT))
-)";
-
-        request.Targets.Add(ShaderProfile::Vulkan_SM5);
-
-		// 自测只调用离线编译入口；CompileSlang 内部会完成 ShaderArtifact 写出与结构校验。
-		ShaderCompileResult result = CompileSlang(request);
-		if (result.Success && result.ShaderData.Count() == 0)
-		{
-            result.Success = false;
-			if (!result.CompileMessage.IsEmpty())
-			{
-				result.CompileMessage += SE_TEXT("\n");
-			}
-			result.CompileMessage += SE_TEXT("Slang offline self-test produced empty ShaderArtifact data.");
-		}
-		return result;
-	}
-
 	void ShadersCompilation::RegisterForShaderReloads(Asset* asset, const String& includedPath)
 	{
 		Threading::ScopeLock lock(ShaderIncludesMapLocker);

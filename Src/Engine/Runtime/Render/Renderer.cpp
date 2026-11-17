@@ -1,29 +1,31 @@
 
-#include "Renderer.h"
+#include <Runtime/Render/Renderer.h>
 
-#include "Utils/RendererAllocation.hpp"
-#include "RenderBuffers.h"
-#include "RenderContext.h"
-#include "RendererPass.h"
-#include "RenderList.h"
-#include "RenderTask.h"
-#include "Runtime/Graphics/GPUDevice.h"
-#include "Runtime/Graphics/Viewport.h"
-#include "Runtime/Graphics/GPUContext.h"
-#include "RenderPass/ForwardPass.h"
-#include "RenderPass/FXAA.h"
-#include "RenderPass/GBufferPass.h"
-#include "RenderPass/LightPass.h"
-#include "Runtime/Graphics/RenderTargetPool.h"
+#include <Runtime/Core/Profiler/ProfilerCPU.h>
+#include <Runtime/Core/Profiler/ProfilerGPU.h>
+#include <Runtime/Core/Systems.h>
+#include <Runtime/Core/Thread/JobSystem.h>
 
-#include "Runtime/Core/Systems.h"
-#include "Runtime/Core/Profiler/ProfilerCPU.h"
-#include "Runtime/Core/Profiler/ProfilerGPU.h"
-#include "Runtime/Core/Thread/JobSystem.h"
-#include "RenderPass/ColorGradingPass.h"
-#include "RenderPass/GizmosPass.h"
-#include "RenderPass/PostProcessingPass.h"
-#include "RenderPass/ShadowPass.h"
+#include <Runtime/Graphics/GPUContext.h>
+#include <Runtime/Graphics/GPUDevice.h>
+#include <Runtime/Graphics/RenderTargetPool.h>
+#include <Runtime/Graphics/Viewport.h>
+#include <Runtime/Render/RenderBuffers.h>
+#include <Runtime/Render/RenderContext.h>
+#include <Runtime/Render/RenderList.h>
+#include <Runtime/Render/RenderPass/ColorGradingPass.h>
+#include <Runtime/Render/RenderPass/FXAA.h>
+#include <Runtime/Render/RenderPass/ForwardPass.h>
+#include <Runtime/Render/RenderPass/GBufferPass.h>
+#include <Runtime/Render/RenderPass/LightPass.h>
+#include <Runtime/Render/RenderFeatures/PhysicalSky.h>
+#include <Runtime/Render/RenderFeatures/ExponentialHeightFogRender.h>
+#include <Runtime/Render/RenderPass/PostProcessingPass.h>
+#include <Runtime/Render/RenderPass/ShadowPass.h>
+#include <Runtime/Render/RenderTask.h>
+#include <Runtime/Render/RendererPass.h>
+#include <Runtime/Render/RenderFeatures/SkyAtmospherePreCompute.h>
+#include <Runtime/Render/Utils/RendererAllocation.hpp>
 
 namespace SE
 {
@@ -31,6 +33,9 @@ namespace SE
 	struct RendererData
 	{
 		List<RendererPassBase*> PassList = List<RendererPassBase*>(64);
+		SkyAtmospherePreCompute AtmospherePreCompute;
+        PhysicalSky Sky;
+        ExponentialHeightFogRender HeightFog;
 
 	} *rendererData;
 
@@ -183,6 +188,12 @@ namespace SE
 			}
 		}
 
+		// Atmosphere generation only uses parameters and view matrices
+		if (renderContext.list->SkyAtmosphere)
+		{
+            rendererData->AtmospherePreCompute.Update(renderContext, renderContext.list->SkyAtmosphere);
+		}
+
 		// Get the light accumulation buffer
 		auto outputFormat = renderContext.buffers->GetOutputFormat();
 		GPUTextureFlags tempFlags = GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget;
@@ -195,12 +206,14 @@ namespace SE
 		RENDER_TARGET_POOL_SET_NAME(lightBuffer, "LightBuffer");
 
 		// GBuffer
-		GBufferPass::Instance().Execute(renderContext, lightBuffer);
+		GBufferPass::Instance().Execute(renderContext, lightBuffer, rendererData->Sky);
 
 
 		// Render lighting
 		renderContextBatch.GetMainContext() = renderContext; // Sync render context in batch with the current value
 		LightPass::Instance().RenderLight(renderContextBatch, *lightBuffer);
+
+        rendererData->HeightFog.Render(renderContext, lightBuffer->View());
 
 
 		// Run forward pass

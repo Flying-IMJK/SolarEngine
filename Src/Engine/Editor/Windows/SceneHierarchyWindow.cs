@@ -84,6 +84,8 @@ namespace SE.Editor
             m_ActorCreateMenus.Add(("Light/Direction", typeof(SE.DirectionalLight)));
             m_ActorCreateMenus.Add(("Light/Point", typeof(SE.PointLight)));
             m_ActorCreateMenus.Add(("Model/Static", typeof(SE.StaticModel)));
+            m_ActorCreateMenus.Add(("Atmosphere/Exponential Height Fog", typeof(SE.ExponentialHeightFog)));
+            m_ActorCreateMenus.Add(("Atmosphere/Sky", typeof(SE.Sky)));
         }
 
         public override void Draw()

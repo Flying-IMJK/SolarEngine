@@ -60,12 +60,12 @@ void PS_Directional(Quad_VS2PS input, out float4 output : SV_Target0)
 	GBufferSample gBuffer = SampleGBuffer(gBufferData, input.TexCoord);
 
 	// Check if cannot shadow pixel
-//	BRANCH
-//	if (gBuffer.ShadingModel == SHADING_MODEL_UNLIT)
-//	{
-//		discard;
-//		return;
-//	}
+	BRANCH
+	if (gBuffer.ShadingModel == SHADING_MODEL_UNLIT)
+	{
+		discard;
+		return;
+	}
 
 	// Sample shadow mask
 	float4 shadowMask = 1;
@@ -104,12 +104,12 @@ void PS_Point(Model_VS2PS input, out float4 output : SV_Target0)
 	GBufferSample gBuffer = SampleGBuffer(gBufferData, uv);
 
 	// Check if cannot shadow pixel
-  /*BRANCH
+    BRANCH
 	if (gBuffer.ShadingModel == SHADING_MODEL_UNLIT)
 	{
 		discard;
 		return;
-	} */
+	}
 
 	// Sample shadow mask
 	float4 shadowMask = 1;

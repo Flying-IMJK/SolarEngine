@@ -799,8 +799,8 @@ namespace SE
 					1,
 					8);
 		}
-
-//			limits.HasCompute = GetShaderProfile() == ShaderProfile::Vulkan_SM5 && physicalDeviceLimits.maxComputeWorkGroupCount[0] >= GPU_MAX_CS_DISPATCH_THREAD_GROUPS && physicalDeviceLimits.maxComputeWorkGroupCount[1] >= GPU_MAX_CS_DISPATCH_THREAD_GROUPS;
+			
+	    limits.HasCompute = GetShaderProfile() == ShaderProfile::Vulkan_SM5 && physicalDeviceLimits.maxComputeWorkGroupCount[0] >= GPU_MAX_CS_DISPATCH_THREAD_GROUPS && physicalDeviceLimits.maxComputeWorkGroupCount[1] >= GPU_MAX_CS_DISPATCH_THREAD_GROUPS;
 		limits.HasTessellation = !!physicalDeviceFeatures.tessellationShader;
 		limits.HasGeometryShaders = !!physicalDeviceFeatures.geometryShader;
 
@@ -849,7 +849,7 @@ namespace SE
 					support = EnumAddFlags(support, FormatSupport::TextureCube);
 				}
 				CHECK_IMAGE_FORMAT(VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT, FormatSupport::ShaderLoad);
-				//VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,
+                CHECK_IMAGE_FORMAT(VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT, FormatSupport::TypedUnorderedAccessView);
 				//VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT
 				CHECK_IMAGE_FORMAT(VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT, FormatSupport::RenderTarget);
 				CHECK_IMAGE_FORMAT(VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT, FormatSupport::Blendable);

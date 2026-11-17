@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Runtime/Core/Scripting/ScriptingObjectRef.h"
+#include <Runtime/Core/Scripting/ScriptingObjectRef.h>
 
 #include <Runtime/Level/Actor.h>
 #include <Runtime/Level/Actors/DirectionalLight.h>
@@ -25,23 +25,18 @@ namespace SE
     /// Sky actor renders atmosphere around the scene with fog and sky.
     /// </summary>
     SE_CLASS(Reflect, API())
-    class SE_API_RUNTIME Sky : public RenderActor, public ISkyRenderer/*, public IAtmosphericFogRenderer,*/
+    class SE_API_RUNTIME Sky : public RenderActor, public ISkyRenderer, public ISkyAtmosphereRenderer/*, public IAtmosphericFogRenderer,*/
     {
         SCRIPTING_TYPE(Sky);
         SE_DEFINE_CLASS(Sky, RenderActor);
     private:
         AssetRef<Shader> m_Shader;
-        GPUPipelineState*  m_PsoSky;
-        ShaderProgramInstance* m_SkyProgram = nullptr;
         GPUPipelineState*  m_PsoSkyBox;
         ShaderProgramInstance* m_SkyBoxProgram    = nullptr;
         int32 m_SceneRenderingKey = -1;
 
     public:
         ~Sky() override;
-
-        SE_FIELD(API(Attributes = "EditorOrder(10), DefaultValue(null), EditorDisplay(\"Skybox\")"))
-        SkyType RenderSkyType;
 
         /// <summary>
         /// The cube texture to draw.
@@ -61,7 +56,12 @@ namespace SE
         SE_FIELD(API(Attributes="EditorOrder(50), DefaultValue(0.0f), Limit(-100, 100, 0.01f), EditorDisplay(\"Skybox\")"))
         float Exposure = 0.0f;
 
+        SE_FIELD(API(Attributes = "EditorOrder(30), EditorDisplay(\"Atmosphere\", EditorDisplayAttribute.InlineStyle)"))
+        SkyAtmosphereData AtmosphereData;
     public:
+        SE_FIELD(API(Attributes = "EditorOrder(10), DefaultValue(null), EditorDisplay(\"Sky\")"))
+        SkyType RenderSkyType;
+
         /// <summary>
         /// Directional light that is used to simulate the sun.
         /// </summary>
@@ -83,7 +83,7 @@ namespace SE
     private:
         void ReleasePrograms();
         void OnShaderReloading(Asset* pAsset) { ReleasePrograms(); }
-        bool SetupProgram(const String& name, GPUPipelineState*& pipeline, ShaderProgramInstance*& instance);
+        bool SetupProgram();
         // void InitConfig(AtmosphericFogData& config) const;
 
     public:
@@ -112,8 +112,10 @@ namespace SE
 
         // [ISkyRenderer]
         bool IsDynamicSky() const override;
-        ShaderProgramInstance*
-        ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world) override;
+        ShaderProgramInstance* ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world) override;
+
+        // [ISkyAtmosphereRenderer]
+        void ApplySkyAtmosphere(SkyAtmosphereData& data) override;
 
     protected:
         // [Actor]

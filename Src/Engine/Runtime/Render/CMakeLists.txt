@@ -1,6 +1,7 @@
 
 add_subdirectory(Assets)
 add_subdirectory(Utils)
+add_subdirectory(RenderFeatures)
 add_subdirectory(RenderPass)
 add_subdirectory(2D)
 

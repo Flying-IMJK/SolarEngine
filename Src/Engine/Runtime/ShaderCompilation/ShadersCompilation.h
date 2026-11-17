@@ -21,15 +21,6 @@ namespace SE
 		static ShaderCompileResult CompileSlang(const ShaderCompileRequest& request);
 
 		/// <summary>
-		/// Runs a minimal offline Slang compilation self-test and returns the generated ShaderArtifact data.
-		/// </summary>
-		/// <remarks>
-		/// This helper is intentionally offline-only. It allows editor commands or tests to verify
-		/// the compiler pipeline before runtime shader parameter binding exists.
-		/// </remarks>
-		static ShaderCompileResult CompileSlangOfflineSelfTest();
-
-		/// <summary>
 		/// Registers shader asset for the automated reloads on source includes changes.
 		/// </summary
 		/// <param name="asset">The asset.</param>

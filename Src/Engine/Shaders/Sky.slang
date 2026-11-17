@@ -19,7 +19,6 @@ struct SkyInput
     float4 ScreenPos : TEXCOORD0;
 };
 
-SHADER_PROGRAM(Sky, SHADER_VS(VS), SHADER_PS(PS_Sky))
 SHADER_PROGRAM(SkyBox, SHADER_VS(VS), SHADER_PS(PS_SkyBox))
 
 SkyInput VS(ModelInput_PosOnly input)
@@ -37,11 +36,6 @@ GBufferOutput PackSky(float4 color)
     output.Light = color;
     output.RT1 = float4(1, 0, 0, SHADING_MODEL_UNLIT);
     return output;
-}
-
-GBufferOutput PS_Sky(SkyInput input)
-{
-    return PackSky(1.0);
 }
 
 GBufferOutput PS_SkyBox(SkyInput input)

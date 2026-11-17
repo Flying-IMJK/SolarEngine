@@ -1,4 +1,4 @@
-﻿
+
 
 RUNTIME_ADD(
     Camera.h
@@ -15,4 +15,6 @@ RUNTIME_ADD(
     PointLight.cpp
     Sky.h
     Sky.cpp
+    ExponentialHeightFog.h
+    ExponentialHeightFog.cpp
 )

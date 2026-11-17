@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Runtime/Core/Math/Color.h>
 #include <Runtime/Core/Math/Matrix.h>
 #include <Runtime/Core/Math/Rectangle.h>
 #include <Runtime/Core/Types/Variable.h>
@@ -10,9 +11,9 @@ namespace SE
     struct RenderView;
     struct RenderContext;
     struct DrawCall;
+    struct RenderDraw;
     class IMaterial;
     class ShaderProgramInstance;
-    struct RenderDraw;
     class MaterialBase;
     class RenderBuffers;
     class GPUTextureView;
@@ -39,8 +40,158 @@ namespace SE
         /// <param name="context">The context responsible for rendering commands.</param>
         /// <param name="renderContext">The rendering context.</param>
         /// <param name="world">The world matrix to use during sky model vertices transformations.</param>
-        virtual ShaderProgramInstance*
-        ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world) = 0;
+        virtual ShaderProgramInstance* ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world) = 0;
+    };
+
+    /// Exponential height fog settings. Distances are meters; colors use linear RGB only.
+    SE_STRUCT(API())
+    struct SE_API_RUNTIME ExponentialHeightFogData
+    {
+        SCRIPTING_TYPE_MIN(ExponentialHeightFogData);
+
+        SE_FIELD(API(Attributes = "EditorDisplay(\"Fog\"), Limit(0, 10, 0.001f)"))
+        float FogDensity = 0.02f;
+
+        SE_FIELD(API(Attributes = "EditorDisplay(\"Fog\"), Limit(0, 2, 0.001f)"))
+        float FogHeightFalloff = 0.2f;
+
+        SE_FIELD(API(Attributes = "EditorDisplay(\"Second Fog\"), Limit(0, 10, 0.001f)"))
+        float SecondFogDensity = 0.0f;
+
+        SE_FIELD(API(Attributes = "EditorDisplay(\"Second Fog\"), Limit(0, 2, 0.001f)"))
+        float SecondFogHeightFalloff = 0.2f;
+
+        /// Height relative to the actor, in meters.
+        SE_FIELD(API(Attributes = "EditorDisplay(\"Second Fog\")"))
+        float SecondFogHeightOffset = 0.0f;
+
+        SE_FIELD(API(Attributes = "EditorDisplay(\"Fog\"), HideAlphaChannel"))
+        Color FogInscatteringColor = Colors::Black;
+
+        SE_FIELD(API(Attributes = "EditorDisplay(\"Fog\"), Limit(0, 1, 0.01f)"))
+        float FogMaxOpacity = 1.0f;
+
+        SE_FIELD(API(Attributes = "EditorDisplay(\"Fog\"), Limit(0, float.MaxValue)"))
+        float StartDistance = 0.0f;
+
+        /// Elements beyond this distance receive no fog; zero disables the cutoff.
+        SE_FIELD(API(Attributes = "EditorDisplay(\"Fog\"), Limit(0, float.MaxValue)"))
+        float FogCutoffDistance = 0.0f;
+
+        SE_FIELD(API(Attributes = "EditorDisplay(\"Directional Inscattering\"), HideAlphaChannel"))
+        Color DirectionalInscatteringColor = Colors::Black;
+
+        SE_FIELD(API(Attributes = "EditorDisplay(\"Directional Inscattering\"), Limit(0.000001f, 1000)"))
+        float DirectionalInscatteringExponent = 4.0f;
+
+        SE_FIELD(API(Attributes = "EditorDisplay(\"Directional Inscattering\"), Limit(0, float.MaxValue)"))
+        float DirectionalInscatteringStartDistance = 100.0f;
+
+        SE_FIELD(API(Attributes = "EditorDisplay(\"Sky Atmosphere\"), HideAlphaChannel"))
+        Color SkyAtmosphereAmbientContributionColorScale = Colors::White;
+
+        /// Runtime world height filled by the provider; not serialized as a setting.
+        SE_FIELD(API(Attributes = "HideInEditor"))
+        float FogHeight = 0.0f;
+    };
+
+    /// Non-owning scene provider. Called on the render thread before fog drawing.
+    class IAtmosphericFogRenderer
+    {
+    public:
+        virtual void ApplyAtmosphericFog(ExponentialHeightFogData& data) = 0;
+    };
+
+    SE_STRUCT(API())
+    struct SE_API_RUNTIME SkyAtmosphereData
+    {
+        SCRIPTING_TYPE_MIN(SkyAtmosphereData);
+        // Atmosphere lengths are km; linear color RGB multiplied by its scale gives coefficients in km^-1.
+        // Alpha is unused by the atmosphere model.
+        SE_FIELD(API(Attributes = "Limit(0.001f, 1000000f)"))
+        float GroundRadius = 6360.0f;
+
+        SE_FIELD(API(Attributes = "Limit(0.001f, 1000000)"))
+        float AtmosphereHeight = 60.0f;
+
+        SE_FIELD(API(Attributes = "Limit(0.001f, 1000000f)"))
+        float RayleighScaleHeight = 8.0f;
+
+        SE_FIELD(API(Attributes = "Limit(0.0f, float.MaxValue, 0.001f)"))
+        float RayleighScatteringScale = 0.033100f;
+
+        SE_FIELD(API(Attributes = "HideAlphaChannel"))
+        Color RayleighScattering = Color(0.005802f / 0.033100f, 0.013558f / 0.033100f, 1.0f);
+
+        SE_FIELD(API(Attributes = "Limit(0.001f, 1000000f)"))
+        float MieScaleHeight = 1.2f;
+
+        SE_FIELD(API(Attributes = "Limit(0.0f, float.MaxValue, 0.001f)"))
+        float MieScatteringScale = 0.003996f;
+
+        SE_FIELD(API(Attributes = "HideAlphaChannel"))
+        Color MieScattering = Colors::White;
+
+        SE_FIELD(API(Attributes = "Limit(0.0f, float.MaxValue, 0.001f)"))
+        float MieAbsorptionScale = 0.000444f;
+
+        SE_FIELD(API(Attributes = "HideAlphaChannel"))
+        Color MieAbsorption = Colors::White;
+
+        SE_FIELD(API(Attributes = "Limit(-0.999f, 0.999f)"))
+        float MieAnisotropy = 0.8f;
+
+        SE_FIELD(API(Attributes = "Limit(0.0f, float.MaxValue, 0.001f)"))
+        float AbsorptionExtinctionScale = 0.001881f;
+
+        SE_FIELD(API(Attributes = "HideAlphaChannel"))
+        Color AbsorptionExtinction = Color(0.000650f / 0.001881f, 1.0f, 0.000085f / 0.001881f);
+
+        SE_FIELD(API(Attributes = "Limit(0.0f, 1000000.0f)"))
+        float AbsorptionTipAltitude = 25.0f;
+
+        SE_FIELD(API(Attributes = "Limit(0.001f, 1000000.0f)"))
+        float AbsorptionWidth = 15.0f;
+
+        SE_FIELD(API(Attributes = "HideAlphaChannel"))
+        Color GroundAlbedo = Color(0.4f, 0.4f, 0.4f);
+
+        SE_FIELD(API(Attributes = "Limit(0.0f, 100.0f)"))
+        float MultiScatteringFactor = 1.0f;
+
+        /// Scales sky and atmospheric sunlight contributions to exponential height fog.
+        SE_FIELD(API(Attributes = "Limit(0, float.MaxValue, 0.01f)"))
+        float HeightFogContribution = 1.0f;
+
+        SE_FIELD(API(Attributes = "Limit(0.0f, 1000000.0f)"))
+        float AerialPerspectiveStartDepth = 0.1f;
+
+        SE_FIELD(API(Attributes = "Limit(0.001f, 1000000.0f)"))
+        float AerialPerspectiveDepth = 96.0f;
+
+        // Runtime values must participate in the native/managed struct layout even when hidden.
+        /// World-space ground reference point in meters; filled by the parameter provider.
+        SE_FIELD(API(Attributes = "HideInEditor"))
+        Float3 GroundPosition = Float3::Zero;
+
+        /// Normalized direction toward the sun, in world space.
+        SE_FIELD(API(Attributes = "HideInEditor"))
+        Float3 SunDirection = Float3::Up;
+
+        /// Linear light color multiplied by engine light intensity; zero disables sunlight.
+        SE_FIELD(API(Attributes = "HideInEditor"))
+        Float3 SunIlluminance = Float3::Zero;
+
+        /// Multiplier of the nominal 0.545-degree sun angular diameter; zero hides the disk.
+        SE_FIELD(API(Attributes = "HideInEditor"))
+        float SunDiscScale = 1.0f;
+    };
+
+    class ISkyAtmosphereRenderer
+    {
+    public:
+        /// Fills a parameter snapshot. GPU work and resources belong to the rendering pipeline.
+        virtual void ApplySkyAtmosphere(SkyAtmosphereData& data) = 0;
     };
 
 

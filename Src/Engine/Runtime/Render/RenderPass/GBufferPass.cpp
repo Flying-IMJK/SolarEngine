@@ -7,6 +7,7 @@
 #include <Runtime/Graphics/Textures/GPUTexture.h>
 #include <Runtime/Render/RenderBuffers.h>
 #include <Runtime/Render/RenderList.h>
+#include <Runtime/Render/RenderFeatures/PhysicalSky.h>
 
 namespace SE
 {
@@ -26,7 +27,7 @@ namespace SE
         gBuffer.InvProjectionMatrix = view.IP;
 	}
 
-	void GBufferPass::Execute(RenderContext& renderContext, GPUTexture* lightBuffer)
+	void GBufferPass::Execute(RenderContext& renderContext, GPUTexture* lightBuffer, PhysicalSky& physicalSky)
 	{
 		PROFILE_GPU_CPU("GBuffer");
 
@@ -64,13 +65,19 @@ namespace SE
 		context->SetRenderTarget(ToSpan(targetBuffers, ARRAY_SIZE(targetBuffers)), *renderContext.buffers->DepthBuffer);
 		renderContext.list->ExecuteDrawCalls(renderContext, DrawCallsListType::GBufferNoDecals);
 
-		// Draw sky
-		if (renderContext.list->Sky && m_SkyModel && m_SkyModel->CanBeRendered()/* && renderContext.view.Flags(ViewFlags::Sky)*/)
-		{
-			PROFILE_GPU_CPU_NAMED("Sky");
-			context->SetRenderTarget(ToSpan(targetBuffers, ARRAY_SIZE(targetBuffers)), *renderContext.buffers->DepthBuffer);
-			DrawSky(renderContext, context);
-		}
+        // SkyBox and PhysicalSky share this stage and never draw over each other.
+        ENGINE_ASSERT(!(renderContext.list->Sky && renderContext.list->SkyAtmosphere));
+        if (renderContext.list->SkyAtmosphere)
+        {
+            context->SetRenderTarget(ToSpan(targetBuffers, ARRAY_SIZE(targetBuffers)), *renderContext.buffers->DepthBuffer);
+            physicalSky.Render(renderContext);
+        }
+        else if (renderContext.list->Sky && m_SkyModel && m_SkyModel->CanBeRendered())
+        {
+            PROFILE_GPU_CPU_NAMED("SkyBox");
+            context->SetRenderTarget(ToSpan(targetBuffers, ARRAY_SIZE(targetBuffers)), *renderContext.buffers->DepthBuffer);
+            DrawSky(renderContext, context);
+        }
 
 		context->ResetRenderTarget();
 
