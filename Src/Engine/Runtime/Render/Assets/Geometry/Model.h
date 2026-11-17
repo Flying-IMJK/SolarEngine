@@ -22,6 +22,134 @@ namespace SE
 
     #define MODE_VERSION 1
 
+
+    
+    /// <summary>
+    /// Represents single Level Of Detail for the model. Contains a collection of the meshes.
+    /// </summary>
+    SE_CLASS(API(NoSpawn))
+    class SE_API_RUNTIME ModelLOD : public ModelLODBase
+    {
+    private:
+        SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(ModelLOD, ModelLODBase)
+        friend Model;
+        friend Mesh;
+    private:
+        Model* m_Model = nullptr;
+        uint32 m_VerticesCount;
+
+    public:
+        /// <summary>
+        /// The meshes array.
+        /// </summary>
+        SE_FIELD(API(ReadOnly)) 
+        List<Mesh> Meshes;
+
+        /// <summary>
+        /// Determines whether any mesh has been initialized.
+        /// </summary>
+        /// <returns>True if any mesh has been initialized, otherwise false.</returns>
+        FORCE_INLINE bool HasAnyMeshInitialized() const
+        {
+            // Note: we initialize all meshes at once so the last one can be used to check it.
+            return Meshes.HasItems() && Meshes.Last().IsInitialized();
+        }
+
+        /// <summary>
+        /// Gets the vertex count for this model LOD level.
+        /// </summary>
+        FORCE_INLINE uint32 GetVertexCount() const
+        {
+            return m_VerticesCount;
+        }
+
+    public:
+        /// <summary>
+        /// Initializes the LOD from the data stream.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <returns>True if fails, otherwise false.</returns>
+        bool Load(MemoryReadStream& stream);
+
+        /// <summary>
+        /// Unloads the LOD meshes data (vertex buffers and cache). It won't dispose the meshes collection. The opposite to Load.
+        /// </summary>
+        void Unload();
+
+        /// <summary>
+        /// Cleanups the data.
+        /// </summary>
+        void Dispose();
+
+    public:
+        /// <summary>
+        /// Determines if there is an intersection between the Model and a Ray in given world using given instance
+        /// </summary>
+        /// <param name="ray">The ray to test</param>
+        /// <param name="world">World to test</param>
+        /// <param name="distance">When the method completes, contains the distance of the intersection (if any valid).</param>
+        /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
+        /// <param name="mesh">Mesh, or null</param>
+        /// <returns>True whether the two objects intersected</returns>
+        bool Intersects(const Ray& ray, const Matrix& world, float& distance, Float3& normal, Mesh** mesh);
+
+        /// <summary>
+        /// Determines if there is an intersection between the Model and a Ray in given world using given instance
+        /// </summary>
+        /// <param name="ray">The ray to test</param>
+        /// <param name="transform">The instance transformation.</param>
+        /// <param name="distance">When the method completes, contains the distance of the intersection (if any valid).</param>
+        /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
+        /// <param name="mesh">Mesh, or null</param>
+        /// <returns>True whether the two objects intersected</returns>
+        bool Intersects(const Ray& ray, const Transform& transform, float& distance, Float3& normal, Mesh** mesh);
+
+        /// <summary>
+        /// Draws the meshes. Binds vertex and index buffers and invokes the draw calls.
+        /// </summary>
+        /// <param name="context">The GPU context to draw with.</param>
+        void Render(GPUContext* context);
+
+        /// <summary>
+        /// Draws the meshes from the model LOD.
+        /// </summary>
+        /// <param name="renderContext">The rendering context.</param>
+        /// <param name="material">The material to use for rendering.</param>
+        /// <param name="world">The world transformation of the model.</param>
+        /// <param name="flags">The object static flags.</param>
+        /// <param name="receiveDecals">True if rendered geometry can receive decals, otherwise false.</param>
+        /// <param name="drawModes">The draw passes to use for rendering this object.</param>
+        /// <param name="perInstanceRandom">The random per-instance value (normalized to range 0-1).</param>
+        /// <param name="sortOrder">Object sorting key.</param>
+        void Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticMask flags = StaticMask::None,
+            bool receiveDecals = true, DrawPass drawModes = DrawPass::Default, float perInstanceRandom = 0.0f, int16 sortOrder = 0) const;
+
+        /// <summary>
+        /// Draws all the meshes from the model LOD.
+        /// </summary>
+        /// <param name="renderContext">The rendering context.</param>
+        /// <param name="info">The packed drawing info data.</param>
+        /// <param name="lodDitherFactor">The LOD transition dither factor.</param>
+        void Draw(const RenderContext& renderContext, const Mesh::DrawInfo& info, float lodDitherFactor) const;
+
+        /// <summary>
+        /// Draws all the meshes from the model LOD.
+        /// </summary>
+        /// <param name="renderContextBatch">The rendering context batch.</param>
+        /// <param name="info">The packed drawing info data.</param>
+        /// <param name="lodDitherFactor">The LOD transition dither factor.</param>
+        void Draw(const RenderContextBatch& renderContextBatch, const Mesh::DrawInfo& info, float lodDitherFactor) const;
+
+    public:
+        // [ModelLODBase]
+        int32           GetMeshesCount() const override;
+        const MeshBase* GetMesh(int32 index) const override;
+        MeshBase*       GetMesh(int32 index) override;
+        void            GetMeshes(List<const MeshBase*>& meshes) const override;
+        void            GetMeshes(List<MeshBase*>& meshes) override;
+
+    };
+
     /// <summary>
     /// Model asset that contains model object made of meshes which can rendered on the GPU.
     /// </summary>
@@ -34,14 +162,11 @@ namespace SE
         SE_DEFINE_CLASS(Model, ModelBase);
         ASSET_HEADER(Model);
 
-    private:
-        int32 m_LoadedLODs = 0;
-        StreamModelLODTask* m_StreamingTask = nullptr;
-
     public:
         /// <summary>
         /// Model level of details. The first entry is the highest quality LOD0 followed by more optimized versions.
         /// </summary>
+        SE_FIELD(API(ReadOnly))
         List<ModelLOD, FixedAllocation<MODEL_MAX_LODS>> LODs;
 
         /// <summary>
@@ -65,44 +190,9 @@ namespace SE
         }
 
         /// <summary>
-        /// Gets the amount of loaded model LODs.
-        /// </summary>
-        SE_FUNCTION(API())
-        FORCE_INLINE int32 GetLoadedLODs() const
-        {
-            return m_LoadedLODs;
-        }
-
-        /// <summary>
-        /// Clamps the index of the LOD to be valid for rendering (only loaded LODs).
-        /// </summary>
-        /// <param name="index">The index.</param>
-        /// <returns>The resident LOD index.</returns>
-        FORCE_INLINE int32 ClampLODIndex(int32 index) const
-        {
-            return Math::Clamp(index, HighestResidentLODIndex(), LODs.Count() - 1);
-        }
-
-        /// <summary>
-        /// Gets index of the highest resident LOD (may be equal to LODs.Count if no LOD has been uploaded). Note: LOD=0 is the highest (top quality)
-        /// </summary>
-        FORCE_INLINE int32 HighestResidentLODIndex() const
-        {
-            return LODs.Count() - m_LoadedLODs;
-        }
-
-        /// <summary>
         /// Determines whether any LOD has been initialized.
         /// </summary>
         bool HasAnyLODInitialized() const;
-
-        /// <summary>
-        /// Determines whether this model can be rendered.
-        /// </summary>
-        FORCE_INLINE bool CanBeRendered() const
-        {
-            return m_LoadedLODs > 0;
-        }
 
     public:
         /// <summary>
@@ -158,6 +248,7 @@ namespace SE
         /// <param name="world">The transformation matrix.</param>
         /// <param name="lodIndex">The Level Of Detail index.</param>
         /// <returns>The bounding box.</returns>
+        SE_FUNCTION(API())
         BoundingBox GetBox(const Matrix& world, int32 lodIndex = 0) const;
 
         /// <summary>
@@ -166,6 +257,7 @@ namespace SE
         /// <param name="transform">The instance transformation.</param>
         /// <param name="lodIndex">The Level Of Detail index.</param>
         /// <returns>The bounding box.</returns>
+        SE_FUNCTION(API())
         BoundingBox GetBox(const Transform& transform, int32 lodIndex = 0) const;
 
         /// <summary>
@@ -173,29 +265,8 @@ namespace SE
         /// </summary>
         /// <param name="lodIndex">The Level Of Detail index.</param>
         /// <returns>The bounding box.</returns>
-        /// The model must be loaded and lodIndex must be valid. Does not wait for loading.
         SE_FUNCTION(API())
         BoundingBox GetBox(int32 lodIndex = 0) const;
-
-        /// <summary>
-        /// Gets the screen-size threshold of a valid LOD of a loaded model. Does not wait for loading.
-        /// </summary>
-        SE_FUNCTION(API())
-        float GetLODScreenSize(int32 lodIndex) const;
-
-        /// <summary>
-        /// Gets the vertex count of a resident LOD. Query on the thread that owns asset edits.
-        /// The model must be loaded and lodIndex must identify a resident LOD. Does not wait for streaming.
-        /// </summary>
-        SE_FUNCTION(API())
-        int32 GetLODVertexCount(int32 lodIndex) const;
-
-        /// <summary>
-        /// Gets the triangle count of a resident LOD. Query on the thread that owns asset edits.
-        /// The model must be loaded and lodIndex must identify a resident LOD. Does not wait for streaming.
-        /// </summary>
-        SE_FUNCTION(API())
-        int32 GetLODTriangleCount(int32 lodIndex) const;
 
     public:
         /// <summary>
@@ -246,7 +317,7 @@ namespace SE
         /// <remarks>If you use saving with the GPU mesh data then the call has to be provided from the thread other than the main game thread.</remarks>
         /// <param name="withMeshDataFromGpu">True if save also GPU mesh buffers, otherwise will keep data in storage unmodified. Valid only if saving the same asset to the same location and it's loaded.</param>
         /// <param name="path">The custom asset path to use for the saving. Use empty value to save this asset to its own storage location. Can be used to duplicate asset. Must be specified when saving virtual asset.</param>
-        /// <returns>True if cannot save data, otherwise false.</returns>
+        /// <returns>True on success, otherwise false.</returns>
         bool Save(bool withMeshDataFromGpu = false, const StringView& path = StringView::Empty);
 
 #endif
@@ -279,7 +350,13 @@ namespace SE
         // [ModelBase]
         void SetupMaterialSlots(int32 slotsCount) override;
         int32 GetLODsCount() const override;
+        const ModelLODBase* GetLOD(int32 lodIndex) const override;
+        ModelLODBase* GetLOD(int32 lodIndex) override;
+        const MeshBase* GetMesh(int32 meshIndex, int32 lodIndex = 0) const override;
+        MeshBase* GetMesh(int32 meshIndex, int32 lodIndex = 0) override;
+        void GetMeshes(List<const MeshBase*>& meshes, int32 lodIndex = 0) const override;
         void GetMeshes(List<MeshBase*>& meshes, int32 lodIndex = 0) override;
+
         void InitAsVirtual() override;
         void CancelStreaming() override;
 #if SE_EDITOR
@@ -297,12 +374,11 @@ namespace SE
         void CancelStreamingTasks() override;
 
     protected:
+        bool OnInit(AssetInitData& initData) override;
+
         // [ModelBase]
         LoadResult load() override;
         void Unload(bool isReloading) override;
-        bool OnInit(AssetInitData& initData) override;
-
-    protected:
         AssetChunksFlag GetChunksToPreload() const override;
     };
 

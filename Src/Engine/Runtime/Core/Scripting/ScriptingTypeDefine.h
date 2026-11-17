@@ -42,8 +42,8 @@ namespace SE
     /// Helper define used to declare required components for native types that have managed type (for objects that can be spawned) including default constructors implementations.
     /// </summary>
     #define SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(type, baseType) \
-    DECLARE_SCRIPTING_TYPE_NO_SPAWN(type); \
-    static type* Spawn(const SpawnParams& params) { return ::SE::<type>(params); } \
+    SCRIPTING_TYPE_NO_SPAWN(type); \
+    static type* Spawn(const SpawnParams& params) { return ::SE::New<type>(params); } \
     explicit type(const SpawnParams& params) : baseType(params) { } \
     explicit type() : baseType(SpawnParams(UID::New(), type::TypeInitializer)) { }
 

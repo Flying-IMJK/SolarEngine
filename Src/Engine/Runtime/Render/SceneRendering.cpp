@@ -13,7 +13,7 @@ namespace SE
 	{
 		for (SceneRendering* scene : _scenes)
 		{
-			scene->_listeners.Remove(this);
+			scene->m_Listeners.Remove(this);
 		}
 	}
 
@@ -22,7 +22,7 @@ namespace SE
 		if (!_scenes.Contains(scene))
 		{
 			_scenes.Add(scene);
-			scene->_listeners.Add(this);
+			scene->m_Listeners.Add(this);
 		}
 	}
 
@@ -105,16 +105,20 @@ namespace SE
 	void SceneRendering::Clear()
 	{
 		Threading::ScopeLock lock(Locker);
-		for (auto* listener : _listeners)
+		for (auto* listener : m_Listeners)
 		{
 			listener->OnSceneRenderingClear(this);
 			listener->_scenes.Remove(this);
 		}
-		_listeners.Clear();
+		m_Listeners.Clear();
 		for (auto& e : Actors)
 		{
 			e.Clear();
 		}
+        for (auto& e : FreeActors)
+        {
+            e.Clear();
+        }
 	}
 
 	void SceneRendering::AddRender(RenderActor* render, int32& key)
@@ -123,26 +127,24 @@ namespace SE
 			return;
 		const int32 category = render->RenderGetDrawCategory();
 		Threading::ScopeLock lock(Locker);
-		auto& list = Actors[category];
-		// TODO: track removedCount and skip searching for free entry if there is none
-		key = 0;
-		for (; key < list.Count(); key++)
-		{
-			if (list.Get()[key].render == nullptr)
-			{
-			    break;
-			}
-		}
-		if (key == list.Count())
-		{
-		    list.AddOne();
-		}
+        auto& list = Actors[category];
+        if (FreeActors[category].HasItems())
+        {
+            // Use existing item
+            key = FreeActors[category].Pop();
+        }
+        else
+        {
+            // Add a new item
+            key = list.Count();
+            list.AddOne();
+        }
 		auto& e = list[key];
 		e.render = render;
 		e.LayerMask = render->RenderGetLayerMask();
 		e.Bounds = render->RenderGetSphere();
 		// e.NoCulling = a->_drawNoCulling;
-		for (auto* listener : _listeners)
+		for (auto* listener : m_Listeners)
 		{
 		    listener->OnSceneRenderingAddActor(render);
 		}
@@ -158,7 +160,7 @@ namespace SE
 		auto& e = list[key];
 		if (e.render == render)
 		{
-			for (auto* listener : _listeners)
+			for (auto* listener : m_Listeners)
 			{
 				listener->OnSceneRenderingUpdateActor(render, e.Bounds);
 			}
@@ -177,12 +179,13 @@ namespace SE
 			auto& e = list.Get()[key];
 			if (e.render == render)
 			{
-				for (auto* listener : _listeners)
+				for (auto* listener : m_Listeners)
 				{
 					listener->OnSceneRenderingRemoveActor(render);
 				}
 				e.render = nullptr;
 				e.LayerMask = 0;
+				FreeActors[category].Push(key); 
 			}
 		}
 		key = -1;
@@ -201,8 +204,8 @@ namespace SE
 	}
 
 #define FOR_EACH_BATCH_ACTOR const int64 count = m_DrawListSize; while (true) { const int64 index = Platform::AtomicIncrement(&m_DrawListIndex); if (index >= count) break; auto e = m_DrawListData[index];
-#define CHECK_ACTOR (/*(view.RenderLayersMask.Mask & e.LayerMask) && */(e.NoCulling || FrustumsListCull(e.Bounds, m_DrawFrustumsData)))
-#define CHECK_ACTOR_SINGLE_FRUSTUM (/*(view.RenderLayersMask.Mask & e.LayerMask) && */(e.NoCulling || view.cullingFrustum.Intersects(e.Bounds)))
+#define CHECK_ACTOR ((view.RenderLayersMask.Mask & e.LayerMask) && (e.NoCulling || FrustumsListCull(e.Bounds, m_DrawFrustumsData)))
+#define CHECK_ACTOR_SINGLE_FRUSTUM ((view.RenderLayersMask.Mask & e.LayerMask) && (e.NoCulling || view.cullingFrustum.Intersects(e.Bounds)))
 
 #if SCENE_RENDERING_USE_PROFILER_PER_ACTOR
 #define DRAW_ACTOR(mode) PROFILE_CPU_ACTOR(e.Actor); e.Actor->Draw(mode)

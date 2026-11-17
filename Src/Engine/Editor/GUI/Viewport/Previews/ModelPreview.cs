@@ -15,6 +15,14 @@ namespace SE.Editor.GUI
         private bool m_FrameModel;
 
         /// <summary>
+        /// The preview-owned model instance. Asset windows may adjust its LOD and material slot visibility.
+        /// </summary>
+        public StaticModel PreviewModel => m_PreviewModel;
+
+        /// <summary>Displays the current rendered LOD and its geometry statistics.</summary>
+        public bool ShowCurrentLOD { get; set; }
+
+        /// <summary>
         /// Normalizes the preview instance to a longest side of 50 and centers it at the origin.
         /// Disabling this restores the instance's identity transform; the asset is never modified.
         /// </summary>
@@ -95,7 +103,7 @@ namespace SE.Editor.GUI
                 return;
             }
 
-            BoundingBox box = model.GetBox();
+            BoundingBox box = model.GetLOD(0).GetBox();
             float maxSize = box.Size.MaxValue;
             float scale = m_ScaleToFit && maxSize > 0.0f ? 50.0f / maxSize : 1.0f;
             Float3 position = m_ScaleToFit ? box.Center * -scale : Float3.Zero;
@@ -117,6 +125,33 @@ namespace SE.Editor.GUI
             ViewportCamera.SetArcBallView(sphere, distance / sphere.Radius);
             m_Task.IsCameraCut = true;
             m_FrameModel = false;
+        }
+
+        public override void Draw()
+        {
+            base.Draw();
+            Model model = Model;
+            if (!ShowCurrentLOD || model == null || !model.IsLoaded() || model.LoadedLODs == 0)
+            {
+                return;
+            }
+            RenderContext context = new RenderContext { view = m_Task.View };
+            float screenSize = 0.0f;
+            int lod = m_PreviewModel.ComputeLODIndex(context, ref screenSize);
+            string text = $"Current LOD: {lod}    Screen size: {screenSize:0.###}";
+            if (lod >= model.GetLODsCount() - model.LoadedLODs && lod < model.GetLODsCount())
+            {
+                model.GetMeshes(out MeshBase[] meshes, lod);
+                int triangles = 0;
+                int vertices = 0;
+                foreach (MeshBase mesh in meshes)
+                {
+                    triangles += mesh.TriangleCount;
+                    vertices += mesh.VertexCount;
+                }
+                text += $"\nTriangles: {triangles:N0}    Vertices: {vertices:N0}";
+            }
+            Render2D.DrawText(Style.Current.FontMedium, text, new Rectangle(new Float2(8, 8), Size), Color.White);
         }
 
         public override void Update(float deltaTime)
@@ -216,7 +251,7 @@ namespace SE.Editor.GUI
         protected override bool CanSkipRendering()
         {
             Model model = Model;
-            return base.CanSkipRendering() || model == null || !model.IsLoaded() || model.GetLoadedLODs() == 0 || !GetHasLoadedAssets();
+            return base.CanSkipRendering() || model == null || !model.IsLoaded() || model.LoadedLODs == 0 || !GetHasLoadedAssets();
         }
 
         public override void OnDestroy()

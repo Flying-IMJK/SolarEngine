@@ -114,7 +114,7 @@ namespace SE
     {
         return LODs.HasItems() && LODs.Last().HasAnyMeshInitialized();
     }
-    
+
     bool Model::Intersects(const Ray& ray, const Matrix& world, float& distance, Float3& normal, Mesh** mesh, int32 lodIndex)
     {
         return LODs[lodIndex].Intersects(ray, world, distance, normal, mesh);
@@ -128,39 +128,6 @@ namespace SE
     BoundingBox Model::GetBox(const Matrix& world, int32 lodIndex) const
     {
         return LODs[lodIndex].GetBox(world);
-    }
-
-    BoundingBox Model::GetBox(int32 lodIndex) const
-    {
-        return LODs[lodIndex].GetBox();
-    }
-
-    float Model::GetLODScreenSize(int32 lodIndex) const
-    {
-        ENGINE_ASSERT(IsLoaded() && lodIndex >= 0 && lodIndex < LODs.Count());
-        return LODs[lodIndex].ScreenSize;
-    }
-
-    int32 Model::GetLODVertexCount(int32 lodIndex) const
-    {
-        ENGINE_ASSERT(IsLoaded() && lodIndex >= HighestResidentLODIndex() && lodIndex < LODs.Count());
-        int32 count = 0;
-        for (const Mesh& mesh : LODs[lodIndex].Meshes)
-        {
-            count += mesh.GetVertexCount();
-        }
-        return count;
-    }
-
-    int32 Model::GetLODTriangleCount(int32 lodIndex) const
-    {
-        ENGINE_ASSERT(IsLoaded() && lodIndex >= HighestResidentLODIndex() && lodIndex < LODs.Count());
-        int32 count = 0;
-        for (const Mesh& mesh : LODs[lodIndex].Meshes)
-        {
-            count += mesh.GetTriangleCount();
-        }
-        return count;
     }
 
     void Model::Render(GPUContext* context, int32 lodIndex)
@@ -319,7 +286,7 @@ namespace SE
     bool Model::Save(bool withMeshDataFromGpu, const StringView& path)
     {
         // Validate state
-        if (WaitForLoaded())
+        if (!WaitForLoaded())
         {
             LOG_ERROR("Render", "Asset loading failed. Cannot save it.");
             return false;
@@ -641,7 +608,7 @@ namespace SE
 
         // Save
         AssetInitData data;
-        data.SerializedVersion = 0;
+        data.SerializedVersion = MODE_VERSION;
         if (IsVirtual())
             Platform::MemoryCopy(m_Header.Chunks, tmpChunks, sizeof(m_Header.Chunks));
         const bool saveResult = path.HasChars() ? SaveAsset(path, data) : SaveAsset(data, true);
@@ -728,8 +695,8 @@ namespace SE
         for (int32 lodIndex = 0; lodIndex < meshesCountPerLod.Length(); lodIndex++)
         {
             auto& lod = LODs[lodIndex];
-            lod._model = this;
-            lod._lodIndex = lodIndex;
+            lod.m_Model = this;
+            lod.m_LodIndex = lodIndex;
             lod.ScreenSize = 1.0f;
             const int32 meshesCount = meshesCountPerLod[lodIndex];
             if (meshesCount <= 0 || meshesCount > MODEL_MAX_MESHES)
@@ -772,14 +739,47 @@ namespace SE
         return LODs.Count();
     }
 
-    void Model::GetMeshes(List<MeshBase*>& meshes, int32 lodIndex)
+    const ModelLODBase* Model::GetLOD(int32 lodIndex) const
+    {
+        if (!LODs.IsValidIndex(lodIndex))
+        {
+            return nullptr;
+        }
+
+        return &LODs.Get()[lodIndex];
+    }
+
+    ModelLODBase* Model::GetLOD(int32 lodIndex)
+    {
+        if (!LODs.IsValidIndex(lodIndex))
+        {
+            return nullptr;
+        }
+
+        return &LODs.Get()[lodIndex];
+    }
+
+
+    const MeshBase* Model::GetMesh(int32 meshIndex, int32 lodIndex) const
     {
         auto& lod = LODs[lodIndex];
-        meshes.Resize(lod.Meshes.Count());
-        for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
-        {
-            meshes[meshIndex] = &lod.Meshes[meshIndex];
-        }
+        return &lod.Meshes[meshIndex];
+    }
+
+    MeshBase* Model::GetMesh(int32 meshIndex, int32 lodIndex)
+    {
+        auto& lod = LODs[lodIndex];
+        return &lod.Meshes[meshIndex];
+    }
+
+    void Model::GetMeshes(List<const MeshBase*>& meshes, int32 lodIndex) const
+    {
+        LODs[lodIndex].GetMeshes(meshes);
+    }
+
+    void Model::GetMeshes(List<MeshBase*>& meshes, int32 lodIndex)
+    {
+        LODs[lodIndex].GetMeshes(meshes);
     }
 
     void Model::InitAsVirtual()
@@ -947,8 +947,8 @@ namespace SE
         for (int32 lodIndex = 0; lodIndex < lods; lodIndex++)
         {
             auto& lod = LODs[lodIndex];
-            lod._model = this;
-            lod._lodIndex = lodIndex;
+            lod.m_Model = this;
+            lod.m_LodIndex = lodIndex;
 
             // Screen Size
             stream->ReadFloat(&lod.ScreenSize);
@@ -1102,4 +1102,177 @@ namespace SE
     {
         return LODs[lodIndex].GetBox(transform);
     }
+
+    BoundingBox Model::GetBox(int32 lodIndex) const
+    {
+        return LODs[lodIndex].GetBox();
+    }
+
+
+    bool ModelLOD::Load(MemoryReadStream& stream)
+	{
+		// Load LOD for each mesh
+		m_VerticesCount = 0;
+		for (int32 i = 0; i < Meshes.Count(); i++)
+		{
+			// #MODEL_DATA_FORMAT_USAGE
+			uint32 vertices;
+			stream.ReadUint32(&vertices);
+			m_VerticesCount += vertices;
+			uint32 triangles;
+			stream.ReadUint32(&triangles);
+			uint32 indicesCount = triangles * 3;
+			bool use16BitIndexBuffer = indicesCount <= Max_uint16;
+			uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
+			if (vertices == 0 || triangles == 0)
+				return false;
+			const VB0ElementType* vb0 = stream.Move<VB0ElementType>(vertices);
+			const VB1ElementType* vb1 = stream.Move<VB1ElementType>(vertices);
+			bool hasColors = stream.ReadBool();
+			VB2ElementType* vb2 = nullptr;
+			if (hasColors)
+			{
+				vb2 = stream.Move<VB2ElementType>(vertices);
+			}
+			const auto ib = stream.Move<byte>(indicesCount * ibStride);
+
+			// Setup GPU resources
+			if (!Meshes[i].Load(vertices, triangles, vb0, vb1, vb2, ib, use16BitIndexBuffer))
+			{
+				LOG_WARNING("Render", "Cannot initialize mesh {0}. Vertices: {1}, triangles: {2}", i, vertices, triangles);
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	void ModelLOD::Unload()
+	{
+		// Unload LOD for each mesh
+		for (int32 i = 0; i < Meshes.Count(); i++)
+		{
+			Meshes[i].Unload();
+		}
+	}
+
+	void ModelLOD::Dispose()
+	{
+		m_Model = nullptr;
+		ScreenSize = 0.0f;
+		Meshes.Resize(0);
+	}
+
+	bool ModelLOD::Intersects(const Ray& ray, const Matrix& world, float& distance, Float3& normal, Mesh** mesh)
+	{
+		bool result = false;
+		float closest = Max_float;
+		Float3 closestNormal = Float3::Up;
+		for (int32 i = 0; i < Meshes.Count(); i++)
+		{
+			float dst;
+			Float3 nrm;
+			if (Meshes[i].Intersects(ray, world, dst, nrm) && dst < closest)
+			{
+				result = true;
+				*mesh = &Meshes[i];
+				closest = dst;
+				closestNormal = nrm;
+			}
+		}
+		distance = closest;
+		normal = closestNormal;
+		return result;
+	}
+
+	bool ModelLOD::Intersects(const Ray& ray, const Transform& transform, float& distance, Float3& normal, Mesh** mesh)
+	{
+		bool result = false;
+		float closest = Max_float;
+		Float3 closestNormal = Float3::Up;
+		for (int32 i = 0; i < Meshes.Count(); i++)
+		{
+			float dst;
+			Float3 nrm;
+			if (Meshes[i].Intersects(ray, transform, dst, nrm) && dst < closest)
+			{
+				result = true;
+				*mesh = &Meshes[i];
+				closest = dst;
+				closestNormal = nrm;
+			}
+		}
+		distance = closest;
+		normal = closestNormal;
+		return result;
+	}
+
+
+	void ModelLOD::Render(GPUContext* context)
+	{
+		for (int32 i = 0; i < Meshes.Count(); i++)
+		{
+		    Meshes.Get()[i].Render(context);
+		}
+	}
+
+	void ModelLOD::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticMask flags,
+		bool receiveDecals, DrawPass drawModes, float perInstanceRandom, int16 sortOrder) const
+	{
+		for (int32 i = 0; i < Meshes.Count(); i++)
+		{
+		    Meshes.Get()[i].Draw(renderContext, material, world, flags, receiveDecals, drawModes, perInstanceRandom, sortOrder);
+		}
+	}
+
+	void ModelLOD::Draw(const RenderContext& renderContext, const Mesh::DrawInfo& info, float lodDitherFactor) const
+	{
+		for (int32 i = 0; i < Meshes.Count(); i++)
+		{
+		    Meshes.Get()[i].Draw(renderContext, info, lodDitherFactor);
+		}
+	}
+
+	void ModelLOD::Draw(const RenderContextBatch& renderContextBatch, const Mesh::DrawInfo& info, float lodDitherFactor) const
+	{
+		for (int32 i = 0; i < Meshes.Count(); i++)
+		{
+		    Meshes.Get()[i].Draw(renderContextBatch, info, lodDitherFactor);
+		}
+	}
+
+    int32 ModelLOD::GetMeshesCount() const
+    {
+        return Meshes.Count();
+    }
+
+    const MeshBase* ModelLOD::GetMesh(int32 index) const
+    {
+        return Meshes.Get() + index;
+    }
+
+    MeshBase* ModelLOD::GetMesh(int32 index)
+    {
+        return Meshes.Get() + index;
+    }
+
+    void ModelLOD::GetMeshes(List<MeshBase*>& meshes)
+    {
+        meshes.Resize(Meshes.Count());
+        for (int32 meshIndex = 0; meshIndex < Meshes.Count(); meshIndex++)
+        {
+            meshes[meshIndex] = &Meshes.Get()[meshIndex];
+        }
+    }
+
+    void ModelLOD::GetMeshes(List<const MeshBase*>& meshes) const
+    {
+        meshes.Resize(Meshes.Count());
+        for (int32 meshIndex = 0; meshIndex < Meshes.Count(); meshIndex++)
+        {
+            meshes[meshIndex] = &Meshes.Get()[meshIndex];
+        }
+    }
+
+
 } // SE

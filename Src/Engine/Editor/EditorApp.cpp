@@ -1,5 +1,9 @@
 #include "EditorApp.h"
 
+#include <Runtime/Render/Assets/Geometry/Model.h>
+#include <Runtime/Resource/Assets/Materials/Material.h>
+#include <Runtime/Resource/Importers/CreateMaterial.h>
+
 #include "Runtime/EngineContext.h"
 #include "Runtime/Settings/GlobalSettings_Resource.h"
 #include "Runtime/Graphics/GraphicWindow.h"
@@ -299,6 +303,30 @@ namespace SE::Editor
 			managedEditor->Render();
 		}
 	}
+
+    MaterialBase* ManagedEditor::GetModelHighlightMaterial()
+    {
+        const String path = EngineContext::ProjectCacheFolder / SE_TEXT("Editor/ModelHighlight.sge");
+        if (!FileSystem::FileExists(path))
+        {
+            CreateMaterial::Options options;
+            options.Info.ShadingModel  = MaterialShadingModel::Unlit;
+            options.Info.BlendMode     = MaterialBlendMode::Transparent;
+            options.Info.FeaturesFlags = MaterialFeatures::DisableDepthWrite;
+            options.Emissive.Color     = Color(1.0f, 0.55f, 0.05f, 1.0f);
+            options.Opacity.Value      = 0.4f;
+            if (!AssetsImporting::Create(AssetsImporting::CreateMaterialTag, path, &options))
+            {
+                LOG_ERROR("Editor", "Cannot create model preview highlight material.");
+                return nullptr;
+            }
+        }
+        return AssetContent::LoadAsync<Material>(path);
+    }
+
+    String ManagedEditor::GetAssetImportPath(BinaryAsset* pAsset) { return pAsset && pAsset->IsLoaded() ? pAsset->GetImportPath() : String::Empty; }
+
+    bool ManagedEditor::SaveModelAsset(Model* pModel) { return pModel && pModel->IsLoaded() && pModel->Save(); }
 
     void EditorApp::ImportAsset()
     {

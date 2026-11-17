@@ -19,6 +19,25 @@ namespace SE.Editor
         public override bool IsProxyFor(Type typeId) => typeId != null && typeof(ModelBase).IsAssignableFrom(typeId);
         public override bool CanReimport(ContentItem item) => item is BinaryAssetItem;
 
+        public override void Open(ContentItem item)
+        {
+            if (item is not AssetItem asset || !typeof(Model).IsAssignableFrom(asset.TypeId))
+            {
+                return;
+            }
+            Editor editor = Editor.Instance;
+            foreach (EditorWindow window in editor.Windows.Windows)
+            {
+                if (window.IsEditingItem(item))
+                {
+                    window.FocusOrShow();
+                    return;
+                }
+            }
+            ModelWindow modelWindow = new ModelWindow(editor, asset);
+            modelWindow.Show(SE.Editor.GUI.DockState.DockFill, editor.Windows.EditScene);
+        }
+
         public override AssetItem ConstructItem(string path, Type typeId, Guid id)
         {
             return new ModelItem(path, id, typeId);
@@ -49,7 +68,7 @@ namespace SE.Editor
         public override bool CanDrawThumbnail(ThumbnailRequest request)
         {
             Model model = (Model)request.asset;
-            if (!model.IsLoaded() || model.GetLoadedLODs() == 0)
+            if (!model.IsLoaded() || model.LoadedLODs == 0)
             {
                 return false;
             }

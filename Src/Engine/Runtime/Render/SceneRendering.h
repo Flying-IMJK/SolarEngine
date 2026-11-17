@@ -76,6 +76,7 @@ namespace SE
 		};
 
 		List<RenderDraw> Actors[MAX];
+		List<int32> FreeActors[MAX];
 		// List<IPostFxSettingsProvider*> PostFxProviders;
 		CriticalSection Locker;
 	public:
@@ -99,7 +100,7 @@ namespace SE
 
 		// Listener - some rendering systems cache state of the scene (eg. in RenderBuffers::CustomBuffer), this extensions allows those systems to invalidate cache and handle scene changes
 		friend class ISceneRenderingListener;
-		List<ISceneRenderingListener*, InlinedAllocation<8>> _listeners;
+		List<ISceneRenderingListener*, InlinedAllocation<8>> m_Listeners;
 
 		List<BoundingFrustum> m_DrawFrustumsData;
 		RenderDraw* m_DrawListData = nullptr;

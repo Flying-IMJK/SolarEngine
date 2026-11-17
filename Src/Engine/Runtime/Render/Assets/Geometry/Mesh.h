@@ -12,33 +12,16 @@ namespace SE
     class GPUContext;
     class Model;
 
+    SE_CLASS(API(NoSpawn))
     class SE_API_RUNTIME Mesh : public MeshBase
     {
+        SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(Mesh, MeshBase)
     protected:
-        bool _hasLightmapUVs;
-        GPUBuffer* _vertexBuffers[3] = {};
-        GPUBuffer* _indexBuffer = nullptr;
-#if USE_PRECISE_MESH_INTERSECTS
-        CollisionProxy _collisionProxy;
-#endif
-        mutable List<byte> _cachedVertexBuffer[3];
-        mutable List<byte> _cachedIndexBuffer;
+        bool _hasLightmapUVs = false;
+
         String m_Name;
 
-    protected:
-        mutable int32 _cachedIndexBufferCount;
-
     public:
-        Mesh();
-
-        Mesh(const Mesh& other)
-            : Mesh()
-        {
-#if !BUILD_RELEASE
-            ENGINE_UNIMPLEMENTED_FUNCTION(); // Not used
-#endif
-        }
-
         /// <summary>
         /// Finalizes an instance of the <see cref="Mesh"/> class.
         /// </summary>
@@ -50,28 +33,13 @@ namespace SE
         /// <summary>
         /// Gets the model owning this mesh.
         /// </summary>
+        SE_FUNCTION(API(Prop))
         FORCE_INLINE Model* GetModel() const
         {
             return (Model*)_model;
         }
 
-        /// <summary>
-        /// Gets the index buffer.
-        /// </summary>
-        FORCE_INLINE GPUBuffer* GetIndexBuffer() const
-        {
-            return _indexBuffer;
-        }
 
-        /// <summary>
-        /// Gets the vertex buffer.
-        /// </summary>
-        /// <param name="index">The index.</param>
-        /// <returns>The buffer.</returns>
-        FORCE_INLINE GPUBuffer* GetVertexBuffer(int32 index) const
-        {
-            return _vertexBuffers[index];
-        }
 
         /// <summary>
         /// Determines whether this mesh is initialized (has vertex and index buffers initialized).
@@ -92,6 +60,13 @@ namespace SE
         FORCE_INLINE bool HasLightmapUVs() const
         {
             return _hasLightmapUVs;
+        }
+
+        /// <summary>Gets the lightmap UV channel, or -1 when the mesh has no lightmap coordinates.</summary>
+        SE_FUNCTION(API(Prop))
+        FORCE_INLINE int32 GetLightmapUVsIndex() const
+        {
+            return _hasLightmapUVs ? 1 : -1;
         }
 
 #if USE_PRECISE_MESH_INTERSECTS
@@ -313,12 +288,6 @@ namespace SE
         /// <param name="info">The packed drawing info data.</param>
         /// <param name="lodDitherFactor">The LOD transition dither factor.</param>
         void Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& info, float lodDitherFactor) const;
-
-    public:
-        // [MeshBase]
-        bool DownloadDataGPU(MeshBufferType type, BytesContainer& result) const override;
-        Threading::Task* DownloadDataGPUAsync(MeshBufferType type, BytesContainer& result) const override;
-        bool DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const override;
 
     private:
         // Internal bindings

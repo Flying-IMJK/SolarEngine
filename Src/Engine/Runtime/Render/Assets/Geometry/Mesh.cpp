@@ -118,12 +118,12 @@ namespace SE
         Unload();
 
         // Setup GPU resources
-        model->LODs[_lodIndex]._verticesCount -= _vertices;
+        model->LODs[_lodIndex].m_VerticesCount -= _vertices;
         // Load 返回加载成功，UpdateMesh 的公开契约则返回是否失败。
         const bool failed = !Load(vertexCount, triangleCount, vb0, vb1, vb2, ib, use16BitIndices);
         if (!failed)
         {
-            model->LODs[_lodIndex]._verticesCount += _vertices;
+            model->LODs[_lodIndex].m_VerticesCount += _vertices;
 
             // Calculate mesh bounds
             BoundingBox bounds;
@@ -192,9 +192,6 @@ namespace SE
         _indexBuffer = nullptr;
     }
 
-    Mesh::Mesh(): _hasLightmapUVs(false), _cachedIndexBufferCount(0)
-    {
-    }
     Mesh::~Mesh()
     {
         // Release buffers
@@ -270,9 +267,9 @@ namespace SE
         _triangles = triangles;
         _vertices = vertices;
         _use16BitIndexBuffer = use16BitIndexBuffer;
-        _cachedVertexBuffer[0].Clear();
-        _cachedVertexBuffer[1].Clear();
-        _cachedVertexBuffer[2].Clear();
+        _cachedVertexBuffer[0].Release();
+        _cachedVertexBuffer[1].Release();
+        _cachedVertexBuffer[2].Release();
 
         return true;
 
@@ -295,10 +292,10 @@ namespace SE
         _triangles = 0;
         _vertices = 0;
         _use16BitIndexBuffer = false;
-        _cachedIndexBuffer.Resize(0);
-        _cachedVertexBuffer[0].Clear();
-        _cachedVertexBuffer[1].Clear();
-        _cachedVertexBuffer[2].Clear();
+        _cachedIndexBuffer.Release();
+        _cachedVertexBuffer[0].Release();
+        _cachedVertexBuffer[1].Release();
+        _cachedVertexBuffer[2].Release();
     }
 
     bool Mesh::Intersects(const Ray& ray, const Matrix& world, float& distance, Float3& normal) const
@@ -451,7 +448,7 @@ namespace SE
         /*const ViewMode viewMode = renderContext.view.Mode;
         if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
         {
-            GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
+            GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)m_Model)->LODs[m_LodIndex]);
         }*/
 #endif
 
@@ -529,7 +526,7 @@ namespace SE
 #if SE_EDITOR
         /*const ViewMode viewMode = renderContext.view.Mode;
         if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
-            GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);*/
+            GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)m_Model)->LODs[m_LodIndex]);*/
 #endif
 
         // Push draw call to the render list
@@ -599,7 +596,7 @@ namespace SE
 #if SE_EDITOR
         /*const ViewMode viewMode = renderContextBatch.GetMainContext().View.Mode;
         if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
-            GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);*/
+            GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)m_Model)->LODs[m_LodIndex]);*/
 #endif
 
         // Push draw call to the render lists
@@ -615,140 +612,8 @@ namespace SE
         }
     }
 
-    bool Mesh::DownloadDataGPU(MeshBufferType type, BytesContainer& result) const
-    {
-        GPUBuffer* buffer = nullptr;
-        switch (type)
-        {
-        case MeshBufferType::Index:
-            buffer = _indexBuffer;
-            break;
-        case MeshBufferType::Vertex0:
-            buffer = _vertexBuffers[0];
-            break;
-        case MeshBufferType::Vertex1:
-            buffer = _vertexBuffers[1];
-            break;
-        case MeshBufferType::Vertex2:
-            buffer = _vertexBuffers[2];
-            break;
-        }
-        return buffer && buffer->DownloadData(result);
-    }
-
-    Threading::Task* Mesh::DownloadDataGPUAsync(MeshBufferType type, BytesContainer& result) const
-    {
-        GPUBuffer* buffer = nullptr;
-        switch (type)
-        {
-        case MeshBufferType::Index:
-            buffer = _indexBuffer;
-            break;
-        case MeshBufferType::Vertex0:
-            buffer = _vertexBuffers[0];
-            break;
-        case MeshBufferType::Vertex1:
-            buffer = _vertexBuffers[1];
-            break;
-        case MeshBufferType::Vertex2:
-            buffer = _vertexBuffers[2];
-            break;
-        }
-        return buffer ? buffer->DownloadDataAsync(result) : nullptr;
-    }
-
-    bool Mesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const
-    {
-        if (_cachedVertexBuffer[0].IsEmpty())
-        {
-            PROFILE_CPU();
-            auto model = GetModel();
-            Threading::ScopeLock lock(model->Locker);
-            if (model->IsVirtual())
-            {
-                LOG_ERROR("Render", "Cannot access CPU data of virtual models. Use GPU data download.");
-                return true;
-            }
-
-            // Fetch chunk with data from drive/memory
-            const auto chunkIndex = MODEL_LOD_TO_CHUNK_INDEX(GetLODIndex());
-            if (model->LoadChunk(chunkIndex))
-                return true;
-            const auto chunk = model->GetChunk(chunkIndex);
-            if (!chunk)
-            {
-                LOG_ERROR("Render", "Missing chunk.");
-                return true;
-            }
-
-            MemoryReadStream stream(chunk->Get(), chunk->Size());
-
-            // Seek to find mesh location
-            for (int32 i = 0; i <= _index; i++)
-            {
-                // #MODEL_DATA_FORMAT_USAGE
-                uint32 vertices;
-                stream.ReadUint32(&vertices);
-                uint32 triangles;
-                stream.ReadUint32(&triangles);
-                uint32 indicesCount = triangles * 3;
-                bool use16BitIndexBuffer = indicesCount <= Max_uint16;
-                uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
-                if (vertices == 0 || triangles == 0)
-                {
-                    LOG_ERROR("Render", "Invalid mesh data.");
-                    return true;
-                }
-                auto vb0 = stream.Move<VB0ElementType>(vertices);
-                auto vb1 = stream.Move<VB1ElementType>(vertices);
-                bool hasColors = stream.ReadBool();
-                VB2ElementType* vb2 = nullptr;
-                if (hasColors)
-                {
-                    vb2 = stream.Move<VB2ElementType>(vertices);
-                }
-                auto ib = stream.Move<byte>(indicesCount * ibStride);
-
-                if (i != _index)
-                    continue;
-
-                // Cache mesh data
-                _cachedIndexBufferCount = indicesCount;
-                _cachedIndexBuffer.Set(ib, indicesCount * ibStride);
-                _cachedVertexBuffer[0].Set((const byte*)vb0, vertices * sizeof(VB0ElementType));
-                _cachedVertexBuffer[1].Set((const byte*)vb1, vertices * sizeof(VB1ElementType));
-                if (hasColors)
-                    _cachedVertexBuffer[2].Set((const byte*)vb2, vertices * sizeof(VB2ElementType));
-                break;
-            }
-        }
-
-        switch (type)
-        {
-        case MeshBufferType::Index:
-            result.Link(_cachedIndexBuffer);
-            count = _cachedIndexBufferCount;
-            break;
-        case MeshBufferType::Vertex0:
-            result.Link(_cachedVertexBuffer[0]);
-            count = _cachedVertexBuffer[0].Count() / sizeof(VB0ElementType);
-            break;
-        case MeshBufferType::Vertex1:
-            result.Link(_cachedVertexBuffer[1]);
-            count = _cachedVertexBuffer[1].Count() / sizeof(VB1ElementType);
-            break;
-        case MeshBufferType::Vertex2:
-            result.Link(_cachedVertexBuffer[2]);
-            count = _cachedVertexBuffer[2].Count() / sizeof(VB2ElementType);
-            break;
-        default:
-            return true;
-        }
-        return false;
-    }
-
     /*Object* Mesh::GetParentModel()
     {
-        return _model;
+        return m_Model;
     }*/
 } // SE

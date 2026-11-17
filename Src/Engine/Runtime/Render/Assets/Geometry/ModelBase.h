@@ -1,12 +1,15 @@
 #pragma once
 
-#include "Runtime/Core/Math/Vector3.h"
-#include "Runtime/Render/Assets/Material/MaterialSlot.h"
-#include "Runtime/Resource/BinaryAsset.h"
-#include "Runtime/Resource/Streaming/StreamableResource.h"
+#include <Runtime/Core/Math/BoundingVolumes.h>
+#include <Runtime/Core/Math/Vector2.h>
+#include <Runtime/Core/Math/Vector3.h>
+#include <Runtime/Render/Assets/Material/MaterialSlot.h>
+#include <Runtime/Resource/BinaryAsset.h>
+#include <Runtime/Resource/Streaming/StreamableResource.h>
 
 namespace SE
 {
+    class StreamModelLODTask;
     // Note: we use the first chunk as a header, next is the highest quality lod and then lower ones
     //
     // Example:
@@ -19,6 +22,92 @@ namespace SE
 
     class GPUTexture;
     class MeshBase;
+
+
+    /// <summary>
+    /// Base class for mesh LOD objects. Contains a collection of the meshes.
+    /// </summary>
+    SE_CLASS(API(Abstract, NoSpawn)) 
+    class SE_API_RUNTIME ModelLODBase : public ScriptingObject
+    {
+        SCRIPTING_TYPE_MIN(ModelLODBase);
+
+    protected:
+        int32 m_LodIndex = 0;
+
+        explicit ModelLODBase(const SpawnParams& params): ScriptingObject(params)
+        {
+        }
+
+    public:
+        /// <summary>
+        /// The screen size to switch LODs. Bottom limit of the model screen size to render this LOD.
+        /// </summary>
+        SE_FIELD(API()) float ScreenSize = 1.0f;
+
+        /// <summary>
+        /// Gets the model LOD index.
+        /// </summary>
+        SE_FUNCTION(API(Prop))
+        FORCE_INLINE int32 GetLODIndex() const
+        {
+            return m_LodIndex;
+        }
+
+        /// <summary>
+        /// Determines whether any mesh has been initialized.
+        /// </summary>
+        bool HasAnyMeshInitialized() const;
+
+    public:
+        /// <summary>
+        /// Gets the bounding box combined for all meshes in this model LOD.
+        /// </summary>
+        SE_FUNCTION(API()) BoundingBox GetBox() const;
+
+        /// <summary>
+        /// Get model bounding box in transformed world matrix.
+        /// </summary>
+        /// <param name="world">World matrix</param>
+        /// <returns>Bounding box</returns>
+        BoundingBox GetBox(const Matrix& world) const;
+
+        /// <summary>
+        /// Get model bounding box in transformed world.
+        /// </summary>
+        /// <param name="transform">The instance transformation.</param>
+        /// <param name="deformation">The meshes deformation container (optional).</param>
+        /// <returns>Bounding box</returns>
+        BoundingBox GetBox(const Transform& transform, const class MeshDeformation* deformation = nullptr) const;
+
+    public:
+        /// <summary>
+        /// Gets the amount of meshes in this LOD.
+        /// </summary>
+        virtual int32 GetMeshesCount() const = 0;
+
+        /// <summary>
+        /// Gets the specific mesh in this LOD.
+        /// </summary>
+        virtual const MeshBase* GetMesh(int32 index) const = 0;
+
+        /// <summary>
+        /// Gets the specific mesh in this LOD.
+        /// </summary>
+        SE_FUNCTION(API(Sealed)) virtual MeshBase* GetMesh(int32 index) = 0;
+
+        /// <summary>
+        /// Gets the meshes in this LOD.
+        /// </summary>
+        virtual void GetMeshes(List<const MeshBase*>& meshes) const = 0;
+
+        /// <summary>
+        /// Gets the meshes in this LOD.
+        /// </summary>
+        SE_FUNCTION(API(Sealed)) 
+        virtual void GetMeshes(SE_PARAM(API(Out)) List<MeshBase*>& meshes) = 0;
+    };
+
 
     /// <summary>
     /// Base class for asset types that can contain a model resource.
@@ -81,6 +170,9 @@ namespace SE
         };
 
     protected:
+        int32 m_LoadedLODs = 0;
+        StreamModelLODTask* m_StreamingTask = nullptr;
+
         explicit ModelBase(const SpawnParams& params, const AssetInfo* info, StreamingGroup* group) : BinaryAsset(params, info), StreamableResource(group)
         {
         }
@@ -89,11 +181,13 @@ namespace SE
         /// <summary>
         /// The minimum screen size to draw this model (the bottom limit). Used to cull small models. Set to 0 to disable this feature.
         /// </summary>
+        SE_FIELD(API())
         float MinScreenSize = 0.0f;
 
         /// <summary>
         /// The list of material slots.
         /// </summary>
+        SE_FIELD(API(ReadOnly))
         List<MaterialSlot> MaterialSlots;
 
         /// <summary>
@@ -117,8 +211,44 @@ namespace SE
         void SetMaterial(int32 slotIndex, MaterialBase* material);
 
         /// <summary>
+        /// Clamps the index of the LOD to be valid for rendering (only loaded LODs).
+        /// </summary>
+        /// <param name="index">The index.</param>
+        /// <returns>The resident LOD index.</returns>
+        FORCE_INLINE int32 ClampLODIndex(int32 index) const
+        {
+            return Math::Clamp(index, HighestResidentLODIndex(), GetLODsCount() - 1);
+        }
+
+        /// <summary>
+        /// Gets index of the highest resident LOD (it may be equal to LODs.Count if no LOD has been uploaded). Note: LOD=0 is the highest (top quality)
+        /// </summary>
+        FORCE_INLINE int32 HighestResidentLODIndex() const
+        {
+            return GetLODsCount() - m_LoadedLODs;
+        }
+
+        /// <summary>
+        /// Gets the amount of loaded model LODs.
+        /// </summary>
+        SE_FUNCTION(API(Prop)) 
+        FORCE_INLINE int32 GetLoadedLODs() const
+        {
+            return m_LoadedLODs;
+        }
+
+        /// <summary>
+        /// Determines whether this model can be rendered.
+        /// </summary>
+        FORCE_INLINE bool CanBeRendered() const
+        {
+            return m_LoadedLODs > 0;
+        }
+
+        /// <summary>
         /// Resizes the material slots collection. Updates meshes that were using removed slots.
         /// </summary>
+        SE_FUNCTION(API())
         virtual void SetupMaterialSlots(int32 slotsCount);
 
         /// <summary>
@@ -136,8 +266,36 @@ namespace SE
         virtual int32 GetLODsCount() const = 0;
 
         /// <summary>
+        /// Gets the mesh for a particular LOD index.
+        /// </summary>
+        virtual const ModelLODBase* GetLOD(int32 lodIndex) const = 0;
+
+        /// <summary>
+        /// Gets the mesh for a particular LOD index.
+        /// </summary>
+        SE_FUNCTION(API(Sealed))
+        virtual ModelLODBase* GetLOD(int32 lodIndex) = 0;
+
+        /// <summary>
+        /// Gets the mesh for a particular LOD index.
+        /// </summary>
+        virtual const MeshBase* GetMesh(int32 meshIndex, int32 lodIndex = 0) const = 0;
+
+        /// <summary>
+        /// Gets the mesh for a particular LOD index.
+        /// </summary>
+        SE_FUNCTION(API(Sealed))
+        virtual MeshBase* GetMesh(int32 meshIndex, int32 lodIndex = 0) = 0;
+
+        /// <summary>
         /// Gets the meshes for a particular LOD index.
         /// </summary>
-        virtual void GetMeshes(List<MeshBase*>& meshes, int32 lodIndex = 0) = 0;
+        virtual void GetMeshes(List<const MeshBase*>& meshes, int32 lodIndex = 0) const = 0;
+
+        /// <summary>
+        /// Gets the meshes for a particular LOD index.
+        /// </summary>
+        SE_FUNCTION(API())
+        virtual void GetMeshes(SE_PARAM(API(Out)) List<MeshBase*>& meshes, int32 lodIndex = 0) = 0;
     };
 }

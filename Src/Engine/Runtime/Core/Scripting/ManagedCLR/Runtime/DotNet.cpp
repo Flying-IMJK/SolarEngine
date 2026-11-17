@@ -495,6 +495,18 @@ namespace SE
     }
 
 
+    void CLRCore::Exception::Throw(CLRObject* pException)
+    {
+        static void* raiseExceptionPtr = GetStaticMethodPointer(SE_TEXT("RaiseException"));
+        CallStaticMethod<void, void*>(raiseExceptionPtr, pException);
+    }
+
+    CLRObject* CLRCore::Exception::GetNullReference()
+    {
+        static void* getNullReferenceExceptionPtr = GetStaticMethodPointer(SE_TEXT("GetNullReferenceException"));
+        return (CLRObject*)CallStaticMethod<void*>(getNullReferenceExceptionPtr);
+    }
+
     ::SE::String CLRCore::Type::ToString(CLRType* type)
     {
         CLRClass* klass = GetOrCreateClass(type);

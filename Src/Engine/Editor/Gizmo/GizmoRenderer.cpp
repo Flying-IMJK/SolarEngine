@@ -123,8 +123,8 @@ namespace SE::Editor
                              const Color&     color)
     {
         if (pTask == nullptr || pContext == nullptr || pTask->Output == nullptr || modelIndex < 0 || modelIndex >= 5 ||
-            !m_Shader.HasReference() || !m_Shader->IsLoaded() || !m_Models[modelIndex].HasReference() ||
-            !m_Models[modelIndex]->IsLoaded() || !m_Models[modelIndex]->CanBeRendered())
+            !m_Shader.HasReference() || !m_Shader->IsLoaded() || 
+            !m_Models[modelIndex].HasReference() || !m_Models[modelIndex]->IsLoaded() || !m_Models[modelIndex]->CanBeRendered())
         {
             return;
         }

@@ -12,7 +12,7 @@ namespace SE
 
 	void ModelInstance::OnEnable()
 	{
-		GetScene()->Rendering.AddRender(this, _sceneRenderingKey);
+		GetScene()->Rendering.AddRender(this, m_SceneRenderingKey);
 
 		// Base
 		RenderActor::OnEnable();
@@ -23,7 +23,7 @@ namespace SE
 		// Base
 		RenderActor::OnDisable();
 
-		GetScene()->Rendering.RemoveRender(this, _sceneRenderingKey);
+		GetScene()->Rendering.RemoveRender(this, m_SceneRenderingKey);
 	}
 
 	void ModelInstance::WaitForModelLoad()
@@ -42,17 +42,20 @@ namespace SE
 			Entries[i] = value[i];
 		}
 
-		if (anyChanged && _sceneRenderingKey != -1)
+		if (anyChanged && m_SceneRenderingKey != -1)
 		{
-			GetScene()->Rendering.UpdateRender(this, _sceneRenderingKey);
+			GetScene()->Rendering.UpdateRender(this, m_SceneRenderingKey);
 		}
 	}
 
-	void ModelInstance::SetMaterial(int32 entryIndex, MaterialBase* material)
+
+    void ModelInstance::SetMaterial(int32 entryIndex, MaterialBase* material)
 	{
 		WaitForModelLoad();
 		if (Entries.Count() == 0 && !material)
-			return;
+		{
+		    return;
+		}
 
 		if (entryIndex < 0 || entryIndex >= Entries.Count())
 		{
@@ -60,19 +63,22 @@ namespace SE
 		}
 
 		if (Entries[entryIndex].Material == material)
-			return;
-		Entries[entryIndex].Material = material;
-		if (_sceneRenderingKey != -1)
 		{
-			GetScene()->Rendering.UpdateRender(this, _sceneRenderingKey);
+		    return;
+		}
+
+		Entries[entryIndex].Material = material;
+		if (m_SceneRenderingKey != -1)
+		{
+			GetScene()->Rendering.UpdateRender(this, m_SceneRenderingKey);
 		}
 	}
 
-	void ModelInstance::OnLayerChanged()
-	{
-		if (_sceneRenderingKey != -1)
+    void ModelInstance::OnLayerChanged()
+    {
+		if (m_SceneRenderingKey != -1)
 		{
-			GetScene()->Rendering.UpdateRender(this, _sceneRenderingKey);
+			GetScene()->Rendering.UpdateRender(this, m_SceneRenderingKey);
 		}
 	}
 

@@ -22,14 +22,19 @@ namespace SE
 		/// </summary>
 		ModelInstanceEntries Entries;
 
-		FORCE_INLINE const List<ModelInstanceEntry>& GetEntries() const
-		{
-			return Entries;
-		}
+		/// <summary>
+        /// Gets the model entries collection. Each entry contains data how to render meshes using this entry (transformation, material, shadows casting, etc.).
+        /// </summary>
+        SE_FUNCTION(API(Prop, Attributes="EditorOrder(1000), EditorDisplay(\"Entries\", EditorDisplayAttribute.InlineStyle), Collection(CanReorderItems=false, NotNullItems=true, CanResize=false, Spacing=10)"))
+	    const List<ModelInstanceEntry>& GetEntries() const
+        {
+            return Entries;
+        }
 
 		/// <summary>
 		/// Sets the model entries collection. Each entry contains data how to render meshes using this entry (transformation, material, shadows casting, etc.).
 		/// </summary>
+		SE_FUNCTION(API())
 		void SetEntries(const List<ModelInstanceEntry>& value);
 
 		/// <summary>
@@ -41,6 +46,7 @@ namespace SE
 		/// Gets the material used to draw the meshes which are assigned to that slot (set in Entries or model's default).
 		/// </summary>
 		/// <param name="entryIndex">The material slot entry index.</param>
+		SE_FUNCTION(API())
 		virtual MaterialBase* GetMaterial(int32 entryIndex) = 0;
 
 		/// <summary>
@@ -48,9 +54,10 @@ namespace SE
 		/// </summary>
 		/// <param name="entryIndex">The material slot entry index.</param>
 		/// <param name="material">The material to set.</param>
-		void SetMaterial(int32 entryIndex, MaterialBase* material);
+        SE_FUNCTION(API())
+        void SetMaterial(int32 entryIndex, MaterialBase* material);
 
-		/// <summary>
+        /// <summary>
 		/// Updates the model bounds (eg. when mesh has applied significant deformation).
 		/// </summary>
 		virtual void UpdateBounds() = 0;
@@ -65,7 +72,7 @@ namespace SE
 		void RenderDraw(RenderContextBatch& contextBatch) override = 0;
 
 	protected:
-		int32 _sceneRenderingKey = -1; // Uses SceneRendering::DrawCategory::SceneDrawAsync
+		int32 m_SceneRenderingKey = -1; // Uses SceneRendering::DrawCategory::SceneDrawAsync
 
 		// [Actor]
 		void OnEnable() override;

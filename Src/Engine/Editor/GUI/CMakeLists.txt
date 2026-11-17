@@ -1,6 +1,7 @@
 
 add_subdirectory(ContextMenu)
 add_subdirectory(Docking)
+add_subdirectory(Tabs)
 add_subdirectory(Tree)
 add_subdirectory(Drag)
 add_subdirectory(Viewport)

@@ -8,6 +8,10 @@ namespace SE.Editor.GUI
     /// <seealso cref="float" />
     public class FloatValueBox : ValueBox<float>
     {
+        public FloatValueBox() : this(0.0f)
+        {
+        }
+
         private Utils.ValueCategory m_Category = Utils.ValueCategory.None;
         public override float GetValue()
         {

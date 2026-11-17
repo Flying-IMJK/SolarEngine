@@ -525,15 +525,13 @@ namespace SE.Editor.GUI
             maxWidth = MathF.Max(maxWidth + 20, MinimumWidth);
 
             // Move child arrows to accommodate scroll bar showing
-            if (overflowItemCount > 0)
+            float extraAdjustmentAmount = overflowItemCount > 0 && _panel.vScrollBar != null ? -_panel.vScrollBar.Width : 0;
+            foreach (Control child in _panel.Children)
             {
-                foreach (Control child in _panel.Children)
+                ContextMenuButton item = child as ContextMenuButton;
+                if (item != null && item.Visible)
                 {
-                    ContextMenuButton item = child as ContextMenuButton;
-                    if (item != null && item.Visible)
-                    {
-                        item.ExtraAdjustmentAmount = -_panel.vScrollBar.Width;
-                    }
+                    item.ExtraAdjustmentAmount = extraAdjustmentAmount;
                 }
             }
 

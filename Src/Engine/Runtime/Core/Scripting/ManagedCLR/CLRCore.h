@@ -152,6 +152,18 @@ namespace SE
         };
 
         /// <summary>
+        /// Helper utilities for throwing managed exceptions from native bindings.
+        /// </summary>
+        struct SE_API_RUNTIME Exception
+        {
+            /// <summary>Throws the supplied managed exception through the CLR runtime.</summary>
+            static void Throw(CLRObject* pException);
+
+            /// <summary>Creates a managed null reference exception.</summary>
+            static CLRObject* GetNullReference();
+        };
+
+        /// <summary>
         /// Helper utilities for C# types information.
         /// </summary>
         struct SE_API_RUNTIME Type

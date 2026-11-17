@@ -33,8 +33,8 @@ namespace SE.Editor
             if (asset != null && !asset.WaitForLoaded(100))
             {
                 // Get meta from loaded asset
-                importPath = asset.GetPath();
-                return importPath.Length > 0;
+                importPath = Editor.GetAssetImportPath(asset);
+                return string.IsNullOrEmpty(importPath);
             }
 
             importPath = string.Empty;

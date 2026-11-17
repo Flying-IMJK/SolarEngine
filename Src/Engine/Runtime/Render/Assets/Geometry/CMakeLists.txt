@@ -3,6 +3,8 @@
 RUNTIME_ADD(
         MeshBase.h
         MeshBase.cpp
+        MeshAccessor.h
+        MeshAccessor.cpp
         Mesh.h
         Mesh.cpp
         MeshDataLayout.h

@@ -140,7 +140,7 @@ namespace SE
                 // Get original mesh vertex buffer data (cached on CPU)
                 BytesContainer vertexData;
                 int32 vertexCount;
-                if (mesh->DownloadDataCPU(type, vertexData, vertexCount))
+                if (!mesh->DownloadDataCPU(type, vertexData, vertexCount))
                     return;
                 ASSERT(vertexData.Length() / vertexCount == vertexStride);
 

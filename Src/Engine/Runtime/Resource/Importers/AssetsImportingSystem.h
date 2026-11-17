@@ -191,7 +191,7 @@ namespace SE
 		/// <param name="outputPath">The output path.</param>
 		/// <param name="assetId">The asset identifier. If valid then used as new asset id. Set to the actual asset id after import.</param>
 		/// <param name="arg">The custom argument.</param>
-		/// <returns>False if fails, otherwise false.</returns>
+		/// <returns>False if fails, otherwise True.</returns>
 		SE_FUNCTION(API())
 		static bool Import(const StringView& inputPath, const StringView& outputPath, UID& assetId, void* arg);
 
@@ -201,7 +201,7 @@ namespace SE
 		/// <param name="inputPath">The input path.</param>
 		/// <param name="outputPath">The output path.</param>
 		/// <param name="arg">The custom argument.</param>
-		/// <returns>False if fails, otherwise false.</returns>
+		/// <returns>False if fails, otherwise True.</returns>
 		SE_FUNCTION(API())
 		static bool Import(const StringView& inputPath, const StringView& outputPath, void* arg)
 		{
@@ -216,7 +216,7 @@ namespace SE
 		/// <param name="outputPath">The output path.</param>
 		/// <param name="assetId">The asset identifier. If valid then used as new asset id. Set to the actual asset id after import.</param>
 		/// <param name="arg">The custom argument.</param>
-		/// <returns>False if fails, otherwise false.</returns>
+		/// <returns>False if fails, otherwise True.</returns>
 		static bool ImportIfEdited(const StringView& inputPath, const StringView& outputPath, UID& assetId, void* arg = nullptr);
 
 		/// <summary>
@@ -225,7 +225,7 @@ namespace SE
 		/// <param name="inputPath">The input path.</param>
 		/// <param name="outputPath">The output path.</param>
 		/// <param name="arg">The custom argument.</param>
-		/// <returns>False if fails, otherwise false.</returns>
+		/// <returns>False if fails, otherwise True.</returns>
 		static bool ImportIfEdited(const StringView& inputPath, const StringView& outputPath, void* arg = nullptr)
 		{
 			UID id = UID::Empty;

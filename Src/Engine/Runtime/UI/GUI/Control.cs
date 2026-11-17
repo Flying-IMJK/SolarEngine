@@ -748,22 +748,22 @@ namespace SE.GUI
                                 bounds.Location = Float2.Zero;
                                 break;
                             case AnchorPresets.TopCenter:
-                                bounds.Location = new Float2(parentBounds.Left * 0.5f - bounds.Left * 0.5f, 0);
+                                bounds.Location = new Float2(parentBounds.Width * 0.5f - bounds.Width * 0.5f, 0);
                                 break;
                             case AnchorPresets.TopRight:
-                                bounds.Location = new Float2(parentBounds.Left - bounds.Left, 0);
+                                bounds.Location = new Float2(parentBounds.Width - bounds.Width, 0);
                                 break;
                             case AnchorPresets.MiddleLeft:
                                 bounds.Location = new Float2(0, parentBounds.Height * 0.5f - bounds.Height * 0.5f);
                                 break;
                             case AnchorPresets.MiddleCenter:
                                 bounds.Location = new Float2(
-                                    parentBounds.Left * 0.5f - bounds.Left * 0.5f,
+                                    parentBounds.Width * 0.5f - bounds.Width * 0.5f,
                                     parentBounds.Height * 0.5f - bounds.Height * 0.5f);
                                 break;
                             case AnchorPresets.MiddleRight:
                                 bounds.Location = new Float2(
-                                    parentBounds.Left - bounds.Left,
+                                    parentBounds.Width - bounds.Width,
                                     parentBounds.Height * 0.5f - bounds.Height * 0.5f);
                                 break;
                             case AnchorPresets.BottomLeft:
@@ -771,37 +771,37 @@ namespace SE.GUI
                                 break;
                             case AnchorPresets.BottomCenter:
                                 bounds.Location = new Float2(
-                                    parentBounds.Left * 0.5f - bounds.Left * 0.5f,
+                                    parentBounds.Width * 0.5f - bounds.Width * 0.5f,
                                     parentBounds.Height - bounds.Height);
                                 break;
                             case AnchorPresets.BottomRight:
                                 bounds.Location = new Float2(
-                                    parentBounds.Left - bounds.Left,
+                                    parentBounds.Width - bounds.Width,
                                     parentBounds.Height - bounds.Height);
                                 break;
                             case AnchorPresets.VerticalStretchLeft:
                                 bounds.Location = Float2.Zero;
-                                bounds.Size = new Float2(bounds.Left, parentBounds.Height);
+                                bounds.Size = new Float2(bounds.Width, parentBounds.Height);
                                 break;
                             case AnchorPresets.VerticalStretchCenter:
-                                bounds.Location = new Float2(parentBounds.Left * 0.5f - bounds.Left * 0.5f, 0);
-                                bounds.Size = new Float2(bounds.Left, parentBounds.Height);
+                                bounds.Location = new Float2(parentBounds.Width * 0.5f - bounds.Width * 0.5f, 0);
+                                bounds.Size = new Float2(bounds.Width, parentBounds.Height);
                                 break;
                             case AnchorPresets.VerticalStretchRight:
-                                bounds.Location = new Float2(parentBounds.Left - bounds.Left, 0);
-                                bounds.Size = new Float2(bounds.Left, parentBounds.Height);
+                                bounds.Location = new Float2(parentBounds.Width - bounds.Width, 0);
+                                bounds.Size = new Float2(bounds.Width, parentBounds.Height);
                                 break;
                             case AnchorPresets.HorizontalStretchTop:
                                 bounds.Location = Float2.Zero;
-                                bounds.Size = new Float2(parentBounds.Left, bounds.Height);
+                                bounds.Size = new Float2(parentBounds.Width, bounds.Height);
                                 break;
                             case AnchorPresets.HorizontalStretchMiddle:
                                 bounds.Location = new Float2(0, parentBounds.Height * 0.5f - bounds.Height * 0.5f);
-                                bounds.Size = new Float2(parentBounds.Left, bounds.Height);
+                                bounds.Size = new Float2(parentBounds.Width, bounds.Height);
                                 break;
                             case AnchorPresets.HorizontalStretchBottom:
                                 bounds.Location = new Float2(0, parentBounds.Height - bounds.Height);
-                                bounds.Size = new Float2(parentBounds.Left, bounds.Height);
+                                bounds.Size = new Float2(parentBounds.Width, bounds.Height);
                                 break;
                             case AnchorPresets.StretchAll:
                                 bounds.Location = Float2.Zero;

@@ -7,6 +7,9 @@ namespace SE
 {
 	class ProjectInfo;
 	class SpriteAtlas;
+    class MaterialBase;
+    class BinaryAsset;
+    class Model;
 }
 
 namespace SE::Editor
@@ -101,9 +104,20 @@ namespace SE::Editor
 		SE_FUNCTION(API())
 		void CreateDemoScene();
 
-	private:
+        /// <summary>Returns a borrowed, asynchronously loaded highlight material on the editor/render thread. Null if creation fails. Keep a reference and check readiness before drawing.</summary>
+        SE_FUNCTION(API())
+        static MaterialBase* GetModelHighlightMaterial();
 
-		void OnEditorAssemblyLoaded(CLRAssembly* assembly);
+        /// <summary>Copies import metadata from a loaded borrowed asset on the editor thread. Empty if unavailable.</summary>
+        SE_FUNCTION(API())
+        static String GetAssetImportPath(BinaryAsset* pAsset);
+
+        /// <summary>Saves a loaded borrowed model on the editor thread, retaining stored geometry. True on success.</summary>
+        SE_FUNCTION(API())
+        static bool SaveModelAsset(Model* pModel);
+
+    private:
+        void OnEditorAssemblyLoaded(CLRAssembly* assembly);
 		void InvokeManagedMethod(const char* methodName);
 	};
 

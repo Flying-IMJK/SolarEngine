@@ -3,7 +3,7 @@
 #include "Runtime/Core/Serialization/ISerializable.h"
 #include "Runtime/Render/RenderEnum.h"
 #include "Runtime/Resource/AssetRef.h"
-#include "../../../Resource/Assets/Materials/MaterialBase.h"
+#include "Runtime/Resource/Assets/Materials/MaterialBase.h"
 
 namespace SE
 {
@@ -13,28 +13,34 @@ namespace SE
 	/// <summary>
 	/// The model instance entry that describes how to draw it.
 	/// </summary>
+	SE_STRUCT(API())
 	struct SE_API_RUNTIME ModelInstanceEntry : ISerializable
 	{
+		SCRIPTING_TYPE_MIN(ModelInstanceEntry)
 	public:
 
 		/// <summary>
 		/// The mesh surface material used for the rendering. If not assigned the default value will be used from the model asset.
 		/// </summary>
+		SE_FIELD(API())
 		AssetRef<MaterialBase> Material;
 
 		/// <summary>
 		/// The shadows casting mode.
 		/// </summary>
+		SE_FIELD(API())
 		ShadowsCastingMode ShadowsMode = ShadowsCastingMode::All;
 
 		/// <summary>
 		/// Determines whenever this mesh is visible.
 		/// </summary>
+		SE_FIELD(API())
 		bool Visible = true;
 
 		/// <summary>
 		/// Determines whenever this mesh can receive decals.
 		/// </summary>
+		SE_FIELD(API())
 		bool ReceiveDecals = true;
 
 	public:

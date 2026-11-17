@@ -13,7 +13,11 @@ namespace SE.Editor
         /// <summary>
         /// The button.
         /// </summary>
-        public readonly Button Button = new Button();
+        public readonly Button Button = new Button
+        {
+            Width = 120.0f,
+            Height = SE.GUI.Button.DefaultHeight,
+        };
 
         /// <inheritdoc />
         public override Control Control => Button;

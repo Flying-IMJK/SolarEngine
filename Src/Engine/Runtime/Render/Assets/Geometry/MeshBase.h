@@ -1,10 +1,8 @@
 #pragma once
 
 #include "Runtime/Core/Math/BoundingVolumes.h"
-#include "Runtime/Core/Types/Object.h"
+#include "Runtime/Core/Scripting/ScriptingObject.h"
 #include "Runtime/Core/Types/Collections/DataContainer.h"
-#include "Runtime/Core/Types/BitFlags.h"
-#include "Runtime/API.h"
 #include "Runtime/Render/RenderEnum.h"
 
 namespace SE
@@ -29,31 +27,40 @@ namespace SE
     /// <summary>
     /// Base class for model resources meshes.
     /// </summary>
-    class SE_API_RUNTIME MeshBase : public Object
+    SE_CLASS(API(Abstract, NoSpawn))
+    class SE_API_RUNTIME MeshBase : public ScriptingObject
     {
+        SCRIPTING_TYPE_MIN(MeshBase)
     protected:
-        ModelBase* _model;
-        BoundingBox _box;
-        BoundingSphere _sphere;
-        int32 _index;
-        int32 _lodIndex;
-        uint32 _vertices;
-        uint32 _triangles;
-        int32 _materialSlotIndex;
-        bool _use16BitIndexBuffer;
+        ModelBase* _model = nullptr;
+        BoundingBox _box = BoundingBox::Zero;
+        BoundingSphere _sphere = BoundingSphere::Empty;
+        int32 _index = 0;
+        int32 _lodIndex = 0;
+        uint32 _vertices = 0;
+        uint32 _triangles = 0;
+        int32 _materialSlotIndex = 0;
+        bool _use16BitIndexBuffer = false;
+
+        GPUBuffer* _vertexBuffers[3] = {};
+        GPUBuffer* _indexBuffer = nullptr;
+#if USE_PRECISE_MESH_INTERSECTS
+        CollisionProxy _collisionProxy;
+#endif
+        mutable BytesContainer _cachedVertexBuffer[3];
+        mutable BytesContainer _cachedIndexBuffer;
+        mutable int32 _cachedIndexBufferCount = 0;
+        mutable int32 _cachedVertexBufferCount = 0;
 
     public:
-
-        MeshBase() :
-            _model(nullptr), _box(), _sphere(), _index(0),
-            _lodIndex(0), _vertices(0), _triangles(0),
-            _materialSlotIndex(0), _use16BitIndexBuffer(false)
+        explicit MeshBase(const SpawnParams& params): ScriptingObject(params)
         {
         }
 
         /// <summary>
         /// Gets the model owning this mesh.
         /// </summary>
+        SE_FUNCTION(API(Prop))
         FORCE_INLINE ModelBase* GetModelBase() const
         {
             return _model;
@@ -62,6 +69,7 @@ namespace SE
         /// <summary>
         /// Gets the mesh parent LOD index.
         /// </summary>
+        SE_FUNCTION(API(Prop))
         FORCE_INLINE int32 GetLODIndex() const
         {
             return _lodIndex;
@@ -70,6 +78,7 @@ namespace SE
         /// <summary>
         /// Gets the mesh index.
         /// </summary>
+        SE_FUNCTION(API(Prop))
         FORCE_INLINE int32 GetIndex() const
         {
             return _index;
@@ -78,6 +87,7 @@ namespace SE
         /// <summary>
         /// Gets the triangle count.
         /// </summary>
+        SE_FUNCTION(API(Prop))
         FORCE_INLINE int32 GetTriangleCount() const
         {
             return _triangles;
@@ -86,6 +96,7 @@ namespace SE
         /// <summary>
         /// Gets the vertex count.
         /// </summary>
+        SE_FUNCTION(API(Prop))
         FORCE_INLINE int32 GetVertexCount() const
         {
             return _vertices;
@@ -94,6 +105,7 @@ namespace SE
         /// <summary>
         /// Gets the box.
         /// </summary>
+        SE_FUNCTION(API(Prop))
         FORCE_INLINE const BoundingBox& GetBox() const
         {
             return _box;
@@ -102,6 +114,7 @@ namespace SE
         /// <summary>
         /// Gets the sphere.
         /// </summary>
+        SE_FUNCTION(API(Prop))
         FORCE_INLINE const BoundingSphere& GetSphere() const
         {
             return _sphere;
@@ -110,6 +123,7 @@ namespace SE
         /// <summary>
         /// Determines whether this mesh is using 16 bit index buffer, otherwise it's 32 bit.
         /// </summary>
+        SE_FUNCTION(API(Prop))
         FORCE_INLINE bool Use16BitIndexBuffer() const
         {
             return _use16BitIndexBuffer;
@@ -118,6 +132,7 @@ namespace SE
         /// <summary>
         /// Gets the index of the material slot to use during this mesh rendering.
         /// </summary>
+        SE_FUNCTION(API(Prop))
         FORCE_INLINE int32 GetMaterialSlotIndex() const
         {
             return _materialSlotIndex;
@@ -126,14 +141,35 @@ namespace SE
         /// <summary>
         /// Sets the index of the material slot to use during this mesh rendering.
         /// </summary>
+        SE_FUNCTION(API(Prop))
         void SetMaterialSlotIndex(int32 value);
 
         /// <summary>
         /// Sets the mesh bounds.
         /// </summary>
         /// <param name="box">The bounding box.</param>
+        SE_FUNCTION(API())
         void SetBounds(const BoundingBox& box);
 
+        /// <summary>
+        /// Gets the index buffer.
+        /// </summary>
+        SE_FUNCTION(API())
+        FORCE_INLINE GPUBuffer* GetIndexBuffer() const
+        {
+            return _indexBuffer;
+        }
+
+        /// <summary>
+        /// Gets the vertex buffer.
+        /// </summary>
+        /// <param name="index">The index.</param>
+        /// <returns>The buffer.</returns>
+        SE_FUNCTION(API())
+        FORCE_INLINE GPUBuffer* GetVertexBuffer(int32 index) const
+        {
+            return _vertexBuffers[index];
+        }
 
     public:
         /// <summary>
@@ -142,7 +178,7 @@ namespace SE
         /// <param name="type">Buffer type</param>
         /// <param name="result">The result data</param>
         /// <returns>True if failed, otherwise false</returns>
-        virtual bool DownloadDataGPU(MeshBufferType type, BytesContainer& result) const = 0;
+        virtual bool DownloadDataGPU(MeshBufferType type, BytesContainer& result) const;
 
         /// <summary>
         /// Extracts mesh buffer data from GPU in the async task.
@@ -150,16 +186,16 @@ namespace SE
         /// <param name="type">Buffer type</param>
         /// <param name="result">The result data</param>
         /// <returns>Created async task used to gather the buffer data.</returns>
-        virtual Threading::Task* DownloadDataGPUAsync(MeshBufferType type, BytesContainer& result) const = 0;
+        virtual Threading::Task* DownloadDataGPUAsync(MeshBufferType type, BytesContainer& result) const;
 
         /// <summary>
-        /// Extract mesh buffer data from CPU. Cached internally.
+        /// Copies mesh buffer data from the internal CPU cache into caller-owned storage.
         /// </summary>
         /// <param name="type">Buffer type</param>
         /// <param name="result">The result data</param>
         /// <param name="count">The amount of items inside the result buffer.</param>
-        /// <returns>True if failed, otherwise false</returns>
-        virtual bool DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const = 0;
+        /// <returns>True if successful, otherwise false.</returns>
+        virtual bool DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const;
 
     public:
         /// <summary>

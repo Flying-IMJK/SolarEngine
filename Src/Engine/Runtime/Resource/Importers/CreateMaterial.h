@@ -48,7 +48,8 @@ namespace SE
 				UID Texture = UID::Empty;
 			} Normals;
 
-			Options();
+            /// <summary>Initializes authoring defaults. Exported for editor-side material creation.</summary>
+            SE_API_RUNTIME Options();
 		};
 
 		/// <summary>

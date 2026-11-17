@@ -1,8 +1,9 @@
 #pragma once
 
-#include "Runtime/Core/Logging/Logging.h"
-#include "Runtime/Core/Scripting/ScriptingType.h"
-#include "Runtime/Core/Scripting/ManagedCLR/CLRTypes.h"
+#include <Runtime/Core/Logging/Logging.h>
+#include <Runtime/Core/Scripting/ManagedCLR/CLRCore.h>
+#include <Runtime/Core/Scripting/ManagedCLR/CLRTypes.h>
+#include <Runtime/Core/Scripting/ScriptingType.h>
 
 #if defined(__clang__)
 // Helper utility to override vtable entry with automatic restore
@@ -29,6 +30,19 @@ struct SE_API_RUNTIME VTableFunctionInjector
 #elif defined(_MSC_VER)
 #define MSVC_FUNC_EXPORT(name) __pragma(comment(linker, "/EXPORT:" #name "=" __FUNCDNAME__))
 #endif
+
+namespace SE
+{
+    template<typename T>
+    T& InternalGetReference(T* pObject)
+    {
+        if (!pObject)
+        {
+            CLRCore::Exception::Throw(CLRCore::Exception::GetNullReference());
+        }
+        return *pObject;
+    }
+}
 
 
 #define ADD_INTERNAL_CALL(fullName, method)
