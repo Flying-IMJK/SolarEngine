@@ -94,5 +94,11 @@ namespace SE::BuildTool
 		std::string path;
 		std::vector<ProjectInfo> projects;
 		std::vector<std::string> excludedProjects;
+
+#ifdef SE_EDITOR
+        bool isEditorBuild = true;
+#else
+        bool isEditorBuild = false;
+#endif
     };
 }

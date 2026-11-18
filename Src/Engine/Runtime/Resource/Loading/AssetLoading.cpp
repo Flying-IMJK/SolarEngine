@@ -249,7 +249,7 @@ namespace SE
 		{
 			LOG_WARNING("Resource", "\'{0}\' failed with result: {1}", ToString(), Types::GetEnumString(result));
 		}
-		return failed;
+		return !failed;
 	}
 
 }

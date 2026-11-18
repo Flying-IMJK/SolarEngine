@@ -517,15 +517,6 @@ namespace SE
         return pass == DrawPass::GBuffer || pass == DrawPass::Depth;
     }
 
-
-    /**
-     * 
-     * @param renderContext 
-     * @param list 
-     * @param drawCalls 
-     * @param prepareDraw 
-     * @param input 
-     */
     void RenderList::ExecuteDrawCalls(const RenderContext&              renderContext,
                                       DrawCallsList&                    list,
                                       const RenderListBuffer<DrawCall>& drawCalls, 

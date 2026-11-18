@@ -114,7 +114,7 @@ namespace SE::Threading
 			if (_action1.IsBinded())
 			{
 				_action1();
-				return false;
+				return true;
 			}
 
 			if (_action2.IsBinded())

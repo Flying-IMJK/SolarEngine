@@ -26,7 +26,7 @@ namespace SE
 
 		bool Run() override
 		{
-			return false;
+			return true;
 		}
 
 		void Enqueue() override

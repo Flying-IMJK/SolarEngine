@@ -203,14 +203,14 @@ namespace SE::Threading
 		SetState(TaskState::Running);
 
 		// Perform an operation
-		bool failed = Run();
+		bool success = Run();
 
 		// Process result
 		if (IsCancelRequested())
 		{
 			SetState(TaskState::Canceled);
 		}
-		else if (failed)
+		else if (!success)
 		{
 			OnFail();
 		}

@@ -89,7 +89,7 @@ namespace SE::Editor
         bool saveResult = _cache->SaveAsset(data, true);
         mipChunk->Data.Release();
         dataChunk->Data.Release();
-        if (saveResult)
+        if (!saveResult)
         {
             LOG_WARNING("Asset", "Failed to save asset previews atlas \'{0}\'.", _cache->ToString());
             return false;

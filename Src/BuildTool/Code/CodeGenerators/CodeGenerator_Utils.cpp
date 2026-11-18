@@ -1,6 +1,7 @@
 #include "CodeGenerator_Utils.h"
 
 #include <fstream>
+#include <sstream>
 
 #include "CodeGenerator_BindingsDataTypes.h"
 #include "CodeGenerator_BindingsTypeMap.h"
@@ -189,10 +190,39 @@ namespace SE::BuildTool::CodeGeneratorUtils
 
 	std::string EscapeCSharpXml(const std::string& text)
 	{
-		std::string result = text;
-		Utils::String::ReplaceAll(result, "&", "&amp;");
-		Utils::String::ReplaceAll(result, "<", "&lt;");
-		Utils::String::ReplaceAll(result, ">", "&gt;");
+		std::string result;
+		for (size_t i = 0; i < text.size(); ++i)
+		{
+			if (text[i] == '&')
+			{
+				size_t const end = text.find(';', i + 1);
+				if (end != std::string::npos)
+				{
+					std::string const entity = text.substr(i + 1, end - i - 1);
+					bool isEntity = entity == "amp" || entity == "lt" || entity == "gt" || entity == "quot" || entity == "apos";
+					if (entity.size() > 1 && entity[0] == '#')
+					{
+						bool const isHex = entity[1] == 'x';
+						size_t const digitsStart = isHex ? 2 : 1;
+						isEntity = digitsStart < entity.size()
+							&& entity.find_first_not_of(isHex ? "0123456789abcdefABCDEF" : "0123456789", digitsStart) == std::string::npos;
+					}
+					if (isEntity)
+					{
+						result.append(text, i, end - i + 1);
+						i = end;
+						continue;
+					}
+				}
+				result += "&amp;";
+			}
+			else if (text[i] == '<')
+				result += "&lt;";
+			else if (text[i] == '>')
+				result += "&gt;";
+			else
+				result += text[i];
+		}
 		return result;
 	}
 
@@ -200,9 +230,60 @@ namespace SE::BuildTool::CodeGeneratorUtils
 	{
 		if (comment.empty())
 			return;
-		output += Utils::String::Format("{0}/// <summary>\n", indent);
-		output += Utils::String::Format("{0}/// {1}\n", indent, EscapeCSharpXml(comment));
-		output += Utils::String::Format("{0}/// </summary>\n", indent);
+		// Preserve XML fragments, including inline references in otherwise plain summaries.
+		bool hasXml = comment.find("<!--") != std::string::npos || comment.find("<![CDATA[") != std::string::npos;
+		bool hasDocumentElement = false;
+		size_t position = 0;
+		while ((position = comment.find('<', position)) != std::string::npos)
+		{
+			size_t const nameStart = ++position;
+			size_t const nameEnd = comment.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.:-", nameStart);
+			if (nameEnd == nameStart || nameEnd == std::string::npos)
+				continue;
+
+			std::string const name = comment.substr(nameStart, nameEnd - nameStart);
+			size_t tagEnd = nameEnd;
+			char quote = 0;
+			for (; tagEnd < comment.size(); ++tagEnd)
+			{
+				char const ch = comment[tagEnd];
+				if (quote != 0)
+				{
+					if (ch == quote)
+						quote = 0;
+				}
+				else if (ch == '\'' || ch == '"')
+					quote = ch;
+				else if (ch == '>')
+					break;
+			}
+			if (tagEnd == comment.size())
+				continue;
+			bool const isSelfClosing = tagEnd > nameEnd && comment[tagEnd - 1] == '/';
+			if (!isSelfClosing && comment.find("</" + name + ">", tagEnd + 1) == std::string::npos)
+				continue;
+
+			hasXml = true;
+			if (name != "see" && name != "paramref" && name != "typeparamref" && name != "c"
+				&& name != "b" && name != "i" && name != "u" && name != "br" && name != "a" && name != "tt")
+				hasDocumentElement = true;
+			position = tagEnd + 1;
+		}
+
+		if (!hasDocumentElement)
+			output += Utils::String::Format("{0}/// <summary>\n", indent);
+
+		std::istringstream lines(comment);
+		std::string line;
+		while (std::getline(lines, line))
+		{
+			if (!line.empty() && line.back() == '\r')
+				line.pop_back();
+			output += Utils::String::Format("{0}/// {1}\n", indent, hasXml ? line : EscapeCSharpXml(line));
+		}
+
+		if (!hasDocumentElement)
+			output += Utils::String::Format("{0}/// </summary>\n", indent);
 	}
 
 	bool IsValidCSharpAttributeList(const std::string& attributes)

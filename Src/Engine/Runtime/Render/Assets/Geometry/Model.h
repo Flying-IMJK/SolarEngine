@@ -318,6 +318,7 @@ namespace SE
         /// <param name="withMeshDataFromGpu">True if save also GPU mesh buffers, otherwise will keep data in storage unmodified. Valid only if saving the same asset to the same location and it's loaded.</param>
         /// <param name="path">The custom asset path to use for the saving. Use empty value to save this asset to its own storage location. Can be used to duplicate asset. Must be specified when saving virtual asset.</param>
         /// <returns>True on success, otherwise false.</returns>
+        SE_FUNCTION(API())
         bool Save(bool withMeshDataFromGpu = false, const StringView& path = StringView::Empty);
 
 #endif

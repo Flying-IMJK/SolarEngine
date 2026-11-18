@@ -251,7 +251,10 @@ namespace SE::BuildTool
             propertiesData.set("propertieCategory", "");
 
             std::string escapedDescription = field.comment;
+            Utils::String::ReplaceAll(escapedDescription, "\\", "\\\\");
             Utils::String::ReplaceAll(escapedDescription, "\"", "\\\"");
+            Utils::String::ReplaceAll(escapedDescription, "\r", "\\r");
+            Utils::String::ReplaceAll(escapedDescription, "\n", "\\n");
             propertiesData.set("propertieEscapedDescription", escapedDescription.c_str());
             propertiesData.set("propertieIsDevOnly", "true");
             propertiesData.set("propertieIsToolsReadOnly", "false");

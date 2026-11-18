@@ -110,14 +110,14 @@ namespace SE::Threading
 		/// Waits the specified timeout for the task to be finished.
 		/// </summary>
 		/// <param name="timeout">The maximum amount of time to wait for the task to finish it's job. Timeout smaller/equal 0 will result in infinite waiting.</param>
-		/// <returns>True if task failed or has been canceled or has timeout, otherwise false.</returns>
+		/// <returns>True if the task and all continuations completed successfully, otherwise false.</returns>
 		bool Wait(const TimeSpan& timeout) const;
 
 		/// <summary>
 		/// Waits the specified timeout for the task to be finished.
 		/// </summary>
 		/// <param name="timeoutMilliseconds">The maximum amount of milliseconds to wait for the task to finish it's job. Timeout smaller/equal 0 will result in infinite waiting.</param>
-		/// <returns>True if task failed or has been canceled or has timeout, otherwise false.</returns>
+		/// <returns>True if the task and all continuations completed successfully, otherwise false.</returns>
 		bool Wait(double timeoutMilliseconds = -1) const;
 
 		/// <summary>
@@ -125,7 +125,7 @@ namespace SE::Threading
 		/// </summary>
 		/// <param name="tasks">The tasks list to wait for.</param>
 		/// <param name="timeoutMilliseconds">The maximum amount of milliseconds to wait for the task to finish it's job. Timeout smaller/equal 0 will result in infinite waiting.</param>
-		/// <returns>True if any task failed or has been canceled or has timeout, otherwise false.</returns>
+		/// <returns>True if all tasks completed successfully, otherwise false.</returns>
 		template<class T = Task, typename AllocationType = HeapAllocation>
 		static bool WaitAll(List<T*, AllocationType>& tasks, double timeoutMilliseconds = -1)
 		{
@@ -164,7 +164,7 @@ namespace SE::Threading
 		/// <summary>
 		/// Continues that task execution with a given action (will spawn new async action).
 		/// </summary>
-		/// <param name="action">Action to run.</param>
+		/// <param name="action">Action to run. Returns true on success, otherwise false.</param>
 		/// <param name="target">The action target object.</param>
 		/// <returns>Enqueued task.</returns>
 		Task* ContinueWith(const Function<bool()>& action, void* target = nullptr);
@@ -211,7 +211,7 @@ namespace SE::Threading
 		/// <summary>
 		/// Starts the new task.
 		/// </summary>
-		/// <param name="action">The action.</param>
+		/// <param name="action">Action to run. Returns true on success, otherwise false.</param>
 		/// <param name="target">The action target object.</param>
 		/// <returns>Task</returns>
 		static Task* StartNew(const Function<bool()>& action, void* target = nullptr);
@@ -219,7 +219,7 @@ namespace SE::Threading
 		/// <summary>
 		/// Starts the new task.
 		/// </summary>
-		/// <param name="action">The action.</param>
+		/// <param name="action">Action to run. Returns true on success, otherwise false.</param>
 		/// <param name="target">The action target object.</param>
 		/// <returns>Task</returns>
 		static Task* StartNew(Function<bool()>::Signature& action, void* target = nullptr);
@@ -257,7 +257,7 @@ namespace SE::Threading
 		/// <summary>
 		/// Runs the task specified operations. It does not handle any task related logic, but only performs the actual job.
 		/// </summary>
-		/// <returns>The task execution result. Returns true if failed, otherwise false.</returns>
+		/// <returns>The task execution result. Returns false if failed, otherwise true.</returns>
 		virtual bool Run() = 0;
 
 	protected:

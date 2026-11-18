@@ -89,6 +89,7 @@ namespace SE
 		/// <summary>
 		/// Gets the imported file path from the asset metadata (can be empty if not available).
 		/// </summary>
+		SE_FUNCTION(API())
 		String GetImportPath() const;
 
 		/// <summary>

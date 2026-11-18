@@ -25,7 +25,7 @@ namespace SE
 //				Engine::OnDraw();
 				Platform::Sleep(20);
 			}
-			return false;
+			return true;
 		}
 	};
 }

@@ -3,6 +3,7 @@
 #include "Core/Dictionary.h"
 #include "Core/FileSystem.h"
 
+#include <sstream>
 #include <unordered_map>
 #include <llvm/Support/raw_ostream.h>
 //-------------------------------------------------------------------------
@@ -345,12 +346,48 @@ namespace SE::BuildTool
         std::string GetCursorComment(CXCursor cr)
         {
             std::string    result;
-            CXString const commentString = clang_Cursor_getBriefCommentText(cr);
-            if (commentString.data != nullptr)
+            CXString const commentString = clang_Cursor_getRawCommentText(cr);
+            const char* pComment = clang_getCString(commentString);
+            if (pComment != nullptr)
             {
-                result = clang_getCString(commentString);
-                Utils::String::ReplaceAll(result, "\r", " ");
-                Utils::String::TrimStart(result);
+                std::string comment = pComment;
+                Utils::String::ReplaceAll(comment, "\r", "");
+                bool const isBlockComment = Utils::String::StartsWith(comment, "/*");
+                if (isBlockComment)
+                {
+                    size_t prefixLength = Utils::String::StartsWith(comment, "/**") || Utils::String::StartsWith(comment, "/*!") ? 3 : 2;
+                    if (prefixLength < comment.size() && comment[prefixLength] == '<')
+                        ++prefixLength;
+                    comment.erase(0, prefixLength);
+                    if (comment.size() >= 2 && comment.compare(comment.size() - 2, 2, "*/") == 0)
+                        comment.erase(comment.size() - 2);
+                }
+
+                // Remove source comment markers without flattening XML or code-block indentation.
+                std::istringstream lines(comment);
+                std::string line;
+                while (std::getline(lines, line))
+                {
+                    Utils::String::TrimStart(line);
+                    size_t prefixLength = 0;
+                    if (!isBlockComment && (Utils::String::StartsWith(line, "///") || Utils::String::StartsWith(line, "//!")))
+                    {
+                        prefixLength = 3;
+                        if (prefixLength < line.size() && line[prefixLength] == '<')
+                            ++prefixLength;
+                    }
+                    else if (!isBlockComment && Utils::String::StartsWith(line, "//"))
+                        prefixLength = 2;
+                    else if (isBlockComment && !line.empty() && line[0] == '*')
+                        prefixLength = 1;
+
+                    line.erase(0, prefixLength);
+                    if (prefixLength != 0 && !line.empty() && line[0] == ' ')
+                        line.erase(0, 1);
+                    if (!result.empty())
+                        result += '\n';
+                    result += line;
+                }
                 Utils::String::TrimEnd(result);
             }
             clang_disposeString(commentString);

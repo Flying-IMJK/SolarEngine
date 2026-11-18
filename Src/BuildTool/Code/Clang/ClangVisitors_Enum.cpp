@@ -28,13 +28,7 @@ namespace SE::BuildTool
             constant.value = (int32_t) initVal.getExtValue();
 
             // Set property description
-            CXString const commentString = clang_Cursor_getBriefCommentText(cr);
-            if ( commentString.data != nullptr )
-            {
-                constant.description = clang_getCString( commentString );
-            }
-
-            clang_disposeString( commentString );
+            constant.description = ClangUtils::GetCursorComment(cr);
 
             pEnum->AddEnumConstant( constant );
         }
@@ -140,15 +134,7 @@ namespace SE::BuildTool
                     pContext->GetAssemblyInfoForHeader(headerID, assemblyName, assemblyDir);
                     enumDescriptor->assemblyName = assemblyName;
                     enumDescriptor->assemblyDir = assemblyDir;
-                    CXString const commentString = clang_Cursor_getBriefCommentText(cr);
-                    if (commentString.data != nullptr)
-                    {
-                        enumDescriptor->comment = clang_getCString(commentString);
-                        Utils::String::ReplaceAll(enumDescriptor->comment, "\r", " ");
-                        Utils::String::TrimStart(enumDescriptor->comment);
-                        Utils::String::TrimEnd(enumDescriptor->comment);
-                    }
-                    clang_disposeString(commentString);
+                    enumDescriptor->comment = ClangUtils::GetCursorComment(cr);
                     enumDescriptor->APIAttributes = macro.GetApi().attributes;
                 }
 

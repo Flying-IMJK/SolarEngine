@@ -749,7 +749,7 @@ namespace SE
 		bool Run() override
 		{
 			*output = AssetContent::CloneAssetFile(dstPath, srcPath, dstId);
-			return false;
+			return true;
 		}
 	};
 	

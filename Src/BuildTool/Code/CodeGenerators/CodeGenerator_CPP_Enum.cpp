@@ -88,7 +88,10 @@ namespace SE::BuildTool
         {
             mustache::data enumConstantData;
 			std::string escapedDescription = type.enumConstants[i].description;
+			Utils::String::ReplaceAll(escapedDescription, "\\", "\\\\");
 			Utils::String::ReplaceAll(escapedDescription, "\"", "\\\"");
+			Utils::String::ReplaceAll(escapedDescription, "\r", "\\r");
+			Utils::String::ReplaceAll(escapedDescription, "\n", "\\n");
 
             enumConstantData.set("enumConstantLabel", type.enumConstants[i].label.c_str());
             enumConstantData.set("enumConstantValue", std::to_string(type.enumConstants[i].value));

@@ -566,7 +566,7 @@ namespace SE
 		/// Stops current thread execution to gather texture data from the GPU.
 		/// </summary>
 		/// <param name="result">The result data.</param>
-		/// <returns>True if cannot download data, otherwise false.</returns>
+		/// <returns>false if cannot download data, otherwise true.</returns>
 		bool DownloadData(TextureData& result);
 
 		/// <summary>
@@ -583,7 +583,7 @@ namespace SE
 		/// <param name="mipMapIndex">Mip map index.</param>
 		/// <param name="data">Output mip data.</param>
 		/// <param name="mipRowPitch">Output mip data row pitch to use. Use 0 to use the pitch from the internal GPU storage.</param>
-		/// <returns>True if failed, otherwise false.</returns>
+		/// <returns>false if cannot get data, otherwise true.</returns>
 		virtual bool GetData(int32 arrayOrDepthSliceIndex,
 			int32 mipMapIndex, TextureMipData& data,
 			uint32 mipRowPitch = 0) = 0;

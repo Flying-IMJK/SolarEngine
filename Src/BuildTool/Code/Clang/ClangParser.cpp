@@ -712,6 +712,12 @@ namespace SE::BuildTool
 		clangArgs.push_back( "/DPLATFORM_WINDOWS" );
 		clangArgs.push_back( "/DPLATFORM_WIN32" );
         clangArgs.push_back( "/D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH" );
+
+        if (m_context.pSolution->isEditorBuild)
+        {
+            clangArgs.push_back("/DSE_EDITOR=1");
+        }
+
         clangArgs.push_back( "/clang:-Werror" );
         clangArgs.push_back( "/clang:-Wno-deprecated-builtins" );
         clangArgs.push_back( "/clang:-fparse-all-comments" );

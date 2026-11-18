@@ -645,7 +645,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
                 result = ApplyAll(targetActor);
             };
             const auto task = Threading::Task::StartNew(New<Threading::MainThreadActionTask>(action));
-            if (task->Wait(TimeSpan::FromSeconds(10)))
+            if (!task->Wait(TimeSpan::FromSeconds(10)))
             {
                 result = true;
             }

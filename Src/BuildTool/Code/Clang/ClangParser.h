@@ -17,7 +17,7 @@ namespace SE::BuildTool
 
         bool Parse(std::vector<HeaderInfo*> const& headers);
         void             PostProcessParsed();
-		std::string_view GetErrorMessage() const { return m_context.GetErrorMessage(); }
+        std::string_view GetErrorMessage() const { return m_context.GetErrorMessage(); }
 
     private:
 
@@ -80,6 +80,6 @@ namespace SE::BuildTool
         ClangParserContext                  m_context;
         Milliseconds                        m_totalParsingTime;
         Milliseconds                        m_totalVisitingTime;
-		std::string                    		m_reflectionDataPath;
+        std::string                    		m_reflectionDataPath;
     };
 }

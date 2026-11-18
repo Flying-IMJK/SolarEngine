@@ -158,17 +158,17 @@ namespace SE
 			if (buffer == nullptr || m_Staging == nullptr)
 			{
 				LOG_WARNING("Graphic", "Cannot download buffer data. Missing objects.");
-				return true;
+				return false;
 			}
 
 			// Gather data
 			if (m_Staging->GetData(m_Data))
 			{
 				LOG_WARNING("Graphic", "Staging resource of \'{0}\' get data failed.", buffer->ToString());
-				return true;
+				return false;
 			}
 
-			return false;
+			return true;
 		}
 
 		void OnEnd() override
@@ -322,7 +322,7 @@ namespace SE
 		{
 			// TODO: support mesh data download from GPU on a main thread during rendering
 			LOG_WARNING("Graphic", "Cannot download GPU buffer data on a main thread. Use staging readback buffer or invoke this function from another thread.");
-			return false;
+			return true;
 		}
 
 		// Create async task
@@ -335,7 +335,7 @@ namespace SE
 
 		// Wait for work to be done
 		task->Start();
-		if (task->Wait())
+		if (!task->Wait())
 		{
 			LOG_WARNING("Graphic", "Resource \'{0}\' copy failed.", ToString());
 			return true;
