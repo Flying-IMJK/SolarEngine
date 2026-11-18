@@ -263,9 +263,7 @@ namespace SE
 		ENGINE_ASSERT(storage);
 
 		const auto chunk = m_Header.Chunks[chunkIndex];
-		if (chunk != nullptr
-			&& chunk->IsValid()
-			&& chunk->ExistsInFile())
+		if (chunk != nullptr&& !chunk->IsValid() && chunk->ExistsInFile())
 		{
 			if (!storage->LoadAssetChunk(chunk))
 			{
@@ -288,10 +286,7 @@ namespace SE
 		for (int32 i = 0; i < ASSET_FILE_DATA_CHUNKS; i++)
 		{
 			auto chunk = m_Header.Chunks[i];
-			if (chunk != nullptr
-				&& chunks & GET_CHUNK_FLAG(i)
-				&& !chunk->IsValid()
-				&& chunk->ExistsInFile())
+			if (chunk != nullptr && chunks & GET_CHUNK_FLAG(i) && !chunk->IsValid() && chunk->ExistsInFile())
 			{
 				if (!storage->LoadAssetChunk(chunk))
 				{

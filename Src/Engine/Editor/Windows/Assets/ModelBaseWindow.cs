@@ -389,12 +389,19 @@ namespace SE.Editor
                     {
                         return;
                     }
+
                     ImportPropertiesProxyBase proxy = (ImportPropertiesProxyBase)Values[0];
+
                     GroupElement group = layout.Group("Import Settings");
+
                     FieldInfo field = typeof(ImportPropertiesProxyBase).GetField(nameof(m_ImportSettings), BindingFlags.NonPublic | BindingFlags.Instance);
+
                     group.Object(new ValueContainer(field) { proxy.m_ImportSettings });
+
                     GroupElement path = layout.Group("Import Path");
-                    string source = SE.Editor.Editor.GetAssetImportPath(proxy.Asset);
+
+                    string source = proxy.Asset.GetImportPath();
+
                     if (string.IsNullOrEmpty(source))
                     {
                         path.Label("No source path in asset metadata");

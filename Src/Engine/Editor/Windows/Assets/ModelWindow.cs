@@ -240,6 +240,7 @@ namespace SE.Editor
             {
                 return;
             }
+
             foreach (Control child in m_Tabs.Children)
             {
                 if (child is Tab tab && tab.Proxy.Window != null)
@@ -247,11 +248,13 @@ namespace SE.Editor
                     tab.Proxy.OnSave();
                 }
             }
-            if (!SE.Editor.Editor.SaveModelAsset(m_Asset))
+
+            if (!m_Asset.Save())
             {
                 MessageBox.Show("Cannot save the model. See the log for details.", "Save Model", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
+
             ClearEditedFlag();
             Item.RefreshThumbnail();
         }

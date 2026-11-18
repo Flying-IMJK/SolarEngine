@@ -324,10 +324,6 @@ namespace SE::Editor
         return AssetContent::LoadAsync<Material>(path);
     }
 
-    String ManagedEditor::GetAssetImportPath(BinaryAsset* pAsset) { return pAsset && pAsset->IsLoaded() ? pAsset->GetImportPath() : String::Empty; }
-
-    bool ManagedEditor::SaveModelAsset(Model* pModel) { return pModel && pModel->IsLoaded() && pModel->Save(); }
-
     void EditorApp::ImportAsset()
     {
     	String assetsPath = String::Format(SE_TEXT("{0}/{1}"), EngineContext::ProjectCacheFolder, EditorAssets::AssetsPath);
