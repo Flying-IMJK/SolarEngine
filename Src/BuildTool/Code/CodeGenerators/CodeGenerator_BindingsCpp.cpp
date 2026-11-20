@@ -37,46 +37,46 @@ namespace SE::BuildTool
         return expression + ".Get()";
     }
 
-    static std::string GetManagedElementClassExpression(const std::string& managedType)
+    static std::string GetManagedElementClassExpression(const std::string& managedFullType)
     {
         struct CachedType
         {
-            const char* managedType;
+            const char* managedFullType;
             const char* cacheName;
         };
         static constexpr CachedType cachedTypes[] =
         {
-            { "bool", "Boolean" },
-            { "sbyte", "SByte" },
-            { "byte", "Byte" },
-            { "char", "Char" },
-            { "short", "Int16" },
-            { "ushort", "UInt16" },
-            { "int", "Int32" },
-            { "uint", "UInt32" },
-            { "long", "Int64" },
-            { "ulong", "UInt64" },
-            { "float", "Single" },
-            { "double", "Double" },
-            { "string", "String" },
-            { "object", "Object" },
-            { "IntPtr", "IntPtr" },
-            { "UIntPtr", "UIntPtr" },
+            { "System.Boolean", "Boolean" },
+            { "System.SByte", "SByte" },
+            { "System.Byte", "Byte" },
+            { "System.Char", "Char" },
+            { "System.Int16", "Int16" },
+            { "System.UInt16", "UInt16" },
+            { "System.Int32", "Int32" },
+            { "System.UInt32", "UInt32" },
+            { "System.Int64", "Int64" },
+            { "System.UInt64", "UInt64" },
+            { "System.Single", "Single" },
+            { "System.Double", "Double" },
+            { "System.String", "String" },
+            { "System.Object", "Object" },
+            { "System.IntPtr", "IntPtr" },
+            { "System.UIntPtr", "UIntPtr" },
         };
         for (const CachedType& cachedType : cachedTypes)
         {
-            if (managedType == cachedType.managedType)
+            if (managedFullType == cachedType.managedFullType)
             {
                 return Utils::String::Format("CLRCore::TypeCache::{0}", cachedType.cacheName);
             }
         }
-        return Utils::String::Format("Scripting::FindClass(StringAnsiView(\"{0}\"))", managedType);
+        return Utils::String::Format("Scripting::FindClass(StringAnsiView(\"{0}\"))", managedFullType);
     }
 
     static std::string GetManagedElementClassExpression(const CSharpTypeConversion& conversion)
     {
         if (conversion.kind != BindingTypeKind::InteropStruct)
-            return GetManagedElementClassExpression(conversion.publicType);
+            return GetManagedElementClassExpression(conversion.managedFullType);
 
         // Reflection names nested marshaller types with '+' rather than C#'s '.'.
         std::string internalType = conversion.libraryImportManagedType;
@@ -1708,9 +1708,9 @@ namespace SE::BuildTool
                 output += Utils::String::Format("    (ScriptingType::SpawnHandler)&::{0}::Spawn,\n", fullNativeName);
             }
 
-            if (!cls.baseClassName.empty())
+            if (cls.parentTypeID != TypeID::Invalid)
             {
-                output += Utils::String::Format("    &::{0}::TypeInitializer,\n", cls.baseClassName);
+                output += Utils::String::Format("    &::{0}::TypeInitializer,\n", cls.parentTypeID.ToString());
             }
             else
             {
@@ -1736,9 +1736,9 @@ namespace SE::BuildTool
                 output += "    nullptr, nullptr,\n";
             }
 
-            if (!cls.baseClassName.empty())
+            if (cls.parentTypeID != TypeID::Invalid)
             {
-                output += Utils::String::Format("    &::{0}::TypeInitializer", cls.baseClassName);
+                output += Utils::String::Format("    &::{0}::TypeInitializer", cls.parentTypeID.ToString());
             }
             else
             {
@@ -1918,9 +1918,10 @@ namespace SE::BuildTool
         output += Utils::String::Format("    &{0}::InitRuntime,\n", internalName);
         output += Utils::String::Format("    &{0}::Ctor, &{0}::Dtor, &{0}::Copy,\n", internalName);
         output += Utils::String::Format("    &{0}::Box, &{0}::Unbox, &{0}::GetField, &{0}::SetField", internalName);
-        if (!cls.baseClassName.empty())
+
+        if (cls.parentTypeID != TypeID::Invalid && m_Database.GetType(cls.parentTypeID)->isAPI)
         {
-            output += Utils::String::Format(",\n    &::{0}::TypeInitializer", cls.baseClassName);
+            output += Utils::String::Format(",\n    &::{0}::TypeInitializer", cls.parentTypeID.ToString());
         }
         else
         {

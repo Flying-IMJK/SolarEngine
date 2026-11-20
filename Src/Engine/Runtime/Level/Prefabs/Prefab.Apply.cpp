@@ -276,7 +276,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
         Actor* oldTargetActor = instance.TargetActor;
         if (!oldTargetActor/* || EnumHasAnyFlags(oldTargetActor->Flags, ObjectFlags::WasMarkedToDelete)*/)
             continue;
-        Actor* newTargetActor = FindActorWithPrefabObjectId(instance.TargetActor, defaultInstance->GetInstanceID());
+        Actor* newTargetActor = FindActorWithPrefabObjectId(instance.TargetActor, defaultInstance->GetID());
         if (!newTargetActor)
         {
             LOG_ERROR("Level", "Missing root object {0} for prefab instance {1}", defaultInstance->ToString(), oldTargetActor->ToString());
@@ -931,7 +931,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
                         for (int32 j = 0; j < targetObjects->Count(); j++)
                         {
                             SceneObject* targetObject = targetObjects->At(j);
-                            if (targetObject->GetPrefabObjectID() == obj->GetInstanceID())
+                            if (targetObject->GetPrefabObjectID() == obj->GetID())
                             {
                                 obj->SetOrderInParent(targetObject->GetOrderInParent());
                                 break;
@@ -968,7 +968,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
                     for (auto i = newPrefabInstanceIdToDataIndex.begin(); i.IsNotEnd(); ++i)
                     {
                         SceneObject* e = sceneObjects->At(newPrefabInstanceIdToDataIndexStart + newPrefabInstanceIdToDataIndexCounter++);
-                        if (e->GetInstanceID() == prefabObjectId)
+                        if (e->GetID() == prefabObjectId)
                         {
                             // Synchronize order of new objects with the order in target instance
                             e->SetOrderInParent(obj->GetOrderInParent());

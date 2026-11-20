@@ -14,6 +14,10 @@ namespace SE.Editor.SceneGraph
         }
 
         public int Index { get; }
+        public override bool CanDelete => false;
+        public override bool CanDuplicate => false;
+        public override bool CanCopyPaste => false;
+        public override bool CanDrag => false;
         public virtual bool CanBeSelectedDirectly => false;
         public override string Name => $"{ParentNode?.Name ?? string.Empty}.{Index}";
 

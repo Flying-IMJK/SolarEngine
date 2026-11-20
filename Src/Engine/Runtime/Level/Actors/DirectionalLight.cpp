@@ -48,7 +48,7 @@ namespace SE
             data.PartitionMode = PartitionMode;
             // data.ContactShadowsLength = ContactShadowsLength;
             data.StaticFlags = GetStaticFlags();
-            data.ID = GetInstanceID();
+            data.ID = GetID();
             renderContext.list->DirectionalLights.Add(data);
         }
     }

@@ -20,13 +20,8 @@ namespace SE
 			/// The object flags.
 			/// </summary>
 			ObjectFlags Flags = ObjectFlags::None;*/
-	protected:
-		UID m_InstanceId;
-
 	public:
-		Object();
-
-		FORCE_INLINE const UID& GetInstanceID() const { return m_InstanceId; }
+		Object() = default;
 
 		/// <summary>
 		/// Gets the string representation of this object.
@@ -56,11 +51,6 @@ namespace SE
 			Delete(this);
 		}
 	};
-
-	inline Object::Object()
-	{
-		m_InstanceId = UID::New();
-	}
 
 	template<class T>
 	FORCE_INLINE void DeleteObjectSafe(T*& resource)

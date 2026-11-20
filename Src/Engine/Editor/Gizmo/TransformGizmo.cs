@@ -8,7 +8,6 @@ namespace SE.Editor.Gizmo
     {
         private readonly List<ScenesGraphNode> m_Selection = new();
         private readonly List<ScenesGraphNode> m_SelectedParents = new();
-        private readonly Dictionary<SceneGraphNode, bool> m_StartEditedScenes = new();
 
         public IReadOnlyList<ScenesGraphNode> Selection => m_Selection;
         public IReadOnlyList<ScenesGraphNode> SelectedParents => m_SelectedParents;
@@ -54,47 +53,8 @@ namespace SE.Editor.Gizmo
             if (!node.IsDisposed && node.Transform != value)
             {
                 node.Transform = value;
-                if (node.ParentScene != null)
-                {
-                    node.ParentScene.IsEdited = true;
-                }
+                Editor.Instance.Scene.MarkSceneEdited(node.ParentScene);
             }
-        }
-
-        protected override void OnStartTransforming()
-        {
-            m_StartEditedScenes.Clear();
-            // Owner.Renderer.BeginTransform();
-            foreach (ScenesGraphNode node in m_SelectedParents)
-            {
-                SceneGraphNode scene = node.ParentScene;
-                if (scene != null)
-                {
-                    m_StartEditedScenes.TryAdd(scene, scene.IsEdited);
-                }
-                // Owner.Renderer.RecordTransform(((ActorGraphNode)node).Actor);
-            }
-        }
-
-        protected override void OnEndTransforming(bool cancelled, bool changed)
-        {
-            if (cancelled || !changed)
-            {
-                foreach (KeyValuePair<SceneGraphNode, bool> scene in m_StartEditedScenes)
-                {
-                    if (!scene.Key.IsDisposed)
-                    {
-                        scene.Key.IsEdited = scene.Value;
-                    }
-                }
-                // Owner.Renderer.CancelTransform();
-            }
-            else
-            {
-                // One completed drag registers one native TransformObjectsAction.
-                // Owner.Renderer.EndTransform();
-            }
-            m_StartEditedScenes.Clear();
         }
 
         public override void Pick()

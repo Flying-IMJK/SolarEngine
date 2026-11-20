@@ -1381,7 +1381,7 @@ namespace SE::BuildTool
         // Interface implementations
         if (!cls.interfaces.empty())
         {
-            if (cls.baseClassName.empty())
+            if (cls.parentTypeID == TypeID::Invalid)
                 output += " : ";
             else
                 output += ", ";

@@ -15,7 +15,7 @@ namespace SE
 {
     Dictionary<TypeID, TypeCompositeInfo const *> Types::m_RegisteredTypes = Dictionary<TypeID, TypeCompositeInfo const *>();
     Dictionary<TypeID, TypeMetaInfo const*> Types::m_RegisteredMetas = Dictionary<TypeID, TypeMetaInfo const*>();
-	Dictionary<TypeID, TypeEnumInfo const*> Types::m_RegisteredEnums = Dictionary<TypeID, TypeEnumInfo const*>();
+    Dictionary<TypeID, TypeEnumInfo const*> Types::m_RegisteredEnums = Dictionary<TypeID, TypeEnumInfo const*>();
     Dictionary<StableID, TypeID> Types::m_StableIDToTypeID = Dictionary<StableID, TypeID>();
 
     struct TypeRegisterInfo
@@ -94,10 +94,12 @@ namespace SE
             item.typer->RegisterTypes();
         }
 
-        // 初始元数据
         for (auto& item : typerInfoCache)
         {
-
+            if (item.typer != nullptr)
+            {
+                item.typer->InitTypes();
+            }
         }
     }
 
@@ -202,10 +204,10 @@ namespace SE
 
     bool Types::IsTypeDerivedFrom( TypeID typeID, TypeID parentTypeID )
     {
-		if (typeID != TypeID::Invalid || parentTypeID != TypeID::Invalid)
-		{
-			return false;
-		}
+        if (typeID == TypeID::Invalid || parentTypeID == TypeID::Invalid)
+        {
+            return false;
+        }
         ENGINE_ASSERT(!CoreTypeRegistry::IsCoreType( typeID ) && !CoreTypeRegistry::IsCoreType(parentTypeID));
 
         auto pTypeInfo = GetTypeInfo( typeID );
@@ -216,7 +218,7 @@ namespace SE
 
     List<TypeCompositeInfo const*> Types::GetAllTypes( bool includeAbstractTypes, bool sortAlphabetically )
     {
-		List<TypeCompositeInfo const*> types;
+        List<TypeCompositeInfo const*> types;
 
         for ( auto const& typeInfoPair : m_RegisteredTypes )
         {
@@ -230,8 +232,8 @@ namespace SE
 
         if ( sortAlphabetically )
         {
-			Function<bool(TypeCompositeInfo const* const&, TypeCompositeInfo const* const&)> sortPredicate =
-				[] ( TypeCompositeInfo const* const& pTypeInfoA, TypeCompositeInfo const* const& pTypeInfoB )
+            Function<bool(TypeCompositeInfo const* const&, TypeCompositeInfo const* const&)> sortPredicate =
+                [] ( TypeCompositeInfo const* const& pTypeInfoA, TypeCompositeInfo const* const& pTypeInfoB )
             {
                 #ifdef SE_DEVELOPMENT
                 return pTypeInfoA->friendlyName < pTypeInfoB->friendlyName;
@@ -240,14 +242,14 @@ namespace SE
                 #endif
             };
 
-			Sorting::QuickSort(types, sortPredicate);
+            Sorting::QuickSort(types, sortPredicate);
         }
 
         return types;
     }
 
     List<TypeCompositeInfo const*> Types::GetAllDerivedTypes( TypeID parentTypeID, bool includeParentTypeInResults,
-		bool includeAbstractTypes, bool sortAlphabetically )
+        bool includeAbstractTypes, bool sortAlphabetically )
     {
         List<TypeCompositeInfo const*> matchingTypes;
 
@@ -272,13 +274,13 @@ namespace SE
         if ( sortAlphabetically )
         {
             Function<bool(TypeCompositeInfo const* const&, TypeCompositeInfo const* const&)> sortPredicate =
-				[] ( TypeCompositeInfo const* const& pTypeInfoA, TypeCompositeInfo const* const& pTypeInfoB )
+                [] ( TypeCompositeInfo const* const& pTypeInfoA, TypeCompositeInfo const* const& pTypeInfoB )
             {
                 #ifdef SE_DEVELOPMENT
                 return pTypeInfoA->fullName < pTypeInfoB->fullName;
                 #else
                 return StringUtils::Compare( pTypeInfoA->m_ID.c_str(), pTypeInfoB->m_ID.c_str());
-				#endif
+                #endif
             };
 
             Sorting::QuickSort(matchingTypes, sortPredicate);
@@ -382,22 +384,22 @@ namespace SE
     }
 
     String Types::GetEnumToString(TypeEnumInfo const * enumInfo, int64 value)
-	{
+    {
         if (!enumInfo)
         {
             return String::Empty;
         }
 
-		for (TypeEnumInfo::ConstantInfo info : enumInfo->constants)
-		{
-			if (info.value == value)
-			{
-				return info.id.ToString();
-			}
-		}
+        for (TypeEnumInfo::ConstantInfo info : enumInfo->constants)
+        {
+            if (info.value == value)
+            {
+                return info.id.ToString();
+            }
+        }
 
-		return String();
-	}
+        return String();
+    }
 
     //-------------------------------------------------------------------------
 

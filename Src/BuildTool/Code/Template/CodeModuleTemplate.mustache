@@ -41,6 +41,14 @@ namespace SE
         {{isDevOnlyEnd}}{{/enumTypeList}}
         }
 
+        void InitTypes() override
+        {
+        {{#compositeTypeList}}{{isDevOnlyBegin}}
+            static_cast<TTypeCompositeInfo<{{registerNamespace}}::{{registerName}}>*>(
+                const_cast<TypeCompositeInfo*>({{registerNamespace}}::{{registerName}}::s_pTypeInfo))->InitType();
+        {{isDevOnlyEnd}}{{/compositeTypeList}}
+        }
+
         void UnregisterTypes() override
         {
             // Meta

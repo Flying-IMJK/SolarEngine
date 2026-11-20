@@ -62,7 +62,7 @@ namespace SE
 		SERIALIZE_GET_OTHER_OBJ(SceneObject, context.otherObj);
 
 		context.stream.JKEY("ID");
-		context.stream.UUID(GetInstanceID());
+		context.stream.UUID(GetID());
 
 		if (other && HasPrefabLink())
 		{
@@ -75,13 +75,16 @@ namespace SE
 		else
 		{
 			context.stream.JKEY("TypeName");
-			context.stream.String(GetTypeInfo()->friendlyName);
+			context.stream.String(GetScriptType().Fullname);
+
+			context.stream.JKEY("TypeID");
+			context.stream.Uint(GetType());
 		}
 
 		if (m_Parent)
 		{
 			context.stream.JKEY("ParentID");
-			context.stream.UUID(m_Parent->GetInstanceID());
+			context.stream.UUID(m_Parent->GetID());
 		}
 
 /*#if !COMPILE_WITHOUT_CSHARP

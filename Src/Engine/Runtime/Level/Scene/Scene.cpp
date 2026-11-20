@@ -37,7 +37,7 @@ namespace SE
 	String Scene::GetPath() const
 	{
 		AssetInfo info;
-		if (AssetContent::GetAssetInfo(GetInstanceID(), info))
+		if (AssetContent::GetAssetInfo(GetID(), info))
 		{
 			return info.path;
 		}

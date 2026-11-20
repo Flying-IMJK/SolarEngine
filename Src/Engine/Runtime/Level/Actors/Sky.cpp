@@ -98,6 +98,7 @@ namespace SE
 
         SERIALIZE_GET_OTHER_OBJ(Sky, context.otherObj);
 
+        SERIALIZE(RenderSkyType);
         SERIALIZE_MEMBER(Sun, SunLight);
         SERIALIZE(SunDiscScale);
         SERIALIZE(SunPower);
@@ -130,7 +131,8 @@ namespace SE
     {
         // Base
         Actor::Deserialize(context);
-
+        
+        DESERIALIZE(RenderSkyType);
         DESERIALIZE_MEMBER(Sun, SunLight);
         DESERIALIZE(SunDiscScale);
         DESERIALIZE(SunPower);

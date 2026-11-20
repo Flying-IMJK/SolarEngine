@@ -9,8 +9,8 @@ namespace SE.Editor.GUI
     {
         private int m_OrderInParent;
         private DragActors m_DragActors;
-        private DragAssets m_DragAssets;
         private DragHandlers m_DragHandlers;
+        private RenamePopup m_RenamePopup;
         private readonly List<Rectangle> m_Highlights = new List<Rectangle>();
         private bool m_HasSearchFilter;
 
@@ -249,12 +249,12 @@ namespace SE.Editor.GUI
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            m_RenamePopup?.Hide();
             m_DragHandlers?.Clear();
             m_Highlights.Clear();
 
             m_DragHandlers = null;
             m_DragActors = null;
-            m_DragAssets = null;
 
             base.OnDestroy();
         }
@@ -274,15 +274,33 @@ namespace SE.Editor.GUI
         /// </summary>
         public void StartRenaming(EditorWindow window, Panel treePanel = null)
         {
-            // Block renaming during scripts reload
-            /*if (Editor.Instance.ProgressReporting.CompileScripts.IsActive)
+            if (_actorNode == null || _actorNode.IsDisposed || GetActor() == null ||
+                _actorNode.ParentScene == null || GetActor().HasPrefabLink || m_RenamePopup != null)
             {
                 return;
-            }*/
-
+            }
             Select();
-
-            /* The native rename dialog and scrolling block is commented out. */
+            Rectangle rect = TextRect;
+            if (treePanel != null)
+            {
+                treePanel.ScrollViewTo(this, true);
+                rect.Width = Math.Max(rect.Width, treePanel.Width - rect.X);
+            }
+            if (window is SceneHierarchyWindow hierarchy)
+            {
+                hierarchy.ScrollingOnSceneTreeView(false);
+            }
+            m_RenamePopup = RenamePopup.ShowPopup(this, rect, _actorNode.Name, false);
+            m_RenamePopup.Validate = (RenamePopup popup, ref string value) => !string.IsNullOrWhiteSpace(value);
+            m_RenamePopup.Renamed += OnRenamed;
+            m_RenamePopup.Closed += popup =>
+            {
+                m_RenamePopup = null;
+                if (window is SceneHierarchyWindow sceneWindow && !sceneWindow.IsDisposed)
+                {
+                    sceneWindow.ScrollingOnSceneTreeView(true);
+                }
+            };
         }
 
         /// <inheritdoc />
@@ -302,9 +320,56 @@ namespace SE.Editor.GUI
             }
         }
 
-        public override void DoDragDrop(DragData data)
+        protected override void BeginDragDrop()
         {
-            /* The native drag initiation body is commented out. */
+            if (_actorNode == null || !_actorNode.CanDrag)
+            {
+                return;
+            }
+            Tree tree = ParentTree;
+            List<ActorGraphNode> actors = new();
+            if (tree != null && tree.Selection.Contains(this))
+            {
+                foreach (TreeNode selected in tree.Selection)
+                {
+                    if (selected is not ActorTreeNode actorTree || !actorTree._actorNode.CanDrag)
+                    {
+                        continue;
+                    }
+                    bool selectedAncestor = false;
+                    for (Control ancestor = selected.Parent; ancestor != null && ancestor != tree; ancestor = ancestor.Parent)
+                    {
+                        if (ancestor is ActorTreeNode parent && parent._actorNode.CanDrag && tree.Selection.Contains(parent))
+                        {
+                            selectedAncestor = true;
+                            break;
+                        }
+                    }
+                    if (!selectedAncestor)
+                    {
+                        actors.Add(actorTree._actorNode);
+                    }
+                }
+            }
+            else
+            {
+                actors.Add(_actorNode);
+            }
+            if (actors.Count > 0)
+            {
+                DoDragDrop(DragActors.GetDragData(actors));
+            }
+        }
+
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            if (IsFocused && key == KeyboardKeys.F2)
+            {
+                SceneHierarchyWindow window = Editor.Instance.Windows.SceneHierarchy;
+                StartRenaming(window, window.SceneTreePanel);
+                return true;
+            }
+            return base.OnKeyDown(key);
         }
 
         protected override bool ShowTooltip()
@@ -365,162 +430,116 @@ namespace SE.Editor.GUI
         /// <inheritdoc />
         protected override DragDropEffect OnDragEnterHeader(DragData data)
         {
-            /* The native scene/content editability checks are commented out. */
+            if (_actorNode == null || _actorNode.IsDisposed ||
+                (_actorNode is SceneGraphNode && DragOverMode != DragItemPositioning.At))
+            {
+                return DragDropEffect.None;
+            }
             if (m_DragHandlers == null)
             {
                 m_DragHandlers = new DragHandlers();
             }
-
-            // Check if drop actors
             if (m_DragActors == null)
             {
-                m_DragActors = new DragActors(ValidateDragActor, FindActorNode);
+                m_DragActors = new DragActors(node => node != null, FindActorNode);
                 m_DragHandlers.Add(m_DragActors);
             }
             if (m_DragActors.OnDragEnter(data))
             {
+                foreach (ActorGraphNode node in m_DragActors.Objects)
+                {
+                    if (!ValidateDragActor(node))
+                    {
+                        m_DragActors.InvalidDrag();
+                        return DragDropEffect.None;
+                    }
+                }
                 return m_DragActors.Effect;
             }
-
-            // Check if drag assets
-            if (m_DragAssets == null)
-            {
-                m_DragAssets = new DragAssets(ValidateDragAsset, FindAsset);
-                m_DragHandlers.Add(m_DragAssets);
-            }
-            if (m_DragAssets.OnDragEnter(data))
-            {
-                return m_DragAssets.Effect;
-            }
-
             return DragDropEffect.None;
         }
 
         /// <inheritdoc />
         protected override DragDropEffect OnDragMoveHeader(DragData data)
         {
-            return m_DragHandlers.Effect;
+            return OnDragEnterHeader(data);
         }
 
         /// <inheritdoc />
         protected override void OnDragLeaveHeader()
         {
-            m_DragHandlers.OnDragLeave();
+            m_DragHandlers?.OnDragLeave();
         }
 
         /// <inheritdoc />
         protected override DragDropEffect OnDragDropHeader(DragData data)
         {
-            DragDropEffect result = DragDropEffect.None;
-
-            SE.Actor myActor = GetActor();
-            SE.Actor newParent;
-            int newOrder = -1;
-
-            // Check if has no actor (only for Root Actor)
-            if (myActor == null)
+            try
             {
-                // Append to the last scene
-                if (SE.Level.ScenesCount == 0)
+                // Cached sources and targets can have changed while dragging.
+                if (OnDragEnterHeader(data) == DragDropEffect.None)
                 {
-                    SE.Debug.LogError("No scene loaded.");
                     return DragDropEffect.None;
                 }
-                newParent = SE.Level.GetScene(SE.Level.ScenesCount - 1);
-            }
-            else
-            {
-                newParent = myActor;
-
-                // Use drag positioning to change target parent and index
-                if (DragOverMode == DragItemPositioning.Above)
+                SE.Actor target = GetActor();
+                SE.Actor parent = target;
+                int order = -1;
+                if (target == null)
                 {
-                    if (myActor.HasParent)
+                    if (SE.Level.ScenesCount == 0)
                     {
-                        newParent = myActor.Parent;
-                        newOrder = myActor.OrderInParent;
+                        return DragDropEffect.None;
                     }
+                    parent = SE.Level.GetScene(SE.Level.ScenesCount - 1);
                 }
-                else if (DragOverMode == DragItemPositioning.Below)
+                else if (DragOverMode == DragItemPositioning.Above || DragOverMode == DragItemPositioning.Below)
                 {
-                    if (myActor.HasParent)
+                    if (!target.HasParent)
                     {
-                        newParent = myActor.Parent;
-                        newOrder = myActor.OrderInParent + 1;
+                        return DragDropEffect.None;
                     }
+                    parent = target.Parent;
+                    order = target.OrderInParent + (DragOverMode == DragItemPositioning.Below ? 1 : 0);
                 }
+                bool worldPositionsStays = !Root.GetKey(KeyboardKeys.Control);
+                return Editor.Instance.Scene.ChangeParent(m_DragActors.Objects, parent, order, worldPositionsStays)
+                    ? DragDropEffect.Move : DragDropEffect.None;
             }
-
-            if (newParent == null)
+            finally
             {
-                SE.Debug.LogError("Missing parent actor.");
-                return DragDropEffect.None;
+                m_DragHandlers?.OnDragDrop(null);
             }
-
-            // Drag actors
-            if (m_DragActors != null && m_DragActors.HasValidDrag)
-            {
-                bool worldPositionsStays = Root.GetKey(KeyboardKeys.Control) == false;
-                SE.SceneObject[] objects = new SE.SceneObject[m_DragActors.Objects.Count];
-                for (int i = 0; i < m_DragActors.Objects.Count; i++)
-                {
-                    objects[i] = m_DragActors.Objects[i].Actor;
-                }
-                /*var action = new ParentActorsAction(objects, newParent, newOrder, worldPositionsStays);
-                _actorNode.Root.Undo?.AddAction(action);
-                action.Do();*/
-                result = DragDropEffect.Move;
-            }
-            // Drag assets
-            else if (m_DragAssets != null && m_DragAssets.HasValidDrag)
-            {
-                SE.Debug.Assert(false, "Unreachable code encountered!");
-                /* The native asset spawn block is commented out. */
-                result = DragDropEffect.Move;
-            }
-
-            // Clear cache
-            m_DragHandlers.OnDragDrop(null);
-
-            // Check if scene has been modified
-            if (result != DragDropEffect.None)
-            {
-                /*var node = SceneGraph.FindNode(newParent.ID) as ActorGraphNode;
-                node?.TreeNode.Expand();*/
-            }
-
-            return result;
         }
 
         private void OnRenamed(RenamePopup renamePopup)
         {
-            /*using (new UndoBlock(_actorNode.Root.Undo, Actor, "Rename"))
+            if (_actorNode == null || _actorNode.IsDisposed || _actorNode.ParentScene == null || GetActor() == null)
             {
-                Actor.Name = renamePopup.Text.Trim();
-            }*/
+                return;
+            }
+            string name = renamePopup.Text.Trim();
+            if (name.Length == 0 || name == GetActor().Name)
+            {
+                return;
+            }
+            GetActor().Name = name;
+            Editor.Instance.Scene.MarkSceneEdited(_actorNode.ParentScene);
         }
 
         private bool ValidateDragActor(ActorGraphNode actorNode)
         {
-            return false;
-            /* The native actor drag validation block is commented out. */
-        }
-
-        private bool ValidateDragAsset(ContentItem assetItem)
-        {
-            return assetItem is AssetItem asset && asset.OnEditorDrag(this);
+            if (actorNode == null || !actorNode.CanDrag || actorNode.Root != _actorNode.Root)
+            {
+                return false;
+            }
+            SE.Actor target = GetActor();
+            return actorNode != _actorNode && (target == null ||
+                (target.Scene != null && !target.HasPrefabLink && actorNode.Find(target) == null));
         }
 
         private static ActorGraphNode FindActorNode(Guid id)
         {
             return Editor.Instance.Scene.GetActorNode(id);
-        }
-
-        private static ContentItem FindAsset(string path)
-        {
-            // AssetDatabaseModule::Find(path) has no managed binding yet.
-            // return AssetDatabaseModule.Find(path);
-            return null;
         }
     }
 }

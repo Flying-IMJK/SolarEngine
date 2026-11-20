@@ -6,50 +6,50 @@
 //-------------------------------------------------------------------------
 namespace SE
 {
-	class TypeCompositeInfo;
-	class TypeEnumInfo;
-	class TypeMetaInfo;
-	class TypePropertyPath;
-	class TypeProperty;
-	class ITyper;
-	class TypeRegister;
-	class IType;
+    class TypeCompositeInfo;
+    class TypeEnumInfo;
+    class TypeMetaInfo;
+    class TypePropertyPath;
+    class TypeProperty;
+    class ITyper;
+    class TypeRegister;
+    class IType;
 
-	//--------------------------------------------------------------------
+    //--------------------------------------------------------------------
     class SE_API_RUNTIME Types
     {
-		friend class TypeRegister;
-    	friend class Typer;
+        friend class TypeRegister;
+        friend class Typer;
 
-		template <typename T> friend TypeID Typeof();
+        template <typename T> friend TypeID Typeof();
     public:
 
         Types();
         ~Types();
 
-		static void InitTypeSystem();
-		static void UnInitTypeSystem();
+        static void InitTypeSystem();
+        static void UnInitTypeSystem();
 
-    	static void RegisterTyper(TypeRegister* pRegister);
-    	static void UnregisterTyper(TypeRegister* pRegister);
+        static void RegisterTyper(TypeRegister* pRegister);
+        static void UnregisterTyper(TypeRegister* pRegister);
 
-    	static void RegisterTypeID(StableID id, TypeID typeId);
-    	static void UnRegisterTypeID(StableID id, TypeID typeId);
+        static void RegisterTypeID(StableID id, TypeID typeId);
+        static void UnRegisterTypeID(StableID id, TypeID typeId);
 
         //-------------------------------------------------------------------------
         // Type
         //-------------------------------------------------------------------------
-		template <typename T = IType>
-		static typename TEnableIf<TIsBaseOf<IType, T>::Value, T*>::Type CreateInstance(const TypeID& typeID)
-		{
-			TypeCompositeInfo const* typeInfo = GetTypeInfo(typeID);
-			if (typeInfo != nullptr)
-			{
-				return (T*)typeInfo->CreateType();
-			}
+        template <typename T = IType>
+        static typename TEnableIf<TIsBaseOf<IType, T>::Value, T*>::Type CreateInstance(const TypeID& typeID)
+        {
+            TypeCompositeInfo const* typeInfo = GetTypeInfo(typeID);
+            if (typeInfo != nullptr)
+            {
+                return (T*)typeInfo->CreateType();
+            }
 
-			return nullptr;
-		}
+            return nullptr;
+        }
 
         /**
          * 注册类型
@@ -75,7 +75,7 @@ namespace SE
          * @return 类型信息
          */
         template <typename T, typename = typename TEnableIf<TIsBaseOfT<IType, T>::Value>::Value>
-		//  std::enable_if_t<std::is_base_of<IType, T>::Value
+        //  std::enable_if_t<std::is_base_of<IType, T>::Value
         static TypeCompositeInfo const *GetTypeInfo()
         {
             return T::s_pTypeInfo;
@@ -170,18 +170,18 @@ namespace SE
          */
         static TypeEnumInfo const *GetEnumInfo(TypeID enumID);
 
-		/**
-		 * 返回给定类型的枚举类型信息
-		 * @tparam T 泛型类型
-		 * @return
-		 */
-		template <typename T, typename = typename TEnableIf<TIsEnum<T>::Value>::Type>
-		static String GetEnumString(T value)
-		{
-			TypeID const enumTypeID = Typeof<T>();
-			TypeEnumInfo const * info = GetEnumInfo(enumTypeID);
-			return GetEnumToString(info, (int64)value);
-		}
+        /**
+         * 返回给定类型的枚举类型信息
+         * @tparam T 泛型类型
+         * @return
+         */
+        template <typename T, typename = typename TEnableIf<TIsEnum<T>::Value>::Type>
+        static String GetEnumString(T value)
+        {
+            TypeID const enumTypeID = Typeof<T>();
+            TypeEnumInfo const * info = GetEnumInfo(enumTypeID);
+            return GetEnumToString(info, (int64)value);
+        }
 
         /**
          * 返回给定类型的枚举类型信息
@@ -195,104 +195,105 @@ namespace SE
             return GetEnumInfo(enumTypeID);
         }
 
-    	//-------------------------------------------------------------------------
-    	// Meta Info
-    	//-------------------------------------------------------------------------
-    	/**
-		 * 注册元数据类型
-		 * @param pType 类型信息
-		 */
-    	static void RegisterMeta(TypeMetaInfo const *pType);
-    	/**
-		 * 移除注册的元数据类型
-		 * @param pType 类型信息
-		 */
-    	static void UnregisterMeta(TypeMetaInfo const *pType);
+        //-------------------------------------------------------------------------
+        // Meta Info
+        //-------------------------------------------------------------------------
+        /**
+         * 注册元数据类型
+         * @param pType 类型信息
+         */
+        static void RegisterMeta(TypeMetaInfo const *pType);
+        /**
+         * 移除注册的元数据类型
+         * @param pType 类型信息
+         */
+        static void UnregisterMeta(TypeMetaInfo const *pType);
 
-    	/**
-		 * 返回给定类型ID 的元数据类型
-		 * @param typeID 类型ID
-		 * @return 元数据类型信息
-		 */
-    	static TypeMetaInfo const *GetMetaTypeInfo(TypeID typeID);
+        /**
+         * 返回给定类型ID 的元数据类型
+         * @param typeID 类型ID
+         * @return 元数据类型信息
+         */
+        static TypeMetaInfo const *GetMetaTypeInfo(TypeID typeID);
 
     private:
         static Dictionary<TypeID, TypeCompositeInfo const *> m_RegisteredTypes;
         static Dictionary<TypeID, TypeEnumInfo const*> m_RegisteredEnums;
-    	static Dictionary<TypeID, TypeMetaInfo const*> m_RegisteredMetas;
-		static Dictionary<StableID, TypeID> m_StableIDToTypeID;
-		static String GetEnumToString(TypeEnumInfo const * info, int64 value);
+        static Dictionary<TypeID, TypeMetaInfo const*> m_RegisteredMetas;
+        static Dictionary<StableID, TypeID> m_StableIDToTypeID;
+        static String GetEnumToString(TypeEnumInfo const * info, int64 value);
     };
 
     template <typename T>
-	TypeID Typeof()
-	{
-		TypeID typeID;
-		constexpr StableID id = StableID::Generate<T>();
-		ENGINE_ASSERT(Types::m_StableIDToTypeID.TryGet(id, typeID))
-		return typeID;
-	}
+    TypeID Typeof()
+    {
+        TypeID typeID;
+        constexpr StableID id = StableID::Generate<T>();
+        ENGINE_ASSERT(Types::m_StableIDToTypeID.TryGet(id, typeID))
+        return typeID;
+    }
 
-	//--------------------------------------------------------------------
+    //--------------------------------------------------------------------
 
-	inline bool TypeIsValid(TypeID id)
-	{
-		return Types::GetTypeInfo(id) != nullptr;
-	}
+    inline bool TypeIsValid(TypeID id)
+    {
+        return Types::GetTypeInfo(id) != nullptr;
+    }
 
     //---类型注册器---------------------------------------------------------
 
-	class SE_API_RUNTIME ITyper
-	{
-		friend class Types;
-	public:
-		virtual ~ITyper() = default;
-	protected:
-		virtual void RegisterTypes() {}
-		virtual void UnregisterTypes() {}
-	};
+    class SE_API_RUNTIME ITyper
+    {
+        friend class Types;
+    public:
+        virtual ~ITyper() = default;
+    protected:
+        virtual void RegisterTypes() {}
+        virtual void InitTypes() {}
+        virtual void UnregisterTypes() {}
+    };
 
-	class SE_API_RUNTIME TypeRegister
-	{
-	public:
-		explicit TypeRegister(TypeRegister* pRegister): getNameFunc(nullptr)
-		{
-			Types::RegisterTyper(pRegister);
-		}
+    class SE_API_RUNTIME TypeRegister
+    {
+    public:
+        explicit TypeRegister(TypeRegister* pRegister): getNameFunc(nullptr)
+        {
+            Types::RegisterTyper(pRegister);
+        }
 
-		virtual ITyper* Create() = 0;
-		virtual ~TypeRegister() = default;
+        virtual ITyper* Create() = 0;
+        virtual ~TypeRegister() = default;
 
-		StringView GetName() const
-		{
-			return StringView(getNameFunc());
-		}
+        StringView GetName() const
+        {
+            return StringView(getNameFunc());
+        }
 
-	protected:
-		const Char* (*getNameFunc)();
-	};
+    protected:
+        const Char* (*getNameFunc)();
+    };
 
-	template <typename T, const Char* (*GetNameFunc)()>
-	class TTypeRegister final : TypeRegister
-	{
-		friend class Types;
-		static_assert(TIsBaseOf<ITyper, T>::Value, "T is not derived from ITyper");
-	private:
-	public:
-		TTypeRegister() : TypeRegister(this)
-		{
-			getNameFunc = GetNameFunc;
-		}
+    template <typename T, const Char* (*GetNameFunc)()>
+    class TTypeRegister final : TypeRegister
+    {
+        friend class Types;
+        static_assert(TIsBaseOf<ITyper, T>::Value, "T is not derived from ITyper");
+    private:
+    public:
+        TTypeRegister() : TypeRegister(this)
+        {
+            getNameFunc = GetNameFunc;
+        }
 
-		ITyper* Create() override
-		{
-			return New<T>();
-		}
-	};
+        ITyper* Create() override
+        {
+            return New<T>();
+        }
+    };
 
-	// 注册TypeRegister
-	#define SE_TYPER_REGISTER(TypeName) 										\
-	const Char* Get##TypeName##Name() { return SE_TEXT(#TypeName);	}			\
-	::SE::TTypeRegister<TypeName, Get##TypeName##Name> TypeName##Register;		\
+    // 注册TypeRegister
+    #define SE_TYPER_REGISTER(TypeName) 										\
+    const Char* Get##TypeName##Name() { return SE_TEXT(#TypeName);	}			\
+    ::SE::TTypeRegister<TypeName, Get##TypeName##Name> TypeName##Register;		\
 
 }

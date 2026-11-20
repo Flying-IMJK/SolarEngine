@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SE.Editor.GUI;
 
 namespace SE.Editor.SceneGraph
 {
@@ -30,6 +31,22 @@ namespace SE.Editor.SceneGraph
 
         public abstract string Name { get; }
         public Guid ID { get; }
+        /// <summary>
+        /// Whether this node can be deleted by an editor command.
+        /// </summary>
+        public virtual bool CanDelete => true;
+        /// <summary>
+        /// Whether this node can be duplicated by an editor command.
+        /// </summary>
+        public virtual bool CanDuplicate => true;
+        /// <summary>
+        /// Whether this node can be copied into actor clipboard data.
+        /// </summary>
+        public virtual bool CanCopyPaste => true;
+        /// <summary>
+        /// Whether this node can be moved by dragging it in the hierarchy.
+        /// </summary>
+        public virtual bool CanDrag => true;
         public virtual RootGraphNode Root => ParentNode?.Root;
         public virtual Transform Transform
         {
@@ -70,6 +87,13 @@ namespace SE.Editor.SceneGraph
         }
 
         public abstract SE.Object GetEditableObject();
+
+        /// <summary>
+        /// Adds node-specific commands to the hierarchy menu for a single selected node.
+        /// </summary>
+        public virtual void OnContextMenu(ContextMenu contextMenu, EditorWindow window)
+        {
+        }
 
         /// <summary>
         /// Releases this node tree and unlinks this node from its parent.

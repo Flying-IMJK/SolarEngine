@@ -184,10 +184,12 @@ namespace SE.Editor
         private void Spawn(Type type)
         {
             SceneModule sceneModule = Editor.Scene;
-            if (Activator.CreateInstance(type) is not SE.Actor actor)
+            if (type.IsAssignableFrom(typeof(SE.Actor)))
             {
                 return;
             }
+
+            SE.Actor actor = (SE.Actor)Activator.CreateInstance(type);
 
             SE.Actor parentActor = null;
             if (sceneModule.HasSthSelected && sceneModule.Selection[0] is ActorGraphNode actorNode)
@@ -195,10 +197,12 @@ namespace SE.Editor
                 parentActor = actorNode.Actor;
                 actorNode.TreeNode.Expand();
             }
+
             if (parentActor == null && SE.Level.ScenesCount > 0)
             {
                 parentActor = SE.Level.GetScene(SE.Level.ScenesCount - 1);
             }
+
             if (parentActor != null)
             {
                 actor.Transform = parentActor.Transform;
@@ -236,6 +240,14 @@ namespace SE.Editor
 
         private void OnTreeRightClick(TreeNode node, Float2 location)
         {
+            if (node is ActorTreeNode treeNode && treeNode.GetActor() != null)
+            {
+                ActorGraphNode graphNode = treeNode.GetActorGraphNode();
+                if (!Editor.Scene.Selection.Contains(graphNode))
+                {
+                    Editor.Scene.Select(graphNode);
+                }
+            }
             ShowContextMenu(node, location);
         }
 
@@ -271,9 +283,12 @@ namespace SE.Editor
         {
             SceneModule sceneModule = Editor.Scene;
             bool hasSthSelected = sceneModule.HasSthSelected;
-            bool isSingleActorSelected = sceneModule.SelectionCount == 1 &&
-                sceneModule.Selection[0] is ActorGraphNode;
+            bool isSingleActorSelected = sceneModule.SelectionCount == 1 && sceneModule.Selection[0] is ActorGraphNode;
             bool canEditScene = SE.Level.IsAnySceneLoaded;
+            bool canDuplicate = sceneModule.Selection.Exists(node => node != null && node.CanDuplicate);
+            bool canDelete = sceneModule.Selection.Exists(node => node != null && node.CanDelete);
+            bool canCopyPaste = sceneModule.Selection.Exists(node => node != null && node.CanCopyPaste);
+            bool canCut = sceneModule.Selection.Exists(node => node != null && node.CanCopyPaste && node.CanDelete);
 
             ContextMenu contextMenu = new() { MinimumWidth = 120 };
             ContextMenuButton button = contextMenu.AddButton("Expand All", OnExpandAllClicked);
@@ -285,16 +300,24 @@ namespace SE.Editor
             button = contextMenu.AddButton("Rename", Rename);
             button.Enabled = isSingleActorSelected;
             button = contextMenu.AddButton("Duplicate", sceneModule.Duplicate);
-            button.Enabled = hasSthSelected;
+            button.Enabled = canDuplicate;
             button = contextMenu.AddButton("Delete", sceneModule.Delete);
-            button.Enabled = hasSthSelected;
+            button.Enabled = canDelete;
 
             contextMenu.AddSeparator();
             button = contextMenu.AddButton("Copy", sceneModule.Copy);
-            button.Enabled = hasSthSelected;
-            contextMenu.AddButton("Paste", sceneModule.Paste);
-            button = contextMenu.AddButton("Cut", sceneModule.Cut);
+            button.Enabled = canCopyPaste;
+            button = contextMenu.AddButton("Paste", sceneModule.Paste);
             button.Enabled = canEditScene;
+            button = contextMenu.AddButton("Cut", sceneModule.Cut);
+            button.Enabled = canCut;
+
+            contextMenu.AddSeparator();
+
+            if (sceneModule.SelectionCount == 1)
+            {
+                sceneModule.Selection[0].OnContextMenu(contextMenu, this);
+            }
 
             contextMenu.AddSeparator();
             ContextMenuChildMenu createMenu = contextMenu.AddChildMenu("Create");
@@ -327,6 +350,7 @@ namespace SE.Editor
                     }
                 }
             }
+
             return contextMenu;
         }
 

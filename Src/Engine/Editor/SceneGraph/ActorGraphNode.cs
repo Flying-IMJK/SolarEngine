@@ -32,6 +32,10 @@ namespace SE.Editor.SceneGraph
         }
 
         public SE.Actor Actor => m_Actor;
+        public override bool CanDelete => !IsDisposed && m_Actor != null && m_Actor.Scene != null;
+        public override bool CanDuplicate => !IsDisposed && m_Actor != null && m_Actor.Scene != null;
+        public override bool CanCopyPaste => !IsDisposed && m_Actor != null && m_Actor.Scene != null;
+        public override bool CanDrag => !IsDisposed && m_Actor != null && m_Actor.Scene != null && !m_Actor.HasPrefabLink;
         public override Transform Transform
         {
             get => m_Actor != null ? m_Actor.Transform : SE.Transform.Identity;

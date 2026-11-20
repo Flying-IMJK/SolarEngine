@@ -176,7 +176,6 @@ namespace SE::BuildTool
     struct TypeInfoStruct : TypeInfoBase
     {
         TypeID                          parentTypeID;
-        std::string                     baseClassName;
         std::vector<TypeInfoStruct*>    interfaces;
         std::vector<TypeInfoField>      fields;
         std::vector<TypeInfoFunc>       functions;

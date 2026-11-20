@@ -1,14 +1,15 @@
 
 
-#include "SceneObjectsFactory.h"
+#include <Runtime/Level/SceneObjectsFactory.h>
 
-#include "Level.h"
-#include "Runtime/Core/Profiler/ProfilerCPU.h"
-#include "Runtime/Core/Serialization/JsonTools.h"
-#include "Runtime/Core/Serialization/Serialization.h"
-#include "Runtime/Core/Thread/Threading.h"
-#include "Prefabs/Prefab.h"
-#include "Runtime/Resource/AssetContent.h"
+#include <Runtime/Core/Profiler/ProfilerCPU.h>
+#include <Runtime/Core/Scripting/Scripting.h>
+#include <Runtime/Core/Serialization/JsonTools.h>
+#include <Runtime/Core/Serialization/Serialization.h>
+#include <Runtime/Core/Thread/Threading.h>
+#include <Runtime/Level/Level.h>
+#include <Runtime/Level/Prefabs/Prefab.h>
+#include <Runtime/Resource/AssetContent.h>
 
 namespace SE
 {
@@ -73,7 +74,7 @@ namespace SE
     void SceneObjectsFactory::Context::SetupIdsMapping(const SceneObject* obj, ISerializeModifier* modifier) const
     {
         int32 instanceIndex;
-        if (ObjectToInstance.TryGet(obj->GetInstanceID(), instanceIndex) && instanceIndex != modifier->CurrentInstance)
+        if (ObjectToInstance.TryGet(obj->GetID(), instanceIndex) && instanceIndex != modifier->CurrentInstance)
         {
             // Apply the current prefab instance objects ids table to resolve references inside a prefab properly
             modifier->CurrentInstance = instanceIndex;
@@ -137,40 +138,42 @@ namespace SE
         }
         else
         {
-            const auto typeNameMember = stream.FindMember("TypeID");
+            const auto typeNameMember = stream.FindMember("TypeName");
             if (typeNameMember != stream.MemberEnd())
             {
-                if (!typeNameMember->value.IsUint())
+                if (!typeNameMember->value.IsString())
                 {
-                    LOG_WARNING("Level", "Invalid object type (TypeID must be an object type full unit).");
+                    LOG_WARNING("Level", "Invalid object type (TypeName must be an object type full name string).");
                     return nullptr;
                 }
-                const TypeID typeId(typeNameMember->value.GetUint());
-                if (TypeIsValid(typeId))
+                const StringAnsiView typeName(typeNameMember->value.GetStringAnsiView());
+                const ScriptingTypeHandle type = Scripting::FindScriptingType(typeName);
+                if (type)
                 {
                     // TODO: cache per-type result in Context to boost loading of the large scenes
-                    if (!Types::IsTypeDerivedFrom(typeId, Typeof<SceneObject>()))
+                    if (!SceneObject::TypeInitializer.IsAssignableFrom(type))
                     {
-                        LOG_WARNING("Level", "Invalid scene object type {0} (inherits from: {1}).", typeId.ToString(), Typeof<SceneObject>().ToString());
+                        LOG_WARNING("Level", "Invalid scene object type {0} (expected a SceneObject).", type.ToString(true));
                         return nullptr;
                     }
-                     
-                    obj = Types::CreateInstance<SceneObject>(typeId);
+
+                    const ScriptingObjectSpawnParams params(id, type);
+                    obj = static_cast<SceneObject*>(type.GetType().Script.Spawn(params));
                     if (obj == nullptr)
                     {
-                        LOG_WARNING("Level", "Failed to spawn object of type {0}.", typeId.ToString());
+                        LOG_WARNING("Level", "Failed to spawn object of type {0}.", type.ToString(true));
                         return nullptr;
                     }
                 }
                 else
                 {
-                    LOG_WARNING("Level", "Unknown object type '{0}', ID: {1}", typeId.ToString(), id.ToString());
+                    LOG_WARNING("Level", "Unknown object type '{0}', ID: {1}", String(typeName.Get(), typeName.Length()), id.ToString());
                     return nullptr;
                 }
             }
             else
             {
-                LOG_WARNING("Level", "Invalid object type.");
+                LOG_WARNING("Level", "Missing object type (TypeName is required).");
             }
         }
 
@@ -304,12 +307,12 @@ namespace SE
                 // Find ID of the parent to this object (use data in json for relationship)
                 if (parentId == JsonTools::GetGuid(data.Data[j], "ID") && data.SceneObjects[j])
                 {
-                    parentId = data.SceneObjects[j]->GetInstanceID();
+                    parentId = data.SceneObjects[j]->GetID();
                     break;
                 }
             }
             const SceneObject* obj = data.SceneObjects[i];
-            const UID id = obj ? obj->GetInstanceID() : JsonTools::GetGuid(stream, "ID");
+            const UID id = obj ? obj->GetID() : JsonTools::GetGuid(stream, "ID");
             auto prefab = AssetContent::LoadAsync<Prefab>(prefabId);
             if (!prefab)
                 continue;
@@ -612,7 +615,7 @@ namespace SE
             bool spawned = false;
             int32 childSearchStart = i + 1; // Objects are serialized with parent followed by its children
             int32 instanceIndex = -1;
-            if (context.ObjectToInstance.TryGet(actor->GetInstanceID(), instanceIndex) && context.Instances[instanceIndex].Prefab == prefab)
+            if (context.ObjectToInstance.TryGet(actor->GetID(), instanceIndex) && context.Instances[instanceIndex].Prefab == prefab)
             {
                 // Start searching from the beginning of that prefab instance (eg. in case prefab objects were reordered)
                 childSearchStart = Math::Min(childSearchStart, context.Instances[instanceIndex].StatIndex);
@@ -631,7 +634,7 @@ namespace SE
 
             // Map prefab object ID to this actor's prefab instance so the new objects gets added to it
             context.SetupIdsMapping(actor, data.Modifier);
-            data.Modifier->IdsMapping[actorPrefabObjectId] = actor->GetInstanceID();
+            data.Modifier->IdsMapping[actorPrefabObjectId] = actor->GetID();
             // Scripting::ObjectsLookupIdMapping.Set(&data.Modifier->IdsMapping);
 
             // Create instance (including all children)
@@ -675,7 +678,7 @@ namespace SE
         newObj.PrefabObjectId = prefabObjectId;
         newObj.Id = id;
         int32 instanceIndex = -1;
-        if (context.ObjectToInstance.TryGet(actor->GetInstanceID(), instanceIndex) && context.Instances[instanceIndex].Prefab == prefab)
+        if (context.ObjectToInstance.TryGet(actor->GetID(), instanceIndex) && context.Instances[instanceIndex].Prefab == prefab)
         {
             // Add to the prefab instance IDs mapping
             context.ObjectToInstance[id] = instanceIndex;

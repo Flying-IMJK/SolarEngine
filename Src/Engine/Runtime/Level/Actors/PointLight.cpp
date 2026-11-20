@@ -117,7 +117,7 @@ namespace SE
             data.IndirectLightingIntensity = IndirectLightingIntensity;
             data.IESTexture = nullptr;// IESTexture ? IESTexture->GetTexture() : nullptr;
             data.StaticFlags = GetStaticFlags();
-            data.ID = GetInstanceID();
+            data.ID = GetID();
             renderContext.list->PointLights.Add(data);
         }
     }

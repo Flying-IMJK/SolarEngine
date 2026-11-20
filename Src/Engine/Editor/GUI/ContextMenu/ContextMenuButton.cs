@@ -123,7 +123,7 @@ namespace SE.Editor.GUI
             Style style = Style.Current;
             Rectangle backgroundRect = new Rectangle(-X + 3, 0, Parent.Width - 6, Height);
             Rectangle textRect = new Rectangle(0, 0, Width - 8, Height);
-            Color textColor = Enabled ? style.TextColor : style.TextColor;
+            Color textColor = Enabled ? style.TextColor : style.ForegroundDisabled;
 
             // Draw background
             if (IsMouseOver && Enabled)

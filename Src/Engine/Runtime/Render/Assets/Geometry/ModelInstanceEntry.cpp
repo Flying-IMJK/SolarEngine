@@ -59,12 +59,20 @@ namespace SE
 
     void ModelInstanceEntry::Serialize(SerializeContext& context)
     {
+        SERIALIZE_GET_OTHER_OBJ(ModelInstanceEntry, context.otherObj);
 
+        SERIALIZE(Material);
+        SERIALIZE(ShadowsMode);
+        SERIALIZE(Visible);
+        SERIALIZE(ReceiveDecals);
     }
 
     void ModelInstanceEntry::Deserialize(DeserializeContext& context)
     {
-
+        DESERIALIZE(Material);
+        DESERIALIZE(ShadowsMode);
+        DESERIALIZE(Visible);
+        DESERIALIZE(ReceiveDecals);
     }
 
     bool ModelInstanceEntries::IsValidFor(const Model* model) const

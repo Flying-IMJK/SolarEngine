@@ -167,6 +167,7 @@ namespace SE::BuildTool
     {
         BindingTypeKind kind = BindingTypeKind::Unsupported;
         std::string publicType;
+        std::string managedFullType;
         std::string libraryImportManagedType;
         std::string marshaller;
         InteropStrategy strategy = InteropStrategy::Unsupported;

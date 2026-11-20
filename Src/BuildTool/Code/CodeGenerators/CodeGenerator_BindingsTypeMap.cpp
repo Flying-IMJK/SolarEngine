@@ -14,6 +14,7 @@ namespace SE::BuildTool
     {
         const char* nativeType;
         const char* managedType;
+        const char* managedFullType;
         AbiValueKind abiKind;
         bool isBlittable;
         bool isString;
@@ -22,78 +23,75 @@ namespace SE::BuildTool
 
     static const BuiltinMapping s_builtinMappings[] =
     {
-        { "bool", "bool", AbiValueKind::Integer, true, false, false },
-        { "int8", "sbyte", AbiValueKind::Integer, true, false, false },
-        { "uint8", "byte", AbiValueKind::Integer, true, false, false },
-        { "int16", "short", AbiValueKind::Integer, true, false, false },
-        { "uint16", "ushort", AbiValueKind::Integer, true, false, false },
-        { "int32", "int", AbiValueKind::Integer, true, false, false },
-        { "uint32", "uint", AbiValueKind::Integer, true, false, false },
-        { "int64", "long", AbiValueKind::Integer, true, false, false },
-        { "uint64", "ulong", AbiValueKind::Integer, true, false, false },
-        { "float", "float", AbiValueKind::Float, true, false, false },
-        { "double", "double", AbiValueKind::Float, true, false, false },
-        { "int", "int", AbiValueKind::Integer, true, false, false },
-        { "char", "sbyte", AbiValueKind::Integer, true, false, false },
-        { "Char", "char", AbiValueKind::Integer, true, false, false },
-        { "SE::Char", "char", AbiValueKind::Integer, true, false, false },
-        { "void", "void", AbiValueKind::Void, true, false, false },
-        { "Guid", "System.Guid", AbiValueKind::BlittableStruct, true, false, false },
-        { "UID", "System.Guid", AbiValueKind::BlittableStruct, true, false, false },
-        { "Vector2", "Vector2", AbiValueKind::BlittableStruct, true, false, false },
-        { "Vector3", "Vector3", AbiValueKind::BlittableStruct, true, false, false },
-        { "Vector4", "Vector4", AbiValueKind::BlittableStruct, true, false, false },
-        { "Quaternion", "Quaternion", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Matrix", "Matrix", AbiValueKind::BlittableStruct, true, false, false },
-        { "Matrix", "Matrix", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Matrix3x3", "Matrix3x3", AbiValueKind::BlittableStruct, true, false, false },
-        { "Matrix3x3", "Matrix3x3", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Viewport", "Viewport", AbiValueKind::BlittableStruct, true, false, false },
-        { "Viewport", "Viewport", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::TypeID", "uint", AbiValueKind::Integer, true, false, false },
-        { "TypeID", "uint", AbiValueKind::Integer, true, false, false },
-        { "SE::Float2", "Float2", AbiValueKind::BlittableStruct, true, false, false },
-        { "Float2", "Float2", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Float3", "Float3", AbiValueKind::BlittableStruct, true, false, false },
-        { "Float3", "Float3", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Float4", "Float4", AbiValueKind::BlittableStruct, true, false, false },
-        { "Float4", "Float4", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Double2", "Double2", AbiValueKind::BlittableStruct, true, false, false },
-        { "Double2", "Double2", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Double3", "Double3", AbiValueKind::BlittableStruct, true, false, false },
-        { "Double3", "Double3", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Double4", "Double4", AbiValueKind::BlittableStruct, true, false, false },
-        { "Double4", "Double4", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Int2", "Int2", AbiValueKind::BlittableStruct, true, false, false },
-        { "Int2", "Int2", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Int3", "Int3", AbiValueKind::BlittableStruct, true, false, false },
-        { "Int3", "Int3", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Int4", "Int4", AbiValueKind::BlittableStruct, true, false, false },
-        { "Int4", "Int4", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Vector2Base<float>", "Float2", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Vector2Base<double>", "Double2", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Vector2Base<int32>", "Int2", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Vector3Base<float>", "Float3", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Vector3Base<double>", "Double3", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Vector3Base<int32>", "Int3", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Vector4Base<float>", "Float4", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Vector4Base<double>", "Double4", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Vector4Base<int32>", "Int4", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Rectangle", "Rectangle", AbiValueKind::BlittableStruct, true, false, false },
-        { "Rectangle", "Rectangle", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::ScreenOrientationType", "ScreenOrientationType", AbiValueKind::Enum, true, false, false },
-        { "ScreenOrientationType", "ScreenOrientationType", AbiValueKind::Enum, true, false, false },
-        { "SE::Color32", "Color32", AbiValueKind::BlittableStruct, true, false, false },
-        { "Color32", "Color32", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Color", "Color", AbiValueKind::BlittableStruct, true, false, false },
-        { "Color", "Color", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::Transform", "Transform", AbiValueKind::BlittableStruct, true, false, false },
-        { "Transform", "Transform", AbiValueKind::BlittableStruct, true, false, false },
-        { "SE::String", "string", AbiValueKind::ClrString, false, true, false },
-        { "String", "string", AbiValueKind::ClrString, false, true, false },
-        { "SE::StringView", "string", AbiValueKind::ClrString, false, true, true },
-        { "StringView", "string", AbiValueKind::ClrString, false, true, true },
-        { nullptr, nullptr, AbiValueKind::Void, false, false, false },
+        { "bool", "bool", "System.Boolean", AbiValueKind::Integer, true, false, false },
+        { "int8", "sbyte", "System.SByte", AbiValueKind::Integer, true, false, false },
+        { "uint8", "byte", "System.Byte", AbiValueKind::Integer, true, false, false },
+        { "int16", "short", "System.Int16", AbiValueKind::Integer, true, false, false },
+        { "uint16", "ushort", "System.UInt16", AbiValueKind::Integer, true, false, false },
+        { "int32", "int", "System.Int32", AbiValueKind::Integer, true, false, false },
+        { "uint32", "uint", "System.UInt32", AbiValueKind::Integer, true, false, false },
+        { "int64", "long", "System.Int64", AbiValueKind::Integer, true, false, false },
+        { "uint64", "ulong", "System.UInt64", AbiValueKind::Integer, true, false, false },
+        { "float", "float", "System.Single", AbiValueKind::Float, true, false, false },
+        { "double", "double", "System.Double", AbiValueKind::Float, true, false, false },
+        { "int", "int", "System.Int32", AbiValueKind::Integer, true, false, false },
+        { "char", "sbyte", "System.SByte", AbiValueKind::Integer, true, false, false },
+        { "Char", "char", "System.Char", AbiValueKind::Integer, true, false, false },
+        { "SE::Char", "char", "System.Char", AbiValueKind::Integer, true, false, false },
+        { "void", "void", "System.Void", AbiValueKind::Void, true, false, false },
+        { "Guid", "System.Guid", "System.Guid", AbiValueKind::BlittableStruct, true, false, false },
+        { "UID", "System.Guid", "System.Guid", AbiValueKind::BlittableStruct, true, false, false },
+        { "Quaternion", "Quaternion", "SE.Quaternion", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Matrix", "Matrix", "SE.Matrix", AbiValueKind::BlittableStruct, true, false, false },
+        { "Matrix", "Matrix", "SE.Matrix", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Matrix3x3", "Matrix3x3", "SE.Matrix3x3", AbiValueKind::BlittableStruct, true, false, false },
+        { "Matrix3x3", "Matrix3x3", "SE.Matrix3x3", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Viewport", "Viewport", "SE.Viewport", AbiValueKind::BlittableStruct, true, false, false },
+        { "Viewport", "Viewport", "SE.Viewport", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::TypeID", "uint", "System.UInt32", AbiValueKind::Integer, true, false, false },
+        { "TypeID", "uint", "System.UInt32", AbiValueKind::Integer, true, false, false },
+        { "SE::Float2", "Float2", "SE.Float2", AbiValueKind::BlittableStruct, true, false, false },
+        { "Float2", "Float2", "SE.Float2", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Float3", "Float3", "SE.Float3", AbiValueKind::BlittableStruct, true, false, false },
+        { "Float3", "Float3", "SE.Float3", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Float4", "Float4", "SE.Float4", AbiValueKind::BlittableStruct, true, false, false },
+        { "Float4", "Float4", "SE.Float4", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Double2", "Double2", "SE.Double2", AbiValueKind::BlittableStruct, true, false, false },
+        { "Double2", "Double2", "SE.Double2", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Double3", "Double3", "SE.Double3", AbiValueKind::BlittableStruct, true, false, false },
+        { "Double3", "Double3", "SE.Double3", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Double4", "Double4", "SE.Double4", AbiValueKind::BlittableStruct, true, false, false },
+        { "Double4", "Double4", "SE.Double4", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Int2", "Int2", "SE.Int2", AbiValueKind::BlittableStruct, true, false, false },
+        { "Int2", "Int2", "SE.Int2", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Int3", "Int3", "SE.Int3", AbiValueKind::BlittableStruct, true, false, false },
+        { "Int3", "Int3", "SE.Int3", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Int4", "Int4", "SE.Int4", AbiValueKind::BlittableStruct, true, false, false },
+        { "Int4", "Int4", "SE.Int4", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Vector2Base<float>", "Float2", "SE.Float2", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Vector2Base<double>", "Double2", "SE.Double2", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Vector2Base<int32>", "Int2", "SE.Int2", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Vector3Base<float>", "Float3", "SE.Float3", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Vector3Base<double>", "Double3", "SE.Double3", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Vector3Base<int32>", "Int3", "SE.Int3", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Vector4Base<float>", "Float4", "SE.Float4", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Vector4Base<double>", "Double4", "SE.Double4", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Vector4Base<int32>", "Int4", "SE.Int4", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Rectangle", "Rectangle", "SE.Rectangle", AbiValueKind::BlittableStruct, true, false, false },
+        { "Rectangle", "Rectangle", "SE.Rectangle", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::ScreenOrientationType", "ScreenOrientationType", "SE.ScreenOrientationType", AbiValueKind::Enum, true, false, false },
+        { "ScreenOrientationType", "ScreenOrientationType", "SE.ScreenOrientationType", AbiValueKind::Enum, true, false, false },
+        { "SE::Color32", "Color32", "SE.Color32", AbiValueKind::BlittableStruct, true, false, false },
+        { "Color32", "Color32", "SE.Color32", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Color", "Color", "SE.Color", AbiValueKind::BlittableStruct, true, false, false },
+        { "Color", "Color", "SE.Color", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::Transform", "Transform", "SE.Transform", AbiValueKind::BlittableStruct, true, false, false },
+        { "Transform", "Transform", "SE.Transform", AbiValueKind::BlittableStruct, true, false, false },
+        { "SE::String", "string", "System.String", AbiValueKind::ClrString, false, true, false },
+        { "String", "string", "System.String", AbiValueKind::ClrString, false, true, false },
+        { "SE::StringView", "string", "System.String", AbiValueKind::ClrString, false, true, true },
+        { "StringView", "string", "System.String", AbiValueKind::ClrString, false, true, true },
+        { nullptr, nullptr, nullptr, AbiValueKind::Void, false, false, false },
     };
 
     static const BuiltinMapping* FindBuiltin(std::string const& nativeName)
@@ -471,17 +469,6 @@ namespace SE::BuildTool
         return result;
     }
 
-    static std::string GetManagedNameForSemantics(BindingTypeSemantics const& semantics)
-    {
-        if (semantics.declaration)
-            return GetManagedTypeName(*semantics.declaration);
-        if (const BuiltinMapping* builtin = FindBuiltin(semantics.sourceType.ToNativeType()))
-            return builtin->managedType;
-        if (const BuiltinMapping* builtin = FindBuiltin(semantics.sourceType.typeID.ToString()))
-            return builtin->managedType;
-        return {};
-    }
-
     CSharpTypeConversion ResolveCSharpTypeConversion(TypeDatabase const& database, BindingTypeSemantics const& semantics,
                                                      BindingUseSite useSite, ApiParameterDirection direction)
     {
@@ -496,10 +483,29 @@ namespace SE::BuildTool
         switch (semantics.kind)
         {
         case BindingTypeKind::Blittable:
-            result.publicType = GetManagedNameForSemantics(semantics);
+        {
+            if (semantics.declaration)
+            {
+                result.publicType = GetManagedTypeName(*semantics.declaration);
+                result.managedFullType = result.publicType;
+            }
+            else
+            {
+                const BuiltinMapping* builtin = FindBuiltin(semantics.sourceType.ToNativeType());
+                if (!builtin)
+                    builtin = FindBuiltin(semantics.sourceType.typeID.ToString());
+                if (!builtin)
+                {
+                    result.diagnostic = "blittable type managed name could not be resolved";
+                    break;
+                }
+                result.publicType = builtin->managedType;
+                result.managedFullType = builtin->managedFullType;
+            }
             result.libraryImportManagedType = result.publicType;
             result.strategy = InteropStrategy::Direct;
             break;
+        }
         case BindingTypeKind::String:
         case BindingTypeKind::StringView:
             if (semantics.kind == BindingTypeKind::StringView && direction != ApiParameterDirection::In &&
@@ -510,6 +516,7 @@ namespace SE::BuildTool
                 break;
             }
             result.publicType = "string";
+            result.managedFullType = "System.String";
             result.libraryImportManagedType = "string";
             result.marshaller = "SE.Interop.StringMarshaller";
             result.strategy = InteropStrategy::CustomMarshaller;
@@ -524,6 +531,7 @@ namespace SE::BuildTool
                 break;
             }
             result.publicType = element.publicType + "[]";
+            result.managedFullType = element.managedFullType + "[]";
             result.libraryImportManagedType = result.publicType;
             result.marshaller = "SE.Interop.ArrayMarshaller<,>";
             result.strategy = InteropStrategy::CustomMarshaller;
@@ -532,6 +540,7 @@ namespace SE::BuildTool
         case BindingTypeKind::InteropStruct:
         {
             result.publicType = GetManagedTypeName(*semantics.declaration);
+            result.managedFullType = result.publicType;
             const int separator = Utils::String::FindLast(result.publicType, '.');
             const std::string simpleName = separator == INVALID_INDEX ? result.publicType : result.publicType.substr(separator + 1);
             result.marshaller = result.publicType + "Marshaller";
@@ -543,21 +552,25 @@ namespace SE::BuildTool
         case BindingTypeKind::NativeObject:
         case BindingTypeKind::ObjectRef:
             result.publicType = GetManagedTypeName(*semantics.declaration);
+            result.managedFullType = result.publicType;
             result.libraryImportManagedType = "IntPtr";
             result.strategy = InteropStrategy::ManualWrapper;
             break;
         case BindingTypeKind::VariantFamily:
             result.publicType = "object";
+            result.managedFullType = "System.Object";
             result.libraryImportManagedType = "IntPtr";
             result.strategy = InteropStrategy::ManualWrapper;
             break;
         case BindingTypeKind::TypeHandle:
             result.publicType = "System.Type";
+            result.managedFullType = "System.Type";
             result.libraryImportManagedType = "IntPtr";
             result.strategy = InteropStrategy::ManualWrapper;
             break;
         case BindingTypeKind::OpaquePointer:
             result.publicType = "IntPtr";
+            result.managedFullType = "System.IntPtr";
             result.libraryImportManagedType = "IntPtr";
             result.strategy = InteropStrategy::Direct;
             break;

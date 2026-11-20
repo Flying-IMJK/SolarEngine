@@ -22,7 +22,7 @@ namespace SE
             {{#IsNotAbstract}}
             s_pDefaultInstance_{{typeIDUint}} = New<::{{namespace}}::{{typeName}}>(nullptr);{{/IsNotAbstract}}
 
-            ::{{namespace}}::{{typeName}}::s_pTypeInfo = New<TTypeCompositeInfo<::{{namespace}}::{{typeName}}>>(s_pDefaultInstance_{{typeIDUint}});
+            ::{{namespace}}::{{typeName}}::s_pTypeInfo = New<TTypeCompositeInfo<::{{namespace}}::{{typeName}}>>();
             Types::RegisterType(::{{namespace}}::{{typeName}}::s_pTypeInfo);
         }
 
@@ -39,7 +39,7 @@ namespace SE
         //-------------------------------------------------------------------------
         // Constructor Methods
         //-------------------------------------------------------------------------
-        TTypeCompositeInfo(IType const* pDefaultInstance)
+        TTypeCompositeInfo()
         {
             {{#ConstructorMethod}}// Create type info
             id = TypeID(SE_TEXT("{{namespace}}::{{typeName}}"));
@@ -57,13 +57,16 @@ namespace SE
             category = "{{category}}";
             isForDevelopmentUseOnly = {{isDevOnly}};
             #endif
+            {{/ConstructorMethod}}
+        }
 
+        // Called once after all modules have registered their types.
+        void InitType()
+        {
+            {{#ConstructorMethod}}
             // Add parent info
             // Parent types
             pParentTypeInfo = ::{{parentTypeNamespace}}::{{parentTypeName}}::s_pTypeInfo;
-
-            {{#isNotAbstract}}// Add properties
-            auto pActualDefaultInstance = reinterpret_cast<::{{namespace}}::{{typeName}} const*>(pDefaultInstance);{{/isNotAbstract}}
 
             TypeProperty* propertyInfo = New<TypeProperty>();
             TypeID metaTypeID;
@@ -79,14 +82,14 @@ namespace SE
             CreateMeta(metaTypeID, "{{metaContext}}", propertyInfo);{{/metaContents}}
 
             // Abstract types cannot have default values since they cannot be instantiated
-            {{#propertieIsNotAbstract}}propertyInfo->pDefaultValue = &pActualDefaultInstance->{{propertieName}};
+            {{#propertieIsNotAbstract}}propertyInfo->pDefaultValue = &s_pDefaultInstance_{{typeIDUint}}->{{propertieName}};
             propertyInfo->offset = offsetof(::{{namespace}}::{{typeName}}, {{propertieName}});
 
-            {{#propertieDynamicArray}}propertyInfo->pDefaultArrayData = pActualDefaultInstance->{{propertieName}}.Get();
-            propertyInfo->arraySize = (int32) pActualDefaultInstance->{{propertieName}}.Count();
+            {{#propertieDynamicArray}}propertyInfo->pDefaultArrayData = s_pDefaultInstance_{{typeIDUint}}->{{propertieName}}.Get();
+            propertyInfo->arraySize = (int32) s_pDefaultInstance_{{typeIDUint}}->{{propertieName}}.Count();
             propertyInfo->arrayElementSize = (int32) sizeof(::{{propertieTypeName}}{{&templateSpecializationString}});
             propertyInfo->size = sizeof(List<::{{propertieTypeName}}{{&templateSpecializationString}}>);{{/propertieDynamicArray}}
-            {{#propertieStaticArray}}propertyInfo->pDefaultArrayData = pActualDefaultInstance->{{propertieName}};
+            {{#propertieStaticArray}}propertyInfo->pDefaultArrayData = s_pDefaultInstance_{{typeIDUint}}->{{propertieName}};
             propertyInfo->arraySize = {{staticArraySize}};
             propertyInfo->arrayElementSize = (int32_t) sizeof(::{{propertieTypeName}}{{&templateSpecializationString}});
             propertyInfo->size = sizeof(::{{propertieTypeName}}{{&templateSpecializationString}}) * {{staticArraSize}};{{/propertieStaticArray}}

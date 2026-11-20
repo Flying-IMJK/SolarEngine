@@ -469,7 +469,7 @@ namespace SE.Editor.GUI
         {
             base.Focus();
 
-            SelectTab();
+            SelectTab(false);
             BringToFront();
         }
 

@@ -42,7 +42,7 @@ namespace SE
 		auto member = context.stream->FindMember(memberName);
 		if (member != context.stream->MemberEnd())
 		{
-			DeserializeContext::StreamScope::StreamScope(context, member->value);
+			DeserializeContext::StreamScope scope(context, member->value);
 			Deserialize(context);
 		}
 
@@ -53,7 +53,7 @@ namespace SE
         const auto m = SERIALIZE_FIND_MEMBER(context.stream, name); \
         if (m != context.stream->MemberEnd())						\
         {															\
-			DeserializeContext::StreamScope::StreamScope(context, m->value);	\
+			DeserializeContext::StreamScope scope(context, m->value);	\
             Deserialize(context, var);								\
         }															\
         else														\
@@ -673,42 +673,35 @@ namespace SE
 		return !otherObj || !Transform::NearEqual(v, *(Transform*)otherObj, SERIALIZE_EPSILON);
 	}
 
-	void Serialization::Deserialize(DeserializeContext& context, Transform& v)
-	{
-		auto& lastStream = context.stream;
+    void Serialization::Deserialize(DeserializeContext& context, Transform& v)
+    {
+        {
+            const auto m = SERIALIZE_FIND_MEMBER(context.stream, "Translation");
+            if (m != context.stream->MemberEnd())
+            {
+                DeserializeContext::StreamScope scope(context, m->value);
+                Deserialize(context, v.Translation);
+            }
+        }
+        {
+            const auto m = SERIALIZE_FIND_MEMBER(context.stream, "Scale");
+            if (m != context.stream->MemberEnd())
+            {
+                DeserializeContext::StreamScope scope(context, m->value);
+                Deserialize(context, v.Scale);
+            }
+        }
+        {
+            const auto m = SERIALIZE_FIND_MEMBER(context.stream, "Orientation");
+            if (m != context.stream->MemberEnd())
+            {
+                DeserializeContext::StreamScope scope(context, m->value);
+                Deserialize(context, v.Orientation);
+            }
+        }
+    }
 
-		{
-			const auto m = SERIALIZE_FIND_MEMBER(context.stream, "Translation");
-			if (m != context.stream->MemberEnd())
-			{
-				Float3 value = v.Translation;
-				context.stream = &m->value;
-				Deserialize(context, value);
-			}
-		}
-		{
-			const auto m = SERIALIZE_FIND_MEMBER(context.stream, "Scale");
-			if (m != context.stream->MemberEnd())
-			{
-				Float3 value = v.Scale;
-				context.stream = &m->value;
-				Deserialize(context, value);
-			}
-		}
-		{
-			const auto m = SERIALIZE_FIND_MEMBER(context.stream, "Orientation");
-			if (m != context.stream->MemberEnd())
-			{
-				Quaternion value = v.Orientation;
-				context.stream = &m->value;
-				Deserialize(context, value);
-			}
-		}
-
-		context.stream = lastStream;
-	}
-
-	bool Serialization::ShouldSerialize(const Matrix& v, const void* otherObj)
+    bool Serialization::ShouldSerialize(const Matrix& v, const void* otherObj)
 	{
 		return !otherObj || v != *(Matrix*)otherObj;
 	}

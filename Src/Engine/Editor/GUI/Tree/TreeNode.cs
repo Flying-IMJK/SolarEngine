@@ -1280,7 +1280,7 @@ namespace SE.Editor.GUI
             Rectangle above = new Rectangle(m_HeaderRect.X,
                 m_HeaderRect.Y - DefaultDragInsertPositionMargin - DefaultNodeOffsetY,
                 m_HeaderRect.Width, DefaultDragInsertPositionMargin * 2.0f);
-            Rectangle below = new Rectangle(m_HeaderRect.Y,
+            Rectangle below = new Rectangle(m_HeaderRect.X,
                 m_HeaderRect.Bottom - DefaultDragInsertPositionMargin,
                 m_HeaderRect.Width, DefaultDragInsertPositionMargin * 2.0f);
             if (above.Contains(location))

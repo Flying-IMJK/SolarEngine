@@ -20,6 +20,10 @@ namespace SE.Editor.SceneGraph
         }
 
         public override string Name => "Root";
+        public override bool CanDelete => false;
+        public override bool CanDuplicate => false;
+        public override bool CanCopyPaste => false;
+        public override bool CanDrag => false;
         public override RootGraphNode Root => this;
         public override SceneGraphNode ParentScene => null;
 

@@ -228,7 +228,7 @@ namespace SE
             // Check for missing parent (eg. parent object has been deleted)
             if (obj->GetParent() == nullptr)
             {
-                LOG_WARNING("Level", "Scene object {0} {1} has missing parent object after load. Removing it.", obj->GetInstanceID(), obj->ToString());
+                LOG_WARNING("Level", "Scene object {0} {1} has missing parent object after load. Removing it.", obj->GetID(), obj->ToString());
                 sceneObjects->At(i) = nullptr;
                 obj->DeleteObject();
                 continue;
@@ -240,7 +240,7 @@ namespace SE
             /*auto script = dynamic_cast<Script*>(obj);*/
             if (obj->GetParent() == obj || (actor && !actor->GetParent()->Children.Contains(actor))/* || (script && !script->GetParent()->Scripts.Contains(script))*/)
             {
-                LOG_WARNING("Level", "Scene object {0} {1} has invalid parent object linkage after load. Removing it.", obj->GetInstanceID(), obj->ToString());
+                LOG_WARNING("Level", "Scene object {0} {1} has invalid parent object linkage after load. Removing it.", obj->GetID(), obj->ToString());
                 sceneObjects->At(i) = nullptr;
                 obj->DeleteObject();
                 continue;
@@ -386,7 +386,7 @@ namespace SE
         if (targetActor->HasParent())
         {
             // Unlink from parent actor
-            objectInstanceIdToPrefabObjectId[targetActor->GetParent()->GetInstanceID()] = UID::Empty;
+            objectInstanceIdToPrefabObjectId[targetActor->GetParent()->GetID()] = UID::Empty;
         }
         for (int32 i = 0; i < sceneObjects->Count(); i++)
         {

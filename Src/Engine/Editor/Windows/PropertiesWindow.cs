@@ -75,6 +75,7 @@ namespace SE.Editor
             Presenter.Panel.Parent = m_ScrollingPanel;
             m_SearchBox.TextChanged += () => Presenter.ApplySearchFilter(m_SearchBox.Text);
             Presenter.AfterLayout += _ => Presenter.ApplySearchFilter(m_SearchBox.Text);
+            Presenter.Modified += OnPropertiesModified;
             Editor.Scene.SelectionChanged += OnSelectionChanged;
             SE.Level.SceneLoaded += OnSceneLoaded;
         }
@@ -83,8 +84,25 @@ namespace SE.Editor
 
         public override void OnExit()
         {
+            Presenter.Modified -= OnPropertiesModified;
             Editor.Scene.SelectionChanged -= OnSelectionChanged;
             SE.Level.SceneLoaded -= OnSceneLoaded;
+        }
+
+        private void OnPropertiesModified()
+        {
+            // A locked window can display actors outside the current hierarchy selection.
+            foreach (object value in Presenter.Selection)
+            {
+                if (value is SE.Scene scene)
+                {
+                    Editor.Scene.MarkSceneEdited(scene);
+                }
+                else if (value is SE.Actor actor)
+                {
+                    Editor.Scene.MarkSceneEdited(actor.Scene);
+                }
+            }
         }
 
         private void OnSelectionChanged()

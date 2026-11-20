@@ -213,20 +213,33 @@ namespace SE
 		SE_FUNCTION(API())
 		static bool LoadSceneAsync(const UID& id);
 
-		SE_FUNCTION(API())
-		static bool SaveScene(Scene* scene, bool prettyJson = true);
+        /// <summary>
+        /// Queues unloading a loaded scene on the main thread. Already unloaded scenes are ignored.
+        /// </summary>
+        SE_FUNCTION(API())
+        static void UnloadSceneAsync(Scene* pScene);
 
-		SE_FUNCTION(API())
-		static void SaveSceneAsync(Scene* scene);
+        /// <summary>
+        /// Saves a scene to its asset path on the main thread. Returns true on success, false on failure.
+        /// </summary>
+        SE_FUNCTION(API())
+        static bool SaveScene(Scene* scene, bool prettyJson = true);
 
-		/// <summary>
-		/// Saves scene to the bytes.
-		/// </summary>
-		/// <param name="scene">Scene to serialize.</param>
-		/// <param name="outData">The result data.</param>
-		/// <param name="prettyJson">True if use pretty Json format writer, otherwise will use the compact Json format writer that packs data to use less memory and perform the action faster.</param>
-		/// <returns>True if action cannot be done, otherwise false.</returns>
-		static bool SaveSceneToBytes(Scene* scene, Json::StringBuffer& outData, bool prettyJson = true);
+        /// <summary>
+        /// Queues saving a loaded scene. Completion is reported by SceneSaved or SceneSaveError.
+        /// A scene unloaded before execution is ignored.
+        /// </summary>
+        SE_FUNCTION(API())
+        static void SaveSceneAsync(Scene* scene);
+
+        /// <summary>
+        /// Saves scene to the bytes.
+        /// </summary>
+        /// <param name="scene">Scene to serialize.</param>
+        /// <param name="outData">The result data.</param>
+        /// <param name="prettyJson">True if use pretty Json format writer, otherwise will use the compact Json format writer that packs data to use less memory and perform the action faster.</param>
+        /// <returns>True if action cannot be done, otherwise false.</returns>
+        static bool SaveSceneToBytes(Scene* scene, Json::StringBuffer& outData, bool prettyJson = true);
 
 		/// <summary>
 		/// Saves scene to the bytes.

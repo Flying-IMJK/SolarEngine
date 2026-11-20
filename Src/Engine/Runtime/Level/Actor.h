@@ -1,11 +1,11 @@
 #pragma once
 
-#include "SceneObject.h"
-#include "Runtime/Core/Math/BoundingVolumes.h"
-#include "Runtime/Core/Math/Transform.h"
-#include "Runtime/Render/RenderEnum.h"
-#include "Runtime/API.h"
-#include "Runtime/Render/SceneRendering.h"
+#include <Runtime/Core/Math/BoundingVolumes.h>
+#include <Runtime/Core/Math/Transform.h>
+#include <Runtime/API.h>
+#include <Runtime/Level/SceneObject.h>
+#include <Runtime/Render/RenderEnum.h>
+#include <Runtime/Render/SceneRendering.h>
 
 namespace SE
 {
@@ -45,7 +45,9 @@ namespace SE
 		Actor(Actor const&) = delete;
 		Actor& operator=(Actor const&) = delete;
 
-		/// <summary>
+        static bool ParseActorsData(const Span<byte>& data, SerializeDocument& document, List<UID>& ids);
+
+        /// <summary>
 		/// List with all child actors attached to the actor (readonly). All items are valid (not null).
 		/// </summary>
 		List<Actor*> Children;
@@ -53,7 +55,27 @@ namespace SE
 	public:
 		~Actor() override;
 
-		/// <summary>
+        /// <summary>
+        /// Serializes the supplied actors, without expanding their children. Returns empty data on failure.
+        /// </summary>
+        SE_FUNCTION(API())
+        static List<byte> ToBytes(const List<Actor*>& actors);
+
+        /// <summary>
+        /// Reads the object IDs from actor clipboard data. Returns an empty list for invalid data.
+        /// </summary>
+        SE_FUNCTION(API())
+        static List<UID> TryGetSerializedObjectsIds(const Span<byte>& data);
+
+        /// <summary>
+        /// Creates actors on the main thread using fresh IDs in serialized object order. Roots retain their original parent
+        /// unless pasteParent is supplied; missing parents fall back to the first loaded scene.
+        /// Returns an empty list on failure. Created objects are owned by their scene.
+        /// </summary>
+        SE_FUNCTION(API())
+        static List<Actor*> FromBytes(const Span<byte>& data, const List<UID>& newIds, Actor* pasteParent = nullptr);
+
+        /// <summary>
 		/// Gets actor bounding sphere that defines 3D space intersecting with the actor (for determination of the visibility for actor).
 		/// </summary>
 		SE_FUNCTION(API(Prop, ReadOnly))
@@ -144,7 +166,7 @@ namespace SE
 		SE_FUNCTION(API(Prop, ReadOnly))
 		FORCE_INLINE float GetPerInstanceRandom() const
 		{
-			return GetInstanceID().C * (1.0f / (float)Max_uint32);
+			return GetID().C * (1.0f / (float)Max_uint32);
 		}
 	public:
 		
@@ -609,7 +631,8 @@ namespace SE
 
 	public:
 		void Initialize() override;
-		void BeginPlay(SceneBeginData* data) override;
+        void OnDeleteObject() override;
+        void BeginPlay(SceneBeginData* data) override;
 		void EndPlay() override;
 
 		UID GetSceneObjectId() const override;
