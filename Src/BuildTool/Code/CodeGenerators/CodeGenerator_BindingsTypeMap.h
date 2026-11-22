@@ -36,6 +36,7 @@ namespace SE::BuildTool
         VariantFamily,
         TypeHandle,
         OpaquePointer,
+        SoftAssetRef,
     };
 
     enum class BindingUseSite { Parameter, EventParameter, Return, Field, ArrayElement, Variant };

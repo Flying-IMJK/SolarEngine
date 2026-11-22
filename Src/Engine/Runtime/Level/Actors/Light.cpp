@@ -60,7 +60,6 @@ namespace SE
 		SERIALIZE_GET_OTHER_OBJ(Light, context.otherObj);
 
 		SERIALIZE(Color);
-		SERIALIZE(Brightness);
 		SERIALIZE(ViewDistance);
 		SERIALIZE(IndirectLightingIntensity);
 		SERIALIZE(VolumetricScatteringIntensity);
@@ -73,7 +72,6 @@ namespace SE
 		RenderActor::Deserialize(context);
 
 		DESERIALIZE(Color);
-		DESERIALIZE(Brightness);
 		DESERIALIZE(ViewDistance);
 		DESERIALIZE(IndirectLightingIntensity);
 		DESERIALIZE(VolumetricScatteringIntensity);

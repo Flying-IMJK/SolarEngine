@@ -74,7 +74,7 @@ namespace SE.Editor.GUI
 
             m_PreviewModel = Object.New<StaticModel>();
             m_PreviewLight = Object.New<DirectionalLight>();
-            m_PreviewLight.Brightness = 8.0f;
+            m_PreviewLight.Brightness = 100000.0f;
             m_PreviewLight.ShadowsMode = ShadowsCastingMode.None;
 
             m_Task.AddCustomActor(m_PreviewModel);

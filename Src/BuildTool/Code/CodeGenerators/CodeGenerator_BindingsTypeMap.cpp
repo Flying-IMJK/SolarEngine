@@ -119,13 +119,10 @@ namespace SE::BuildTool
             });
     }
 
-    static bool IsWeakOrSoftReference(TypeInfo const& type)
+    static bool IsSoftAssetReference(TypeInfo const& type)
     {
-        return type.genericityArgs.size() == 1 && IsOneOf(type.typeID.ToString(),
-            { 
-                "SE::WeakAssetRef", "WeakAssetRef", 
-                "SE::SoftAssetRef", "SoftAssetRef"
-            });
+        return type.genericityArgs.size() == 1 &&
+            IsOneOf(type.typeID.ToString(), { "SE::SoftAssetRef", "SoftAssetRef" });
     }
 
     static bool IsExplicitlyUnsupportedFamily(TypeInfo const& type)
@@ -231,9 +228,10 @@ namespace SE::BuildTool
         {
             return Unsupported(type, "SEBIND004", "multi-level pointers require an explicit pointer policy");
         }
-        if (IsWeakOrSoftReference(type))
+        if (type.genericityArgs.size() == 1 &&
+            IsOneOf(type.typeID.ToString(), { "SE::WeakAssetRef", "WeakAssetRef" }))
         {
-            return Unsupported(type, "SEBIND001", "weak and soft object references require a dedicated lifetime policy");
+            return Unsupported(type, "SEBIND001", "weak asset references require a dedicated lifetime policy");
         }
         if (IsExplicitlyUnsupportedFamily(type))
         {
@@ -255,9 +253,40 @@ namespace SE::BuildTool
             {
                 return Unsupported(type, element.diagnosticCode.c_str(), "unsupported collection element: " + element.diagnostic);
             }
+            if (element.kind == BindingTypeKind::SoftAssetRef)
+            {
+                return Unsupported(type, "SEBIND001", "soft asset reference collections are not supported");
+            }
             result.kind = BindingTypeKind::Collection;
             result.collection = std::move(collection);
             return result;
+        }
+
+        if (IsSoftAssetReference(type))
+        {
+            if (pointerDepth != 0)
+            {
+                return Unsupported(type, "SEBIND004", "soft asset reference pointers are not supported");
+            }
+
+            TypeInfoBase const* target = database.ResolveTypeDeclaration(type.genericityArgs[0]);
+            if (!target || !target->isAPI || !target->IsFlag(TypeInfoBase::Flag::IsClassStruct))
+            {
+                return Unsupported(type, "SEBIND005", "soft asset reference target must be an exported asset type");
+            }
+            for (TypeInfoBase const* base = target; base && base->IsFlag(TypeInfoBase::Flag::IsClassStruct);)
+            {
+                if (IsOneOf(base->typeID.ToString(), { "SE::Asset", "Asset" }))
+                {
+                    result.kind = BindingTypeKind::SoftAssetRef;
+                    result.canonicalType = TypeID("UID");
+                    result.declaration = target;
+                    return result;
+                }
+                auto const* baseStruct = static_cast<TypeInfoStruct const*>(base);
+                base = database.GetType(baseStruct->parentTypeID);
+            }
+            return Unsupported(type, "SEBIND005", "soft asset reference target must derive from Asset");
         }
 
         if (IsStrongObjectReference(type))
@@ -446,6 +475,16 @@ namespace SE::BuildTool
             result.nativeValueType = semantics.sourceType.ToString(false, true);
             result.strategy = InteropStrategy::ManualWrapper;
             break;
+        case BindingTypeKind::SoftAssetRef:
+        {
+            TypeInfo nativeType = semantics.sourceType;
+            nativeType.isConst = false;
+            nativeType.isRef = false;
+            result.exportType = "::SE::UID";
+            result.nativeValueType = nativeType.ToString(false, true);
+            result.strategy = InteropStrategy::ManualWrapper;
+            break;
+        }
         case BindingTypeKind::ObjectRef:
         case BindingTypeKind::VariantFamily:
             result.exportType = "CLRObject*";
@@ -548,6 +587,18 @@ namespace SE::BuildTool
             result.strategy = InteropStrategy::ManualWrapper;
             break;
         }
+        case BindingTypeKind::SoftAssetRef:
+            if (useSite == BindingUseSite::EventParameter ||
+                (useSite == BindingUseSite::Parameter && direction != ApiParameterDirection::In))
+            {
+                result.diagnostic = "soft asset references support scalar input parameters, returns, and fields";
+                break;
+            }
+            result.publicType = "SE.SoftAssetRef<" + GetManagedTypeName(*semantics.declaration) + ">";
+            result.managedFullType = result.publicType;
+            result.libraryImportManagedType = "System.Guid";
+            result.strategy = InteropStrategy::ManualWrapper;
+            break;
         case BindingTypeKind::ScriptingObject:
         case BindingTypeKind::NativeObject:
         case BindingTypeKind::ObjectRef:
@@ -597,6 +648,7 @@ namespace SE::BuildTool
         case BindingTypeKind::ObjectRef:
         case BindingTypeKind::VariantFamily: return AbiValueKind::ClrObject;
         case BindingTypeKind::TypeHandle: return AbiValueKind::ClrTypeObject;
+        case BindingTypeKind::SoftAssetRef: return AbiValueKind::BlittableStruct;
         case BindingTypeKind::Blittable:
             if (semantics.declaration && semantics.declaration->IsFlag(TypeInfoBase::Flag::IsEnum)) return AbiValueKind::Enum;
             if (semantics.declaration) return AbiValueKind::BlittableStruct;
@@ -659,6 +711,9 @@ namespace SE::BuildTool
             returnAbiKind == AbiValueKind::BlittableStruct ||
             (function.returnType.isRef && returnSemantics.kind == BindingTypeKind::Blittable);
 
+        if (function.isVirtual && returnSemantics.kind == BindingTypeKind::SoftAssetRef)
+            plan.diagnostics.push_back("SEBIND001 " + owner.name + "::" + function.name +
+                " virtual soft asset reference returns are not supported");
         if (function.isVirtual && function.returnType.isRef)
             plan.diagnostics.push_back("SEBIND008 " + owner.name + "::" + function.name +
                 " virtual reference returns are not supported in P0");
@@ -684,6 +739,9 @@ namespace SE::BuildTool
                 plan.diagnostics.push_back("SEBIND001 " + owner.name + "::" + function.name + " parameter '" + parameter.name +
                     "' type '" + parameter.type.ToString() + "': " +
                     (!semantics.IsSupported() ? semantics.diagnostic : csharp.diagnostic));
+            if (semantics.kind == BindingTypeKind::SoftAssetRef && (function.isVirtual || !parameter.defaultValue.empty()))
+                plan.diagnostics.push_back("SEBIND001 " + owner.name + "::" + function.name + " parameter '" + parameter.name +
+                    "': soft asset references are not supported in virtual methods or as optional parameters");
             if (semantics.kind == BindingTypeKind::ScriptingObject && semantics.reference.pointerDepth == 0 &&
                 direction == ApiParameterDirection::Out)
                 plan.diagnostics.push_back("SEBIND001 " + owner.name + "::" + function.name + " parameter '" + parameter.name +

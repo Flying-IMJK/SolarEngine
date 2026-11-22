@@ -181,9 +181,17 @@ namespace SE.Editor
             {
                 return new BasicValueEditor();
             }
-            if (type.IsGenericType && FindEditorForType(type.GetGenericTypeDefinition()) is { } genericEditorType)
+            if (type.IsGenericType)
             {
-                return (CustomEditor)Activator.CreateInstance(genericEditorType)!;
+                Type definition = type.GetGenericTypeDefinition();
+                if (FindEditorForType(definition) is { } genericEditorType)
+                {
+                    return (CustomEditor)Activator.CreateInstance(genericEditorType)!;
+                }
+                if (definition == typeof(SoftAssetRef<>))
+                {
+                    return (CustomEditor)Activator.CreateInstance(typeof(SoftAssetRefEditor<>).MakeGenericType(type.GetGenericArguments()))!;
+                }
             }
             return new GenericEditor();
         }

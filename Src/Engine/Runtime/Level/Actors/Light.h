@@ -30,13 +30,6 @@ namespace SE
         Color Color = Colors::White;
 
         /// <summary>
-        /// Brightness of the light
-        /// </summary>
-        // SE_PROPERTY(API(Attributes="EditorOrder(30), EditorDisplay(\"Light\"), Limit(0.0f, 100000000.0f, 0.1f)"))
-        SE_FIELD(API(Attributes="EditorOrder(30), EditorDisplay(\"Light\"), Limit(0.0f, 100000000.0f, 0.1f)"))
-        float Brightness = 3.14f;
-
-        /// <summary>
         /// Controls light visibility range. The distance at which the light becomes completely faded. Use a value of 0 to always draw light.
         /// </summary>
         // SE_PROPERTY(API(Attributes="EditorOrder(35), Limit(0, float.MaxValue, 10.0f), EditorDisplay(\"Light\")"))

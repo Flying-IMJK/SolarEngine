@@ -13,11 +13,6 @@ namespace SE
     {
     public:
         /// <summary>
-        /// Determines whether the scene rendering system is ready (all shaders are loaded and helper resources are ready).
-        /// </summary>
-        static bool IsReady();
-
-        /// <summary>
         /// 执行输入任务的渲染
         /// </summary>
         /// <param name="task">The scene rendering task.</param>

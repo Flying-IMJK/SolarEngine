@@ -31,10 +31,10 @@ struct LightData
     float3 Direction;
     float Radius;
 
-    float FalloffExponent;
-    float InverseSquared;
-    float Dummy0;
     float RadiusInv;
+    float Padding0;
+    float Padding1;
+    float Padding2;
 };
 
 // Structure that contains information about shadow
@@ -58,41 +58,16 @@ void GetRadialLightAttenuation(
     bool isSpotLight,
     float3 N,
     float distanceSqr,
-    float distanceBiasSqr,
     float3 toLight,
     float3 L,
     inout float NoL,
     inout float attenuation)
 {
-    // Distance attenuation
-    if (lightData.InverseSquared)
-    {
-        BRANCH
-        if (lightData.SourceLength > 0)
-        {
-            float3 l01 = lightData.Direction * lightData.SourceLength;
-            float3 l0 = toLight - 0.5 * l01;
-            float3 l1 = toLight + 0.5 * l01;
-            float lengthL0 = length(l0);
-            float lengthL1 = length(l1);
-            attenuation = rcp((lengthL0 * lengthL1 + dot(l0, l1)) * 0.5 + distanceBiasSqr);
-            NoL = saturate(0.5 * (dot(N, l0) / lengthL0 + dot(N, l1) / lengthL1));
-        }
-        else
-        {
-            attenuation = rcp(distanceSqr + distanceBiasSqr);
-            NoL = saturate(dot(N, L));
-        }
-        attenuation *= Square(saturate(1 - Square(distanceSqr * Square(lightData.RadiusInv))));
-    }
-    else
-    {
-        attenuation = 1;
-        NoL = saturate(dot(N, L));
-        float3 worldLightVector = toLight * lightData.RadiusInv;
-        float t = dot(worldLightVector, worldLightVector);
-        attenuation *= pow(1.0f - saturate(t), lightData.FalloffExponent);
-    }
+    // Distances are meters. A one-centimeter lower bound avoids the point singularity.
+    float factor = distanceSqr * Square(lightData.RadiusInv);
+    float window = saturate(1.0 - factor * factor);
+    attenuation = window * window / max(distanceSqr, 0.0001);
+    NoL = saturate(dot(N, L));
 
     // Spot mask attenuation
     if (isSpotLight)
@@ -109,7 +84,7 @@ float AreaLightSpecular(LightData lightData, float roughness, inout float3 toLig
     float energy = 1;
     float m = roughness * roughness;
     float3 r = reflect(-V, N);
-    float invDistToLight = rsqrt(dot(toLight, toLight));
+    float invDistToLight = rsqrt(max(dot(toLight, toLight), 0.0001));
 
     BRANCH
     if (lightData.SourceLength > 0)
@@ -120,7 +95,7 @@ float AreaLightSpecular(LightData lightData, float roughness, inout float3 toLig
         float3 l0 = toLight - 0.5 * l01;
         float a = Square(lightData.SourceLength);
         float b = dot(r, l01);
-        float t = saturate(dot(l0, b * r - l01) / (a - b * b));
+        float t = saturate(dot(l0, b * r - l01) / max(a - b * b, 1e-6));
         toLight = l0 + t * l01;
     }
 
@@ -131,11 +106,12 @@ float AreaLightSpecular(LightData lightData, float roughness, inout float3 toLig
         energy *= Square(m / saturate(m + 0.5 * sphereAngle));
         float3 closestPointOnRay = dot(toLight, r) * r;
         float3 centerToRay = closestPointOnRay - toLight;
-        float3 closestPointOnSphere = toLight + centerToRay * saturate(lightData.SourceRadius * rsqrt(dot(centerToRay, centerToRay)));
+        float3 closestPointOnSphere = toLight + centerToRay * saturate(lightData.SourceRadius * rsqrt(max(dot(centerToRay, centerToRay), 1e-8)));
         toLight = closestPointOnSphere;
     }
 
-    L = normalize(toLight);
+    if (dot(toLight, toLight) > 1e-8)
+        L = normalize(toLight);
     return energy;
 }
 

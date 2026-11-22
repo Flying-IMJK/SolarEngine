@@ -6,25 +6,27 @@
 #include <Runtime/Core/Systems.h>
 #include <Runtime/Core/Thread/JobSystem.h>
 
+#include <Runtime/Graphics/Base/GPULimits.h>
 #include <Runtime/Graphics/GPUContext.h>
 #include <Runtime/Graphics/GPUDevice.h>
 #include <Runtime/Graphics/RenderTargetPool.h>
 #include <Runtime/Graphics/Viewport.h>
 #include <Runtime/Render/RenderBuffers.h>
 #include <Runtime/Render/RenderContext.h>
+#include <Runtime/Render/RenderFeatures/ExponentialHeightFogRender.h>
+#include <Runtime/Render/RenderFeatures/PhysicalSky.h>
+#include <Runtime/Render/RenderFeatures/SkyAtmospherePreCompute.h>
 #include <Runtime/Render/RenderList.h>
+#include <Runtime/Render/RenderPass/AutoExposurePass.h>
 #include <Runtime/Render/RenderPass/ColorGradingPass.h>
 #include <Runtime/Render/RenderPass/FXAA.h>
 #include <Runtime/Render/RenderPass/ForwardPass.h>
 #include <Runtime/Render/RenderPass/GBufferPass.h>
 #include <Runtime/Render/RenderPass/LightPass.h>
-#include <Runtime/Render/RenderFeatures/PhysicalSky.h>
-#include <Runtime/Render/RenderFeatures/ExponentialHeightFogRender.h>
 #include <Runtime/Render/RenderPass/PostProcessingPass.h>
 #include <Runtime/Render/RenderPass/ShadowPass.h>
 #include <Runtime/Render/RenderTask.h>
 #include <Runtime/Render/RendererPass.h>
-#include <Runtime/Render/RenderFeatures/SkyAtmospherePreCompute.h>
 #include <Runtime/Render/Utils/RendererAllocation.hpp>
 
 namespace SE
@@ -58,8 +60,15 @@ namespace SE
 	{
 		GPUDevice* device = GPUDevice::instance;
 
-		// Initialize
-		if (!device->GetMainContext()->LoadDefaultResources())
+        const FormatSupport sceneRequired = FormatSupport::Texture2D | FormatSupport::RenderTarget | FormatSupport::Blendable | FormatSupport::ShaderSample;
+        if ((device->GetPixelFormatFeatures(PixelFormat::R32G32B32A32_Float).Support & sceneRequired) != sceneRequired)
+        {
+            LOG_ERROR("Render", "Physical scene lighting requires blendable/sampleable RGBA32F render targets.");
+            return false;
+        }
+
+        // Initialize
+        if (!device->GetMainContext()->LoadDefaultResources())
 		{
 			LOG_FATAL("Graphic", "Cannot load default resources.");
 			return false;
@@ -71,8 +80,9 @@ namespace SE
 		rendererData->PassList.Add(&ShadowsPass::Instance());
 		rendererData->PassList.Add(&LightPass::Instance());
 		rendererData->PassList.Add(&ForwardPass::Instance());
-		rendererData->PassList.Add(&ColorGradingPass::Instance());
-		rendererData->PassList.Add(&PostProcessingPass::Instance());
+        rendererData->PassList.Add(&AutoExposurePass::Instance());
+        rendererData->PassList.Add(&ColorGradingPass::Instance());
+        rendererData->PassList.Add(&PostProcessingPass::Instance());
 		rendererData->PassList.Add(&FXAA::Instance());
 
 		// Init child services
@@ -90,14 +100,15 @@ namespace SE
 
 	void RendererSystem::OnDispose()
 	{
-		Delete(rendererData);
-		ISystem::OnDispose();
+        AutoExposurePass::Instance().Dispose();
+        Delete(rendererData);
+        ISystem::OnDispose();
 	}
 
 	void RenderPath(SceneRenderTask* task, RenderContext& renderContext, RenderContextBatch& renderContextBatch);
 	void RenderAntiAliasingPass(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output, const Viewport& outputViewport);
 
-	void Renderer::Render(SceneRenderTask* task)
+    void Renderer::Render(SceneRenderTask* task)
 	{
 		// 清理上下文状态、设置Viewport
 		GPUContext* context = GPUDevice::instance->GetMainContext();
@@ -194,10 +205,11 @@ namespace SE
             rendererData->AtmospherePreCompute.Update(renderContext, renderContext.list->SkyAtmosphere);
 		}
 
-		// Get the light accumulation buffer
-		auto outputFormat = renderContext.buffers->GetOutputFormat();
-		GPUTextureFlags tempFlags = GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget;
-		if (GPUDevice::instance->GetGPULimits().HasCompute)
+        // Get the light accumulation buffer
+        // Scene radiance is unexposed here; sunlight can exceed half-float range.
+        auto            outputFormat = PixelFormat::R32G32B32A32_Float;
+        GPUTextureFlags tempFlags    = GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget;
+        if (GPUDevice::instance->GetGPULimits().HasCompute)
 		{
 			tempFlags = EnumAddFlags(tempFlags, GPUTextureFlags::UnorderedAccess);
 		}
@@ -232,17 +244,17 @@ namespace SE
 
 
 		auto tempBuffer = RenderTargetPool::Get(tempDesc);
-		RENDER_TARGET_POOL_SET_NAME(tempBuffer, "TempBuffer");
-		// Color Grading LUT generation
-		auto colorGradingLUT = ColorGradingPass::Instance().RenderLUT(renderContext);
+        RENDER_TARGET_POOL_SET_NAME(tempBuffer, "TempBuffer");
+        auto exposure = AutoExposurePass::Instance().Render(renderContext, frameBuffer);
+        auto colorGradingLUT = ColorGradingPass::Instance().RenderLUT(renderContext);
+        PostProcessingPass::Instance().Render(renderContext, frameBuffer, tempBuffer, colorGradingLUT, exposure);
 
-		PostProcessingPass::Instance().Render(renderContext, frameBuffer, tempBuffer, colorGradingLUT);
-		RenderTargetPool::Release(colorGradingLUT);
 		Swap(frameBuffer, tempBuffer);
 
 		// Cleanup
 		context->ResetRenderTarget();
 		context->FlushState();
+        RenderTargetPool::Release(colorGradingLUT);
 
 		// Draw Gizmos
 		if (view.DrawGizmos)

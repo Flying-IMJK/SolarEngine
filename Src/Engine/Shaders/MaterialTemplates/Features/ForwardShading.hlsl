@@ -37,7 +37,7 @@ void PS_Forward(in PixelInput input, out float4 output : SV_Target0)
     LOOP
     for (uint i = 0; i < LocalLightsCount; ++i)
         light += GetLighting(ViewPos, LocalLights[i], gBuffer, 1.0, true, LocalLights[i].SpotAngles.x > -2.0);
-    output.rgb += light.rgb * material.AO;
+    output.rgb += light.rgb;
 #endif
 #if MATERIAL_BLEND == MATERIAL_BLEND_ADDITIVE
     output.rgb *= material.Opacity;

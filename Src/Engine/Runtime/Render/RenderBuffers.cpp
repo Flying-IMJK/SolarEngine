@@ -12,7 +12,7 @@ namespace SE
     // How many frames keep cached buffers for temporal or optional effects?
 #define LAZY_FRAMES_COUNT 4
 
-    RenderBuffers::RenderBuffers() : _width(), _height(), _aspectRatio(), _useAlpha(), _viewport(), _resources(), VolumetricFogData()
+    RenderBuffers::RenderBuffers(const SpawnParams& params): ScriptingObject(params) 
     {
 #define CREATE_TEXTURE(name) name = GPUDevice::instance->CreateTexture(SE_TEXT(#name)); _resources.Add(name)
         CREATE_TEXTURE(DepthBuffer);
@@ -70,7 +70,6 @@ LastFrame##name = 0; \
         UPDATE_LAZY_KEEP_RT(TemporalSSR);
         UPDATE_LAZY_KEEP_RT(TemporalAA);
         UPDATE_LAZY_KEEP_RT(HalfResDepth);
-        UPDATE_LAZY_KEEP_RT(LuminanceMap);
 #undef UPDATE_LAZY_KEEP_RT
         for (int32 i = CustomBuffers.Count() - 1; i >= 0; i--)
         {
@@ -161,6 +160,13 @@ LastFrame##name = 0; \
             result += SkyAtmosphereAerialPerspectiveLut->GetMemoryUsage();
         if (SkyAtmosphereDistantSkyLightLut)
             result += SkyAtmosphereDistantSkyLightLut->GetMemoryUsage();
+        if (AutoExposureHistogram)
+            result += AutoExposureHistogram->GetMemoryUsage();
+        for (auto history : AutoExposureHistory)
+        {
+            if (history)
+                result += history->GetMemoryUsage();
+        }
         return result;
     }
 
@@ -209,7 +215,8 @@ LastFrame##name = 0; \
         _height = height;
         _aspectRatio = static_cast<float>(width) / height;
         _viewport = Viewport(0, 0, static_cast<float>(width), static_cast<float>(height));
-        LastEyeAdaptationTime = 0;
+        AutoExposureHistoryValid = false;
+        LastAutoExposureTime     = 0.0;
 
         // Flush any pool render targets to prevent over-allocating GPU memory when resizing game viewport
         RenderTargetPool::Flush(false, 4);
@@ -219,6 +226,10 @@ LastFrame##name = 0; \
 
     void RenderBuffers::Release()
     {
+        DeleteObjectSafe(AutoExposureHistogram);
+        DeleteObjectSafe(AutoExposureHistory[0]);
+        DeleteObjectSafe(AutoExposureHistory[1]);
+        AutoExposureHistoryIndex        = 0;
         SkyAtmosphereLutsSubmitted = false;
         SkyAtmosphereHeightFogSubmitted = false;
         SkyAtmosphereBaseLutsSubmitted = false;
@@ -228,7 +239,8 @@ LastFrame##name = 0; \
         DeleteObjectSafe(SkyAtmosphereSkyViewLut);
         DeleteObjectSafe(SkyAtmosphereAerialPerspectiveLut);
         DeleteObjectSafe(SkyAtmosphereDistantSkyLightLut);
-        LastEyeAdaptationTime = 0;
+        AutoExposureHistoryValid = false;
+        LastAutoExposureTime     = 0.0;
         LinkedCustomBuffers = nullptr;
 
         for (int32 i = 0; i < _resources.Count(); i++)
@@ -249,7 +261,6 @@ LastFrame##name = 0
         UPDATE_LAZY_KEEP_RT(TemporalSSR);
         UPDATE_LAZY_KEEP_RT(TemporalAA);
         UPDATE_LAZY_KEEP_RT(HalfResDepth);
-        UPDATE_LAZY_KEEP_RT(LuminanceMap);
 #undef UPDATE_LAZY_KEEP_RT
         CustomBuffers.ClearDelete();
     }

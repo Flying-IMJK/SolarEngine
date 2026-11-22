@@ -494,7 +494,7 @@ namespace SE
 		/// Initializes a texture resource (allocates the GPU memory and performs the resource setup).
 		/// </summary>
 		/// <param name="desc">The texture description.</param>
-		/// <returns>True if cannot create texture, otherwise false.</returns>
+		/// <returns>True if the texture was initialized successfully, otherwise false.</returns>
 		SE_FUNCTION(API())
 		bool Init(const GPUTextureDescription& desc);
 

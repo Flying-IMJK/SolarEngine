@@ -102,6 +102,7 @@ namespace SE::BuildTool
             case BindingTypeKind::StringView:
             case BindingTypeKind::InteropStruct:
             case BindingTypeKind::ObjectRef:
+            case BindingTypeKind::SoftAssetRef:
             case BindingTypeKind::Collection:
             case BindingTypeKind::Blittable:
             case BindingTypeKind::ScriptingObject:
@@ -141,7 +142,7 @@ namespace SE::BuildTool
                kind == BindingTypeKind::StringView || kind == BindingTypeKind::ScriptingObject ||
                kind == BindingTypeKind::NativeObject || kind == BindingTypeKind::ObjectRef ||
                kind == BindingTypeKind::VariantFamily || kind == BindingTypeKind::TypeHandle ||
-               kind == BindingTypeKind::OpaquePointer;
+               kind == BindingTypeKind::OpaquePointer || kind == BindingTypeKind::SoftAssetRef;
     }
 
     bool BindingsCppGenerator::GetNativeToManagedConvert(TypeInfo const& type, std::string& expr, std::string_view marshalAs) const
@@ -163,6 +164,11 @@ namespace SE::BuildTool
         if (conversion.kind == BindingTypeKind::InteropStruct)
         {
             expr = Utils::String::Format("BindingsInterop::ToManaged({0})", expr);
+            return true;
+        }
+        if (conversion.kind == BindingTypeKind::SoftAssetRef)
+        {
+            expr = Utils::String::Format("({0}).GetID()", expr);
             return true;
         }
         if (conversion.kind == BindingTypeKind::ObjectRef)
@@ -235,6 +241,11 @@ namespace SE::BuildTool
             expr = Utils::String::Format("BindingsInterop::ToNative({0})", expr);
             return true;
         }
+        if (conversion.kind == BindingTypeKind::SoftAssetRef)
+        {
+            expr = Utils::String::Format("{0}({1})", conversion.nativeValueType, expr);
+            return true;
+        }
         if (conversion.kind == BindingTypeKind::ObjectRef)
         {
             const std::string targetType = type.genericityArgs.empty()
@@ -300,6 +311,8 @@ namespace SE::BuildTool
             return Utils::String::Format("Variant((ScriptingObject*){0})",
                 isPointer ? expr : Utils::String::Format("&({0})", expr));
         }
+        if (conversion.kind == BindingTypeKind::SoftAssetRef)
+            return Utils::String::Format("Variant(({0}).GetID())", expr);
         if (conversion.kind == BindingTypeKind::ObjectRef)
         {
             return Utils::String::Format("Variant((ScriptingObject*){0}.Get())", expr);
@@ -361,6 +374,8 @@ namespace SE::BuildTool
                 targetType, expr, isPointer ? nativeType : nativeType + "*");
             return isPointer ? objectPointer : "*" + objectPointer;
         }
+        if (conversion.kind == BindingTypeKind::SoftAssetRef)
+            return Utils::String::Format("static_cast<::SE::UID>({0})", expr);
         if (conversion.kind == BindingTypeKind::ObjectRef)
         {
             const std::string targetType = type.genericityArgs.empty()

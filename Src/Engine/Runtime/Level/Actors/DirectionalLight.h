@@ -12,6 +12,10 @@ namespace SE
         SCRIPTING_TYPE(DirectionalLight);
         SE_DEFINE_CLASS(DirectionalLight, LightWithShadow);
     public:
+        /// Normal illuminance in lux before atmospheric attenuation.
+        SE_FIELD(API(Attributes = "EditorOrder(30), EditorDisplay(\"Light\", \"Illuminance (lux)\"), Limit(0, 100000000, 1)"))
+        float Brightness = 100000.0f;
+
         /// <summary>
         /// The partitioning mode for the shadow cascades.
         /// </summary>

@@ -104,6 +104,12 @@ namespace SE
             return false;
         }
 
+        const FormatSupport hdrSupport = device->GetPixelFormatFeatures(PixelFormat::R32G32B32A32_Float).Support;
+        if ((hdrSupport & required) != required)
+        {
+            LOG_ERROR("Render", "Atmosphere luminance requires sampleable/storage RGBA32F 2D and 3D textures.");
+            return false;
+        }
         return true;
     }
 
@@ -162,15 +168,16 @@ namespace SE
             GPUTextureDescription description;
             if (i == 3)
             {
-                description = GPUTextureDescription::New3D(32, 32, 16, PixelFormat::R16G16B16A16_Float, flags);
+                description = GPUTextureDescription::New3D(32, 32, 16, PixelFormat::R32G32B32A32_Float, flags);
             }
             else
             {
-                const auto format = i == 4 ? PixelFormat::R32G32B32A32_Float : PixelFormat::R16G16B16A16_Float;
+                // Transmittance and unit-illuminance multiple scattering remain half precision.
+                const auto format = i >= 2 ? PixelFormat::R32G32B32A32_Float : PixelFormat::R16G16B16A16_Float;
                 description = GPUTextureDescription::New2D(widths[i], heights[i], format, flags, 1);
             }
 
-            if ((*textures[i])->Init(description))
+            if (!(*textures[i])->Init(description))
             {
                 return false;
             }

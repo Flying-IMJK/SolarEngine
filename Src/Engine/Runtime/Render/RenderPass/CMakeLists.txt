@@ -10,6 +10,8 @@ RUNTIME_ADD(
     ShadowPass.cpp
     ColorGradingPass.h
     ColorGradingPass.cpp
+    AutoExposurePass.h
+    AutoExposurePass.cpp
     PostProcessingPass.h
     PostProcessingPass.cpp
 

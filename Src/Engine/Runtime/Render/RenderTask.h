@@ -1,18 +1,18 @@
 #pragma once
 
-#include "RenderContext.h"
-#include "RenderView.h"
-#include "SceneRendering.h"
-#include "Runtime/Core/Platform/CriticalSection.h"
-#include "Runtime/Core/Types/Collections/List.h"
-#include "Runtime/Core/Types/Object.h"
-#include "Runtime/Core/Types/Delegate.h"
-#include "Runtime/Core/Scripting/ScriptingObject.h"
-#include "Runtime/Core/Scripting/ScriptingObjectRef.h"
+#include <Runtime/Core/Platform/CriticalSection.h>
+#include <Runtime/Core/Scripting/ScriptingObject.h>
+#include <Runtime/Core/Scripting/ScriptingObjectRef.h>
+#include <Runtime/Core/Types/Collections/List.h>
+#include <Runtime/Core/Types/Delegate.h>
+#include <Runtime/Core/Types/Object.h>
+#include <Runtime/Render/RenderContext.h>
+#include <Runtime/Render/RenderView.h>
+#include <Runtime/Render/SceneRendering.h>
 
-#include "Runtime/API.h"
-#include "Runtime/Graphics/Viewport.h"
-#include "Runtime/Resource/Storage/AssetStorages.h"
+#include <Runtime/API.h>
+#include <Runtime/Graphics/Viewport.h>
+#include <Runtime/Resource/Storage/AssetStorages.h>
 
 namespace SE
 {
@@ -287,10 +287,10 @@ namespace SE
 		SE_FIELD(API())
 		RenderView View;
 
-		/// <summary>
-		/// The actors source to use (configures what objects to render).
-		/// </summary>
-		SE_FIELD(API())
+        /// <summary>
+        /// The actors source to use (configures what objects to render).
+        /// </summary>
+        SE_FIELD(API())
 		ActorsSources ActorsSource = ActorsSources::Scenes;
 
 		/// <summary>
@@ -393,10 +393,11 @@ namespace SE
 		/// <param name="category">The actors category to draw (see SceneRendering::DrawCategory).</param>
 		virtual void OnCollectDrawCalls(RenderContextBatch& renderContextBatch, SceneRendering::DrawCategory category = SceneRendering::DrawCategory::SceneDraw);
 
-		/// <summary>
-		/// The action called after scene rendering. Can be used to perform custom pre-rendering or to modify the render view.
-		/// </summary>
-		Delegate<RenderContext&> PreRender;
+        /// <summary>
+        /// The action called before scene rendering. Can be used to perform custom pre-rendering or to modify the render view and frame post-process settings.
+        /// </summary>
+        SE_EVENT(API())
+        Delegate<RenderContext&> PreRender;
 
 		/// <summary>
 		/// Called before scene rendering. Can be used to perform custom pre-rendering or to modify the render view.

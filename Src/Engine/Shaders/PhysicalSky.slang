@@ -37,8 +37,8 @@ float3 PhysicalSkySunDisk(float3 origin, float3 direction)
         transmittance = AtmosphereTransmittance(origin, direction);
     float sineRadius = sin(angularRadius);
     float3 luminance = data.View.SunIlluminance.rgb / max(AtmospherePi * sineRadius * sineRadius, 1.e-12);
-    // Match UE's disk luminance ceiling and keep the output finite in half-float HDR.
-    return min(luminance * transmittance * coverage, 64000.0);
+    // The scene color is full precision until exposure is applied in post processing.
+    return luminance * transmittance * coverage;
 }
 
 GBufferOutput PS_PhysicalSky(Quad_VS2PS input)

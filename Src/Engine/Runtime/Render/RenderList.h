@@ -34,10 +34,10 @@ namespace SE
         float CastShadows;
         Float3 Direction;
         float Radius;
-        float FalloffExponent;
-        float InverseSquared;
-        float Dummy0;
         float RadiusInv;
+        float  Padding0;
+        float  Padding1;
+        float  Padding2;
     });
 
     /// <summary>
@@ -111,7 +111,6 @@ namespace SE
 
         float ShadowsDistance;
         float Radius;
-        float FallOffExponent;
         float SourceRadius;
 
         Float3 UpVector;
@@ -127,7 +126,6 @@ namespace SE
         int16 ShadowDataIndex = -1;
         uint8 CastVolumetricShadow : 1;
         uint8 RenderedVolumetricFog : 1;
-        uint8 UseInverseSquaredFalloff : 1;
 
         GPUTexture* IESTexture;
         UID ID;
@@ -153,7 +151,6 @@ namespace SE
 
         float ShadowsDistance;
         float Radius;
-        float FallOffExponent;
         float SourceRadius;
 
         float SourceLength;
@@ -165,7 +162,6 @@ namespace SE
         int16 ShadowDataIndex = -1;
         uint8 CastVolumetricShadow : 1;
         uint8 RenderedVolumetricFog : 1;
-        uint8 UseInverseSquaredFalloff : 1;
 
         GPUTexture* IESTexture;
         UID ID;
@@ -305,11 +301,11 @@ namespace SE
     /// <summary>
     /// Rendering cache container object for the draw calls collecting, sorting and executing.
     /// </summary>
-    class SE_API_RUNTIME RenderList : public Object
+    SE_CLASS(API(Sealed))
+    class SE_API_RUNTIME RenderList : public ScriptingObject
     {
+        SCRIPTING_TYPE(RenderList);
     public:
-        RenderList();
-
         /// <summary>
         /// Allocates the new renderer list object or reuses already allocated one.
         /// </summary>
@@ -416,6 +412,7 @@ namespace SE
         /// <summary>
         /// The post process settings.
         /// </summary>
+        SE_FIELD(API())
         PostProcessSettings PostSettings;
 
         // struct SE_API_RUNTIME BlendableSettings

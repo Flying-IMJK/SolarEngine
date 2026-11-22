@@ -97,9 +97,10 @@ namespace SE
         if (!forwardList.IsEmpty())
         {
             // Run forward pass
-            /*view.Pass = DrawPass::Forward;
+            view.Pass = DrawPass::Forward;
+            context->SetViewportAndScissors(static_cast<float>(output->Width()), static_cast<float>(output->Height()));
             context->SetRenderTarget(depthBufferHandle, output->View());
-            mainCache->ExecuteDrawCalls(renderContext, forwardList, input->View());*/
+            mainCache->ExecuteDrawCalls(renderContext, forwardList, {}, input->View());
         }
     }
 }

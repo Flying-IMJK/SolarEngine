@@ -80,6 +80,10 @@ namespace SE.Editor.GUI
             {
                 tooltip = assetItem.NamePath;
             }
+            else if (Validator.UseAssetID && Validator.SelectedID != Guid.Empty)
+            {
+                tooltip = Validator.SelectedID.ToString();
+            }
             else
             {
                 tooltip = Validator.SelectedPath;
@@ -189,8 +193,8 @@ namespace SE.Editor.GUI
                     Render2D.DrawSprite(EditorIcons.Cross16, clearIconRect, clearIconColor);
                 }
             }
-            // Check if has no item but has an asset (eg. virtual asset)
-            else if (Validator.SelectedAsset)
+            // Virtual assets and unresolved IDs have no item thumbnail.
+            else if (Validator.SelectedAsset || (Validator.UseAssetID && Validator.SelectedID != Guid.Empty))
             {
                 // Draw remove button
                 if (CanEdit)
@@ -225,6 +229,10 @@ namespace SE.Editor.GUI
                 else if (Validator.SelectedAsset)
                 {
                     name = Validator.SelectedAsset.GetType().Name;
+                }
+                else if (Validator.UseAssetID && Validator.SelectedID != Guid.Empty)
+                {
+                    name = "Missing asset";
                 }
                 Render2D.PushClip(nameRect);
                 Render2D.DrawText(style.FontSmall, name, nameRect, style.Foreground, TextAlignment.Near, TextAlignment.Center);
@@ -318,7 +326,8 @@ namespace SE.Editor.GUI
                     Focus();
                     OnSubmit();
                 }
-                else if (Validator.SelectedAsset != null || Validator.SelectedItem != null)
+                else if (Validator.SelectedAsset != null || Validator.SelectedItem != null ||
+                    (Validator.UseAssetID && Validator.SelectedID != Guid.Empty))
                 {
                     if (Button2Rect.Contains(location) && canLocate)
                     {
@@ -330,7 +339,7 @@ namespace SE.Editor.GUI
                     {
                         // Deselect asset
                         Focus();
-                        if (Validator.SelectedItem != null)
+                        if (Validator.UseAssetID || Validator.SelectedItem != null)
                         {
                             Validator.SelectedItem = null;
                         }
@@ -346,7 +355,7 @@ namespace SE.Editor.GUI
             {
                 // Clear value
                 Focus();
-                if (Validator.SelectedItem != null)
+                if (Validator.UseAssetID || Validator.SelectedItem != null)
                 {
                     Validator.SelectedItem = null;
                 }
@@ -459,7 +468,11 @@ namespace SE.Editor.GUI
                     RootWindow().Focus();
                     Focus();
                 });
-                if (Validator.SelectedAsset != null)
+                if (Validator.UseAssetID && Validator.SelectedItem != null)
+                {
+                    popup.ScrollToAndHighlightItemByName(Validator.SelectedItem.ShortName);
+                }
+                else if (Validator.SelectedAsset != null)
                 {
                     string selectedAssetName = Path.GetFileNameWithoutExtension(Validator.SelectedAsset.GetPath());
                     popup.ScrollToAndHighlightItemByName(selectedAssetName);

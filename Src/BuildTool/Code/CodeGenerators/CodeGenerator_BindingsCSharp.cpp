@@ -60,6 +60,8 @@ namespace SE::BuildTool
                 conversion.publicType, expression);
         case BindingTypeKind::TypeHandle:
             return Utils::String::Format("SE.Interop.SystemTypeMarshaller.ConvertToManaged({0})", expression);
+        case BindingTypeKind::SoftAssetRef:
+            return Utils::String::Format("new {0}({1})", conversion.publicType, expression);
         case BindingTypeKind::NativeObject:
             return Utils::String::Format("{0}.FromUnmanaged({1})", conversion.publicType, expression);
         case BindingTypeKind::InteropStruct:
@@ -85,6 +87,8 @@ namespace SE::BuildTool
             return Utils::String::Format("SE.Interop.ManagedHandleMarshaller.ManagedToNative.ConvertToUnmanaged({0})", expression);
         case BindingTypeKind::TypeHandle:
             return Utils::String::Format("SE.Interop.SystemTypeMarshaller.ConvertToUnmanaged({0})", expression);
+        case BindingTypeKind::SoftAssetRef:
+            return Utils::String::Format("({0}).ID", expression);
         case BindingTypeKind::NativeObject:
             return Utils::String::Format("{0} != null ? {0}.__unmanagedPtr : IntPtr.Zero", expression);
         case BindingTypeKind::InteropStruct:
@@ -106,7 +110,8 @@ namespace SE::BuildTool
         if (cppType.isPointer || conversion.kind == BindingTypeKind::String || conversion.kind == BindingTypeKind::StringView ||
             conversion.kind == BindingTypeKind::ScriptingObject || conversion.kind == BindingTypeKind::NativeObject ||
             conversion.kind == BindingTypeKind::ObjectRef || conversion.kind == BindingTypeKind::Collection ||
-            conversion.kind == BindingTypeKind::VariantFamily || conversion.kind == BindingTypeKind::TypeHandle)
+            conversion.kind == BindingTypeKind::VariantFamily || conversion.kind == BindingTypeKind::TypeHandle ||
+            conversion.kind == BindingTypeKind::SoftAssetRef)
         {
             return false;
         }

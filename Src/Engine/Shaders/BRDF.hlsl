@@ -50,11 +50,21 @@ float Vis_SmithJointApprox(float roughness, float NoV, float NoL)
     return 0.5 * rcp(visSmithV + visSmithL);
 }
 
+// Height-correlated Smith-GGX. The input is perceptual roughness; square it once here.
+float Vis_SmithGGXCorrelated(float perceptualRoughness, float NoV, float NoL)
+{
+    float alpha = perceptualRoughness * perceptualRoughness;
+    float alpha2 = alpha * alpha;
+    float ggxV = NoL * sqrt(NoV * NoV * (1.0 - alpha2) + alpha2);
+    float ggxL = NoV * sqrt(NoL * NoL * (1.0 - alpha2) + alpha2);
+    return 0.5 / max(ggxV + ggxL, 1e-8);
+}
+
 // [Schlick 1994, "An Inexpensive BRDF Model for Physically-Based Rendering"]
 float3 F_Schlick(float3 specularColor, float VoH)
 {
     float fc = Pow5(1 - VoH);
-    return saturate(50.0 * specularColor.g) * fc + (1 - fc) * specularColor;
+    return fc + (1.0 - fc) * specularColor;
 }
 
 #define REFLECTION_CAPTURE_NUM_MIPS 7

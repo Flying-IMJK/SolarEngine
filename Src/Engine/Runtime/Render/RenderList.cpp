@@ -110,8 +110,6 @@ namespace SE
         data->CastShadows = useShadow ? 1.0f : 0.0f;
         data->Direction = -Direction;
         data->Radius = 0;
-        data->FalloffExponent = 0;
-        data->InverseSquared = 0;
         data->RadiusInv = 0;
     }
 
@@ -127,9 +125,7 @@ namespace SE
         data->CastShadows = useShadow ? 1.0f : 0.0f;
         data->Direction = Direction;
         data->Radius = Radius;
-        data->FalloffExponent = FallOffExponent;
-        data->InverseSquared = UseInverseSquaredFalloff ? 1.0f : 0.0f;
-        data->RadiusInv = 1.0f / Radius;
+        data->RadiusInv    = Radius > 0.0f ? 1.0f / Radius : 0.0f;
     }
 
     void RendererPointLightData::SetupLightData(LightData* data, bool useShadow) const
@@ -144,9 +140,7 @@ namespace SE
         data->CastShadows = useShadow ? 1.0f : 0.0f;
         data->Direction = Direction;
         data->Radius = Radius;
-        data->FalloffExponent = FallOffExponent;
-        data->InverseSquared = UseInverseSquaredFalloff ? 1.0f : 0.0f;
-        data->RadiusInv = 1.0f / Radius;
+        data->RadiusInv    = Radius > 0.0f ? 1.0f / Radius : 0.0f;
     }
 
     void RendererSkyLightData::SetupLightData(LightData* data, bool useShadow) const
@@ -161,9 +155,7 @@ namespace SE
         data->CastShadows = useShadow ? 1.0f : 0.0f;
         data->Direction = Float3::Forward;
         data->Radius = Radius;
-        data->FalloffExponent = 0;
-        data->InverseSquared = 0;
-        data->RadiusInv = 1.0f / Radius;
+        data->RadiusInv    = Radius > 0.0f ? 1.0f / Radius : 0.0f;
     }
 
 
@@ -221,7 +213,7 @@ namespace SE
     }
 
     
-    RenderList::RenderList() : Object()
+    RenderList::RenderList(const SpawnParams& params) : ScriptingObject(params)
         , DirectionalLights(4)
         , PointLights(32)
         , SpotLights(32)
@@ -268,7 +260,7 @@ namespace SE
         AtmosphericFog = nullptr;
         // Fog = nullptr;
         // PostFx.Clear();
-        // Settings = PostProcessSettings();
+        PostSettings = PostProcessSettings();
         // Blendable.Clear();
         m_InstanceBuffer.Clear();
     }
@@ -831,8 +823,6 @@ namespace SE
                     {SE_TEXT("CastShadows"), &light.CastShadows, sizeof(light.CastShadows)},
                     {SE_TEXT("Direction"), &light.Direction, sizeof(light.Direction)},
                     {SE_TEXT("Radius"), &light.Radius, sizeof(light.Radius)},
-                    {SE_TEXT("FalloffExponent"), &light.FalloffExponent, sizeof(light.FalloffExponent)},
-                    {SE_TEXT("InverseSquared"), &light.InverseSquared, sizeof(light.InverseSquared)},
                     {SE_TEXT("RadiusInv"), &light.RadiusInv, sizeof(light.RadiusInv)},
                 };
                 for (const auto& parameter : lightParameters)

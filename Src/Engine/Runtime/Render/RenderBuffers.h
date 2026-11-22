@@ -18,8 +18,10 @@ namespace SE
     /// <summary>
     /// The scene rendering buffers container.
     /// </summary>
-    class SE_API_RUNTIME RenderBuffers : public Object
+    SE_CLASS(API())
+    class SE_API_RUNTIME RenderBuffers : public ScriptingObject
     {
+        SCRIPTING_TYPE(RenderBuffers);
     private:
         /// <summary
         /// The custom rendering state.
@@ -59,10 +61,12 @@ namespace SE
             GPUTexture* GBuffer[4];
         };
 
-        // Helper target for the eye adaptation
-        float LastEyeAdaptationTime = 0.0f;
-        GPUTexture* LuminanceMap = nullptr;
-        uint64 LastFrameLuminanceMap = 0;
+        // Task-local exposure history. RG: exposure multiplier and adapted EV100.
+        GPUTexture* AutoExposureHistogram    = nullptr;
+        GPUTexture* AutoExposureHistory[2]   = {nullptr, nullptr};
+        int32       AutoExposureHistoryIndex = 0;
+        bool        AutoExposureHistoryValid = false;
+        double      LastAutoExposureTime     = 0.0;
 
         // Helper target for volumetric fog rendering (used for the temporal filter and apply via fog shader)
         GPUTexture* VolumetricFogHistory = nullptr;
@@ -110,12 +114,11 @@ namespace SE
         bool SkyAtmosphereLutsSubmitted = false;
 
     public:
-        RenderBuffers();
 
         /// <summary>
         /// Finalizes an instance of the <see cref="RenderBuffers"/> class.
         /// </summary>
-        ~RenderBuffers();
+        ~RenderBuffers() override;
 
         String ToString() const override;
 

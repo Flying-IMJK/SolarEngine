@@ -68,7 +68,7 @@ struct Data
 	float Time;
 
 	float Dummy1;
-	float PostExposure;
+	float Padding;
 	float VignetteIntensity;
 	float LensDirtIntensity;
 
@@ -95,6 +95,7 @@ static const float permTexUnitHalf = 0.5 / 256.0;  // Half perm texture texel-si
 
 // Input textures
 Texture2D Input0;
+Texture2D<float4> AutoExposure;
 Texture2D Input1;
 Texture2D Input2;
 Texture2D Input3;
@@ -108,11 +109,11 @@ Texture2D ColorGradingLUT;
 #endif
 static const float LUTSize = 32;
 
-half3 ColorLookupTable(half3 linearColor)
+float3 ColorLookupTable(float3 linearColor)
 {
 	// Move from linear color to encoded LUT color space
 	//float3 encodedColor = linearColor; // Default
-	float3 encodedColor = LinearToLog(linearColor + LogToLinear(0)); // Log
+	float3 encodedColor = saturate(LinearToLog(max(linearColor, 0.0) + LogToLinear(0))); // Log
 
 	float3 uvw = encodedColor * ((LUTSize - 1) / LUTSize) + (0.5f / LUTSize);
 
@@ -522,8 +523,8 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 	float3 lensDirt = LensDirt.SampleLevel(SamplerLinearClamp, uv, 0).rgb;
 	color.rgb += lensDirt * (lensLight * data.LensDirtIntensity);
 
-	// Eye Adaptation post exposure
-//	color.rgb *= PostExposure;
+	// Apply this view's automatic exposure once, after scene compositing.
+	color.rgb *= AutoExposure.Load(int3(0, 0, 0)).x;
 
 	// Color Grading and Tone Mapping
 #if USE_GRADING_LUT

@@ -1,4 +1,5 @@
 
+using System;
 using SE.Editor.GUI;
 
 namespace SE.Editor
@@ -71,6 +72,80 @@ namespace SE.Editor
             }
 
             Picker = null;
+            base.Deinitialize();
+        }
+    }
+
+    internal sealed class SoftAssetRefEditor<T> : CustomEditor where T : Asset
+    {
+        private AssetPicker m_Picker;
+        private bool m_IsRefreshing;
+
+        public override DisplayStyle Style => DisplayStyle.Inline;
+
+        public override void Initialize(LayoutElementsContainer layout)
+        {
+            if (HasDifferentTypes)
+            {
+                return;
+            }
+
+            m_Picker = layout.Custom<AssetPicker>().CustomControl;
+            m_Picker.Validator.UseAssetID = true;
+            m_Picker.Validator.AssetType = typeof(T);
+            m_Picker.SelectedItemChanged += OnSelectedItemChanged;
+            Editor.Instance.AssetDatabase.WorkspaceModified += m_Picker.Validator.RefreshSelectedAssetID;
+        }
+
+        private void OnSelectedItemChanged()
+        {
+            if (m_IsRefreshing)
+            {
+                return;
+            }
+
+            Guid id = m_Picker.Validator.SelectedID;
+            if (HasDifferentValues || ((SoftAssetRef<T>)Values[0]).ID != id)
+            {
+                SetValue(new SoftAssetRef<T>(id));
+            }
+        }
+
+        public override void Refresh()
+        {
+            base.Refresh();
+            if (m_Picker == null)
+            {
+                return;
+            }
+
+            bool differentValues = HasDifferentValues;
+            m_Picker.DifferentValues = differentValues;
+            Guid id = differentValues ? Guid.Empty : ((SoftAssetRef<T>)Values[0]).ID;
+            if (m_Picker.Validator.SelectedID == id)
+            {
+                return;
+            }
+
+            m_IsRefreshing = true;
+            try
+            {
+                m_Picker.Validator.SelectedID = id;
+            }
+            finally
+            {
+                m_IsRefreshing = false;
+            }
+        }
+
+        protected override void Deinitialize()
+        {
+            if (m_Picker != null)
+            {
+                Editor.Instance.AssetDatabase.WorkspaceModified -= m_Picker.Validator.RefreshSelectedAssetID;
+                m_Picker.SelectedItemChanged -= OnSelectedItemChanged;
+                m_Picker = null;
+            }
             base.Deinitialize();
         }
     }

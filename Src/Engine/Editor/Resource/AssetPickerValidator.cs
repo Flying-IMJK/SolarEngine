@@ -12,8 +12,11 @@ namespace SE.Editor
     {
         private Asset m_Selected;
         private ContentItem m_SelectedItem;
+        private Guid m_SelectedID;
         private Type _type;
         private string m_FileExtension;
+
+        internal bool UseAssetID { get; set; }
 
         /// <summary>
         /// Gets or sets the selected item.
@@ -23,6 +26,19 @@ namespace SE.Editor
             get => m_SelectedItem;
             set
             {
+                if (UseAssetID)
+                {
+                    if (value == null)
+                    {
+                        SetSelectedAssetID(Guid.Empty, null);
+                    }
+                    else if (value is AssetItem referenceItem && IsValid(referenceItem))
+                    {
+                        SetSelectedAssetID(referenceItem.Id, referenceItem);
+                    }
+                    return;
+                }
+
                 if (m_SelectedItem == value)
                 {
                     return;
@@ -96,6 +112,10 @@ namespace SE.Editor
         {
             get
             {
+                if (UseAssetID)
+                {
+                    return m_SelectedID;
+                }
                 if (m_Selected != null)
                 {
                     return m_Selected.ID;
@@ -106,7 +126,45 @@ namespace SE.Editor
                 }
                 return Guid.Empty;
             }
-            set => SelectedItem = Editor.Instance.AssetDatabase.FindAsset(value);
+            set
+            {
+                if (!UseAssetID)
+                {
+                    SelectedItem = Editor.Instance.AssetDatabase.FindAsset(value);
+                    return;
+                }
+
+                if (m_SelectedID == value && m_SelectedItem != null)
+                {
+                    return;
+                }
+
+                AssetItem item = value == Guid.Empty ? null : Editor.Instance.AssetDatabase.FindAsset(value);
+                SetSelectedAssetID(value, item != null && IsValid(item) ? item : null);
+            }
+        }
+
+        internal void RefreshSelectedAssetID()
+        {
+            if (m_SelectedItem == null && m_SelectedID != Guid.Empty)
+            {
+                SelectedID = m_SelectedID;
+            }
+        }
+
+        private void SetSelectedAssetID(Guid id, AssetItem item)
+        {
+            if (m_SelectedID == id && m_SelectedItem == item)
+            {
+                return;
+            }
+
+            // An unresolved ID stays selected even when its database item is unavailable.
+            m_SelectedItem?.RemoveReference(this);
+            m_SelectedItem = item;
+            m_SelectedID = id;
+            m_SelectedItem?.AddReference(this);
+            OnSelectedItemChanged();
         }
 
         /// <summary>
@@ -274,8 +332,14 @@ namespace SE.Editor
         /// <inheritdoc />
         public void OnItemDeleted(ContentItem item)
         {
-            // Deselect item
-            SelectedItem = null;
+            if (UseAssetID)
+            {
+                SetSelectedAssetID(m_SelectedID, null);
+            }
+            else
+            {
+                SelectedItem = null;
+            }
         }
 
         /// <inheritdoc />
@@ -291,8 +355,7 @@ namespace SE.Editor
         /// <inheritdoc />
         public void OnItemDispose(ContentItem item)
         {
-            // Deselect item
-            SelectedItem = null;
+            OnItemDeleted(item);
         }
 
         /// <summary>
@@ -303,6 +366,7 @@ namespace SE.Editor
             m_SelectedItem?.RemoveReference(this);
             m_SelectedItem = null;
             m_Selected = null;
+            m_SelectedID = Guid.Empty;
         }
     }
 

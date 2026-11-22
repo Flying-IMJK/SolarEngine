@@ -7,7 +7,7 @@
 ShadowData GetShadow(LightData lightData, GBufferSample gBuffer, float4 shadowMask)
 {
     ShadowData shadow;
-    shadow.SurfaceShadow = gBuffer.AO * shadowMask.r;
+    shadow.SurfaceShadow = shadowMask.r;
     shadow.TransmissionShadow = shadowMask.g;
     return shadow;
 }
@@ -15,7 +15,7 @@ ShadowData GetShadow(LightData lightData, GBufferSample gBuffer, float4 shadowMa
 LightingData StandardShading(GBufferSample gBuffer, float energy, float3 L, float3 V, half3 N)
 {
     float3 diffuseColor = GetDiffuseColor(gBuffer);
-    float3 H = normalize(V + L);
+    float3 H = (V + L) * rsqrt(max(dot(V + L, V + L), 1e-8));
     float NoL = saturate(dot(N, L));
     float NoV = max(dot(N, V), 1e-5);
     float NoH = saturate(dot(N, H));
@@ -29,7 +29,7 @@ LightingData StandardShading(GBufferSample gBuffer, float energy, float3 L, floa
     float3 specularColor = GetSpecularColor(gBuffer);
     float3 F = F_Schlick(specularColor, VoH);
     float D = D_GGX(gBuffer.Roughness, NoH) * energy;
-    float Vis = Vis_SmithJointApprox(gBuffer.Roughness, NoV, NoL);
+    float Vis = Vis_SmithGGXCorrelated(gBuffer.Roughness, NoV, NoL);
     lighting.Specular = (D * Vis) * F;
 #endif
     lighting.Transmission = 0;
@@ -43,10 +43,10 @@ LightingData SubsurfaceShading(GBufferSample gBuffer, float energy, float3 L, fl
     // Fake effect of the light going through the material
     float3 subsurfaceColor = gBuffer.CustomData.rgb;
     float opacity = gBuffer.CustomData.a;
-    float3 H = normalize(V + L);
+    float3 H = (V + L) * rsqrt(max(dot(V + L, V + L), 1e-8));
     float inscatter = pow(saturate(dot(L, -V)), 12.1f) * lerp(3, 0.1f, opacity);
     float normalContribution = saturate(dot(N, H) * opacity + 1.0f - opacity);
-    float backScatter = gBuffer.AO * normalContribution / (PI * 2.0f);
+    float backScatter = normalContribution / (PI * 2.0f);
     lighting.Transmission = lerp(backScatter, 1, inscatter) * subsurfaceColor;
 #endif
     return lighting;
@@ -127,16 +127,16 @@ float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, f
     {
         toLight = lightData.Position - gBuffer.WorldPos;
         float distanceSqr = dot(toLight, toLight);
-        L = toLight * rsqrt(distanceSqr);
+        L = toLight * rsqrt(max(distanceSqr, 0.0001));
         float attenuation = 1;
-        GetRadialLightAttenuation(lightData, isSpotLight, N, distanceSqr, 1, toLight, L, NoL, attenuation);
+        GetRadialLightAttenuation(lightData, isSpotLight, N, distanceSqr, toLight, L, NoL, attenuation);
         shadow.SurfaceShadow *= attenuation;
         shadow.TransmissionShadow *= attenuation;
     }
 
 #if !LIGHTING_NO_DIRECTIONAL
-    // Reduce shadow mapping artifacts
-    shadow.SurfaceShadow *= saturate(NoL * 6.0f - 0.2f) * NoL;
+    // The cosine term belongs to irradiance, independently of the shadow mask.
+    shadow.SurfaceShadow *= NoL;
 #endif
 
     BRANCH

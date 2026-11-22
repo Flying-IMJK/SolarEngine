@@ -1,8 +1,8 @@
 #pragma once
 
-#include "RenderView.h"
-#include "Runtime/Core/Types/Collections/List.h"
-#include "Utils/RendererAllocation.hpp"
+#include <Runtime/Core/Types/Collections/List.h>
+#include <Runtime/Render/RenderView.h>
+#include <Runtime/Render/Utils/RendererAllocation.hpp>
 
 namespace SE
 {
@@ -12,6 +12,7 @@ namespace SE
 	class SceneRenderTask;
 
 	SE_INJECT_CODE(cpp, "#include \"Runtime/Render/RenderTask.h\"")
+	SE_INJECT_CODE(cpp, "#include \"Runtime/Render/RenderList.h\"")
 
 	// <summary>
 	/// The high-level renderer context. Used to collect the draw calls for the scene rendering. Can be used to perform a custom rendering.

@@ -210,7 +210,7 @@ namespace SE
         _defaultLensStar  = nullptr;
     }
 
-    void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input, GPUTexture* output, GPUTexture* colorGradingLUT)
+    void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input, GPUTexture* output, GPUTexture* colorGradingLUT, GPUTexture* pAutoExposure)
     {
         PROFILE_GPU_CPU("Post Processing");
         auto  device  = GPUDevice::instance;
@@ -325,7 +325,7 @@ namespace SE
             data.LensFlareIntensity = 0;
             data.LensDirtIntensity  = 0;
         }
-        data.PostExposure = Math::Exp2(8 /*settings.EyeAdaptation.PostExposure*/);
+        data.Padding      = 0.0f;
         data.InputSize    = Float2(static_cast<float>(w1), static_cast<float>(h1));
         data.InvInputSize = Float2(1.0f / static_cast<float>(w1), 1.0f / static_cast<float>(h1));
         data.InputAspect  = static_cast<float>(w1) / h1;
@@ -513,6 +513,11 @@ namespace SE
 
         if (validComposite)
         {
+            if (pAutoExposure)
+            {
+                m_SPComposite->SetTexture(SE_TEXT("AutoExposure"), pAutoExposure->View());    
+            }
+
             m_SPComposite->SetConstantBuffer(SE_TEXT("data"), m_DataBuffer);
 
             // Composite pass inputs mapping:

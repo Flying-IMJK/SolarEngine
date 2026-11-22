@@ -56,7 +56,7 @@ private:
         float Time;
 
         float Dummy1;
-        float PostExposure;
+        float Padding;
         float VignetteIntensity;
         float LensDirtIntensity;
 
@@ -112,7 +112,6 @@ public:
     void Dispose() override;
 
 public:
-
     /// <summary>
     /// Perform postFx rendering for the input task
     /// </summary>
@@ -120,7 +119,9 @@ public:
     /// <param name="input">Target with rendered HDR frame to post process</param>
     /// <param name="output">Output frame</param>
     /// <param name="colorGradingLUT">The prebaked LUT for color grading and tonemapping.</param>
-    void Render(RenderContext& renderContext, GPUTexture* input, GPUTexture* output, GPUTexture* colorGradingLUT);
+    /// <param name="pAutoExposure">Required borrowed GPU texture containing this view's exposure. Its owner keeps it alive through GPU completion.</param>
+    /// <returns>True if the composite draw was submitted. False means resources or bindings are unavailable; output is not valid and must not be presented.</returns>
+    void Render(RenderContext& renderContext, GPUTexture* input, GPUTexture* output, GPUTexture* colorGradingLUT, GPUTexture* pAutoExposure);
 
 private:
 

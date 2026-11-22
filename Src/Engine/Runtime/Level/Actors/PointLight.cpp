@@ -22,22 +22,8 @@ namespace SE
 
     float PointLight::ComputeBrightness() const
     {
-        float result = Brightness;
-
-        /*if (IESTexture)
-        {
-            if (UseIESBrightness)
-            {
-                result = IESTexture->Brightness * IESBrightnessScale;
-            }
-
-            result *= IESTexture->TextureMultiplier;
-        }*/
-
-        //if (UseInverseSquaredFalloff)
-        //	result *= 16.0f;
-
-        return result;
+        // A uniform point source emits into the full sphere's 4 pi steradians.
+        return Math::Max(Brightness, 0.0f) / (4.0f * Math::PI);
     }
 
     float PointLight::GetScaledRadius() const
@@ -93,7 +79,7 @@ namespace SE
             radius > Math::ZeroTolerance &&
             (ViewDistance < Math::ZeroTolerance || Float3::DistanceSquared(renderContext.view.Position, position) < ViewDistance * ViewDistance))
         {
-            RendererPointLightData data;
+            RendererPointLightData data        = {};
             data.Position = position;
             data.MinRoughness = MinRoughness;
             data.ShadowsDistance = ShadowsDistance;
@@ -109,8 +95,6 @@ namespace SE
             data.RenderedVolumetricFog = 0;
             data.ShadowsMode = ShadowsMode;
             data.Radius = radius;
-            data.FallOffExponent = FallOffExponent;
-            data.UseInverseSquaredFalloff = UseInverseSquaredFalloff;
             data.SourceRadius = SourceRadius;
             data.SourceLength = SourceLength;
             data.ContactShadowsLength = ContactShadowsLength;
@@ -174,12 +158,11 @@ namespace SE
 
         SERIALIZE_GET_OTHER_OBJ(PointLight, context.otherObj);
 
+        SERIALIZE(Brightness);
         SERIALIZE_MEMBER(Radius, _radius);
         // SERIALIZE(IESTexture);
         SERIALIZE(SourceRadius);
         SERIALIZE(SourceLength);
-        SERIALIZE(FallOffExponent);
-        SERIALIZE(UseInverseSquaredFalloff);
         // SERIALIZE(UseIESBrightness);
         // SERIALIZE(IESBrightnessScale);
     }
@@ -189,12 +172,11 @@ namespace SE
         // Base
         LightWithShadow::Deserialize(context);
 
+        DESERIALIZE(Brightness);
         DESERIALIZE_MEMBER(Radius, _radius);
         // DESERIALIZE(IESTexture);
         DESERIALIZE(SourceRadius);
         DESERIALIZE(SourceLength);
-        DESERIALIZE(FallOffExponent);
-        DESERIALIZE(UseInverseSquaredFalloff);
         // DESERIALIZE(UseIESBrightness);
         // DESERIALIZE(IESBrightnessScale);
     }

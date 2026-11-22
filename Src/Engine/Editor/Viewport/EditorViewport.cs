@@ -100,6 +100,17 @@ namespace SE.Editor
         public const int FpsCameraFilteringFrames = 3;
 
         private float m_MouseSensitivity;
+        private ContextMenu m_AutoExposureMenu;
+        private AutoExposureSettings m_AutoExposure = new AutoExposureSettings
+        {
+            ExposureCompensation = 0.0f,
+            MinEV100 = -10.0f,
+            MaxEV100 = 20.0f,
+            LowPercentile = 0.5f,
+            HighPercentile = 0.95f,
+            SpeedUp = 3.0f,
+            SpeedDown = 1.0f
+        };
         private float m_MovementSpeed;
         private float m_MinMovementSpeed;
         private float m_MaxMovementSpeed;
@@ -349,6 +360,7 @@ namespace SE.Editor
         /// <param name="useWidgets">Enable or disable viewport widgets.</param>
         public EditorViewport(SceneRenderTask task, ViewportCamera camera, bool useWidgets) : base(task)
         {
+            m_Task.PreRender += OnPreRender;
             m_MouseAccelerationScale = 0.1f;
             m_UseMouseFiltering = false;
             m_UseMouseAcceleration = false;
@@ -416,6 +428,74 @@ namespace SE.Editor
                 _orthographicModeButton.TooltipText = "Toggle Orthographic/Perspective Mode";
                 _orthographicModeButton.Parent = _cameraWidget;
                 _orthographicModeButton.Toggled += button => OnOrthographicModeToggled(button);
+
+                // Exposure is a task-local post effect; camera projection remains independent.
+                m_AutoExposureMenu = new ContextMenu();
+                ContextMenu exposureMenu = m_AutoExposureMenu;
+                ViewportWidgetButton exposureButton = new ViewportWidgetButton("Auto Exposure", default, exposureMenu, false,
+                    Style.Current.FontMedium.MeasureText("Auto Exposure", TextLayoutOptions.Default).X)
+                {
+                    Parent = _cameraWidget,
+                    TooltipText = "Automatic exposure post effect"
+                };
+                (string Title, float Min, float Max, float Step)[] exposureRows =
+                {
+                    ("Exposure Compensation", -16.0f, 16.0f, 0.1f),
+                    ("Min EV100", -16.0f, 32.0f, 0.1f),
+                    ("Max EV100", -16.0f, 32.0f, 0.1f),
+                    ("Low Percentile", 0.0f, 0.99f, 0.01f),
+                    ("High Percentile", 0.001f, 1.0f, 0.01f),
+                    ("Speed to Bright (1/s)", 0.01f, 100.0f, 0.1f),
+                    ("Speed to Dark (1/s)", 0.01f, 100.0f, 0.1f)
+                };
+                float exposureLabelWidth = 0.0f;
+                foreach ((string Title, float Min, float Max, float Step) row in exposureRows)
+                {
+                    exposureLabelWidth = Mathf.Max(exposureLabelWidth, Style.Current.FontMedium.MeasureText(row.Title, TextLayoutOptions.Default).X);
+                }
+                FloatValueBox[] exposureValues = new FloatValueBox[exposureRows.Length];
+                bool updatingExposure = false;
+                System.Action syncExposure = () =>
+                {
+                    updatingExposure = true;
+                    exposureValues[0].SetValue(m_AutoExposure.ExposureCompensation);
+                    exposureValues[1].SetValue(m_AutoExposure.MinEV100);
+                    exposureValues[2].SetValue(m_AutoExposure.MaxEV100);
+                    exposureValues[3].SetValue(m_AutoExposure.LowPercentile);
+                    exposureValues[4].SetValue(m_AutoExposure.HighPercentile);
+                    exposureValues[5].SetValue(m_AutoExposure.SpeedUp);
+                    exposureValues[6].SetValue(m_AutoExposure.SpeedDown);
+                    updatingExposure = false;
+                };
+                for (int i = 0; i < exposureRows.Length; i++)
+                {
+                    ContextMenuButton rowButton = exposureMenu.AddButton(exposureRows[i].Title);
+                    rowButton.CloseMenuOnClick = false;
+                    FloatValueBox value = new FloatValueBox(exposureRows[i].Min, exposureLabelWidth + 16.0f, 2, 90.0f,
+                        exposureRows[i].Min, exposureRows[i].Max, exposureRows[i].Step)
+                    {
+                        Parent = rowButton
+                    };
+                    exposureValues[i] = value;
+                    value.ValueChanged += () =>
+                    {
+                        if (updatingExposure)
+                        {
+                            return;
+                        }
+                        AutoExposureSettings settings = m_AutoExposure;
+                        settings.ExposureCompensation = exposureValues[0].GetValue();
+                        settings.MinEV100 = exposureValues[1].GetValue();
+                        settings.MaxEV100 = exposureValues[2].GetValue();
+                        settings.LowPercentile = exposureValues[3].GetValue();
+                        settings.HighPercentile = exposureValues[4].GetValue();
+                        settings.SpeedUp = exposureValues[5].GetValue();
+                        settings.SpeedDown = exposureValues[6].GetValue();
+                        m_AutoExposure = settings;
+                    };
+                }
+                syncExposure();
+                exposureMenu.VisibleChanged += control => syncExposure();
 
                 ContextMenuButton camSpeedButton = cameraCM.AddButton("Camera Speed");
                 camSpeedButton.CloseMenuOnClick = false;
@@ -1289,10 +1369,27 @@ namespace SE.Editor
             }
         }
 
+        private void OnPreRender(ref RenderContext context)
+        {
+            // RenderList is pooled per frame; retain only the editor configuration.
+            PostProcessSettings settings = context.list.PostSettings;
+            settings.AutoExposure = m_AutoExposure;
+            context.list.PostSettings = settings;
+        }
+
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (m_Task != null)
+            {
+                m_Task.PreRender -= OnPreRender;
+            }
             ReleaseMouseControl();
+            if (m_AutoExposureMenu != null)
+            {
+                m_AutoExposureMenu.Dispose();
+                m_AutoExposureMenu = null;
+            }
             // Editor.Instance.Options.OptionsChanged -= OnEditorOptionsChanged;
             base.OnDestroy();
         }

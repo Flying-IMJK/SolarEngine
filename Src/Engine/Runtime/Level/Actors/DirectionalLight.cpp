@@ -10,7 +10,6 @@ namespace SE
         : LightWithShadow(params)
     {
         m_DrawNoCulling = 1;
-        Brightness = 8.0f;
     }
 
     void DirectionalLight::RenderDraw(RenderContext& renderContext)
@@ -23,9 +22,9 @@ namespace SE
             && EnumHasAnyFlags(renderContext.view.Pass, DrawPass::GBuffer)
             && (ViewDistance < Math::ZeroTolerance || Float3::DistanceSquared(renderContext.view.Position, position) < ViewDistance * ViewDistance))
         {
-            RendererDirectionalLightData data;
+            RendererDirectionalLightData data  = {};
             data.Position = position;
-            // data.MinRoughness = MinRoughness;
+            data.MinRoughness                  = MinRoughness;
             data.ShadowsDistance = ShadowsDistance;
             data.Color = Color.ToFloat3() * (Color.A * brightness);
             data.ShadowsStrength = ShadowsStrength;
@@ -60,6 +59,7 @@ namespace SE
 
         SERIALIZE_GET_OTHER_OBJ(DirectionalLight, context.otherObj);
 
+        SERIALIZE(Brightness);
         SERIALIZE(CascadeCount);
         SERIALIZE(Cascade1Spacing);
         SERIALIZE(Cascade2Spacing);
@@ -74,6 +74,7 @@ namespace SE
         // Base
         Light::Deserialize(context);
 
+        DESERIALIZE(Brightness);
         DESERIALIZE(CascadeCount);
         DESERIALIZE(Cascade1Spacing);
         DESERIALIZE(Cascade2Spacing);
