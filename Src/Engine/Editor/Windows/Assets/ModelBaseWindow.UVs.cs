@@ -87,7 +87,6 @@ namespace SE.Editor
 
                 protected override void Deinitialize()
                 {
-                    ((UVsPropertiesProxyBase)Values[0]).m_Preview = null;
                     m_UVsPreview = null;
                     base.Deinitialize();
                 }

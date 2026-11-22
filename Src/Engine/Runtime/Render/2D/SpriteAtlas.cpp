@@ -290,7 +290,9 @@ namespace SE
     {
         auto spritesDataChunk = GetChunk(15);
         if (spritesDataChunk == nullptr || !spritesDataChunk->IsValid())
+        {
             return LoadResult::MissingDataChunk;
+        }
         MemoryReadStream spritesData(spritesDataChunk->Get(), spritesDataChunk->Size());
 
         if (!LoadSprites(spritesData))

@@ -1070,7 +1070,6 @@ namespace SE
             geometry.Layout        = &render2DData->vertexLayout;
             geometry.VertexBuffers = {{0, vb}};
             geometry.IndexBuffer   = ib;
-            geometry.IndexFormat   = PixelFormat::R32_UInt;
             if (render2DData->Context->BindRenderGeometry(geometry))
             {
                 render2DData->Context->DrawIndexed(programInstance, countIb, 0, d.StartIB);
@@ -1187,7 +1186,6 @@ namespace SE
         renderGeometry.Layout = &render2DData->vertexLayout;
         renderGeometry.VertexBuffers = {{0, vb}};
         renderGeometry.IndexBuffer   = ib;
-        renderGeometry.IndexFormat   = PixelFormat::R32_UInt;
         renderGeometry.IndexOffset   = 0;
 
         // Draw

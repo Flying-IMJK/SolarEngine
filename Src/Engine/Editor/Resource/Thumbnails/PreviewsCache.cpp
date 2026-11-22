@@ -34,13 +34,13 @@ namespace SE::Editor
     {
     private:
 
-        PreviewsCache* _cache;
+        PreviewsCache* m_Cache;
         TextureData _data;
 
     public:
 
         FlushTask(PreviewsCache* cache)
-            : _cache(cache)
+            : m_Cache(cache)
         {
         }
 
@@ -66,37 +66,37 @@ namespace SE::Editor
         // Check if has valid data downloaded
         if (_data.GetMipLevels() != 1)
         {
-            LOG_WARNING("Asset", "Failed to flush asset previews atlas \'{0}\'.", _cache->ToString());
+            LOG_WARNING("Asset", "Failed to flush asset previews atlas \'{0}\'.", m_Cache->ToString());
             return false;
         }
         auto mipData = _data.GetData(0, 0);
-        ENGINE_ASSERT(mipData->DepthPitch ==  GPUUtils::CalculateTextureMemoryUsage(_cache->GetTexture()->Format(), _cache->Width(), _cache->Height(), 1));
+        ENGINE_ASSERT(mipData->DepthPitch ==  GPUUtils::CalculateTextureMemoryUsage(m_Cache->GetTexture()->Format(), m_Cache->Width(), m_Cache->Height(), 1));
 
-        Threading::ScopeLock lock(_cache->Locker);
+        Threading::ScopeLock lock(m_Cache->Locker);
 
         // Link chunks (don't allocate additional memory)
-        auto mipChunk = _cache->GetOrCreateChunk(0);
-        auto dataChunk = _cache->GetOrCreateChunk(15);
+        auto mipChunk = m_Cache->GetOrCreateChunk(0);
+        auto dataChunk = m_Cache->GetOrCreateChunk(15);
         mipChunk->Data.Link(mipData->Data);
-        dataChunk->Data.Link((byte*)_cache->_assets.Get(), sizeof(UID) * _cache->_assets.Count());
+        dataChunk->Data.Link((byte*)m_Cache->m_Assets.Get(), sizeof(UID) * m_Cache->m_Assets.Count());
 
         // Prepare asset data
         AssetInitData data;
-        data.SerializedVersion = 4;
-        data.CustomData.Copy(_cache->m_Texture.GetHeader());
+        data.SerializedVersion = m_Cache->GetSerializedVersion();
+        data.CustomData.Copy(m_Cache->m_Texture.GetHeader());
 
         // Save (use silent mode to prevent asset reloading)
-        bool saveResult = _cache->SaveAsset(data, true);
+        bool saveResult = m_Cache->SaveAsset(data, true);
         mipChunk->Data.Release();
         dataChunk->Data.Release();
         if (!saveResult)
         {
-            LOG_WARNING("Asset", "Failed to save asset previews atlas \'{0}\'.", _cache->ToString());
+            LOG_WARNING("Asset", "Failed to save asset previews atlas \'{0}\'.", m_Cache->ToString());
             return false;
         }
 
         // Clear flag
-        _cache->_isDirty = false;
+        m_Cache->m_IsDirty = false;
 
         return true;
     }
@@ -104,7 +104,7 @@ namespace SE::Editor
     void FlushTask::OnEnd()
     {
         ASSERT(_cache->_flushTask == this);
-        _cache->_flushTask = nullptr;
+        m_Cache->m_FlushTask = nullptr;
 
         // Base
         ThreadPoolTask::OnEnd();
@@ -124,10 +124,12 @@ namespace SE::Editor
 
     SpriteHandle PreviewsCache::FindSlot(const UID& id)
     {
-        if (WaitForLoaded())
+        if (!WaitForLoaded())
+        {
             return SpriteHandle::Invalid;
+        }
         int32 index;
-        if (_assets.Find(id, index))
+        if (m_Assets.Find(id, index))
         {
             const String spriteName = StringUtils::ToString(index);
             return FindSprite(spriteName);
@@ -140,14 +142,18 @@ namespace SE::Editor
         // Load previews data
         auto previewsMetaChunk = GetChunk(15);
         if (previewsMetaChunk == nullptr || !previewsMetaChunk->IsValid())
+        {
             return LoadResult::MissingDataChunk;
+        }
         if (previewsMetaChunk->Size() != ASSETS_ICONS_PER_ATLAS * sizeof(UID))
+        {
             return LoadResult::Failed;
-        _assets.Set(previewsMetaChunk->Get<UID>(), ASSETS_ICONS_PER_ATLAS);
+        }
+        m_Assets.Set(previewsMetaChunk->Get<UID>(), ASSETS_ICONS_PER_ATLAS);
 
         // Verify if cached assets still exist (don't store thumbnails for removed files)
         AssetInfo assetInfo;
-        for (UID& id : _assets)
+        for (UID& id : m_Assets)
         {
             if (id.IsValid() && AssetContent::GetAsset(id) == nullptr && !AssetContent::GetAssetInfo(id, assetInfo))
             {
@@ -168,7 +174,7 @@ namespace SE::Editor
             Sprites.Add(sprite);
         }
 
-        _isDirty = false;
+        m_IsDirty = false;
         return TextureBase::load();
     }
 
@@ -177,11 +183,11 @@ namespace SE::Editor
         // Wait for flush end
         if (IsFlushing())
         {
-            _flushTask->Cancel();
+            m_FlushTask->Cancel();
         }
 
         // Release data
-        _assets.Clear();
+        m_Assets.Clear();
 
         SpriteAtlas::Unload(isReloading);
     }
@@ -196,7 +202,7 @@ namespace SE::Editor
     {
         // Unused slot is which ID is Empty
         // (Search from back to front since slots are allocated from front to back - it will be faster)
-        return _assets.FindLast(UID::Empty) != INVALID_INDEX;
+        return m_Assets.FindLast(UID::Empty) != INVALID_INDEX;
     }
 
     SpriteHandle PreviewsCache::OccupySlot(GPUTexture* source, const UID& id)
@@ -205,9 +211,9 @@ namespace SE::Editor
             return SpriteHandle::Invalid;
 
         // Find this asset slot or use the first empty
-        int32 index = _assets.Find(id);
+        int32 index = m_Assets.Find(id);
         if (index == INVALID_INDEX)
-            index = _assets.Find(UID::Empty);
+            index = m_Assets.Find(UID::Empty);
         if (index == INVALID_INDEX)
         {
             LOG_WARNING("Asset", "Cannot find free slot in the asset previews atlas.");
@@ -222,7 +228,7 @@ namespace SE::Editor
         GPUDevice::instance->GetMainContext()->CopyTexture(GetTexture(), 0, x, y, 0, source, 0);
 
         // Occupy slot
-        _assets[index] = id;
+        m_Assets[index] = id;
 
         // Get sprite handle
         const String spriteName = StringUtils::ToString(index);
@@ -234,7 +240,7 @@ namespace SE::Editor
         }
 
         // Set dirty flag
-        _isDirty = true;
+        m_IsDirty = true;
 
         return slot;
     }
@@ -243,10 +249,10 @@ namespace SE::Editor
     {
         bool result = false;
         Threading::ScopeLock lock(Locker);
-        int32 index = _assets.Find(id);
+        int32 index = m_Assets.Find(id);
         if (index != INVALID_INDEX)
         {
-            _assets[index] = UID::Empty;
+            m_Assets[index] = UID::Empty;
             result = true;
         }
         return result;
@@ -257,12 +263,12 @@ namespace SE::Editor
         Threading::ScopeLock lock(Locker);
 
         // Check if is fully loaded and is dirty and is not during downloading
-        if (_isDirty && !IsFlushing() && IsReady())
+        if (m_IsDirty && !IsFlushing() && IsReady())
         {
             // Spawn flushing tasks sequence
-            _flushTask = New<FlushTask>(this);
-            auto downloadDataTask = GetTexture()->DownloadDataAsync(_flushTask->GetData());
-            downloadDataTask->ContinueWith(_flushTask);
+            m_FlushTask = New<FlushTask>(this);
+            auto downloadDataTask = GetTexture()->DownloadDataAsync(m_FlushTask->GetData());
+            downloadDataTask->ContinueWith(m_FlushTask);
             downloadDataTask->Start();
         }
     }

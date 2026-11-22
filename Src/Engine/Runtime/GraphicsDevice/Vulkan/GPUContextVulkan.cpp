@@ -39,11 +39,11 @@ namespace SE
 		, _queue(queue)
 		, m_CmdBufferManager(New<CmdBufferManagerVulkan>(device, this))
 		, m_RenderGeometryReady(false)
-		, _renderGeometryIndexBufferSize(0)
-		, _renderGeometryIndexOffset(0)
-		, _renderGeometryIndexFormat(PixelFormat::Undefined)
-		, m_RenderGeometryLayoutHash(0)
-		, m_RenderGeometryPerInstanceSlotsMask(0)
+		, m_GeometryIndexBufferSize(0)
+		, m_GeometryIndexOffset(0)
+		, m_GeometryIndexFormat(PixelFormat::Undefined)
+		, m_GeometryLayoutHash(0)
+		, m_GeometryPerInstanceSlotsMask(0)
 		, m_CurrentGraphicsState(nullptr)
 	{
 		Platform::MemoryClear(_rtHandles, sizeof(GPUTextureViewVulkan*) * GPU_MAX_RT_BINDED );
@@ -88,7 +88,7 @@ namespace SE
 			return false;
 		}
 
-		if (!m_RenderGeometryReady || m_RenderGeometryLayoutHash != pipelineState->GetVertexFactoryLayoutHash())
+		if (!m_RenderGeometryReady || m_GeometryLayoutHash != pipelineState->GetVertexFactoryLayoutHash())
 		{
 			LOG_ERROR("Graphic", "ShaderArtifact draw for program {0} requires RenderGeometry prepared by BindRenderGeometry for the current pipeline state. LayoutHash={1}.",
 				shaderProgram->GetProgramId(), pipelineState->GetVertexFactoryLayoutHash());
@@ -806,9 +806,9 @@ namespace SE
                 continue;
             }
 
-            if (m_RenderGeometryPerInstanceSlotsMask & requiredBit)
+            if (m_GeometryPerInstanceSlotsMask & requiredBit)
             {
-                const uint64 available = m_RenderGeometryVertexElementCounts[slot];
+                const uint64 available = m_GeometryVertexElementCounts[slot];
                 if (instanceStart > available || static_cast<uint64>(instanceCount) > available - instanceStart)
                 {
                     LOG_ERROR("Graphic", "Draw instance range exceeds vertex buffer slot {0}.", slot);
@@ -817,7 +817,7 @@ namespace SE
             }
             else
             {
-                const uint64 available = m_RenderGeometryVertexElementCounts[slot];
+                const uint64 available = m_GeometryVertexElementCounts[slot];
                 if (vertexStart > available || static_cast<uint64>(verticesCount) > available - vertexStart)
                 {
                     LOG_ERROR("Graphic", "Draw vertex range exceeds vertex buffer slot {0}.", slot);
@@ -856,28 +856,19 @@ namespace SE
 			return;
 		}
 
-		if (_renderGeometryIndexBufferSize == 0 ||
-			(_renderGeometryIndexFormat != PixelFormat::R16_UInt &&
-			 _renderGeometryIndexFormat != PixelFormat::R32_UInt))
-		{
-			LOG_ERROR("Graphic", "ShaderArtifact indexed draw for program {0} requires an index buffer in the prepared RenderGeometry. LayoutHash={1}.",
-				shaderProgram->GetProgramId(), m_RenderGeometryLayoutHash);
-			return;
-		}
 		if (startIndex < 0 || startInstance < 0)
 		{
 			LOG_ERROR("Graphic", "indexed draw startIndex and startInstance must be non-negative.");
 			return;
 		}
 
-		const uint64 indexSize = PixelFormatGetSizeInBytes(_renderGeometryIndexFormat);
+		const uint64 indexSize = PixelFormatGetSizeInBytes(m_GeometryIndexFormat);
 		const uint64 firstIndexByte = static_cast<uint64>(startIndex) * indexSize;
 		const uint64 indexBytes = static_cast<uint64>(indicesCount) * indexSize;
-		const uint64 endByte = static_cast<uint64>(_renderGeometryIndexOffset) + firstIndexByte + indexBytes;
-		if (indexSize == 0 || endByte > _renderGeometryIndexBufferSize)
+		const uint64 endByte = static_cast<uint64>(m_GeometryIndexOffset) + firstIndexByte + indexBytes;
+		if (indexSize == 0 || endByte > m_GeometryIndexBufferSize)
 		{
-			LOG_ERROR("Graphic", "ShaderArtifact indexed draw for program {0} exceeds the prepared index buffer range. LayoutHash={1}.",
-				shaderProgram->GetProgramId(), m_RenderGeometryLayoutHash);
+			LOG_ERROR("Graphic", "ShaderArtifact indexed draw for program {0} exceeds the prepared index buffer range. LayoutHash={1}.", shaderProgram->GetProgramId(), m_GeometryLayoutHash);
 			return;
 		}
 
@@ -888,12 +879,12 @@ namespace SE
 			const uint32 requiredBit = 1u << slot;
 			// 索引决定 PerVertex 元素访问范围，但 PerInstance Slot 仍可在提交前精确校验。
 			if ((requiredSlotsMask & requiredBit) == 0 ||
-				(m_RenderGeometryPerInstanceSlotsMask & requiredBit) == 0)
+				(m_GeometryPerInstanceSlotsMask & requiredBit) == 0)
 			{
 				continue;
 			}
 
-			const uint64 available = m_RenderGeometryVertexElementCounts[slot];
+			const uint64 available = m_GeometryVertexElementCounts[slot];
 			if (instanceStart > available || static_cast<uint64>(instanceCount) > available - instanceStart)
 			{
 				LOG_ERROR("Graphic", "Indexed draw instance range exceeds vertex buffer slot {0}.", slot);
@@ -922,10 +913,14 @@ namespace SE
 
     void GPUContextVulkan::DrawIndexedInstancedIndirect(ShaderProgramInstance& instance, GPUBuffer* args, uint32 offset)
     {
-        if (instance.GetProgram() == nullptr || !m_RenderGeometryReady ||
-            _renderGeometryIndexBufferSize == 0 || args == nullptr ||
+        if (instance.GetProgram() == nullptr ||
+            !m_RenderGeometryReady ||
+            m_GeometryIndexBufferSize == 0 ||
+            args == nullptr ||
             !EnumHasAnyFlags(args->GetFlags(), GPUBufferFlags::Argument) || !OnDrawCall(instance))
+        {
             return;
+        }
         const auto* buffer = static_cast<GPUBufferVulkan*>(args);
         vkCmdDrawIndexedIndirect(m_CmdBufferManager->GetCmdBuffer()->GetHandle(), buffer->GetHandle(),
                                  static_cast<VkDeviceSize>(offset), 1, sizeof(VkDrawIndexedIndirectCommand));
@@ -991,12 +986,12 @@ namespace SE
 	void GPUContextVulkan::ClearRenderGeometry()
 	{
 		m_RenderGeometryReady = false;
-		_renderGeometryIndexBufferSize = 0;
-		_renderGeometryIndexOffset = 0;
-		_renderGeometryIndexFormat = PixelFormat::Undefined;
-		m_RenderGeometryLayoutHash = 0;
-		m_RenderGeometryPerInstanceSlotsMask = 0;
-		Platform::MemoryClear(m_RenderGeometryVertexElementCounts, sizeof(m_RenderGeometryVertexElementCounts));
+		m_GeometryIndexBufferSize = 0;
+		m_GeometryIndexOffset = 0;
+		m_GeometryIndexFormat = PixelFormat::Undefined;
+		m_GeometryLayoutHash = 0;
+		m_GeometryPerInstanceSlotsMask = 0;
+		Platform::MemoryClear(m_GeometryVertexElementCounts, sizeof(m_GeometryVertexElementCounts));
 	}
 
 	bool GPUContextVulkan::BindRenderGeometry(const RenderGeometry& geometry)
@@ -1049,10 +1044,10 @@ namespace SE
 					geometry.Layout->GetHash(), slot);
 				return false;
 			}
-			m_RenderGeometryVertexElementCounts[slot] = (vertexBuffer->Buffer->GetSize() - vertexBuffer->Offset) / binding->Stride;
+			m_GeometryVertexElementCounts[slot] = (vertexBuffer->Buffer->GetSize() - vertexBuffer->Offset) / binding->Stride;
 			if (binding->InputRate == VertexFactoryInputRate::PerInstance)
 			{
-				m_RenderGeometryPerInstanceSlotsMask |= (1u << slot);
+				m_GeometryPerInstanceSlotsMask |= (1u << slot);
 			}
 		}
 
@@ -1084,21 +1079,29 @@ namespace SE
 
 		if (geometry.IndexBuffer != nullptr)
 		{
+			m_GeometryIndexBufferSize = geometry.IndexBuffer->GetSize();
+		    m_GeometryIndexOffset = geometry.IndexOffset;
+		    m_GeometryIndexFormat = geometry.IndexBuffer->GetFormat();
+
 			GPUBufferVulkan* indexBuffer = static_cast<GPUBufferVulkan*>(geometry.IndexBuffer);
-			const VkIndexType indexType = geometry.IndexFormat == PixelFormat::R32_UInt
+			const VkIndexType indexType = m_GeometryIndexFormat == PixelFormat::R32_UInt
 				? VK_INDEX_TYPE_UINT32
 				: VK_INDEX_TYPE_UINT16;
+
 			vkCmdBindIndexBuffer(
 				cmdBuffer->GetHandle(),
 				indexBuffer->GetHandle(),
 				static_cast<VkDeviceSize>(geometry.IndexOffset),
 				indexType);
 		}
+	    else
+		{
+		    m_GeometryIndexBufferSize = 0;
+		    m_GeometryIndexOffset = 0;
+		    m_GeometryIndexFormat = PixelFormat::Undefined;
+		}
 
-		_renderGeometryIndexBufferSize = geometry.IndexBuffer != nullptr ? geometry.IndexBuffer->GetSize() : 0;
-		_renderGeometryIndexOffset = geometry.IndexOffset;
-		_renderGeometryIndexFormat = geometry.IndexFormat;
-		m_RenderGeometryLayoutHash = geometry.Layout->GetHash();
+		m_GeometryLayoutHash = geometry.Layout->GetHash();
 		m_RenderGeometryReady = true;
 		return true;
 	}

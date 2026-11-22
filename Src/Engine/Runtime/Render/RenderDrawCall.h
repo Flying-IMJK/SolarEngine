@@ -208,7 +208,6 @@ namespace SE
         struct
         {
             const VertexFactoryLayout* vertexLayout;
-            PixelFormat                IndexFormat;
             uint32                     IndexOffset;
 
             /// <summary>

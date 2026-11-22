@@ -54,9 +54,9 @@ namespace SE::Editor
         static constexpr PixelFormat AssetIconsAtlasFormat = PixelFormat::R8G8B8A8_UNorm;
 
     private:
-        List<UID> _assets;
-        bool _isDirty = false;
-        FlushTask* _flushTask = nullptr;
+        List<UID> m_Assets;
+        bool m_IsDirty = false;
+        FlushTask* m_FlushTask = nullptr;
 
     public:
 
@@ -109,7 +109,7 @@ namespace SE::Editor
         /// <returns>True if this previews cache is flushing, otherwise false.</returns>
         FORCE_INLINE bool IsFlushing() const
         {
-            return _flushTask != nullptr;
+            return m_FlushTask != nullptr;
         }
 
         /// <summary>

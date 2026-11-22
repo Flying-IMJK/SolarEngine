@@ -75,9 +75,9 @@ namespace SE
                 LOG_ERROR("Graphics", "Indexed RenderGeometry requires an index buffer.");
 				return false;
 			}
-			if (IndexOffset != 0 || IndexFormat != PixelFormat::Undefined)
+			if (IndexOffset != 0)
 			{
-                LOG_ERROR("Graphics", "RenderGeometry without an index buffer must use zero offset and undefined format.");
+                LOG_ERROR("Graphics", "RenderGeometry without an index buffer must use zero offset.");
 				return false;
 			}
 			return true;
@@ -89,18 +89,13 @@ namespace SE
             LOG_ERROR("Graphics", "RenderGeometry index buffer is unallocated or lacks the index-buffer flag.");
 			return false;
 		}
-		if (IndexFormat != PixelFormat::R16_UInt && IndexFormat != PixelFormat::R32_UInt)
+		if (IndexBuffer->GetFormat() != PixelFormat::R16_UInt && IndexBuffer->GetFormat() != PixelFormat::R32_UInt)
 		{
             LOG_ERROR("Graphics", "RenderGeometry index format must be R16_UInt or R32_UInt.");
 			return false;
 		}
-		if (IndexBuffer->GetFormat() != PixelFormat::Undefined && IndexBuffer->GetFormat() != IndexFormat)
-		{
-            LOG_ERROR("Graphics", "RenderGeometry index format does not match the index buffer format.");
-			return false;
-		}
 
-		const uint32 indexSize = PixelFormatGetSizeInBytes(IndexFormat);
+		const uint32 indexSize = PixelFormatGetSizeInBytes(IndexBuffer->GetFormat());
 		if ((IndexOffset % indexSize) != 0 || IndexOffset > IndexBuffer->GetSize())
 		{
             LOG_ERROR("Graphics", "RenderGeometry index offset is unaligned or exceeds the index buffer size.");

@@ -69,12 +69,12 @@ namespace SE
 
 		// Render Geometry State
 		bool m_RenderGeometryReady;
-        PixelFormat _renderGeometryIndexFormat;
-		uint32 _renderGeometryIndexBufferSize;
-		uint32 _renderGeometryIndexOffset;
-		uint64 m_RenderGeometryLayoutHash;
-		uint32 m_RenderGeometryPerInstanceSlotsMask;
-		uint32 m_RenderGeometryVertexElementCounts[GPU_MAX_VB_BINDED];
+        PixelFormat m_GeometryIndexFormat;
+		uint32 m_GeometryIndexBufferSize;
+		uint32 m_GeometryIndexOffset;
+		uint64 m_GeometryLayoutHash;
+		uint32 m_GeometryPerInstanceSlotsMask;
+		uint32 m_GeometryVertexElementCounts[GPU_MAX_VB_BINDED];
 
 		RenderPassVulkan* m_RenderPass;
 		GraphicsPipelineStateVulkan* m_CurrentGraphicsState;

@@ -859,7 +859,6 @@ namespace SE
         RenderGeometry geometry;
         geometry.Layout      = draw.Geometry.vertexLayout;
         geometry.IndexBuffer = draw.Geometry.IndexBuffer;
-        geometry.IndexFormat = draw.Geometry.IndexFormat;
         geometry.IndexOffset = draw.Geometry.IndexOffset;
         for (uint32 slot = 0; slot < ARRAY_SIZE(draw.Geometry.VertexBuffers); ++slot)
         {

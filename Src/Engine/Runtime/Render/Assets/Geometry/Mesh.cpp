@@ -370,10 +370,6 @@ namespace SE
             _vertexBuffers[StaticMeshVertexFactory::ColorSlot]);
         geometry.IndexBuffer = _indexBuffer;
         geometry.IndexOffset = 0;
-        if (_indexBuffer != nullptr)
-        {
-            geometry.IndexFormat = _use16BitIndexBuffer ? PixelFormat::R16_UInt : PixelFormat::R32_UInt;
-        }
         return geometry;
     }
 
@@ -383,7 +379,6 @@ namespace SE
         // The batching key compares this POD block, including padding. Keep it deterministic.
         Platform::MemoryClear(&drawCall.Geometry, sizeof(drawCall.Geometry));
         drawCall.Geometry.vertexLayout = geometry.Layout;
-        drawCall.Geometry.IndexFormat  = geometry.IndexFormat;
         drawCall.Geometry.IndexOffset  = geometry.IndexOffset;
         drawCall.Geometry.IndexBuffer = geometry.IndexBuffer;
         for (uint32 slot = StaticMeshVertexFactory::PositionSlot; slot <= StaticMeshVertexFactory::ColorSlot; slot++)
