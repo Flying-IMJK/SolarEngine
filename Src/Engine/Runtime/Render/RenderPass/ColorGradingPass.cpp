@@ -2,6 +2,7 @@
 #include <Runtime/Render/RenderPass/ColorGradingPass.h>
 
 #include <Runtime/Core/Profiler/Profiler.h>
+#include <Runtime/Graphics/Base/GPULimits.h>
 #include <Runtime/Graphics/GPUContext.h>
 #include <Runtime/Graphics/GPUDevice.h>
 #include <Runtime/Graphics/RenderTargetPool.h>
@@ -38,28 +39,19 @@ namespace SE
 
 	Float3 Dummy;
 	float LutWeight;
+    Color  ScreenFadeColor;
 	});
 
+    ColorGradingPass::ColorGradingPass() : m_UseVolumeTexture(false), m_LutFormat(), m_Shader(nullptr) {}
 
-	ColorGradingPass::ColorGradingPass()
-		: m_UseVolumeTexture(false)
-		, m_LutFormat()
-		, m_Shader(nullptr)
-	{
-	}
+    String ColorGradingPass::ToString() const { return SE_TEXT("ColorGradingPass"); }
 
-
-	String ColorGradingPass::ToString() const
-	{
-		return SE_TEXT("ColorGradingPass");
-	}
-
-	bool ColorGradingPass::Init()
+    bool ColorGradingPass::Init()
 	{
 		// Detect if can use volume texture (3d) for a LUT (faster, requires geometry shader)
 		const auto device = GPUDevice::instance;
 #if GPU_ALLOW_GEOMETRY_SHADERS
-		_useVolumeTexture = device->Limits.HasGeometryShaders && device->Limits.HasVolumeTextureRendering;
+        m_UseVolumeTexture = device->GetGPULimits().HasGeometryShaders && device->GetGPULimits().HasVolumeTextureRendering;
 #endif
 
 		// Pick a proper LUT pixels format
@@ -75,11 +67,16 @@ namespace SE
 			formatSupportFlags = EnumAddFlags(formatSupportFlags, FormatSupport::Texture2D);
 		}
 
-		if (EnumHasNoneFlags(formatSupport, formatSupportFlags))
-		{
-			// Fallback to format that is supported on every washing machine
-			m_LutFormat = PixelFormat::R8G8B8A8_UNorm;
-		}
+        if (!EnumHasAllFlags(formatSupport, formatSupportFlags))
+        {
+            // Preserve the existing lower-precision format choice when 10-bit LUTs are unavailable.
+            m_LutFormat = PixelFormat::R8G8B8A8_UNorm;
+            if (!EnumHasAllFlags(device->GetPixelFormatFeatures(m_LutFormat).Support, formatSupportFlags))
+            {
+                LOG_ERROR("Render", "Color grading requires a sampleable render-target LUT format.");
+                return false;
+            }
+        }
 
 		// Load shader
         m_Shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/PostProcess/ColorGrading"));
@@ -95,8 +92,8 @@ namespace SE
 
         m_PipelineState = device->CreatePipelineState();
 
-		return true;
-	}
+        return m_ProgramInstance && m_GPUConstantBuffer && m_PipelineState;
+    }
 
 	void ColorGradingPass::Dispose()
 	{
@@ -135,11 +132,11 @@ namespace SE
 			return false;
 		}
 
-		return true;
+        return m_ProgramInstance && m_GPUConstantBuffer && m_PipelineState;
     }
 
-    GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
-	{
+    GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext, const Color& screenFadeColor)
+    {
 		// Ensure to have valid data
 		if (CheckIfSkipPass())
 		{
@@ -148,31 +145,48 @@ namespace SE
 
 		PROFILE_GPU_CPU("Color Grading LUT");
 
+        auto&       toneMapping  = renderContext.list->PostSettings.ToneMapping;
+        auto&       colorGrading = renderContext.list->PostSettings.ColorGrading;
+        const bool  useLut       = colorGrading.LutTexture && colorGrading.LutTexture->IsLoaded() && colorGrading.LutTexture->GetResidentMipLevels() > 0 && colorGrading.LutWeight > Math::ZeroTolerance;
+        GPUTexture* ldrLut       = useLut ? colorGrading.LutTexture->GetTexture() : nullptr;
+        // A 16^3 unwrapped LDR table stores encoded values as data; an sRGB view would decode while filtering.
+        if (useLut && (!ldrLut || !ldrLut->IsAllocated() || ldrLut->IsSRGB() || ldrLut->IsVolume() || ldrLut->IsCubeMap() || ldrLut->IsArray() || ldrLut->IsMultiSample() || ldrLut->Width() != 256 || ldrLut->Height() != 16 ||
+                       colorGrading.LutTexture->GetResidentMipLevels() != ldrLut->MipLevels()))
+        {
+            LOG_ERROR("Render", "LDR color grading requires a fully resident 256x16 LUT with sRGB texture decoding disabled.");
+            return nullptr;
+        }
+        if (!UpdateProgram(toneMapping.Mode, useLut))
+        {
+            LOG_ERROR("Render", "Cannot prepare the color grading LUT program.");
+            return nullptr;
+        }
 
-		// For a 3D texture, the viewport is 16x16 (per slice), for a 2D texture, it's unwrapped to 256x16
-		const int32 LutSize = 32; // this must match value in shader (see ColorGrading.shader and PostProcessing.shader)
-		GPUTextureDescription lutDesc;
+        // A 32^3 LUT uses 32x32 slices or a 1024x32 unwrapped texture.
+        const int32           LutSize = 32;
+        GPUTextureDescription lutDesc;
 #if GPU_ALLOW_GEOMETRY_SHADERS
-		if (_useVolumeTexture)
-		{
-			lutDesc = GPUTextureDescription::New3D(LutSize, LutSize, LutSize, 1, _lutFormat);
-		}
+        if (m_UseVolumeTexture)
+        {
+            lutDesc = GPUTextureDescription::New3D(LutSize, LutSize, LutSize, 1, m_LutFormat);
+        }
 		else
 #endif
 		{
 			lutDesc = GPUTextureDescription::New2D(LutSize * LutSize, LutSize, 1, m_LutFormat);
 		}
 		const auto lut = RenderTargetPool::Get(lutDesc);
-		RENDER_TARGET_POOL_SET_NAME(lut, "ColorGrading.LUT");
+        if (!lut)
+        {
+            return nullptr;
+        }
+        RENDER_TARGET_POOL_SET_NAME(lut, "ColorGrading.LUT");
 
 		// Prepare the parameters
-		Data data;
-		auto& toneMapping = renderContext.list->PostSettings.ToneMapping;
-		auto& colorGrading = renderContext.list->PostSettings.ColorGrading;
+        Data data            = {};
+        data.ScreenFadeColor = screenFadeColor;
 
-		UpdateProgram(toneMapping.Mode);
-
-		// White Balance
+        // White Balance
 		data.WhiteTemp = toneMapping.WhiteTemperature;
 		data.WhiteTint = toneMapping.WhiteTint;
 		// Shadows
@@ -196,38 +210,34 @@ namespace SE
 		data.ColorOffsetHighlights = colorGrading.ColorOffsetHighlights + colorGrading.ColorOffset;
 		data.ColorCorrectionHighlightsMin = colorGrading.HighlightsMin;
 		//
-		const bool useLut = colorGrading.LutTexture && colorGrading.LutTexture->IsLoaded() &&
-			colorGrading.LutTexture->GetResidentMipLevels() > 0 &&
-				colorGrading.LutWeight > Math::ZeroTolerance;
+        data.LutWeight = useLut ? Math::Saturate(colorGrading.LutWeight) : 0.0f;
 
-		data.LutWeight = useLut ? colorGrading.LutWeight : 0.0f;
-
-		// Prepare
+        // Prepare
 		auto device = GPUDevice::instance;
 		auto context = device->GetMainContext();
 
         context->UpdateCB(m_GPUConstantBuffer, &data);
 
-		m_ProgramInstance->SetConstantBuffer(SE_TEXT("data"), m_GPUConstantBuffer);
-		context->SetViewportAndScissors((float)lutDesc.Width, (float)lutDesc.Height);
+        if (!m_ProgramInstance->SetConstantBuffer(SE_TEXT("data"), m_GPUConstantBuffer) || (useLut && !m_ProgramInstance->SetTexture(SE_TEXT("LutTexture"), ldrLut->View())))
+        {
+            LOG_ERROR("Render", "Cannot bind the color grading LUT inputs.");
+            RenderTargetPool::Release(lut);
+            return nullptr;
+        }
+        context->SetViewportAndScissors((float)lutDesc.Width, (float)lutDesc.Height);
         context->SetState(m_PipelineState);
 
-		ShaderVar lutVar;
-        if (useLut && m_ProgramInstance->FindVar(SE_TEXT("LutTexture"), lutVar))
-        {
-            lutVar.SetTexture(colorGrading.LutTexture->GetTexture()->View());
-        }
-
-		// Draw
+        // Draw
 #if GPU_ALLOW_GEOMETRY_SHADERS
-		if (_useVolumeTexture)
-		{
+        if (m_UseVolumeTexture)
+        {
 			context->SetRenderTarget(lut->ViewVolume());
 
 			// Render one fullscreen-triangle per slice intersecting the bounds
 			const int32 numInstances = lutDesc.Depth;
-			context->DrawFullscreenTriangle(numInstances);
-		}
+            context->DrawFullscreenTriangle(m_ProgramInstance);
+            context->DrawInstanced(m_ProgramInstance, 3, numInstances - 1, 1);
+        }
 		else
 #endif
 		{
@@ -235,21 +245,24 @@ namespace SE
             context->DrawFullscreenTriangle(m_ProgramInstance);
 		}
 
-		return lut;
+        context->ResetRenderTarget();
+        return lut;
 	}
 
-    void ColorGradingPass::UpdateProgram(ToneMappingMode mappingMode)
+    bool ColorGradingPass::UpdateProgram(ToneMappingMode mappingMode, bool useLdrLut)
     {
-        StringView programName;
+        String       programName;
+        List<String> macros;
 #if GPU_ALLOW_GEOMETRY_SHADERS
-        if (_useVolumeTexture)
+        if (m_UseVolumeTexture)
         {
-            programName = "PS_Lut3D";
+            programName = SE_TEXT("Lut3D");
+            macros.Add(SE_TEXT("USE_VOLUME_LUT"));
         }
         else
 #endif
         {
-            programName = SE_TEXT("PS_Lut2D");
+            programName = SE_TEXT("Lut2D");
         }
 
         String toneMappingMacro;
@@ -257,6 +270,7 @@ namespace SE
         {
 
             case ToneMappingMode::None:
+                toneMappingMacro = SE_TEXT("TONE_MAPPING_MODE_NONE");
                 break;
             case ToneMappingMode::Neutral:
                 toneMappingMacro = SE_TEXT("TONE_MAPPING_MODE_NEUTRAL");
@@ -264,19 +278,28 @@ namespace SE
             case ToneMappingMode::ACES:
                 toneMappingMacro = SE_TEXT("TONE_MAPPING_MODE_ACES");
                 break;
+            default:
+                return false;
         }
 
-		GPUShaderProgram* program;
-
-        if (m_Shader->SelectProgram(programName, {toneMappingMacro}, program))
+        macros.Add(toneMappingMacro);
+        if (useLdrLut)
         {
-            if (m_ProgramInstance->GetProgram() == nullptr || m_ProgramInstance->GetProgram() != program)
+            macros.Add(SE_TEXT("USE_LDR_LUT"));
+        }
+        GPUShaderProgram* program = nullptr;
+        if (!m_Shader->SelectProgram(programName, macros, program))
+        {
+            return false;
+        }
+        if (m_ProgramInstance->GetProgram() != program || !m_PipelineState->IsValid())
+        {
+            m_PipelineState->ReleaseGPU();
+            if (!m_ProgramInstance->Initialize(program) || !m_PipelineState->Init(GPUPipelineState::Description::DefaultFullscreenTriangle, program))
             {
-                // Create pipeline stages
-                m_PipelineState->Init(GPUPipelineState::Description::DefaultFullscreenTriangle, program);
-
-                m_ProgramInstance->Initialize(program);
+                return false;
             }
         }
+        return true;
     }
-}
+} // namespace SE

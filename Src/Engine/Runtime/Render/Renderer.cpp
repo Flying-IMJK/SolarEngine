@@ -41,16 +41,13 @@ namespace SE
 
 	} *rendererData;
 
-
 	class RendererSystem : public ISystem
 	{
 		ENGINE_SYSTEM(RendererSystem)
 	public:
-		RendererSystem() : ISystem(SE_TEXT("Renderer"), 20)
-		{
-		}
+        RendererSystem() : ISystem(SE_TEXT("Renderer"), 20) {}
 
-		bool OnInit() override;
+        bool OnInit() override;
 		void OnDispose() override;
 	};
 
@@ -128,7 +125,6 @@ namespace SE
 		RenderPath(task, renderContext, renderContextBatch);
 		task->OnPostRender(renderContext);
 
-
 		// Copy back the view (modified during rendering with rendering state like TAA frame index and jitter)
 		task->View = renderContext.view;
 
@@ -163,12 +159,10 @@ namespace SE
 				ShadowsPass::Instance().SetupShadows(renderContext, renderContextBatch);
 			}
 
-
 			// Dispatch drawing (via JobSystem - multiple job batches for every scene)
 			Threading::JobSystem::SetJobStartingOnDispatch(false);
 			task->OnCollectDrawCalls(renderContextBatch, SceneRendering::DrawCategory::SceneDraw);
 			task->OnCollectDrawCalls(renderContextBatch, SceneRendering::DrawCategory::SceneDrawAsync);
-
 
 			// Wait for async jobs to finish
 			Threading::JobSystem::SetJobStartingOnDispatch(true);
@@ -177,7 +171,6 @@ namespace SE
 				Threading::JobSystem::Wait(label);
 			}
 			renderContextBatch.WaitLabels.Clear();
-
 		}
 		
 		// Sort draw calls
@@ -220,13 +213,11 @@ namespace SE
 		// GBuffer
 		GBufferPass::Instance().Execute(renderContext, lightBuffer, rendererData->Sky);
 
-
 		// Render lighting
 		renderContextBatch.GetMainContext() = renderContext; // Sync render context in batch with the current value
 		LightPass::Instance().RenderLight(renderContextBatch, *lightBuffer);
 
         rendererData->HeightFog.Render(renderContext, lightBuffer->View());
-
 
 		// Run forward pass
 		auto frameBuffer = RenderTargetPool::Get(tempDesc);
@@ -238,44 +229,40 @@ namespace SE
 		context->FlushState();
 		RenderTargetPool::Release(lightBuffer);
 
-
 		const Viewport outputViewport = task->GetOutputViewport();
-		GPUTextureView* outputView = task->GetOutputView();
+        GPUTextureView* outputView     = task->GetOutputView();
 
+        auto tempBuffer = RenderTargetPool::Get(tempDesc);
+        if (tempBuffer)
+        {
+            RENDER_TARGET_POOL_SET_NAME(tempBuffer, "TempBuffer");
+            PostProcessingPass::Instance().Render(renderContext, frameBuffer, tempBuffer);
+            Swap(frameBuffer, tempBuffer);
+        }
 
-		auto tempBuffer = RenderTargetPool::Get(tempDesc);
-        RENDER_TARGET_POOL_SET_NAME(tempBuffer, "TempBuffer");
-        auto exposure = AutoExposurePass::Instance().Render(renderContext, frameBuffer);
-        auto colorGradingLUT = ColorGradingPass::Instance().RenderLUT(renderContext);
-        PostProcessingPass::Instance().Render(renderContext, frameBuffer, tempBuffer, colorGradingLUT, exposure);
+        // Cleanup
+        context->ResetRenderTarget();
+        context->FlushState();
 
-		Swap(frameBuffer, tempBuffer);
+        // After-Tonemapping materials belong after FXAA; editor overlays and spatial upscaling
+        // follow before the GUI presents the view. An unavailable post process copies its input.
+        RenderAntiAliasingPass(renderContext, frameBuffer, outputView, outputViewport);
 
-		// Cleanup
-		context->ResetRenderTarget();
-		context->FlushState();
-        RenderTargetPool::Release(colorGradingLUT);
+        if (view.DrawGizmos)
+        {
+            // Editor primitive composition belongs after the scene's display transform.
+        }
 
-		// Draw Gizmos
-		if (view.DrawGizmos)
-		{
+        RenderTargetPool::Release(tempBuffer);
+        RenderTargetPool::Release(frameBuffer);
+    }
 
-		}
+    void RenderAntiAliasingPass(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output, const Viewport& outputViewport)
+    {
+        auto context = renderContext.gpuContext;
+        context->SetViewportAndScissors(outputViewport);
 
-		// AA -> Back Buffer
-		RenderAntiAliasingPass(renderContext, frameBuffer, outputView, outputViewport);
-
-
-		RenderTargetPool::Release(tempBuffer);
-		RenderTargetPool::Release(frameBuffer);
-	}
-
-	void RenderAntiAliasingPass(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output, const Viewport& outputViewport)
-	{
-		auto context = renderContext.gpuContext;
-		context->SetViewportAndScissors(outputViewport);
-
-		FXAA::Instance().Render(renderContext, input, output);
+        FXAA::Instance().Render(renderContext, input, output);
 
 		/*const auto aaMode = renderContext.list->Settings.AntiAliasing.Mode;
 		if (aaMode == AntialiasingMode::FastApproximateAntialiasing)
@@ -292,6 +279,6 @@ namespace SE
 			context->SetRenderTarget(output);
 			context->Draw(input);
 		}*/
-	}
+    }
 
-} // SE
+} // namespace SE

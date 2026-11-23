@@ -4,10 +4,11 @@
 #include "Shaders/PostProcess/ACES.hlsl"
 #include "Shaders/QuadCommon.hlsl"
 
-#ifdef _PS_Lut3D
-#define USE_VOLUME_LUT 1
-#else
+#ifndef USE_VOLUME_LUT
 #define USE_VOLUME_LUT 0
+#endif
+#ifndef USE_LDR_LUT
+#define USE_LDR_LUT 0
 #endif
 static const float LUTSize = 32;
 
@@ -39,11 +40,14 @@ struct Data
 
 	float3 Dummy;
 	float LutWeight;
+	float4 ScreenFadeColor;
 }
 
 ParameterBlock<Data> data;
 
+#if USE_LDR_LUT
 Texture2D LutTexture;
+#endif
 
 // Accurate for 1000K < temp < 15000K
 // [Krystek 1985, "An algorithm to calculate correlated colour temperature"]
@@ -207,7 +211,8 @@ float3 Tonemap(float3 linearColor)
 #elif defined(TONE_MAPPING_MODE_ACES)
 	return TonemapACES(linearColor);
 #else
-	return float3(0, 0, 0);
+	// Module discovery runs without variant defines; the explicit None variant is identity too.
+	return linearColor;
 #endif
 }
 
@@ -245,12 +250,22 @@ float4 CombineLUTs(float2 uv, uint layerIndex)
 	// Apply tone mapping
 	float3 color = Tonemap(linearColor);
 
-	// Apply LDR LUT color grading
+	// Legacy LDR LUTs operate on encoded sRGB values, not scene-linear colors.
+#if USE_LDR_LUT
 	{
-		float3 uvw = saturate(color) * (15.0 / 16.0) + (0.5f / 16.0);
+		float3 gammaColor = LinearToSrgb(saturate(color));
+		float3 uvw = gammaColor * (15.0 / 16.0) + (0.5f / 16.0);
 		float3 lutColor = SampleUnwrappedTexture3D(LutTexture, SamplerLinearClamp, uvw, 16).rgb;
-		color = lerp(color, lutColor, data.LutWeight);
+		gammaColor = lerp(gammaColor, lutColor, data.LutWeight);
+		color = sRGBToLinear(gammaColor);
 	}
+#endif
+
+	// Keep the post-LDR-LUT linear stage for color correction and cinematic overlays.
+	color = lerp(color, data.ScreenFadeColor.rgb, data.ScreenFadeColor.a);
+
+	// Bake SDR output-device encoding into the combined LUT. Consumers must not encode again.
+	color = LinearToSrgb(max(color, 0.0));
 
 	return float4(color, 1);
 }
@@ -259,9 +274,7 @@ float4 CombineLUTs(float2 uv, uint layerIndex)
 Quad_VS2GS VS_WriteToSlice(float2 position : POSITION0, float2 texCoord : TEXCOORD0, uint layerIndex : SV_InstanceID)
 {
 	Quad_VS2GS output;
-#if VULKAN
-	position.y = position.y * -1.0f;
-#endif
+	// Vulkan Y inversion is applied by the Slang compiler, as for VS_Quad.
 	output.Vertex.Position = float4(position, 0, 1);
 	output.Vertex.TexCoord = texCoord;
 	output.LayerIndex = layerIndex;
@@ -300,9 +313,10 @@ float4 PS_Lut3D(Quad_GS2PS input) : SV_Target
 }
 
 SHADER_PROGRAM(Lut2D, 
-	SHADER_VS(VS_Quard),
+	SHADER_VS(VS_Quad),
 	SHADER_PS(PS_Lut2D),
-	SHADER_MACRO(_, TONE_MAPPING_MODE_NEUTRAL, TONE_MAPPING_MODE_ACES)
+	SHADER_MACRO(TONE_MAPPING_MODE_NONE, TONE_MAPPING_MODE_NEUTRAL, TONE_MAPPING_MODE_ACES),
+	SHADER_MACRO(_, USE_LDR_LUT)
 )
 
 
@@ -310,6 +324,8 @@ SHADER_PROGRAM(Lut3D,
 	SHADER_VS(VS_WriteToSlice),
 	SHADER_GS(GS_WriteToSlice),
 	SHADER_PS(PS_Lut3D),
-	SHADER_MACRO(_, TONE_MAPPING_MODE_NEUTRAL, TONE_MAPPING_MODE_ACES)
+	SHADER_MACRO(TONE_MAPPING_MODE_NONE, TONE_MAPPING_MODE_NEUTRAL, TONE_MAPPING_MODE_ACES),
+	SHADER_MACRO(USE_VOLUME_LUT),
+	SHADER_MACRO(_, USE_LDR_LUT)
 )
 

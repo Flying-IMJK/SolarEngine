@@ -55,12 +55,10 @@ private:
         float ChromaticDistortion;
         float Time;
 
-        float Dummy1;
+        float OutputDithering;
         float Padding;
         float VignetteIntensity;
         float LensDirtIntensity;
-
-        Color ScreenFadeColor;
 
         Matrix LensFlareStarMat;
         });
@@ -88,8 +86,8 @@ private:
     ShaderProgramInstance* m_SPGenGhosts;
     ShaderProgramInstance* m_SPComposite;
 
-    GPUConstantBuffer* m_DataBuffer;
-    GPUConstantBuffer* m_GaussianBlurBuffer;
+    GPUConstantBuffer* m_DataBuffer         = nullptr;
+    GPUConstantBuffer* m_GaussianBlurBuffer = nullptr;
 
     GaussianBlurData _gbData;
     Float4 GaussianBlurCacheH[GB_KERNEL_SIZE];
@@ -113,15 +111,12 @@ public:
 
 public:
     /// <summary>
-    /// Perform postFx rendering for the input task
+    /// Queue the view's HDR post processing and SDR output transform on the render thread.
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
-    /// <param name="input">Target with rendered HDR frame to post process</param>
-    /// <param name="output">Output frame</param>
-    /// <param name="colorGradingLUT">The prebaked LUT for color grading and tonemapping.</param>
-    /// <param name="pAutoExposure">Required borrowed GPU texture containing this view's exposure. Its owner keeps it alive through GPU completion.</param>
-    /// <returns>True if the composite draw was submitted. False means resources or bindings are unavailable; output is not valid and must not be presented.</returns>
-    void Render(RenderContext& renderContext, GPUTexture* input, GPUTexture* output, GPUTexture* colorGradingLUT, GPUTexture* pAutoExposure);
+    /// <param name="pInput">Borrowed scene-linear HDR input, kept alive through submission by the caller.</param>
+    /// <param name="pOutput">Borrowed target receiving the processed frame. Copies pInput unchanged if post processing is unavailable.</param>
+    void Render(RenderContext& renderContext, GPUTexture* pInput, GPUTexture* pOutput);
 
 private:
 

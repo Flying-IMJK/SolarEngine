@@ -14,10 +14,10 @@ namespace SE
 
     void DirectionalLight::RenderDraw(RenderContext& renderContext)
     {
-        float brightness = Brightness;
+        float brightness = Illuminance;
         AdjustBrightness(renderContext.view, brightness);
         const Float3 position = GetPosition() - renderContext.view.Origin;
-        if (Brightness > Math::ZeroTolerance
+        if (Illuminance > Math::ZeroTolerance
             /*&& EnumHasAnyFlags(renderContext.view.flags, ViewFlags::DirectionalLights)*/
             && EnumHasAnyFlags(renderContext.view.Pass, DrawPass::GBuffer)
             && (ViewDistance < Math::ZeroTolerance || Float3::DistanceSquared(renderContext.view.Position, position) < ViewDistance * ViewDistance))
@@ -59,7 +59,7 @@ namespace SE
 
         SERIALIZE_GET_OTHER_OBJ(DirectionalLight, context.otherObj);
 
-        SERIALIZE(Brightness);
+        SERIALIZE(Illuminance);
         SERIALIZE(CascadeCount);
         SERIALIZE(Cascade1Spacing);
         SERIALIZE(Cascade2Spacing);
@@ -74,7 +74,7 @@ namespace SE
         // Base
         Light::Deserialize(context);
 
-        DESERIALIZE(Brightness);
+        DESERIALIZE(Illuminance);
         DESERIALIZE(CascadeCount);
         DESERIALIZE(Cascade1Spacing);
         DESERIALIZE(Cascade2Spacing);

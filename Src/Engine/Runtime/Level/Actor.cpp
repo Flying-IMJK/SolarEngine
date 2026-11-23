@@ -38,9 +38,7 @@ namespace SE
     {
     }
 
-    Actor::~Actor()
-    {
-    }
+    Actor::~Actor() = default;
 
     List<byte> Actor::ToBytes(const List<Actor*>& actors)
     {

@@ -1,4 +1,5 @@
 #pragma once
+#include <Runtime/Core/Math/Color.h>
 #include <Runtime/Graphics/Base/GPUPipelineState.h>
 #include <Runtime/Graphics/Base/PixelFormat.h>
 #include <Runtime/Render/RenderContext.h>
@@ -12,9 +13,9 @@ namespace SE
     class Shader;
 
     /// <summary>
-	/// Color Grading and Tone Mapping rendering service. Generates HDR LUT for PostFx pass.
-	/// </summary>
-	class ColorGradingPass : public RendererPass<ColorGradingPass>
+    /// Bakes scene-linear color grading, tone mapping and SDR output encoding into a combined LUT.
+    /// </summary>
+    class ColorGradingPass : public RendererPass<ColorGradingPass>
 	{
 	private:
 		bool m_UseVolumeTexture;
@@ -22,26 +23,28 @@ namespace SE
         AssetRef<Shader>       m_Shader;
         GPUPipelineState*  m_PipelineState   = nullptr;
         ShaderProgramInstance* m_ProgramInstance = nullptr;
-        GPUConstantBuffer* m_GPUConstantBuffer;
+        GPUConstantBuffer*     m_GPUConstantBuffer = nullptr;
 
-	public:
+    public:
 
 		/// <summary>
 		/// Init
 		/// </summary>
 		ColorGradingPass();
 
-		/// <summary>
-		/// Performs Look Up Table rendering for the input task.
-		/// </summary>
-		/// <param name="renderContext">The rendering context.</param>
-		/// <returns>Allocated temp render target with a rendered LUT. Can be 2d or 3d based on current graphics hardware caps. Release after usage.</returns>
-		GPUTexture* RenderLUT(RenderContext& renderContext);
+        /// <summary>
+        /// Performs Look Up Table rendering for the input task.
+        /// </summary>
+        /// <param name="renderContext">The rendering context.</param>
+        /// <param name="screenFadeColor">Linear overlay RGB and blending weight. Transparent disables the overlay.</param>
+        /// <returns>Temporary LUT with a submitted draw, or null on failure. Called on the render thread;
+        /// the caller returns it to the pool after its final use is submitted. This does not wait for the GPU.</returns>
+        GPUTexture* RenderLUT(RenderContext& renderContext, const Color& screenFadeColor);
 
-	private:
+    private:
         void OnShaderReloading(Asset* pAsset);
 
-        void UpdateProgram(ToneMappingMode mappingMode);
+        bool UpdateProgram(ToneMappingMode mappingMode, bool useLdrLut);
 
     public:
         // [RendererPass]

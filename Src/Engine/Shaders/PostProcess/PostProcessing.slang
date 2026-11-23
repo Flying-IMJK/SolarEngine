@@ -27,13 +27,18 @@
 #define GB_RADIUS 6
 #define GB_KERNEL_SIZE (GB_RADIUS * 2 + 1)
 
-#ifndef USE_GRADING_LUT
-#define USE_GRADING_LUT 0
-#endif
 #ifndef USE_3D_LUT
 #define USE_3D_LUT 0
 #endif
-
+#ifndef USE_BLOOM
+#define USE_BLOOM 0
+#endif
+#ifndef USE_LENS_FLARES
+#define USE_LENS_FLARES 0
+#endif
+#ifndef USE_CAMERA_ARTIFACTS
+#define USE_CAMERA_ARTIFACTS 0
+#endif
 
 struct Data
 {
@@ -67,12 +72,10 @@ struct Data
 	float ChromaticDistortion;
 	float Time;
 
-	float Dummy1;
+	float OutputDithering;
 	float Padding;
 	float VignetteIntensity;
 	float LensDirtIntensity;
-
-	float4 ScreenFadeColor;
 
 	float4x4 LensFlareStarMat;
 }
@@ -441,19 +444,22 @@ SHADER_PROGRAM(
 	Composite,
 	SHADER_VS(VS_Quad),
 	SHADER_PS(PS_Composite),
-	SHADER_MACRO(_, USE_GRADING_LUT),
-	SHADER_MACRO(_, USE_3D_LUT)
+	SHADER_MACRO(_, USE_3D_LUT),
+	SHADER_MACRO(_, USE_BLOOM),
+	SHADER_MACRO(_, USE_LENS_FLARES),
+	SHADER_MACRO(_, USE_CAMERA_ARTIFACTS)
 )
 
-// Applies exposure, color grading and tone mapping to the input.
-// Combines it with the results of the bloom pass and other postFx.
+// Combines linear HDR camera effects and exposure, then uses the combined LUT
+// to apply grading, tone mapping, linear overlays and SDR output-device encoding.
 float4 PS_Composite(Quad_VS2PS input) : SV_Target
 {
 	float2 uv = input.TexCoord;
 	float3 lensLight = 0;
 	float4 color;
 
-	// Chromatic Abberation
+#if USE_CAMERA_ARTIFACTS
+	// Chromatic aberration changes scene-linear sampling, before the display transform.
 	if (data.ChromaticDistortion > 0)
 	{
 		const float MAX_DIST_PX = 24.0;
@@ -480,14 +486,19 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 			t += stepsiz;
 		}
 		sumcol /= sumw;
-		color = sumcol + (rnd / 255.0);
+		color = sumcol;
 	}
 	else
 	{
 		color = Input0.Sample(SamplerLinearClamp, uv);
 	}
 
-	// Lens Flares
+#else
+	color = Input0.Sample(SamplerLinearClamp, uv);
+#endif
+
+	// Lens Flares remain scene-linear and use the same exposure scale as the scene.
+#if USE_LENS_FLARES
 	BRANCH
 	if (data.LensFlareIntensity > 0)
 	{
@@ -506,7 +517,10 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 		color.rgb += lensFlares;
 	}
 
+#endif
+
 	// Bloom
+#if USE_BLOOM
 	BRANCH
 	if (data.BloomMagnitude > 0)
 	{
@@ -519,37 +533,22 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 		color.rgb += bloom;
 	}
 
-	// Lens Dirt
-	float3 lensDirt = LensDirt.SampleLevel(SamplerLinearClamp, uv, 0).rgb;
-	color.rgb += lensDirt * (lensLight * data.LensDirtIntensity);
-
-	// Apply this view's automatic exposure once, after scene compositing.
-	color.rgb *= AutoExposure.Load(int3(0, 0, 0)).x;
-
-	// Color Grading and Tone Mapping
-#if USE_GRADING_LUT
-	color.rgb = ColorLookupTable(color.rgb);
 #endif
 
-	// Film Grain
-	BRANCH
-	if (data.GrainAmount > 0)
+#if USE_BLOOM || USE_LENS_FLARES
+	if (data.LensDirtIntensity > 0)
 	{
-		// Calculate noise
-		float2 rotCoordsR = coordRot(uv, data.GrainTime);
-		float noise = pnoise2D(rotCoordsR * (data.InputSize / data.GrainParticleSize), data.GrainTime);
-
-		// Noisiness response curve based on scene luminance
-		float luminance = Luminance(saturate(color.rgb));
-		luminance += smoothstep(0.2, 0.0, luminance);
-
-		// Add noise to the final color
-		noise = lerp(noise, 0, min(pow(luminance, 4.0), 100));
-		color.rgb += noise * data.GrainAmount;
+		float3 lensDirt = LensDirt.SampleLevel(SamplerLinearClamp, uv, 0).rgb;
+		color.rgb += lensDirt * (lensLight * data.LensDirtIntensity);
 	}
+#endif
 
-	// Vignette
-	BRANCH
+	// Scene and unexposed Bloom/lens contributions receive the same exposure exactly once.
+	// Local exposure, when implemented, modulates the scene here; its Bloom policy is explicit.
+	color.rgb *= AutoExposure.Load(int3(0, 0, 0)).x;
+
+#if USE_CAMERA_ARTIFACTS
+	// Vignette belongs to HDR camera response, before grading and output encoding.
 	if (data.VignetteIntensity > 0)
 	{
 		float2 uvCircle = uv * (1 - uv);
@@ -558,10 +557,26 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 		color.rgb = lerp(data.VignetteColor, color.rgb, mask);
 	}
 
-	// Screen fade
-	color.rgb = lerp(color.rgb, data.ScreenFadeColor.rgb, data.ScreenFadeColor.a);
+	// Existing procedural approximation, not UE's grain-texture algorithm. Keep its modulation
+	// in scene-linear HDR and separate from quantization dithering after output encoding.
+	if (data.GrainAmount > 0)
+	{
+		float2 rotCoords = coordRot(uv, data.GrainTime);
+		float noise = pnoise2D(rotCoords * (data.InputSize / data.GrainParticleSize), data.GrainTime);
+		color.rgb *= max(0.0, 1.0 + noise * data.GrainAmount);
+	}
+#endif
 
-	// Saturate color since it will be rendered to the screen
+	// The combined LUT includes the complete legacy LDR-LUT round trip, linear fade,
+	// and the final SDR sRGB transfer function. It is required even with ToneMapping None.
+	color.rgb = ColorLookupTable(color.rgb);
+
+	// Output quantization dithering belongs here, in device-encoded space. Disabled until
+	// an output-precision policy is connected; it must not be used as HDR film grain.
+	if (data.OutputDithering > 0)
+	{
+		color.rgb += (nrand(input.TexCoord + data.Time) - 0.5) * data.OutputDithering;
+	}
 	color.rgb = saturate(color.rgb);
 
 	// Return final pixel color (preserve input alpha)

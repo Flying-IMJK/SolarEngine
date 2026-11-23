@@ -235,7 +235,7 @@ namespace SE
         if (SunLight && SunLight->IsActiveInHierarchy())
         {
             data.SunDirection = -SunLight->GetForward();
-            data.SunIlluminance = SunLight->Color.ToFloat3() * (SunLight->Color.A * SunLight->Brightness);
+            data.SunIlluminance = SunLight->Color.ToFloat3() * (SunLight->Color.A * SunLight->Illuminance);
         }
     }
 
