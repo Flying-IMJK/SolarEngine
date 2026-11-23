@@ -8,12 +8,12 @@ namespace SE.Editor.SceneGraph
     /// </summary>
     public abstract class RootGraphNode : ActorGraphNode
     {
-        protected RootGraphNode(SceneGraphFactory factory)
+        protected RootGraphNode(ScenesGraphFactory factory)
             : this(factory, Guid.NewGuid())
         {
         }
 
-        protected RootGraphNode(SceneGraphFactory factory, Guid id)
+        protected RootGraphNode(ScenesGraphFactory factory, Guid id)
             : base(factory, null, id)
         {
             TreeNode.AutoFocus = false;

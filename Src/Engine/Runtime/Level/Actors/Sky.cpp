@@ -102,6 +102,8 @@ namespace SE
         SERIALIZE_MEMBER(Sun, SunLight);
         SERIALIZE(SunDiscScale);
         SERIALIZE(SunPower);
+        SERIALIZE(CubeTexture);
+        SERIALIZE(Color);
         context.stream.JKEY("AtmosphereData");
         context.stream.StartObject();
         SERIALIZE_MEMBER(GroundRadius, AtmosphereData.GroundRadius);
@@ -136,6 +138,8 @@ namespace SE
         DESERIALIZE_MEMBER(Sun, SunLight);
         DESERIALIZE(SunDiscScale);
         DESERIALIZE(SunPower);
+        DESERIALIZE(CubeTexture);
+        DESERIALIZE(Color);
         const auto atmosphere = SERIALIZE_FIND_MEMBER(context.stream, "AtmosphereData");
         if (atmosphere != context.stream->MemberEnd() && atmosphere->value.IsObject())
         {

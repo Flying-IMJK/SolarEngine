@@ -13,22 +13,21 @@ namespace SE.Editor.SceneGraph
         private readonly ActorTreeNode m_TreeNode;
         private bool m_IsTreeNodeLinked;
 
-        public ActorGraphNode(SceneGraphFactory factory, SE.Actor actor)
-            : this(factory, actor, actor?.SceneObjectId ?? throw new ArgumentNullException(nameof(actor)),
+        public ActorGraphNode(ScenesGraphFactory factory, SE.Actor actor) : this(factory, actor, actor.SceneObjectId,
                 new ActorTreeNode())
         {
         }
 
-        internal ActorGraphNode(SceneGraphFactory factory, SE.Actor actor, Guid id)
+        internal ActorGraphNode(ScenesGraphFactory factory, SE.Actor actor, Guid id)
             : this(factory, actor, id, new ActorTreeNode())
         {
         }
 
-        protected ActorGraphNode(SceneGraphFactory factory, SE.Actor actor, Guid id, ActorTreeNode treeNode)
+        protected ActorGraphNode(ScenesGraphFactory factory, SE.Actor actor, Guid id, ActorTreeNode treeNode)
             : base(factory, id)
         {
             m_Actor = actor;
-            m_TreeNode = treeNode ?? throw new ArgumentNullException(nameof(treeNode));
+            m_TreeNode = treeNode;
         }
 
         public SE.Actor Actor => m_Actor;

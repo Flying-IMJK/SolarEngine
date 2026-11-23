@@ -6,7 +6,7 @@ namespace SE.Editor.SceneGraph
     /// <summary>
     /// Owns node registration and all actor-to-node construction rules.
     /// </summary>
-    public sealed class SceneGraphFactory : IDisposable
+    public sealed class ScenesGraphFactory : IDisposable
     {
         public sealed class NodeFactory
         {
@@ -25,7 +25,7 @@ namespace SE.Editor.SceneGraph
         private RootGraphNode m_Root;
         private bool m_IsDisposed;
 
-        public SceneGraphFactory()
+        public ScenesGraphFactory()
         {
             RegisterActorNode<SE.Scene, SceneGraphNode>(actor => new SceneGraphNode(this, (SE.Scene)actor));
             RegisterActorNode<SE.Camera, CameraGraphNode>(actor => new CameraGraphNode(this, actor));
@@ -143,7 +143,7 @@ namespace SE.Editor.SceneGraph
         {
             if (m_IsDisposed)
             {
-                throw new ObjectDisposedException(nameof(SceneGraphFactory));
+                throw new ObjectDisposedException(nameof(ScenesGraphFactory));
             }
 
             if (m_Nodes.TryGetValue(node.ID, out ScenesGraphNode duplicate) && duplicate != null)

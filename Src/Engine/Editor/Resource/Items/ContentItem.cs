@@ -502,9 +502,7 @@ namespace SE.Editor
             {
                 m_IsMouseDown = false;
 
-                // Mirrors the native TypeTryCast<ContentView>(this) expression.
-                ContentView otherItem = (object)this as ContentView;
-                if (otherItem != null)
+                if (Parent is ContentView otherItem)
                 {
                     otherItem.OnItemClick(this);
                 }

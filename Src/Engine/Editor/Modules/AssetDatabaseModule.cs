@@ -210,79 +210,170 @@ namespace SE.Editor
             return null;
         }
 
-        public void Move(IEnumerable<ContentItem> items, ContentFolder newParent)
+        /// <summary>Moves the specified items to a different folder.</summary>
+        public void Move(List<ContentItem> items, ContentFolder newParent)
         {
-            foreach (ContentItem item in items)
+            for (int i = 0; i < items.Count; i++)
             {
-                Move(item, newParent);
+                Move(items[i], newParent);
             }
         }
 
+        /// <summary>Moves the specified item to a different folder.</summary>
         public void Move(ContentItem item, ContentFolder newParent)
         {
-            Debug.Assert(item != null, "Item cannot be null.");
-            Debug.Assert(newParent != null, "New parent cannot be null.");
+            if (newParent == null || item == null)
+            {
+                throw new ArgumentNullException();
+            }
             if (item.ParentFolder == newParent)
             {
                 return;
             }
 
-            string target = $"{newParent.Path}/{item.ShortName + Path.GetExtension(item.Path)}";
-            Move(item, target);
+            string extension = Path.GetExtension(item.Path);
+            string newPath = FileSystem.CombinePaths(newParent.Path, item.ShortName + extension);
+            Move(item, newPath);
         }
 
+        /// <summary>Moves or renames the specified item, including its children when it is a folder.</summary>
         public void Move(ContentItem item, string newPath)
         {
-            Debug.Assert(item != null && !string.IsNullOrEmpty(newPath), "Item and target path must be valid.");
-
+            if (item == null || string.IsNullOrEmpty(newPath))
+            {
+                throw new ArgumentNullException();
+            }
             if (item.IsFolder && Directory.Exists(newPath))
             {
+                MessageBox.Show("Cannot move folder. Target location already exists.");
                 return;
             }
 
-            ContentFolder newParent = Find(Path.GetDirectoryName(newPath)) as ContentFolder;
+            string newDirPath = Path.GetDirectoryName(newPath);
+            ContentFolder newParent = Find(newDirPath) as ContentFolder;
             if (newParent == null)
             {
+                MessageBox.Show("Cannot move item. Missing target location.");
                 return;
             }
 
-            if (item is ContentFolder folder)
+            List<ProjectTreeNode> projects = Editor.AssetDatabase.Projects;
+            List<string> contentPaths = new();
+            List<string> sourcePaths = new();
+            foreach (ProjectTreeNode project in projects)
+            {
+                if (project.Content != null)
+                {
+                    contentPaths.Add(project.Content.GetPath());
+                }
+                if (project.Source != null)
+                {
+                    sourcePaths.Add(project.Source.GetPath());
+                }
+            }
+
+            // Moving between Content and Source can lose the asset database reference.
+            foreach (string contentPath in contentPaths)
+            {
+                if (item.Path.Contains(contentPath, StringComparison.Ordinal))
+                {
+                    bool isFound = false;
+                    foreach (string sourcePath in sourcePaths)
+                    {
+                        if (newParent.Path.Contains(sourcePath, StringComparison.Ordinal))
+                        {
+                            isFound = true;
+                            DialogResult result = MessageBox.Show(Editor.MainWindow,
+                                "Moving item from \"Content\" to \"Source\" folder may lose asset database reference.\nDo you want to continue?",
+                                "Moving item", MessageBoxButtons.OKCancel);
+                            if (result == DialogResult.Cancel)
+                            {
+                                return;
+                            }
+                            break;
+                        }
+                    }
+                    if (isFound)
+                    {
+                        break;
+                    }
+                }
+            }
+            foreach (string sourcePath in sourcePaths)
+            {
+                if (item.Path.Contains(sourcePath, StringComparison.Ordinal))
+                {
+                    bool isFound = false;
+                    foreach (string contentPath in contentPaths)
+                    {
+                        if (newParent.Path.Contains(contentPath, StringComparison.Ordinal))
+                        {
+                            isFound = true;
+                            DialogResult result = MessageBox.Show(Editor.MainWindow,
+                                "Moving item from \"Source\" to \"Content\" folder may lose asset database reference.\nDo you want to continue?",
+                                "Moving item", MessageBoxButtons.OKCancel);
+                            if (result == DialogResult.Cancel)
+                            {
+                                return;
+                            }
+                            break;
+                        }
+                    }
+                    if (isFound)
+                    {
+                        break;
+                    }
+                }
+            }
+
             {
                 string oldPath = item.Path;
-                try
+                if (item.IsFolder)
                 {
-                    Directory.CreateDirectory(newPath);
+                    ContentFolder folder = (ContentFolder)item;
+                    try
+                    {
+                        Directory.CreateDirectory(newPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning(ex);
+                        Debug.LogError(string.Format("Cannot move folder \'{0}\' to \'{1}\'", oldPath, newPath));
+                        return;
+                    }
+
+                    item.UpdatePath(newPath);
+                    for (int i = 0; i < folder.Children.Count; i++)
+                    {
+                        UpdateAssetNewNameTree(folder.Children[i]);
+                    }
+
+                    try
+                    {
+                        Directory.Delete(oldPath, true);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning(ex);
+                        Debug.LogWarning(string.Format("Cannot remove folder \'{0}\'", oldPath));
+                        return;
+                    }
                 }
-                catch (Exception ex)
+                else
                 {
-                    Debug.LogWarning(ex);
-                    Debug.LogError(string.Format("Cannot move folder \'{0}\' to \'{1}\'", oldPath, newPath));
-                    return;
+                    if (!RenameAsset(item, ref newPath))
+                    {
+                        MessageBox.Show("Cannot rename item.");
+                        return;
+                    }
                 }
 
-                item.UpdatePath(newPath);
-                for (int i = 0; i < folder.Children.Count; i++)
+                if (item.ParentFolder != null)
                 {
-                    UpdateAssetNewNameTree(folder.Children[i]);
-                }
-
-
-                try
-                {
-                    Directory.Delete(oldPath, true);
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogWarning(ex);
-                    Debug.LogError(string.Format("Cannot remove folder \'{0}\'", oldPath));
+                    item.ParentFolder.Node.SortChildren();
                 }
             }
-            else if (!RenameAsset(item, newPath))
-            {
-                return;
-            }
 
-            item.ParentFolder?.Node.SortChildren();
             item.ParentFolder = newParent;
             if (m_EnableEvents)
             {
@@ -623,7 +714,8 @@ namespace SE.Editor
             }
         }
 
-        private static bool RenameAsset(ContentItem item, string newPath)
+        /// <summary>Renames a content item. Returns true on failure, matching the Flax workflow.</summary>
+        private static bool RenameAsset(ContentItem item, ref string newPath)
         {
             string oldPath = item.Path;
             if (item.IsAsset)
@@ -655,15 +747,11 @@ namespace SE.Editor
         private static void UpdateAssetNewNameTree(ContentItem item)
         {
             string extension = Path.GetExtension(item.Path);
-
-            string newPath = $"{item.ParentFolder.Path}/{item.ShortName + extension}";
-
+            string newPath = FileSystem.CombinePaths(item.ParentFolder.Path, item.ShortName + extension);
             if (item.IsFolder)
             {
                 string oldPath = item.Path;
                 ContentFolder folder = (ContentFolder)item;
-
-                // Create new folder
                 try
                 {
                     Directory.CreateDirectory(newPath);
@@ -683,7 +771,7 @@ namespace SE.Editor
             }
             else
             {
-                RenameAsset(item, newPath);
+                RenameAsset(item, ref newPath);
             }
         }
 

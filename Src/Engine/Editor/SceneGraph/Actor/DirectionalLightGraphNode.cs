@@ -5,7 +5,7 @@ namespace SE.Editor.SceneGraph
     /// </summary>
     public sealed class DirectionalLightGraphNode : ActorGraphNode
     {
-        public DirectionalLightGraphNode(SceneGraphFactory factory, SE.Actor actor)
+        public DirectionalLightGraphNode(ScenesGraphFactory factory, SE.Actor actor)
             : base(factory, actor)
         {
         }

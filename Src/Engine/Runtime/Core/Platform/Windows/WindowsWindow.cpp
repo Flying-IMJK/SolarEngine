@@ -1863,7 +1863,7 @@ namespace SE
 		stgmed.hGlobal = StringToHandle(data);
 	
 		// Create drop source
-		auto dropSource = New<WindowsDragSource>(&fmtetc, &stgmed, 1);
+		auto dropSource = new WindowsDragSource(&fmtetc, &stgmed, 1);
 	
 		// Do the drag drop operation
 		DWORD dwEffect;

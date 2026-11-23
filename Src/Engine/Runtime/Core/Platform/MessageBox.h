@@ -229,6 +229,7 @@ namespace SE
         /// <param name="caption">The text to display in the title bar of the message box.</param>
         /// <param name="buttons">One of the MessageBoxButtons values that specifies which buttons to display in the message box.</param>
         /// <returns>The message box dialog result.</returns>
+        SE_FUNCTION(API())
         static DialogResult Show(Window* parent, StringView text, StringView caption, MessageBoxButtons buttons)
         {
             return Show(parent, text, caption, buttons, MessageBoxIcon::None);

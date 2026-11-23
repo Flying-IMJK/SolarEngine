@@ -11,8 +11,8 @@ namespace SE.Editor.SceneGraph
     {
         private bool m_IsEdited;
 
-        public SceneGraphNode(SceneGraphFactory factory, SE.Scene scene)
-            : base(factory, scene)
+        public SceneGraphNode(ScenesGraphFactory factory, SE.Scene scene)
+            : base(factory, scene, scene.SceneObjectId, new SceneTreeNode())
         {
         }
 

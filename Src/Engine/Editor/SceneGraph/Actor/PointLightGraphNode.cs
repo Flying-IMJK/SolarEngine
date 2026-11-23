@@ -5,7 +5,7 @@ namespace SE.Editor.SceneGraph
     /// </summary>
     public sealed class PointLightGraphNode : ActorGraphNode
     {
-        public PointLightGraphNode(SceneGraphFactory factory, SE.Actor actor)
+        public PointLightGraphNode(ScenesGraphFactory factory, SE.Actor actor)
             : base(factory, actor)
         {
         }

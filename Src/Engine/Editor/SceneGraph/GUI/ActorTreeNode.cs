@@ -17,14 +17,14 @@ namespace SE.Editor.GUI
         /// <summary>
         /// The actor node that owns this node.
         /// </summary>
-        protected ActorGraphNode _actorNode;
+        protected ActorGraphNode m_ActorNode;
 
         /// <summary>
         /// Gets the actor.
         /// </summary>
         public SE.Actor GetActor()
         {
-            return _actorNode.Actor;
+            return m_ActorNode.Actor;
         }
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace SE.Editor.GUI
         /// </summary>
         public ActorGraphNode GetActorGraphNode()
         {
-            return _actorNode;
+            return m_ActorNode;
         }
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace SE.Editor.GUI
 
         public virtual void LinkNode(ActorGraphNode node)
         {
-            _actorNode = node;
+            m_ActorNode = node;
             SE.Actor actor = node.Actor;
             if (actor != null)
             {
@@ -153,7 +153,7 @@ namespace SE.Editor.GUI
         /// </summary>
         public virtual void UpdateText()
         {
-            Text = _actorNode.Name;
+            Text = m_ActorNode.Name;
         }
 
         /// <summary>
@@ -237,7 +237,7 @@ namespace SE.Editor.GUI
         public override bool OnShowTooltip(out string text, out Float2 location, out Rectangle area)
         {
             // Evaluate tooltip text once it's actually needed
-            SE.Actor actor = _actorNode.Actor;
+            SE.Actor actor = m_ActorNode.Actor;
             if (string.IsNullOrEmpty(TooltipText) && actor != null)
             {
                 // TooltipText = Surface.SurfaceUtils.GetVisualScriptTypeDescription(TypeUtils.GetObjectType(actor));
@@ -274,8 +274,8 @@ namespace SE.Editor.GUI
         /// </summary>
         public void StartRenaming(EditorWindow window, Panel treePanel = null)
         {
-            if (_actorNode == null || _actorNode.IsDisposed || GetActor() == null ||
-                _actorNode.ParentScene == null || GetActor().HasPrefabLink || m_RenamePopup != null)
+            if (m_ActorNode == null || m_ActorNode.IsDisposed || GetActor() == null ||
+                m_ActorNode.ParentScene == null || GetActor().HasPrefabLink || m_RenamePopup != null)
             {
                 return;
             }
@@ -290,7 +290,7 @@ namespace SE.Editor.GUI
             {
                 hierarchy.ScrollingOnSceneTreeView(false);
             }
-            m_RenamePopup = RenamePopup.ShowPopup(this, rect, _actorNode.Name, false);
+            m_RenamePopup = RenamePopup.ShowPopup(this, rect, m_ActorNode.Name, false);
             m_RenamePopup.Validate = (RenamePopup popup, ref string value) => !string.IsNullOrWhiteSpace(value);
             m_RenamePopup.Renamed += OnRenamed;
             m_RenamePopup.Closed += popup =>
@@ -322,7 +322,7 @@ namespace SE.Editor.GUI
 
         protected override void BeginDragDrop()
         {
-            if (_actorNode == null || !_actorNode.CanDrag)
+            if (m_ActorNode == null || !m_ActorNode.CanDrag)
             {
                 return;
             }
@@ -332,14 +332,14 @@ namespace SE.Editor.GUI
             {
                 foreach (TreeNode selected in tree.Selection)
                 {
-                    if (selected is not ActorTreeNode actorTree || !actorTree._actorNode.CanDrag)
+                    if (selected is not ActorTreeNode actorTree || !actorTree.m_ActorNode.CanDrag)
                     {
                         continue;
                     }
                     bool selectedAncestor = false;
                     for (Control ancestor = selected.Parent; ancestor != null && ancestor != tree; ancestor = ancestor.Parent)
                     {
-                        if (ancestor is ActorTreeNode parent && parent._actorNode.CanDrag && tree.Selection.Contains(parent))
+                        if (ancestor is ActorTreeNode parent && parent.m_ActorNode.CanDrag && tree.Selection.Contains(parent))
                         {
                             selectedAncestor = true;
                             break;
@@ -347,13 +347,13 @@ namespace SE.Editor.GUI
                     }
                     if (!selectedAncestor)
                     {
-                        actors.Add(actorTree._actorNode);
+                        actors.Add(actorTree.m_ActorNode);
                     }
                 }
             }
             else
             {
-                actors.Add(_actorNode);
+                actors.Add(m_ActorNode);
             }
             if (actors.Count > 0)
             {
@@ -430,8 +430,8 @@ namespace SE.Editor.GUI
         /// <inheritdoc />
         protected override DragDropEffect OnDragEnterHeader(DragData data)
         {
-            if (_actorNode == null || _actorNode.IsDisposed ||
-                (_actorNode is SceneGraphNode && DragOverMode != DragItemPositioning.At))
+            if (m_ActorNode == null || m_ActorNode.IsDisposed ||
+                (m_ActorNode is SceneGraphNode && DragOverMode != DragItemPositioning.At))
             {
                 return DragDropEffect.None;
             }
@@ -513,7 +513,7 @@ namespace SE.Editor.GUI
 
         private void OnRenamed(RenamePopup renamePopup)
         {
-            if (_actorNode == null || _actorNode.IsDisposed || _actorNode.ParentScene == null || GetActor() == null)
+            if (m_ActorNode == null || m_ActorNode.IsDisposed || m_ActorNode.ParentScene == null || GetActor() == null)
             {
                 return;
             }
@@ -523,17 +523,17 @@ namespace SE.Editor.GUI
                 return;
             }
             GetActor().Name = name;
-            Editor.Instance.Scene.MarkSceneEdited(_actorNode.ParentScene);
+            Editor.Instance.Scene.MarkSceneEdited(m_ActorNode.ParentScene);
         }
 
         private bool ValidateDragActor(ActorGraphNode actorNode)
         {
-            if (actorNode == null || !actorNode.CanDrag || actorNode.Root != _actorNode.Root)
+            if (actorNode == null || !actorNode.CanDrag || actorNode.Root != m_ActorNode.Root)
             {
                 return false;
             }
             SE.Actor target = GetActor();
-            return actorNode != _actorNode && (target == null ||
+            return actorNode != m_ActorNode && (target == null ||
                 (target.Scene != null && !target.HasPrefabLink && actorNode.Find(target) == null));
         }
 
