@@ -15,14 +15,14 @@ namespace SE.Editor.SceneGraph
         private int m_OrderInParent;
         private bool m_IsDisposed;
 
-        protected ScenesGraphNode(SceneGraphFactory factory, Guid id)
+        protected ScenesGraphNode(ScenesGraphFactory factory, Guid id)
         {
-            Factory = factory ?? throw new ArgumentNullException(nameof(factory));
+            Factory = factory;
             ID = id;
             Factory.RegisterNode(this);
         }
 
-        internal SceneGraphFactory Factory { get; }
+        internal ScenesGraphFactory Factory { get; }
 
         /// <summary>
         /// Children in scene hierarchy order.

@@ -300,10 +300,7 @@ namespace SE.GUI
         /// <inheritdoc />
         public override void DoDragDrop(DragData data)
         {
-            if (data.DataType == DragDataType.Text)
-            {
-                // The native window drag operation is disabled in WindowRootControl.
-            }
+            m_Window.DoDragDrop(data);
         }
 
         /// <inheritdoc />

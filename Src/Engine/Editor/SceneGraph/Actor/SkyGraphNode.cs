@@ -5,7 +5,7 @@ namespace SE.Editor.SceneGraph
     /// </summary>
     public sealed class SkyGraphNode : ActorGraphNode
     {
-        public SkyGraphNode(SceneGraphFactory factory, SE.Actor actor)
+        public SkyGraphNode(ScenesGraphFactory factory, SE.Actor actor)
             : base(factory, actor)
         {
         }

@@ -105,6 +105,25 @@ namespace SE
         /// </summary>
         public GUI.WindowRootControl GUI => m_GUI;
 
+        /// <summary>
+        /// Starts a text drag operation on the window thread and blocks until it completes or is cancelled.
+        /// </summary>
+        /// <param name="data">The data to transfer.</param>
+        /// <exception cref="ArgumentNullException">The data is null.</exception>
+        /// <exception cref="NotSupportedException">The data is not text.</exception>
+        public void DoDragDrop(DragData data)
+        {
+            ArgumentNullException.ThrowIfNull(data);
+            if (data is DragDataText text)
+            {
+                DoDragDrop(text.Text);
+            }
+            else
+            {
+                throw new NotSupportedException("Only DragDataText drag and drop is supported.");
+            }
+        }
+
 
         /// <summary>
         /// Creates a managed GUI window with the native platform defaults.

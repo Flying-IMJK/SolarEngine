@@ -5,7 +5,7 @@ namespace SE.Editor.SceneGraph
     /// </summary>
     public sealed class StaticModelGraphNode : ActorGraphNode
     {
-        public StaticModelGraphNode(SceneGraphFactory factory, SE.Actor actor)
+        public StaticModelGraphNode(ScenesGraphFactory factory, SE.Actor actor)
             : base(factory, actor)
         {
         }

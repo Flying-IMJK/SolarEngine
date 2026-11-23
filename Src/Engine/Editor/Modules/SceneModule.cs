@@ -47,7 +47,7 @@ namespace SE.Editor
 
         public event Action SelectionChanged;
 
-        public SceneGraphFactory SceneGraph { get; private set; } = null!;
+        public ScenesGraphFactory SceneGraph { get; private set; } = null!;
         public ScenesRootNode Root { get; private set; } = null!;
         public List<ScenesGraphNode> Selection { get; } = new(64);
         public int SelectionCount => Selection.Count;
@@ -732,7 +732,7 @@ namespace SE.Editor
 
         public override void OnInit()
         {
-            SceneGraph = new SceneGraphFactory();
+            SceneGraph = new ScenesGraphFactory();
             Root = new ScenesRootNode(this);
             SceneGraph.SetRoot(Root);
             Root.LinkTreeNode();
