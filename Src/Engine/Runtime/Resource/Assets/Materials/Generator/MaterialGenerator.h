@@ -19,78 +19,78 @@ namespace SE
         Layer = 0,
 
         /// <summary>
-            /// The color input.
-            /// </summary>
+        /// The color input.
+        /// </summary>
         Color = 1,
 
         /// <summary>
-            /// The mask input.
-            /// </summary>
+        /// The mask input.
+        /// </summary>
         Mask = 2,
 
         /// <summary>
-            /// The emissive input.
-            /// </summary>
+        /// The emissive input.
+        /// </summary>
         Emissive = 3,
 
         /// <summary>
-            /// The metalness input.
-            /// </summary>
+        /// The metalness input.
+        /// </summary>
         Metalness = 4,
 
         /// <summary>
-            /// The specular input.
-            /// </summary>
+        /// The specular input.
+        /// </summary>
         Specular = 5,
 
         /// <summary>
-            /// The roughness input.
-            /// </summary>
+        /// The roughness input.
+        /// </summary>
         Roughness = 6,
 
         /// <summary>
-            /// The ambient occlusion input.
-            /// </summary>
+        /// The ambient occlusion input.
+        /// </summary>
         AmbientOcclusion = 7,
 
         /// <summary>
-            /// The normal input.
-            /// </summary>
+        /// The normal input.
+        /// </summary>
         Normal = 8,
 
         /// <summary>
-            /// The opacity input.
-            /// </summary>
+        /// The opacity input.
+        /// </summary>
         Opacity = 9,
 
         /// <summary>
-            /// The refraction input.
-            /// </summary>
+        /// The refraction input.
+        /// </summary>
         Refraction = 10,
 
         /// <summary>
-            /// The position offset input.
-            /// </summary>
+        /// The position offset input.
+        /// </summary>
         PositionOffset = 11,
 
         /// <summary>
-            /// The tessellation multiplier input.
-            /// </summary>
+        /// The tessellation multiplier input.
+        /// </summary>
         TessellationMultiplier = 12,
 
         /// <summary>
-            /// The world displacement input.
-            /// </summary>
+        /// The world displacement input.
+        /// </summary>
         WorldDisplacement = 13,
 
         /// <summary>
-            /// The subsurface color input.
-            /// </summary>
+        /// The subsurface color input.
+        /// </summary>
         SubsurfaceColor = 14,
 
         /// <summary>
-            /// The amount of input boxes.
-            /// </summary>
+        /// The amount of input boxes.
+        /// </summary>
         MAX
     };
 

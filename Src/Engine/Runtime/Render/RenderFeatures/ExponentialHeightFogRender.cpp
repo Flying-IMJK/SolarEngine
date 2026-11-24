@@ -126,27 +126,15 @@ namespace SE
         Float3 lightDirection         = Float3::Up;
         Float3 lightIlluminance       = Float3::Zero;
         float  atmosphereContribution = 0.0f;
-        if (list->SkyAtmosphere)
+        if (list->DirectionalLights.HasItems())
         {
-            if (useAtmosphere || buffers->SkyAtmosphereLutsSubmitted)
-            {
-                lightDirection         = Float3(buffers->SkyAtmosphereView.SunDirection);
-                lightIlluminance       = Float3(buffers->SkyAtmosphereView.SunIlluminance);
-                atmosphereContribution = buffers->SkyAtmosphereView.SunIlluminance.W;
-            }
-            else
-            {
-                // Only the base directional color needs this provider when no LUT was submitted.
-                SkyAtmosphereData atmosphere;
-                list->SkyAtmosphere->ApplySkyAtmosphere(atmosphere);
-                lightDirection   = atmosphere.SunDirection;
-                lightIlluminance = atmosphere.SunIlluminance;
-            }
+            const auto& light = list->DirectionalLights.First();
+            lightDirection   = -light.Direction;
+            lightIlluminance = light.Illuminance;
         }
-        else if (list->DirectionalLights.HasItems())
+        if (useAtmosphere)
         {
-            lightDirection   = -list->DirectionalLights.First().Direction;
-            lightIlluminance = list->DirectionalLights.First().Color;
+            atmosphereContribution = buffers->SkyAtmosphereView.SunIlluminance.W;
         }
         const float lightLuminance  = Math::Max(Float3::Dot(lightIlluminance, Float3(0.2126f, 0.7152f, 0.0722f)), 0.0f);
         data.LightDirection         = Float4(Float3::Normalize(lightDirection), Math::Clamp(fog.DirectionalInscatteringExponent, 0.000001f, 1000.0f));

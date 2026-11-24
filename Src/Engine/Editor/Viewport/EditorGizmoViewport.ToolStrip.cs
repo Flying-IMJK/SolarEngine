@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using SE.Editor.Gizmo;
 using SE.Editor.GUI;
@@ -9,8 +8,6 @@ namespace SE.Editor
 {
     public partial class EditorGizmoViewport
     {
-        private ToolStrip m_ToolStrip;
-        private readonly List<ContextMenu> m_ToolStripMenus = new();
         private ViewportWidgetButton m_MoveButton;
         private ViewportWidgetButton m_RotateButton;
         private ViewportWidgetButton m_ScaleButton;
@@ -26,18 +23,8 @@ namespace SE.Editor
         private void BuildToolStrip(ToolStrip toolStrip)
         {
             ArgumentNullException.ThrowIfNull(toolStrip);
-            m_ToolStrip = toolStrip;
-
-            // Keep the existing camera settings menu and its bindings, with the camera group first.
-            _cameraButton.Parent = toolStrip;
-            _orthographicModeButton.Parent = toolStrip;
-            _orthographicModeButton.Tag = this;
-            _orthographicModeButton.Toggled += button => { UpdateToolStrip(); Focus(); };
-            m_ToolStripMenus.Add(_cameraButton.ContextMenu);
-            _cameraWidget.Parent = null;
-            _cameraWidget.Dispose();
-            _cameraWidget = null;
-            toolStrip.AddSeparator();
+            // Append gizmo controls after the common viewport controls.
+            m_ToolStripItems.Add(toolStrip.AddSeparator());
 
             m_MoveButton = new ViewportWidgetButton(string.Empty, EditorIcons.Translate32)
             {
@@ -54,7 +41,7 @@ namespace SE.Editor
             m_MoveButton.Clicked += button => { TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate; Focus(); };
             m_RotateButton.Clicked += button => { TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate; Focus(); };
             m_ScaleButton.Clicked += button => { TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale; Focus(); };
-            toolStrip.AddSeparator();
+            m_ToolStripItems.Add(toolStrip.AddSeparator());
 
             ContextMenu spaceMenu = new ContextMenu();
             ContextMenuButton world = spaceMenu.AddButton("World", () => TransformGizmo.ActiveTransformSpace = TransformGizmoBase.TransformSpace.World);
@@ -93,7 +80,7 @@ namespace SE.Editor
             {
                 Parent = toolStrip, Tag = this,
             };
-            toolStrip.AddSeparator();
+            m_ToolStripItems.Add(toolStrip.AddSeparator());
 
             m_TranslationSnapButton = new ViewportWidgetButton(string.Empty, EditorIcons.Grid32, autoCheck: true)
             {
@@ -190,21 +177,17 @@ namespace SE.Editor
             {
                 Parent = toolStrip, Tag = this, TooltipText = "Scale snap step",
             };
+            m_ToolStripItems.AddRange(new Control[]
+            {
+                m_MoveButton, m_RotateButton, m_ScaleButton, m_SpaceButton, m_PivotButton,
+                m_TranslationSnapButton, m_TranslationStepButton, m_RotationSnapButton,
+                m_RotationStepButton, m_ScaleSnapButton, m_ScaleStepButton
+            });
             UpdateToolStrip();
         }
 
         private void UpdateToolStrip()
         {
-            // Projection and snap settings are existing public fields; reflect their current values too.
-            string speedText = MovementSpeed.ToString("0.##", CultureInfo.InvariantCulture);
-            if (_cameraButton.Text != speedText)
-            {
-                _cameraButton.Text = speedText;
-            }
-            _orthographicModeButton.Checked = !UseOrthographicProjection;
-            _orthographicModeButton.Icon = UseOrthographicProjection ? EditorIcons.Orthographic32 : EditorIcons.Perspective32;
-            _orthographicModeButton.TooltipText = UseOrthographicProjection ? "Orthographic — switch to perspective" : "Perspective — switch to orthographic";
-
             m_MoveButton.Checked = TransformGizmo.ActiveMode == TransformGizmoBase.Mode.Translate;
             m_RotateButton.Checked = TransformGizmo.ActiveMode == TransformGizmoBase.Mode.Rotate;
             m_ScaleButton.Checked = TransformGizmo.ActiveMode == TransformGizmoBase.Mode.Scale;
@@ -244,22 +227,6 @@ namespace SE.Editor
             {
                 m_ScaleStepButton.Text = scale;
             }
-        }
-
-        private void DestroyToolStripItems()
-        {
-            // The window owns the strip; the viewport owns its buttons, bindings, and popup menus.
-            while (m_ToolStrip.ChildrenCount != 0)
-            {
-                Control item = m_ToolStrip.GetChild(0);
-                item.Parent = null;
-                item.Dispose();
-            }
-            foreach (ContextMenu menu in m_ToolStripMenus)
-            {
-                menu.Dispose();
-            }
-            m_ToolStripMenus.Clear();
         }
     }
 }

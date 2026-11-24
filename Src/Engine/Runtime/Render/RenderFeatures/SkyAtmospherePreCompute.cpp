@@ -9,6 +9,7 @@
 #include <Runtime/Render/RenderBuffers.h>
 #include <Runtime/Render/RenderContext.h>
 #include <Runtime/Render/RenderDrawCall.h>
+#include <Runtime/Render/RenderList.h>
 #include <Runtime/Resource/AssetContent.h>
 
 namespace SE
@@ -224,8 +225,14 @@ namespace SE
         viewData.SkyRight = Float4(right, 0.0f);
         viewData.SkyForward = Float4(forward, 0.0f);
         viewData.SkyUp = Float4(up, 0.0f);
-        const Float3 direction = atmosphereData.SunDirection;
-        const Float3 illuminance = atmosphereData.SunIlluminance;
+        Float3 direction = Float3::Up;
+        Float3 illuminance = Float3::Zero;
+        if (renderContext.list->DirectionalLights.HasItems())
+        {
+            const auto& light = renderContext.list->DirectionalLights.First();
+            direction = -light.Direction;
+            illuminance = light.Illuminance;
+        }
         viewData.SunDirection = Float4(Float3::Normalize(direction), 0.5f * 0.545f * Math::DegreesToRadians * atmosphereData.SunDiscScale);
         viewData.SunIlluminance = Float4(illuminance, Math::Max(atmosphereData.HeightFogContribution, 0.0f));
         viewData.AerialPerspective = Float4(atmosphereData.AerialPerspectiveStartDepth, atmosphereData.AerialPerspectiveDepth, view.IsOrthographicProjection() ? 1.0f : 0.0f, 0.0f);

@@ -316,7 +316,6 @@ namespace SE.Editor
             var sky = new Sky();
             sky.Name = "Sky";
             sky.LocalPosition = new Float3(40, 150, 0);
-            sky.SunLight = sun;
             sky.StaticFlags = StaticMask.FullyStatic;
 
             Level.SpawnActor(sky, scene);

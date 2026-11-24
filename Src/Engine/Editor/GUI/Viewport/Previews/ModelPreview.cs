@@ -10,6 +10,8 @@ namespace SE.Editor.GUI
     {
         private StaticModel m_PreviewModel;
         private DirectionalLight m_PreviewLight;
+        private Sky m_PreviewSky;
+        private ExponentialHeightFog m_PreviewFog;
         private ContextMenuButton m_ScaleToFitButton;
         private bool m_ScaleToFit = true;
         private bool m_FrameModel;
@@ -63,7 +65,7 @@ namespace SE.Editor.GUI
             }
         }
 
-        public ModelPreview(bool useWidgets) : base(new SceneRenderTask(), new FPSCamera(), useWidgets)
+        public ModelPreview(ToolStrip toolStrip) : base(new SceneRenderTask(), new FPSCamera(), toolStrip)
         {
             m_Task.Enabled = false;
             m_Task.ActorsSource = ActorsSources.CustomActors;
@@ -74,14 +76,22 @@ namespace SE.Editor.GUI
 
             m_PreviewModel = Object.New<StaticModel>();
             m_PreviewLight = Object.New<DirectionalLight>();
-            m_PreviewLight.Illuminance = 100000.0f;
+            m_PreviewLight.Illuminance = 10.0f;
             m_PreviewLight.ShadowsMode = ShadowsCastingMode.None;
+
+            m_PreviewSky = Object.New<Sky>();
+            m_PreviewSky.RenderSkyType = SkyType.Physical;
+
+            m_PreviewFog = Object.New<ExponentialHeightFog>();
+
 
             m_Task.AddCustomActor(m_PreviewModel);
             m_Task.AddCustomActor(m_PreviewLight);
+            m_Task.AddCustomActor(m_PreviewSky);
+            m_Task.AddCustomActor(m_PreviewFog);
             m_Task.Begin += OnPreviewRenderBegin;
 
-            if (useWidgets)
+            if (toolStrip != null)
             {
                 ContextMenu menu = _cameraButton.ContextMenu;
                 menu.AddSeparator();
@@ -269,13 +279,16 @@ namespace SE.Editor.GUI
 
             // Destroy the task and its cached draw references before releasing the actors.
             base.OnDestroy();
-            menu?.Dispose();
             m_ScaleToFitButton = null;
             m_PreviewModel.Model = null;
             Object.DestroyNow(m_PreviewModel);
             Object.DestroyNow(m_PreviewLight);
+            Object.DestroyNow(m_PreviewSky);
+            Object.DestroyNow(m_PreviewFog);
             m_PreviewModel = null;
             m_PreviewLight = null;
+            m_PreviewSky = null;
+            m_PreviewFog = null;
         }
     }
 }

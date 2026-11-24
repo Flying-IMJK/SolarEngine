@@ -1,4 +1,5 @@
-
+using System.Collections.Generic;
+using System.Globalization;
 using SE.Editor.GUI;
 using SE.GUI;
 
@@ -100,17 +101,9 @@ namespace SE.Editor
         public const int FpsCameraFilteringFrames = 3;
 
         private float m_MouseSensitivity;
-        private ContextMenu m_AutoExposureMenu;
-        private AutoExposureSettings m_AutoExposure = new AutoExposureSettings
-        {
-            ExposureCompensation = 0.0f,
-            MinEV100 = -10.0f,
-            MaxEV100 = 20.0f,
-            LowPercentile = 0.5f,
-            HighPercentile = 0.95f,
-            SpeedUp = 3.0f,
-            SpeedDown = 1.0f
-        };
+        protected readonly List<Control> m_ToolStripItems = new();
+        protected readonly List<ContextMenu> m_ToolStripMenus = new();
+        private float m_ExposureEV100 = 0.0f;
         private float m_MovementSpeed;
         private float m_MinMovementSpeed;
         private float m_MaxMovementSpeed;
@@ -137,9 +130,6 @@ namespace SE.Editor
         private float m_CameraEasingDegree;
         private int m_SpeedStep;
         private int m_MaxSpeedSteps;
-
-        /// <summary>The camera settings widget.</summary>
-        protected ViewportWidgetsContainer _cameraWidget;
 
         /// <summary>The camera settings widget button.</summary>
         protected ViewportWidgetButton _cameraButton;
@@ -172,8 +162,6 @@ namespace SE.Editor
             set
             {
                 m_MovementSpeed = value;
-                /*if (_cameraButton != null)
-                    _cameraButton.Text = string.Format(GetMovementSpeedTextFormat(), m_MovementSpeed);*/
             }
         }
 
@@ -357,8 +345,8 @@ namespace SE.Editor
         /// <summary>Initializes a new instance of the <see cref="EditorViewport"/> class.</summary>
         /// <param name="task">The task.</param>
         /// <param name="camera">The camera controller.</param>
-        /// <param name="useWidgets">Enable or disable viewport widgets.</param>
-        public EditorViewport(SceneRenderTask task, ViewportCamera camera, bool useWidgets) : base(task)
+        /// <param name="toolStrip">Externally owned and positioned toolbar, or null for a viewport without controls.</param>
+        public EditorViewport(SceneRenderTask task, ViewportCamera camera, ToolStrip toolStrip) : base(task)
         {
             m_Task.PreRender += OnPreRender;
             m_MouseAccelerationScale = 0.1f;
@@ -404,98 +392,36 @@ namespace SE.Editor
                 FarPlane = float.Parse(cachedState);*/
             OnCameraMovementProgressChanged();
 
-            if (useWidgets)
+            if (toolStrip != null)
             {
-                #region Camera settings widget
+                #region Camera toolbar controls
                 const string largestText = "Relative Panning";
                 Float2 textSize = Style.Current.FontMedium.MeasureText(largestText, TextLayoutOptions.Default);
                 float xLocationForExtras = textSize.X + 5;
                 float cameraSpeedTextWidth = Style.Current.FontMedium.MeasureText("0.00", TextLayoutOptions.Default).X;
 
-                _cameraWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
                 ContextMenu cameraCM = new ContextMenu();
+                m_ToolStripMenus.Add(cameraCM);
                 _cameraButton = new ViewportWidgetButton(
                     string.Format(GetMovementSpeedTextFormat(), m_MovementSpeed),
                     EditorIcons.Camera64, cameraCM, false, cameraSpeedTextWidth);
                 _cameraButton.Tag = this;
                 _cameraButton.TooltipText = "Camera Settings";
-                _cameraButton.Parent = _cameraWidget;
-                _cameraWidget.Parent = this;
+                _cameraButton.Parent = toolStrip;
+                m_ToolStripItems.Add(_cameraButton);
 
                 _orthographicModeButton = new ViewportWidgetButton(
                     string.Empty, EditorIcons.CamSpeed32, null, true);
                 _orthographicModeButton.Checked = !UseOrthographicProjection;
                 _orthographicModeButton.TooltipText = "Toggle Orthographic/Perspective Mode";
-                _orthographicModeButton.Parent = _cameraWidget;
-                _orthographicModeButton.Toggled += button => OnOrthographicModeToggled(button);
-
-                // Exposure is a task-local post effect; camera projection remains independent.
-                m_AutoExposureMenu = new ContextMenu();
-                ContextMenu exposureMenu = m_AutoExposureMenu;
-                ViewportWidgetButton exposureButton = new ViewportWidgetButton("Auto Exposure", default, exposureMenu, false,
-                    Style.Current.FontMedium.MeasureText("Auto Exposure", TextLayoutOptions.Default).X)
+                _orthographicModeButton.Parent = toolStrip;
+                _orthographicModeButton.Tag = this;
+                _orthographicModeButton.Toggled += button =>
                 {
-                    Parent = _cameraWidget,
-                    TooltipText = "Automatic exposure post effect"
+                    OnOrthographicModeToggled(button);
+                    Focus();
                 };
-                (string Title, float Min, float Max, float Step)[] exposureRows =
-                {
-                    ("Exposure Compensation", -16.0f, 16.0f, 0.1f),
-                    ("Min EV100", -16.0f, 32.0f, 0.1f),
-                    ("Max EV100", -16.0f, 32.0f, 0.1f),
-                    ("Low Percentile", 0.0f, 0.99f, 0.01f),
-                    ("High Percentile", 0.001f, 1.0f, 0.01f),
-                    ("Speed to Bright (1/s)", 0.01f, 100.0f, 0.1f),
-                    ("Speed to Dark (1/s)", 0.01f, 100.0f, 0.1f)
-                };
-                float exposureLabelWidth = 0.0f;
-                foreach ((string Title, float Min, float Max, float Step) row in exposureRows)
-                {
-                    exposureLabelWidth = Mathf.Max(exposureLabelWidth, Style.Current.FontMedium.MeasureText(row.Title, TextLayoutOptions.Default).X);
-                }
-                FloatValueBox[] exposureValues = new FloatValueBox[exposureRows.Length];
-                bool updatingExposure = false;
-                System.Action syncExposure = () =>
-                {
-                    updatingExposure = true;
-                    exposureValues[0].SetValue(m_AutoExposure.ExposureCompensation);
-                    exposureValues[1].SetValue(m_AutoExposure.MinEV100);
-                    exposureValues[2].SetValue(m_AutoExposure.MaxEV100);
-                    exposureValues[3].SetValue(m_AutoExposure.LowPercentile);
-                    exposureValues[4].SetValue(m_AutoExposure.HighPercentile);
-                    exposureValues[5].SetValue(m_AutoExposure.SpeedUp);
-                    exposureValues[6].SetValue(m_AutoExposure.SpeedDown);
-                    updatingExposure = false;
-                };
-                for (int i = 0; i < exposureRows.Length; i++)
-                {
-                    ContextMenuButton rowButton = exposureMenu.AddButton(exposureRows[i].Title);
-                    rowButton.CloseMenuOnClick = false;
-                    FloatValueBox value = new FloatValueBox(exposureRows[i].Min, exposureLabelWidth + 16.0f, 2, 90.0f,
-                        exposureRows[i].Min, exposureRows[i].Max, exposureRows[i].Step)
-                    {
-                        Parent = rowButton
-                    };
-                    exposureValues[i] = value;
-                    value.ValueChanged += () =>
-                    {
-                        if (updatingExposure)
-                        {
-                            return;
-                        }
-                        AutoExposureSettings settings = m_AutoExposure;
-                        settings.ExposureCompensation = exposureValues[0].GetValue();
-                        settings.MinEV100 = exposureValues[1].GetValue();
-                        settings.MaxEV100 = exposureValues[2].GetValue();
-                        settings.LowPercentile = exposureValues[3].GetValue();
-                        settings.HighPercentile = exposureValues[4].GetValue();
-                        settings.SpeedUp = exposureValues[5].GetValue();
-                        settings.SpeedDown = exposureValues[6].GetValue();
-                        m_AutoExposure = settings;
-                    };
-                }
-                syncExposure();
-                exposureMenu.VisibleChanged += control => syncExposure();
+                m_ToolStripItems.Add(_orthographicModeButton);
 
                 ContextMenuButton camSpeedButton = cameraCM.AddButton("Camera Speed");
                 camSpeedButton.CloseMenuOnClick = false;
@@ -650,6 +576,18 @@ namespace SE.Editor
                 farPlaneValue.ValueChanged += () => OnFarPlaneChanged(farPlaneValue);
                 cameraCM.VisibleChanged += control => farPlaneValue.SetValue(NearPlane);
 
+                // Exposure is a task-local post effect; camera projection remains independent.
+                ContextMenu exposureMenu = cameraCM.AddChildMenu("Exposure").ContextMenu;
+                m_ToolStripMenus.Add(exposureMenu);
+                ContextMenuButton exposure = exposureMenu.AddButton("EV100");
+                exposure.CloseMenuOnClick = false;
+                FloatValueBox exposureValue = new FloatValueBox(m_ExposureEV100, xLocationForExtras, 2, 70.0f, -16.0f, 32.0f, 0.1f)
+                {
+                    Parent = exposure
+                };
+                exposureValue.ValueChanged += () => m_ExposureEV100 = exposureValue.GetValue();
+                exposureMenu.VisibleChanged += control => exposureValue.SetValue(m_ExposureEV100);
+
                 cameraCM.AddSeparator();
                 ContextMenuButton reset = cameraCM.AddButton("Reset to default");
                 reset.ButtonClicked += button =>
@@ -660,6 +598,7 @@ namespace SE.Editor
                     maxCamSpeedValue.SetValue(m_MaxMovementSpeed);
                 };
                 #endregion
+                UpdateCameraToolStrip();
 
                 #region View mode widget
                 // The View mode widget is disabled in the native constructor too.
@@ -944,7 +883,7 @@ namespace SE.Editor
         public void OnOrthographicModeToggled(Control control)
         {
             UseOrthographicProjection = !UseOrthographicProjection;
-            // _orthographicModeButton.Checked = !UseOrthographicProjection;
+            UpdateCameraToolStrip();
             if (UseOrthographicProjection)
             {
                 Quaternion orient = ViewOrientation;
@@ -975,6 +914,7 @@ namespace SE.Editor
         public override void Update(float deltaTime)
         {
             base.Update(deltaTime);
+            UpdateCameraToolStrip();
             if (m_DisableInputUpdate)
             {
                 return;
@@ -985,10 +925,6 @@ namespace SE.Editor
             {
                 m_Camera.Update(deltaTime);
                 useMovementSpeed = m_Camera.GetUseMovementSpeed();
-                /*if (_cameraButton != null)
-                {
-                    _cameraButton.Parent.Visible = useMovementSpeed;
-                }*/
             }
 
             WindowRootControl win = (WindowRootControl)Root;
@@ -1373,8 +1309,34 @@ namespace SE.Editor
         {
             // RenderList is pooled per frame; retain only the editor configuration.
             PostProcessSettings settings = context.list.PostSettings;
-            settings.AutoExposure = m_AutoExposure;
+            // Equal EV limits fix exposure; the other parameters retain their runtime defaults.
+            settings.AutoExposure = new AutoExposureSettings
+            {
+                ExposureCompensation = 0.0f,
+                MinEV100 = m_ExposureEV100,
+                MaxEV100 = m_ExposureEV100,
+                LowPercentile = 0.5f,
+                HighPercentile = 0.95f,
+                SpeedUp = 3.0f,
+                SpeedDown = 1.0f
+            };
             context.list.PostSettings = settings;
+        }
+
+        private void UpdateCameraToolStrip()
+        {
+            if (_cameraButton == null)
+            {
+                return;
+            }
+            string speedText = MovementSpeed.ToString("0.##", CultureInfo.InvariantCulture);
+            if (_cameraButton.Text != speedText)
+            {
+                _cameraButton.Text = speedText;
+            }
+            _orthographicModeButton.Checked = !UseOrthographicProjection;
+            _orthographicModeButton.Icon = UseOrthographicProjection ? EditorIcons.Orthographic32 : EditorIcons.Perspective32;
+            _orthographicModeButton.TooltipText = UseOrthographicProjection ? "Orthographic — switch to perspective" : "Perspective — switch to orthographic";
         }
 
         /// <inheritdoc />
@@ -1385,11 +1347,24 @@ namespace SE.Editor
                 m_Task.PreRender -= OnPreRender;
             }
             ReleaseMouseControl();
-            if (m_AutoExposureMenu != null)
+            // The caller owns the toolbar; release only controls and menus added by this viewport.
+            foreach (ContextMenu menu in m_ToolStripMenus)
             {
-                m_AutoExposureMenu.Dispose();
-                m_AutoExposureMenu = null;
+                menu.Hide();
             }
+            foreach (Control item in m_ToolStripItems)
+            {
+                item.Parent = null;
+                item.Dispose();
+            }
+            m_ToolStripItems.Clear();
+            foreach (ContextMenu menu in m_ToolStripMenus)
+            {
+                menu.Dispose();
+            }
+            m_ToolStripMenus.Clear();
+            _cameraButton = null;
+            _orthographicModeButton = null;
             // Editor.Instance.Options.OptionsChanged -= OnEditorOptionsChanged;
             base.OnDestroy();
         }
@@ -1419,13 +1394,6 @@ namespace SE.Editor
         public ref Input GetPrevInput()
         {
             return ref m_PrevInput;
-        }
-
-        /// <inheritdoc />
-        protected override void PerformLayoutBeforeChildren()
-        {
-            base.PerformLayoutBeforeChildren();
-            // ViewportWidgetsContainer.ArrangeWidgets(this);
         }
 
         /// <summary>Gets a value indicating whether this viewport is using mouse currently.</summary>

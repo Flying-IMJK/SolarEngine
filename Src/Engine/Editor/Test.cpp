@@ -71,7 +71,6 @@ namespace SE::Editor
         m_SphereModel->SetPosition({ 0, 0, 0});
 
         m_Sky->RenderSkyType = SkyType::Physical;
-        m_Sky->SunLight      = m_directionalLight;
 
         Level::SpawnActor(m_Sky, scene);
         Level::SpawnActor(m_SphereModel, scene);

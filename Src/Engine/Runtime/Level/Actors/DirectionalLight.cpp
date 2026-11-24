@@ -26,7 +26,7 @@ namespace SE
             data.Position = position;
             data.MinRoughness                  = MinRoughness;
             data.ShadowsDistance = ShadowsDistance;
-            data.Color = Color.ToFloat3() * (Color.A * brightness);
+            data.Illuminance     = Color.ToFloat3() * (Color.A * brightness);
             data.ShadowsStrength = ShadowsStrength;
             data.Direction = GetForward();
             data.ShadowsFadeDistance = ShadowsFadeDistance;

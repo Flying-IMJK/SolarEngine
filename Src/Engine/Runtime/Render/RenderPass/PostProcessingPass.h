@@ -71,20 +71,20 @@ private:
         });
 
     // Post Processing
-    AssetRef<Shader>      m_Shader;
-    GPUPipelineState* m_PSOThreshold;
-    GPUPipelineState* m_PSOScale;
-    GPUPipelineState* m_PSOBlurH;
-    GPUPipelineState* m_PSOBlurV;
-    GPUPipelineState* m_PSOGenGhosts;
-    GPUPipelineState* m_PSOComposite;
+    AssetRef<Shader>  m_Shader = nullptr;
+    GPUPipelineState* m_PSOThreshold = nullptr;
+    GPUPipelineState* m_PSOScale     = nullptr;
+    GPUPipelineState* m_PSOBlurH     = nullptr;
+    GPUPipelineState* m_PSOBlurV     = nullptr;
+    GPUPipelineState* m_PSOGenGhosts = nullptr;
+    GPUPipelineState* m_PSOComposite = nullptr;
 
-    ShaderProgramInstance* m_SPThreshold;
-    ShaderProgramInstance* m_SPScale;
-    ShaderProgramInstance* m_SPBlurH;
-    ShaderProgramInstance* m_SPBlurV;
-    ShaderProgramInstance* m_SPGenGhosts;
-    ShaderProgramInstance* m_SPComposite;
+    ShaderProgramInstance* m_SPThreshold = nullptr;
+    ShaderProgramInstance* m_SPScale = nullptr;
+    ShaderProgramInstance* m_SPBlurH = nullptr;
+    ShaderProgramInstance* m_SPBlurV = nullptr;
+    ShaderProgramInstance* m_SPGenGhosts = nullptr;
+    ShaderProgramInstance* m_SPComposite = nullptr;
 
     GPUConstantBuffer* m_DataBuffer         = nullptr;
     GPUConstantBuffer* m_GaussianBlurBuffer = nullptr;
@@ -93,16 +93,16 @@ private:
     Float4 GaussianBlurCacheH[GB_KERNEL_SIZE];
     Float4 GaussianBlurCacheV[GB_KERNEL_SIZE];
 
-    AssetRef<Texture> _defaultLensColor;
-    AssetRef<Texture> _defaultLensStar;
-    AssetRef<Texture> _defaultLensDirt;
+    AssetRef<Texture> _defaultLensColor = nullptr;
+    AssetRef<Texture> _defaultLensStar = nullptr;
+    AssetRef<Texture> _defaultLensDirt = nullptr;
 
 public:
 
     /// <summary>
     /// Init
     /// </summary>
-    PostProcessingPass();
+    PostProcessingPass() = default;
 
     // [RendererPass]
     String ToString() const override;

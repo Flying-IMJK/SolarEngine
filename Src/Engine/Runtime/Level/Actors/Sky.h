@@ -1,9 +1,6 @@
 #pragma once
 
-#include <Runtime/Core/Scripting/ScriptingObjectRef.h>
-
 #include <Runtime/Level/Actor.h>
-#include <Runtime/Level/Actors/DirectionalLight.h>
 #include <Runtime/Render/Assets/Texture/CubeTexture.h>
 #include <Runtime/Render/RenderDrawCall.h>
 #include <Runtime/Resource/AssetRef.h>
@@ -61,12 +58,6 @@ namespace SE
     public:
         SE_FIELD(API(Attributes = "EditorOrder(10), DefaultValue(null), EditorDisplay(\"Sky\")"))
         SkyType RenderSkyType;
-
-        /// <summary>
-        /// Directional light that is used to simulate the sun.
-        /// </summary>
-        SE_FIELD(API(Attributes = "EditorOrder(10), DefaultValue(null), EditorDisplay(\"Sky\")"))
-        ScriptingObjectRef<DirectionalLight> SunLight;
 
         /// <summary>
         /// The sun disc scale.

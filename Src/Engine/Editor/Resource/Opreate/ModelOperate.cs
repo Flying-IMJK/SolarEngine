@@ -49,7 +49,7 @@ namespace SE.Editor
         {
             if (m_Preview == null)
             {
-                m_Preview = new ModelPreview(false)
+                m_Preview = new ModelPreview(null)
                 {
                     ScaleToFit = false,
                     UseAutomaticTaskManagement = false,

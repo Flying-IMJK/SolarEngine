@@ -17,16 +17,10 @@
 
 namespace SE
 {
-    PostProcessingPass::PostProcessingPass() :
-        m_Shader(nullptr), m_PSOThreshold(nullptr), m_PSOScale(nullptr), m_PSOBlurH(nullptr), m_PSOBlurV(nullptr), m_PSOGenGhosts(nullptr), m_PSOComposite(nullptr), m_SPThreshold(nullptr), m_SPScale(nullptr), m_SPBlurH(nullptr),
-        m_SPBlurV(nullptr), m_SPGenGhosts(nullptr), m_SPComposite(nullptr), _defaultLensColor(nullptr), _defaultLensStar(nullptr), _defaultLensDirt(nullptr)
-    {}
-
     String PostProcessingPass::ToString() const { return SE_TEXT("PostProcessingPass"); }
 
     bool PostProcessingPass::Init()
     {
-
         // Load shader
         m_Shader = AssetContent::LoadAsyncInternal<Shader>(SE_TEXT("Shaders/PostProcess/PostProcessing"));
         if (m_Shader == nullptr)

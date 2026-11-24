@@ -50,7 +50,7 @@ namespace SE.Editor
         /// <param name="scene">The scene and selection owner.</param>
         /// <param name="toolStrip">Window-owned toolbar populated by this viewport.</param>
         public EditorGizmoViewport(SceneRenderTask task, SceneModule scene, ToolStrip toolStrip)
-            : base(task, new FPSCamera(), true)
+            : base(task, new FPSCamera(), toolStrip)
         {
             m_Scene = scene;
             Renderer = new GizmoRenderer();
@@ -220,7 +220,6 @@ namespace SE.Editor
             TransformGizmo.TransformSpaceChanged -= UpdateToolStrip;
             TransformGizmo.PivotChanged -= UpdateToolStrip;
             TransformGizmo.TransformingEnded -= OnTransformingEnded;
-            DestroyToolStripItems();
             m_Scene.SelectionChanged -= OnSelectionChanged;
             m_Task.End -= OnDrawGizmos;
             // Renderer.TransformRestored -= OnTransformRestored;

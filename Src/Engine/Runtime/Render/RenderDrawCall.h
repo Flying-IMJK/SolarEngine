@@ -174,14 +174,6 @@ namespace SE
         SE_FIELD(API(Attributes = "HideInEditor"))
         Float3 GroundPosition = Float3::Zero;
 
-        /// Normalized direction toward the sun, in world space.
-        SE_FIELD(API(Attributes = "HideInEditor"))
-        Float3 SunDirection = Float3::Up;
-
-        /// Linear light color multiplied by engine light intensity; zero disables sunlight.
-        SE_FIELD(API(Attributes = "HideInEditor"))
-        Float3 SunIlluminance = Float3::Zero;
-
         /// Multiplier of the nominal 0.545-degree sun angular diameter; zero hides the disk.
         SE_FIELD(API(Attributes = "HideInEditor"))
         float SunDiscScale = 1.0f;

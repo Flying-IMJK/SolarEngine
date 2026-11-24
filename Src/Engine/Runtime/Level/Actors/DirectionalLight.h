@@ -14,7 +14,7 @@ namespace SE
     public:
         /// Normal illuminance in lux before atmospheric attenuation.
         SE_FIELD(API(Attributes = "EditorOrder(30), EditorDisplay(\"Light\", \"Illuminance (lux)\"), Limit(0, 100000000, 1)"))
-        float Illuminance = 100000.0f;
+        float Illuminance = 10.0f;
 
         /// <summary>
         /// The partitioning mode for the shadow cascades.

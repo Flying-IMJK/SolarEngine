@@ -104,7 +104,7 @@ namespace SE
         data->SpotAngles.Y = 1.0f;
         data->SourceRadius = 0;
         data->SourceLength = 0;
-        data->Color = Color;
+        data->Color        = Illuminance;
         data->MinRoughness = Math::Max(MinRoughness, MIN_ROUGHNESS);
         data->Position = Float3::Zero;
         data->CastShadows = useShadow ? 1.0f : 0.0f;

@@ -10,7 +10,7 @@ namespace SE.Editor
         {
             private readonly ModelWindow m_Window;
 
-            public Preview(ModelWindow window) : base(true)
+            public Preview(ModelWindow window, ToolStrip toolStrip) : base(toolStrip)
             {
                 m_Window = window;
             }
@@ -130,7 +130,8 @@ namespace SE.Editor
             m_LOD.SelectedIndex = 0;
             m_LOD.SelectedIndexChanged += OnLODChanged;
 
-            m_Preview = new Preview(this)
+            m_Toolstrip.AddSeparator();
+            m_Preview = new Preview(this, m_Toolstrip)
             {
                 ScaleToFit = false,
                 AnchorPreset = AnchorPresets.StretchAll,

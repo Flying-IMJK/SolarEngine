@@ -60,7 +60,7 @@ namespace SE
         Float3 Position;
         float MinRoughness;
 
-        Float3 Color;
+        Float3 Illuminance;
         float ShadowsStrength;
 
         Float3 Direction;

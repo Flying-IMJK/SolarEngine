@@ -99,7 +99,6 @@ namespace SE
         SERIALIZE_GET_OTHER_OBJ(Sky, context.otherObj);
 
         SERIALIZE(RenderSkyType);
-        SERIALIZE_MEMBER(Sun, SunLight);
         SERIALIZE(SunDiscScale);
         SERIALIZE(SunPower);
         SERIALIZE(CubeTexture);
@@ -135,7 +134,6 @@ namespace SE
         Actor::Deserialize(context);
         
         DESERIALIZE(RenderSkyType);
-        DESERIALIZE_MEMBER(Sun, SunLight);
         DESERIALIZE(SunDiscScale);
         DESERIALIZE(SunPower);
         DESERIALIZE(CubeTexture);
@@ -193,7 +191,7 @@ namespace SE
 
     bool Sky::IsDynamicSky() const
     {
-        return !IsStatic();// || (SunLight && !SunLight->IsStatic());
+        return !IsStatic();
     }
 
     ShaderProgramInstance* Sky::ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world)
@@ -230,13 +228,6 @@ namespace SE
         data.SunDiscScale = SunDiscScale;
 
         data.GroundPosition = GetPosition();
-        data.SunDirection = Float3::Up;
-        data.SunIlluminance = Float3::Zero;
-        if (SunLight && SunLight->IsActiveInHierarchy())
-        {
-            data.SunDirection = -SunLight->GetForward();
-            data.SunIlluminance = SunLight->Color.ToFloat3() * (SunLight->Color.A * SunLight->Illuminance);
-        }
     }
 
     void Sky::EndPlay()
