@@ -5,6 +5,8 @@
 #include <Runtime/Core/Platform/FileSystem.h>
 #include <Runtime/Core/Serialization/MemoryReadStream.h>
 #include <Runtime/Core/Serialization/MemoryWriteStream.h>
+
+#include "Runtime/Resource/Importers/AssetsImportingSystem.h"
 #include <Runtime/Graphics/GPUDevice.h>
 #include <Runtime/Graphics/GlobalSettings_GPU.h>
 #include <Runtime/Resource/Assets/Materials/ShaderCacheManager.h>
@@ -12,6 +14,8 @@
 #include <Runtime/ShaderCompilation/ShadersCompilation.h>
 #include <Runtime/ShaderCompilation/Slang/Artifact/ShaderArtifactReader.h>
 #if SE_EDITOR
+#include <Runtime/Core/Serialization/Json.h>
+#include <Runtime/EngineContext.h>
 #include <Runtime/ShaderCompilation/Slang/SlangShaderCompiler.h>
 #endif
 
@@ -88,10 +92,7 @@ namespace SE
 
         // The payload stays a raw ShaderArtifact artifact. Dependency metadata is a separate record, tied to the exact
         // profile and payload fingerprint so an interrupted cache write cannot publish a mismatched pair.
-        bool ReadDependencies(const BytesContainer& metadata,
-                              const BytesContainer& shader,
-                              ShaderProfile         profile,
-                              List<String>&         includes)
+        bool ReadDependencies(const BytesContainer& metadata, const BytesContainer& shader, ShaderProfile profile, List<String>& includes)
         {
             if (metadata.Length() < 4 * sizeof(uint32))
                 return false;
@@ -101,8 +102,7 @@ namespace SE
             stream.Read(storedProfile);
             stream.Read(hash);
             stream.Read(count);
-            if (version != 1 || storedProfile != static_cast<uint32>(profile) || hash != Fingerprint(shader) ||
-                count > (stream.GetLength() - stream.GetPosition()) / (sizeof(uint32) + sizeof(DateTime)))
+            if (version != 2 || storedProfile != static_cast<uint32>(profile) || hash != Fingerprint(shader) || count > (stream.GetLength() - stream.GetPosition()) / (sizeof(uint32) + sizeof(DateTime)))
                 return false;
             includes.Clear();
             for (uint32 i = 0; i < count; ++i)
@@ -111,8 +111,7 @@ namespace SE
                     return false;
                 uint32 length;
                 stream.Read(length);
-                if (length > (stream.GetLength() - stream.GetPosition()) / sizeof(Char) ||
-                    stream.GetLength() - stream.GetPosition() - length * sizeof(Char) < sizeof(DateTime))
+                if (length > (stream.GetLength() - stream.GetPosition()) / sizeof(Char) || stream.GetLength() - stream.GetPosition() - length * sizeof(Char) < sizeof(DateTime))
                     return false;
                 String path(reinterpret_cast<const Char*>(stream.GetPositionHandle()), length);
                 stream.SetPosition(stream.GetPosition() + length * sizeof(Char));
@@ -125,12 +124,9 @@ namespace SE
             return stream.GetPosition() == stream.GetLength();
         }
 
-        void WriteDependencies(MemoryWriteStream&    writer,
-                               const BytesContainer& shader,
-                               ShaderProfile         profile,
-                               const List<String>&   includes)
+        void WriteDependencies(MemoryWriteStream& writer, const BytesContainer& shader, ShaderProfile profile, const List<String>& includes)
         {
-            writer.Write(static_cast<uint32>(1));
+            writer.Write(static_cast<uint32>(2));
             writer.Write(static_cast<uint32>(profile));
             writer.Write(Fingerprint(shader));
             writer.Write(static_cast<uint32>(includes.Count()));
@@ -165,6 +161,53 @@ namespace SE
         {
             return false;
         }
+
+#if SE_EDITOR
+        // Resolve the entry before checking caches so cache hits also retain source notifications.
+        if (!parent->HasChunk(SHADER_FILE_CHUNK_SOURCE) || !parent->LoadChunks(GET_CHUNK_FLAG(SHADER_FILE_CHUNK_SOURCE)))
+        {
+            LOG_ERROR("Resource", "Missing shader source description for '{0}'.", parent->ToString());
+            return false;
+        }
+        const StorageChunk* sourceChunk = parent->GetChunk(SHADER_FILE_CHUNK_SOURCE);
+        if (!sourceChunk || sourceChunk->Size() == 0)
+        {
+            LOG_ERROR("Resource", "Empty shader source description for '{0}'.", parent->ToString());
+            return false;
+        }
+
+        BytesContainer decrypted;
+        decrypted.Copy(sourceChunk->Data);
+        Encoding::DecryptBytes(decrypted.Get(), decrypted.Length());
+        Json::Document sourceDescription;
+        sourceDescription.Parse(reinterpret_cast<const char*>(decrypted.Get()), decrypted.Length());
+        if (sourceDescription.HasParseError())
+        {
+            LOG_ERROR("Resource", "Invalid shader source JSON for '{0}' at byte {1}.", parent->ToString(), sourceDescription.GetErrorOffset());
+            return false;
+        }
+
+        const bool  inlineCode  = sourceDescription["inlineCode"].GetBool();
+        const auto& sourceValue = sourceDescription["source"];
+
+        String sourcePath;
+
+        if (!inlineCode)
+        {
+            sourcePath = String(sourceValue.GetString(), sourceValue.GetStringLength());
+
+            if (sourcePath.IsEmpty())
+            {
+                LOG_ERROR("Resource", "Empty shader source path for '{0}'.", parent->ToString());
+                return false;
+            }
+
+            sourcePath = AssetsImporting::RestoreImportPath(sourcePath);
+
+            result.Includes.Add(sourcePath);
+            RegisterForShaderReloads(parent, result);
+        }
+#endif
 
         const ShaderProfile                   profile    = GPUDevice::instance->GetShaderProfile();
         const int32                           chunkIndex = GetCacheChunkIndex(profile);
@@ -224,51 +267,70 @@ namespace SE
         String error;
         bool   valid = hasCache && ShaderArtifactReader::ReadAndValidate(cache.Get(), cache.Length(), error);
 #if SE_EDITOR
-        valid = valid && !GPU_FORCE_RECOMPILE_SHADERS && ReadDependencies(dependencies, cache, profile, result.Includes);
+        List<String> cachedIncludes;
+        valid = valid && !GPU_FORCE_RECOMPILE_SHADERS && ReadDependencies(dependencies, cache, profile, cachedIncludes);
+        if (valid && !inlineCode)
+        {
+            valid = false;
+            for (const String& path : cachedIncludes)
+            {
+                if (FileSystem::AreFilePathsEqual(path, sourcePath))
+                {
+                    valid = true;
+                    break;
+                }
+            }
+        }
 #endif
         if (valid)
         {
+#if SE_EDITOR
+            result.Includes = MoveTemp(cachedIncludes);
+#endif
             result.Data.Copy(cache);
             return true;
         }
-        result.Includes.Clear();
 
 #if SE_EDITOR
-        if (!parent->HasChunk(SHADER_FILE_CHUNK_SOURCE) || !parent->LoadChunks(GET_CHUNK_FLAG(SHADER_FILE_CHUNK_SOURCE)))
-        {
-            return false;
-        }
-        const StorageChunk* sourceChunk = parent->GetChunk(SHADER_FILE_CHUNK_SOURCE);
-        if (!sourceChunk || sourceChunk->Size() == 0)
-        {
-            return false;
-        }
-
-        BytesContainer decrypted;
-        decrypted.Copy(sourceChunk->Data);
-        Encoding::DecryptBytes(decrypted.Get(), decrypted.Length());
-        decrypted.Get()[decrypted.Length() - 1] = 0;
-
         ShaderCompileRequest request;
-        request.ShaderName = FileSystem::GetFileNameWithoutExtension(parent->GetPath());
-        request.SourcePath = parent->GetPath();
+
+        if (inlineCode)
+        {
+            request.SourcePath = parent->GetPath();
+        }
+        else
+        {
+            request.SourcePath = sourcePath;
+        }
+
+
+        request.ShaderName = FileSystem::GetFileNameWithoutExtension(request.SourcePath);
         request.Targets.Add(profile);
+
+        StringAnsi sourceCode;
+        if (inlineCode)
+        {
+            sourceCode = StringAnsi(sourceValue.GetString(), sourceValue.GetStringLength());
+        }
+        else if (!File::ReadAllText(sourcePath, sourceCode))
+        {
+            LOG_ERROR("Resource", "Cannot read shader source '{0}' for '{1}'.", sourcePath, parent->ToString());
+            return false;
+        }
+
         StringAnsi source;
         InitCompilationRequest(request, source);
-        source += StringAnsi(reinterpret_cast<const char*>(decrypted.Get()), decrypted.Length() - 1);
+        source += sourceCode;
+
         request.SourceCode       = source.Get();
         request.SourceCodeLength = source.Length();
+
         SlangShaderCompiler compiler;
         ShaderCompileResult compiled = compiler.Compile(request);
-        if (!compiled.Success)
-        {
-            LOG_ERROR("Resource", "Cannot compile ShaderArtifact shader '{0}': {1}", parent->ToString(), compiled.CompileMessage);
-            return false;
-        }
-        result.Data.Copy(compiled.ShaderData);
-        List<String> additional;
+        List<String>        additional;
         GetAdditionalSourceFiles(additional);
         additional.Add(compiled.SourceDependencies);
+
         for (const String& path : additional)
         {
             if (!FileSystem::AreFilePathsEqual(path, parent->GetPath()) && !result.Includes.Contains(path))
@@ -276,18 +338,31 @@ namespace SE
                 result.Includes.Add(path);
             }
         }
+
+        if (!compiled.Success)
+        {
+            LOG_ERROR("Resource", "Cannot compile ShaderArtifact shader '{0}': {1}", parent->ToString(), compiled.CompileMessage);
+            return false;
+        }
+
+        result.Data.Copy(compiled.ShaderData);
         MemoryWriteStream metadata;
         WriteDependencies(metadata, result.Data, profile, result.Includes);
+
         if (mode == ShaderStorage::CachingMode::AssetInternal)
         {
             StorageChunk* target          = parent->GetOrCreateChunk(chunkIndex);
             StorageChunk* dependencyChunk = parent->GetOrCreateChunk(SHADER_FILE_CHUNK_DEPENDENCIES);
             if (!target || !dependencyChunk)
+            {
                 return false;
+            }
             target->Data.Copy(result.Data);
             dependencyChunk->Data.Copy(metadata.GetHandle(), metadata.GetLength());
             if (!Save())
+            {
                 return false;
+            }
         }
         else if (mode == ShaderStorage::CachingMode::ProjectCache)
         {
@@ -295,7 +370,9 @@ namespace SE
             writer.WriteBytes(result.Data.Get(), result.Data.Length());
             if (!ShaderCacheManager::SetCache(profile, entry, writer) ||
                 !metadata.SaveToFile(entry.Path + SE_TEXT(".deps")))
+            {
                 LOG_WARNING("Resource", "Cannot save ShaderArtifact shader cache '{0}'.", parent->ToString());
+            }
         }
         return true;
 #else
@@ -307,7 +384,9 @@ namespace SE
     void IShaderAsset::RegisterForShaderReloads(Asset* pAsset, const ShaderCacheResult& cache)
     {
         for (const String& path : cache.Includes)
+        {
             ShadersCompilation::RegisterForShaderReloads(pAsset, path);
+        }
     }
 
     void IShaderAsset::UnregisterForShaderReloads(Asset* pAsset)

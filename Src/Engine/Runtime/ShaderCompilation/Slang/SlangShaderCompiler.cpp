@@ -541,6 +541,14 @@ namespace SE
 
 		Slang::ComPtr<SlangShaderFileSystem> fileSystem(Slang::INIT_ATTACH, new SlangShaderFileSystem(rootSourcePath));
 
+        // Slang may already have read includes when module loading, linking or emission fails.
+        auto failedCompilation = [&]()
+        {
+            result.SourceDependencies = fileSystem->GetLoadedFiles();
+            result.CompileMessage = m_Diagnostics;
+            return MoveTemp(result);
+        };
+
 		ShaderVariantPlan baselineVariant;
 		Slang::ComPtr<slang::ISession> baselineSession;
 		String error;
@@ -548,8 +556,7 @@ namespace SE
 		if (!CreateSession(globalSession, *fileSystem, request.Targets[0], baselineVariant, baselineSession, error))
 		{
 			AddDiagnostic(error);
-			result.CompileMessage = m_Diagnostics;
-			return result;
+			return failedCompilation();
 		}
 
 		Slang::ComPtr<slang::IBlob> baselineDiagnostics;
@@ -558,16 +565,14 @@ namespace SE
 		if (baselineModule == nullptr)
 		{
 			AddDiagnostic(SE_TEXT("Failed to load Slang module for baseline discovery."));
-			result.CompileMessage = m_Diagnostics;
-			return result;
+			return failedCompilation();
 		}
 
 		List<ShaderProgramDeclaration> baselinePrograms;
 		if (!DiscoverPrograms(baselineModule, baselinePrograms, error))
 		{
 			AddDiagnostic(error);
-			result.CompileMessage = m_Diagnostics;
-			return result;
+			return failedCompilation();
 		}
 
 		ShaderArtifact artifact;
@@ -582,8 +587,7 @@ namespace SE
 			if (!PlanProgramVariants(request, baselineProgram, variants, error))
 			{
 				AddDiagnostic(error);
-				result.CompileMessage = m_Diagnostics;
-				return result;
+				return failedCompilation();
 			}
 			if (variants.Count() == 0)
 			{
@@ -612,8 +616,7 @@ namespace SE
 					if (!CreateSession(globalSession, *fileSystem, target, variant, session, error))
 					{
 						AddDiagnostic(error);
-						result.CompileMessage = m_Diagnostics;
-						return result;
+						return failedCompilation();
 					}
 
 					Slang::ComPtr<slang::IBlob> moduleDiagnostics;
@@ -622,8 +625,7 @@ namespace SE
 					if (module == nullptr)
 					{
 						AddDiagnostic(String::Format(SE_TEXT("Failed to load Slang module for variant: {0}"), variant.Variant));
-						result.CompileMessage = m_Diagnostics;
-						return result;
+						return failedCompilation();
 					}
 
 					List<ShaderProgramDeclaration> variantPrograms;
@@ -631,16 +633,14 @@ namespace SE
 					if (!DiscoverPrograms(module, variantPrograms, error))
 					{
 						AddDiagnostic(error);
-						result.CompileMessage = m_Diagnostics;
-						return result;
+						return failedCompilation();
 					}
 
 					ShaderProgramDeclaration* variantProgram = FindProgram(variantPrograms, baselineProgram.ProgramId);
 					if (variantProgram == nullptr || !SameProgramShape(baselineProgram, *variantProgram))
 					{
                         AddDiagnostic(String::Format(SE_TEXT("Variant-controlled Program/Stage/Macro declarations are not allowed: {0}") ,baselineProgram.ProgramId));
-						result.CompileMessage = m_Diagnostics;
-						return result;
+						return failedCompilation();
 					}
 
 					List<slang::IComponentType*> components;
@@ -659,8 +659,7 @@ namespace SE
                         {
                             AddSlangDiagnostics(entryDiagnostics);
                             AddDiagnostic(String::Format(SE_TEXT("Failed to find or check entry point: {0}"), stage.EntryPoint));
-                            result.CompileMessage = m_Diagnostics;
-                            return result;
+                            return failedCompilation();
                         }
 						components.Add(entryPoints[stageIndex]);
 					}
@@ -671,8 +670,7 @@ namespace SE
 					{
 						AddSlangDiagnostics(compositeDiagnostics);
 						AddDiagnostic(SE_TEXT("Failed to create Slang composite component."));
-						result.CompileMessage = m_Diagnostics;
-						return result;
+						return failedCompilation();
 					}
 
 					Slang::ComPtr<slang::IComponentType> linked;
@@ -681,8 +679,7 @@ namespace SE
 					{
 						AddSlangDiagnostics(linkDiagnostics);
 						AddDiagnostic(SE_TEXT("Failed to link Slang component."));
-						result.CompileMessage = m_Diagnostics;
-						return result;
+						return failedCompilation();
 					}
 
 					Slang::ComPtr<slang::IBlob> layoutDiagnostics;
@@ -691,14 +688,12 @@ namespace SE
 					if (layout == nullptr)
 					{
 						AddDiagnostic(SE_TEXT("Failed to get Slang program layout."));
-						result.CompileMessage = m_Diagnostics;
-						return result;
+						return failedCompilation();
 					}
 					if (!ValidateReflectionConstraints(layout, error))
 					{
 						AddDiagnostic(error);
-						result.CompileMessage = m_Diagnostics;
-						return result;
+						return failedCompilation();
 					}
 
 					ShaderVariantRecord variantRecord;
@@ -713,8 +708,7 @@ namespace SE
 					if (!BuildReflection(linked, reflectionStages, 0, layout, variantRecord.Layout, error))
 					{
 						AddDiagnostic(error);
-						result.CompileMessage = m_Diagnostics;
-						return result;
+						return failedCompilation();
 					}
 
 					for (int32 stageIndex = 0; stageIndex < baselineProgram.Stages.Count(); stageIndex++)
@@ -725,14 +719,12 @@ namespace SE
 						{
 							AddSlangDiagnostics(codeDiagnostics);
                             AddDiagnostic(String::Format(SE_TEXT("Failed to emit target code for entry point: {0}") ,baselineProgram.Stages[stageIndex].EntryPoint));
-							result.CompileMessage = m_Diagnostics;
-							return result;
+							return failedCompilation();
 						}
 						if (code == nullptr || code->getBufferPointer() == nullptr || code->getBufferSize() == 0)
 						{
 							AddDiagnostic(String::Format(SE_TEXT("Slang returned empty target code for entry point: {0}"), baselineProgram.Stages[stageIndex].EntryPoint));
-							result.CompileMessage = m_Diagnostics;
-							return result;
+							return failedCompilation();
 						}
 
 						ShaderStageRecord stageRecord;
@@ -743,8 +735,7 @@ namespace SE
 						    !VertexInputCompiler::ReadVertexInputSignature(layout, stageIndex, stageRecord.VertexInputSignature, error))
 						{
 							AddDiagnostic(baselineProgram.ProgramId + SE_TEXT(": ") + error);
-							result.CompileMessage = m_Diagnostics;
-							return result;
+							return failedCompilation();
 						}
 						if (stageRecord.Stage == ShaderStage::Vertex)
 						{
@@ -757,8 +748,7 @@ namespace SE
 									programVertexSignature, stageRecord.VertexInputSignature, false))
 							{
 								AddDiagnostic(baselineProgram.ProgramId + SE_TEXT(": vertex input semantic/type changed between variants or targets."));
-								result.CompileMessage = m_Diagnostics;
-								return result;
+								return failedCompilation();
 							}
 							if (!hasTargetVertexSignature)
 							{
@@ -769,15 +759,13 @@ namespace SE
 									targetVertexSignature, stageRecord.VertexInputSignature, true))
 							{
 								AddDiagnostic(baselineProgram.ProgramId + SE_TEXT(": vertex input locations changed between variants of one target."));
-								result.CompileMessage = m_Diagnostics;
-								return result;
+								return failedCompilation();
 							}
 						}
 						if (!ReadOutputControlPoints(globalSession, layout, stageIndex, baselineProgram.Stages[stageIndex], stageRecord.OutputControlPoints, error))
 						{
 							AddDiagnostic(error);
-							result.CompileMessage = m_Diagnostics;
-							return result;
+							return failedCompilation();
 						}
 						stageRecord.Code.Set((const byte*)code->getBufferPointer(), (int32)code->getBufferSize());
 						variantRecord.Stages.Add(stageRecord);
@@ -800,16 +788,14 @@ namespace SE
 		{
 			AddDiagnostic(error);
 			result.ShaderData.Clear();
-			result.CompileMessage = m_Diagnostics;
-			return result;
+			return failedCompilation();
 		}
 
 		if (!ShaderArtifactReader::ReadAndValidate(result.ShaderData, error))
 		{
 			AddDiagnostic(error);
 			result.ShaderData.Clear();
-			result.CompileMessage = m_Diagnostics;
-			return result;
+			return failedCompilation();
 		}
 
 		result.Success            = true;

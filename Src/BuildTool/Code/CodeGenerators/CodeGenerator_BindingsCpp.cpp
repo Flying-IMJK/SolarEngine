@@ -1965,6 +1965,7 @@ namespace SE::BuildTool
     void BindingsCppGenerator::GenerateCppEnum(const TypeInfoEnum& en, const std::string& assemblyType, std::string& output)
     {
         std::string fullNameName = CodeGeneratorUtils::GetFullNativeName(en.namespaceScopeList, en.structScopeList , en.name);
+        std::string fullCSharpTypename = CodeGeneratorUtils::GetFullCSTypeName(en.namespaceScopeList, en.name);
         std::string namespaceName = CodeGeneratorUtils::GetFullCSNameSpaceName(en.namespaceScopeList);
 
         std::string InternalNativeName = en.name;
@@ -1995,7 +1996,7 @@ namespace SE::BuildTool
         // ScriptingTypeInitializer
         output += Utils::String::Format("inline ScriptingTypeInitializer {0}_TypeInitializer(\n", en.name);
         output += Utils::String::Format("    (BinaryModule*)GetBinaryModule{0}(),\n", assemblyType);
-        output += Utils::String::Format("    StringAnsiView(\"{0}\", ARRAY_SIZE(\"{0}\") - 1),\n", fullNameName);
+        output += Utils::String::Format("    StringAnsiView(\"{0}\", ARRAY_SIZE(\"{0}\") - 1),\n", fullCSharpTypename);
         output += Utils::String::Format("    sizeof(::{0}),\n", fullNameName);
         output += Utils::String::Format("    StableID::Generate<::{0}>(),\n", fullNameName);
         output += Utils::String::Format("    {0}Internal::Items\n", InternalNativeName);

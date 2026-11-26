@@ -20,48 +20,44 @@ namespace SE
 	namespace ShadersCompilationImpl
 	{
 		CriticalSection ShaderIncludesMapLocker;
-		Dictionary<String, List<Asset*>> ShaderIncludesMap;
-		Dictionary<String, FileSystemWatcher*> ShaderIncludesWatcher;
+        Dictionary<String, List<UID>> ShaderIncludesMap;
+        Dictionary<String, FileSystemWatcher*> ShaderIncludesWatcher;
+        struct PendingReload
+        {
+            List<String> Paths;
+            double LastChange;
+        };
+        Dictionary<UID, PendingReload> PendingReloads;
+        bool Stopping = false;
 
-		void OnShaderIncludesWatcherEvent(FileWatcherEvent &event)
-		{
-			if (event.action == FileSystemAction::Delete)
-				return;
+        String WatchedPath(String path)
+        {
+            FileSystem::NormalizePath(path);
+#if PLATFORM_WINDOWS
+            path.ToLower();
+#endif
+            return path;
+        }
 
-			// Get list of assets using this shader file
-			List<Asset*> toReload;
-			{
-				Threading::ScopeLock lock(ShaderIncludesMapLocker);
+        void OnShaderIncludesWatcherEvent(FileWatcherEvent& event)
+        {
+            if (event.action != FileSystemAction::Modify && event.action != FileSystemAction::Create &&
+                event.action != FileSystemAction::Rename)
+                return;
 
-				auto file = ShaderIncludesMap.Find(event.path);
-				if (file == ShaderIncludesMap.end())
-					return;
-				toReload = file->Value;
-			}
-
-			// Add any shaders that failed to load (eg. due to error in included header)
-			for (Asset* asset : AssetContent::GetAssets())
-			{
-				if (asset->LastLoadFailed() && !toReload.Contains(asset))
-				{
-					if (TypeAs<Shader>(asset) || TypeAs<Material>(asset)/* || asset->Is<ParticleEmitter>()*/)
-					{
-						toReload.Add(asset);
-					}
-				}
-			}
-
-			LOG_INFO("ShaderCompiler", "Shader include \'{0}\' has been modified.", event.path);
-
-			// 稍等片刻，以便正在编辑文件的编辑器（例如 Visual Studio）有足够的时间刷新整个文件更改
-			Platform::Sleep(100);
-
-			// Reload shaders using this include
-			for (Asset* asset : toReload)
-			{
-				asset->Reload();
-			}
-		}
+            const String path = WatchedPath(event.path);
+            Threading::ScopeLock lock(ShaderIncludesMapLocker);
+            const auto* assets = ShaderIncludesMap.TryGet(path);
+            if (!assets)
+                return;
+            const double now = Platform::GetTimeSeconds();
+            for (const UID& id : *assets)
+            {
+                auto& pending = PendingReloads[id];
+                pending.Paths.AddUnique(path);
+                pending.LastChange = now;
+            }
+        }
 	}
 
 	using namespace ShadersCompilationImpl;
@@ -76,6 +72,7 @@ namespace SE
 		}
 
 		bool OnInit() override;
+        void OnUpdate() override;
 		void OnDispose() override;
 	};
 
@@ -104,40 +101,112 @@ namespace SE
 
 	void ShadersCompilation::RegisterForShaderReloads(Asset* asset, const String& includedPath)
 	{
-		Threading::ScopeLock lock(ShaderIncludesMapLocker);
+        const String path = WatchedPath(includedPath);
+        Threading::ScopeLock lock(ShaderIncludesMapLocker);
+        if (Stopping)
+            return;
 
-		// Add to collection
-		const bool alreadyAdded = ShaderIncludesMap.ContainsKey(includedPath);
-		auto& file = ShaderIncludesMap[includedPath];
-		ASSERT_LOW_LAYER(!file.Contains(asset));
-		file.Add(asset);
+        ShaderIncludesMap[path].AddUnique(asset->GetID());
+        String directory = FileSystem::GetParentDirectory(path);
+#if PLATFORM_WINDOWS
+        if (directory.Length() == 2 && directory[1] == ':')
+            directory += SE_TEXT("/");
+#endif
+        if (!ShaderIncludesWatcher.ContainsKey(directory) && FileSystem::DirectoryExists(directory))
+        {
+            auto watcher = New<FileSystemWatcher>(directory, false);
+            watcher->OnEvent.Bind<OnShaderIncludesWatcherEvent>();
+            ShaderIncludesWatcher.Add(directory, watcher);
+        }
+    }
 
-		if (!alreadyAdded)
-		{
-			// Create a directory watcher to track the included file changes
-			const String directory = FileSystem::GetDirectoryName(includedPath);
-			if (FileSystem::DirectoryExists(directory) && !ShaderIncludesWatcher.ContainsKey(directory))
-			{
-				auto watcher = New<FileSystemWatcher>(directory, false);
-				watcher->OnEvent.Bind<OnShaderIncludesWatcherEvent>();
-				ShaderIncludesWatcher.Add(directory, watcher);
-			}
-		}
-	}
+    void ShadersCompilation::UnregisterForShaderReloads(Asset* asset)
+    {
+        Threading::ScopeLock lock(ShaderIncludesMapLocker);
+        for (auto it = ShaderIncludesMap.begin(); it != ShaderIncludesMap.end(); ++it)
+        {
+            if (it->Value.Remove(asset->GetID()) && it->Value.IsEmpty())
+                ShaderIncludesMap.Remove(it);
+        }
+    }
 
-	void ShadersCompilation::UnregisterForShaderReloads(Asset* asset)
-	{
-		Threading::ScopeLock lock(ShaderIncludesMapLocker);
+    void ShadersCompilationSystem::OnUpdate()
+    {
+        const double settleBefore = Platform::GetTimeSeconds() - 0.1;
+        List<UID> ready;
+        {
+            Threading::ScopeLock lock(ShaderIncludesMapLocker);
+            for (const auto& change : PendingReloads)
+            {
+                if (change.Value.LastChange <= settleBefore)
+                {
+                    ready.Add(change.Key);
+                }
+            }
+        }
 
-		// Remove asset reference
-		for (auto& file : ShaderIncludesMap)
-		{
-			file.Value.Remove(asset);
-		}
-	}
+        List<UID> reloaded;
+        for (const UID& id : ready)
+        {
+            Asset* asset = AssetContent::GetAsset(id);
+            if (!asset->IsLoaded())
+            {
+                continue;
+            }
+
+            // Re-check the paths: a load may have replaced the include set since the notification.
+            bool affected = false;
+            {
+                Threading::ScopeLock lock(ShaderIncludesMapLocker);
+                const auto* pending = PendingReloads.TryGet(id);
+                if (!pending || pending->LastChange > settleBefore)
+                {
+                    continue;
+                }
+                for (const String& path : pending->Paths)
+                {
+                    const auto* assets = ShaderIncludesMap.TryGet(path);
+                    if (assets && assets->Contains(id))
+                    {
+                        affected = true;
+                        break;
+                    }
+                }
+                PendingReloads.Remove(id);
+            }
+            if (!affected || !asset)
+            {
+                continue;
+            }
+            reloaded.Add(id);
+            asset->Reload();
+        }
+
+        if (reloaded.IsEmpty())
+        {
+            return;
+        }
+
+        // Only query registered materials when a live asset has failed to load.
+        const ContentStats stats = AssetContent::GetStats();
+        if (stats.LoadedAssetsCount + stats.LoadingAssetsCount == stats.AssetsCount)
+        {
+            return;
+        }
+
+        for (const UID& id : AssetContent::GetAllAssetsByType(Typeof<Material>()))
+        {
+            Asset* asset = AssetContent::GetAsset(id);
+            if (asset && asset->LastLoadFailed() && !reloaded.Contains(id))
+            {
+                asset->Reload();
+            }
+        }
+    }
 
 	bool ShadersCompilationSystem::OnInit()
 	{
+        Stopping = false;
 #if SE_EDITOR
 
 		List<String> shaderFileList;
@@ -184,11 +253,15 @@ namespace SE
 
 	void ShadersCompilationSystem::OnDispose()
 	{
-		// Clear includes scanning
-		ShaderIncludesMapLocker.Lock();
-		ShaderIncludesMap.Clear();
-		ShaderIncludesWatcher.ClearDelete();
-		ShaderIncludesMapLocker.Unlock();
+        Dictionary<String, FileSystemWatcher*> watchers;
+        {
+            Threading::ScopeLock lock(ShaderIncludesMapLocker);
+            Stopping = true;
+            PendingReloads.Clear();
+            ShaderIncludesMap.Clear();
+            watchers.Swap(ShaderIncludesWatcher);
+        }
+        watchers.ClearDelete();
 	}
 
 }

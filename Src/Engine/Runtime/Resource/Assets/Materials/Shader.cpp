@@ -14,7 +14,14 @@ namespace SE
         m_GPUShader = GPUDevice::instance->CreateShader(pInfo ? StringView(pInfo->path) : StringView::Empty);
     }
 
-    Shader::~Shader() { DeleteObjectSafe(m_GPUShader); }
+    Shader::~Shader()
+    {
+#if SE_EDITOR
+        // Failed loads can reach destruction without going through Unload().
+        UnregisterForShaderReloads(this);
+#endif
+        DeleteObjectSafe(m_GPUShader);
+    }
 
     bool Shader::SelectProgram(const String& name, const List<String>& selection, GPUShaderProgram*& output)
     {
@@ -39,10 +46,17 @@ namespace SE
 
     Asset::LoadResult Shader::load()
     {
+#if SE_EDITOR
+        // A retry after a failed load can start without Unload(true).
+        UnregisterForShaderReloads(this);
+#endif
         ShaderCacheResult cache;
-        if (!LoadShaderCache(cache) || !m_GPUShader || !m_GPUShader->Load(cache.Data.Get(), cache.Data.Length()))
-            return LoadResult::Failed;
+        const bool hasShader = LoadShaderCache(cache);
         RegisterForShaderReloads(this, cache);
+        if (!hasShader || !m_GPUShader || !m_GPUShader->Load(cache.Data.Get(), cache.Data.Length()))
+        {
+            return LoadResult::Failed;
+        }
         return LoadResult::Ok;
     }
 

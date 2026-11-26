@@ -121,12 +121,7 @@ namespace SE
 		{
 			path = JsonTools::GetString(document, "ImportPath");
 			username = JsonTools::GetString(document, "ImportUsername");
-			if (path.HasChars() && FileSystem::IsRelative(path))
-			{
-				// Convert path back to thr absolute (eg. if stored in relative format)
-				path = EngineContext::ProjectFolder / path;
-				FileSystem ::PathRemoveRelativeParts(path);
-			}
+			path = AssetsImporting::RestoreImportPath(path);
 		}
 		else
 		{

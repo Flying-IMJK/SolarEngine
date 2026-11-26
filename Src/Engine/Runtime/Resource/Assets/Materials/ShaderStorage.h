@@ -61,6 +61,7 @@ namespace SE
             {
                 struct
                 {
+
                 } Shader;
 
                 struct

@@ -235,6 +235,9 @@ namespace SE
 		// Converts source files path into the relative format if enabled by the project settings. Result path can be stored in asset for reimports.
 		static String GetImportPath(const String& path);
 
+		// Restores stored import paths to normalized absolute paths. Empty paths stay empty; the relative-path setting is ignored.
+		static String RestoreImportPath(const String& path);
+
 		SE_FUNCTION(API())
 		static bool TryRestoreImportOptions(TextureUtilsOptions& options, String assetPath);
 

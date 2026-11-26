@@ -20,7 +20,7 @@ namespace SE
         bool SelectProgram(const String& programName, const List<String>& selection, GPUShaderProgram*& output);
         bool SelectProgram(const String& programName, const List<String>& selection, ShaderProgramInstance* pInstance);
         GPUShader* GetGPUShader() const { return m_GPUShader; }
-        uint32         GetSerializedVersion() const override;
+        uint32 GetSerializedVersion() const override;
 
 #if SE_EDITOR
         bool Save() override;

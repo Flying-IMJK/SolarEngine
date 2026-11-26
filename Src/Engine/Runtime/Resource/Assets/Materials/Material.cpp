@@ -12,6 +12,7 @@
 #include <Runtime/ShaderCompilation/ShaderCompileTypes.h>
 
 #if SE_EDITOR
+#include <Runtime/Core/Serialization/JsonWriters.hpp>
 #include <Runtime/Resource/Assets/Materials/Generator/MaterialGenerator.h>
 #endif
 
@@ -253,11 +254,23 @@ namespace SE
             BinaryModule::Locker.Unlock();
 #endif
 
-            // Encrypt source code
-            Encoding::EncryptBytes((byte*)source.GetHandle(), source.GetPosition());
+            // The generator appends a NUL that is not part of the JSON source string.
+            Json::StringBuffer sourceDescription;
+            CompactJsonWriter  writer(sourceDescription);
+            writer.StartObject();
+            writer.JKEY("inlineCode");
+            writer.Bool(true);
+            writer.JKEY("source");
+            writer.String(reinterpret_cast<const char*>(source.GetHandle()), source.GetPosition() - 1);
+            writer.EndObject();
 
-            // Set new source code chunk
-            SetChunk(SHADER_FILE_CHUNK_SOURCE, ToSpan(source.GetHandle(), source.GetPosition()));
+            StorageChunk* sourceChunk = GetOrCreateChunk(SHADER_FILE_CHUNK_SOURCE);
+            if (!sourceChunk)
+            {
+                return LoadResult::MissingDataChunk;
+            }
+            sourceChunk->Data.Copy(reinterpret_cast<const byte*>(sourceDescription.GetString()), static_cast<int32>(sourceDescription.GetSize()));
+            Encoding::EncryptBytes(sourceChunk->Get(), sourceChunk->Size());
 
             // Clear shader cache
             for (int32 chunkIndex = 1; chunkIndex < 14; chunkIndex++)
