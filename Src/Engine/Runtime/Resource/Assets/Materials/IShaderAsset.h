@@ -19,7 +19,6 @@ namespace SE
         // Append compile-time definitions to preamble and configure the new Slang request. The base owns
         // source storage and attaches the final SourceCode pointer after this hook returns.
         virtual void InitCompilationRequest(ShaderCompileRequest& request, StringAnsi& preamble);
-        virtual void GetAdditionalSourceFiles(List<String>& files) const { files.Clear(); }
 #endif
 
     protected:

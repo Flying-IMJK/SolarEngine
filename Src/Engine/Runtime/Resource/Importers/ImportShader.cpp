@@ -17,7 +17,6 @@ namespace SE
     {
         // Base
         IMPORT_SETUP(Shader, ShaderStorage::Header::Version);
-        const int32 SourceCodeChunk = 15;
 
         // Read text (handles any Unicode convert into ANSI)
         StringAnsi sourceCodeText;
@@ -27,7 +26,7 @@ namespace SE
         }
 
         // Load source code
-        if (!context.AllocateChunk(SourceCodeChunk))
+        if (!context.AllocateChunk(SHADER_FILE_CHUNK_SOURCE))
         {
             return CreateAssetResult::CannotAllocateChunk;
         }
@@ -48,7 +47,7 @@ namespace SE
         writer.EndObject();
 
         // Store only the source reference; compilation reads the current file contents.
-        const auto& chunk = context.Data.Header.Chunks[SourceCodeChunk];
+        const auto& chunk = context.Data.Header.Chunks[SHADER_FILE_CHUNK_SOURCE];
         chunk->Data.Copy(reinterpret_cast<const byte*>(sourceDescription.GetString()), static_cast<int32>(sourceDescription.GetSize()));
         Encoding::EncryptBytes(chunk->Get(), chunk->Size());
 

@@ -119,9 +119,6 @@ namespace SE
         MaterialValue _ddx, _ddy, _cameraVector;
 
     public:
-        // Template inputs embedded in generated source; tracked separately from Slang include dependencies.
-        List<String> SourceFiles;
-
         MaterialGenerator();
         ~MaterialGenerator();
 

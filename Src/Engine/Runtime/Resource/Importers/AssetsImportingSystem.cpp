@@ -63,7 +63,7 @@ namespace SE
 
     class SE_API_RUNTIME AssetsImportingSystem : public ISystem
     {
-    ENGINE_SYSTEM(AssetsImportingSystem)
+        ENGINE_SYSTEM(AssetsImportingSystem)
     public:
         AssetsImportingSystem() : ISystem(SE_TEXT("AssetsImportingSystem"), -400)
         {
@@ -176,7 +176,49 @@ namespace SE
 
             systemData->Creators.Add(InBuildCreators, ARRAY_SIZE(InBuildCreators));
 
+            ImportAsset();
+
             return true;
+        }
+
+        void ImportAsset()
+        {
+#ifdef SE_EDITOR
+            const String assetsPath = EngineContext::StartupFolder / SE_TEXT("Assets");
+            const String cachePath  = EngineContext::ProjectCacheFolder / SE_TEXT("Assets");
+
+            List<String> file;
+            FileSystem::DirectoryGetFiles(file, assetsPath, nullptr);
+            for (String& fileName : file)
+            {
+                String fileExtension = FileSystem::GetExtension(fileName);
+                if (fileExtension == ASSET_FILES_EXTENSION)
+                {
+                    continue;
+                }
+
+                // Keep the engine asset's relative path in the project cache.
+                String outPath  = cachePath / FileSystem::ConvertAbsolutePathToRelative(assetsPath, fileName);
+                auto   importer = AssetsImporting::GetImporter(fileExtension);
+                if (importer == nullptr)
+                {
+                    if (FileSystem::FileExists(outPath) && FileSystem::GetFileLastEditTime(fileName) <= FileSystem::GetFileLastEditTime(outPath))
+                    {
+                        continue;
+                    }
+
+                    if (!FileSystem::CreateDirectory(FileSystem::GetParentDirectory(outPath)) || !FileSystem::CopyFile(outPath, fileName))
+                    {
+                        LOG_ERROR("Editor", "Cannot copy file '{0}' to '{1}'.", fileName, outPath);
+                    }
+                    continue;
+                }
+
+                FileSystem::ReplaceExtension(outPath, ASSET_FILES_EXTENSION);
+                AssetsImporting::ImportIfEdited(fileName, outPath);
+            }
+
+#endif
         }
 
         void OnDispose() override

@@ -34,7 +34,8 @@ void SetLoadLibDir()
 			SE::String path = exeDir + SE_TEXT("/") + lib;
 			if (SE::FileSystem::DirectoryExists(path))
 			{
-				assert(AddDllDirectory(path.Get()) != nullptr);
+				const DLL_DIRECTORY_COOKIE libDirCookie = AddDllDirectory(path.Get());
+				assert(libDirCookie != nullptr);
 			}
 		}
 	}

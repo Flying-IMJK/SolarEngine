@@ -12,8 +12,6 @@ namespace SE::Editor
 	String EditorAssets::SegMDL2Icons::ChromeClose = SE_TEXT("\uE8BB");
 
 
-	String EditorAssets::AssetsPath = SE_TEXT("Assets");
-
 	String EditorAssets::IconsPath = SE_TEXT("Assets/Icon");
 	String EditorAssets::WindowIconsFont = SE_TEXT("Assets/Fonts/SegMDL2");
 

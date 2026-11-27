@@ -19,428 +19,394 @@
 
 namespace SE
 {
-	namespace EngineImpl
-	{
-		bool IsReady = false;
+    namespace EngineImpl
+    {
+        bool IsReady = false;
 #if !SE_EDITOR
-		bool RunInBackground = false;
+        bool RunInBackground = false;
 #endif
-		String CommandLine = String::Empty;
-		int32 Fps = 0, FpsAccumulatedFrames = 0;
-		double FpsAccumulated = 0.0;
+        String CommandLine = String::Empty;
+        int32 Fps = 0, FpsAccumulatedFrames = 0;
+        double FpsAccumulated = 0.0;
 
-		void InitLog();
-		void InitStartupPaths();
-		void InitProjectPaths();
-		void InitMainWindow(App* application);
-		void InitGraphic();
-	}
+        void InitLog();
+        void InitStartupPaths();
+        void InitMainWindow(App* application);
+        void InitGraphic();
+    }
 
-	DateTime Engine::StartupTime;
-	bool Engine::HasFocus = false;
-	uint64 Engine::UpdateCount = 0;
-	uint64 Engine::FrameCount = 0;
-	Action Engine::UpdateCall;
-	Action Engine::LateUpdateCall;
-	App* Engine::pApp = nullptr;
-	Threading::TaskGraph* Engine::UpdateGraph = nullptr;
-	Action Engine::RenderCall;
+    DateTime Engine::StartupTime;
+    bool Engine::HasFocus = false;
+    uint64 Engine::UpdateCount = 0;
+    uint64 Engine::FrameCount = 0;
+    Action Engine::UpdateCall;
+    Action Engine::LateUpdateCall;
+    App* Engine::pApp = nullptr;
+    Threading::TaskGraph* Engine::UpdateGraph = nullptr;
+    Action Engine::RenderCall;
 /*	Action Engine::Pause;
-	Action Engine::Unpause;*/
+    Action Engine::Unpause;*/
 
 
-	int32 Engine::Main(const Char* cmdLine, App* application)
-	{
-		pApp = application;
+    int32 Engine::Main(const Char* cmdLine, App* application)
+    {
+        pApp = application;
 
-		Types::InitTypeSystem();
+        Types::InitTypeSystem();
 
-		// 设置主线程ID
-		Threading::SetMainThreadID(Platform::GetCurrentThreadID());
+        // 璁剧疆涓荤嚎绋婭D
+        Threading::SetMainThreadID(Platform::GetCurrentThreadID());
 
-		Systems::Sort();
+        Systems::Sort();
 //		bc7_enc_settings encoderSettings;
-		if (Platform::Init())
-		{
-			Platform::Fatal(SE_TEXT("Cannot init platform."));
-			return -1;
-		}
+        if (Platform::Init())
+        {
+            Platform::Fatal(SE_TEXT("Cannot init platform."));
+            return -1;
+        }
 
-		Platform::SetHighDpiAwarenessEnabled(true);
-		EngineContext::StartupFolder = EngineContext::BinariesFolder = Platform::GetMainDirectory();
+        Platform::SetHighDpiAwarenessEnabled(true);
+        EngineContext::StartupFolder = EngineContext::BinariesFolder = Platform::GetMainDirectory();
 
-		FileSystem::PathRemoveRelativeParts(EngineContext::StartupFolder);
-		FileSystem::NormalizePath(EngineContext::BinariesFolder);
+        FileSystem::PathRemoveRelativeParts(EngineContext::StartupFolder);
+        FileSystem::NormalizePath(EngineContext::BinariesFolder);
 
-		FileSystem::GetSpecialFolderPath(SpecialFolder::Temporary, EngineContext::TemporaryFolder);
-		if (EngineContext::TemporaryFolder.IsEmpty())
-		{
-			Platform::Fatal(SE_TEXT("Failed to gather temporary folder directory."));
-		}
-		EngineContext::TemporaryFolder /= UID::New().ToString(UID::FormatType::D);
+        FileSystem::GetSpecialFolderPath(SpecialFolder::Temporary, EngineContext::TemporaryFolder);
+        if (EngineContext::TemporaryFolder.IsEmpty())
+        {
+            Platform::Fatal(SE_TEXT("Failed to gather temporary folder directory."));
+        }
+        EngineContext::TemporaryFolder /= UID::New().ToString(UID::FormatType::D);
 
-		EngineImpl::InitStartupPaths();
-		EngineImpl::InitLog();
+        EngineImpl::InitStartupPaths();
+        EngineImpl::InitLog();
 
-		// Load game info or project info before configuring project-dependent paths.
-		const int32 result = application->LoadProduct();
-		if (result != 0)
-		{
-			return result;
-		}
-		EngineImpl::InitProjectPaths();
+        // Load game or project info and configure project-dependent paths.
+        const int32 result = application->LoadProduct();
+        if (result != 0)
+        {
+            return result;
+        }
 
-		// 启动多线程
-		Threading::SetMainThreadID(Platform::GetCurrentThreadID());
-		Threading::Init();
+        // 鍚姩澶氱嚎绋?
+        Threading::SetMainThreadID(Platform::GetCurrentThreadID());
+        Threading::Init();
 
-		if (!application->Init())
-		{
-			return -10;
-		}
+        if (!application->Init())
+        {
+            return -10;
+        }
 
-		EngineImpl::InitGraphic();
+        EngineImpl::InitGraphic();
 
-		UpdateGraph = New<Threading::TaskGraph>();
-		Systems::Initialize();
+        UpdateGraph = New<Threading::TaskGraph>();
+        Systems::Initialize();
 
 #if SE_EDITOR
-		// The editor creates its managed window and GUI during BeforeRun. Let that
-		// complete before showing the native window so the first resize callback
-		// reaches an already initialized managed UI tree.
-		Platform::BeforeRun();
-		application->BeforeRun();
-		EngineImpl::InitMainWindow(application);
+        // The editor creates its managed window and GUI during BeforeRun. Let that
+        // complete before showing the native window so the first resize callback
+        // reaches an already initialized managed UI tree.
+        Platform::BeforeRun();
+        application->BeforeRun();
+        EngineImpl::InitMainWindow(application);
 #else
-		EngineImpl::InitMainWindow(application);
+        EngineImpl::InitMainWindow(application);
 
-		Platform::BeforeRun();
-		application->BeforeRun();
+        Platform::BeforeRun();
+        application->BeforeRun();
 #endif
 
-		Time::Synchronize();
-		EngineImpl::IsReady = true;
+        Time::Synchronize();
+        EngineImpl::IsReady = true;
 
-		// Main engine loop
-		const bool useSleep = true; // TODO: this should probably be a platform setting
-		while (!EngineContext::IsRequestingExit)
-		{
-			// Reduce CPU usage by introducing idle time if the engine is running very fast and has enough time to spend
-			if ((useSleep && Time::UpdateFPS > Math::ZeroTolerance) || !Platform::GetHasFocus())
-			{
-				double nextTick = Time::GetNextTick();
-				double timeToTick = nextTick - Platform::GetTimeSeconds();
+        // Main engine loop
+        const bool useSleep = true; // TODO: this should probably be a platform setting
+        while (!EngineContext::IsRequestingExit)
+        {
+            // Reduce CPU usage by introducing idle time if the engine is running very fast and has enough time to spend
+            if ((useSleep && Time::UpdateFPS > Math::ZeroTolerance) || !Platform::GetHasFocus())
+            {
+                double nextTick = Time::GetNextTick();
+                double timeToTick = nextTick - Platform::GetTimeSeconds();
 
-				// Sleep less than needed, some platforms may sleep slightly more than requested
-				if (timeToTick > 0.002)
-				{
-					PROFILE_CPU_NAMED("Idle");
-					Platform::Sleep(1);
-				}
-			}
+                // Sleep less than needed, some platforms may sleep slightly more than requested
+                if (timeToTick > 0.002)
+                {
+                    PROFILE_CPU_NAMED("Idle");
+                    Platform::Sleep(1);
+                }
+            }
 
-			// App paused logic
-			if (Platform::GetIsPaused())
-			{
-				OnPause();
-				do
-				{
-					Platform::Sleep(10);
-					Platform::Tick();
-				} while (Platform::GetIsPaused() && !EngineContext::IsRequestingExit);
-				if (EngineContext::IsRequestingExit)
-				{
-					break;
-				}
-				OnUnpause();
-			}
+            // App paused logic
+            if (Platform::GetIsPaused())
+            {
+                OnPause();
+                do
+                {
+                    Platform::Sleep(10);
+                    Platform::Tick();
+                } while (Platform::GetIsPaused() && !EngineContext::IsRequestingExit);
+                if (EngineContext::IsRequestingExit)
+                {
+                    break;
+                }
+                OnUnpause();
+            }
 
-			// Use the same time for all ticks to improve synchronization
-			const double time = Platform::GetTimeSeconds();
+            // Use the same time for all ticks to improve synchronization
+            const double time = Platform::GetTimeSeconds();
 
-			// Update game logic
-			if (Time::OnBeginUpdate(time))
-			{
-				OnUpdate();
-				OnLateUpdate();
-				Time::OnEndUpdate();
-			}
-			// Draw frame
-			if (Time::OnBeginDraw(time))
-			{
-				OnRender();
-				Time::OnEndRender();
-				FrameMark;
-			}
-		}
+            // Update game logic
+            if (Time::OnBeginUpdate(time))
+            {
+                OnUpdate();
+                OnLateUpdate();
+                Time::OnEndUpdate();
+            }
+            // Draw frame
+            if (Time::OnBeginDraw(time))
+            {
+                OnRender();
+                Time::OnEndRender();
+                FrameMark;
+            }
+        }
 
-		// Call on exit event
-		OnExit();
+        // Call on exit event
+        OnExit();
 
-		// Delete temporary directory only if Engine is closing normally (after crash user/developer can restore some data)
-		if (FileSystem::DirectoryExists(EngineContext::TemporaryFolder))
-		{
-			FileSystem::DeleteDirectory(EngineContext::TemporaryFolder);
-		}
+        // Delete temporary directory only if Engine is closing normally (after crash user/developer can restore some data)
+        if (FileSystem::DirectoryExists(EngineContext::TemporaryFolder))
+        {
+            FileSystem::DeleteDirectory(EngineContext::TemporaryFolder);
+        }
 
-		return EngineContext::ExitCode;
-	}
+        return EngineContext::ExitCode;
+    }
 
-	void Engine::Exit(int32 exitCode)
-	{
-		ENGINE_ASSERT(Threading::IsMainThread());
+    void Engine::Exit(int32 exitCode)
+    {
+        ENGINE_ASSERT(Threading::IsMainThread());
 
-		// Call on exit event
-		OnExit();
+        // Call on exit event
+        OnExit();
 
-		// Exit application
-		exit(exitCode);
-	}
+        // Exit application
+        exit(exitCode);
+    }
 
-	void Engine::OnUpdate()
-	{
-		PROFILE_CPU();
+    void Engine::OnUpdate()
+    {
+        PROFILE_CPU();
 
-		UpdateCount++;
+        UpdateCount++;
 
-		// Update application (will gather data and other platform related events)
-		{
-			PROFILE_CPU_NAMED("Platform.Tick");
-			Platform::Tick();
-		}
+        // Update application (will gather data and other platform related events)
+        {
+            PROFILE_CPU_NAMED("Platform.Tick");
+            Platform::Tick();
+        }
 
-		const auto mainWindow = pApp->GetMainWindow();
+        const auto mainWindow = pApp->GetMainWindow();
 
-		// Determine if application has focus (flag used by the other parts of the engine)
-		HasFocus = (mainWindow && mainWindow->IsFocused()) || Platform::GetHasFocus();
+        // Determine if application has focus (flag used by the other parts of the engine)
+        HasFocus = (mainWindow && mainWindow->IsFocused()) || Platform::GetHasFocus();
 
-		Threading::MainThreadTask::RunAll(Time::Update.UnscaledDeltaTime.GetTotalSeconds());
+        Threading::MainThreadTask::RunAll(Time::Update.UnscaledDeltaTime.GetTotalSeconds());
 
-		// Update services
-		Systems::Update();
-		UpdateCall();
+        // Update services
+        Systems::Update();
+        UpdateCall();
 
-		pApp->OnUpdate();
+        pApp->OnUpdate();
 
-		UpdateGraph->Execute();
-	}
+        UpdateGraph->Execute();
+    }
 
-	void Engine::OnLateUpdate()
-	{
-		PROFILE_CPU();
+    void Engine::OnLateUpdate()
+    {
+        PROFILE_CPU();
 
-		// Call event
-		LateUpdateCall();
-		pApp->OnLateUpdate();
+        // Call event
+        LateUpdateCall();
+        pApp->OnLateUpdate();
 
-		// Update services
-		Systems::LateUpdate();
-	}
+        // Update services
+        Systems::LateUpdate();
+    }
 
-	void Engine::OnRender()
-	{
-		PROFILE_CPU();
+    void Engine::OnRender()
+    {
+        PROFILE_CPU();
 
-		// Begin frame rendering
-		FrameCount++;
-		const double time = Platform::GetTimeSeconds();
-		auto device = GPUDevice::instance;
-		device->locker.Lock();
-		ProfilerGPU::BeginFrame();
+        // Begin frame rendering
+        FrameCount++;
+        const double time = Platform::GetTimeSeconds();
+        auto device = GPUDevice::instance;
+        device->locker.Lock();
+        ProfilerGPU::BeginFrame();
 
-		device->Draw([](GPUContext* context){
-		  	pApp->OnRender();
-			Engine::RenderCall();
-			Systems::Render();
-		  	RenderTask::RenderAll();
-		});
+        device->Draw([](GPUContext* context){
+            pApp->OnRender();
+            Engine::RenderCall();
+            Systems::Render();
+            RenderTask::RenderAll();
+        });
 
-		// End frame rendering
-		ProfilerGPU::EndFrame();
-		device->locker.Unlock();
+        // End frame rendering
+        ProfilerGPU::EndFrame();
+        device->locker.Unlock();
 
-		// Calculate FPS
-		EngineImpl::FpsAccumulatedFrames++;
-		if (time - EngineImpl::FpsAccumulated >= 1.0)
-		{
-			EngineImpl::Fps = EngineImpl::FpsAccumulatedFrames;
-			EngineImpl::FpsAccumulatedFrames = 0;
-			EngineImpl::FpsAccumulated = time;
-		}
-	}
-	
-	void Engine::OnExit()
-	{
-		EngineImpl::IsReady = false;
+        // Calculate FPS
+        EngineImpl::FpsAccumulatedFrames++;
+        if (time - EngineImpl::FpsAccumulated >= 1.0)
+        {
+            EngineImpl::Fps = EngineImpl::FpsAccumulatedFrames;
+            EngineImpl::FpsAccumulatedFrames = 0;
+            EngineImpl::FpsAccumulated = time;
+        }
+    }
+    
+    void Engine::OnExit()
+    {
+        EngineImpl::IsReady = false;
 
-		pApp->BeforeExit();
-		Platform::BeforeExit();
+        pApp->BeforeExit();
+        Platform::BeforeExit();
 
-		if (GPUDevice::instance)
-		{
-			// Start disposing
-			GPUDevice::instance->GetTasksSystem()->Dispose();
-		}
+        if (GPUDevice::instance)
+        {
+            // Start disposing
+            GPUDevice::instance->GetTasksSystem()->Dispose();
+        }
 
-		Systems::ShutDown();
+        Systems::ShutDown();
 
-		Threading::Shutdown();
-		// Kill all remaining threads
-		Threading::ThreadRegistry::KillEmAll();
+        Threading::Shutdown();
+        // Kill all remaining threads
+        Threading::ThreadRegistry::KillEmAll();
 
-		ProfilerCPU::Dispose();
-		ProfilerGPU::Dispose();
+        ProfilerCPU::Dispose();
+        ProfilerGPU::Dispose();
 
-		Log::System::Shutdown();
-		Platform::Exit();
-	}
+        Log::System::Shutdown();
+        Platform::Exit();
+    }
 
-	void Engine::OnPause()
-	{
+    void Engine::OnPause()
+    {
 
-	}
+    }
 
-	void Engine::OnUnpause()
-	{
+    void Engine::OnUnpause()
+    {
 
-	}
-	bool Engine::ShouldExit()
-	{
-		return EngineContext::IsRequestingExit;
-	}
+    }
+    bool Engine::ShouldExit()
+    {
+        return EngineContext::IsRequestingExit;
+    }
 
-	void EngineImpl::InitLog()
-	{
-		// Initialize logger
-		Log::System::Initialize();
+    void EngineImpl::InitLog()
+    {
+        // Initialize logger
+        Log::System::Initialize();
 
-		// Log platform into
-		Platform::LogInfo();
-	}
+        // Log platform into
+        Platform::LogInfo();
+    }
 
-	void EngineImpl::InitStartupPaths()
-	{
-		// Cache other global paths
-		FileSystem::GetSpecialFolderPath(SpecialFolder::LocalAppData, EngineContext::ProductLocalFolder);
-		if (EngineContext::ProductLocalFolder.IsEmpty())
-		{
-			Platform::Fatal(SE_TEXT("Failed to gather local app data folder directory."));
-		}
+    void EngineImpl::InitStartupPaths()
+    {
+        // Cache other global paths
+        FileSystem::GetSpecialFolderPath(SpecialFolder::LocalAppData, EngineContext::ProductLocalFolder);
+        if (EngineContext::ProductLocalFolder.IsEmpty())
+        {
+            Platform::Fatal(SE_TEXT("Failed to gather local app data folder directory."));
+        }
 
 /*#if SE_EDITOR
-		EngineContext::EngineContentFolder = EngineContext::StartupFolder / SE_TEXT("Content");
+        EngineContext::EngineContentFolder = EngineContext::StartupFolder / SE_TEXT("Content");
 #else
 #if USE_MONO
-		EngineContext::MonoPath = EngineContext::StartupFolder / SE_TEXT("Mono");
+        EngineContext::MonoPath = EngineContext::StartupFolder / SE_TEXT("Mono");
 #endif
 #endif*/
 
 #if !PLATFORM_SWITCH
-		// Setup directories
-		if (FileSystem::DirectoryExists(EngineContext::TemporaryFolder))
-		{
-			FileSystem::DeleteDirectory(EngineContext::TemporaryFolder);
-		}
-		if (FileSystem::CreateDirectory(EngineContext::TemporaryFolder))
-		{
-			// Try one more time (Explorer may block it)
-			Platform::Sleep(10);
-			if (FileSystem::CreateDirectory(EngineContext::TemporaryFolder))
-			{
-				Platform::Fatal(SE_TEXT("Cannot create temporary directory."));
-			}
-		}
+        // Setup directories
+        if (FileSystem::DirectoryExists(EngineContext::TemporaryFolder))
+        {
+            FileSystem::DeleteDirectory(EngineContext::TemporaryFolder);
+        }
+        if (FileSystem::CreateDirectory(EngineContext::TemporaryFolder))
+        {
+            // Try one more time (Explorer may block it)
+            Platform::Sleep(10);
+            if (FileSystem::CreateDirectory(EngineContext::TemporaryFolder))
+            {
+                Platform::Fatal(SE_TEXT("Cannot create temporary directory."));
+            }
+        }
 #endif
 
 
-	}
+    }
 
-	void EngineImpl::InitProjectPaths()
-	{
-		// LoadProduct has selected the project root before dependent folders are created.
-		ENGINE_ASSERT(!EngineContext::ProjectFolder.IsEmpty());
-		EngineContext::ProjectContentFolder = EngineContext::ProjectFolder / SE_TEXT("Content");
-#if SE_EDITOR
-		EngineContext::ProjectSourceFolder = EngineContext::ProjectFolder / SE_TEXT("Source");
-        EngineContext::ProjectCacheFolder = EngineContext::ProjectFolder / SE_TEXT("Cache");
-
-        if (!FileSystem::DirectoryExists(EngineContext::ProjectCacheFolder))
+    void EngineImpl::InitMainWindow(App* application)
+    {
+#if PLATFORM_HAS_HEADLESS_MODE
+        // Try to use headless mode
+/*		if (CommandLine::Options.Headless.IsTrue())
         {
-            FileSystem::CreateDirectory(EngineContext::ProjectCacheFolder);
+            LOG_INFO("Engine", "Running in headless mode.");
+            return;
+        }*/
+#endif
+        PROFILE_CPU_NAMED("Engine::InitMainWindow");
 
-			FileSystem::CopyDirectory(EngineContext::ProjectFolder / SE_TEXT("Cache/Assets"),
-                                      EngineContext::StartupFolder / SE_TEXT("Assets"),
-                                      true);
+        // Create window
+        Window* window = application->CreateMainWindow();
+        if (!window)
+        {
+            Platform::Fatal(SE_TEXT("No main window created."));
+            return;
         }
 
-		if (!FileSystem::DirectoryExists(EngineContext::ProjectContentFolder))
-		{
-			FileSystem::CreateDirectory(EngineContext::ProjectContentFolder);
-		}
+        window->Show();
 
-		if (!FileSystem::DirectoryExists(EngineContext::ProjectSourceFolder))
-		{
-			FileSystem::CreateDirectory(EngineContext::ProjectSourceFolder);
-		}
-#endif
-		// Resolve relative project paths against the selected project, not the executable folder.
-		Platform::SetWorkingDirectory(EngineContext::ProjectFolder);
-	}
+        Window::SetMainWindow(window);
+    }
 
-	void EngineImpl::InitMainWindow(App* application)
-	{
-#if PLATFORM_HAS_HEADLESS_MODE
-		// Try to use headless mode
-/*		if (CommandLine::Options.Headless.IsTrue())
-		{
-			LOG_INFO("Engine", "Running in headless mode.");
-			return;
-		}*/
-#endif
-		PROFILE_CPU_NAMED("Engine::InitMainWindow");
+    void EngineImpl::InitGraphic()
+    {
+        ENGINE_ASSERT(GPUDevice::instance == nullptr);
 
-		// Create window
-		Window* window = application->CreateMainWindow();
-		if (!window)
-		{
-			Platform::Fatal(SE_TEXT("No main window created."));
-			return;
-		}
-
-		window->Show();
-
-		Window::SetMainWindow(window);
-	}
-
-	void EngineImpl::InitGraphic()
-	{
-		ENGINE_ASSERT(GPUDevice::instance == nullptr);
-
-		// Create and initialize graphics device
-		// Log::Logger::WriteFloor();
-		LOG_INFO("Graphic", "Creating Graphics Device...");
+        // Create and initialize graphics device
+        // Log::Logger::WriteFloor();
+        LOG_INFO("Graphic", "Creating Graphics Device...");
 
 
-		GPUGlobalSettings globalSettings;
-		globalSettings.validationMode = RHIValidationMode::Disabled;
-		if (!GPUDevice::Create(globalSettings))
-		{
-			LOG_FATAL("Graphic", "Cannot create rendering device.");
-		}
+        GPUGlobalSettings globalSettings;
+        globalSettings.validationMode = RHIValidationMode::Disabled;
+        if (!GPUDevice::Create(globalSettings))
+        {
+            LOG_FATAL("Graphic", "Cannot create rendering device.");
+        }
 
-		GPUDevice* device = GPUDevice::instance;
+        GPUDevice* device = GPUDevice::instance;
 
-		LOG_INFO("Graphic",
-			"Graphics Device created! Adapter: \'{0}\', Renderer: {1}, Shader Profile: {2}, Feature Level: {3}",
-			SE_TEXT(""), /*device->GetDescription(),*/
-			SE_TEXT(""),/*::ToString(device->GetRendererType()),*/
-			ToString(device->GetShaderProfile()),
-			ToString(device->GetFeatureLevel())
-		);
+        LOG_INFO("Graphic",
+            "Graphics Device created! Adapter: \'{0}\', Renderer: {1}, Shader Profile: {2}, Feature Level: {3}",
+            SE_TEXT(""), /*device->GetDescription(),*/
+            SE_TEXT(""),/*::ToString(device->GetRendererType()),*/
+            ToString(device->GetShaderProfile()),
+            ToString(device->GetFeatureLevel())
+        );
 
 
 
-		// Log::Logger::WriteFloor();
-	}
+        // Log::Logger::WriteFloor();
+    }
 
 }

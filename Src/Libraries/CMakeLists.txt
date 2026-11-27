@@ -153,3 +153,21 @@ if(NOT TARGET assimp)
     set_target_properties(assimp PROPERTIES FOLDER "ThirdParty/Assimp")
     NoWarning(assimp)
 endif()
+
+# 第三方动态库及调试符号统一输出到 Lib，使用方在注册搜索目录后延迟加载。
+foreach(SE_LIBRARY_TARGET IN ITEMS fmt freetype assimp)
+    get_target_property(SE_LIBRARY_TYPE ${SE_LIBRARY_TARGET} TYPE)
+    if(SE_LIBRARY_TYPE STREQUAL "SHARED_LIBRARY")
+        set_target_properties(${SE_LIBRARY_TARGET} PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY_DEBUG "${ProjectRootDir}/Debug/${EngineLibRootDir}"
+            RUNTIME_OUTPUT_DIRECTORY_RELEASE "${ProjectRootDir}/Release/${EngineLibRootDir}"
+            PDB_OUTPUT_DIRECTORY_DEBUG "${ProjectRootDir}/Debug/${EngineLibRootDir}"
+            PDB_OUTPUT_DIRECTORY_RELEASE "${ProjectRootDir}/Release/${EngineLibRootDir}"
+        )
+
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+            target_link_options(${SE_LIBRARY_TARGET} INTERFACE "/DELAYLOAD:$<TARGET_FILE_NAME:${SE_LIBRARY_TARGET}>")
+            set_property(TARGET ${SE_LIBRARY_TARGET} APPEND PROPERTY INTERFACE_LINK_LIBRARIES delayimp)
+        endif()
+    endif()
+endforeach()

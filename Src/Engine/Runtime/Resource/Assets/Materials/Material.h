@@ -8,7 +8,6 @@ namespace SE
     class MaterialShader;
 
     #define MATERIAL_VERSION 1
-    #define MATERIAL_FILE_CHUNK_SOURCE_FILES 8
 
     // <summary>
     /// Material asset that contains shader for rendering models on the GPU.
@@ -22,11 +21,6 @@ namespace SE
     private:
         MaterialShader* m_MaterialShader = nullptr;
         ShaderStorage::Header _shaderHeader;
-#if SE_EDITOR
-        List<String> m_SourceFiles;
-        bool         LoadMaterialSourceFiles();
-        bool         SaveMaterialSourceFiles();
-#endif
 
     public:
         explicit Material(const AssetInfo* info);
@@ -49,7 +43,6 @@ namespace SE
 
         // [ShaderAssetBase]
         void InitCompilationRequest(ShaderCompileRequest& request, StringAnsi& preamble) override;
-        void GetAdditionalSourceFiles(List<String>& files) const override { files = m_SourceFiles; }
 #endif
 
     public:

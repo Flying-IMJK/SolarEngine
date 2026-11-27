@@ -289,7 +289,6 @@ namespace SE
             return false;
         }
 
-        SourceFiles.Clear();
         String inputs[In_MAX];
         List<StringAnsiView, FixedAllocation<8>> features;
 
@@ -336,7 +335,6 @@ namespace SE
         type::Generate(feature.Data); \
         if (!feature.Init()) \
             return false; \
-        SourceFiles.Add(EngineContext::StartupFolder / SE_TEXT("Shaders/MaterialTemplates/") + feature.Data.Template); \
     }
 
         switch (baseLayer->Domain)
@@ -659,7 +657,6 @@ namespace SE
             // Open template file
             String path = EngineContext::StartupFolder / SE_TEXT("Shaders/MaterialTemplates/");
             path /= materialInfo.Domain == MaterialDomain::GUI ? SE_TEXT("GUI.shader") : SE_TEXT("Surface.shader");
-            SourceFiles.Add(path);
             auto file = FileReadStream::Open(path);
             if (file == nullptr)
             {

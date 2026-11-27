@@ -76,7 +76,7 @@ namespace SE.Editor
         /// </summary>
         public void LoadDefaultLayout()
         {
-            string path = Path.Combine(EngineContext.StartupFolder, EditorAssets.AssetsPath, "Config", "LayoutDefault.xml");
+            string path = Path.Combine(EngineContext.ProjectCacheFolder, EditorAssets.AssetsPath, "Config", "LayoutDefault.xml");
             if (!LoadLayout(path))
             {
                 Editor.UI.MasterDockPanel.ResetLayout();

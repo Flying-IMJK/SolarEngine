@@ -1,9 +1,7 @@
 #pragma once
 
-#include "Runtime/Core/Types/BitFlags.h"
-#include "Runtime/Core/Types/Variable.h"
-
 #include "Runtime/API.h"
+#include "Runtime/Core/Types/Variable.h"
 #include "Runtime/Graphics/Base/GPUEnums.h"
 
 namespace SE

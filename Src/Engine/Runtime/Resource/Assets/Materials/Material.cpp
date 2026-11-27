@@ -170,8 +170,7 @@ namespace SE
         // Generate the current ShaderArtifact source from the authored graph when needed.
 #if SE_EDITOR
 
-        const bool sourceFilesCurrent = LoadMaterialSourceFiles();
-        if (!HasChunk(SHADER_FILE_CHUNK_SOURCE) || !sourceFilesCurrent || HasDependenciesModified())
+        if (!HasChunk(SHADER_FILE_CHUNK_SOURCE) || HasDependenciesModified())
         {
             auto lock = storage->Lock();
             MaterialGenerator generator;
@@ -276,10 +275,6 @@ namespace SE
             for (int32 chunkIndex = 1; chunkIndex < 14; chunkIndex++)
                 ReleaseChunk(chunkIndex);
 
-            m_SourceFiles = generator.SourceFiles;
-            if (!SaveMaterialSourceFiles())
-                return LoadResult::Failed;
-
             // Setup shader header
             Platform::MemoryClear(&_shaderHeader, sizeof(_shaderHeader));
             _shaderHeader.Material.GraphVersion = MATERIAL_GRAPH_VERSION;
@@ -370,9 +365,6 @@ namespace SE
             result |= GET_CHUNK_FLAG(GetCacheChunkIndex());
 
         result |= GET_CHUNK_FLAG(SHADER_FILE_CHUNK_MATERIAL_PARAMS);
-#if SE_EDITOR
-        result |= GET_CHUNK_FLAG(MATERIAL_FILE_CHUNK_SOURCE_FILES);
-#endif
         return result;
     }
 

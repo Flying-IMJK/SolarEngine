@@ -327,11 +327,7 @@ namespace SE
 
         SlangShaderCompiler compiler;
         ShaderCompileResult compiled = compiler.Compile(request);
-        List<String>        additional;
-        GetAdditionalSourceFiles(additional);
-        additional.Add(compiled.SourceDependencies);
-
-        for (const String& path : additional)
+        for (const String& path : compiled.SourceDependencies)
         {
             if (!FileSystem::AreFilePathsEqual(path, parent->GetPath()) && !result.Includes.Contains(path))
             {

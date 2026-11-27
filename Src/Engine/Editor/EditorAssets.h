@@ -33,9 +33,6 @@ namespace SE::Editor
 			static String ChromeClose;
 		};
 
-
-		static String AssetsPath;
-
 		/// <summary>
 		/// The icons atlas.
 		/// </summary>
