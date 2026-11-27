@@ -7,7 +7,10 @@ namespace SE
 {
     DrawPass DeferredMaterialShader::GetDrawModes() const
     {
-        return DrawPass::Depth | DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas | DrawPass::MotionVectors;
+        DrawPass modes = DrawPass::Depth | DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas;
+        if (HasProgram(SE_TEXT("MotionVectors")))
+            modes |= DrawPass::MotionVectors;
+        return modes;
     }
 
     bool DeferredMaterialShader::CanUseInstancing(InstancingHandler& handler) const
@@ -25,7 +28,7 @@ namespace SE
         {
             program = SE_TEXT("Depth");
         }
-        else if (pass == DrawPass::MotionVectors)
+        else if (pass == DrawPass::MotionVectors && HasProgram(SE_TEXT("MotionVectors")))
         {
             program = SE_TEXT("MotionVectors");
         }

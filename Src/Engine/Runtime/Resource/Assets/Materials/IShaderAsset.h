@@ -19,14 +19,13 @@ namespace SE
         // Append compile-time definitions to preamble and configure the new Slang request. The base owns
         // source storage and attaches the final SourceCode pointer after this hook returns.
         virtual void InitCompilationRequest(ShaderCompileRequest& request, StringAnsi& preamble);
+        // True on success. Saving can release the parent's chunk memory.
+        virtual bool Save() = 0;
 #endif
 
     protected:
         virtual BinaryAsset* GetShaderAsset() const = 0;
-#if SE_EDITOR
-        // True on success. Saving can release the parent's chunk memory.
-        virtual bool Save() = 0;
-#endif
+
         struct ShaderCacheResult
         {
             // Owns raw ShaderArtifact bytes independently of asset chunks, including across Save().

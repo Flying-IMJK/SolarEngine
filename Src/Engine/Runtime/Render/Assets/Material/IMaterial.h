@@ -125,7 +125,8 @@ namespace SE
 
         /// Returns the instance selected by the latest successful Bind, or nullptr after a failed Bind or unload.
         /// Bind render parameters and submit on the render thread before rebinding or unloading the material.
-        /// The material owns the instance and its immutable Program; instances can be shared by material assets.
+        /// The material owns the instance, which references Programs owned by its shader.
+        /// Material instances may borrow their base material's selected instance; keep both owners alive through submission.
         virtual ShaderProgramInstance* GetProgram() = 0;
 
     };

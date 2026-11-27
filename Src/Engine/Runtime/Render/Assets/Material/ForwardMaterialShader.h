@@ -7,7 +7,6 @@ namespace SE
     class ForwardMaterialShader final : public MaterialShader
     {
     public:
-        explicit ForwardMaterialShader(const StringView& name) : MaterialShader(name) {}
         DrawPass GetDrawModes() const override;
         bool CanUseInstancing(InstancingHandler& handler) const override;
         void Bind(BindParameters& params) override;

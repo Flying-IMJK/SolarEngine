@@ -1,13 +1,18 @@
 #pragma once
 
+#include <Runtime/Resource/AssetRef.h>
 #include <Runtime/Resource/Assets/Materials/IShaderAsset.h>
 #include <Runtime/Resource/Assets/Materials/MaterialBase.h>
 
 namespace SE
 {
+    class MaterialGenerator;
     class MaterialShader;
+    class Shader;
 
-    #define MATERIAL_VERSION 1
+#define MATERIAL_VERSION 1
+
+
 
     // <summary>
     /// Material asset that contains shader for rendering models on the GPU.
@@ -18,28 +23,24 @@ namespace SE
     private:
         SE_DEFINE_CLASS(Material, MaterialBase);
         ASSET_HEADER(Material);
+        friend class MaterialGenerator;
     private:
         MaterialShader* m_MaterialShader = nullptr;
-        ShaderStorage::Header _shaderHeader;
+        AssetRef<Shader> m_ShaderAsset;
+        ShaderStorage::Header m_ShaderHeader;
 
     public:
-        explicit Material(const AssetInfo* info);
+        ~Material() override;
 
-        /// <summary>
-        /// Tries to load surface graph from the asset.
-        /// </summary>
-        /// <param name="createDefaultIfMissing">True if create default surface if missing.</param>
-        /// <returns>The output surface data, or empty if failed to load.</returns>
-        BytesContainer LoadSurface(bool createDefaultIfMissing);
+        bool IsGraphShader() const override { return m_ShaderHeader.Material.GraphVersion != -1; }
+
+        Shader* GetShaderReference() const { return m_ShaderAsset.Get(); }
+        bool   SetShaderReference(Shader* pShader);
+
+        uint32 GetSerializedVersion() const override;
 
 #if SE_EDITOR
-        /// <summary>
-        /// Updates the material surface (save new one, discard cached data, reload asset).
-        /// </summary>
-        /// <param name="data">The surface graph data.</param>
-        /// <param name="info">The material info structure.</param>
-        /// <returns>True if cannot save it, otherwise false.</returns>
-        bool SaveSurface(const BytesContainer& data, const MaterialInfo& info);
+        void GetReferences(List<UID>& output) const override;
 
         // [ShaderAssetBase]
         void InitCompilationRequest(ShaderCompileRequest& request, StringAnsi& preamble) override;
@@ -48,7 +49,6 @@ namespace SE
     public:
         // [MaterialBase]
         bool IsMaterialInstance() const override;
-        MaterialShader* GetMaterialShaderObject() const override;
 
         // [IMaterial]
         const MaterialInfo& GetInfo() const override;
@@ -60,6 +60,11 @@ namespace SE
         void Bind(BindParameters& params) override;
 
         ShaderProgramInstance* GetProgram() override;
+
+#if SE_EDITOR
+        // Internal compilation saves may run before the asset has finished loading.
+        bool Save() override;
+#endif
 
     protected:
         // [BinaryAsset]
@@ -78,12 +83,13 @@ namespace SE
 
 #if SE_EDITOR
         void OnDependencyModified(BinaryAsset* asset) override;
-
-        /// <summary>
-        /// Saves this shader asset to the storage container.
-        /// </summary>
-        /// <returns>True if failed, otherwise false.</returns>
-        bool Save() override;
 #endif
+
+    private:
+        bool LoadShader(Shader* pShader);
+        void ReleaseShader();
+        void OnShaderLoaded(Asset* pAsset);
+        void OnShaderReloading(Asset* pAsset);
+        void OnShaderUnloaded();
     };
 } // SE

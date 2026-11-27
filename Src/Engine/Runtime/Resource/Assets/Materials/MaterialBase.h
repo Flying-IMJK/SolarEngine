@@ -38,7 +38,8 @@ namespace SE
         /// </summary>
         SE_FUNCTION(API())
         virtual bool IsReady() const override = 0;
-        virtual MaterialShader* GetMaterialShaderObject() const = 0;
+
+        virtual bool IsGraphShader() const = 0;
 
     public:
         /// <summary>

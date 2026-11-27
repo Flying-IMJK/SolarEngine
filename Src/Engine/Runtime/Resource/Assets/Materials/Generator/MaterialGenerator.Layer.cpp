@@ -114,7 +114,7 @@ MaterialLayer* MaterialGenerator::GetLayer(const UID& id, Node* caller)
     ASSERT(material);
 
     // Get surface data
-    BytesContainer surfaceData = material->LoadSurface(true);
+    BytesContainer surfaceData = LoadSurface(material, true);
     if (surfaceData.IsInvalid())
     {
         OnError(caller, nullptr, SE_TEXT("Cannot load surface data."));

@@ -1,4 +1,5 @@
 #pragma once
+#include <Runtime/Core/Types/UID.h>
 #include <Runtime/Render/Assets/Material/MaterialInfo.h>
 
 namespace SE
@@ -51,11 +52,11 @@ namespace SE
 
     public:
         /// <summary>
-        /// File header, version 20
+        /// Shared shader and material asset header, version 2
         /// </summary>
         struct Header
         {
-            static const int32 Version = 1;
+            static const int32 Version = 2;
 
             union
             {
@@ -75,6 +76,9 @@ namespace SE
                     /// The material additional information.
                     /// </summary>
                     MaterialInfo Info;
+
+                    /// Referenced Shader asset for the ordinary Shader source;
+                    UID ShaderID;
                 } Material;
 
                 struct

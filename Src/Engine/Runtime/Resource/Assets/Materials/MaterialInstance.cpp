@@ -121,11 +121,6 @@ namespace SE
         return true;
     }
 
-    MaterialShader* MaterialInstance::GetMaterialShaderObject() const
-    {
-        return _baseMaterial != nullptr ? _baseMaterial->GetMaterialShaderObject() : nullptr;
-    }
-
 #if SE_EDITOR
 
     void MaterialInstance::GetReferences(List<UID>& output) const
@@ -134,7 +129,9 @@ namespace SE
         MaterialBase::GetReferences(output);
 
         if (_baseMaterial)
+        {
             output.Add(_baseMaterial->GetID());
+        }
     }
 
 #endif

@@ -22,6 +22,9 @@ namespace SE
 
 		bool Load(const byte* data, int dataLength);
         bool HasProgram(const String& programName) const;
+        /// Read-only selection for the active target; does not create or cache a GPU Program.
+        /// The owner must keep the loaded artifact unchanged for the duration of this query.
+        bool IsGraphicsProgram(const String& programName, const List<String>& defines) const;
 
         // 根据 ProgramName 和 变体列表 复用或创建不可变 ShaderProgram。
         bool GetOrCreateProgram(const String&                   programName,

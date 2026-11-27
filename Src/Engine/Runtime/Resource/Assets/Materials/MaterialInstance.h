@@ -34,6 +34,8 @@ namespace SE
 
         ShaderProgramInstance* GetProgram() override;
 
+        bool IsGraphShader() const override { return _baseMaterial ? _baseMaterial->IsGraphShader() : false; };
+
 #if SE_EDITOR
 
         /// <summary>
@@ -55,7 +57,7 @@ namespace SE
     public:
         // [MaterialBase]
         bool IsMaterialInstance() const override;
-        MaterialShader* GetMaterialShaderObject() const override;
+
 #if SE_EDITOR
         void GetReferences(List<UID>& output) const override;
 #endif

@@ -1,15 +1,17 @@
+#include <Runtime/Resource/Assets/Materials/Generator/MaterialGenerator.h>
 
-#include "MaterialGenerator.h"
-#include "MaterialLayer.h"
-#include "Runtime/Graph/GraphUtilities.h"
-#include "Runtime/Render/Assets/Material/MaterialShader.h"
-#include "Runtime/Render/Assets/Material/MaterialShaderFeatures.h"
-#include "Runtime/Core/Platform/File.h"
-#include "Runtime/Core/Serialization/MemoryReadStream.h"
-#include "Runtime/Core/Thread/Threading.h"
-#include "Runtime/Engine.h"
-#include "Runtime/EngineContext.h"
-#include "Runtime/Resource/Assets/Materials/Material.h"
+#include <Runtime/Core/Platform/File.h>
+#include <Runtime/Core/Serialization/MemoryReadStream.h>
+#include <Runtime/Core/Serialization/MemoryWriteStream.h>
+#include <Runtime/Core/Thread/Threading.h>
+#include <Runtime/Engine.h>
+#include <Runtime/EngineContext.h>
+#include <Runtime/Graph/GraphUtilities.h>
+#include <Runtime/Render/Assets/Material/MaterialShader.h>
+#include <Runtime/Render/Assets/Material/MaterialShaderFeatures.h>
+#include <Runtime/Resource/Assets/Materials/Generator/MaterialLayer.h>
+#include <Runtime/Resource/Assets/Materials/Material.h>
+#include <Runtime/Resource/Assets/Materials/ShaderCacheManager.h>
 
 namespace SE
 {
@@ -133,6 +135,110 @@ namespace SE
         _layers.ClearDelete();
     }
 
+    BytesContainer MaterialGenerator::LoadSurface(Material* pMaterial, bool createDefaultIfMissing)
+    {
+        BytesContainer result;
+        if (!pMaterial->WaitForLoaded() && !pMaterial->LastLoadFailed())
+        {
+            return result;
+        }
+        Threading::ScopeLock lock(pMaterial->Locker);
+
+        if (!pMaterial->IsGraphShader())
+        {
+            LOG_ERROR("Resource", "Only Graph materials have a surface.");
+            return result;
+        }
+
+        // Check if has that chunk
+        if (pMaterial->HasChunk(SHADER_FILE_CHUNK_VISJECT_SURFACE))
+        {
+            // Load graph
+            if (pMaterial->LoadChunks(GET_CHUNK_FLAG(SHADER_FILE_CHUNK_VISJECT_SURFACE)))
+            {
+                // Get stream with graph data
+                const auto data = pMaterial->GetChunk(SHADER_FILE_CHUNK_VISJECT_SURFACE);
+                result.Copy(data->Data);
+                return result;
+            }
+        }
+
+        LOG_WARNING("Resource", "Material \'{0}\' surface data is missing.", pMaterial->ToString());
+
+#if COMPILE_WITH_MATERIAL_GRAPH
+
+        // Check if create default surface
+        if (createDefaultIfMissing)
+        {
+            // Create default layer
+            const auto layer = MaterialLayer::CreateDefault(pMaterial->GetID());
+
+            // Serialize layer to stream
+            MemoryWriteStream stream(256);
+            layer->Graph.Save(&stream, false);
+
+            // Set output data
+            result.Copy(stream.GetHandle(), stream.GetPosition());
+            return result;
+        }
+
+#endif
+
+        return result;
+    }
+
+#if SE_EDITOR
+
+    bool MaterialGenerator::SaveSurface(Material* pMaterial, const BytesContainer& data, const MaterialInfo& info)
+    {
+        // Wait for asset to be loaded or don't if last load failed (eg. by shader source compilation error)
+        if (pMaterial->LastLoadFailed())
+        {
+            LOG_WARNING("Resource", "Saving asset that failed to load.");
+        }
+        else if (!pMaterial->WaitForLoaded())
+        {
+            LOG_ERROR("Resource", "Asset loading failed. Cannot save it.");
+            return false;
+        }
+
+        Threading::ScopeLock lock(pMaterial->Locker);
+
+        if (!pMaterial->IsGraphShader())
+        {
+            LOG_ERROR("Resource", "Cannot save a Graph surface to a Shader material.");
+            return false;
+        }
+
+        // Release all chunks
+        for (int32 i = 0; i < ASSET_FILE_DATA_CHUNKS; i++)
+        {
+            pMaterial->ReleaseChunk(i);
+        }
+
+        // Update material info
+        pMaterial->m_ShaderHeader.Material.GraphVersion = MATERIAL_GRAPH_VERSION;
+        pMaterial->m_ShaderHeader.Material.Info         = info;
+
+        // Set Visject Surface data
+        auto visjectSurfaceChunk = pMaterial->GetOrCreateChunk(SHADER_FILE_CHUNK_VISJECT_SURFACE);
+        ENGINE_ASSERT(visjectSurfaceChunk != nullptr);
+        visjectSurfaceChunk->Data.Copy(data);
+
+        if (!pMaterial->Save())
+        {
+            LOG_ERROR("Resource", "Cannot save \'{0}\'", pMaterial->ToString());
+            return false;
+        }
+
+        // Invalidate shader cache
+        ShaderCacheManager::RemoveCache(pMaterial->GetID());
+
+        return true;
+    }
+
+#endif
+
     MaterialLayer* MaterialGenerator::GetRootLayer() const
     {
         return _layers.Count() > 0 ? _layers[0] : nullptr;
@@ -223,7 +329,7 @@ namespace SE
         ENGINE_ASSERT(material);
 
         // Get surface data
-        BytesContainer surfaceData = material->LoadSurface(true);
+        BytesContainer surfaceData = LoadSurface(material, true);
         if (surfaceData.IsInvalid())
         {
             OnError(caller, nullptr, SE_TEXT("Cannot load surface data."));

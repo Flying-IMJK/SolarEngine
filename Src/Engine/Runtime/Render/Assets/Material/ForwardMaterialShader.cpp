@@ -29,6 +29,8 @@ namespace SE
                 program = SE_TEXT("Depth");
                 break;
             case DrawPass::Distortion:
+                if (!HasProgram(SE_TEXT("Distortion")))
+                    return;
                 program                      = SE_TEXT("Distortion");
                 description.DepthWriteEnable = false;
                 description.BlendMode        = BlendingMode::Add;

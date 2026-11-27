@@ -846,7 +846,7 @@ namespace SE
             else
             {
                 // Create material
-                CreateMaterial::Options materialOptions;
+                CreateMaterial::Options materialOptions(MaterialSource::Graph);
                 materialOptions.Diffuse.Color = material.Diffuse.Color;
                 if (material.Diffuse.TextureIndex != -1)
                     materialOptions.Diffuse.Texture = data.Textures[material.Diffuse.TextureIndex].AssetID;

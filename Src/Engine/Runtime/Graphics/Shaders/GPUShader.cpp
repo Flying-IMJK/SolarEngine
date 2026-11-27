@@ -30,6 +30,24 @@ namespace SE
         return false;
     }
 
+    bool GPUShader::IsGraphicsProgram(const String& programName, const List<String>& defines) const
+    {
+        const ShaderProgramRecord* program;
+        const ShaderTargetRecord*  target;
+        const ShaderVariantRecord* variant;
+        if (!SelectProgram(programName, defines, program, target, variant))
+            return false;
+
+        bool hasVertex = false;
+        for (const ShaderStageRecord& stage : variant->Stages)
+        {
+            if (stage.Stage == ShaderStage::Compute)
+                return false;
+            hasVertex |= stage.Stage == ShaderStage::Vertex;
+        }
+        return hasVertex;
+    }
+
     bool GPUShader::Load(const byte* data, int dataLength)
     {
         ShaderArtifact artifact;

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Types.h"
-#include "Runtime/Core/Math/Color.h"
-#include "Runtime/Core/Types/UID.h"
-#include "Runtime/Render/Assets/Material/MaterialInfo.h"
+#include <Runtime/Core/Math/Color.h>
+#include <Runtime/Core/Types/UID.h>
+#include <Runtime/Resource/Assets/Materials/Material.h>
+#include <Runtime/Resource/Importers/Types.h>
 
 namespace SE
 {
@@ -16,7 +16,8 @@ namespace SE
 	public:
 		struct Options
 		{
-			MaterialInfo Info;
+            UID ShaderID = UID::Empty;
+            MaterialInfo Info;
 
 			struct
 			{
@@ -48,9 +49,9 @@ namespace SE
 				UID Texture = UID::Empty;
 			} Normals;
 
-            /// <summary>Initializes authoring defaults. Exported for editor-side material creation.</summary>
-            SE_API_RUNTIME Options();
-		};
+            /// <summary>Selects the immutable asset source and initializes authoring defaults.</summary>
+            explicit SE_API_RUNTIME Options();
+        };
 
 		/// <summary>
 		/// Creates the material asset.

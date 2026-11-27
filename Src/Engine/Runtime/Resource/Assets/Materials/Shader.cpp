@@ -1,6 +1,7 @@
 #include <Runtime/Resource/Assets/Materials/Shader.h>
 
 #include <Runtime/Graphics/GPUDevice.h>
+#include <Runtime/Render/Assets/Material/MaterialParams.h>
 #include <Runtime/Resource/Factories/BinaryAssetFactory.h>
 
 namespace SE
@@ -33,6 +34,12 @@ namespace SE
     {
         GPUShaderProgram* program = nullptr;
         return pInstance && SelectProgram(name, selection, program) && pInstance->Initialize(program);
+    }
+
+    void Shader::GetMaterialParameters(MaterialParams& output) const
+    {
+        // Source declarations and their reflected defaults will populate this collection later.
+        output.Dispose();
     }
 
     bool Shader::OnInit(AssetInitData& initData)

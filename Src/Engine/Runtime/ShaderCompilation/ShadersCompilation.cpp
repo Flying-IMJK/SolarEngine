@@ -13,6 +13,7 @@
 #include <Runtime/Resource/Assets/Materials/Material.h>
 #include <Runtime/Resource/Assets/Materials/Shader.h>
 #include <Runtime/Resource/Importers/AssetsImportingSystem.h>
+#include <Runtime/Resource/Storage/AssetStorages.h>
 #include <Runtime/ShaderCompilation/Slang/SlangShaderCompiler.h>
 
 namespace SE
@@ -242,8 +243,36 @@ namespace SE
 			outPutPath.Append(".");
 			outPutPath.Append(ASSET_FILES_EXTENSION);
 
-			AssetsImporting::ImportIfEdited(shaderFile, outPutPath.ToString());
-		}
+            const String assetPath = outPutPath.ToString();
+            bool         reimport  = false;
+            if (FileSystem::FileExists(assetPath))
+            {
+                // Source timestamps cannot detect a shared asset-header format change.
+                const StorageReference storage = AssetStorages::GetStorage(assetPath);
+                AssetInitData          data;
+                if (!storage || storage->GetEntriesCount() != 1 || !storage->LoadAssetHeader(0, data))
+                {
+                    LOG_ERROR("Shader", "Cannot read Shader asset header for '{0}'.", assetPath);
+                    return false;
+                }
+                reimport = data.SerializedVersion != ShaderStorage::Header::Version || data.CustomData.Length() != sizeof(ShaderStorage::Header);
+            }
+
+            if (reimport)
+            {
+                LOG_INFO("Shader", "Reimporting '{0}' for shared Shader header version {1}.", assetPath, ShaderStorage::Header::Version);
+                if (!AssetsImporting::Import(shaderFile, assetPath, nullptr))
+                {
+                    LOG_ERROR("Shader", "Cannot reimport Shader '{0}'.", shaderFile);
+                    return false;
+                }
+            }
+            else
+            {
+                // ImportIfEdited also returns false when the source is already up to date.
+                AssetsImporting::ImportIfEdited(shaderFile, assetPath);
+            }
+        }
 
 
 #endif

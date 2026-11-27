@@ -1,9 +1,13 @@
 
-#include "CreateMaterial.h"
+#include <Runtime/Resource/Importers/CreateMaterial.h>
 
-#include "Runtime/Resource/Assets/Materials/Material.h"
-#include "Runtime/Resource/Assets/Materials/Generator/MaterialGenerator.h"
-#include "Runtime/Resource/Assets/Materials/Generator/MaterialLayer.h"
+#include <Runtime/Core/Thread/Threading.h>
+
+#include <Runtime/Render/Assets/Material/MaterialShader.h>
+#include <Runtime/Resource/Assets/Materials/Generator/MaterialGenerator.h>
+#include <Runtime/Resource/Assets/Materials/Generator/MaterialLayer.h>
+#include <Runtime/Resource/Assets/Materials/Material.h>
+#include <Runtime/Resource/Assets/Materials/Shader.h>
 
 namespace SE
 {
@@ -117,7 +121,6 @@ namespace SE
         }
     }
 
-
     CreateMaterial::Options::Options()
     {
         Info.Domain = MaterialDomain::Surface;
@@ -138,65 +141,93 @@ namespace SE
     CreateAssetResult CreateMaterial::Create(CreateAssetContext& context)
     {
         // Base
-        IMPORT_SETUP(Material, MATERIAL_VERSION);
+        IMPORT_SETUP(Material, ShaderStorage::Header::Version);
         context.SkipMetadata = true;
 
+        if (!context.CustomArg)
+        {
+            LOG_ERROR("Resource", "Material creation requires explicit source options.");
+            return CreateAssetResult::Error;
+        }
+        const Options&        options = *static_cast<const Options*>(context.CustomArg);
         ShaderStorage::Header shaderHeader;
         Platform::MemoryClear(&shaderHeader, sizeof(shaderHeader));
-        if (context.CustomArg)
+        shaderHeader.Material.Info   = options.Info;
+
+        if (options.ShaderID.IsValid())
         {
-            // Use custom material properties
-            const Options& options = *(Options*)context.CustomArg;
-            shaderHeader.Material.Info = options.Info;
+            shaderHeader.Material.GraphVersion = -1;
+            shaderHeader.Material.ShaderID     = options.ShaderID;
 
-            // Generate Visject Surface with custom material properties setup
-            auto layer = MaterialLayer::CreateDefault(context.Data.Header.ID);
-            if (context.AllocateChunk(SHADER_FILE_CHUNK_VISJECT_SURFACE))
-                return CreateAssetResult::CannotAllocateChunk;
-            layer->Graph.Nodes.EnsureCapacity(32);
-            layer->Root = &layer->Graph.Nodes[0];
-            for (auto& box : layer->Root->Boxes)
-                box.Parent = layer->Root;
-            Meta11 meta;
-            meta.Selected = false;
-
-            // Diffuse + Mask
-            ShaderGraphNode<>* diffuseTextureNode;
-            AddInput(layer, meta, MaterialGraphBoxes::Color, options.Diffuse.Texture, options.Diffuse.Color, Colors::Black, Float2::Zero, &diffuseTextureNode);
-            if (diffuseTextureNode && options.Diffuse.HasAlphaMask)
+            Shader* shader = AssetContent::LoadAsync<Shader>(options.ShaderID);
+            if (!shader || !shader->WaitForLoaded())
             {
-                CONNECT(layer->Root->Boxes[static_cast<int32>(MaterialGraphBoxes::Mask)], diffuseTextureNode->Boxes[5]);
+                LOG_ERROR("Resource", "Cannot load the Shader used to create a material.");
+                return CreateAssetResult::Error;
             }
 
-            // Emissive
-            AddInput(layer, meta, MaterialGraphBoxes::Emissive, options.Emissive.Texture, options.Emissive.Color, Colors::Black, Float2(0, 200));
-
-            // Opacity
-            AddInput(layer, meta, MaterialGraphBoxes::Opacity, options.Opacity.Texture, options.Opacity.Value, 1.0f, Float2(0, 400));
-
-            // Opacity
-            AddInput(layer, meta, MaterialGraphBoxes::Roughness, options.Roughness.Texture, options.Roughness.Value, 0.5f, Float2(200, 400));
-
-            // Normal
-            auto normalMap = AddTextureNode(layer, options.Normals.Texture, true);
-            if (normalMap)
+            Threading::ScopeLock shaderLock(shader->Locker);
+            if (!IShaderAsset::IsNullRenderer())
             {
-                CONNECT(layer->Root->Boxes[static_cast<int32>(MaterialGraphBoxes::Normal)], normalMap->Boxes[1]);
-                SET_POS(normalMap, Float2(-893.5272f, -200.926111f));
+                MaterialShader* material = MaterialShader::Create(shader->GetGPUShader(), options.Info);
+                if (!material)
+                {
+                    return CreateAssetResult::Error;
+                }
+                Delete(material);
             }
 
-            MemoryWriteStream stream(512);
-            layer->Graph.Save(&stream, true);
-            context.Data.Header.Chunks[SHADER_FILE_CHUNK_VISJECT_SURFACE]->Data.Copy(stream.GetHandle(), stream.GetPosition());
-            Delete(layer);
+            context.Data.CustomData.Copy(&shaderHeader);
         }
         else
         {
-            // Use default material properties and don't create graph Surface because during material loading it will be generated
-            const Options options;
-            shaderHeader.Material.Info = options.Info;
+            shaderHeader.Material.GraphVersion = MATERIAL_GRAPH_VERSION;
+            {
+                // Graph source and its initial authoring values are fixed by the creation options.
+
+                // Generate Visject Surface with custom material properties setup
+                auto layer = MaterialLayer::CreateDefault(context.Data.Header.ID);
+                if (context.AllocateChunk(SHADER_FILE_CHUNK_VISJECT_SURFACE))
+                    return CreateAssetResult::CannotAllocateChunk;
+                layer->Graph.Nodes.EnsureCapacity(32);
+                layer->Root = &layer->Graph.Nodes[0];
+                for (auto& box : layer->Root->Boxes)
+                    box.Parent = layer->Root;
+                Meta11 meta;
+                meta.Selected = false;
+
+                // Diffuse + Mask
+                ShaderGraphNode<>* diffuseTextureNode;
+                AddInput(layer, meta, MaterialGraphBoxes::Color, options.Diffuse.Texture, options.Diffuse.Color, Colors::Black, Float2::Zero, &diffuseTextureNode);
+                if (diffuseTextureNode && options.Diffuse.HasAlphaMask)
+                {
+                    CONNECT(layer->Root->Boxes[static_cast<int32>(MaterialGraphBoxes::Mask)], diffuseTextureNode->Boxes[5]);
+                }
+
+                // Emissive
+                AddInput(layer, meta, MaterialGraphBoxes::Emissive, options.Emissive.Texture, options.Emissive.Color, Colors::Black, Float2(0, 200));
+
+                // Opacity
+                AddInput(layer, meta, MaterialGraphBoxes::Opacity, options.Opacity.Texture, options.Opacity.Value, 1.0f, Float2(0, 400));
+
+                // Opacity
+                AddInput(layer, meta, MaterialGraphBoxes::Roughness, options.Roughness.Texture, options.Roughness.Value, 0.5f, Float2(200, 400));
+
+                // Normal
+                auto normalMap = AddTextureNode(layer, options.Normals.Texture, true);
+                if (normalMap)
+                {
+                    CONNECT(layer->Root->Boxes[static_cast<int32>(MaterialGraphBoxes::Normal)], normalMap->Boxes[1]);
+                    SET_POS(normalMap, Float2(-893.5272f, -200.926111f));
+                }
+
+                MemoryWriteStream stream(512);
+                layer->Graph.Save(&stream, true);
+                context.Data.Header.Chunks[SHADER_FILE_CHUNK_VISJECT_SURFACE]->Data.Copy(stream.GetHandle(), stream.GetPosition());
+                Delete(layer);
+            }
+            context.Data.CustomData.Copy(&shaderHeader);
         }
-        context.Data.CustomData.Copy(&shaderHeader);
 
         return CreateAssetResult::Ok;
     }

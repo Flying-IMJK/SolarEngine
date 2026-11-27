@@ -8,6 +8,8 @@
 
 namespace SE
 {
+    class Material;
+
     /// <summary>
     /// Material node input boxes (each enum item value maps to box ID).
     /// </summary>
@@ -205,6 +207,25 @@ namespace SE
         void WriteCustomGlobalCode(const List<const MaterialGraph::Node*, InlinedAllocation<8>>& nodes, int32 templateInputsMapping);
 
     public:
+
+        /// <summary>
+        /// Loads a copy of the material surface graph, waiting for loading and locking the asset.
+        /// </summary>
+        /// <param name="pMaterial">The material asset. Must not be null.</param>
+        /// <param name="createDefaultIfMissing">True to create a default surface if missing.</param>
+        /// <returns>The owned surface data, or empty if loading failed.</returns>
+        static BytesContainer LoadSurface(Material* pMaterial, bool createDefaultIfMissing);
+
+#if SE_EDITOR
+        /// <summary>
+        /// Saves the material surface and invalidates its shader cache while holding the asset lock.
+        /// </summary>
+        /// <param name="pMaterial">The material asset. Must not be null.</param>
+        /// <param name="data">The surface graph data.</param>
+        /// <param name="info">The material info structure.</param>
+        /// <returns>True on success, otherwise false.</returns>
+        static bool SaveSurface(Material* pMaterial, const BytesContainer& data, const MaterialInfo& info);
+#endif
 
         static MaterialValue getUVs;
         static MaterialValue getTime;
