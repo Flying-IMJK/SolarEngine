@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Runtime/API.h"
-#include "Runtime/Core/Types/Collections/List.h"
-#include "Runtime/Core/Types/Strings/String.h"
-#include "Runtime/ShaderCompilation/Slang/ShaderReflectionIR.h"
-#include "Runtime/ShaderCompilation/ShaderCompileTypes.h"
-#include "Runtime/ShaderCompilation/Slang/ShaderVariantPlanner.h"
+#include <Runtime/Core/Types/Collections/List.h>
+#include <Runtime/Core/Types/Strings/String.h>
+#include <Runtime/API.h>
+#include <Runtime/Render/Assets/Material/MaterialParams.h>
+#include <Runtime/ShaderCompilation/Slang/ShaderReflectionIR.h>
+#include <Runtime/ShaderCompilation/Slang/ShaderVariantPlanner.h>
 
 namespace SE
 {
@@ -90,16 +90,47 @@ namespace SE
 		List<ShaderTargetRecord> Targets;
 	};
 
-	struct SE_API_RUNTIME ShaderArtifact
-	{
-		String Format = SE_TEXT("SLC2");
-		uint32 Version = 4;
-		String CompilerBuildTag;
-		List<ShaderProgramRecord> Programs;
-	};
+    // Public source declarations are independent of optimized per-variant binding layouts.
+    struct SE_API_RUNTIME ShaderMaterialParameter
+    {
+        String                Name;
+        StringID              ShaderName;
+        MaterialParameterType Type = MaterialParameterType::Invalid;
+        BytesContainer        DefaultValue;
 
+        uint32 GetValueSize() const
+        {
+            switch (Type)
+            {
+                case MaterialParameterType::Bool:
+                case MaterialParameterType::Integer:
+                case MaterialParameterType::Float:
+                    return 4;
+                case MaterialParameterType::Vector2:
+                    return 8;
+                case MaterialParameterType::Vector3:
+                    return 12;
+                case MaterialParameterType::Vector4:
+                case MaterialParameterType::Color:
+                    return 16;
+                case MaterialParameterType::Matrix:
+                    return 64;
+                default:
+                    return 0;
+            }
+        }
+    };
 
-	struct SE_API_RUNTIME ShaderProgramStageDeclaration
+    struct SE_API_RUNTIME ShaderArtifact
+    {
+        String                        Format  = SE_TEXT("SLC2");
+        uint32                        Version = 5;
+        String                        CompilerBuildTag;
+        List<ShaderMaterialParameter> MaterialParameters;
+        List<ShaderProgramRecord>     Programs;
+    };
+
+    struct SE_API_RUNTIME ShaderProgramStageDeclaration
     {
         ShaderStage Stage = ShaderStage::Max;
         StringAnsi  EntryPoint;

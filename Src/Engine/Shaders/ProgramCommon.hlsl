@@ -55,6 +55,17 @@ struct SolarShadeTargetAttribute
 	ShadeTarget target;
 };
 
+[__AttributeUsage(_AttributeTargets.Var)]
+struct SolarShadeParamAttribute
+{
+	string name;
+};
+
+[__AttributeUsage(_AttributeTargets.Var)]
+struct ShadeColorParamAttribute
+{
+	string name;
+};
 
 #define SHADER_VS(entry) SolarShaderStage("vertex", #entry)
 #define SHADER_HS(entry) SolarShaderStage("hull", #entry)

@@ -12,6 +12,7 @@
 #include <Runtime/Render/RenderBuffers.h>
 #include <Runtime/Resource/AssetContent.h>
 #include <Runtime/Resource/Streaming/Streaming.h>
+#include <Runtime/ShaderCompilation/Slang/Artifact/ShaderArtifact.h>
 #include <Runtime/Utilities/Variant.h>
 
 namespace SE
@@ -242,11 +243,16 @@ namespace SE
 
     bool MaterialParameter::Bind(BindMeta& meta) const
     {
-        if (!meta.Program || m_ShaderName.IsEmpty())
+        if (!meta.Program || m_ShaderName == StringID::Invalid)
+        {
             return false;
+        }
+
         ShaderVar variable;
-        if (!meta.Program->FindVar(m_ShaderName, variable))
+        if (!meta.Program->FindVar(m_ShaderName.ToString(), variable))
+        {
             return true;
+        }
         const auto write = [&variable](const void* pData, uint32 size) {
             return variable.GetLocation().UniformByteSize == size && variable.SetUniform(pData, size);
         };
@@ -549,6 +555,48 @@ namespace SE
         result.m_VersionHash = m_VersionHash;
     }
 
+    void MaterialParams::SyncShaderParameters(const List<ShaderMaterialParameter>& declarations)
+    {
+        MaterialParams previous;
+        Clone(previous);
+        Resize(0);
+        Resize(declarations.Count(), false);
+        for (int32 index = 0; index < declarations.Count(); index++)
+        {
+            const ShaderMaterialParameter& declaration = declarations[index];
+            MaterialParameter&             parameter   = At(index);
+            parameter.m_Type                           = declaration.Type;
+            parameter.m_IsPublic                       = true;
+            parameter.m_Override                       = true;
+            parameter.m_Name                           = declaration.Name;
+            parameter.m_ShaderName                     = declaration.ShaderName;
+
+            const uint32 size = declaration.GetValueSize();
+            if (declaration.Type == MaterialParameterType::Bool)
+            {
+                // Slang packs bool as uint32; the material's host-side representation is bool.
+                uint32 value;
+                Platform::MemoryCopy(&value, declaration.DefaultValue.Get(), sizeof(value));
+                parameter._asBool = value != 0;
+            }
+            else if (size != 0)
+            {
+                Platform::MemoryCopy(parameter.AsData, declaration.DefaultValue.Get(), size);
+            }
+            for (const MaterialParameter& old : previous)
+            {
+                if (old.m_ShaderName == declaration.ShaderName && old.m_Type == declaration.Type)
+                {
+                    parameter.clone(&old);
+                    parameter.m_Name     = declaration.Name;
+                    parameter.m_IsPublic = true;
+                    break;
+                }
+            }
+        }
+        UpdateHash();
+    }
+
     void MaterialParams::Dispose()
     {
         Resize(0);
@@ -588,7 +636,10 @@ namespace SE
                         param->m_IsPublic = stream->ReadBool();
                         param->m_Override = stream->ReadBool();
                         stream->ReadString(&param->m_Name, 10421);
-                        stream->ReadString(&param->m_ShaderName, 10421);
+
+                        String shaderName;
+                        stream->ReadString(&shaderName, 10421);
+                        param->m_ShaderName = StringID(shaderName);
 
                         // Read value
                         switch (param->m_Type)
@@ -675,7 +726,7 @@ namespace SE
             stream->WriteBool(param->m_IsPublic);
             stream->WriteBool(param->m_Override);
             stream->WriteString(param->m_Name, 10421);
-            stream->WriteString(param->m_ShaderName, 10421);
+            stream->WriteString(param->m_ShaderName.ToString(), 10421);
 
             // Write value
             UID id;

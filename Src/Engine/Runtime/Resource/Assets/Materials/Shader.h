@@ -8,7 +8,6 @@ namespace SE
 {
     class MaterialParams;
 
-    /// Shared ShaderArtifact shader asset for handwritten Slang programs.
     SE_CLASS(Reflect, API(NoSpawn))
     class SE_API_RUNTIME Shader final : public BinaryAsset, public IShaderAsset
     {
@@ -17,13 +16,17 @@ namespace SE
 
     public:
         ~Shader() override;
-        // Render-thread selection. The asset owns the immutable Program; release instances and pipelines
-        // referencing it before the asset reloads or unloads. Failure clears output.
-        bool SelectProgram(const String& programName, const List<String>& selection, GPUShaderProgram*& output);
-        bool SelectProgram(const String& programName, const List<String>& selection, ShaderProgramInstance* pInstance);
+        
+        SE_FUNCTION(API())
+        bool SelectProgram(const String& name, const List<String>& selection, SE_PARAM(API(Out)) GPUShaderProgram*& output);
+
+        SE_FUNCTION(API())
+        bool SelectProgram(const String& name, const List<String>& selection, ShaderProgramInstance* pInstance);
+
+        SE_FUNCTION(API())
         GPUShader* GetGPUShader() const { return m_GPUShader; }
-        /// Public material parameter declarations. Currently empty until source reflection is implemented.
-        void   GetMaterialParameters(MaterialParams& output) const;
+
+        const List<ShaderMaterialParameter>& GetMaterialParameters();
         uint32 GetSerializedVersion() const override;
 
 #if SE_EDITOR

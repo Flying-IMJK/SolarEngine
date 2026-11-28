@@ -466,22 +466,15 @@ namespace SE::BuildTool
             }
 
             CXType canonical = clang_getCanonicalType(argType);
-            param.isPointer = (canonical.kind == CXType_Pointer);
-            param.pointerDepth = 0;
-            CXType pointerType = canonical;
-            while (pointerType.kind == CXType_Pointer)
-            {
-                ++param.pointerDepth;
-                pointerType = clang_getCanonicalType(clang_getPointeeType(pointerType));
-            }
             param.isRef = (canonical.kind == CXType_LValueReference ||
                            canonical.kind == CXType_RValueReference);
             param.isMoveRef = canonical.kind == CXType_RValueReference;
 
+            // Strip references before pointers so T*& keeps both declarator flags.
             CXType valueType = argType;
-            if (param.isPointer || param.isRef)
+            if (param.isRef)
             {
-                CXType pointeeType = clang_getPointeeType(argType);
+                CXType pointeeType = clang_getPointeeType(valueType);
                 if (pointeeType.kind == CXType_Invalid)
                 {
                     pointeeType = clang_getPointeeType(canonical);
@@ -490,9 +483,30 @@ namespace SE::BuildTool
                 {
                     valueType = pointeeType;
                 }
+                canonical = clang_getCanonicalType(valueType);
             }
 
+            // Keep reference mutability separate from the pointed-to type's constness.
             param.isConst = clang_isConstQualifiedType(valueType) != 0;
+            while (canonical.kind == CXType_Pointer)
+            {
+                param.isPointer = true;
+                ++param.pointerDepth;
+                CXType pointeeType = clang_getPointeeType(valueType);
+                if (pointeeType.kind == CXType_Invalid)
+                {
+                    pointeeType = clang_getPointeeType(canonical);
+                }
+                if (pointeeType.kind != CXType_Invalid)
+                {
+                    valueType = pointeeType;
+                }
+                if (!param.isRef && param.pointerDepth == 1)
+                {
+                    param.isConst = clang_isConstQualifiedType(valueType) != 0;
+                }
+                canonical = clang_getCanonicalType(valueType);
+            }
 
             // Preserve only an actual typedef/using declaration. The native
             // typeID below remains canonical for C++ casts and signatures.

@@ -16,6 +16,7 @@ RUNTIME_ADD(
     ShaderVariantPlanner.h
     ShaderVariantPlanner.cpp
     SlangReflectionBuilder.cpp
+    SlangMaterialParameterCompiler.cpp
     SlangShaderCompiler.h
     SlangShaderCompiler.cpp
     SlangShaderFileSystem.h

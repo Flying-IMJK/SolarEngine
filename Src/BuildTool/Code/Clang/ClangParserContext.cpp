@@ -669,7 +669,9 @@ namespace SE::BuildTool
                 continue;
             if (foundIndex >= 0)
             {
-                LogError("Multiple SE_PARAM markers for parameter at line {0}", candidate.fileLine);
+                HeaderInfo const* pHeaderInfo = GetHeaderInfo(candidate.headerID);
+                LogError("{0}({1},{2}): error: Multiple SE_PARAM markers for parameter",
+                         pHeaderInfo->filePath, candidate.fileLine, candidate.fileColumn);
                 return false;
             }
             foundIndex = index;

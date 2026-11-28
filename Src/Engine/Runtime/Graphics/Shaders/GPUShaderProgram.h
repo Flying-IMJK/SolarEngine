@@ -8,15 +8,15 @@ namespace SE
 {
     // 已选中 Program/Target/Variant 后生成的不可变 ShaderProgram 缓存对象。
     // 平台无关层只保存 ShaderArtifact 指针和反射；具体 GPU 后端在派生类中持有 shader module / pipeline layout 等对象。
-    class SE_API_RUNTIME GPUShaderProgram
+    SE_CLASS(API(NoSpawn))
+    class SE_API_RUNTIME GPUShaderProgram : public ScriptingObject
     {
+        SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(GPUShaderProgram, ScriptingObject)
     public:
-        virtual ~GPUShaderProgram() {}
-
         virtual bool Initialize(const ShaderProgramRecord* program, const ShaderTargetRecord* target, const ShaderVariantRecord* variant);
 
         const String&                  GetProgramId() const;
-        const ShaderVariantRecord*       GetVariant() const;
+        const ShaderVariantRecord*     GetVariant() const;
         const ShaderProgramReflection& GetReflection() const;
 
     protected:

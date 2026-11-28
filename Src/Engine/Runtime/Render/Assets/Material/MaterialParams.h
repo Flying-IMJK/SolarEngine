@@ -23,6 +23,7 @@ namespace SE
     class ReadStream;
     class MaterialParams;
     class MaterialInstance;
+    struct ShaderMaterialParameter;
 
     struct MaterialParamsLink
     {
@@ -190,7 +191,7 @@ namespace SE
         MaterialParameterType m_Type = MaterialParameterType::Invalid;
         bool m_IsPublic;
         bool m_Override;
-        String                m_ShaderName;
+        StringID m_ShaderName;
 
         union
         {
@@ -284,7 +285,7 @@ namespace SE
         }
 
         /// The stable reflected path generated for this parameter, independent of its display name.
-        const String& GetShaderName() const { return m_ShaderName; }
+        const StringView& GetShaderName() const { return m_ShaderName.ToString(); }
 
     public:
         /// <summary>
@@ -378,6 +379,10 @@ namespace SE
         /// </summary>
         /// <param name="result">The result container.</param>
         void Clone(MaterialParams& result);
+
+        // Reconcile declarations from a validated ShaderArtifact, retaining values and IDs by path/type.
+        // Defaults use Slang's packed encoding; the caller must exclusively own edits to this collection.
+        void SyncShaderParameters(const List<ShaderMaterialParameter>& declarations);
 
         /// <summary>
         /// Releases the whole data.

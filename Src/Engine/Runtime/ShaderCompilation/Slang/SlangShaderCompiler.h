@@ -15,8 +15,9 @@ namespace SE
 		ShaderCompileResult Compile(const ShaderCompileRequest& request);
 
 	private:
+        bool MaterialParameters(slang::ProgramLayout* pLayout, List<ShaderMaterialParameter>& parameters, String& error);
 
-		bool BuildReflection(slang::IComponentType*   linked,
+        bool BuildReflection(slang::IComponentType*   linked,
                              const List<ShaderStage>& stages,
                              SlangInt                 targetIndex,
                              slang::ProgramLayout*    layout,

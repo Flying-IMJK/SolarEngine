@@ -5,7 +5,6 @@
 #include "Runtime/Graphics/Base/GPUResource.h"
 #include "Runtime/ShaderCompilation/ShaderCompileTypes.h"
 #include "Runtime/ShaderCompilation/Slang/Artifact/ShaderArtifact.h"
-#include "Reflection/ShaderProgramReflection.h"
 
 namespace SE
 {
@@ -21,6 +20,9 @@ namespace SE
 		~GPUShader() override;
 
 		bool Load(const byte* data, int dataLength);
+        
+        const ShaderArtifact& GetArtifact() const { return m_Artifact; }
+
         bool HasProgram(const String& programName) const;
         /// Read-only selection for the active target; does not create or cache a GPU Program.
         /// The owner must keep the loaded artifact unchanged for the duration of this query.

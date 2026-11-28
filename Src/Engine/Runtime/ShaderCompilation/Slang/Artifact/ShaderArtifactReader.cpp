@@ -920,18 +920,76 @@ namespace SE
 			error = SE_TEXT("ShaderArtifact data is not valid JSON.");
 			return false;
 		}
-		if (!ReadString(document, "format", artifact.Format, error) ||
-			!ReadUint(document, "version", artifact.Version, error) ||
-			!ReadString(document, "compilerBuildTag", artifact.CompilerBuildTag, error) ||
-			artifact.Format != SE_TEXT("SLC2") || artifact.Version != 4)
-		{
+        if (!ReadString(document, "format", artifact.Format, error) || !ReadUint(document, "version", artifact.Version, error) || !ReadString(document, "compilerBuildTag", artifact.CompilerBuildTag, error) ||
+            artifact.Format != SE_TEXT("SLC2") || artifact.Version != 5)
+        {
 			if (error.IsEmpty())
 			{
 				error = SE_TEXT("ShaderArtifact header is invalid.");
 			}
 			return false;
 		}
-		const Json::Value* programs = nullptr;
+        const Json::Value* materialParameters = nullptr;
+        if (!ReadArray(document, "materialParameters", materialParameters, error))
+        {
+            return false;
+        }
+
+        for (auto it = materialParameters->Begin(); it != materialParameters->End(); ++it)
+        {
+            ShaderMaterialParameter parameter;
+            uint32                  type;
+            const Json::Value*      defaultValue = nullptr;
+            if (!ReadString(*it, "name", parameter.Name, error))
+            {
+                return false;
+            }
+
+			String temp;
+			if (!ReadString(*it, "shaderName", temp, error))
+            {
+                return false;
+            }
+			parameter.ShaderName = StringID(temp);
+
+			if (!ReadUint(*it, "type", type, error))
+            {
+                return false;
+            }
+
+			if (!ReadArray(*it, "defaultValue", defaultValue, error))
+            {
+                return false;
+            }
+
+            parameter.Type = static_cast<MaterialParameterType>(type);
+            if (type > 255 || parameter.ShaderName == StringID::Invalid || (parameter.GetValueSize() == 0 && parameter.Type != MaterialParameterType::Texture && parameter.Type != MaterialParameterType::CubeTexture) ||
+                defaultValue->Size() != parameter.GetValueSize())
+            {
+                error = SE_TEXT("ShaderArtifact material parameter type or default value size is invalid.");
+                return false;
+            }
+            for (auto value = defaultValue->Begin(); value != defaultValue->End(); ++value)
+            {
+                if (!value->IsUint() || value->GetUint() > 255)
+                {
+                    error = SE_TEXT("ShaderArtifact material parameter default value must contain bytes.");
+                    return false;
+                }
+                parameter.DefaultValue.Append((byte*)value->GetUint(), sizeof(byte));
+            }
+            for (const ShaderMaterialParameter& existing : artifact.MaterialParameters)
+            {
+                if (existing.ShaderName == parameter.ShaderName)
+                {
+                    error = SE_TEXT("ShaderArtifact material parameter path is duplicated.");
+                    return false;
+                }
+            }
+            artifact.MaterialParameters.Add(MoveTemp(parameter));
+        }
+
+        const Json::Value* programs = nullptr;
 		if (!ReadArray(document, "programs", programs, error) || programs->Empty())
 		{
 			return false;

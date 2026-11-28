@@ -39,11 +39,22 @@ namespace SE
             LOG_ERROR("Resource", "Shader references can only be changed on a loaded Shader material between draws on the main thread.");
             return false;
         }
+
+        const bool sameShader = m_ShaderAsset.Get() == pShader;
+
         if (!LoadShader(pShader))
+        {
             return false;
+        }
 
         Threading::ScopeLock lock(Locker);
-        pShader->GetMaterialParameters(Params);
+        if (!sameShader)
+        {
+            Params.Dispose();
+            // Remove old Shader overrides from instances before publishing the new declarations.
+            ParamsChanged();
+        }
+        Params.SyncShaderParameters(pShader->GetMaterialParameters());
         ParamsChanged();
         return true;
     }
@@ -127,7 +138,7 @@ namespace SE
         {
             if (LoadShader(m_ShaderAsset.Get()))
             {
-                m_ShaderAsset->GetMaterialParameters(Params);
+                Params.SyncShaderParameters(m_ShaderAsset->GetMaterialParameters());
                 ParamsChanged();
             }
         }
@@ -476,6 +487,8 @@ namespace SE
             {
                 return LoadResult::Failed;
             }
+
+            Params.SyncShaderParameters(shader->GetMaterialParameters());
         }
 
         ParamsChanged();

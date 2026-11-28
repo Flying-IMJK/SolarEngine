@@ -498,7 +498,7 @@ namespace SE
             LOG_VULKAN_RESULT(result);
             if (result != VK_SUCCESS)
             {
-                LOG_ERROR("Graphic", "Failed to create Vulkan shader module for stage {0}.", ToString(stage.Stage));
+                LOG_ERROR("Graphic", "Failed to create Vulkan shader module for stage {0}.", ::SE::ToString(stage.Stage));
                 return false;
             }
             m_StageModules.Add(MoveTemp(module));

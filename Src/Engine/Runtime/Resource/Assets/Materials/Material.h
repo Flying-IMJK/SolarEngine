@@ -10,9 +10,7 @@ namespace SE
     class MaterialShader;
     class Shader;
 
-#define MATERIAL_VERSION 1
-
-
+    #define MATERIAL_VERSION 1
 
     // <summary>
     /// Material asset that contains shader for rendering models on the GPU.
@@ -34,7 +32,9 @@ namespace SE
 
         bool IsGraphShader() const override { return m_ShaderHeader.Material.GraphVersion != -1; }
 
+        SE_FUNCTION(API())
         Shader* GetShaderReference() const { return m_ShaderAsset.Get(); }
+        SE_FUNCTION(API())
         bool   SetShaderReference(Shader* pShader);
 
         uint32 GetSerializedVersion() const override;
@@ -48,10 +48,19 @@ namespace SE
 
     public:
         // [MaterialBase]
+        SE_FUNCTION(API())
         bool IsMaterialInstance() const override;
 
         // [IMaterial]
         const MaterialInfo& GetInfo() const override;
+
+        SE_FUNCTION(API())
+        FORCE_INLINE const MaterialInfo& Info() const
+        {
+            return GetInfo();
+        }
+
+        SE_FUNCTION(API())
         GPUShader*      GetShader() const override;
         bool                IsReady() const override;
         DrawPass            GetDrawModes() const override;
@@ -59,6 +68,7 @@ namespace SE
         bool CanUseInstancing(InstancingHandler& handler) const override;
         void Bind(BindParameters& params) override;
 
+        SE_FUNCTION(API())
         ShaderProgramInstance* GetProgram() override;
 
 #if SE_EDITOR

@@ -39,6 +39,7 @@ namespace SE
         SE_FUNCTION(API())
         virtual bool IsReady() const override = 0;
 
+        SE_FUNCTION(API())
         virtual bool IsGraphShader() const = 0;
 
     public:

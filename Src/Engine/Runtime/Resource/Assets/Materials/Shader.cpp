@@ -36,10 +36,9 @@ namespace SE
         return pInstance && SelectProgram(name, selection, program) && pInstance->Initialize(program);
     }
 
-    void Shader::GetMaterialParameters(MaterialParams& output) const
+    const List<ShaderMaterialParameter>& Shader::GetMaterialParameters()
     {
-        // Source declarations and their reflected defaults will populate this collection later.
-        output.Dispose();
+        return GetGPUShader()->GetArtifact().MaterialParameters;
     }
 
     bool Shader::OnInit(AssetInitData& initData)

@@ -576,11 +576,9 @@ namespace SE
 		}
 
 		ShaderArtifact artifact;
-        artifact.CompilerBuildTag = String::Format(SE_TEXT("SolarSlangCompiler/1;Slang/{0};SLC2/{1}"),
-                                                   StringAnsiView(SLANG_TAG_VERSION),
-                                                   StringUtils::ToString(4));
+        artifact.CompilerBuildTag = String::Format(SE_TEXT("SolarSlangCompiler/1;Slang/{0};SLC2/{1}"), StringAnsiView(SLANG_TAG_VERSION), StringUtils::ToString(5));
 
-		for (int32 program_index = 0; program_index < baselinePrograms.Count(); program_index++)
+        for (int32 program_index = 0; program_index < baselinePrograms.Count(); program_index++)
 		{
 			const ShaderProgramDeclaration& baselineProgram = baselinePrograms[program_index];
 			List<ShaderVariantPlan> variants;
@@ -697,7 +695,13 @@ namespace SE
 					}
 
 					ShaderVariantRecord variantRecord;
-					variantRecord.Variant = variant.Variant;
+                    // Read source declarations before the physical layout is pruned for stage activity.
+                    if (!MaterialParameters(layout, artifact.MaterialParameters, error))
+                    {
+                        AddDiagnostic(error);
+                        return failedCompilation();
+                    }
+                    variantRecord.Variant = variant.Variant;
 					List<ShaderStage> reflectionStages;
 					reflectionStages.Resize(baselineProgram.Stages.Count());
 					for (int32 stageIndex = 0; stageIndex < baselineProgram.Stages.Count(); stageIndex++)
@@ -780,7 +784,8 @@ namespace SE
 			artifact.Programs.Add(programRecord);
 		}
 
-		Sorting::QuickSort(artifact.Programs, [](const ShaderProgramRecord& a, const ShaderProgramRecord& b) {
+        Sorting::QuickSort(artifact.MaterialParameters, [](const ShaderMaterialParameter& a, const ShaderMaterialParameter& b) { return a.ShaderName < b.ShaderName; });
+        Sorting::QuickSort(artifact.Programs, [](const ShaderProgramRecord& a, const ShaderProgramRecord& b) {
 			return a.ProgramId < b.ProgramId;
 		});
 

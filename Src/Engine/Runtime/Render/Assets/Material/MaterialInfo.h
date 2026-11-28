@@ -9,6 +9,7 @@ namespace SE
     /// <summary>
     /// Material domain type. Material domain defines the target usage of the material shader.
     /// </summary>
+    SE_ENUM(API())
     enum class MaterialDomain : byte
     {
         /// <summary>
@@ -57,6 +58,7 @@ namespace SE
     /// <summary>
     /// Material blending modes.
     /// </summary>
+    SE_ENUM(API())
     enum class MaterialBlendMode : byte
     {
         /// <summary>
@@ -83,6 +85,7 @@ namespace SE
     /// <summary>
     /// Material shading modes. Defines how material inputs and properties are combined to result the final surface color.
     /// </summary>
+    SE_ENUM(API())
     enum class MaterialShadingModel : byte
     {
         /// <summary>
@@ -109,6 +112,7 @@ namespace SE
     /// <summary>
     /// Decal material blending modes.
     /// </summary>
+    SE_ENUM(API())
     enum class MaterialDecalBlendingMode : byte
     {
         /// <summary>
@@ -135,6 +139,7 @@ namespace SE
     /// <summary>
     /// Transparent material lighting modes.
     /// </summary>
+    SE_ENUM(API())
     enum class MaterialTransparentLightingMode : byte
     {
         /// <summary>
@@ -269,6 +274,7 @@ namespace SE
     /// <summary>
     /// Material input scene textures. Special inputs from the graphics pipeline.
     /// </summary>
+    SE_ENUM(API())
     enum class MaterialSceneTextures
     {
         /// <summary>
@@ -336,41 +342,50 @@ namespace SE
     /// <summary>
     /// Structure with basic information about the material surface. It describes how material is reacting on light and which graphical features of it requires to render.
     /// </summary>
+    SE_STRUCT(API())
     struct SE_API_RUNTIME MaterialInfo
     {
+        SCRIPTING_TYPE_MIN(MaterialInfo)
         /// <summary>
         /// The material shader domain.
         /// </summary>
+        SE_FIELD(API())
         MaterialDomain Domain;
 
         /// <summary>
         /// The blending mode for rendering.
         /// </summary>
+        SE_FIELD(API())
         MaterialBlendMode BlendMode;
 
         /// <summary>
         /// The shading mode for lighting.
         /// </summary>
+        SE_FIELD(API())
         MaterialShadingModel ShadingModel;
 
         /// <summary>
         /// The usage flags.
         /// </summary>
+        SE_FIELD(API())
         MaterialUsage UsageFlags;
 
         /// <summary>
         /// The features usage flags.
         /// </summary>
+        SE_FIELD(API())
         MaterialFeatures FeaturesFlags;
 
         /// <summary>
         /// The decal material blending mode.
         /// </summary>
+        SE_FIELD(API())
         MaterialDecalBlendingMode DecalBlendingMode;
 
         /// <summary>
         /// The transparent material lighting mode.
         /// </summary>
+        SE_FIELD(API())
         MaterialTransparentLightingMode TransparentLightingMode;
 
         /// <summary>
@@ -381,26 +396,31 @@ namespace SE
         /// <summary>
         /// The primitives culling mode.
         /// </summary>
+        SE_FIELD(API())
         CullMode CullMode;
 
         /// <summary>
         /// The mask threshold.
         /// </summary>
+        SE_FIELD(API())
         float MaskThreshold;
 
         /// <summary>
         /// The opacity threshold.
         /// </summary>
+        SE_FIELD(API())
         float OpacityThreshold;
 
         /// <summary>
         /// The tessellation mode.
         /// </summary>
+        SE_FIELD(API())
         TessellationMethod TessellationMode;
 
         /// <summary>
         /// The maximum tessellation factor (used only if material uses tessellation).
         /// </summary>
+        SE_FIELD(API())
         int32 MaxTessellationFactor;
 
         MaterialInfo(): Domain(), BlendMode(), ShadingModel(), DecalBlendingMode(), TransparentLightingMode(), CullMode(), MaskThreshold(0), OpacityThreshold(0),

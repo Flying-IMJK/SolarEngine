@@ -1,6 +1,7 @@
 
 #include <Runtime/Resource/Importers/CreateMaterial.h>
 
+#include <Runtime/Core/Serialization/MemoryWriteStream.h>
 #include <Runtime/Core/Thread/Threading.h>
 
 #include <Runtime/Render/Assets/Material/MaterialShader.h>
@@ -178,6 +179,15 @@ namespace SE
             }
 
             context.Data.CustomData.Copy(&shaderHeader);
+            MaterialParams parameters;
+            parameters.SyncShaderParameters(shader->GetMaterialParameters());
+            MemoryWriteStream parameterStream(256);
+            parameters.Save(&parameterStream);
+            if (context.AllocateChunk(SHADER_FILE_CHUNK_MATERIAL_PARAMS))
+            {
+                return CreateAssetResult::CannotAllocateChunk;
+            }
+            context.Data.Header.Chunks[SHADER_FILE_CHUNK_MATERIAL_PARAMS]->Data.Copy(parameterStream.GetHandle(), parameterStream.GetPosition());
         }
         else
         {
@@ -231,4 +241,4 @@ namespace SE
 
         return CreateAssetResult::Ok;
     }
-} // SE
+} // namespace SE

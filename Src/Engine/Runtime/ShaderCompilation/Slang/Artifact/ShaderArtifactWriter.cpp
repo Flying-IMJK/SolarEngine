@@ -285,8 +285,8 @@ namespace SE
 	{
 		output.Clear();
 
-		if (artifact.Format != SE_TEXT("SLC2") || artifact.Version != 4)
-		{
+        if (artifact.Format != SE_TEXT("SLC2") || artifact.Version != 5)
+        {
 			error = SE_TEXT("Invalid ShaderArtifact artifact header.");
 			return false;
 		}
@@ -302,7 +302,35 @@ namespace SE
 		writer.Key(SE_TEXT("compilerBuildTag"));
 		writer.String(artifact.CompilerBuildTag);
 
-		writer.Key(SE_TEXT("programs"));
+        writer.Key(SE_TEXT("materialParameters"));
+        writer.StartArray();
+        for (const ShaderMaterialParameter& parameter : artifact.MaterialParameters)
+        {
+            if (parameter.ShaderName == StringID::Invalid || (parameter.GetValueSize() == 0 && parameter.Type != MaterialParameterType::Texture && parameter.Type != MaterialParameterType::CubeTexture) ||
+                parameter.DefaultValue.Length() != static_cast<int32>(parameter.GetValueSize()))
+            {
+                error = SE_TEXT("Invalid ShaderArtifact material parameter declaration.");
+                return false;
+            }
+            writer.StartObject();
+            writer.Key(SE_TEXT("name"));
+            writer.String(parameter.Name);
+            writer.Key(SE_TEXT("shaderName"));
+            writer.String(parameter.ShaderName.ToString());
+            writer.Key(SE_TEXT("type"));
+            writer.Uint(static_cast<uint32>(parameter.Type));
+            writer.Key(SE_TEXT("defaultValue"));
+            writer.StartArray();
+            for (byte value : parameter.DefaultValue)
+            {
+                writer.Uint(value);
+            }
+            writer.EndArray(parameter.DefaultValue.Length());
+            writer.EndObject();
+        }
+        writer.EndArray(artifact.MaterialParameters.Count());
+
+        writer.Key(SE_TEXT("programs"));
 		writer.StartArray();
 		for (int32 programIndex = 0; programIndex < artifact.Programs.Count(); programIndex++)
 		{

@@ -139,7 +139,9 @@ namespace SE::BuildTool
         {
             if (!parameter.type.isRef || parameter.type.isConst || parameter.type.isMoveRef)
             {
-                context->LogError("SE_PARAM at line {0} requires a mutable lvalue reference parameter", macro.fileLine);
+                HeaderInfo const* pHeaderInfo = context->GetHeaderInfo(macro.headerID);
+                context->LogError("{0}({1},{2}): error: SE_PARAM requires a mutable lvalue reference parameter",
+                                  pHeaderInfo->filePath, macro.fileLine, macro.fileColumn);
             }
             else
             {
